@@ -1,6 +1,7 @@
 #include "ModelPipeline.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
+#include <telemetry/src/PrometheusClient.h>
 
 namespace py = pybind11;
 
@@ -22,6 +23,8 @@ void ModelPipeline::trainOnDataLoader(
     bolt::TrainConfig& train_config,
     const std::optional<ValidationOptions>& validation,
     std::optional<uint32_t> max_in_memory_batches) {
+  auto start_time = std::chrono::system_clock::now();
+
   _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
   data_source->restart();
 
@@ -35,6 +38,11 @@ void ModelPipeline::trainOnDataLoader(
   } else {
     trainInMemory(dataset, train_config, validation);
   }
+
+  std::chrono::duration<double> elapsed_time =
+      std::chrono::system_clock::now() - start_time;
+  telemetry::client.trackTraining(
+      /* training_time_seconds = */ elapsed_time.count());
 }
 
 py::object ModelPipeline::evaluateOnFile(
@@ -48,6 +56,8 @@ py::object ModelPipeline::evaluateOnFile(
 py::object ModelPipeline::evaluateOnDataLoader(
     const std::shared_ptr<dataset::DataLoader>& data_source,
     std::optional<bolt::EvalConfig>& eval_config_opt) {
+  auto start_time = std::chrono::system_clock::now();
+
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
       data_source, /* training= */ false);
 
@@ -61,7 +71,14 @@ py::object ModelPipeline::evaluateOnDataLoader(
 
   auto [_, output] = _model->evaluate({data}, labels, eval_config);
 
-  return _output_processor->processOutputTracker(output);
+  auto py_output = _output_processor->processOutputTracker(output);
+
+  std::chrono::duration<double> elapsed_time =
+      std::chrono::system_clock::now() - start_time;
+  telemetry::client.trackEvaluate(
+      /* evaluate_time_seconds = */ elapsed_time.count());
+
+  return py_output;
 }
 
 template py::object ModelPipeline::predict(const LineInput&, bool);
@@ -70,12 +87,21 @@ template py::object ModelPipeline::predict(const MapInput&, bool);
 template <typename InputType>
 py::object ModelPipeline::predict(const InputType& sample,
                                   bool use_sparse_inference) {
+  auto start_time = std::chrono::system_clock::now();
+
   std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
 
   BoltVector output =
       _model->predictSingle(std::move(inputs), use_sparse_inference);
 
-  return _output_processor->processBoltVector(output);
+  auto py_output = _output_processor->processBoltVector(output);
+
+  std::chrono::duration<double> elapsed_time =
+      std::chrono::system_clock::now() - start_time;
+  telemetry::client.trackPrediction(
+      /* inference_time_seconds = */ elapsed_time.count());
+
+  return py_output;
 }
 
 template py::object ModelPipeline::predictBatch(const LineInputBatch&, bool);
@@ -84,13 +110,23 @@ template py::object ModelPipeline::predictBatch(const MapInputBatch&, bool);
 template <typename InputBatchType>
 py::object ModelPipeline::predictBatch(const InputBatchType& samples,
                                        bool use_sparse_inference) {
+  auto start_time = std::chrono::system_clock::now();
+
   std::vector<BoltBatch> input_batches =
       _dataset_factory->featurizeInputBatch(samples);
 
   BoltBatch outputs = _model->predictSingleBatch(std::move(input_batches),
                                                  use_sparse_inference);
 
-  return _output_processor->processBoltBatch(outputs);
+  auto py_output = _output_processor->processBoltBatch(outputs);
+
+  std::chrono::duration<double> elapsed_time =
+      std::chrono::system_clock::now() - start_time;
+  telemetry::client.trackBatchPredictions(
+      /* inference_time_seconds = */ elapsed_time.count(),
+      /* num_inferences = */ outputs.getBatchSize());
+
+  return py_output;
 }
 
 template std::vector<dataset::Explanation> ModelPipeline::explain(
@@ -102,6 +138,8 @@ template <typename InputType>
 std::vector<dataset::Explanation> ModelPipeline::explain(
     const InputType& sample,
     std::optional<std::variant<uint32_t, std::string>> target_class) {
+  auto start_time = std::chrono::system_clock::now();
+
   std::optional<uint32_t> target_neuron;
   if (target_class) {
     target_neuron = _dataset_factory->labelToNeuronId(*target_class);
@@ -111,7 +149,15 @@ std::vector<dataset::Explanation> ModelPipeline::explain(
       /* input_data= */ {_dataset_factory->featurizeInput(sample)},
       /* explain_prediction_using_highest_activation= */ true,
       /* neuron_to_explain= */ target_neuron);
-  return _dataset_factory->explain(gradients_indices, gradients_ratio, sample);
+  auto explanation =
+      _dataset_factory->explain(gradients_indices, gradients_ratio, sample);
+
+  std::chrono::duration<double> elapsed_time =
+      std::chrono::system_clock::now() - start_time;
+  telemetry::client.trackExplanation(
+      /* explain_time_seconds = */ elapsed_time.count());
+
+  return explanation;
 }
 
 void ModelPipeline::trainInMemory(
