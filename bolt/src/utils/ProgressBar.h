@@ -36,8 +36,8 @@ class ProgressBar {
   }
 
   static std::optional<ProgressBar> makeOptional(bool verbose,
-                                         const std::string& description,
-                                         uint32_t max_steps) {
+                                                 const std::string& description,
+                                                 uint32_t max_steps) {
     if (!verbose) {
       return std::nullopt;
     }

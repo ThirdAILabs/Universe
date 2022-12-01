@@ -38,12 +38,7 @@ using data::ColumnNumberMapPtr;
 using search::Flash;
 
 class QueryCandidateGeneratorConfig {
-  static inline const uint32_t DEFAULT_BATCH_SIZE = 10000;
-  static inline const char* DEFAULT_HASH_FUNCTION = "DensifiedMinHash";
-  static inline const uint32_t DEFAULT_NUM_TABLES = 128;
-  static inline const uint32_t DEFAULT_HASHES_PER_TABLE = 3;
-  static inline const uint32_t DEFAULT_RESERVOIR_SIZE = 512;
-  static inline const uint32_t DEFAULT_HASH_TABLE_RANGE = 100000;
+  static inline const char* DEFAULT_HASH_FUNCTION = "Minhash";
 
  public:
   QueryCandidateGeneratorConfig(
@@ -119,22 +114,25 @@ class QueryCandidateGeneratorConfig {
   static std::shared_ptr<QueryCandidateGeneratorConfig> fromDefault(
       const std::string& source_column_name,
       const std::string& target_column_name, const std::string& dataset_size) {
-    uint32_t num_tables = DEFAULT_NUM_TABLES;
-    uint32_t hashes_per_table = DEFAULT_HASHES_PER_TABLE;
+    uint32_t num_tables = 128;
+    uint32_t hashes_per_table = 3;
+    uint32_t reservoir_size = 256;
+    uint32_t hash_table_range = 100000;
 
     if (dataset_size == "small") {
       hashes_per_table = 2;
+      hash_table_range = 10000;
     } else if (dataset_size == "large") {
       num_tables = 256;
-      hashes_per_table = 4;
+      reservoir_size = 512;
     }
     auto generator_config = QueryCandidateGeneratorConfig(
         /* hash_function = */ DEFAULT_HASH_FUNCTION,
         /* num_tables = */ num_tables,
         /* hashes_per_table = */ hashes_per_table,
-        /* range = */ DEFAULT_HASH_TABLE_RANGE,
+        /* range = */ hash_table_range,
         /* n_grams = */ {3, 4},
-        /* reservoir_size */ DEFAULT_RESERVOIR_SIZE,
+        /* reservoir_size */ reservoir_size,
         /* source_column_name = */ source_column_name,
         /* target_column_name = */ target_column_name);
 
