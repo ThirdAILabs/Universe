@@ -1,4 +1,6 @@
 #include "InferenceOutputTracker.h"
+#include <bolt_vector/src/BoltVector.h>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -90,6 +92,16 @@ float* InferenceOutputTracker::activationsForSample(uint32_t index) {
     return nullptr;
   }
   return _activations->data() + index * _num_nonzeros_per_sample;
+}
+
+BoltVector InferenceOutputTracker::sampleAsNonOwningBoltVector(uint32_t index) {
+  if (!_activations.has_value()) {
+    throw std::out_of_range(
+        "Cannot access ith sample of empty InferenceOutputTracker.");
+  }
+  return BoltVector(/* an= */ activeNeuronsForSample(index),
+                    /* a= */ activationsForSample(index), /* g= */ nullptr,
+                    /* l= */ _num_nonzeros_per_sample);
 }
 
 }  // namespace thirdai::bolt

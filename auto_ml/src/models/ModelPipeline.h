@@ -5,6 +5,7 @@
 #include "OutputProcessor.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -51,6 +52,8 @@ class ValidationOptions {
     return val_config;
   }
 
+  const std::vector<std::string>& metrics() const { return _metrics; }
+
  private:
   std::string _filename;
   std::vector<std::string> _metrics;
@@ -91,17 +94,16 @@ class ModelPipeline {
                    const std::optional<ValidationOptions>& validation,
                    std::optional<uint32_t> max_in_memory_batches);
 
-  void trainOnDataLoader(
-      const std::shared_ptr<dataset::DataLoader>& data_source,
-      bolt::TrainConfig& train_config,
-      const std::optional<ValidationOptions>& validation,
-      std::optional<uint32_t> max_in_memory_batches);
+  void trainOnDataLoader(const dataset::DataLoaderPtr& data_source,
+                         bolt::TrainConfig& train_config,
+                         const std::optional<ValidationOptions>& validation,
+                         std::optional<uint32_t> max_in_memory_batches);
 
   py::object evaluateOnFile(const std::string& filename,
                             std::optional<bolt::EvalConfig>& eval_config_opt);
 
   py::object evaluateOnDataLoader(
-      const std::shared_ptr<dataset::DataLoader>& data_source,
+      const dataset::DataLoaderPtr& data_source,
       std::optional<bolt::EvalConfig>& eval_config_opt);
 
   template <typename InputType>
@@ -166,11 +168,17 @@ class ModelPipeline {
 
   void updateRehashRebuildInTrainConfig(bolt::TrainConfig& train_config);
 
+  std::optional<float> tuneBinaryClassificationPredictionThreshold(
+      const dataset::DataLoaderPtr& data_source, const std::string& metric_name,
+      uint32_t max_num_batches);
+
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_dataset_factory, _model, _output_processor, _train_eval_config);
   }
+
+  static constexpr uint32_t ALL_BATCHES = std::numeric_limits<uint32_t>::max();
 
  protected:
   data::DatasetLoaderFactoryPtr _dataset_factory;

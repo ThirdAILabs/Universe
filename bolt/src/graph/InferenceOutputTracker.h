@@ -2,6 +2,7 @@
 
 #include "Node.h"
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <bolt_vector/src/BoltVector.h>
 
 namespace thirdai::bolt {
 
@@ -26,6 +27,8 @@ class InferenceOutputTracker {
   uint32_t* activeNeuronsForSample(uint32_t index);
 
   float* activationsForSample(uint32_t index);
+
+  BoltVector sampleAsNonOwningBoltVector(uint32_t index);
 
   uint32_t numNonzerosInOutput() const { return _num_nonzeros_per_sample; }
 

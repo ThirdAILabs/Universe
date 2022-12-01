@@ -91,6 +91,19 @@ py::object RegressionOutputProcessor::processOutputTracker(
   return py::object(std::move(output_array));
 }
 
+py::object BinaryOutputProcessor::processBoltVector(BoltVector& output) {
+  return convertBoltVectorToNumpy(output);
+}
+
+py::object BinaryOutputProcessor::processBoltBatch(BoltBatch& outputs) {
+  return convertBoltBatchToNumpy(outputs);
+}
+
+py::object BinaryOutputProcessor::processOutputTracker(
+    bolt::InferenceOutputTracker& output) {
+  return convertInferenceTrackerToNumpy(output);
+}
+
 py::object OutputProcessor::convertInferenceTrackerToNumpy(
     bolt::InferenceOutputTracker& output) {
   uint32_t num_samples = output.numSamples();

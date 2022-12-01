@@ -110,4 +110,36 @@ class RegressionOutputProcessor final : public OutputProcessor {
   }
 };
 
+class BinaryOutputProcessor final : public OutputProcessor {
+ public:
+  BinaryOutputProcessor() {}
+
+  static auto make() { return std::make_shared<BinaryOutputProcessor>(); }
+
+  static auto cast(const OutputProcessorPtr& output_processor) {
+    return std::dynamic_pointer_cast<BinaryOutputProcessor>(output_processor);
+  }
+
+  py::object processBoltVector(BoltVector& output) final;
+
+  py::object processBoltBatch(BoltBatch& outputs) final;
+
+  py::object processOutputTracker(bolt::InferenceOutputTracker& output) final;
+
+  void setPredictionTheshold(std::optional<float> threshold) {
+    _prediction_threshold = threshold;
+  }
+
+ private:
+  std::optional<float> _prediction_threshold;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<OutputProcessor>(this), _prediction_threshold);
+  }
+};
+
+using BinaryOutputProcessorPtr = std::shared_ptr<BinaryOutputProcessor>;
+
 }  // namespace thirdai::automl::models

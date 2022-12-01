@@ -1,7 +1,9 @@
 #include "ModelPipeline.h"
+#include <bolt/src/metrics/Metric.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <telemetry/src/PrometheusClient.h>
+#include <limits>
 
 namespace py = pybind11;
 
@@ -19,8 +21,7 @@ void ModelPipeline::trainOnFile(
 }
 
 void ModelPipeline::trainOnDataLoader(
-    const std::shared_ptr<dataset::DataLoader>& data_source,
-    bolt::TrainConfig& train_config,
+    const dataset::DataLoaderPtr& data_source, bolt::TrainConfig& train_config,
     const std::optional<ValidationOptions>& validation,
     std::optional<uint32_t> max_in_memory_batches) {
   auto start_time = std::chrono::system_clock::now();
@@ -39,6 +40,33 @@ void ModelPipeline::trainOnDataLoader(
     trainInMemory(dataset, train_config, validation);
   }
 
+  // If the model is for binary classification then at the end of each call to
+  // train we check to see if there is a prediction theshold that improves
+  // performance on some metric.
+  if (auto binary_output = BinaryOutputProcessor::cast(_output_processor)) {
+    if (validation && !validation->metrics().empty()) {
+      std::optional<float> threshold =
+          tuneBinaryClassificationPredictionThreshold(
+              /* data_source= */ dataset::SimpleFileDataLoader::make(
+                  validation->filename(), DEFAULT_EVALUATE_BATCH_SIZE),
+              /* metric_name= */ validation->metrics().at(0),
+              /* max_num_batches= */ ALL_BATCHES);
+
+      binary_output->setPredictionTheshold(threshold);
+    } else if (!train_config.metrics().empty()) {
+      // The number of training batches used is capped at 20 in case there is a
+      // large training dataset.
+      data_source->restart();
+      std::optional<float> threshold =
+          tuneBinaryClassificationPredictionThreshold(
+              /* data_source= */ data_source,
+              /* metric_name= */ train_config.metrics().at(0),
+              /* max_num_batches= */ 20);
+
+      binary_output->setPredictionTheshold(threshold);
+    }
+  }
+
   std::chrono::duration<double> elapsed_time =
       std::chrono::system_clock::now() - start_time;
   telemetry::client.trackTraining(
@@ -54,15 +82,14 @@ py::object ModelPipeline::evaluateOnFile(
 }
 
 py::object ModelPipeline::evaluateOnDataLoader(
-    const std::shared_ptr<dataset::DataLoader>& data_source,
+    const dataset::DataLoaderPtr& data_source,
     std::optional<bolt::EvalConfig>& eval_config_opt) {
   auto start_time = std::chrono::system_clock::now();
 
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
       data_source, /* training= */ false);
 
-  auto [data, labels] =
-      dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
+  auto [data, labels] = dataset->loadInMemory(ALL_BATCHES).value();
 
   bolt::EvalConfig eval_config =
       eval_config_opt.value_or(bolt::EvalConfig::makeConfig());
@@ -163,8 +190,7 @@ std::vector<dataset::Explanation> ModelPipeline::explain(
 void ModelPipeline::trainInMemory(
     data::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
     const std::optional<ValidationOptions>& validation) {
-  auto [train_data, train_labels] =
-      dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
+  auto [train_data, train_labels] = dataset->loadInMemory(ALL_BATCHES).value();
 
   if (validation) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
@@ -173,8 +199,7 @@ void ModelPipeline::trainInMemory(
         /* training= */ false);
 
     auto [val_data, val_labels] =
-        validation_dataset->loadInMemory(std::numeric_limits<uint32_t>::max())
-            .value();
+        validation_dataset->loadInMemory(ALL_BATCHES).value();
 
     train_config.withValidation(val_data, val_labels,
                                 validation->validationConfig());
@@ -240,6 +265,45 @@ void ModelPipeline::updateRehashRebuildInTrainConfig(
           _train_eval_config.reconstructHashFunctionsInterval()) {
     train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
   }
+}
+
+std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
+    const dataset::DataLoaderPtr& data_source, const std::string& metric_name,
+    uint32_t max_num_batches) {
+  auto dataset = _dataset_factory->getLabeledDatasetLoader(
+      data_source, /* training= */ false);
+
+  auto [data, labels] = dataset->loadInMemory(max_num_batches).value();
+
+  auto eval_config =
+      bolt::EvalConfig::makeConfig().returnActivations().silence();
+  auto [_, activations] = _model->evaluate({data}, labels, eval_config);
+
+  auto metric = bolt::makeMetric(metric_name);
+
+  double best_metric_value = metric->worst();
+  std::optional<float> best_threshold = std::nullopt;
+
+  for (uint32_t t_idx = 1; t_idx < 1000; t_idx++) {
+    float threshold = t_idx * 0.001;
+
+    uint32_t sample_idx = 0;
+    for (const auto& label_batch : *labels) {
+      for (const auto& label_vec : label_batch) {
+        metric->record(
+            /* output= */ activations.sampleAsNonOwningBoltVector(sample_idx++),
+            /* labels= */ label_vec);
+      }
+    }
+
+    if (metric->betterThan(metric->value(), best_metric_value)) {
+      best_metric_value = metric->value();
+      metric->reset();
+      best_threshold = threshold;
+    }
+  }
+
+  return best_threshold;
 }
 
 }  // namespace thirdai::automl::models
