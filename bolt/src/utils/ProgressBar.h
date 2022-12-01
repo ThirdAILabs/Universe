@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <optional>
 
 constexpr char OPEN = '[';
 constexpr char CLOSE = ']';
@@ -32,6 +33,15 @@ class ProgressBar {
       std::cout << TODO;
     }
     std::cout << CLOSE << " " << _prev_percent << "%" << std::flush;
+  }
+
+  static std::optional<ProgressBar> makeOptional(bool verbose,
+                                         const std::string& description,
+                                         uint32_t max_steps) {
+    if (!verbose) {
+      return std::nullopt;
+    }
+    return std::make_optional<ProgressBar>(description, max_steps);
   }
 
   void increment() {

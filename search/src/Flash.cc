@@ -35,14 +35,6 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
   thirdai::licensing::LicenseWrapper::checkLicense();
 }
 
-template <typename... Args>
-std::optional<ProgressBar> createProgressBar(bool make, Args... args) {
-  if (!make) {
-    return std::nullopt;
-  }
-  return std::make_optional<ProgressBar>(args...);
-}
-
 template <typename LABEL_T>
 void Flash<LABEL_T>::addDataset(
     const dataset::InMemoryDataset<BoltBatch>& dataset,
@@ -52,8 +44,8 @@ void Flash<LABEL_T>::addDataset(
         "Number of data and label batches must be same.");
   }
   auto num_batches = dataset.numBatches();
-  std::optional<ProgressBar> bar = createProgressBar(
-      /* make = */ verbose,
+  std::optional<ProgressBar> bar = ProgressBar::makeOptional(
+      /* verbose = */ verbose,
       /* description = */ fmt::format("Processing {} batches", num_batches),
       /* max_steps = */ dataset.numBatches());
   for (uint64_t batch_index = 0; batch_index < num_batches; batch_index++) {
@@ -64,8 +56,10 @@ void Flash<LABEL_T>::addDataset(
       bar->increment();
     }
   }
-  bar->close(
-      /* comment = */ fmt::format("Finished Training the Model"));
+  if (verbose) {
+    bar->close(
+        /* comment = */ fmt::format("Finished Training the Model"));
+  }
 }
 
 template <typename LABEL_T>

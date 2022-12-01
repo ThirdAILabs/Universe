@@ -31,11 +31,11 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::bolt {
+namespace thirdai::automl::models {
 
-using thirdai::automl::data::ColumnNumberMap;
-using thirdai::automl::data::ColumnNumberMapPtr;
-using thirdai::search::Flash;
+using data::ColumnNumberMap;
+using data::ColumnNumberMapPtr;
+using search::Flash;
 
 class QueryCandidateGeneratorConfig {
   static inline const uint32_t DEFAULT_BATCH_SIZE = 10000;
@@ -576,4 +576,4 @@ class QueryCandidateGenerator {
 
 using QueryCandidateGeneratorPtr = std::shared_ptr<QueryCandidateGenerator>;
 
-}  // namespace thirdai::bolt
+}  // namespace thirdai::automl::models

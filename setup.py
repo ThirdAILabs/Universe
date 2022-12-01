@@ -195,6 +195,8 @@ setup(
             "pandas",
             "cryptography<=36.0.2",
             "tokenizers==0.11.6",
+            "pyarrow",
+            "prometheus_client",
         ],
         "benchmark": [
             "toml",
