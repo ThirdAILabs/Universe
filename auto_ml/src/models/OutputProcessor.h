@@ -15,12 +15,14 @@ namespace thirdai::automl::models {
 
 class OutputProcessor {
  public:
-  virtual py::object processBoltVector(BoltVector& output) = 0;
+  virtual py::object processBoltVector(BoltVector& output,
+                                       bool return_predicted_class) = 0;
 
-  virtual py::object processBoltBatch(BoltBatch& outputs) = 0;
+  virtual py::object processBoltBatch(BoltBatch& outputs,
+                                      bool return_predicted_class) = 0;
 
-  virtual py::object processOutputTracker(
-      bolt::InferenceOutputTracker& output) = 0;
+  virtual py::object processOutputTracker(bolt::InferenceOutputTracker& outpu,
+                                          bool return_predicted_class) = 0;
 
   static py::object convertInferenceTrackerToNumpy(
       bolt::InferenceOutputTracker& output);
@@ -62,11 +64,14 @@ class CategoricalOutputProcessor final : public OutputProcessor {
     return std::make_shared<CategoricalOutputProcessor>(prediction_threshold);
   }
 
-  py::object processBoltVector(BoltVector& output) final;
+  py::object processBoltVector(BoltVector& output,
+                               bool return_predicted_class) final;
 
-  py::object processBoltBatch(BoltBatch& outputs) final;
+  py::object processBoltBatch(BoltBatch& outputs,
+                              bool return_predicted_class) final;
 
-  py::object processOutputTracker(bolt::InferenceOutputTracker& output) final;
+  py::object processOutputTracker(bolt::InferenceOutputTracker& output,
+                                  bool return_predicted_class) final;
 
  private:
   std::optional<float> _prediction_threshold;
@@ -91,11 +96,14 @@ class RegressionOutputProcessor final : public OutputProcessor {
     return std::make_shared<RegressionOutputProcessor>(regression_binning);
   }
 
-  py::object processBoltVector(BoltVector& output) final;
+  py::object processBoltVector(BoltVector& output,
+                               bool return_predicted_class) final;
 
-  py::object processBoltBatch(BoltBatch& outputs) final;
+  py::object processBoltBatch(BoltBatch& outputs,
+                              bool return_predicted_class) final;
 
-  py::object processOutputTracker(bolt::InferenceOutputTracker& output) final;
+  py::object processOutputTracker(bolt::InferenceOutputTracker& output,
+                                  bool return_predicted_class) final;
 
  private:
   dataset::RegressionBinningStrategy _regression_binning;
@@ -120,17 +128,22 @@ class BinaryOutputProcessor final : public OutputProcessor {
     return std::dynamic_pointer_cast<BinaryOutputProcessor>(output_processor);
   }
 
-  py::object processBoltVector(BoltVector& output) final;
+  py::object processBoltVector(BoltVector& output,
+                               bool return_predicted_class) final;
 
-  py::object processBoltBatch(BoltBatch& outputs) final;
+  py::object processBoltBatch(BoltBatch& outputs,
+                              bool return_predicted_class) final;
 
-  py::object processOutputTracker(bolt::InferenceOutputTracker& output) final;
+  py::object processOutputTracker(bolt::InferenceOutputTracker& output,
+                                  bool return_predicted_class) final;
 
   void setPredictionTheshold(std::optional<float> threshold) {
     _prediction_threshold = threshold;
   }
 
  private:
+  uint32_t binaryActivationsToPrediction(const float* activations);
+
   std::optional<float> _prediction_threshold;
 
   friend class cereal::access;

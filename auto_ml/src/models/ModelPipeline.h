@@ -100,18 +100,22 @@ class ModelPipeline {
                          std::optional<uint32_t> max_in_memory_batches);
 
   py::object evaluateOnFile(const std::string& filename,
-                            std::optional<bolt::EvalConfig>& eval_config_opt);
+                            std::optional<bolt::EvalConfig>& eval_config_opt,
+                            bool return_predicted_class);
 
   py::object evaluateOnDataLoader(
       const dataset::DataLoaderPtr& data_source,
-      std::optional<bolt::EvalConfig>& eval_config_opt);
+      std::optional<bolt::EvalConfig>& eval_config_opt,
+      bool return_predicted_class);
 
   template <typename InputType>
-  py::object predict(const InputType& sample, bool use_sparse_inference);
+  py::object predict(const InputType& sample, bool use_sparse_inference,
+                     bool return_predicted_class);
 
   template <typename InputBatchType>
   py::object predictBatch(const InputBatchType& samples,
-                          bool use_sparse_inference);
+                          bool use_sparse_inference,
+                          bool return_predicted_class);
 
   template <typename InputType>
   std::vector<dataset::Explanation> explain(
