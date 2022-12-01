@@ -35,15 +35,6 @@ InferenceOutputTracker::InferenceOutputTracker(const NodePtr& output_node,
   }
 }
 
-InferenceOutputTracker::InferenceOutputTracker(
-    std::optional<std::vector<uint32_t>> active_neurons,
-    std::vector<float> activations, uint32_t num_nonzeros_per_sample)
-    : _num_nonzeros_per_sample(num_nonzeros_per_sample),
-      _num_samples(activations.size() / num_nonzeros_per_sample),
-      _current_vec_index(activations.size() / num_nonzeros_per_sample),
-      _activations(std::move(activations)),
-      _active_neurons(std::move(active_neurons)) {}
-
 void InferenceOutputTracker::saveOutputBatch(const NodePtr& output_node,
                                              uint32_t batch_size) {
   for (uint32_t vec_id_in_batch = 0; vec_id_in_batch < batch_size;

@@ -13,10 +13,6 @@ class InferenceOutputTracker {
   InferenceOutputTracker(const NodePtr& output_node, bool save_activations,
                          uint32_t total_num_samples);
 
-  InferenceOutputTracker(std::optional<std::vector<uint32_t>> active_neurons,
-                         std::vector<float> activations,
-                         uint32_t num_nonzeros_per_sample);
-
   void saveOutputBatch(const NodePtr& output_node, uint32_t batch_size);
 
   // Returns a (possibly null) pointer to the saved activation data.
