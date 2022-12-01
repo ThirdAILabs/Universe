@@ -476,7 +476,7 @@ InferenceResult BoltGraph::evaluate(
       /* total_num_samples = */ predict_context.len());
 
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
-      /*make=*/eval_config.verbose(),
+      /*verbose=*/eval_config.verbose(),
       /*description=*/"test",
       /*max_steps=*/predict_context.numBatches());
 
