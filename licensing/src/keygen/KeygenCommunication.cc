@@ -15,6 +15,9 @@ namespace thirdai::licensing {
 
 using json = nlohmann::json;
 
+const std::string KEYGEN_PUBLIC_KEY_BASE64_DER =
+    "MCowBQYDK2VwAyEAmtv9iB02PTHBVsNImWiS3QGDp+RUDcABy3wu7Fp5Zq4=";
+
 std::string get_signature(const std::string& signature_header) {
   // We add 11 because the actual signature starts 11 chars after the beginning
   // of the found string
@@ -52,9 +55,9 @@ void verifySignature(const httplib::Result& res) {
   hash.Final(reinterpret_cast<CryptoPP::byte*>(&digest[0]));
 
   std::string encoded_digest;
-  CryptoPP::StringSource( // NOLINT
+  CryptoPP::StringSource(  // NOLINT
       digest, true,
-      new CryptoPP::Base64Encoder(                  
+      new CryptoPP::Base64Encoder(
           new CryptoPP::StringSink(encoded_digest))  // Base64Encoder
   );
 
@@ -70,49 +73,22 @@ void verifySignature(const httplib::Result& res) {
                      << "digest: sha-256=" << encoded_digest;
   std::string signed_data = signed_data_stream.str();
 
-
-  const CryptoPP::byte key[] = {0x9A, 0xDB, 0xFD, 0x88, 0x1D, 0x36, 0x3D, 0x31,
-                                0xC1, 0x56, 0xC3, 0x48, 0x99, 0x68, 0x92, 0xDD,
-                                0x01, 0x83, 0xA7, 0xE4, 0x54, 0x0D, 0xC0, 0x01,
-                                0xCB, 0x7C, 0x2E, 0xEC, 0x5A, 0x79, 0x66, 0xAE};
-
-  CryptoPP::Integer x(key, sizeof(key), CryptoPP::Integer::UNSIGNED, CryptoPP::LITTLE_ENDIAN_ORDER);
-
-  CryptoPP::ed25519PublicKey pub_key;
-  pub_key.SetPublicElement(x);
-
-  CryptoPP::Integer public_element = pub_key.GetPublicElement();
-  std::cout << public_element.ByteCount() << std::endl;
-
-  CryptoPP::ed25519::Verifier verifier(pub_key);
-
-  CryptoPP::Base64Encoder encoder(new CryptoPP::FileSink(std::cout));
-  std::cout << "Public key: ";
-  verifier.AccessPublicKey().Save(encoder);
-  std::cout << std::endl;
-
-  CryptoPP::Base64Encoder encoder2(new CryptoPP::FileSink(std::cout));
-  std::cout << "Public key: ";
-  verifier.AccessPublicKey().Save(encoder2);
-  std::cout << std::endl;
-
-  std::cout << signed_data << std::endl;
-  std::cout << signed_data.size() << std::endl;
-  std::cout << signature << std::endl;
-  std::cout << signature.size() << std::endl;
+  CryptoPP::StringSource ss_1(KEYGEN_PUBLIC_KEY_BASE64_DER, true,
+                            new CryptoPP::Base64Decoder);
+  CryptoPP::ed25519::Verifier verifier(ss_1);
 
   std::string decoded_signature;
-   
-  CryptoPP::StringSource ss(signature, true, // NOLINT
+  CryptoPP::StringSource ss(
+      signature, true,  // NOLINT
       new CryptoPP::Base64Decoder(
-          new CryptoPP::StringSink(decoded_signature)
-      ) // Base64Decoder
-  ); // StringSource
+          new CryptoPP::StringSink(decoded_signature))  // Base64Decoder
+  );                                                    // StringSource
 
   bool valid = verifier.VerifyMessage(
       reinterpret_cast<const CryptoPP::byte*>(signed_data.data()),
       signed_data.size(),
-      reinterpret_cast<const CryptoPP::byte*>(decoded_signature.data()), decoded_signature.size());
+      reinterpret_cast<const CryptoPP::byte*>(decoded_signature.data()),
+      decoded_signature.size());
 
   if (valid == false) {
     throw std::runtime_error("Invalid signature over message");

@@ -7,8 +7,8 @@ bolt.UniversalDeepTransformer(
     data_types={"col": bolt.types.categorical()}, target="col", n_target_classes=1
 )
 
-thirdai.activate("blarg")
+# thirdai.activate("blarg")
 
-bolt.UniversalDeepTransformer(
-    data_types={"col": bolt.types.categorical()}, target="col", n_target_classes=1
-)
+# bolt.UniversalDeepTransformer(
+#     data_types={"col": bolt.types.categorical()}, target="col", n_target_classes=1
+# )
