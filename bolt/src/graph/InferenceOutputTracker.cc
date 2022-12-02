@@ -92,7 +92,8 @@ float* InferenceOutputTracker::activationsForSample(uint32_t index) {
   return _activations->data() + index * _num_nonzeros_per_sample;
 }
 
-BoltVector InferenceOutputTracker::getSampleAsNonOwningBoltVector(uint32_t index) {
+BoltVector InferenceOutputTracker::getSampleAsNonOwningBoltVector(
+    uint32_t index) {
   if (!_activations.has_value()) {
     throw std::out_of_range(
         "Cannot access ith sample of empty InferenceOutputTracker.");
