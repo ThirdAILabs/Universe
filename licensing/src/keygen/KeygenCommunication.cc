@@ -18,6 +18,42 @@ using json = nlohmann::json;
 const std::string KEYGEN_PUBLIC_KEY_BASE64_DER =
     "MCowBQYDK2VwAyEAmtv9iB02PTHBVsNImWiS3QGDp+RUDcABy3wu7Fp5Zq4=";
 
+CryptoPP::ed25519Verifier createVerifier() {
+  CryptoPP::StringSource source(KEYGEN_PUBLIC_KEY_BASE64_DER, true,
+                                new CryptoPP::Base64Decoder);
+  return CryptoPP::ed25519::Verifier(source);
+}
+
+// See https://www.cryptopp.com/wiki/SHA2
+std::string sha256(const std::string& input) {
+  std::string digest;
+  CryptoPP::SHA256 hash;
+
+  hash.Update(reinterpret_cast<const CryptoPP::byte*>(input.data()),
+              input.length());
+  digest.resize(hash.DigestSize());
+  hash.Final(reinterpret_cast<CryptoPP::byte*>(&digest[0]));
+
+  return digest;
+}
+
+std::string base64Encode(const std::string& input) {
+  std::string encoded;
+  CryptoPP::StringSource(  // NOLINT
+      input, true,
+      new CryptoPP::Base64Encoder(
+          new CryptoPP::StringSink(encoded))  // Base64Encoder
+  );
+
+  // For some reason CryptoPP adds an extra new line at the end of the encoded
+  // string so we need to pop it off here
+  if (!encoded.empty()) {
+    encoded.pop_back();
+  }
+
+  return encoded;
+}
+
 std::string get_signature(const std::string& signature_header) {
   // We add 11 because the actual signature starts 11 chars after the beginning
   // of the found string
@@ -27,6 +63,46 @@ std::string get_signature(const std::string& signature_header) {
 
   return signature_header.substr(signature_start,
                                  signature_end - signature_start);
+}
+
+std::string getOriginalKeygenMessage(
+    const std::string& date, const std::string& base64_encoded_body_hash) {
+  std::stringstream original_keygen_message_stream;
+  original_keygen_message_stream
+      << "(request-target): post "
+         "/v1/accounts/thirdai/licenses/actions/validate-key\n"
+      << "host: api.keygen.sh\n"
+      << "date: " << date << "\n"
+      << "digest: sha-256=" << base64_encoded_body_hash;
+  return original_keygen_message_stream.str();
+}
+
+std::string getSignature(const httplib::Result& res) {
+  if (!res->has_header("Keygen-Signature")) {
+    throw std::runtime_error(
+        "License was found to be valid, but did not find a Keygen signature "
+        "verifying that the response came from Keygen.");
+  }
+
+  std::string signature_header = res->get_header_value("Keygen-Signature");
+
+  // We add 11 because the actual signature starts 11 chars after the beginning
+  // of the found string
+  size_t signature_start = signature_header.find("signature=") + 11;
+  // The signature ends one char before the next " after signature_start
+  size_t signature_end = signature_header.find(',', signature_start) - 1;
+
+  std::string base64_signature =
+      signature_header.substr(signature_start, signature_end - signature_start);
+
+  std::string decoded_signature;
+  CryptoPP::StringSource ss(
+      base64_signature, true,
+      new CryptoPP::Base64Decoder(
+          new CryptoPP::StringSink(decoded_signature))  // Base64Decoder
+  );                                                    // StringSource
+
+  return decoded_signature;
 }
 
 void verifySignature(const httplib::Result& res) {
@@ -42,53 +118,21 @@ void verifySignature(const httplib::Result& res) {
         "response (necessary to verify that the response came from Keygen).");
   }
 
-  std::string signature = res->get_header_value("Keygen-Signature");
-  signature = get_signature(signature);
+  std::string body_hash = sha256(res->body);
+  std::string base64_encoded_body_hash = base64Encode(body_hash);
 
-  // See https://www.cryptopp.com/wiki/SHA2
-  std::string digest;
-  CryptoPP::SHA256 hash;
+  std::string date = res->get_header_value("date");
+  std::string signed_data =
+      getOriginalKeygenMessage(date, base64_encoded_body_hash);
 
-  hash.Update(reinterpret_cast<const CryptoPP::byte*>(res->body.data()),
-              res->body.length());
-  digest.resize(hash.DigestSize());
-  hash.Final(reinterpret_cast<CryptoPP::byte*>(&digest[0]));
-
-  std::string encoded_digest;
-  CryptoPP::StringSource(  // NOLINT
-      digest, true,
-      new CryptoPP::Base64Encoder(
-          new CryptoPP::StringSink(encoded_digest))  // Base64Encoder
-  );
-
-  if (!encoded_digest.empty()) {
-    encoded_digest.pop_back();
-  }
-
-  std::stringstream signed_data_stream;
-  signed_data_stream << "(request-target): post "
-                        "/v1/accounts/thirdai/licenses/actions/validate-key\n"
-                     << "host: api.keygen.sh\n"
-                     << "date: " << res->get_header_value("date") << "\n"
-                     << "digest: sha-256=" << encoded_digest;
-  std::string signed_data = signed_data_stream.str();
-
-  CryptoPP::StringSource ss_1(KEYGEN_PUBLIC_KEY_BASE64_DER, true,
-                            new CryptoPP::Base64Decoder);
-  CryptoPP::ed25519::Verifier verifier(ss_1);
-
-  std::string decoded_signature;
-  CryptoPP::StringSource ss(
-      signature, true,  // NOLINT
-      new CryptoPP::Base64Decoder(
-          new CryptoPP::StringSink(decoded_signature))  // Base64Decoder
-  );                                                    // StringSource
+  std::string signature = getSignature(res);
+  CryptoPP::ed25519::Verifier verifier = createVerifier();
 
   bool valid = verifier.VerifyMessage(
       reinterpret_cast<const CryptoPP::byte*>(signed_data.data()),
       signed_data.size(),
-      reinterpret_cast<const CryptoPP::byte*>(decoded_signature.data()),
-      decoded_signature.size());
+      reinterpret_cast<const CryptoPP::byte*>(signature.data()),
+      signature.size());
 
   if (valid == false) {
     throw std::runtime_error("Invalid signature over message");
