@@ -146,7 +146,7 @@ void createModelsSubmodule(py::module_& module) {
       .def(
           "embedding_representation",
           [](UniversalDeepTransformer& model, const MapInput& input) {
-            return models::OutputProcessor::convertBoltVectorToNumpy(
+            return models::convertBoltVectorToNumpy(
                 model.embeddingRepresentation(input));
           },
           py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)

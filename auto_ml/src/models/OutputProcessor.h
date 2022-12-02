@@ -29,14 +29,6 @@ class OutputProcessor {
   virtual py::object processOutputTracker(
       bolt::InferenceOutputTracker& output) = 0;
 
-  // Helper functions for numpy conversions.
-  static py::object convertInferenceTrackerToNumpy(
-      bolt::InferenceOutputTracker& output);
-
-  static py::object convertBoltVectorToNumpy(const BoltVector& vector);
-
-  static py::object convertBoltBatchToNumpy(const BoltBatch& batch);
-
  private:
   friend class cereal::access;
   template <class Archive>
@@ -76,19 +68,7 @@ class CategoricalOutputProcessor final : public OutputProcessor {
   py::object processOutputTracker(bolt::InferenceOutputTracker& output) final;
 
  private:
-  static uint32_t argmax(const float* const array, uint32_t len) {
-    assert(len > 0);
-
-    uint32_t max_index = 0;
-    float max_value = array[0];
-    for (uint32_t i = 1; i < len; i++) {
-      if (array[i] > max_value) {
-        max_index = i;
-        max_value = array[i];
-      }
-    }
-    return max_index;
-  }
+  void ensureMaxActivationLargerThanThreshold(float* activations, uint32_t len);
 
   std::optional<float> _prediction_threshold;
 
@@ -124,6 +104,8 @@ class RegressionOutputProcessor final : public OutputProcessor {
   py::object processOutputTracker(bolt::InferenceOutputTracker& output) final;
 
  private:
+  float unbinActivations(const BoltVector& output) const;
+
   dataset::RegressionBinningStrategy _regression_binning;
 
   // Private constructor for cereal.
@@ -135,5 +117,17 @@ class RegressionOutputProcessor final : public OutputProcessor {
     archive(cereal::base_class<OutputProcessor>(this), _regression_binning);
   }
 };
+
+// Helper function for InferenceOutputTracker to Numpy.
+py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
+
+// Helper function for BoltVector to Numpy.
+py::object convertBoltVectorToNumpy(const BoltVector& vector);
+
+// Helper function for BoltBatch to Numpy.
+py::object convertBoltBatchToNumpy(const BoltBatch& batch);
+
+// Helper function used for OutputProcessors.
+uint32_t argmax(const float* array, uint32_t len);
 
 }  // namespace thirdai::automl::models

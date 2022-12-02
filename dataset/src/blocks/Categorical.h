@@ -282,24 +282,6 @@ class RegressionBinningStrategy {
     return _min + category * _binsize + (_binsize / 2);
   }
 
-  float unbinActivations(const uint32_t* active_neurons,
-                         const float* activations, uint32_t len) const {
-    uint32_t predicted_bin_index = 0;
-    float max_activation = activations[0];
-
-    for (uint32_t i = 1; i < len; i++) {
-      if (activations[i] > max_activation) {
-        predicted_bin_index = i;
-        max_activation = activations[i];
-      }
-    }
-
-    if (active_neurons != nullptr) {
-      return unbin(active_neurons[predicted_bin_index]);
-    }
-    return unbin(predicted_bin_index);
-  }
-
   uint32_t numBins() const { return _num_bins; }
 
  private:
