@@ -1,5 +1,4 @@
 #include "InferenceOutputTracker.h"
-#include <bolt_vector/src/BoltVector.h>
 #include <stdexcept>
 
 namespace thirdai::bolt {
