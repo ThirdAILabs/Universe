@@ -246,6 +246,17 @@ class MetadataCategoricalBlock final : public CategoricalBlock {
 
 using MetadataCategoricalBlockPtr = std::shared_ptr<MetadataCategoricalBlock>;
 
+/**
+ * This class represents the binning logic for a regression as classification
+ * problem. The reason it is abstracted outside of the
+ * RegressionCategoricalBlock is becuase this logic is needed for the
+ * RegressionOutputProcessor in the ModelPipeline/UDT, and the
+ * RegressionOutputProcessor is needed to construct the ModelPipeline, however
+ * the blocks in UDT cannot be constructed until train when we can map the
+ * column names to indices. This class allows for the binning logic to be
+ * constructed when the model is initialized, and then used in the block later
+ * when we know which column it needs to be applied to.
+ */
 class RegressionBinningStrategy {
  public:
   // Default constructor for cereal to use with optionals

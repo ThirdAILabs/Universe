@@ -160,6 +160,8 @@ std::vector<dataset::Explanation> ModelPipeline::explain(
   return explanation;
 }
 
+// We take in the TrainConfig by value to copy it so we can modify the number
+// epochs.
 void ModelPipeline::trainInMemory(
     data::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
     const std::optional<ValidationOptions>& validation) {
