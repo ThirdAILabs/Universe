@@ -93,13 +93,13 @@ float* InferenceOutputTracker::activationsForSample(uint32_t index) {
 }
 
 BoltVector InferenceOutputTracker::sampleAsNonOwningBoltVector(uint32_t index) {
-   if (!_activations.has_value()) {
-     throw std::out_of_range(
-         "Cannot access ith sample of empty InferenceOutputTracker.");
-   }
-   return BoltVector(/* an= */ activeNeuronsForSample(index),
-                     /* a= */ activationsForSample(index), /* g= */ nullptr,
-                     /* l= */ _num_nonzeros_per_sample);
- }
+  if (!_activations.has_value()) {
+    throw std::out_of_range(
+        "Cannot access ith sample of empty InferenceOutputTracker.");
+  }
+  return BoltVector(/* an= */ activeNeuronsForSample(index),
+                    /* a= */ activationsForSample(index), /* g= */ nullptr,
+                    /* l= */ _num_nonzeros_per_sample);
+}
 
 }  // namespace thirdai::bolt
