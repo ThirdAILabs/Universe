@@ -182,7 +182,9 @@ TEST_F(CategoricalBlockTest, TestMultiLabelParsing) {
 
 TEST_F(CategoricalBlockTest, RegressionCategoricalBlock) {
   std::vector<BlockPtr> blocks = {RegressionCategoricalBlock::make(
-      /* col= */ 0, /* min= */ 1.0, /* max= */ 11.0, /* num_bins= */ 20,
+      /* col= */ 0,
+      RegressionBinningStrategy(/* min= */ 1.0, /* max= */ 11.0,
+                                /* num_bins= */ 20),
       /* correct_label_radius= */ 1, /* labels_sum_to_one= */ false)};
 
   GenericBatchProcessor batch_processor(

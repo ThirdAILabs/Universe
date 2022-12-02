@@ -84,9 +84,11 @@ class ModelPipeline {
           user_specified_parameters) {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
-    return ModelPipeline(std::move(dataset_factory), std::move(model),
-                         CategoricalOutputProcessor::make(),
-                         config->train_eval_parameters());
+    return ModelPipeline(
+        std::move(dataset_factory), std::move(model),
+        CategoricalOutputProcessor::make(
+            config->train_eval_parameters().predictionThreshold()),
+        config->train_eval_parameters());
   }
 
   void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
