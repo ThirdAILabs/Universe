@@ -19,38 +19,54 @@ def _get_label_postprocessing_fn(model, use_class_name):
         return lambda pred: pred
 
 
-def compute_evaluate_accuracy(model, test_filename, inference_samples, use_class_name):
+def compute_evaluate_accuracy(
+    model, test_filename, inference_samples, use_class_name, use_activations=True
+):
     label_fn = _get_label_postprocessing_fn(model, use_class_name)
 
-    activations = model.evaluate(test_filename, metrics=["categorical_accuracy"])
+    if use_activations:
+        activations = model.evaluate(test_filename, metrics=["categorical_accuracy"])
+        predictions = np.argmax(activations, axis=1)
+    else:
+        predictions = model.evaluate(
+            test_filename, metrics=["categorical_accuracy"], return_predicted_class=True
+        )
 
-    predictions = [label_fn(id) for id in np.argmax(activations, axis=1)]
+    predictions = [label_fn(id) for id in predictions]
 
     return _compute_accuracy(predictions, inference_samples)
 
 
-def compute_predict_accuracy(model, inference_samples, use_class_name):
+def compute_predict_accuracy(
+    model, inference_samples, use_class_name, use_activations=True
+):
     label_fn = _get_label_postprocessing_fn(model, use_class_name)
 
     predictions = []
     for sample, _ in inference_samples:
-        prediction = label_fn(np.argmax(model.predict(sample)))
+        if use_activations:
+            prediction = label_fn(np.argmax(model.predict(sample)))
+        else:
+            prediction = label_fn(model.predict(sample, return_predicted_class=True))
         predictions.append(prediction)
 
     return _compute_accuracy(predictions, inference_samples)
 
 
 def compute_predict_batch_accuracy(
-    model, inference_samples, use_class_name, batch_size=20
+    model, inference_samples, use_class_name, use_activations=True, batch_size=20
 ):
     label_fn = _get_label_postprocessing_fn(model, use_class_name)
 
     predictions = []
     for idx in range(0, len(inference_samples), batch_size):
         batch = [x for x, _ in inference_samples[idx : idx + batch_size]]
-        activations = model.predict_batch(batch)
-        predictions += [label_fn(pred) for pred in np.argmax(activations, axis=1)]
-
+        if use_activations:
+            activations = model.predict_batch(batch)
+            predictions += [label_fn(pred) for pred in np.argmax(activations, axis=1)]
+        else:
+            batch_predictions = model.predict_batch(batch, return_predicted_class=True)
+            predictions += [label_fn(pred) for pred in batch_predictions]
     return _compute_accuracy(predictions, inference_samples)
 
 

@@ -120,7 +120,47 @@ def test_model_pipeline_text_classifier_predict_batch(
     assert acc >= ACCURACY_THRESHOLD
 
 
-def test_model_pipeline_text_classification_save_load(
+def test_model_pipeline_text_classifier_accuracy_return_class(
+    train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
+):
+    model = train_model_pipeline_text_classifier
+    _, test_filename, inference_samples = download_clinc_dataset_model_pipeline
+
+    acc = compute_evaluate_accuracy(
+        model,
+        test_filename,
+        inference_samples,
+        use_class_name=False,
+        use_activations=False,
+    )
+    assert acc >= ACCURACY_THRESHOLD
+
+
+def test_model_pipeline_text_classifier_predict_single_return_class(
+    train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
+):
+    model = train_model_pipeline_text_classifier
+    _, _, inference_samples = download_clinc_dataset_model_pipeline
+
+    acc = compute_predict_accuracy(
+        model, inference_samples, use_class_name=False, use_activations=False
+    )
+    assert acc >= ACCURACY_THRESHOLD
+
+
+def test_model_pipeline_text_classifier_predict_batch_return_class(
+    train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
+):
+    model = train_model_pipeline_text_classifier
+    _, _, inference_samples = download_clinc_dataset_model_pipeline
+
+    acc = compute_predict_batch_accuracy(
+        model, inference_samples, use_class_name=False, use_activations=False
+    )
+    assert acc >= ACCURACY_THRESHOLD
+
+
+def test_model_pipeline_text_classifier_save_load(
     train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
 ):
     model = train_model_pipeline_text_classifier
@@ -143,7 +183,7 @@ def test_model_pipeline_text_classification_save_load(
 
 # Because validatation doesn't return anything there isn't anything specific to test
 # here, this is just a sanity check that using validation produces no errors.
-def test_model_pipeline_text_classification_train_with_validation(
+def test_model_pipeline_text_classifier_train_with_validation(
     train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
 ):
     model = train_model_pipeline_text_classifier
