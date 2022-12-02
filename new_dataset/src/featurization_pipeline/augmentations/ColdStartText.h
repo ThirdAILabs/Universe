@@ -156,9 +156,10 @@ class ColdStartTextAugmentation final : public Augmentation {
 
   /*
   Randomly deletes elements from each phrase, resulting in new phrases.
-  Repeats the process num_reps times for each phrase. If a phrase is not
-  long enough to choose num_to_sample words, then it is kept but only
-  represented once in the output (not num_reps times).
+  Repeats the process num_reps times for each phrase, resulting in (roughly)
+  num_reps * phrases.size() new phrases. Note that if a phrase is not long
+  enough to choose num_to_sample words, then it is kept but only represented
+  once in the output (not num_reps times).
   */
   PhraseCollection sampleFromPhrases(PhraseCollection& phrases,
                                      uint32_t num_to_sample,

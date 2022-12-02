@@ -426,5 +426,8 @@ def test_real_input():
     # This assertion checks that we get more than 2 but less than 100 phrases
     # per row of input. If we are getting more than 100 phrases, this is a
     # problem as it results in a very big pre-training task (100x larger).
+    # Note that there are 3 rows of input, so we verify that there are between
+    # 6 and 300 phrases to ensure that the average number of phrases / row is
+    # acceptable.
     assert 6 <= num_data <= 300
     assert num_valid_data / num_data > 0.95
