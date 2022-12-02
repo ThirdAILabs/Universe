@@ -1,3 +1,5 @@
+#pragma once
+
 #include <licensing/src/file/SignedLicense.h>
 #include <licensing/src/keygen/KeygenCommunication.h>
 #include <optional>
