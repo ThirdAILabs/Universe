@@ -19,15 +19,19 @@ namespace thirdai::automl::models {
  */
 class OutputProcessor {
  public:
-  // Processes output from predict.
+  // Processes output from predict. The return_predicted_class option indicates
+  // that it should return the predicted class rather than the activations.
   virtual py::object processBoltVector(BoltVector& output,
                                        bool return_predicted_class) = 0;
 
-  // Processes output from predictBatch.
+  // Processes output from predictBatch. The return_predicted_class option
+  // indicates that it should return the predicted class rather than the
+  // activations.
   virtual py::object processBoltBatch(BoltBatch& outputs,
                                       bool return_predicted_class) = 0;
 
-  // Processes output from evaluate.
+  // Processes output from evaluate. The return_predicted_class option indicates
+  // that it should return the predicted class rather than the activations.
   virtual py::object processOutputTracker(bolt::InferenceOutputTracker& output,
                                           bool return_predicted_class) = 0;
 
@@ -126,6 +130,14 @@ class RegressionOutputProcessor final : public OutputProcessor {
   }
 };
 
+/**
+ * This class performs output processing for binary classification problems.
+ * This is different from the regular CategoricalOutputProcessor because it
+ * allows for a custom threshold to be set for positive predictions when the
+ * return_predicted_class option is used. For example if the output
+ * probabilities are [0.8, 0.2] but the threshold is set to 0.1, then it will
+ * output a prediction of 1 instead of 0.
+ */
 class BinaryOutputProcessor final : public OutputProcessor {
  public:
   BinaryOutputProcessor() {}
