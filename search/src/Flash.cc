@@ -56,7 +56,7 @@ void Flash<LABEL_T>::addDataset(
       bar->increment();
     }
   }
-  if (verbose) {
+  if (bar) {
     bar->close(
         /* comment = */ fmt::format("Finished Training the Model"));
   }

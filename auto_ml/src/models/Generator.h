@@ -114,17 +114,28 @@ class QueryCandidateGeneratorConfig {
   static std::shared_ptr<QueryCandidateGeneratorConfig> fromDefault(
       const std::string& source_column_name,
       const std::string& target_column_name, const std::string& dataset_size) {
+    // Initialize "medium" dataset size default parameters
     uint32_t num_tables = 128;
     uint32_t hashes_per_table = 3;
     uint32_t reservoir_size = 256;
     uint32_t hash_table_range = 100000;
 
-    if (dataset_size == "small") {
+    auto size = thirdai::utils::lower(dataset_size);
+
+    if (size == "small") {
+      num_tables = 64;
       hashes_per_table = 2;
+      reservoir_size = 128;
       hash_table_range = 10000;
-    } else if (dataset_size == "large") {
+    } else if (size == "large") {
       num_tables = 256;
+      hashes_per_table = 4;
       reservoir_size = 512;
+      hash_table_range = 1000000;
+    } else if (size != "medium") {
+      throw std::invalid_argument(
+          "Invalid Dataset Size Parameter. Dataset Size can be 'small', "
+          "'medium' or 'large'.");
     }
     auto generator_config = QueryCandidateGeneratorConfig(
         /* hash_function = */ DEFAULT_HASH_FUNCTION,
