@@ -3,8 +3,8 @@
 #include "KeygenCommunication.h"
 #include "cryptopp/sha.h"       // SHA256
 #include "cryptopp/xed25519.h"  // Ed25519
-#include "httplib.h"
-#include "json.hpp"
+#include <cpp-httplib/httplib.h>
+#include <json/include/nlohmann/json.hpp>
 #include <cryptopp/base64.h>  // Base64 decoder
 #include <cryptopp/files.h>
 #include <cryptopp/hex.h>
