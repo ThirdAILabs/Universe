@@ -91,34 +91,69 @@ class ModelPipeline {
         config->train_eval_parameters());
   }
 
+  /**
+   * Wrapper around trainOnDataLoader for passing in a filename and batchsize.
+   */
   void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
                    std::optional<uint32_t> batch_size_opt,
                    const std::optional<ValidationOptions>& validation,
                    std::optional<uint32_t> max_in_memory_batches);
 
-  void trainOnDataLoader(const dataset::DataLoaderPtr& data_source,
-                         bolt::TrainConfig& train_config,
-                         const std::optional<ValidationOptions>& validation,
-                         std::optional<uint32_t> max_in_memory_batches);
+  /**
+   * Trains the model on the data given in datasource using the specified
+   * TrainConfig and reports any metrics specified in the ValidationOptions on
+   * the validation data (if provided). The parameter max_in_memory_batches
+   * controls if the data will be processed by streaming chunks of with
+   * max_in_memory_batches batches. Note that validation data cannot be used for
+   * streaming because of requirements for the order in which data must be
+   * loaded with temporal tracking in UDT. See comment in trainOnStream for more
+   * details.
+   */
+  void trainOnDataLoader(
+      const std::shared_ptr<dataset::DataLoader>& data_source,
+      bolt::TrainConfig& train_config,
+      const std::optional<ValidationOptions>& validation,
+      std::optional<uint32_t> max_in_memory_batches);
 
+  /**
+   * Wrapper around evaluateOnDataLoader for passing in a filename.
+   */
   py::object evaluateOnFile(const std::string& filename,
                             std::optional<bolt::EvalConfig>& eval_config_opt,
                             bool return_predicted_class);
 
+  /**
+   * Processes the data specified in data_source and returns the activations of
+   * the final layer. Computes any metrics specifed in the EvalConfig.
+   */
   py::object evaluateOnDataLoader(
       const dataset::DataLoaderPtr& data_source,
       std::optional<bolt::EvalConfig>& eval_config_opt,
       bool return_predicted_class);
 
+  /**
+   * Takes in a single input sample and returns the activations for the output
+   * layer.
+   */
   template <typename InputType>
   py::object predict(const InputType& sample, bool use_sparse_inference,
                      bool return_predicted_class);
 
+  /**
+   * Takes in a batch of input samples and processes them in parallel and
+   * returns the activations for the output layer. The order in which the input
+   * samples are provided is the order in which the activations are returned.
+   */
   template <typename InputBatchType>
   py::object predictBatch(const InputBatchType& samples,
                           bool use_sparse_inference,
                           bool return_predicted_class);
 
+  /**
+   * Creates an explanation for the prediction of a sample. If the target class
+   * is provided then it will instead explain why that class was/was not
+   * predicted.
+   */
   template <typename InputType>
   std::vector<dataset::Explanation> explain(
       const InputType& sample,
@@ -156,22 +191,38 @@ class ModelPipeline {
   ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
 
  private:
-  // We take in the TrainConfig by value to copy it so we can modify the number
-  // epochs.
+  /**
+   * Performs in memory training on the given dataset.
+   */
   void trainInMemory(data::DatasetLoaderPtr& dataset,
                      bolt::TrainConfig train_config,
                      const std::optional<ValidationOptions>& validation);
 
-  // We take in the TrainConfig by value to copy it so we can modify the number
-  // epochs.
+  /**
+   * Performs training on a streaming dataset in chunks. Note that validation is
+   * not used in this case because the validation data must be loaded after the
+   * training data if temporal tracking is used in UDT but it is not simple to
+   * load validation data after training data for a streaming dataset.
+   */
   void trainOnStream(data::DatasetLoaderPtr& dataset,
                      bolt::TrainConfig train_config,
                      uint32_t max_in_memory_batches);
 
+  /**
+   * Helper for processing a streaming dataset in chunks for a single epoch.
+   */
   void trainSingleEpochOnStream(data::DatasetLoaderPtr& dataset,
                                 const bolt::TrainConfig& train_config,
                                 uint32_t max_in_memory_batches);
 
+  /**
+   * Updates the hash table rebuilding and hash function reconstructing
+   * parameters in the TrainConfig if an override for these values is present in
+   * the TrainEvalParameters. These parameters cannot be specified by the user
+   * for this model, this allows us to override the autotuning of these
+   * parameters by specifing them in the TrainEvalParameters in the
+   * DeploymentConfig.
+   */
   void updateRehashRebuildInTrainConfig(bolt::TrainConfig& train_config);
 
   std::optional<float> tuneBinaryClassificationPredictionThreshold(

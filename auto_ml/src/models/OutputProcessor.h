@@ -13,37 +13,23 @@ namespace py = pybind11;
 
 namespace thirdai::automl::models {
 
+/**
+ * This class is an interface to abstract converting the output of the model in
+ * a ModelPipeline to a format that is convenient for the user.
+ */
 class OutputProcessor {
  public:
+  // Processes output from predict.
   virtual py::object processBoltVector(BoltVector& output,
                                        bool return_predicted_class) = 0;
 
+  // Processes output from predictBatch.
   virtual py::object processBoltBatch(BoltBatch& outputs,
                                       bool return_predicted_class) = 0;
 
-  virtual py::object processOutputTracker(bolt::InferenceOutputTracker& outpu,
+  // Processes output from evaluate.
+  virtual py::object processOutputTracker(bolt::InferenceOutputTracker& output,
                                           bool return_predicted_class) = 0;
-
-  static py::object convertInferenceTrackerToNumpy(
-      bolt::InferenceOutputTracker& output);
-
-  static py::object convertBoltVectorToNumpy(const BoltVector& vector);
-
-  static py::object convertBoltBatchToNumpy(const BoltBatch& batch);
-
-  static uint32_t argmax(const float* const array, uint32_t len) {
-    assert(len > 0);
-
-    uint32_t max_index = 0;
-    float max_value = array[0];
-    for (uint32_t i = 1; i < len; i++) {
-      if (array[i] > max_value) {
-        max_index = i;
-        max_value = array[i];
-      }
-    }
-    return max_index;
-  }
 
  private:
   friend class cereal::access;
@@ -55,6 +41,19 @@ class OutputProcessor {
 
 using OutputProcessorPtr = std::shared_ptr<OutputProcessor>;
 
+/**
+ * This class performs output processing for classification problems. It simply
+ * returns numpy arrays representing the output. If the output is sparse then
+ * two numpy arrays are returned, one for the indices and one for the values. If
+ * the output is dense the only one array is returned.
+ *
+ * The prediction_threshold parameter is optional and is intended for use with
+ * multi-class classification where the predicted classes are determined by all
+ * the neurons with activations exceeding some threshold. When specified it
+ * ensures that the largest activation is always >= the threshold, which means
+ * that at least one class will be predicted for every input. This can boost
+ * accuracy on some datasets.
+ */
 class CategoricalOutputProcessor final : public OutputProcessor {
  public:
   explicit CategoricalOutputProcessor(std::optional<float> prediction_threshold)
@@ -74,6 +73,8 @@ class CategoricalOutputProcessor final : public OutputProcessor {
                                   bool return_predicted_class) final;
 
  private:
+  void ensureMaxActivationLargerThanThreshold(float* activations, uint32_t len);
+
   std::optional<float> _prediction_threshold;
 
   // Private constructor for cereal.
@@ -86,6 +87,11 @@ class CategoricalOutputProcessor final : public OutputProcessor {
   }
 };
 
+/**
+ * This class performs output processing for regression problems. It takes the
+ * categorical output from the model and maps the predicted bins back to
+ * continuous values that users will expect from a regression model.
+ */
 class RegressionOutputProcessor final : public OutputProcessor {
  public:
   explicit RegressionOutputProcessor(
@@ -106,6 +112,8 @@ class RegressionOutputProcessor final : public OutputProcessor {
                                   bool return_predicted_class) final;
 
  private:
+  float unbinActivations(const BoltVector& output) const;
+
   dataset::RegressionBinningStrategy _regression_binning;
 
   // Private constructor for cereal.
@@ -154,5 +162,17 @@ class BinaryOutputProcessor final : public OutputProcessor {
 };
 
 using BinaryOutputProcessorPtr = std::shared_ptr<BinaryOutputProcessor>;
+
+// Helper function for InferenceOutputTracker to Numpy.
+py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
+
+// Helper function for BoltVector to Numpy.
+py::object convertBoltVectorToNumpy(const BoltVector& vector);
+
+// Helper function for BoltBatch to Numpy.
+py::object convertBoltBatchToNumpy(const BoltBatch& batch);
+
+// Helper function used for OutputProcessors.
+uint32_t argmax(const float* array, uint32_t len);
 
 }  // namespace thirdai::automl::models

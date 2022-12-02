@@ -69,32 +69,15 @@ class UniversalDeepTransformer : public ModelPipeline {
     auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
           embedding_dimension] = processUDTOptions(options);
 
-    OutputProcessorPtr output_processor;
-    std::optional<dataset::RegressionBinningStrategy> regression_binning =
-        std::nullopt;
-    if (auto num_config = data::asNumerical(
-            dataset_config->data_types.at(dataset_config->target))) {
-      uint32_t num_bins = n_target_classes.value_or(
-          data::UDTConfig::REGRESSION_DEFAULT_NUM_BINS);
-
-      regression_binning = dataset::RegressionBinningStrategy(
-          num_config->range.first, num_config->range.second, num_bins);
-
-      output_processor =
-          RegressionOutputProcessor::make(regression_binning.value());
-    } else {
-      if (n_target_classes == 2) {
-        output_processor = BinaryOutputProcessor::make();
-      } else {
-        output_processor = CategoricalOutputProcessor::make();
-      }
-    }
+    auto [output_processor, regression_binning] =
+        getOutputProcessor(dataset_config);
 
     auto dataset_factory = data::UDTDatasetFactory::make(
         /* config= */ std::move(dataset_config),
         /* force_parallel= */ parallel_data_processing,
         /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
-        /* contextual_columns= */ contextual_columns, regression_binning);
+        /* contextual_columns= */ contextual_columns,
+        /* regression_binning= */ regression_binning);
 
     bolt::BoltGraphPtr model;
     if (model_config) {
@@ -160,6 +143,34 @@ class UniversalDeepTransformer : public ModelPipeline {
  private:
   explicit UniversalDeepTransformer(ModelPipeline&& model)
       : ModelPipeline(model) {}
+
+  /**
+   * Returns the output processor to use to create the ModelPipeline. Also
+   * returns a RegressionBinningStrategy if the output is a regression task as
+   * this binning logic must be shared with the dataset pipeline.
+   */
+  static std::pair<OutputProcessorPtr,
+                   std::optional<dataset::RegressionBinningStrategy>>
+  getOutputProcessor(const data::UDTConfigPtr& dataset_config) {
+    if (auto num_config = data::asNumerical(
+            dataset_config->data_types.at(dataset_config->target))) {
+      uint32_t num_bins = dataset_config->n_target_classes.value_or(
+          data::UDTConfig::REGRESSION_DEFAULT_NUM_BINS);
+
+      auto regression_binning = dataset::RegressionBinningStrategy(
+          num_config->range.first, num_config->range.second, num_bins);
+
+      auto output_processor =
+          RegressionOutputProcessor::make(regression_binning);
+      return {output_processor, regression_binning};
+    }
+
+    if (dataset_config->n_target_classes == 2) {
+      return {BinaryOutputProcessor::make(), std::nullopt};
+    }
+
+    return {CategoricalOutputProcessor::make(), std::nullopt};
+  }
 
   static bolt::BoltGraphPtr loadUDTBoltGraph(
       const std::vector<bolt::InputPtr>& input_nodes, uint32_t output_dim,

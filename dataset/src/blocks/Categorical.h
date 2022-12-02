@@ -246,6 +246,17 @@ class MetadataCategoricalBlock final : public CategoricalBlock {
 
 using MetadataCategoricalBlockPtr = std::shared_ptr<MetadataCategoricalBlock>;
 
+/**
+ * This class represents the binning logic for a regression as classification
+ * problem. The reason it is abstracted outside of the
+ * RegressionCategoricalBlock is becuase this logic is needed for the
+ * RegressionOutputProcessor in the ModelPipeline/UDT, and the
+ * RegressionOutputProcessor is needed to construct the ModelPipeline, however
+ * the blocks in UDT cannot be constructed until train when we can map the
+ * column names to indices. This class allows for the binning logic to be
+ * constructed when the model is initialized, and then used in the block later
+ * when we know which column it needs to be applied to.
+ */
 class RegressionBinningStrategy {
  public:
   // Default constructor for cereal to use with optionals
@@ -269,24 +280,6 @@ class RegressionBinningStrategy {
 
   float unbin(uint32_t category) const {
     return _min + category * _binsize + (_binsize / 2);
-  }
-
-  float unbinActivations(const uint32_t* active_neurons,
-                         const float* activations, uint32_t len) const {
-    uint32_t predicted_bin_index = 0;
-    float max_activation = activations[0];
-
-    for (uint32_t i = 1; i < len; i++) {
-      if (activations[i] > max_activation) {
-        predicted_bin_index = i;
-        max_activation = activations[i];
-      }
-    }
-
-    if (active_neurons != nullptr) {
-      return unbin(active_neurons[predicted_bin_index]);
-    }
-    return unbin(predicted_bin_index);
   }
 
   uint32_t numBins() const { return _num_bins; }
