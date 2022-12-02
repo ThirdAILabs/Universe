@@ -44,48 +44,17 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
         data_loader, _labeled_batch_processor, _shuffle && training);
   }
 
-  std::vector<BoltVector> featurizeInput(const std::string& input) final {
-    BoltVector output;
-
-    std::vector<std::string_view> input_vector = {
-        std::string_view(input.data(), input.length())};
-    if (auto exception =
-            _unlabeled_batch_processor->makeInputVector(input_vector, output)) {
-      std::rethrow_exception(exception);
-    }
-    return {std::move(output)};
-  }
+  std::vector<BoltVector> featurizeInput(const std::string& input) final;
 
   std::vector<BoltBatch> featurizeInputBatch(
-      const std::vector<std::string>& inputs) final {
-    auto [batch, _] = _unlabeled_batch_processor->createBatch(inputs);
+      const std::vector<std::string>& inputs) final;
 
-    // We cannot use the initializer list because the copy constructor is
-    // deleted for BoltBatch.
-    std::vector<BoltBatch> batch_list;
-    batch_list.emplace_back(std::move(batch));
-    return batch_list;
-  }
-
-  uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
-    if (std::holds_alternative<uint32_t>(label)) {
-      return std::get<uint32_t>(label);
-    }
-
-    throw std::invalid_argument(
-        "This model does not support string labels; label must be a "
-        "non-negative integer.");
-  }
+  uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final;
 
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio,
-      const std::string& sample) final {
-    auto input_row = dataset::ProcessorUtils::parseCsvRow(sample, _delimiter);
-    return bolt::getSignificanceSortedExplanations(gradients_indices,
-                                                   gradients_ratio, input_row,
-                                                   _unlabeled_batch_processor);
-  }
+      const std::string& sample) final;
 
   std::vector<bolt::InputPtr> getInputNodes() final {
     return {bolt::Input::make(_unlabeled_batch_processor->getInputDim())};
@@ -114,5 +83,3 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
 };
 
 }  // namespace thirdai::automl::data
-
-CEREAL_REGISTER_TYPE(thirdai::automl::data::SingleBlockDatasetFactory)
