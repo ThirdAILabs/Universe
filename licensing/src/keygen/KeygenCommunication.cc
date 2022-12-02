@@ -4,11 +4,11 @@
 #include "cryptopp/sha.h"       // SHA256
 #include "cryptopp/xed25519.h"  // Ed25519
 #include <cpp-httplib/httplib.h>
-#include <json/include/nlohmann/json.hpp>
 #include <cryptopp/base64.h>  // Base64 decoder
 #include <cryptopp/files.h>
 #include <cryptopp/hex.h>
 #include <cryptopp/integer.h>
+#include <json/include/nlohmann/json.hpp>
 #include <iostream>
 #include <stdexcept>
 
@@ -161,10 +161,6 @@ void verifyKeygenResponse(const httplib::Result& res) {
   }
 }
 
-/*
- * Communicates with the Keygen server to verify that the user with the given
- * access key is validated to use the ThirdAI python package.
- */
 void KeygenCommunication::verifyWithKeygen(const std::string& access_key) {
   httplib::Client cli("https://api.keygen.sh");
   httplib::Headers headers = {{"Content-Type", "application/vnd.api+json"},

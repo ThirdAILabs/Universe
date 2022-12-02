@@ -61,9 +61,11 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   # For now only require openssl if we are building with licensing, since we
   # only communicate with the internet (keygen) in that case
   add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
-  find_package(OpenSSL REQUIRED)  
+  find_package(OpenSSL REQUIRED)
 
-  set(JSON_BuildTests OFF CACHE INTERNAL "")
+  set(JSON_BuildTests
+      OFF
+      CACHE INTERNAL "")
   add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 endif()
 
@@ -294,14 +296,12 @@ set(THIRDAI_SOURCES
     auto_ml/src/deployment_config/dataset_configs/UDTDatasetFactoryConfig.cc
     utils/Logging.cc)
 
-# Only add the licensing subdirectory and licensing cc files if the 
+# Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set
 if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
-  set(THIRDAI_SOURCES 
-    ${THIRDAI_SOURCES} 
-    licensing/src/keygen/KeygenCommunication.cc
-  )
+  set(THIRDAI_SOURCES ${THIRDAI_SOURCES}
+                      licensing/src/keygen/KeygenCommunication.cc)
 endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
@@ -309,7 +309,9 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal prometheus-cpp::pull)
 if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto OpenSSL::SSL nlohmann_json::nlohmann_json)
+  target_link_libraries(
+    thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto OpenSSL::SSL
+                   nlohmann_json::nlohmann_json)
 endif()
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
