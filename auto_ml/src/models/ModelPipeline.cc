@@ -299,9 +299,15 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
     uint32_t sample_idx = 0;
     for (const auto& label_batch : *labels) {
       for (const auto& label_vec : label_batch) {
-        metric->record(
-            /* output= */ activations.sampleAsNonOwningBoltVector(sample_idx++),
-            /* labels= */ label_vec);
+        if (activations.activationsForSample(sample_idx++)[1] >= threshold) {
+          metric->record(
+              /* output= */ BoltVector::makeDenseVector({0, 1.0}),
+              /* labels= */ label_vec);
+        } else {
+          metric->record(
+              /* output= */ BoltVector::makeDenseVector({1.0, 0.0}),
+              /* labels= */ label_vec);
+        }
       }
     }
 

@@ -83,7 +83,11 @@ class UniversalDeepTransformer : public ModelPipeline {
       output_processor =
           RegressionOutputProcessor::make(regression_binning.value());
     } else {
-      output_processor = CategoricalOutputProcessor::make();
+      if (n_target_classes == 2) {
+        output_processor = BinaryOutputProcessor::make();
+      } else {
+        output_processor = CategoricalOutputProcessor::make();
+      }
     }
 
     auto dataset_factory = data::UDTDatasetFactory::make(
