@@ -2,6 +2,7 @@
 
 #include "Node.h"
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <bolt_vector/src/BoltVector.h>
 
 namespace thirdai::bolt {
 
