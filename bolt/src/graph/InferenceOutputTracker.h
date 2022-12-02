@@ -27,7 +27,7 @@ class InferenceOutputTracker {
 
   float* activationsForSample(uint32_t index);
 
-  BoltVector sampleAsNonOwningBoltVector(uint32_t index);
+  BoltVector getSampleAsNonOwningBoltVector(uint32_t index);
 
   uint32_t numNonzerosInOutput() const { return _num_nonzeros_per_sample; }
 
