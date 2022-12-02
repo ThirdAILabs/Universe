@@ -107,7 +107,7 @@ py::object RegressionOutputProcessor::processOutputTracker(
   NumpyArray<float> output_array(/* shape= */ {output.numSamples(), 1U});
 
   for (uint32_t i = 0; i < output.numSamples(); i++) {
-    BoltVector ith_sample = output.sampleAsNonOwningBoltVector(i);
+    BoltVector ith_sample = output.getSampleAsNonOwningBoltVector(i);
     output_array.mutable_at(i, 0) = unbinActivations(ith_sample);
   }
 
