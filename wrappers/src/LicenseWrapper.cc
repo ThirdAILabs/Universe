@@ -28,6 +28,6 @@ void LicenseWrapper::setLicensePath(const std::string& license_path) {
   _license_path = license_path;
 }
 
-void LicenseWrapper::deactivate() { _license_path = std::nullopt; }
+void LicenseWrapper::deactivate() { _api_key = std::nullopt; }
 
 }  // namespace thirdai::licensing

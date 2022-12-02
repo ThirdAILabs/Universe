@@ -58,10 +58,9 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   set(CRYPTOPP_SOURCES "${CMAKE_SOURCE_DIR}/deps/cryptopp")
   add_subdirectory(deps/cryptopp-cmake EXCLUDE_FROM_ALL)
 
-  # For now only build the requests library if it is a release build
-  # set(CPR_USE_SYSTEM_CURL ON)
-  add_subdirectory(deps/cpr EXCLUDE_FROM_ALL)
-  include_directories(deps/cpr/include)
+  # For now only require openssl if we are building with licensing, since we
+  # only communicate with the internet (keygen) in that case
+  find_package(OpenSSL REQUIRED)  
 endif()
 
 if(MSVC)
@@ -273,7 +272,7 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal)
 if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp cpr::cpr)
+  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto OpenSSL::SSL)
 endif()
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
