@@ -61,7 +61,7 @@ void ModelPipeline::trainOnDataLoader(
           tuneBinaryClassificationPredictionThreshold(
               /* data_source= */ data_source,
               /* metric_name= */ train_config.metrics().at(0),
-              /* max_num_batches= */ 20);
+              /* max_num_batches= */ 100);
 
       binary_output->setPredictionTheshold(threshold);
     }
@@ -301,6 +301,16 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
     uint32_t sample_idx = 0;
     for (const auto& label_batch : *labels) {
       for (const auto& label_vec : label_batch) {
+        /**
+         * The output bolt vector from activations cannot be passed in because
+         * it doesn't incorporate the threshold, and metrics like
+         * categorical_accuracy cannot use a threshold. However for our metrics
+         * that would make sense to compute for binary classification, the value
+         * of the activations themselves don't matter, just the value of the
+         * prediction (0/1). Hense we can create a new output vector that
+         * reflects whether the prediction would be 1 based off of the threshold
+         * we're testing.
+         */
         if (activations.activationsForSample(sample_idx++)[1] >= threshold) {
           metric->record(
               /* output= */ BoltVector::makeDenseVector({0, 1.0}),

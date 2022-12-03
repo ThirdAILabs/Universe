@@ -225,6 +225,11 @@ class ModelPipeline {
    */
   void updateRehashRebuildInTrainConfig(bolt::TrainConfig& train_config);
 
+  /**
+   * Computes the optimal binary prediction threshold to maximize the given
+   * metric on max_num_batches batches of the given dataset. Note: does not
+   * shuffle the data to obtain the batches.
+   */
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
       const dataset::DataLoaderPtr& data_source, const std::string& metric_name,
       uint32_t max_num_batches);

@@ -19,6 +19,14 @@ def _get_label_postprocessing_fn(model, use_class_name):
         return lambda pred: pred
 
 
+# This function computes the accuracy of the evaluate function. The model should
+# be an instance of a ModelPipeline or UniversalDeepTransformer. The parameter
+# use_class_name indicates if it should use the model.class_name() to map the predicted
+# neurons to string class names to compute accuracy. This is used when the labels
+# in the dataset are strings. The parameter use_activations determines if the accuracy
+# is computed by getting the activations and taking the argmax with numpy or if
+# it uses the return_predicted_class flag to get the predicted class directly from
+# the model.
 def compute_evaluate_accuracy(
     model, test_filename, inference_samples, use_class_name, use_activations=True
 ):
@@ -37,6 +45,14 @@ def compute_evaluate_accuracy(
     return _compute_accuracy(predictions, inference_samples)
 
 
+# This function computes the accuracy of the predict function. The model should
+# be an instance of a ModelPipeline or UniversalDeepTransformer. The parameter
+# use_class_name indicates if it should use the model.class_name() to map the predicted
+# neurons to string class names to compute accuracy. This is used when the labels
+# in the dataset are strings. The parameter use_activations determines if the accuracy
+# is computed by getting the activations and taking the argmax with numpy or if
+# it uses the return_predicted_class flag to get the predicted class directly from
+# the model.
 def compute_predict_accuracy(
     model, inference_samples, use_class_name, use_activations=True
 ):
@@ -53,6 +69,14 @@ def compute_predict_accuracy(
     return _compute_accuracy(predictions, inference_samples)
 
 
+# This function computes the accuracy of the predict_batch function. The model
+# should # be an instance of a ModelPipeline or UniversalDeepTransformer. The parameter
+# use_class_name indicates if it should use the model.class_name() to map the predicted
+# neurons to string class names to compute accuracy. This is used when the labels
+# in the dataset are strings. The parameter use_activations determines if the accuracy
+# is computed by getting the activations and taking the argmax with numpy or if
+# it uses the return_predicted_class flag to get the predicted class directly from
+# the model.
 def compute_predict_batch_accuracy(
     model, inference_samples, use_class_name, use_activations=True, batch_size=20
 ):

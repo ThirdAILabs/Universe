@@ -48,7 +48,7 @@ py::object CategoricalOutputProcessor::processOutputTracker(
     NumpyArray<uint32_t> predictions(output.numSamples());
     for (uint32_t i = 0; i < output.numSamples(); i++) {
       predictions.mutable_at(i) =
-          output.sampleAsNonOwningBoltVector(i).getHighestActivationId();
+          output.getSampleAsNonOwningBoltVector(i).getHighestActivationId();
     }
     return py::object(std::move(predictions));
   }
