@@ -115,6 +115,9 @@ Args:
     eval_config (Option[bolt.EvalConfig]): The predict config is optional
         and allows for specification of metrics to compute and whether to use sparse
         inference.
+    return_predicted_class (bool): Optional, defaults to false. When true the model
+        will output the predicted class foreach sample rather than the activations 
+        of the final layer. This has no affect for regression models.
 
 Returns:
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
@@ -137,6 +140,9 @@ Args:
     eval_config (Option[bolt.EvalConfig]): The predict config is optional
         and allows for specification of metrics to compute and whether to use sparse
         inference.
+    return_predicted_class (bool): Optional, defaults to false. When true the model
+        will output the predicted class foreach sample rather than the activations 
+        of the final layer. This has no affect for regression models.
 
 Returns:
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
@@ -157,7 +163,9 @@ Args:
         same way as the dataset, and thus should be the same format as a line in 
         the dataset, except with the label columns removed.
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
-
+    return_predicted_class (bool): Optional, defaults to false. When true the model
+        will output the predicted class rather than the activations 
+        of the final layer. This has no affect for regression models.
 Returns: 
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
@@ -223,6 +231,9 @@ Args:
         be the same format as a line in the dataset, except with the label columns 
         removed.
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
+    return_predicted_class (bool): Optional, defaults to false. When true the model
+        will output the predicted class foreach sample rather than the activations 
+        of the final layer. This has no affect for regression models.
 
 Returns: 
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
@@ -236,41 +247,6 @@ Examples:
             "The dog sat", 
             "The cow ate grass"
         ])
-
-)pbdoc";
-
-const char* const MODEL_PIPELINE_LOAD_VALIDATION_DATA = R"pbdoc(
-Loads a given dataset for validation. 
-
-Args:
-    filename (str): The validation dataset file.
-
-Returns:
-    Tuple[List[dataset.BoltDataset], dataset.BoltDataset]:
-    This function returns a tuple of input BoltDatasets and a BoltDataset for the
-    labels.
-
-Examples:
-    >>> eval_config = (
-            bolt.EvalConfig()
-            .with_metrics(["categorical_accuracy"])
-            .enable_sparse_inference()
-        )
-    >>> val_data, val_labels = model.load_validation_data("./validation_file")
-    >>> train_config = bolt.TrainConfig(
-            epochs=1, learning_rate=0.001
-        ).with_validation(
-            validation_data=val_data,
-            validation_labels=val_labels,
-            eval_config=eval_config,
-            validation_frequency=10,
-        )
-
-    >>> model.train(
-            filename="./train_file",
-            train_config=train_config,
-            batch_size=256,
-        )
 
 )pbdoc";
 

@@ -20,18 +20,20 @@ namespace thirdai::automl::models {
 class OutputProcessor {
  public:
   // Processes output from predict. The return_predicted_class option indicates
-  // that it should return the predicted class rather than the activations.
+  // that it should return the predicted class rather than the activations, this
+  // has no effect on regression outputs.
   virtual py::object processBoltVector(BoltVector& output,
                                        bool return_predicted_class) = 0;
 
   // Processes output from predictBatch. The return_predicted_class option
   // indicates that it should return the predicted class rather than the
-  // activations.
+  // activations, this has no effect on regression outputs.
   virtual py::object processBoltBatch(BoltBatch& outputs,
                                       bool return_predicted_class) = 0;
 
   // Processes output from evaluate. The return_predicted_class option indicates
-  // that it should return the predicted class rather than the activations.
+  // that it should return the predicted class rather than the activations, this
+  // has no effect on regression outputs.
   virtual py::object processOutputTracker(bolt::InferenceOutputTracker& output,
                                           bool return_predicted_class) = 0;
 
