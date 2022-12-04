@@ -288,3 +288,4 @@ uint32_t argmax(const float* const array, uint32_t len) {
 
 CEREAL_REGISTER_TYPE(thirdai::automl::models::CategoricalOutputProcessor)
 CEREAL_REGISTER_TYPE(thirdai::automl::models::RegressionOutputProcessor)
+CEREAL_REGISTER_TYPE(thirdai::automl::models::BinaryOutputProcessor)
