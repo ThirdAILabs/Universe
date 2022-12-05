@@ -9,6 +9,7 @@
 #include <new_dataset/python_bindings/DatasetPython.h>
 #include <new_dataset/python_bindings/FeaturizationPython.h>
 #include <search/python_bindings/DocSearchPython.h>
+#include <telemetry/python_bindings/TelemetryPython.h>
 #include <utils/Logging.h>
 #include <utils/Version.h>
 
@@ -121,6 +122,9 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // TODO(Josh/Nick): Deprecate this call and change NewDataset/new_dataset to
   // Dataset/dataset everyone in the codebase.
   thirdai::dataset::python::createDatasetSubmodule(m);
+
+  // Telemetry submodule
+  thirdai::telemetry::python::createTelemetrySubmodule(m);
 
   // Data Submodule
   auto data_submodule = m.def_submodule("data");

@@ -3,12 +3,14 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include "OutputProcessor.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -67,11 +69,15 @@ class UniversalDeepTransformer : public ModelPipeline {
     auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
           embedding_dimension] = processUDTOptions(options);
 
+    auto [output_processor, regression_binning] =
+        getOutputProcessor(dataset_config);
+
     auto dataset_factory = data::UDTDatasetFactory::make(
         /* config= */ std::move(dataset_config),
         /* force_parallel= */ parallel_data_processing,
         /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
-        /* contextual_columns= */ contextual_columns);
+        /* contextual_columns= */ contextual_columns,
+        /* regression_binning= */ regression_binning);
 
     bolt::BoltGraphPtr model;
     if (model_config) {
@@ -92,8 +98,9 @@ class UniversalDeepTransformer : public ModelPipeline {
         /* freeze_hash_tables= */ freeze_hash_tables,
         /* prediction_threshold= */ std::nullopt);
 
-    return UniversalDeepTransformer(
-        {std::move(dataset_factory), std::move(model), train_eval_parameters});
+    return UniversalDeepTransformer({std::move(dataset_factory),
+                                     std::move(model), output_processor,
+                                     train_eval_parameters});
   }
 
   BoltVector embeddingRepresentation(const MapInput& input) {
@@ -136,6 +143,29 @@ class UniversalDeepTransformer : public ModelPipeline {
  private:
   explicit UniversalDeepTransformer(ModelPipeline&& model)
       : ModelPipeline(model) {}
+
+  /**
+   * Returns the output processor to use to create the ModelPipeline. Also
+   * returns a RegressionBinningStrategy if the output is a regression task as
+   * this binning logic must be shared with the dataset pipeline.
+   */
+  static std::pair<OutputProcessorPtr,
+                   std::optional<dataset::RegressionBinningStrategy>>
+  getOutputProcessor(const data::UDTConfigPtr& dataset_config) {
+    if (auto num_config = data::asNumerical(
+            dataset_config->data_types.at(dataset_config->target))) {
+      uint32_t num_bins = dataset_config->n_target_classes.value_or(
+          data::UDTConfig::REGRESSION_DEFAULT_NUM_BINS);
+
+      auto regression_binning = dataset::RegressionBinningStrategy(
+          num_config->range.first, num_config->range.second, num_bins);
+
+      auto output_processor =
+          RegressionOutputProcessor::make(regression_binning);
+      return {output_processor, regression_binning};
+    }
+    return {CategoricalOutputProcessor::make(), std::nullopt};
+  }
 
   static bolt::BoltGraphPtr loadUDTBoltGraph(
       const std::vector<bolt::InputPtr>& input_nodes, uint32_t output_dim,
@@ -196,26 +226,33 @@ class UniversalDeepTransformer : public ModelPipeline {
     auto options = UDTOptions();
 
     for (const auto& [option_name, option_value] : options_map) {
+      auto option_value_lower = utils::lower(option_value);
       if (option_name == "contextual_columns") {
-        if (option_value == "true") {
+        if (option_value_lower == "true") {
           options.contextual_columns = true;
+        } else if (option_value_lower == "false") {
+          options.contextual_columns = false;
         } else {
           throwOptionError(option_name, option_value,
-                           /* expected_option_value= */ "true");
+                           /* expected_option_values= */ "'True' or 'False'");
         }
       } else if (option_name == "force_parallel") {
-        if (option_value == "true") {
+        if (option_value_lower == "true") {
           options.force_parallel = true;
+        } else if (option_value_lower == "false") {
+          options.force_parallel = false;
         } else {
           throwOptionError(option_name, option_value,
-                           /* expected_option_value= */ "true");
+                           /* expected_option_values= */ "'True' or 'False'");
         }
       } else if (option_name == "freeze_hash_tables") {
-        if (option_value == "false") {
+        if (option_value_lower == "true") {
+          options.freeze_hash_tables = true;
+        } else if (option_value_lower == "false") {
           options.freeze_hash_tables = false;
         } else {
           throwOptionError(option_name, option_value,
-                           /* expected_option_value= */ "false");
+                           /* expected_option_values= */ "'True' or 'False'");
         }
       } else if (option_name == "embedding_dimension") {
         uint32_t int_value = utils::toInteger(option_value.c_str());
@@ -239,11 +276,11 @@ class UniversalDeepTransformer : public ModelPipeline {
 
   static void throwOptionError(const std::string& option_name,
                                const std::string& given_option_value,
-                               const std::string& expected_option_value) {
+                               const std::string& expected_option_values) {
     throw std::invalid_argument(
         "Given invalid value for option '" + option_name +
-        "'. Expected value '" + expected_option_value +
-        "' but received value '" + given_option_value + "'.");
+        "'. Expected one of " + expected_option_values +
+        " but received value '" + given_option_value + "'.");
   }
 
   // Private constructor for cereal.

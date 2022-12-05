@@ -1,4 +1,5 @@
 #include "InferenceOutputTracker.h"
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -34,15 +35,6 @@ InferenceOutputTracker::InferenceOutputTracker(const NodePtr& output_node,
         "result.");
   }
 }
-
-InferenceOutputTracker::InferenceOutputTracker(
-    std::optional<std::vector<uint32_t>> active_neurons,
-    std::vector<float> activations, uint32_t num_nonzeros_per_sample)
-    : _num_nonzeros_per_sample(num_nonzeros_per_sample),
-      _num_samples(activations.size() / num_nonzeros_per_sample),
-      _current_vec_index(activations.size() / num_nonzeros_per_sample),
-      _activations(std::move(activations)),
-      _active_neurons(std::move(active_neurons)) {}
 
 void InferenceOutputTracker::saveOutputBatch(const NodePtr& output_node,
                                              uint32_t batch_size) {
@@ -99,6 +91,17 @@ float* InferenceOutputTracker::activationsForSample(uint32_t index) {
     return nullptr;
   }
   return _activations->data() + index * _num_nonzeros_per_sample;
+}
+
+BoltVector InferenceOutputTracker::getSampleAsNonOwningBoltVector(
+    uint32_t index) {
+  if (!_activations.has_value()) {
+    throw std::out_of_range(
+        "Cannot access ith sample of empty InferenceOutputTracker.");
+  }
+  return BoltVector(/* an= */ activeNeuronsForSample(index),
+                    /* a= */ activationsForSample(index), /* g= */ nullptr,
+                    /* l= */ _num_nonzeros_per_sample);
 }
 
 }  // namespace thirdai::bolt
