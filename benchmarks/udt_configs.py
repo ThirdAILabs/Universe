@@ -21,6 +21,8 @@ class ClincUDTConfig(UDTBenchmarkConfig):
 
     target = "category"
     n_target_classes = 151
+    experiment_name = "ClincUDT"
+    dataset_name = "clinc"
 
 
 class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
@@ -37,6 +39,8 @@ class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     }
 
     delimiter = "\t"
+    experiment_name = "AmazonPolarityUDT"
+    dataset_name = "amazon_polarity"
 
 
 class CriteoUDTConfig(UDTBenchmarkConfig):
@@ -64,3 +68,6 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
 
     # Add label column
     data_types["label"] = bolt.types.categorical()
+
+    experiment_name = "CriteoUDT"
+    dataset_name = "criteo_46m"
