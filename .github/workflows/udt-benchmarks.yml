@@ -1,4 +1,4 @@
-name: Run Python BOLT Benchmarks 
+name: Run UDT Benchmarks 
 
 # Kills old jobs from the same pr if we push a new commit
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
@@ -52,7 +52,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         uses: voxmedia/github-action-slack-notify-build@v1
         with:
-          channel_id: weekly_benchmarks
+          channel_id: weekly_udt_benchmarks
           status: SUCCESS
           color: good
 
@@ -62,6 +62,6 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         uses: voxmedia/github-action-slack-notify-build@v1
         with:
-          channel_id: weekly_benchmarks
+          channel_id: weekly_udt_benchmarks
           status: FAILED
           color: danger
