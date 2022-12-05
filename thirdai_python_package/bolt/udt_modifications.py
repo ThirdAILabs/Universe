@@ -49,7 +49,7 @@ def modify_udt_classifier():
             batch_size = self.default_train_batch_size
 
         train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
-        
+
         # Adds keyboard interrupt as default to UDT
         if bolt.callbacks.KeyboardInterrupt() not in callbacks:
             callbacks.append(bolt.callbacks.KeyboardInterrupt())
