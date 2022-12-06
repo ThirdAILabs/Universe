@@ -10,6 +10,7 @@ from .udt_docs import *
 def create_parquet_loader(path, batch_size):
     return thirdai.dataset.ParquetLoader(parquet_path=path, batch_size=batch_size)
 
+
 def create_cloud_instance_data_loader(path, batch_size, **kwargs):
     parsed_url = urlparse(path, allow_fragments=False)
     bucket = parsed_url.netloc
@@ -30,6 +31,7 @@ def create_cloud_instance_data_loader(path, batch_size, **kwargs):
             batch_size=batch_size,
             gcp_credentials=gcp_credentials,
         )
+
 
 # This function defines train and eval methods that wrap the UDT train and
 # eval methods, allowing users to pass just a single filepath to refer both to
