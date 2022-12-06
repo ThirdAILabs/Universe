@@ -41,8 +41,10 @@ class ParameterReference {
                    thirdai::compression::CountSketch<float>>;
 
  public:
-  ParameterReference(float* params, std::vector<uint32_t> dimensions)
-      : _params(params), _dimensions(std::move(dimensions)) {
+  ParameterReference(float* params, const std::vector<uint32_t>& dimensions)
+      : _params(params),
+        _dimensions(dimensions),
+        _total_dim(dimensionProduct(dimensions)) {
     _total_dim = dimensionProduct(_dimensions);
   }
 

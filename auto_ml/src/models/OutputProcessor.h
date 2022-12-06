@@ -29,6 +29,8 @@ class OutputProcessor {
   virtual py::object processOutputTracker(
       bolt::InferenceOutputTracker& output) = 0;
 
+  virtual ~OutputProcessor() = default;
+
  private:
   friend class cereal::access;
   template <class Archive>
