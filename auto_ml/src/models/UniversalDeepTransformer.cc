@@ -5,6 +5,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pytypes.h>
+#include <pybind11/stl.h>
 #include <utils/StringManipulation.h>
 #include <stdexcept>
 #include <string>
@@ -25,7 +26,7 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
 
   auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
         embedding_dimension, prediction_depth] = processUDTOptions(options);
-  std::string target_column = target_col;
+  std::string target_column = dataset_config->target;
 
   auto [output_processor, regression_binning] =
       getOutputProcessor(dataset_config);
@@ -109,29 +110,29 @@ py::object UniversalDeepTransformer::predictBatch(MapInputBatch samples,
     }
   }
 
-  py::list prediction_steps;
+  std::vector<std::vector<uint32_t>> predictions(samples.size());
 
   for (uint32_t t = 1; t <= _prediction_depth; t++) {
-    py::object prediction =
+    py::object raw_prediction =
         ModelPipeline::predictBatch(samples, use_sparse_inference,
                                     /* return_predicted_class= */ true);
 
-    if (py::isinstance<NumpyArray<uint32_t>>(prediction)) {
-      NumpyArray<uint32_t> predictions =
-          prediction.cast<NumpyArray<uint32_t>>();
-      for (uint32_t i = 0; i < predictions.shape(0); i++) {
+    if (py::isinstance<NumpyArray<uint32_t>>(raw_prediction)) {
+      NumpyArray<uint32_t> prediction =
+          raw_prediction.cast<NumpyArray<uint32_t>>();
+      for (uint32_t i = 0; i < prediction.shape(0); i++) {
         setPredictionAtTimestep(samples[i], t,
-                                std::to_string(predictions.at(i)));
+                                std::to_string(prediction.at(i)));
+        predictions[i].push_back(prediction.at(i));
       }
     } else {
       throw std::invalid_argument(
           "Unsupported prediction type for recursive predictions '" +
-          py::str(prediction.get_type()).cast<std::string>() + "'.");
+          py::str(raw_prediction.get_type()).cast<std::string>() + "'.");
     }
-    prediction_steps.append(prediction);
   }
 
-  return std::move(prediction_steps);
+  return py::cast(std::move(predictions));
 }
 
 std::pair<OutputProcessorPtr, std::optional<dataset::RegressionBinningStrategy>>
