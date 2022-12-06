@@ -56,6 +56,12 @@ class UniversalDeepTransformer : public ModelPipeline {
       const std::optional<std::string>& model_config = std::nullopt,
       const deployment::UserInputMap& options = {});
 
+  py::object predict(MapInput sample, bool use_sparse_inference,
+                     bool return_predicted_class);
+
+  py::object predictBatch(MapInputBatch samples, bool use_sparse_inference,
+                          bool return_predicted_class);
+
   BoltVector embeddingRepresentation(const MapInput& input) {
     auto input_vector = _dataset_factory->featurizeInput(input);
     return _model->predictSingle(std::move(input_vector),
@@ -94,8 +100,12 @@ class UniversalDeepTransformer : public ModelPipeline {
   }
 
  private:
-  explicit UniversalDeepTransformer(ModelPipeline&& model)
-      : ModelPipeline(model) {}
+  explicit UniversalDeepTransformer(ModelPipeline&& model,
+                                    std::string target_column,
+                                    uint32_t prediction_depth)
+      : ModelPipeline(model),
+        _target_column(std::move(target_column)),
+        _prediction_depth(prediction_depth) {}
 
   /**
    * Returns the output processor to use to create the ModelPipeline. Also
@@ -129,6 +139,7 @@ class UniversalDeepTransformer : public ModelPipeline {
     bool force_parallel = false;
     bool freeze_hash_tables = true;
     uint32_t embedding_dimension = DEFAULT_HIDDEN_DIM;
+    uint32_t prediction_depth = 1;
   };
 
   static UDTOptions processUDTOptions(
@@ -143,13 +154,22 @@ class UniversalDeepTransformer : public ModelPipeline {
         " but received value '" + given_option_value + "'.");
   }
 
+  void setPredictionAtTimestep(MapInput& sample, uint32_t step,
+                               const std::string& pred) {
+    sample[_target_column + "_" + std::to_string(step)] = pred;
+  }
+
+  std::string _target_column;
+  uint32_t _prediction_depth;
+
   // Private constructor for cereal.
   UniversalDeepTransformer() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<ModelPipeline>(this));
+    archive(cereal::base_class<ModelPipeline>(this), _target_column,
+            _prediction_depth);
   }
 };
 

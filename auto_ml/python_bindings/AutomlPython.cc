@@ -140,11 +140,10 @@ void createModelsSubmodule(py::module_& module) {
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
-      .def("predict", &UniversalDeepTransformer::predict<MapInput>,
+      .def("predict", &UniversalDeepTransformer::predict,
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT)
-      .def("predict_batch",
-           &UniversalDeepTransformer::predictBatch<MapInputBatch>,
+      .def("predict_batch", &UniversalDeepTransformer::predictBatch,
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
       .def(

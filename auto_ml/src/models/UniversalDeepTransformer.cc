@@ -2,7 +2,11 @@
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <auto_ml/src/Aliases.h>
+#include <pybind11/numpy.h>
+#include <pybind11/pytypes.h>
 #include <utils/StringManipulation.h>
+#include <stdexcept>
 #include <string>
 
 namespace thirdai::automl::models {
@@ -20,7 +24,8 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
       std::move(time_granularity), lookahead, delimiter);
 
   auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
-        embedding_dimension] = processUDTOptions(options);
+        embedding_dimension, prediction_depth] = processUDTOptions(options);
+  std::string target_column = target_col;
 
   auto [output_processor, regression_binning] =
       getOutputProcessor(dataset_config);
@@ -52,7 +57,81 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
       /* prediction_threshold= */ std::nullopt);
 
   return UniversalDeepTransformer({std::move(dataset_factory), std::move(model),
-                                   output_processor, train_eval_parameters});
+                                   output_processor, train_eval_parameters},
+                                  target_column, prediction_depth);
+}
+
+py::object UniversalDeepTransformer::predict(MapInput sample,
+                                             bool use_sparse_inference,
+                                             bool return_predicted_class) {
+  if (_prediction_depth == 1) {
+    return ModelPipeline::predict(sample, use_sparse_inference,
+                                  return_predicted_class);
+  }
+
+  for (uint32_t t = 1; t < _prediction_depth; t++) {
+    setPredictionAtTimestep(sample, t, "");
+  }
+
+  py::list prediction_steps;
+
+  for (uint32_t t = 1; t <= _prediction_depth; t++) {
+    py::object prediction =
+        ModelPipeline::predict(sample, use_sparse_inference,
+                               /* return_predicted_class= */ true);
+
+    if (py::isinstance<py::int_>(prediction)) {
+      setPredictionAtTimestep(sample, t,
+                              std::to_string(prediction.cast<uint32_t>()));
+    } else {
+      throw std::invalid_argument(
+          "Unsupported prediction type for recursive predictions '" +
+          py::str(prediction.get_type()).cast<std::string>() + "'.");
+    }
+
+    prediction_steps.append(prediction);
+  }
+
+  return std::move(prediction_steps);
+}
+
+py::object UniversalDeepTransformer::predictBatch(MapInputBatch samples,
+                                                  bool use_sparse_inference,
+                                                  bool return_predicted_class) {
+  if (_prediction_depth == 1) {
+    return ModelPipeline::predictBatch(samples, use_sparse_inference,
+                                       return_predicted_class);
+  }
+
+  for (auto& sample : samples) {
+    for (uint32_t t = 1; t < _prediction_depth; t++) {
+      setPredictionAtTimestep(sample, t, "");
+    }
+  }
+
+  py::list prediction_steps;
+
+  for (uint32_t t = 1; t <= _prediction_depth; t++) {
+    py::object prediction =
+        ModelPipeline::predictBatch(samples, use_sparse_inference,
+                                    /* return_predicted_class= */ true);
+
+    if (py::isinstance<NumpyArray<uint32_t>>(prediction)) {
+      NumpyArray<uint32_t> predictions =
+          prediction.cast<NumpyArray<uint32_t>>();
+      for (uint32_t i = 0; i < predictions.shape(0); i++) {
+        setPredictionAtTimestep(samples[i], t,
+                                std::to_string(predictions.at(i)));
+      }
+    } else {
+      throw std::invalid_argument(
+          "Unsupported prediction type for recursive predictions '" +
+          py::str(prediction.get_type()).cast<std::string>() + "'.");
+    }
+    prediction_steps.append(prediction);
+  }
+
+  return std::move(prediction_steps);
 }
 
 std::pair<OutputProcessorPtr, std::optional<dataset::RegressionBinningStrategy>>
@@ -134,6 +213,17 @@ UniversalDeepTransformer::processUDTOptions(
           option_value.resolveIntegerParam("embedding_dimension");
       if (int_value != 0) {
         options.embedding_dimension = int_value;
+      } else {
+        std::stringstream error;
+        error << "Invalid value for option '" << option_name
+              << "'. Received value '" << std::to_string(int_value) + "'.";
+
+        throw std::invalid_argument(error.str());
+      }
+    } else if (option_name == "prediction_depth") {
+      uint32_t int_value = option_value.resolveIntegerParam("prediction_depth");
+      if (int_value != 0) {
+        options.prediction_depth = int_value;
       } else {
         std::stringstream error;
         error << "Invalid value for option '" << option_name

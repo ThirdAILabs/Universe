@@ -6,12 +6,16 @@
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <memory>
 
 namespace py = pybind11;
 
 namespace thirdai::automl::models {
+
+template <typename T>
+using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
 /**
  * This class is an interface to abstract converting the output of the model in
