@@ -42,7 +42,8 @@ void ModelPipeline::trainOnDataLoader(
 
   // If the model is for binary classification then at the end of each call to
   // train we check to see if there is a prediction theshold that improves
-  // performance on some metric.
+  // performance on some metric. If multiple metrics are specified it defaults
+  // to using the first metric.
   if (auto binary_output = BinaryOutputProcessor::cast(_output_processor)) {
     if (validation && !validation->metrics().empty()) {
       std::optional<float> threshold =
@@ -302,14 +303,18 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
     for (const auto& label_batch : *labels) {
       for (const auto& label_vec : label_batch) {
         /**
-         * The output bolt vector from activations cannot be passed in because
-         * it doesn't incorporate the threshold, and metrics like
-         * categorical_accuracy cannot use a threshold. However for our metrics
-         * that would make sense to compute for binary classification, the value
-         * of the activations themselves don't matter, just the value of the
-         * prediction (0/1). Hense we can create a new output vector that
-         * reflects whether the prediction would be 1 based off of the threshold
-         * we're testing.
+         * The output bolt vector from activations cannot be passed in directly
+         * because it doesn't incorporate the threshold, and metrics like
+         * categorical_accuracy cannot use a threshold. To solve this we create
+         * a new output vector where the neuron with the largest activation is
+         * the same as the neuron that would be choosen as the prediction if we
+         * applied the given prediction threshold.
+         *
+         * For metrics like F1 or categorical accuracy the value of the
+         * activation does not matter, only the predicted class so this
+         * modification does not affect the metric. Metrics like mean squared
+         * error do not really make sense to compute at different thresholds
+         * anyway and so we can ignore the affect of this modification on them.
          */
         if (activations.activationsForSample(sample_idx++)[1] >= threshold) {
           metric->record(
