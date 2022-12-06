@@ -53,12 +53,11 @@ jobs:
         uses: pypa/cibuildwheel@v2.9.0
         env:
 
-          # This is a specific variable we expect in setup.py, since cmake
-          # for some reason Cmake needs the variable passed in in the format 
-          # -DOPENSSL_ROOT_DIR:PATH, which we do in 
+          # We need this to get Openssl1.1 working on Manylinux (which has a 
+          # CentOS base image). See
+          # https://github.com/facebook/folly/issues/1762
           CIBW_ENVIRONMENT_LINUX: >
-            OPENSSL_ROOT_DIR_PATH="/usr/lib64/openssl11;/usr/include/openssl11"
-
+            CMAKE_ARGS="-DOPENSSL_ROOT_DIR:PATH=/usr/lib64/openssl11;/usr/include/openssl11"
 
           # The following is to relax the discovery timeout (from a default 5) so that
           # cibuildwheel GitHub workflow does not timeout on test-discovery.
