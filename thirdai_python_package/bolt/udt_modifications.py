@@ -10,6 +10,20 @@ from .udt_docs import *
 def create_parquet_loader(path, batch_size):
     return thirdai.dataset.ParquetLoader(parquet_path=path, batch_size=batch_size)
 
+def create_cloud_storage_data_loader(path, batch_size):
+    parse_url = urlparse(path, allow_fragments=False)
+    bucket = parse_url.netloc
+    key = parse_url.path.lstrip("/")
+
+    if parse_url.scheme == 's3':
+        return thirdai.dataset.S3DataLoader(
+            bucket_name=bucket, prefix_filter=key, batch_size=batch_size
+        )
+    if parse_url.scheme == 'gcs':
+        return thirdai.dataset.GCSDataLoader(
+            bucket_name=bucket, prefix_filter=key, batch_size=batch_size
+        )
+
 
 def create_cloud_instance_data_loader(path, batch_size, **kwargs):
     parsed_url = urlparse(path, allow_fragments=False)
@@ -187,4 +201,4 @@ def modify_udt_classifier():
 
 
 def modify_udt_generator():
-    
+    pass 
