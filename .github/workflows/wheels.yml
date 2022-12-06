@@ -66,11 +66,13 @@ jobs:
 
           CIBW_ENVIRONMENT_MACOS:
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
+            OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
+            OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
 
           # Mac and windows will use this path, since they do not run in docker
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
          
-          CIBW_BEFORE_BUILD_LINUX: sudo apt-get install libssl-dev pkg-config
+          CIBW_BEFORE_BUILD_LINUX: yum install libssl-dev
           CIBW_BEFORE_BUILD_MACOS: brew install openssl
 
           # TODO(josh): Get cross compiling working to build more types of wheels
