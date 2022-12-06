@@ -1,17 +1,9 @@
+from licensing_utils import this_should_require_a_license_bolt
+
 import pytest
 import thirdai
 
 pytestmark = [pytest.mark.release]
-
-
-def this_should_require_a_license_bolt():
-
-    from thirdai import bolt
-
-    bolt.UniversalDeepTransformer(
-        data_types={"col": bolt.types.categorical()}, target="col", n_target_classes=1
-    )
-
 
 # Note that neither of these tests check what happens when we don't activate.
 # at all. This is because these tests are running in CI with a valid license

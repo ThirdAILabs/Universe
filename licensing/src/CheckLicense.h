@@ -11,7 +11,7 @@ namespace thirdai::licensing {
 inline void checkLicense(const std::optional<std::string>& access_key,
                          const std::optional<std::string>& license_path) {
   if (access_key.has_value()) {
-    KeygenCommunication::verifyWithKeygen(*access_key);
+    verifyWithKeygen(*access_key);
     return;
   }
 

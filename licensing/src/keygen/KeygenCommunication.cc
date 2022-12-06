@@ -1,3 +1,5 @@
+// This enables ssl support (which is required for https links), see
+// https://github.com/yhirose/cpp-httplib for more details.
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 
 #include "KeygenCommunication.h"
@@ -16,8 +18,14 @@ namespace thirdai::licensing {
 
 using json = nlohmann::json;
 
+// DER describes the binary encoding format of the key, see
+// https://www.cryptopp.com/wiki/Keys_and_Formats#BER_and_DER_Encoding
+// for more details.
 const std::string KEYGEN_PUBLIC_KEY_BASE64_DER =
     "MCowBQYDK2VwAyEAmtv9iB02PTHBVsNImWiS3QGDp+RUDcABy3wu7Fp5Zq4=";
+
+const std::string VALIDATE_ENDPOINT =
+    "/v1/accounts/thirdai/licenses/actions/validate-key";
 
 /*
  * This method creates an ed25519Verifier that uses the thirdai Keygen public
@@ -25,8 +33,9 @@ const std::string KEYGEN_PUBLIC_KEY_BASE64_DER =
  * thirdai Keygen private key.
  */
 CryptoPP::ed25519Verifier createVerifier() {
-  CryptoPP::StringSource source(KEYGEN_PUBLIC_KEY_BASE64_DER, true,
-                                new CryptoPP::Base64Decoder);
+  CryptoPP::StringSource source(/* string = */ KEYGEN_PUBLIC_KEY_BASE64_DER,
+                                /* pumpAll = */ true,
+                                /* attachment = */ new CryptoPP::Base64Decoder);
   return CryptoPP::ed25519::Verifier(source);
 }
 
@@ -69,8 +78,11 @@ std::string base64Encode(const std::string& input) {
 
 /*
  * Returns the exact message that was originally signed by Keygen. Assumes that
- * the passed in request was sent to the validate key Keygen endpoint (the
- * request target is part of the message signed by Keygen).
+ * the passed in HTTP result corresponds to a request that was sent to the
+ * validate key Keygen endpoint, AKA:
+ * "post /v1/accounts/thirdai/licenses/actions/validate-key"
+ * This assumption is necessary because Keygen includes this data as part of
+ * the message it signs.
  */
 std::string getOriginalKeygenMessage(const httplib::Result& res) {
   if (!res->has_header("date")) {
@@ -85,8 +97,7 @@ std::string getOriginalKeygenMessage(const httplib::Result& res) {
 
   std::stringstream original_keygen_message_stream;
   original_keygen_message_stream
-      << "(request-target): post "
-         "/v1/accounts/thirdai/licenses/actions/validate-key\n"
+      << "(request-target): post " << VALIDATE_ENDPOINT << "\n"
       << "host: api.keygen.sh\n"
       << "date: " << date << "\n"
       << "digest: sha-256=" << base64_encoded_body_hash;
@@ -112,7 +123,8 @@ std::string getSignature(const httplib::Result& res) {
   // We add 11 because the actual signature starts 11 chars after the beginning
   // of the found string
   size_t signature_start = signature_header.find("signature=") + 11;
-  // The signature ends one char before the next " after signature_start
+  // The signature ends two chars before the next , after signature_start, so
+  // we subtract 1 from the index of the next , to get the exclusive end index
   size_t signature_end = signature_header.find(',', signature_start) - 1;
 
   std::string base64_signature =
@@ -120,7 +132,8 @@ std::string getSignature(const httplib::Result& res) {
 
   std::string decoded_signature;
   CryptoPP::StringSource ss(
-      base64_signature, true,
+      /* string = */ base64_signature, /* pumpAll = */ true,
+      /* attachment = */
       new CryptoPP::Base64Decoder(
           new CryptoPP::StringSink(decoded_signature))  // Base64Decoder
   );                                                    // StringSource
@@ -161,15 +174,19 @@ void verifyKeygenResponse(const httplib::Result& res) {
   }
 }
 
-void KeygenCommunication::verifyWithKeygen(const std::string& access_key) {
-  httplib::Client cli("https://api.keygen.sh");
+void verifyWithKeygen(const std::string& access_key) {
+  httplib::Client client("https://api.keygen.sh");
+  // These headers denote that we sending (Content-Type) and expect to receive
+  // (Accept) json with additional "vendor specific" semantics. This is what
+  // Keygen recommends, see
+  // https://keygen.sh/docs/api/licenses/#licenses-actions-validate-key
   httplib::Headers headers = {{"Content-Type", "application/vnd.api+json"},
                               {"Accept", "application/vnd.api+json"}};
   json body;
   body["meta"]["key"] = access_key;
 
-  httplib::Result res = cli.Post(
-      /* path = */ "/v1/accounts/thirdai/licenses/actions/validate-key",
+  httplib::Result res = client.Post(
+      /* path = */ VALIDATE_ENDPOINT,
       /* headers = */ headers,
       /* body = */ body.dump(), /* content_type = */ "application/json");
 
