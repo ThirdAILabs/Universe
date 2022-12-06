@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include "ColumnNumberMap.h"
@@ -43,7 +44,9 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
  public:
   explicit UDTDatasetFactory(UDTConfigPtr config, bool force_parallel,
                              uint32_t text_pairgram_word_limit,
-                             bool contextual_columns = false)
+                             bool contextual_columns = false,
+                             std::optional<dataset::RegressionBinningStrategy>
+                                 regression_binning = std::nullopt)
       : _config(std::move(config)),
         _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
             _config->data_types, _config->provided_relationships,
@@ -51,7 +54,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         _context(std::make_shared<TemporalContext>()),
         _parallel(_temporal_relationships.empty() || force_parallel),
         _text_pairgram_word_limit(text_pairgram_word_limit),
-        _contextual_columns(contextual_columns) {
+        _contextual_columns(contextual_columns),
+        _regression_binning(regression_binning) {
     FeatureComposer::verifyConfigIsValid(*_config, _temporal_relationships);
 
     _vectors_map = processAllMetadata();
@@ -65,10 +69,12 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   static std::shared_ptr<UDTDatasetFactory> make(
       UDTConfigPtr config, bool force_parallel,
-      uint32_t text_pairgram_word_limit, bool contextual_columns = false) {
+      uint32_t text_pairgram_word_limit, bool contextual_columns = false,
+      std::optional<dataset::RegressionBinningStrategy> regression_binning =
+          std::nullopt) {
     return std::make_shared<UDTDatasetFactory>(
         std::move(config), force_parallel, text_pairgram_word_limit,
-        contextual_columns);
+        contextual_columns, regression_binning);
   }
 
   DatasetLoaderPtr getLabeledDatasetLoader(
@@ -136,11 +142,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   uint32_t getLabelDim() final { return _label_dim; }
-
-  bolt::InferenceOutputTracker processEvaluateOutput(
-      bolt::InferenceOutputTracker& output) final;
-
-  BoltVector processOutputVector(BoltVector& output) final;
 
  private:
   PreprocessedVectorsMap processAllMetadata();
@@ -301,7 +302,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   uint32_t _text_pairgram_word_limit;
   bool _contextual_columns;
 
-  dataset::RegressionCategoricalBlockPtr _regression_categorical_block;
+  std::optional<dataset::RegressionBinningStrategy> _regression_binning;
 
   // Private constructor for cereal.
   UDTDatasetFactory() {}
@@ -315,7 +316,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
             _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _input_dim, _label_dim,
             _parallel, _text_pairgram_word_limit, _contextual_columns,
-            _regression_categorical_block);
+            _regression_binning);
   }
 };
 

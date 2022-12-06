@@ -1,5 +1,6 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
+#include <stdexcept>
 
 namespace thirdai::automl::data {
 
@@ -76,40 +77,6 @@ std::string UDTDatasetFactory::className(uint32_t neuron_id) const {
         "equivalent.");
   }
   return _vocabs.at(_config->target)->getString(neuron_id);
-}
-
-bolt::InferenceOutputTracker UDTDatasetFactory::processEvaluateOutput(
-    bolt::InferenceOutputTracker& output) {
-  if (!_regression_categorical_block) {
-    return std::move(output);
-  }
-  std::vector<float> predicted_values(output.numSamples());
-
-  for (uint32_t i = 0; i < output.numSamples(); i++) {
-    predicted_values[i] =
-        _regression_categorical_block->getPredictedNumericalValue(
-            output.activeNeuronsForSample(i), output.activationsForSample(i),
-            output.numNonzerosInOutput());
-  }
-
-  return bolt::InferenceOutputTracker(
-      /* active_neurons= */ std::nullopt,
-      /* activations= */ std::move(predicted_values),
-      /* num_nonzeros_per_sample= */ 1);
-}
-
-BoltVector UDTDatasetFactory::processOutputVector(BoltVector& output) {
-  if (!_regression_categorical_block) {
-    return std::move(output);
-  }
-
-  BoltVector value(/* l= */ 1, /* is_dense= */ true,
-                   /* has_gradient= */ false);
-  value.activations[0] =
-      _regression_categorical_block->getPredictedNumericalValue(
-          output.active_neurons, output.activations, output.len);
-
-  return value;
 }
 
 PreprocessedVectorsMap UDTDatasetFactory::processAllMetadata() {
@@ -257,18 +224,17 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
         /* delimiter= */ target_config->delimiter);
   }
   if (asNumerical(target_type)) {
-    auto target_config = asNumerical(target_type);
-    uint32_t num_bins = _config->n_target_classes.value_or(
-        UDTConfig::REGRESSION_DEFAULT_NUM_BINS);
+    if (!_regression_binning) {
+      throw std::logic_error(
+          "Regression binning must be set for numerical outputs.");
+    }
 
-    _regression_categorical_block = dataset::RegressionCategoricalBlock::make(
-        /* col= */ target_col_num, /* min= */ target_config->range.first,
-        /* max= */ target_config->range.second, /* num_bins= */ num_bins,
+    return dataset::RegressionCategoricalBlock::make(
+        /* col= */ target_col_num,
+        /* binning_strategy= */ _regression_binning.value(),
         /* correct_label_radius= */
         UDTConfig::REGRESSION_CORRECT_LABEL_RADIUS,
         /* labels_sum_to_one= */ true);
-
-    return _regression_categorical_block;
   }
   throw std::invalid_argument(
       "Target column must have type numerical or categorical.");
