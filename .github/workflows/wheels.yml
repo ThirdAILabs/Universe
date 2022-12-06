@@ -73,7 +73,7 @@ jobs:
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
          
           CIBW_BEFORE_BUILD_LINUX: >
-            yum update -y; yum clean all
+            yum update -y && yum clean all &&
             yum install openssl-devel -y
           CIBW_BEFORE_BUILD_MACOS: brew install openssl
 
