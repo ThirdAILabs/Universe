@@ -1,7 +1,6 @@
 #pragma once
 
 #include <wrappers/src/EigenDenseWrapper.h>
-#include <wrappers/src/LicenseWrapper.h>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_map.hpp>
@@ -12,6 +11,7 @@
 #include <hashing/src/FastSRP.h>
 #include <Eigen/src/Core/util/Constants.h>
 #include <exceptions/src/Exceptions.h>
+#include <licensing/src/CheckLicense.h>
 #include <optional>
 #include <queue>
 #include <stdexcept>
@@ -41,7 +41,7 @@ class DocSearch {
         _num_centroids(centroids_input.size()),
         _centroids(dense_dim, centroids_input.size()),
         _centroid_id_to_internal_id(centroids_input.size()) {
-    thirdai::licensing::LicenseWrapper::checkLicenseWrapper();
+    thirdai::licensing::CheckLicense::checkLicenseWrapper();
 
     if (dense_dim == 0 || num_tables == 0 || hashes_per_table == 0) {
       throw std::invalid_argument(
@@ -213,7 +213,7 @@ class DocSearch {
   // This needs to be protected since it's a top level serialization target
   // called by a child class, but DO NOT call it unless you are creating a
   // temporary object to serialize into.
-  DocSearch() { thirdai::licensing::LicenseWrapper::checkLicenseWrapper(); };
+  DocSearch() { thirdai::licensing::CheckLicense::checkLicenseWrapper(); };
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/

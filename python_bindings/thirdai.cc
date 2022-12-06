@@ -20,7 +20,7 @@
 #include <pybind11/stl.h>
 
 // Licensing wrapper
-#include <wrappers/src/LicenseWrapper.h>
+#include <licensing/src/CheckLicense.h>
 
 #ifndef __clang__
 #include <omp.h>
@@ -107,18 +107,18 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
 #if THIRDAI_CHECK_LICENSE
   m.def("set_thirdai_license_path",
-        &thirdai::licensing::LicenseWrapper::setLicensePath,
+        &thirdai::licensing::CheckLicense::setLicensePath,
         py::arg("license_path"),
         "Set a license filepath for any future calls to ThirdAI functions. "
         "License file verification will be treated as a fallback if activate "
         "has not been called.");
 
-  m.def("activate", &thirdai::licensing::LicenseWrapper::activate,
+  m.def("activate", &thirdai::licensing::CheckLicense::activate,
         py::arg("api_key"),
         "Set a ThirdAI API access key to authenticate future calls to ThirdAI "
         "functions.");
 
-  m.def("deactivate", &thirdai::licensing::LicenseWrapper::deactivate,
+  m.def("deactivate", &thirdai::licensing::CheckLicense::deactivate,
         "Remove the currently stored ThirdAI access key. Future calls to "
         "ThirdAI functions may fail.");
 #endif

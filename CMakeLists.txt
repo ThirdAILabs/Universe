@@ -275,7 +275,7 @@ set(THIRDAI_SOURCES
     hashing/src/UniversalHash.cc
     hashtable/src/SampledHashTable.cc
     hashtable/src/VectorHashTable.cc
-    wrappers/src/LicenseWrapper.cc
+    licensing/src/CheckLicense.cc
     dataset/src/Vocabulary.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc

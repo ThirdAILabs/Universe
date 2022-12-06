@@ -1,6 +1,5 @@
 #pragma once
 
-#include <wrappers/src/LicenseWrapper.h>
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
@@ -15,6 +14,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <licensing/src/CheckLicense.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -41,7 +41,7 @@ class BoltGraph {
         _epoch(0),
         _updates(0),
         _tracked_metric(nullptr) {
-    thirdai::licensing::LicenseWrapper::checkLicenseWrapper();
+    thirdai::licensing::CheckLicense::checkLicenseWrapper();
   }
 
   /*
@@ -112,7 +112,7 @@ class BoltGraph {
 
  private:
   // Private constructor for cereal.
-  BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicenseWrapper(); }
+  BoltGraph() { thirdai::licensing::CheckLicense::checkLicenseWrapper(); }
 
   void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);
