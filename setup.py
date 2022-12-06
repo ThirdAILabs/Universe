@@ -66,6 +66,10 @@ class CMakeBuild(build_ext):
             "-DCMAKE_BUILD_TYPE={}".format(build_mode),
         ]
 
+        openssl_root_dir_path = os.environ.get("OPENSSL_ROOT_DIR_PATH")
+        if openssl_root_dir_path:
+            cmake_args.append(f'-DOPENSSL_ROOT_DIR:PATH="{openssl_root_dir_path}"')
+
         # To build the wheel, we don't need to make "all" targets. We just need
         # what is required to be packaged with python.  The pybind11 target in
         # CMakeLists.txt is defined as _thirdai, which is what is shipped with
