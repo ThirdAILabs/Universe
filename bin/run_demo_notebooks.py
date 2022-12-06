@@ -11,6 +11,7 @@ from nbconvert.preprocessors import CellExecutionError, ExecutePreprocessor
 
 DEMO_URL = "https://github.com/ThirdAILabs/Demos.git"
 
+SKIPPED_TESTS = {'DistributedInferenceDatabricks'}
 
 def get_notebook_paths(temp_dir):
     # Collect all of the jupyter notebooks in the Demos repo
@@ -23,6 +24,8 @@ def get_notebook_paths(temp_dir):
 def run_demo_notebooks(notebook_paths, temp_dir):
     failed_notebooks = []
     for notebook_path in notebook_paths:
+        if Path(notebook_path).stem in SKIPPED_TESTS:
+            continue
         with open(notebook_path) as notebook_file:
             # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
             nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
