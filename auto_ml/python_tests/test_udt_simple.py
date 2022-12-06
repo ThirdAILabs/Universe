@@ -82,7 +82,7 @@ def make_simple_trained_model(
         n_target_classes=3,
         integer_target=integer_label,
         model_config=model_config,
-        options={"embedding_dimension": str(embedding_dim)} if embedding_dim else {},
+        options={"embedding_dimension": embedding_dim} if embedding_dim else {},
     )
 
     model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)

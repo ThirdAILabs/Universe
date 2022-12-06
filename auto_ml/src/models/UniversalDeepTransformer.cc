@@ -3,6 +3,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <utils/StringManipulation.h>
+#include <string>
 
 namespace thirdai::automl::models {
 
@@ -12,7 +13,7 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
     std::string target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    const std::unordered_map<std::string, std::string>& options) {
+    const deployment::UserInputMap& options) {
   auto dataset_config = std::make_shared<data::UDTConfig>(
       std::move(data_types), std::move(temporal_tracking_relationships),
       std::move(target_col), n_target_classes, integer_target,
@@ -115,39 +116,28 @@ bolt::BoltGraphPtr UniversalDeepTransformer::buildUDTBoltGraph(
 
 UniversalDeepTransformer::UDTOptions
 UniversalDeepTransformer::processUDTOptions(
-    const std::unordered_map<std::string, std::string>& options_map) {
+    const deployment::UserInputMap& options_map) {
   auto options = UDTOptions();
 
   for (const auto& [option_name, option_value] : options_map) {
     if (option_name == "contextual_columns") {
-      if (option_value == "true") {
-        options.contextual_columns = true;
-      } else {
-        throwOptionError(option_name, option_value,
-                         /* expected_option_value= */ "true");
-      }
+      options.contextual_columns =
+          option_value.resolveBooleanParam("contextual_columns");
     } else if (option_name == "force_parallel") {
-      if (option_value == "true") {
-        options.force_parallel = true;
-      } else {
-        throwOptionError(option_name, option_value,
-                         /* expected_option_value= */ "true");
-      }
+      options.force_parallel =
+          option_value.resolveBooleanParam("force_parallel");
     } else if (option_name == "freeze_hash_tables") {
-      if (option_value == "false") {
-        options.freeze_hash_tables = false;
-      } else {
-        throwOptionError(option_name, option_value,
-                         /* expected_option_value= */ "false");
-      }
+      options.freeze_hash_tables =
+          option_value.resolveBooleanParam("freeze_hash_tables");
     } else if (option_name == "embedding_dimension") {
-      uint32_t int_value = utils::toInteger(option_value.c_str());
+      uint32_t int_value =
+          option_value.resolveIntegerParam("embedding_dimension");
       if (int_value != 0) {
         options.embedding_dimension = int_value;
       } else {
         std::stringstream error;
         error << "Invalid value for option '" << option_name
-              << "'. Received value '" << option_value + "'.";
+              << "'. Received value '" << std::to_string(int_value) + "'.";
 
         throw std::invalid_argument(error.str());
       }

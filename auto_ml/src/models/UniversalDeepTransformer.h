@@ -10,6 +10,7 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/models/ModelPipeline.h>
 #include <memory>
 #include <optional>
@@ -17,8 +18,6 @@
 #include <unordered_map>
 
 namespace thirdai::automl::models {
-
-using OptionsMap = std::unordered_map<std::string, std::string>;
 
 /**
  * UniversalDeepTransformer is a wrapper around the model pipeline that uses the
@@ -55,7 +54,7 @@ class UniversalDeepTransformer : public ModelPipeline {
       bool integer_target = false, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::optional<std::string>& model_config = std::nullopt,
-      const std::unordered_map<std::string, std::string>& options = {});
+      const deployment::UserInputMap& options = {});
 
   BoltVector embeddingRepresentation(const MapInput& input) {
     auto input_vector = _dataset_factory->featurizeInput(input);
@@ -133,7 +132,7 @@ class UniversalDeepTransformer : public ModelPipeline {
   };
 
   static UDTOptions processUDTOptions(
-      const std::unordered_map<std::string, std::string>& options_map);
+      const deployment::UserInputMap& options_map);
 
   static void throwOptionError(const std::string& option_name,
                                const std::string& given_option_value,
