@@ -9,10 +9,27 @@ from thirdai._thirdai.dataset import DataLoader
 class GCSDataLoader(DataLoader):
     """Data Loader class for Google Cloud Storage
 
-    The google cloud storage client and the google cloud storage
-    file system packages are imported here so that they are
+    The google cloud storage client and the google cloud library
+    that verifies credentials are imported here so that they are
     not dependencies of our package. These are required in order
     to read from a GCS bucket with pandas.
+
+    In case this class is used in a local environment, the user
+    has to provide credentials that are verified via a OAuth 2.0 
+    access token. 
+
+    Args:
+        bucket_name: The name of the bucket in the Google Cloud Storage (GCS)
+            instance
+        resource_path: This is the path to the file to be read from the bucket
+        batch_size: batch size 
+        gcp_credentials: Credentials required to authorize any CRUD operations 
+            on a GCS instance. In a local environment, this is supposed to be 
+            a credentials.json file that a user can download from their dashboard
+            once they create a project on Google Cloud. In a cloud environment, 
+            the credentials are not needed.
+        file_format: Extension of the file to be read. Options include `csv`, 
+            `parquet` and `pqt`. 
 
     """
 
@@ -79,7 +96,9 @@ class GCSDataLoader(DataLoader):
     def _is_google_cloud_instance() -> bool:
         """
         Checks if the underlying environment is a google compute engine (GCE)
-        instance via a DNS lookup to metadata server.
+        instance via a DNS lookup to metadata server. This is needed to 
+        ensure that in a local environment the path to a credentials file 
+        is provided. 
         """
         try:
             socket.getaddrinfo("metadata.google.internal", 80)

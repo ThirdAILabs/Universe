@@ -10,21 +10,6 @@ from .udt_docs import *
 def create_parquet_loader(path, batch_size):
     return thirdai.dataset.ParquetLoader(parquet_path=path, batch_size=batch_size)
 
-def create_cloud_storage_data_loader(path, batch_size):
-    parse_url = urlparse(path, allow_fragments=False)
-    bucket = parse_url.netloc
-    key = parse_url.path.lstrip("/")
-
-    if parse_url.scheme == 's3':
-        return thirdai.dataset.S3DataLoader(
-            bucket_name=bucket, prefix_filter=key, batch_size=batch_size
-        )
-    if parse_url.scheme == 'gcs':
-        return thirdai.dataset.GCSDataLoader(
-            bucket_name=bucket, prefix_filter=key, batch_size=batch_size
-        )
-
-
 def create_cloud_instance_data_loader(path, batch_size, **kwargs):
     parsed_url = urlparse(path, allow_fragments=False)
     bucket = parsed_url.netloc
@@ -45,16 +30,6 @@ def create_cloud_instance_data_loader(path, batch_size, **kwargs):
             batch_size=batch_size,
             gcp_credentials=gcp_credentials,
         )
-
-
-def create_s3_loader(path, batch_size):
-    parsed_url = urlparse(path, allow_fragments=False)
-    bucket = parsed_url.netloc
-    key = parsed_url.path.lstrip("/")
-    return thirdai.dataset.S3DataLoader(
-        bucket_name=bucket, prefix_filter=key, batch_size=batch_size
-    )
-
 
 # This function defines train and eval methods that wrap the UDT train and
 # eval methods, allowing users to pass just a single filepath to refer both to
@@ -110,7 +85,7 @@ def modify_udt_classifier():
         if filename.startswith("s3://"):
             return original_train_with_loader_method(
                 self,
-                create_s3_loader(filename, batch_size),
+                create_cloud_instance_data_loader(filename, batch_size),
                 train_config,
                 max_in_memory_batches,
             )
@@ -170,7 +145,7 @@ def modify_udt_classifier():
         if filename.startswith("s3://"):
             return original_eval_with_loader_method(
                 self,
-                create_s3_loader(
+                create_cloud_instance_data_loader(
                     filename,
                     batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
                 ),
@@ -184,7 +159,7 @@ def modify_udt_classifier():
                     batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
                     gcp_credentials=gcp_credentials,
                 ),
-                eval_config=eval_config
+                eval_config=eval_config,
             )
 
         return original_eval_method(self, filename, eval_config)
@@ -198,7 +173,3 @@ def modify_udt_classifier():
 
     bolt.models.Pipeline.train = wrapped_train
     bolt.models.Pipeline.evaluate = wrapped_evaluate
-
-
-def modify_udt_generator():
-    pass 
