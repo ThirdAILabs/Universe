@@ -280,6 +280,7 @@ set(THIRDAI_SOURCES
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
+    new_dataset/src/featurization_pipeline/augmentations/ColdStartText.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
@@ -332,6 +333,8 @@ pybind11_add_module(
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
   auto_ml/python_bindings/DeploymentPython.cc
+  auto_ml/src/models/ModelPipeline.cc
+  auto_ml/src/models/OutputProcessor.cc
   telemetry/python_bindings/TelemetryPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)

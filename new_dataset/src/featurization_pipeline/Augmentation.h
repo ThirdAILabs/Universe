@@ -3,7 +3,7 @@
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <memory>
 
-namespace thirdai::dataset {
+namespace thirdai::data {
 
 /**
  * This class represents an Augmentation to be applied to a dataset.
@@ -31,4 +31,4 @@ class Augmentation {
 
 using AugmentationPtr = std::shared_ptr<Augmentation>;
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::data

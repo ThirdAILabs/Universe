@@ -30,16 +30,6 @@
 
 namespace thirdai::bolt {
 
-namespace {
-template <class... Args>
-std::optional<ProgressBar> makeOptionalProgressBar(bool make, Args... args) {
-  if (!make) {
-    return std::nullopt;
-  }
-  return std::make_optional<ProgressBar>(args...);
-}
-}  // namespace
-
 void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
                         bool print_when_done) {
   if (_output == nullptr) {
@@ -205,8 +195,8 @@ MetricData BoltGraph::train(
     // some sort of RAII training context object whose destructor will
     // automatically delete the training state
     try {
-      std::optional<ProgressBar> bar = makeOptionalProgressBar(
-          /*make=*/train_config.verbose(),
+      std::optional<ProgressBar> bar = ProgressBar::makeOptional(
+          /*verbose=*/train_config.verbose(),
           /*description=*/fmt::format("train epoch {}", _epoch),
           /*max_steps=*/dataset_context.numBatches());
 
@@ -485,8 +475,8 @@ InferenceResult BoltGraph::evaluate(
       _output, eval_config.shouldReturnActivations(),
       /* total_num_samples = */ predict_context.len());
 
-  std::optional<ProgressBar> bar = makeOptionalProgressBar(
-      /*make=*/eval_config.verbose(),
+  std::optional<ProgressBar> bar = ProgressBar::makeOptional(
+      /*verbose=*/eval_config.verbose(),
       /*description=*/"test",
       /*max_steps=*/predict_context.numBatches());
 
