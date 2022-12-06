@@ -72,7 +72,9 @@ jobs:
           # Mac and windows will use this path, since they do not run in docker
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
          
-          CIBW_BEFORE_BUILD_LINUX: yum install openssl-devel
+          CIBW_BEFORE_BUILD_LINUX: >
+            yum update -y; yum clean all
+            yum install openssl-devel -y
           CIBW_BEFORE_BUILD_MACOS: brew install openssl
 
           # TODO(josh): Get cross compiling working to build more types of wheels
