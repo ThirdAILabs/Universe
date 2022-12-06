@@ -53,19 +53,16 @@ void CategoricalOutputProcessor::ensureMaxActivationLargerThanThreshold(
 py::object RegressionOutputProcessor::processBoltVector(BoltVector& output) {
   float value = unbinActivations(output);
 
-  NumpyArray<float> output_array(1U);
-  output_array.mutable_at(0) = value;
-
-  return py::object(std::move(output_array));
+  return py::cast(value);
 }
 
 py::object RegressionOutputProcessor::processBoltBatch(BoltBatch& outputs) {
-  NumpyArray<float> output_array(/* shape= */ {outputs.getBatchSize(), 1U});
+  NumpyArray<float> output_array(outputs.getBatchSize());
 
   for (uint32_t vec_id = 0; vec_id < outputs.getBatchSize(); vec_id++) {
     float value = unbinActivations(outputs[vec_id]);
 
-    output_array.mutable_at(vec_id, 0) = value;
+    output_array.mutable_at(vec_id) = value;
   }
 
   return py::object(std::move(output_array));
@@ -73,11 +70,11 @@ py::object RegressionOutputProcessor::processBoltBatch(BoltBatch& outputs) {
 
 py::object RegressionOutputProcessor::processOutputTracker(
     bolt::InferenceOutputTracker& output) {
-  NumpyArray<float> output_array(/* shape= */ {output.numSamples(), 1U});
+  NumpyArray<float> output_array(output.numSamples());
 
   for (uint32_t i = 0; i < output.numSamples(); i++) {
     BoltVector ith_sample = output.getSampleAsNonOwningBoltVector(i);
-    output_array.mutable_at(i, 0) = unbinActivations(ith_sample);
+    output_array.mutable_at(i) = unbinActivations(ith_sample);
   }
 
   return py::object(std::move(output_array));
