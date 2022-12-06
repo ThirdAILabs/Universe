@@ -116,8 +116,8 @@ Args:
         and allows for specification of metrics to compute and whether to use sparse
         inference.
     return_predicted_class (bool): Optional, defaults to false. When true the model
-        will output the predicted class foreach sample rather than the activations 
-        of the final layer. This has no affect for regression models.
+        will output the predicted class for each sample rather than the activations 
+        of the final layer. This has no effect for regression models.
 
 Returns:
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
@@ -141,8 +141,8 @@ Args:
         and allows for specification of metrics to compute and whether to use sparse
         inference.
     return_predicted_class (bool): Optional, defaults to false. When true the model
-        will output the predicted class foreach sample rather than the activations 
-        of the final layer. This has no affect for regression models.
+        will output the predicted class for each sample rather than the activations 
+        of the final layer. This has no effect for regression models.
 
 Returns:
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
@@ -165,7 +165,7 @@ Args:
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
     return_predicted_class (bool): Optional, defaults to false. When true the model
         will output the predicted class rather than the activations 
-        of the final layer. This has no affect for regression models.
+        of the final layer. This has no effect for regression models.
 Returns: 
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
@@ -232,8 +232,8 @@ Args:
         removed.
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
     return_predicted_class (bool): Optional, defaults to false. When true the model
-        will output the predicted class foreach sample rather than the activations 
-        of the final layer. This has no affect for regression models.
+        will output the predicted class for each sample rather than the activations 
+        of the final layer. This has no effect for regression models.
 
 Returns: 
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 

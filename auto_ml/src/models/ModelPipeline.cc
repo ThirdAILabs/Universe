@@ -54,14 +54,14 @@ void ModelPipeline::trainOnDataLoader(
 
       binary_output->setPredictionTheshold(threshold);
     } else if (!train_config.metrics().empty()) {
-      // The number of training batches used is capped at 20 in case there is a
+      // The number of training batches used is capped at 100 in case there is a
       // large training dataset.
       data_source->restart();
       std::optional<float> threshold =
           tuneBinaryClassificationPredictionThreshold(
               /* data_source= */ data_source,
               /* metric_name= */ train_config.metrics().at(0),
-              /* max_num_batches= */ 100);
+              /* max_num_batches= */ MAX_TRAIN_BATCHES_FOR_THRESHOLD_TUNING);
 
       binary_output->setPredictionTheshold(threshold);
     }
@@ -295,8 +295,8 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
   double best_metric_value = metric->worst();
   std::optional<float> best_threshold = std::nullopt;
 
-  for (uint32_t t_idx = 1; t_idx < 1000; t_idx++) {
-    float threshold = t_idx * 0.001;
+  for (uint32_t t_idx = 1; t_idx < NUM_THRESHOLDS_TO_CHECK; t_idx++) {
+    float threshold = static_cast<float>(t_idx) / NUM_THRESHOLDS_TO_CHECK;
 
     uint32_t sample_idx = 0;
     for (const auto& label_batch : *labels) {

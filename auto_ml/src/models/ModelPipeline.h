@@ -225,6 +225,8 @@ class ModelPipeline {
    */
   void updateRehashRebuildInTrainConfig(bolt::TrainConfig& train_config);
 
+  const uint32_t MAX_TRAIN_BATCHES_FOR_THRESHOLD_TUNING = 100;
+  const uint32_t NUM_THRESHOLDS_TO_CHECK = 1000;
   /**
    * Computes the optimal binary prediction threshold to maximize the given
    * metric on max_num_batches batches of the given dataset. Note: does not

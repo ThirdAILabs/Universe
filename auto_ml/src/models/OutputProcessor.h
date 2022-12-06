@@ -159,6 +159,11 @@ class BinaryOutputProcessor final : public OutputProcessor {
   py::object processOutputTracker(bolt::InferenceOutputTracker& output,
                                   bool return_predicted_class) final;
 
+  /**
+   * Sets the prediction threshold for class 1. This is used by the
+   * ModelPipeline after selecting the threshold which maximizies the metric of
+   * interest.
+   */
   void setPredictionTheshold(std::optional<float> threshold) {
     _prediction_threshold = threshold;
   }
