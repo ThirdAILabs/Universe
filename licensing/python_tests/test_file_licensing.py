@@ -3,7 +3,6 @@
 import platform
 
 import pytest
-
 from licensing_utils import this_should_require_a_license_bolt
 
 pytestmark = [pytest.mark.release]

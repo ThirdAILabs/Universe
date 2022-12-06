@@ -1,7 +1,6 @@
-from licensing_utils import this_should_require_a_license_bolt
-
 import pytest
 import thirdai
+from licensing_utils import this_should_require_a_license_bolt
 
 pytestmark = [pytest.mark.release]
 
