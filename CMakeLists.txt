@@ -61,7 +61,7 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   # For now only require openssl if we are building with licensing, since we
   # only communicate with the internet (keygen) in that case
   add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
-  find_package(OpenSSL REQUIRED)
+  find_package(OpenSSL 1.1.1 REQUIRED)
 
   set(JSON_BuildTests
       OFF

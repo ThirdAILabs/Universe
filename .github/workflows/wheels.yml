@@ -74,7 +74,7 @@ jobs:
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
-            yum install openssl-devel -y
+            yum install openssl11 -y
           CIBW_BEFORE_BUILD_MACOS: brew install openssl
 
           # TODO(josh): Get cross compiling working to build more types of wheels
