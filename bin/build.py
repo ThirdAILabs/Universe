@@ -55,7 +55,7 @@ def main():
         "-e",
         "--extras",
         default="none",
-        choices=["none", "test", "benchmark", "distributed", "docs"],
+        choices=["none", "test", "benchmark", "distributed", "docs", "gcp-client"],
         metavar="EXTRAS",  # Don't print the choices because they're ugly
         help="A string corresponding to the additional python dependencies the build should ensure are installed. See setup.py for the specific packages each option entails. Default of none means that we don't do any dependency checks.",
     )

@@ -198,6 +198,7 @@ setup(
             "pyarrow",
             "prometheus_client",
         ],
+        "gcp-client": ["google-cloud-storage"],
         "benchmark": [
             "toml",
             "psutil",

@@ -11,6 +11,28 @@ def create_parquet_loader(path, batch_size):
     return thirdai.dataset.ParquetLoader(parquet_path=path, batch_size=batch_size)
 
 
+def create_cloud_instance_data_loader(path, batch_size, **kwargs):
+    parsed_url = urlparse(path, allow_fragments=False)
+    bucket = parsed_url.netloc
+    key = parsed_url.path.lstrip("/")
+
+    if parsed_url.scheme == "s3":
+        return thirdai.dataset.S3DataLoader(
+            bucket_name=bucket, prefix_filter=key, batch_size=batch_size
+        )
+    if parsed_url.scheme == "gcs":
+        if "gcp_credentials" in kwargs:
+            gcp_credentials = kwargs["gcp_credentials"]
+        else:
+            gcp_credentials = None
+        return thirdai.dataset.GCSDataLoader(
+            bucket_name=bucket,
+            resource_path=key,
+            batch_size=batch_size,
+            gcp_credentials=gcp_credentials,
+        )
+
+
 def create_s3_loader(path, batch_size):
     parsed_url = urlparse(path, allow_fragments=False)
     bucket = parsed_url.netloc
@@ -44,6 +66,7 @@ def modify_udt_classifier():
         callbacks: List[bolt.callbacks.Callback] = [],
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
+        gcp_credentials: Optional[str] = None,
     ):
         if batch_size is None:
             batch_size = self.default_train_batch_size
@@ -78,6 +101,18 @@ def modify_udt_classifier():
                 max_in_memory_batches,
             )
 
+        if filename.startswith("gcs://"):
+            return original_train_with_loader_method(
+                self,
+                create_cloud_instance_data_loader(
+                    path=filename,
+                    batch_size=batch_size,
+                    gcp_credentials=gcp_credentials,
+                ),
+                train_config,
+                max_in_memory_batches,
+            )
+
         return original_train_method(
             self,
             filename=filename,
@@ -95,6 +130,7 @@ def modify_udt_classifier():
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
         verbose: bool = True,
+        gcp_credentials: Optional[str] = None,
     ):
         eval_config = bolt.EvalConfig()
         if not verbose:
@@ -126,6 +162,16 @@ def modify_udt_classifier():
                 ),
                 eval_config=eval_config,
             )
+        if filename.startswith("gcs://"):
+            return original_train_with_loader_method(
+                self,
+                create_cloud_instance_data_loader(
+                    path=filename,
+                    batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
+                    gcp_credentials=gcp_credentials,
+                ),
+                eval_config=eval_config
+            )
 
         return original_eval_method(self, filename, eval_config)
 
@@ -138,3 +184,7 @@ def modify_udt_classifier():
 
     bolt.models.Pipeline.train = wrapped_train
     bolt.models.Pipeline.evaluate = wrapped_evaluate
+
+
+def modify_udt_generator():
+    
