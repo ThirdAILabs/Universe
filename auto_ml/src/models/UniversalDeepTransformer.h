@@ -136,11 +136,11 @@ class UniversalDeepTransformer : public ModelPipeline {
 
   static void throwOptionError(const std::string& option_name,
                                const std::string& given_option_value,
-                               const std::string& expected_option_value) {
+                               const std::string& expected_option_values) {
     throw std::invalid_argument(
         "Given invalid value for option '" + option_name +
-        "'. Expected value '" + expected_option_value +
-        "' but received value '" + given_option_value + "'.");
+        "'. Expected one of " + expected_option_values +
+        " but received value '" + given_option_value + "'.");
   }
 
   // Private constructor for cereal.
