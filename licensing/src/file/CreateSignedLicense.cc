@@ -1,5 +1,5 @@
 #include "License.h"
-#include "LicenseWithSignature.h"
+#include "SignedLicense.h"
 #include <cryptopp/files.h>
 #include <exception>
 #include <filesystem>
@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 using thirdai::licensing::License;
-using thirdai::licensing::LicenseWithSignature;
+using thirdai::licensing::SignedLicense;
 
 int main(int32_t argc, const char** argv) {
   if (argc < 5 || argc % 2 == 0) {
@@ -46,7 +46,7 @@ int main(int32_t argc, const char** argv) {
 
     // Create and sign license
     License license = License::createLicenseWithNDaysLeft(metadata, num_days);
-    LicenseWithSignature license_with_signature(license, private_key);
+    SignedLicense license_with_signature(license, private_key);
 
     // Write license with signature to file
     try {
@@ -57,9 +57,9 @@ int main(int32_t argc, const char** argv) {
     }
 
     // Read the license back
-    LicenseWithSignature read_from_file;
+    SignedLicense read_from_file;
     try {
-      read_from_file = LicenseWithSignature::deserializeFromFile(output_file);
+      read_from_file = SignedLicense::deserializeFromFile(output_file);
     } catch (const std::exception& e) {
       std::cerr << "Failed to read license from file: " << e.what()
                 << std::endl;

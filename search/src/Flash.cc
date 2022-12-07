@@ -1,9 +1,9 @@
-#include <wrappers/src/LicenseWrapper.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
 #include <dataset/src/InMemoryDataset.h>
+#include <licensing/src/CheckLicense.h>
 #include <search/src/Flash.h>
 #include <algorithm>
 #include <memory>
@@ -21,7 +21,7 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function)
       _range(_hash_function->range()),
       _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, false>>(
           _num_tables, _range)) {
-  thirdai::licensing::LicenseWrapper::checkLicense();
+  thirdai::licensing::checkLicense();
 }
 
 template <typename LABEL_T>
@@ -32,7 +32,7 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
       _range(_hash_function->range()),
       _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, true>>(
           _num_tables, reservoir_size, _range)) {
-  thirdai::licensing::LicenseWrapper::checkLicense();
+  thirdai::licensing::checkLicense();
 }
 
 template <typename LABEL_T>
