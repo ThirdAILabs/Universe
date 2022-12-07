@@ -58,10 +58,13 @@ def run_benchmark(config, run_name):
         callbacks=[mlflowcallback],
     )
 
-    model.evaluate(
-        config.test_file, metrics=["categorical_accuracy"], callbacks=[mlflowcallback]
-    )
+    f = io.StringIO()
+    with redirect_stdout(f):
+        model.evaluate(config.test_file, metrics=["categorical_accuracy"])
 
+    eval_output = f.getvalue()
+    eval_accuracy = parse_eval_output(eval_output)
+    mlflow.log_metric("categorical_accuracy", eval_accuracy)
 
 def main():
     args = parse_args()
