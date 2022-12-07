@@ -29,10 +29,10 @@ jobs:
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v34
-      - name: List all changed files
+      - name: Run clang-tidy on all changed files
         run: |
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
             echo "$file was changed"
-            python3 ../../bin/clang_tidy.py $file
+            python3 bin/clang_tidy.py $file
           done
       
