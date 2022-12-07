@@ -64,7 +64,7 @@ def run_benchmark(config, run_name):
 
     eval_output = f.getvalue()
     eval_accuracy = parse_eval_output(eval_output)
-    mlflow.log_metric("categorical_accuracy", eval_accuracy)
+    mlflow.log_metric("test_categorical_accuracy", eval_accuracy)
 
 def main():
     args = parse_args()
