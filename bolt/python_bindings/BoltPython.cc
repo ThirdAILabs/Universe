@@ -35,11 +35,12 @@ void createBoltSubmodule(py::module_& bolt_submodule) {
       .def("with_reconstruct_hash_functions",
            &TrainConfig::withReconstructHashFunctions,
            py::arg("reconstruct_hash_functions"))
-      // We do not want to expose this method because it will not work correctly
+    
+#endif
+  // We do not want to expose this method because it will not work correctly
       // with the ModelPipeline since it won't sae the entire pipeline.
       .def("with_save_parameters", &TrainConfig::withSaveParameters,
            py::arg("save_prefix"), py::arg("save_frequency"))
-#endif
       .def("with_callbacks", &TrainConfig::withCallbacks, py::arg("callbacks"))
       .def("with_validation", &TrainConfig::withValidation,
            py::arg("validation_data"), py::arg("validation_labels"),
