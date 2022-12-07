@@ -8,9 +8,8 @@ concurrency:
 
 # Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
-  push:
-    branches: [diff-clang-tidy]
+  # Triggers the workflow on pull request events but only for the main branch
+
   pull_request:
     branches: [main]
 
@@ -31,10 +30,12 @@ jobs:
         uses: tj-actions/changed-files@v34
         with:
           since_last_remote_commit: "true"
+      - name: Generate compilation database
+        run: |
+          bin/generate_compile_commands.sh
       - name: Run clang-tidy on all changed files
         run: |
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
-            echo "$file was changed"
             python3 bin/clang_tidy.py $file
           done
       
