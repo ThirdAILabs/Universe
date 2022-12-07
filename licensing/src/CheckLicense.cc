@@ -8,10 +8,10 @@
 
 namespace thirdai::licensing {
 
-std::optional<std::string> _license_path = {};
-std::optional<std::string> _api_key = {};
+static std::optional<std::string> _license_path = {};
+static std::optional<std::string> _api_key = {};
 
-void CheckLicense::checkLicenseWrapper() {
+void checkLicense() {
 #if THIRDAI_CHECK_LICENSE
 #pragma message( \
     "THIRDAI_CHECK_LICENSE is defined, adding license checking code")  // NOLINT
@@ -26,12 +26,12 @@ void CheckLicense::checkLicenseWrapper() {
 #endif
 }
 
-void CheckLicense::activate(const std::string& api_key) { _api_key = api_key; }
+void activate(const std::string& api_key) { _api_key = api_key; }
 
-void CheckLicense::setLicensePath(const std::string& license_path) {
+void setLicensePath(const std::string& license_path) {
   _license_path = license_path;
 }
 
-void CheckLicense::deactivate() { _api_key = std::nullopt; }
+void deactivate() { _api_key = std::nullopt; }
 
 }  // namespace thirdai::licensing

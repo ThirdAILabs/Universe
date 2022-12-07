@@ -41,7 +41,7 @@ class BoltGraph {
         _epoch(0),
         _updates(0),
         _tracked_metric(nullptr) {
-    thirdai::licensing::CheckLicense::checkLicenseWrapper();
+    thirdai::licensing::checkLicense();
   }
 
   /*
@@ -112,7 +112,7 @@ class BoltGraph {
 
  private:
   // Private constructor for cereal.
-  BoltGraph() { thirdai::licensing::CheckLicense::checkLicenseWrapper(); }
+  BoltGraph() { thirdai::licensing::checkLicense(); }
 
   void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);

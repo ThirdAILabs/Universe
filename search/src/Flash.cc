@@ -21,7 +21,7 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function)
       _range(_hash_function->range()),
       _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, false>>(
           _num_tables, _range)) {
-  thirdai::licensing::CheckLicense::checkLicenseWrapper();
+  thirdai::licensing::checkLicense();
 }
 
 template <typename LABEL_T>
@@ -32,7 +32,7 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
       _range(_hash_function->range()),
       _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, true>>(
           _num_tables, reservoir_size, _range)) {
-  thirdai::licensing::CheckLicense::checkLicenseWrapper();
+  thirdai::licensing::checkLicense();
 }
 
 template <typename LABEL_T>

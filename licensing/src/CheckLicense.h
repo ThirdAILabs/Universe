@@ -4,15 +4,12 @@
 
 namespace thirdai::licensing {
 
-class CheckLicense {
- public:
-  static void checkLicenseWrapper();
+void checkLicense();
 
-  static void setLicensePath(const std::string& license_path);
+void setLicensePath(const std::string& license_path);
 
-  static void activate(const std::string& api_key);
+void activate(const std::string& api_key);
 
-  static void deactivate();
-};
+void deactivate();
 
 }  // namespace thirdai::licensing
