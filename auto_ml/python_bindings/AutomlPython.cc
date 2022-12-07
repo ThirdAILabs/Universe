@@ -69,12 +69,12 @@ void createModelsSubmodule(py::module_& module) {
       .def("evaluate_with_file", &ModelPipeline::evaluateOnFile,
            py::arg("filename"), py::arg("eval_config") = std::nullopt,
            py::arg("return_predicted_class") = false,
-           py::arg("return_metric") = false, docs::MODEL_PIPELINE_EVALUATE_FILE,
-           bolt::python::OutputRedirect())
+           py::arg("return_metrics") = false,
+           docs::MODEL_PIPELINE_EVALUATE_FILE, bolt::python::OutputRedirect())
       .def("evaluate_with_loader", &ModelPipeline::evaluateOnDataLoader,
            py::arg("data_source"), py::arg("eval_config") = std::nullopt,
            py::arg("return_predicted_class") = false,
-           py::arg("return_metric") = false,
+           py::arg("return_metrics") = false,
            docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER,
            bolt::python::OutputRedirect())
       .def("predict", &ModelPipeline::predict<LineInput>,
