@@ -17,7 +17,7 @@
 #include <vector>
 
 namespace thirdai {
-
+//
 using ValueIndexPair = std::pair<float, uint32_t>;
 
 // This compares the first element in the pair, then the second element.

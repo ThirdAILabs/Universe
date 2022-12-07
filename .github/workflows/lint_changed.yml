@@ -1,0 +1,38 @@
+name: Lint C++ Code
+
+# Kills old jobs from the same pr if we push a new commit
+# See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [main, diff-clang-tidy]
+  pull_request:
+    branches: [main]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  clang-tidy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:           
+          submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}          
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v34
+      - name: List all changed files
+        run: |
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            echo "$file was changed"
+            python3 ../../bin/clang_tidy.py $file
+          done
+      
