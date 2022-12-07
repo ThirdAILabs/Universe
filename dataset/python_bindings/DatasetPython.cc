@@ -235,10 +235,10 @@ void createDatasetSubmodule(py::module_& module) {
                   std::optional<std::unordered_map<uint32_t, uint32_t>>
                       col_to_num_bins = std::nullopt) {
                  return std::make_shared<TabularMetadata>(
-                     column_dtypes, col_min_maxes,
+                     std::move(column_dtypes), std::move(col_min_maxes),
                      ThreadSafeVocabulary::make(std::move(class_name_to_id),
                                                 /* fixed = */ true),
-                     column_names, col_to_num_bins);
+                     std::move(column_names), std::move(col_to_num_bins));
                }),
            py::arg("column_dtypes"), py::arg("col_min_maxes"),
            py::arg("class_name_to_id") =

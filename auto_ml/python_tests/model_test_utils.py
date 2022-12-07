@@ -19,38 +19,117 @@ def _get_label_postprocessing_fn(model, use_class_name):
         return lambda pred: pred
 
 
-def compute_evaluate_accuracy(model, test_filename, inference_samples, use_class_name):
+def compute_evaluate_accuracy(
+    model, test_filename, inference_samples, use_class_name, use_activations=True
+):
+    """
+    This function computes the accuracy of the evaluate function.
+
+    Args:
+        model (Union[bolt.models.Pipeline, bolt.models.UDTClassifier]): model to
+            evaluate.
+        test_filename (str): file containing the test data.
+        inference_samples (List): A list of x,y pairs of inference samples. The input
+            can either be a str or Dict[str,str] and the label can be a integer or
+            string.
+        use_class_name (bool): Indicates if it should use the
+            `model.class_name()` method to map the predicted neurons to string class
+            names to compare to the labels.
+        use_activations (bool). Defaults to True. If True the accuracy is
+            computed by getting the activations and taking the argmax using numpy. Otherwise
+            it uses the return_predicted_class flag to get the predicted class directly
+            from the model.
+
+    Returns:
+        The accuracy of the model on the given classification task.
+    """
     label_fn = _get_label_postprocessing_fn(model, use_class_name)
 
-    activations = model.evaluate(test_filename, metrics=["categorical_accuracy"])
+    if use_activations:
+        activations = model.evaluate(test_filename, metrics=["categorical_accuracy"])
+        predictions = np.argmax(activations, axis=1)
+    else:
+        predictions = model.evaluate(
+            test_filename, metrics=["categorical_accuracy"], return_predicted_class=True
+        )
 
-    predictions = [label_fn(id) for id in np.argmax(activations, axis=1)]
+    predictions = [label_fn(id) for id in predictions]
 
     return _compute_accuracy(predictions, inference_samples)
 
 
-def compute_predict_accuracy(model, inference_samples, use_class_name):
+def compute_predict_accuracy(
+    model, inference_samples, use_class_name, use_activations=True
+):
+    """
+    This function computes the accuracy of the predict function.
+
+    Args:
+        model (Union[bolt.models.Pipeline, bolt.models.UDTClassifier]): model to
+            evaluate.
+        inference_samples (List): A list of x,y pairs of inference samples. The input
+            can either be a str or Dict[str,str] and the label can be a integer or
+            string.
+        use_class_name (bool): Indicates if it should use the
+            `model.class_name()` method to map the predicted neurons to string class
+            names to compare to the labels.
+        use_activations (bool). Defaults to True. If True the accuracy is
+            computed by getting the activations and taking the argmax using numpy. Otherwise
+            it uses the return_predicted_class flag to get the predicted class directly
+            from the model.
+
+    Returns:
+        The accuracy of the model on the given classification task.
+    """
     label_fn = _get_label_postprocessing_fn(model, use_class_name)
 
     predictions = []
     for sample, _ in inference_samples:
-        prediction = label_fn(np.argmax(model.predict(sample)))
+        if use_activations:
+            prediction = label_fn(np.argmax(model.predict(sample)))
+        else:
+            prediction = label_fn(model.predict(sample, return_predicted_class=True))
         predictions.append(prediction)
 
     return _compute_accuracy(predictions, inference_samples)
 
 
 def compute_predict_batch_accuracy(
-    model, inference_samples, use_class_name, batch_size=20
+    model, inference_samples, use_class_name, use_activations=True, batch_size=20
 ):
+    """
+    This function computes the accuracy of the evaluate function.
+
+    Args:
+        model (Union[bolt.models.Pipeline, bolt.models.UDTClassifier]): model to
+            evaluate.
+        test_filename (str): file containing the test data.
+        inference_samples (List): A list of x,y pairs of inference samples. The input
+            can either be a str or Dict[str,str] and the label can be a integer or
+            string.
+        use_class_name (bool): Indicates if it should use the
+            `model.class_name()` method to map the predicted neurons to string class
+            names to compare to the labels.
+        use_activations (bool). Defaults to True. If True the accuracy is
+            computed by getting the activations and taking the argmax using numpy. Otherwise
+            it uses the return_predicted_class flag to get the predicted class directly
+            from the model.
+        batch_size (int): Defaults to 20. Indicates the batch size to use for predictions.
+
+    Returns:
+        The accuracy of the model on the given classification task.
+    """
     label_fn = _get_label_postprocessing_fn(model, use_class_name)
 
     predictions = []
     for idx in range(0, len(inference_samples), batch_size):
         batch = [x for x, _ in inference_samples[idx : idx + batch_size]]
-        activations = model.predict_batch(batch)
-        predictions += [label_fn(pred) for pred in np.argmax(activations, axis=1)]
-
+        if use_activations:
+            activations = model.predict_batch(batch)
+            predictions += [label_fn(pred) for pred in np.argmax(activations, axis=1)]
+        else:
+            batch_predictions = model.predict_batch(batch, return_predicted_class=True)
+            predictions += [label_fn(pred) for pred in batch_predictions]
     return _compute_accuracy(predictions, inference_samples)
 
 

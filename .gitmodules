@@ -25,3 +25,9 @@
 [submodule "deps/prometheus-cpp"]
 	path = deps/prometheus-cpp
 	url = https://github.com/ThirdAILabs/PrometheusCppFork
+[submodule "deps/cpp-httplib"]
+	path = deps/cpp-httplib
+	url = https://github.com/ThirdAILabs/CppHttplibFork
+[submodule "deps/json"]
+	path = deps/json
+	url = https://github.com/ThirdAILabs/JsonCppFork

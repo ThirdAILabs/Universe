@@ -49,6 +49,8 @@ class NodeStateMachineTest {
     }
   }
 
+  virtual ~NodeStateMachineTest() = default;
+
  private:
   virtual void setNodePrecessors(const std::vector<NodePtr>& predecessors) = 0;
 

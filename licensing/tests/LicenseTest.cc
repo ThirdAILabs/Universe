@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include <cryptopp/osrng.h>
 #include <cryptopp/rsa.h>
-#include <licensing/src/License.h>
-#include <licensing/src/LicenseWithSignature.h>
+#include <licensing/src/file/License.h>
+#include <licensing/src/file/SignedLicense.h>
 #include <fstream>
 #include <map>
 
@@ -38,7 +38,7 @@ TEST(LicenseTest, SignVerifyTest) {
   auto license = LicenseTest::createLicense();
 
   // Create signed license
-  LicenseWithSignature signed_license(license, private_key);
+  SignedLicense signed_license(license, private_key);
 
   // Verify License
   signed_license.verify(public_key);
@@ -51,12 +51,12 @@ TEST(LicenseTest, SignSerializeDeserializeVerifyTest) {
   auto license = LicenseTest::createLicense();
 
   // Create signed license
-  LicenseWithSignature signed_license(license, private_key);
+  SignedLicense signed_license(license, private_key);
 
   // Write to disk and then read from disk
   signed_license.serializeToFile("license.serialized");
-  LicenseWithSignature license_from_disk =
-      LicenseWithSignature::deserializeFromFile("license.serialized");
+  SignedLicense license_from_disk =
+      SignedLicense::deserializeFromFile("license.serialized");
 
   // Verify License
   ASSERT_TRUE(license_from_disk.verify(public_key));
@@ -69,7 +69,7 @@ TEST(LicenseTest, SignModifyVerifyTest) {
   auto license = LicenseTest::createLicense();
 
   // Create signed license
-  LicenseWithSignature signed_license(license, private_key);
+  SignedLicense signed_license(license, private_key);
 
   // Verifying with a different public key should fail
   auto [private_key_2, public_key_2] = LicenseTest::generateKeyPair();
