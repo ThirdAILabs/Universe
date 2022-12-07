@@ -23,6 +23,8 @@ void createUDTTemporalSubmodule(py::module_& module);
 
 // Python wrappers for ModelPipline methods
 
+deployment::UserInputMap createUserInputMap(const py::dict& parameters);
+
 ModelPipeline createPipeline(const deployment::DeploymentConfigPtr& config,
                              const py::dict& parameters);
 
@@ -46,7 +48,7 @@ class UDTFactory {
       std::string target_col, std::optional<uint32_t> n_target_classes,
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
-      const std::unordered_map<std::string, std::string>& options);
+      const py::dict& options);
 
   // These need to be here instead of inside UDTFactory because otherwise I was
   // getting weird linking errors
