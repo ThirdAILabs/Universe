@@ -41,6 +41,8 @@ class OutputProcessor {
   virtual py::object processOutputTracker(bolt::InferenceOutputTracker& output,
                                           bool return_predicted_class) = 0;
 
+  virtual ~OutputProcessor() = default;
+
  private:
   friend class cereal::access;
   template <class Archive>

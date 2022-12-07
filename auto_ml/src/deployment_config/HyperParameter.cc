@@ -1,5 +1,6 @@
 #include "HyperParameter.h"
 #include <cereal/archives/portable_binary.hpp>
+#include <sstream>
 
 namespace thirdai::automl::deployment {
 
@@ -7,9 +8,11 @@ template <typename T>
 T OptionMappedParameter<T>::resolve(
     const UserInputMap& user_specified_parameters) const {
   if (!user_specified_parameters.count(_option_name)) {
-    throw std::invalid_argument("UserSpecifiedParameter '" + _option_name +
-                                "' not specified by user but is required to "
-                                "construct ModelPipeline.");
+    std::stringstream error;
+    error << "UserSpecifiedParameter '" << _option_name
+          << "' not specified by user but is required to construct "
+             "ModelPipeline.";
+    throw std::invalid_argument(error.str());
   }
 
   std::string option = user_specified_parameters.at(_option_name)
@@ -34,9 +37,11 @@ template <typename T>
 T UserSpecifiedParameter<T>::resolve(
     const UserInputMap& user_specified_parameters) const {
   if (!user_specified_parameters.count(_param_name)) {
-    throw std::invalid_argument("UserSpecifiedParameter '" + _param_name +
-                                "' not specified by user but is required to "
-                                "construct ModelPipeline.");
+    std::stringstream error;
+    error << "UserSpecifiedParameter '" << _param_name
+          << "' not specified by user but is required to construct "
+             "ModelPipeline.";
+    throw std::invalid_argument(error.str());
   }
 
   if constexpr (std::is_same<T, bool>::value) {

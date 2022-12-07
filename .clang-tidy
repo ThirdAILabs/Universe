@@ -57,7 +57,7 @@
 Checks: >
          -*, 
          abseil-*,
-         bugprone-*, -bugprone-narrowing-conversions,
+         bugprone-*, -bugprone-narrowing-conversions, -bugprone-easily-swappable-parameters, -bugprone-implicit-widening-of-multiplication-result,
          cert-*-cpp, -cert-err58-cpp, -cert-msc50-cpp, -cert-msc51-cpp, 
          cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c,
          clang-analyzer-*, 
@@ -70,10 +70,10 @@ Checks: >
          google-*, -google-runtime-references,
          llvm-*, -llvm-header-guard, -llvm-include-order,
          misc-*, -misc-non-private-member-variables-in-classes,
-         modernize-*, -modernize-use-*, -modernize-avoid-c-arrays,
+         modernize-*, -modernize-use-*, -modernize-avoid-c-arrays, -modernize-return-braced-init-list,
          openmp-*, mpi-*,
          performance-*, -performance-noexcept-move-constructor,
-         readability-*, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration, -readability-function-cognitive-complexity, -readability-magic-numbers,
+         readability-*, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration, -readability-function-cognitive-complexity, -readability-magic-numbers, -readability-identifier-length, -clang-diagnostic-ignored-optimization-argument
 HeaderFilterRegex: ".*"
 # TODO: Add these back in if we can figure out how to exclude the hashing 
 # directory from magic numbers checks
