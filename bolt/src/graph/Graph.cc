@@ -13,6 +13,7 @@
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <exceptions/src/Exceptions.h>
 #include <utils/Logging.h>
 #include <algorithm>
@@ -27,6 +28,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_set>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -176,7 +178,10 @@ MetricData BoltGraph::train(
   // over the dataset.
   uint32_t num_epochs = _epoch + train_config.epochs();
 
+  std::vector<double> train_losses;
+
   for (/*_epoch = _epoch*/; _epoch < num_epochs; _epoch++) {
+    train_losses = std::vector<double>(dataset_context.len());
     train_state.epoch = _epoch;
     callbacks.onEpochBegin(*this, train_state);
 
@@ -210,7 +215,11 @@ MetricData BoltGraph::train(
         dataset_context.setInputs(batch_idx, _inputs);
 
         const BoltBatch& batch_labels = dataset_context.labels()->at(batch_idx);
-        processTrainingBatch(batch_labels, train_metrics);
+        uint32_t train_losses_start_idx =
+             batch_idx * dataset_context.batchSize();
+         train_losses = std::move(*processTrainingBatch(
+             batch_labels, train_metrics,
+             {std::make_pair(std::move(train_losses), train_losses_start_idx)}));
         updateParametersAndSampling(
             train_state.learning_rate, train_state.rebuild_hash_tables_batch,
             train_state.reconstruct_hash_functions_batch);
@@ -277,11 +286,18 @@ MetricData BoltGraph::train(
   auto metric_data = train_metrics.getOutput();
   metric_data["epoch_times"] = std::move(train_state.epoch_times);
 
+  metric_data["last_epoch_losses"] = std::move(train_losses);
+
   return metric_data;
 }
 
-void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
-                                     MetricAggregator& metrics) {
+
+std::optional<std::vector<double>> BoltGraph::processTrainingBatch(
+    const BoltBatch& batch_labels, MetricAggregator& metrics,
+    std::optional<std::pair<std::vector<double>, uint32_t>>&& loss_struct) {
+  auto& losses = std::get<0>(*loss_struct);
+  auto& start_idx = std::get<1>(*loss_struct);
+
   assert(graphCompiled());
   batch_labels.verifyExpectedDimension(
       /* expected_dimension = */ _output->outputDim(),
@@ -289,11 +305,16 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
       /* origin_string = */
       "Passed in label BoltVector is larger than the output dim");
 
-#pragma omp parallel for default(none) shared(batch_labels, metrics)
+#pragma omp parallel for default(none) \
+     shared(batch_labels, metrics, losses, start_idx)
   for (uint64_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
 
     resetOutputGradients(vec_id);
+
+    // We might need to change this to play nicely with weighted losses.
+    losses[start_idx + vec_id] = _loss->lossValue(
+        _output->getOutputVector(vec_id), batch_labels[vec_id]);
 
     _loss->lossGradients(vec_id, _output->getOutputVector(vec_id),
                          batch_labels[vec_id], batch_labels.getBatchSize());
@@ -303,6 +324,7 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
     metrics.processSample(_output->getOutputVector(vec_id),
                           batch_labels[vec_id]);
   }
+  return std::move(losses);
 }
 
 void BoltGraph::updateParametersAndSampling(
@@ -452,6 +474,17 @@ BoltGraph::getInputGradientSingle(
 InferenceResult BoltGraph::evaluate(
     const std::vector<dataset::BoltDatasetPtr>& test_data,
     const dataset::BoltDatasetPtr& test_labels, const EvalConfig& eval_config) {
+
+  auto output_node = _output;
+  if (eval_config.shouldReturnPenultimateActivations()) {
+    if (_output->getPredecessors().size() > 1) {
+      throw std::invalid_argument(
+          "Unable to return penultimate activations as there are multiple "
+          "penultimate layers.");
+    }
+    output_node = _output->getPredecessors().front();
+  }
+
   DatasetContext predict_context(test_data, test_labels);
 
   bool has_labels = (test_labels != nullptr);
@@ -460,7 +493,8 @@ InferenceResult BoltGraph::evaluate(
 
   verifyCanPredict(
       predict_context, has_labels,
-      /* returning_activations = */ eval_config.shouldReturnActivations(),
+      /* returning_activations = */ eval_config.shouldReturnActivations() ||
+        eval_config.shouldReturnPenultimateActivations(),
       /* num_metrics_tracked = */ metrics.getNumMetricsTracked());
 
   /*
@@ -473,7 +507,9 @@ InferenceResult BoltGraph::evaluate(
                           eval_config.sparseInferenceEnabled());
 
   InferenceOutputTracker outputTracker(
-      _output, eval_config.shouldReturnActivations(),
+      output_node,
+      eval_config.shouldReturnActivations() ||
+        eval_config.shouldReturnPenultimateActivations(),
       /* total_num_samples = */ predict_context.len());
 
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
@@ -503,7 +539,7 @@ InferenceResult BoltGraph::evaluate(
 
       processOutputCallback(eval_config.outputCallback(), batch_size);
 
-      outputTracker.saveOutputBatch(_output, batch_size);
+      outputTracker.saveOutputBatch(output_node, batch_size);
     }
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();

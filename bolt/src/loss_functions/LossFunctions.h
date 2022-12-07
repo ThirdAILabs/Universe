@@ -5,6 +5,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <utils/StringManipulation.h>
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <stdexcept>
 
@@ -22,6 +23,14 @@ class LossFunction {
                      const BoltVector& labels, uint32_t batch_size) const;
 
   virtual std::vector<InputPtr> getExtraInputs() const { return {}; }
+
+  // Computes the loss for a pair of output and label vectors.
+  // More positive values are worse.
+  virtual double lossValue(BoltVector& output, const BoltVector& labels) {
+    (void)output;
+    (void)labels;
+    throw std::invalid_argument("Not implemented.");
+  }
 
   virtual ~LossFunction() = default;
 
@@ -51,6 +60,24 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
     return std::make_shared<CategoricalCrossEntropyLoss>();
   }
 
+  double lossValue(BoltVector& output, const BoltVector& labels) final {
+    assert(!(output.isDense() && output.active_neurons != nullptr));
+    assert(!labels.isDense() || labels.active_neurons == nullptr);
+    if (output.isDense() && labels.isDense()) {
+      assert(output.len == labels.len);
+    }
+
+    double loss = 0.0;
+    for (uint32_t pos = 0; pos < labels.len; pos++) {
+      uint32_t active_neuron =
+          labels.isDense() ? pos : labels.active_neurons[pos];
+      loss +=
+          labels.activations[pos] *
+          std::log(output.findActiveNeuronNoTemplate(active_neuron).activation);
+    }
+    return -loss;
+  }
+
  private:
   float elementLossGradient(uint32_t vec_index, float label, float activation,
                             uint32_t batch_size) const final {
@@ -72,6 +99,37 @@ class BinaryCrossEntropyLoss final : public LossFunction {
   static std::shared_ptr<BinaryCrossEntropyLoss> makeBinaryCrossEntropyLoss() {
     return std::make_shared<BinaryCrossEntropyLoss>();
   }
+
+  double lossValue(BoltVector& output, const BoltVector& labels) final {
+    assert(!(output.isDense() && output.active_neurons != nullptr));
+    assert(!labels.isDense() || labels.active_neurons == nullptr);
+    if (output.isDense() && labels.isDense()) {
+      assert(output.len == labels.len);
+    }
+
+    double loss = 0.0;
+
+    for (uint32_t pos = 0; pos < labels.len; pos++) {
+      uint32_t active_neuron =
+          labels.isDense() ? pos : labels.active_neurons[pos];
+      loss +=
+          labels.activations[pos] *
+          std::log(output.findActiveNeuronNoTemplate(active_neuron).activation);
+    }
+
+    for (uint32_t pos = 0; pos < output.len; pos++) {
+      uint32_t active_neuron =
+          output.isDense() ? pos : output.active_neurons[pos];
+      loss +=
+          (1.0 - labels.findActiveNeuronNoTemplate(active_neuron).activation) *
+          std::log(1.0 - output.activations[pos]);
+    }
+
+    // We assume output includes all labels.
+    return -loss / output.len;
+  }
+
+
 
  private:
   float elementLossGradient(uint32_t vec_index, float label, float activation,
