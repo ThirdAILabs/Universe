@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/types/polymorphic.hpp>
+#include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <utils/StringManipulation.h>
 #include <algorithm>
@@ -9,21 +10,29 @@
 
 namespace thirdai::bolt {
 
+class WeightedLossFunction;
+
 class LossFunction {
+  friend class WeightedLossFunction;
+
  public:
   LossFunction() {}
 
-  void lossGradients(BoltVector& output, const BoltVector& labels,
-                     uint32_t batch_size) const;
+  void lossGradients(uint32_t vec_index, BoltVector& output,
+                     const BoltVector& labels, uint32_t batch_size) const;
+
+  virtual std::vector<InputPtr> getExtraInputs() const { return {}; }
 
   virtual ~LossFunction() = default;
 
  private:
   template <bool OUTPUT_DENSE, bool LABEL_DENSE>
-  void computeLossGradientsImpl(BoltVector& output, const BoltVector& labels,
+  void computeLossGradientsImpl(uint32_t vec_index, BoltVector& output,
+                                const BoltVector& labels,
                                 uint32_t batch_size) const;
 
-  virtual float elementLossGradient(float label, float activation,
+  virtual float elementLossGradient(uint32_t vec_index, float label,
+                                    float activation,
                                     uint32_t batch_size) const = 0;
 
   friend class cereal::access;
@@ -43,8 +52,9 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
   }
 
  private:
-  float elementLossGradient(float label, float activation,
+  float elementLossGradient(uint32_t vec_index, float label, float activation,
                             uint32_t batch_size) const final {
+    (void)vec_index;
     return (label - activation) / batch_size;
   }
 
@@ -64,8 +74,9 @@ class BinaryCrossEntropyLoss final : public LossFunction {
   }
 
  private:
-  float elementLossGradient(float label, float activation,
+  float elementLossGradient(uint32_t vec_index, float label, float activation,
                             uint32_t batch_size) const override {
+    (void)vec_index;
     /* Derivation
 
     Note: we are assuming that BCE is used along with a signmoid activation in
@@ -110,8 +121,9 @@ class MeanSquaredError final : public LossFunction {
   }
 
  private:
-  float elementLossGradient(float label, float activation,
+  float elementLossGradient(uint32_t vec_index, float label, float activation,
                             uint32_t batch_size) const override {
+    (void)vec_index;
     return 2 * (label - activation) / batch_size;
   }
 
@@ -139,8 +151,9 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
   }
 
  private:
-  float elementLossGradient(float label, float activation,
+  float elementLossGradient(uint32_t vec_index, float label, float activation,
                             uint32_t batch_size) const override {
+    (void)vec_index;
     auto direction = activation > label ? -1.0 : 1.0;
     return direction / batch_size;
   }
@@ -162,8 +175,9 @@ class MarginBCE final : public LossFunction {
  private:
   // Private constructor for cereal
   MarginBCE() {}
-  float elementLossGradient(float label, float activation,
+  float elementLossGradient(uint32_t vec_index, float label, float activation,
                             uint32_t batch_size) const override {
+    (void)vec_index;
     if (label == 0.0) {
       activation += _negative_margin;
     } else {

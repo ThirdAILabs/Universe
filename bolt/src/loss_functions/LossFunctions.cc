@@ -4,25 +4,26 @@
 
 namespace thirdai::bolt {
 
-void LossFunction::lossGradients(BoltVector& output, const BoltVector& labels,
-                                 uint32_t batch_size) const {
+void LossFunction::lossGradients(uint32_t vec_index, BoltVector& output,
+                                 const BoltVector& labels, uint32_t batch_size) const {
   if (output.isDense()) {
     if (labels.isDense()) {
-      computeLossGradientsImpl<true, true>(output, labels, batch_size);
+      computeLossGradientsImpl<true, true>(vec_index, output, labels, batch_size);
     } else {
-      computeLossGradientsImpl<true, false>(output, labels, batch_size);
+      computeLossGradientsImpl<true, false>(vec_index, output, labels, batch_size);
     }
   } else {
     if (labels.isDense()) {
-      computeLossGradientsImpl<false, true>(output, labels, batch_size);
+      computeLossGradientsImpl<false, true>(vec_index, output, labels, batch_size);
     } else {
-      computeLossGradientsImpl<false, false>(output, labels, batch_size);
+      computeLossGradientsImpl<false, false>(vec_index, output, labels, batch_size);
     }
   }
 }
 
 template <bool OUTPUT_DENSE, bool LABEL_DENSE>
-void LossFunction::computeLossGradientsImpl(BoltVector& output,
+void LossFunction::computeLossGradientsImpl(uint32_t vec_index,
+                                            BoltVector& output,
                                             const BoltVector& labels,
                                             uint32_t batch_size) const {
   assert(!(OUTPUT_DENSE && output.active_neurons != nullptr));
@@ -44,7 +45,8 @@ void LossFunction::computeLossGradientsImpl(BoltVector& output,
     float label_val =
         labels.findActiveNeuron<LABEL_DENSE>(active_neuron).activation;
     output.gradients[i] =
-        elementLossGradient(label_val, output.activations[i], batch_size);
+        elementLossGradient(
+          vec_index, label_val, output.activations[i], batch_size);
   }
 }
 

@@ -295,8 +295,8 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
 
     resetOutputGradients(vec_id);
 
-    _loss->lossGradients(_output->getOutputVector(vec_id), batch_labels[vec_id],
-                         batch_labels.getBatchSize());
+    _loss->lossGradients(vec_id, _output->getOutputVector(vec_id),
+                         batch_labels[vec_id], batch_labels.getBatchSize());
 
     backpropagate(vec_id);
 
@@ -419,7 +419,8 @@ BoltGraph::getInputGradientSingle(
     }
 
     resetOutputGradients(/* vec_index= */ 0);
-    _loss->lossGradients(_output->getOutputVector(/*vec_index= */ 0),
+    _loss->lossGradients(/* vec_index= */ 0,
+                          _output->getOutputVector(/*vec_index= */ 0),
                          label_vector, /*batch_size= */ 1);
     backpropagate(/*vec_index= */ 0);
 
@@ -715,6 +716,15 @@ void BoltGraph::traverseGraph() {
     queue.pop();
   }
 
+  auto loss_inputs = _loss->getExtraInputs();
+   for (auto& input : loss_inputs) {
+     if (!all_inputs.count(input)) {
+       throw exceptions::GraphCompilationFailure(
+           "Found input that was not provided in list of input nodes.");
+     }
+     all_inputs.erase(input);
+   }
+
   if (!all_inputs.empty()) {
     throw exceptions::GraphCompilationFailure(
         "Not all provided inputs were reached during graph traversal.");
@@ -829,11 +839,11 @@ void BoltGraph::verifyInputForGraph(const DatasetContextBase& context) {
 void BoltGraph::verifyGraphProperties() {
   GraphPropertyChecks::verifyOutputLayerIsValid(_output);
 
-  GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy(_output,
-                                                                      _loss);
+  // GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy(_output,
+  //                                                                     _loss);
 
-  GraphPropertyChecks::verifySigmoidIsUsedWithBinaryCrossEntropy(_output,
-                                                                 _loss);
+  // GraphPropertyChecks::verifySigmoidIsUsedWithBinaryCrossEntropy(_output,
+  //                                                                _loss);
 }
 
 void BoltGraph::rebuildHashTables() {

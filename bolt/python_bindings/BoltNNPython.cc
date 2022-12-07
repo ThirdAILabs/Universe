@@ -13,6 +13,8 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/graph/nodes/Switch.h>
+#include <bolt/src/loss_functions/LossFunctions.h>
+ #include <bolt/src/loss_functions/WeightedLoss.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/functional.h>
@@ -631,6 +633,11 @@ void createLossesSubmodule(py::module_& nn_submodule) {
       losses_submodule, "MarginBCE")
       .def(py::init<float, float, bool>(), py::arg("positive_margin"),
            py::arg("negative_margin"), py::arg("bound"));
+
+   py::class_<WeightedLossFunction, std::shared_ptr<WeightedLossFunction>,
+              LossFunction>(losses_submodule, "Weighted")
+       .def(py::init<InputPtr, std::shared_ptr<LossFunction>>(),
+            py::arg("weights"), py::arg("loss"));
 }
 
 py::tuple dagEvaluatePythonWrapper(BoltGraph& model,
