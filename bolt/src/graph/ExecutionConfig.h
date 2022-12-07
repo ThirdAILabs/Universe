@@ -202,6 +202,8 @@ class TrainConfig {
     return MetricAggregator(_metric_names);
   }
 
+  const std::vector<std::string>& metrics() const { return _metric_names; }
+
   constexpr bool verbose() const { return _verbose; }
 
   uint32_t getRebuildHashTablesBatchInterval(uint32_t batch_size,

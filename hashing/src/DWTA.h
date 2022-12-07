@@ -42,8 +42,6 @@ class DWTAHashFunction final : public HashFunction {
   }
 
   std::string getName() const final { return "DWTA"; }
-
-  ~DWTAHashFunction() = default;
 };
 
 }  // namespace thirdai::hashing

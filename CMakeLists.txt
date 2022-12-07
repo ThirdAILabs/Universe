@@ -57,6 +57,16 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   set(CRYPTOPP_BUILD_TESTING OFF)
   set(CRYPTOPP_SOURCES "${CMAKE_SOURCE_DIR}/deps/cryptopp")
   add_subdirectory(deps/cryptopp-cmake EXCLUDE_FROM_ALL)
+
+  # For now only require openssl if we are building with licensing, since we
+  # only communicate with the internet (keygen) in that case
+  add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
+  find_package(OpenSSL 1.1.1 REQUIRED)
+
+  set(JSON_BuildTests
+      OFF
+      CACHE INTERNAL "")
+  add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 endif()
 
 if(MSVC)
@@ -131,6 +141,7 @@ set(THIRDAI_COMPILE_OPTIONS
     -Wextra
     -Werror
     -Wno-unused-function
+    -Wno-ignored-optimization-argument
     -pedantic
     $<$<CONFIG:Debug>:-Og>
     $<$<CONFIG:Debug>:-g>
@@ -233,11 +244,6 @@ add_subdirectory(hashtable)
 add_subdirectory(compression)
 add_subdirectory(utils)
 
-# Only add the licensing subdirectory if the corresponding flag is set
-if(${LICENSE_BUILD_FLAG_FOUND})
-  add_subdirectory(licensing)
-endif()
-
 set(THIRDAI_SOURCES
     bolt_vector/src/BoltVector.cc
     bolt/src/graph/Graph.cc
@@ -273,13 +279,14 @@ set(THIRDAI_SOURCES
     hashing/src/UniversalHash.cc
     hashtable/src/SampledHashTable.cc
     hashtable/src/VectorHashTable.cc
-    wrappers/src/LicenseWrapper.cc
+    licensing/src/CheckLicense.cc
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
     new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.cc
+    new_dataset/src/featurization_pipeline/augmentations/ColdStartText.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc
     new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
     compression/src/CountSketch.cc
@@ -297,12 +304,22 @@ set(THIRDAI_SOURCES
     auto_ml/src/deployment_config/dataset_configs/UDTDatasetFactoryConfig.cc
     utils/Logging.cc)
 
+# Only add the licensing subdirectory and licensing cc files if the
+# corresponding flag is set
+if(${LICENSE_BUILD_FLAG_FOUND})
+  add_subdirectory(licensing)
+  set(THIRDAI_SOURCES ${THIRDAI_SOURCES}
+                      licensing/src/keygen/KeygenCommunication.cc)
+endif()
+
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal prometheus-cpp::pull)
 if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
+  target_link_libraries(
+    thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto OpenSSL::SSL
+                   nlohmann_json::nlohmann_json)
 endif()
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
@@ -324,6 +341,8 @@ pybind11_add_module(
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
   auto_ml/python_bindings/DeploymentPython.cc
+  auto_ml/src/models/ModelPipeline.cc
+  auto_ml/src/models/OutputProcessor.cc
   telemetry/python_bindings/TelemetryPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
