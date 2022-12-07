@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import zipfile
 
 import datasets
@@ -148,5 +149,57 @@ def download_brazilian_houses_dataset():
         del sample["totalBRL"]
         sample = {x: str(y) for x, y in sample.items()}
         inference_samples.append((sample, label))
+
+    return TRAIN_FILE, TEST_FILE, inference_samples
+
+
+@pytest.fixture(scope="session")
+def download_internet_ads_dataset():
+    INTERNET_ADS_URL = (
+        "https://archive.ics.uci.edu/ml/machine-learning-databases/internet_ads/ad.data"
+    )
+    INTERNET_ADS_FILE = "./internet_ads.data"
+    TRAIN_FILE = "./internet_ads_train.csv"
+    TEST_FILE = "./internet_ads_test.csv"
+
+    column_names = [str(i) for i in range(1558)] + ["label"]
+
+    if not os.path.exists(INTERNET_ADS_FILE):
+        os.system(f"curl {INTERNET_ADS_URL} --output {INTERNET_ADS_FILE}")
+
+    if not os.path.exists(TRAIN_FILE) or not os.path.exists(TEST_FILE):
+        header = ",".join(column_names) + "\n"
+
+        with open(INTERNET_ADS_FILE, "r") as data_file:
+            lines = data_file.readlines()
+        for i, line in enumerate(lines):
+            cols = line.strip().split(",")
+            for j, col in enumerate(cols[:3]):
+                if "?" in col:
+                    cols[j] = ""
+            lines[i] = ",".join(cols) + "\n"
+
+        random.shuffle(lines)
+
+        train_test_split = int(0.8 * len(lines))
+
+        with open(TRAIN_FILE, "w") as train_file:
+            train_file.write(header)
+            train_file.writelines(lines[:train_test_split])
+
+        with open(TEST_FILE, "w") as test_file:
+            test_file.write(header)
+            test_file.writelines(lines[train_test_split:])
+
+    inference_samples = []
+    with open(TEST_FILE, "r") as test_file:
+        for line in test_file.readlines()[1:]:
+            column_vals = {
+                col_name: value
+                for col_name, value in zip(column_names, line.split(","))
+            }
+            label = column_vals["label"].strip()
+            del column_vals["label"]
+            inference_samples.append((column_vals, label))
 
     return TRAIN_FILE, TEST_FILE, inference_samples

@@ -164,6 +164,11 @@ class UniversalDeepTransformer : public ModelPipeline {
           RegressionOutputProcessor::make(regression_binning);
       return {output_processor, regression_binning};
     }
+
+    if (dataset_config->n_target_classes == 2) {
+      return {BinaryOutputProcessor::make(), std::nullopt};
+    }
+
     return {CategoricalOutputProcessor::make(), std::nullopt};
   }
 

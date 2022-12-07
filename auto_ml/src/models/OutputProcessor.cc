@@ -10,7 +10,12 @@ namespace thirdai::automl::models {
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
-py::object CategoricalOutputProcessor::processBoltVector(BoltVector& output) {
+py::object CategoricalOutputProcessor::processBoltVector(
+    BoltVector& output, bool return_predicted_class) {
+  if (return_predicted_class) {
+    return py::cast(output.getHighestActivationId());
+  }
+
   if (_prediction_threshold) {
     ensureMaxActivationLargerThanThreshold(output.activations, output.len);
   }
@@ -18,7 +23,16 @@ py::object CategoricalOutputProcessor::processBoltVector(BoltVector& output) {
   return convertBoltVectorToNumpy(output);
 }
 
-py::object CategoricalOutputProcessor::processBoltBatch(BoltBatch& outputs) {
+py::object CategoricalOutputProcessor::processBoltBatch(
+    BoltBatch& outputs, bool return_predicted_class) {
+  if (return_predicted_class) {
+    NumpyArray<uint32_t> predictions(outputs.getBatchSize());
+    for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
+      predictions.mutable_at(i) = outputs[i].getHighestActivationId();
+    }
+    return py::object(std::move(predictions));
+  }
+
   if (_prediction_threshold) {
     for (auto& output : outputs) {
       ensureMaxActivationLargerThanThreshold(output.activations, output.len);
@@ -29,7 +43,16 @@ py::object CategoricalOutputProcessor::processBoltBatch(BoltBatch& outputs) {
 }
 
 py::object CategoricalOutputProcessor::processOutputTracker(
-    bolt::InferenceOutputTracker& output) {
+    bolt::InferenceOutputTracker& output, bool return_predicted_class) {
+  if (return_predicted_class) {
+    NumpyArray<uint32_t> predictions(output.numSamples());
+    for (uint32_t i = 0; i < output.numSamples(); i++) {
+      predictions.mutable_at(i) =
+          output.getSampleAsNonOwningBoltVector(i).getHighestActivationId();
+    }
+    return py::object(std::move(predictions));
+  }
+
   if (_prediction_threshold) {
     uint32_t output_dim = output.numNonzerosInOutput();
     for (uint32_t i = 0; i < output.numSamples(); i++) {
@@ -50,13 +73,18 @@ void CategoricalOutputProcessor::ensureMaxActivationLargerThanThreshold(
   }
 }
 
-py::object RegressionOutputProcessor::processBoltVector(BoltVector& output) {
+py::object RegressionOutputProcessor::processBoltVector(
+    BoltVector& output, bool return_predicted_class) {
+  (void)return_predicted_class;
+
   float value = unbinActivations(output);
 
   return py::cast(value);
 }
 
-py::object RegressionOutputProcessor::processBoltBatch(BoltBatch& outputs) {
+py::object RegressionOutputProcessor::processBoltBatch(
+    BoltBatch& outputs, bool return_predicted_class) {
+  (void)return_predicted_class;  // No classes to return in regression;
   NumpyArray<float> output_array(outputs.getBatchSize());
 
   for (uint32_t vec_id = 0; vec_id < outputs.getBatchSize(); vec_id++) {
@@ -69,7 +97,9 @@ py::object RegressionOutputProcessor::processBoltBatch(BoltBatch& outputs) {
 }
 
 py::object RegressionOutputProcessor::processOutputTracker(
-    bolt::InferenceOutputTracker& output) {
+    bolt::InferenceOutputTracker& output, bool return_predicted_class) {
+  (void)return_predicted_class;  // No classes to return in regression;
+
   NumpyArray<float> output_array(output.numSamples());
 
   for (uint32_t i = 0; i < output.numSamples(); i++) {
@@ -90,6 +120,65 @@ float RegressionOutputProcessor::unbinActivations(
     return _regression_binning.unbin(predicted_bin_index);
   }
   return _regression_binning.unbin(output.active_neurons[predicted_bin_index]);
+}
+
+py::object BinaryOutputProcessor::processBoltVector(
+    BoltVector& output, bool return_predicted_class) {
+  assert(output.isDense());
+  assert(output.len == 2);
+
+  if (return_predicted_class) {
+    return py::cast(binaryActivationsToPrediction(output.activations));
+  }
+
+  return convertBoltVectorToNumpy(output);
+}
+
+py::object BinaryOutputProcessor::processBoltBatch(
+    BoltBatch& outputs, bool return_predicted_class) {
+  assert(outputs.getBatchSize() == 0 || outputs.begin()->isDense());
+  assert(outputs.getBatchSize() == 0 || outputs.begin()->len == 2);
+
+  if (return_predicted_class) {
+    NumpyArray<uint32_t> predictions(outputs.getBatchSize());
+
+    for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
+      predictions.mutable_at(i) =
+          binaryActivationsToPrediction(outputs[i].activations);
+    }
+    return py::object(std::move(predictions));
+  }
+
+  return convertBoltBatchToNumpy(outputs);
+}
+
+py::object BinaryOutputProcessor::processOutputTracker(
+    bolt::InferenceOutputTracker& output, bool return_predicted_class) {
+  assert(output.getNonowningActiveNeuronPointer() == nullptr);
+  assert(output.numNonzerosInOutput() == 2);
+
+  if (return_predicted_class) {
+    NumpyArray<uint32_t> predictions(output.numSamples());
+
+    for (uint32_t i = 0; i < output.numSamples(); i++) {
+      predictions.mutable_at(i) =
+          binaryActivationsToPrediction(output.activationsForSample(i));
+    }
+    return py::object(std::move(predictions));
+  }
+
+  return convertInferenceTrackerToNumpy(output);
+}
+
+uint32_t BinaryOutputProcessor ::binaryActivationsToPrediction(
+    const float* activations) {
+  if (_prediction_threshold) {
+    uint32_t pred = activations[1] >= *_prediction_threshold ? 1 : 0;
+    return pred;
+  }
+
+  uint32_t pred = activations[1] >= activations[0] ? 1 : 0;
+  return pred;
 }
 
 py::object convertInferenceTrackerToNumpy(
@@ -195,3 +284,4 @@ uint32_t argmax(const float* const array, uint32_t len) {
 
 CEREAL_REGISTER_TYPE(thirdai::automl::models::CategoricalOutputProcessor)
 CEREAL_REGISTER_TYPE(thirdai::automl::models::RegressionOutputProcessor)
+CEREAL_REGISTER_TYPE(thirdai::automl::models::BinaryOutputProcessor)

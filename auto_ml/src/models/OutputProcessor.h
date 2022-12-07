@@ -19,15 +19,23 @@ namespace thirdai::automl::models {
  */
 class OutputProcessor {
  public:
-  // Processes output from predict.
-  virtual py::object processBoltVector(BoltVector& output) = 0;
+  // Processes output from predict. The return_predicted_class option indicates
+  // that it should return the predicted class rather than the activations, this
+  // has no effect on regression outputs.
+  virtual py::object processBoltVector(BoltVector& output,
+                                       bool return_predicted_class) = 0;
 
-  // Processes output from predictBatch.
-  virtual py::object processBoltBatch(BoltBatch& outputs) = 0;
+  // Processes output from predictBatch. The return_predicted_class option
+  // indicates that it should return the predicted class rather than the
+  // activations, this has no effect on regression outputs.
+  virtual py::object processBoltBatch(BoltBatch& outputs,
+                                      bool return_predicted_class) = 0;
 
-  // Processes output from evaluate.
-  virtual py::object processOutputTracker(
-      bolt::InferenceOutputTracker& output) = 0;
+  // Processes output from evaluate. The return_predicted_class option indicates
+  // that it should return the predicted class rather than the activations, this
+  // has no effect on regression outputs.
+  virtual py::object processOutputTracker(bolt::InferenceOutputTracker& output,
+                                          bool return_predicted_class) = 0;
 
   virtual ~OutputProcessor() = default;
 
@@ -63,11 +71,14 @@ class CategoricalOutputProcessor final : public OutputProcessor {
     return std::make_shared<CategoricalOutputProcessor>(prediction_threshold);
   }
 
-  py::object processBoltVector(BoltVector& output) final;
+  py::object processBoltVector(BoltVector& output,
+                               bool return_predicted_class) final;
 
-  py::object processBoltBatch(BoltBatch& outputs) final;
+  py::object processBoltBatch(BoltBatch& outputs,
+                              bool return_predicted_class) final;
 
-  py::object processOutputTracker(bolt::InferenceOutputTracker& output) final;
+  py::object processOutputTracker(bolt::InferenceOutputTracker& output,
+                                  bool return_predicted_class) final;
 
  private:
   void ensureMaxActivationLargerThanThreshold(float* activations, uint32_t len);
@@ -99,11 +110,14 @@ class RegressionOutputProcessor final : public OutputProcessor {
     return std::make_shared<RegressionOutputProcessor>(regression_binning);
   }
 
-  py::object processBoltVector(BoltVector& output) final;
+  py::object processBoltVector(BoltVector& output,
+                               bool return_predicted_class) final;
 
-  py::object processBoltBatch(BoltBatch& outputs) final;
+  py::object processBoltBatch(BoltBatch& outputs,
+                              bool return_predicted_class) final;
 
-  py::object processOutputTracker(bolt::InferenceOutputTracker& output) final;
+  py::object processOutputTracker(bolt::InferenceOutputTracker& output,
+                                  bool return_predicted_class) final;
 
  private:
   float unbinActivations(const BoltVector& output) const;
@@ -119,6 +133,56 @@ class RegressionOutputProcessor final : public OutputProcessor {
     archive(cereal::base_class<OutputProcessor>(this), _regression_binning);
   }
 };
+
+/**
+ * This class performs output processing for binary classification problems.
+ * This is different from the regular CategoricalOutputProcessor because it
+ * allows for a custom threshold to be set for positive predictions when the
+ * return_predicted_class option is used. For example if the output
+ * probabilities are [0.8, 0.2] but the threshold is set to 0.1, then it will
+ * output a prediction of 1 instead of 0.
+ */
+class BinaryOutputProcessor final : public OutputProcessor {
+ public:
+  BinaryOutputProcessor() {}
+
+  static auto make() { return std::make_shared<BinaryOutputProcessor>(); }
+
+  static auto cast(const OutputProcessorPtr& output_processor) {
+    return std::dynamic_pointer_cast<BinaryOutputProcessor>(output_processor);
+  }
+
+  py::object processBoltVector(BoltVector& output,
+                               bool return_predicted_class) final;
+
+  py::object processBoltBatch(BoltBatch& outputs,
+                              bool return_predicted_class) final;
+
+  py::object processOutputTracker(bolt::InferenceOutputTracker& output,
+                                  bool return_predicted_class) final;
+
+  /**
+   * Sets the prediction threshold for class 1. This is used by the
+   * ModelPipeline after selecting the threshold which maximizies the metric of
+   * interest.
+   */
+  void setPredictionTheshold(std::optional<float> threshold) {
+    _prediction_threshold = threshold;
+  }
+
+ private:
+  uint32_t binaryActivationsToPrediction(const float* activations);
+
+  std::optional<float> _prediction_threshold;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<OutputProcessor>(this), _prediction_threshold);
+  }
+};
+
+using BinaryOutputProcessorPtr = std::shared_ptr<BinaryOutputProcessor>;
 
 // Helper function for InferenceOutputTracker to Numpy.
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
