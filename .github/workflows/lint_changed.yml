@@ -10,7 +10,7 @@ concurrency:
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [main, diff-clang-tidy]
+    branches: [diff-clang-tidy]
   pull_request:
     branches: [main]
 
