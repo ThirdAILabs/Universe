@@ -82,8 +82,8 @@ py::object UniversalDeepTransformer::predict(MapInput sample,
                                /* return_predicted_class= */ true);
 
     if (py::isinstance<py::int_>(prediction)) {
-      setPredictionAtTimestep(sample, t,
-                              std::to_string(prediction.cast<uint32_t>()));
+      uint32_t predicted_class = prediction.cast<uint32_t>();
+      setPredictionAtTimestep(sample, t, className(predicted_class));
     } else {
       throw std::invalid_argument(
           "Unsupported prediction type for recursive predictions '" +
@@ -121,8 +121,7 @@ py::object UniversalDeepTransformer::predictBatch(MapInputBatch samples,
       NumpyArray<uint32_t> prediction =
           raw_prediction.cast<NumpyArray<uint32_t>>();
       for (uint32_t i = 0; i < prediction.shape(0); i++) {
-        setPredictionAtTimestep(samples[i], t,
-                                std::to_string(prediction.at(i)));
+        setPredictionAtTimestep(samples[i], t, className(prediction.at(i)));
         predictions[i].push_back(prediction.at(i));
       }
     } else {

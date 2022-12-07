@@ -71,10 +71,7 @@ std::string UDTDatasetFactory::className(uint32_t neuron_id) const {
         "Attempted to get id to label map before training.");
   }
   if (_config->integer_target) {
-    throw std::invalid_argument(
-        "This model does not provide a mapping from ids to labels since the "
-        "target column has integer ids; the ids and labels are "
-        "equivalent.");
+    return std::to_string(neuron_id);
   }
   return _vocabs.at(_config->target)->getString(neuron_id);
 }
