@@ -50,7 +50,7 @@ std::string sha256(const std::string& input) {
   hash.Update(reinterpret_cast<const CryptoPP::byte*>(input.data()),
               input.length());
   digest.resize(hash.DigestSize());
-  hash.Final(reinterpret_cast<CryptoPP::byte*>(&digest[0]));
+  hash.Final(reinterpret_cast<CryptoPP::byte*>(digest.data()));
 
   return digest;
 }
