@@ -70,10 +70,8 @@ PrometheusTelemetryClient PrometheusTelemetryClient::start(uint32_t port) {
 
 PrometheusTelemetryClient::PrometheusTelemetryClient(
     std::shared_ptr<prometheus::Exposer> exposer,
-    std::shared_ptr<prometheus::Registry> registry) {
-  _registry = std::move(registry);
-  _exposer = std::move(exposer);
-
+    std::shared_ptr<prometheus::Registry> registry)
+    : _exposer(std::move(exposer)), _registry(std::move(registry)) {
   // See https://prometheus.io/docs/practices/histograms/ for metric naming
   // conventions
 

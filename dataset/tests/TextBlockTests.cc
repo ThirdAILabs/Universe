@@ -115,11 +115,11 @@ class TextBlockTest : public testing::Test {
          first_word_idx++) {
       for (uint32_t second_word_idx = first_word_idx;
            second_word_idx < words.size(); second_word_idx++) {
-        auto first_word = words[first_word_idx];
+        const auto& first_word = words[first_word_idx];
         uint32_t first_word_hash =
             hashing::MurmurHash(first_word.c_str(), first_word.length(),
                                 TextEncodingUtils::HASH_SEED);
-        auto second_word = words[second_word_idx];
+        const auto& second_word = words[second_word_idx];
         uint32_t second_word_hash =
             hashing::MurmurHash(second_word.c_str(), second_word.length(),
                                 TextEncodingUtils::HASH_SEED);
