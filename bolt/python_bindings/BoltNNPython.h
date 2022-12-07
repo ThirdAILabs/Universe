@@ -44,9 +44,7 @@ class ParameterReference {
   ParameterReference(float* params, const std::vector<uint32_t>& dimensions)
       : _params(params),
         _dimensions(dimensions),
-        _total_dim(dimensionProduct(dimensions)) {
-    _total_dim = dimensionProduct(_dimensions);
-  }
+        _total_dim(dimensionProduct(dimensions)) {}
 
   ParameterArray copy() const {
     float* params_copy = new float[_total_dim];
