@@ -120,7 +120,7 @@ class ModelPipeline {
    */
   py::object evaluateOnFile(const std::string& filename,
                             std::optional<bolt::EvalConfig>& eval_config_opt,
-                            bool return_predicted_class);
+                            bool return_predicted_class, bool return_metrics);
 
   /**
    * Processes the data specified in data_source and returns the activations of
@@ -129,7 +129,7 @@ class ModelPipeline {
   py::object evaluateOnDataLoader(
       const dataset::DataLoaderPtr& data_source,
       std::optional<bolt::EvalConfig>& eval_config_opt,
-      bool return_predicted_class);
+      bool return_predicted_class, bool return_metrics);
 
   /**
    * Takes in a single input sample and returns the activations for the output

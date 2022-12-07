@@ -365,3 +365,11 @@ def test_model_config_override():
     # embedding dimension should be 3 as well. This will not happen with the default
     # udt model architecture.
     assert model.embedding_representation(single_sample()).shape == (3,)
+
+
+def test_return_metrics():
+    model = make_simple_trained_model()
+    metrics = model.evaluate(
+        TEST_FILE, metrics=["categorical_accuracy"], return_metrics=True
+    )
+    assert metrics["categorical_accuracy"] > 0

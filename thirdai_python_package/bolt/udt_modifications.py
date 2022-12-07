@@ -95,6 +95,7 @@ def modify_udt_classifier():
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
         return_predicted_class: bool = False,
+        return_metrics: bool = False,
         verbose: bool = True,
     ):
         eval_config = bolt.EvalConfig()
@@ -116,6 +117,8 @@ def modify_udt_classifier():
                     batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
                 ),
                 eval_config=eval_config,
+                return_predicted_class=return_predicted_class,
+                return_metrics=return_metrics,
             )
 
         if filename.startswith("s3://"):
@@ -126,9 +129,13 @@ def modify_udt_classifier():
                     batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
                 ),
                 eval_config=eval_config,
+                return_predicted_class=return_predicted_class,
+                return_metrics=return_metrics,
             )
 
-        return original_eval_method(self, filename, eval_config, return_predicted_class)
+        return original_eval_method(
+            self, filename, eval_config, return_predicted_class, return_metrics
+        )
 
     wrapped_evaluate.__doc__ = classifier_eval_doc
 

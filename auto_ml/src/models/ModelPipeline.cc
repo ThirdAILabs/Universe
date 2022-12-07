@@ -77,16 +77,17 @@ void ModelPipeline::trainOnDataLoader(
 py::object ModelPipeline::evaluateOnFile(
     const std::string& filename,
     std::optional<bolt::EvalConfig>& eval_config_opt,
-    bool return_predicted_class) {
+    bool return_predicted_class, bool return_metrics) {
   return evaluateOnDataLoader(dataset::SimpleFileDataLoader::make(
                                   filename, DEFAULT_EVALUATE_BATCH_SIZE),
-                              eval_config_opt, return_predicted_class);
+                              eval_config_opt, return_predicted_class,
+                              return_metrics);
 }
 
 py::object ModelPipeline::evaluateOnDataLoader(
     const dataset::DataLoaderPtr& data_source,
     std::optional<bolt::EvalConfig>& eval_config_opt,
-    bool return_predicted_class) {
+    bool return_predicted_class, bool return_metrics) {
   auto start_time = std::chrono::system_clock::now();
 
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
@@ -99,10 +100,11 @@ py::object ModelPipeline::evaluateOnDataLoader(
 
   eval_config.returnActivations();
 
-  auto [_, output] = _model->evaluate({data}, labels, eval_config);
+  auto [metrics, output] = _model->evaluate({data}, labels, eval_config);
 
-  auto py_output =
-      _output_processor->processOutputTracker(output, return_predicted_class);
+  auto py_output = return_metrics ? py::cast(metrics)
+                                  : _output_processor->processOutputTracker(
+                                        output, return_predicted_class);
 
   std::chrono::duration<double> elapsed_time =
       std::chrono::system_clock::now() - start_time;
