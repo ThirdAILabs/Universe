@@ -13,12 +13,6 @@ py::object CategoricalOutputProcessor::processBoltVector(
     return py::cast(output.getHighestActivationId());
   }
 
-py::object CategoricalOutputProcessor::processBoltVector(
-    BoltVector& output, bool return_predicted_class) {
-  if (return_predicted_class) {
-    return py::cast(output.getHighestActivationId());
-  }
-
   if (_prediction_threshold) {
     ensureMaxActivationLargerThanThreshold(output.activations, output.len);
   }
