@@ -76,11 +76,6 @@ void CategoricalOutputProcessor::ensureMaxActivationLargerThanThreshold(
 py::object RegressionOutputProcessor::processBoltVector(
     BoltVector& output, bool return_predicted_class) {
   (void)return_predicted_class;
-<<<<<<< HEAD
-
-  float value = unbinActivations(output);
-=======
->>>>>>> ab24237f5b26098b5a87e2c411e63a25231ed52e
 
   float value = unbinActivations(output);
 
@@ -90,12 +85,7 @@ py::object RegressionOutputProcessor::processBoltVector(
 py::object RegressionOutputProcessor::processBoltBatch(
     BoltBatch& outputs, bool return_predicted_class) {
   (void)return_predicted_class;  // No classes to return in regression;
-<<<<<<< HEAD
-
-  NumpyArray<float> output_array(/* shape= */ {outputs.getBatchSize(), 1U});
-=======
   NumpyArray<float> output_array(outputs.getBatchSize());
->>>>>>> ab24237f5b26098b5a87e2c411e63a25231ed52e
 
   for (uint32_t vec_id = 0; vec_id < outputs.getBatchSize(); vec_id++) {
     float value = unbinActivations(outputs[vec_id]);
@@ -110,11 +100,7 @@ py::object RegressionOutputProcessor::processOutputTracker(
     bolt::InferenceOutputTracker& output, bool return_predicted_class) {
   (void)return_predicted_class;  // No classes to return in regression;
 
-<<<<<<< HEAD
-  NumpyArray<float> output_array(/* shape= */ {output.numSamples(), 1U});
-=======
   NumpyArray<float> output_array(output.numSamples());
->>>>>>> ab24237f5b26098b5a87e2c411e63a25231ed52e
 
   for (uint32_t i = 0; i < output.numSamples(); i++) {
     BoltVector ith_sample = output.getSampleAsNonOwningBoltVector(i);
