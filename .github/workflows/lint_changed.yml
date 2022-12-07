@@ -28,8 +28,6 @@ jobs:
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v34
-        with:
-          since_last_remote_commit: "true"
       - name: Generate compilation database
         run: |
           bin/generate_compile_commands.sh
