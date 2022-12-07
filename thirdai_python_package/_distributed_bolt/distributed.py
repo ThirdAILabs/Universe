@@ -78,6 +78,8 @@ class RayTrainingClusterConfig:
         # Ray expicitly forces the OMP_NUM_THREADS in environment to 1.
         # So, we need to change the OMP_NUM_THREADS to support parallization
         num_omp_threads = str(get_num_cpus())
+        if requested_cpus_per_node != -1:
+            num_omp_threads = requested_cpus_per_node
         self.logging.info("Setting OMP_NUM_THREADS to " + num_omp_threads)
 
         # We do a deepcopy here so we do not unexpectedly modify the input.
