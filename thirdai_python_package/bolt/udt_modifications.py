@@ -94,6 +94,7 @@ def modify_udt_classifier():
         filename: str,
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
+        return_predicted_class: bool = False,
         verbose: bool = True,
     ):
         eval_config = bolt.EvalConfig()
@@ -127,7 +128,7 @@ def modify_udt_classifier():
                 eval_config=eval_config,
             )
 
-        return original_eval_method(self, filename, eval_config)
+        return original_eval_method(self, filename, eval_config, return_predicted_class)
 
     wrapped_evaluate.__doc__ = classifier_eval_doc
 

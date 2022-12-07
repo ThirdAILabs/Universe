@@ -81,7 +81,7 @@ TEST(DlrmAttentionNodeTest, TestSetMembership) {
                              .first["categorical_accuracy"];
   ASSERT_EQ(original_accuracy, loaded_accuracy);
 
-  std::remove(save_filename.c_str());
+  ASSERT_FALSE(std::remove(save_filename.c_str()));
 }
 
 }  // namespace thirdai::bolt::tests

@@ -196,7 +196,7 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
 
   ASSERT_GT(new_trained_test_metrics.first["categorical_accuracy"], 0.9);
 
-  std::remove(save_filename.c_str());
+  ASSERT_FALSE(std::remove(save_filename.c_str()));
 }
 
 }  // namespace thirdai::bolt::tests
