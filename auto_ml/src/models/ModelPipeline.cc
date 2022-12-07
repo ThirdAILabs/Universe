@@ -314,7 +314,7 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
          * activation does not matter, only the predicted class so this
          * modification does not affect the metric. Metrics like mean squared
          * error do not really make sense to compute at different thresholds
-         * anyway and so we can ignore the affect of this modification on them.
+         * anyway and so we can ignore the effect of this modification on them.
          */
         if (activations.activationsForSample(sample_idx++)[1] >= threshold) {
           metric->record(

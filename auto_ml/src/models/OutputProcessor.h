@@ -36,6 +36,11 @@ class OutputProcessor {
   // has no effect on regression outputs.
   virtual py::object processOutputTracker(bolt::InferenceOutputTracker& output,
                                           bool return_predicted_class) = 0;
+<<<<<<< HEAD
+=======
+
+  virtual ~OutputProcessor() = default;
+>>>>>>> ab24237f5b26098b5a87e2c411e63a25231ed52e
 
  private:
   friend class cereal::access;

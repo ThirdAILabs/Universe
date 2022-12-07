@@ -131,6 +131,7 @@ set(THIRDAI_COMPILE_OPTIONS
     -Wextra
     -Werror
     -Wno-unused-function
+    -Wno-ignored-optimization-argument
     -pedantic
     $<$<CONFIG:Debug>:-Og>
     $<$<CONFIG:Debug>:-g>

@@ -12,7 +12,7 @@ MAE_THRESHOLD = 0.3
 
 def _compute_mae(predictions, inference_samples):
     labels = [y for _, y in inference_samples]
-    return np.mean(np.abs(predictions[:, 0] - labels))
+    return np.mean(np.abs(predictions - labels))
 
 
 @pytest.fixture(scope="module")
