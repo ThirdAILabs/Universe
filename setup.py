@@ -199,6 +199,8 @@ setup(
             "prometheus_client",
             "awswrangler",
             "gcsfs",
+            "google-cloud-storage",
+            "mock",
         ],
         "benchmark": [
             "toml",
@@ -207,8 +209,15 @@ setup(
             "mlflow==1.23.1",
             "protobuf==3.19.6",
             "boto3",
+            "awswrangler",
         ],
-        "distributed": ["ray", "toml", "protobuf==3.19.6"],
+        "distributed": [
+            "ray",
+            "toml",
+            "protobuf==3.19.6",
+            "mock",
+            "google-cloud-storage",
+        ],
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
         "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"],
     },
