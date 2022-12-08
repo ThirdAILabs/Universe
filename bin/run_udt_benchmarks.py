@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import importlib.util
 import inspect
@@ -9,8 +11,9 @@ from pathlib import Path
 
 def get_udt_configs(universe_dir):
     """
-    This helper function loads the udt benchmark configs directly
-    from the .py file that defines these configs as python classes
+    This helper function loads the names of the UDT benchmark configs directly
+    from the Universe/benchmarks/udt_configs.py file that defines these configs
+    as python classes
     """
     udt_config_file = os.path.join(universe_dir, "benchmarks", "udt_configs.py")
     udt_config_spec = importlib.util.spec_from_file_location(
