@@ -364,6 +364,28 @@ TEST(MetricTest, FMeasure) {
   ASSERT_DOUBLE_EQ(metric.value(), 0.6);
 }
 
+TEST(MetricTest, FMeasureWithVariableAlpha) {
+  std::string metric_name = "f0.25_measure(0.8)";
+  ASSERT_TRUE(FMeasure::isFMeasure(metric_name));
+
+  auto metric = FMeasure::make(metric_name);
+
+  //                                          tp: 1, fp: 3, fn: 1
+  //                         thresholded_neurons: 0, 3, 4, 5
+  BoltVector dense_pred_1 =
+      BoltVector::makeDenseVector({1.0, 0.2, 0.0, 1.0, 0.9, 0.8, 0.5, 0.0});
+  BoltVector dense_label_1 =
+      BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0});
+
+  // Check correct value is computed for each sample
+  metric->record(dense_pred_1, dense_label_1);
+  // Precision = 1 / 4
+  // Recall = 1 / 2
+  // F0.25 = (1/4) * (1/2) / (alpha * (1/2 - 1/4) + 1/4)
+  ASSERT_DOUBLE_EQ(metric->value(), 0.4);
+  metric->reset();
+}
+
 /**
  * Tests that the Weighted Mean Absolute Percentage Error (WMAPE)
  * metric is thread-safe and can run in parallel.

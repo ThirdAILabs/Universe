@@ -222,8 +222,9 @@ class RecallAtK : public Metric {
  */
 class FMeasure final : public Metric {
  public:
-  explicit FMeasure(float threshold)
-      : _threshold(threshold),
+  explicit FMeasure(float threshold, float alpha = 0.5)
+      : _alpha(alpha),
+        _threshold(threshold),
         _true_positive(0),
         _false_positive(0),
         _false_negative(0) {}
@@ -250,6 +251,7 @@ class FMeasure final : public Metric {
   static std::shared_ptr<Metric> make(const std::string& name);
 
  private:
+  float _alpha;
   float _threshold;
   std::atomic<uint64_t> _true_positive;
   std::atomic<uint64_t> _false_positive;
