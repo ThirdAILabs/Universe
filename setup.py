@@ -197,8 +197,9 @@ setup(
             "tokenizers==0.11.6",
             "pyarrow",
             "prometheus_client",
+            "awswrangler",
+            "gcsfs",
         ],
-        "gcp-client": ["google-cloud-storage"],
         "benchmark": [
             "toml",
             "psutil",

@@ -58,12 +58,10 @@ def setup_mock_s3(s3):
     )
 
 
-def load_all_batches(bucket_name, prefix_filter, batch_size):
+def load_all_batches(storage_path, batch_size):
     from thirdai import dataset
 
-    loader = dataset.S3DataLoader(
-        bucket_name=bucket_name, prefix_filter=prefix_filter, batch_size=batch_size
-    )
+    loader = dataset.CSVDataLoader(storage_path=storage_path, batch_size=batch_size)
     batches = []
     while True:
         next_batch = loader.next_batch()
@@ -73,12 +71,10 @@ def load_all_batches(bucket_name, prefix_filter, batch_size):
     return batches
 
 
-def load_all_lines(bucket_name, prefix_filter, batch_size):
+def load_all_lines(storage_path, batch_size):
     from thirdai import dataset
 
-    loader = dataset.S3DataLoader(
-        bucket_name=bucket_name, prefix_filter=prefix_filter, batch_size=batch_size
-    )
+    loader = dataset.CSVDataLoader(storage_path=storage_path, batch_size=batch_size)
     lines = []
     while True:
         next_line = loader.next_line()
@@ -96,7 +92,7 @@ def test_s3_data_loader_by_batch(s3):
     setup_mock_s3(s3)
 
     batches = load_all_batches(
-        bucket_name="test_bucket", prefix_filter="find", batch_size=batch_size
+        storage_path="s3://test_bucket/find", batch_size=batch_size
     )
 
     assert len(batches) == math.ceil(total_num_lines_to_return / batch_size)
@@ -116,9 +112,7 @@ def test_s3_data_loader_by_line(s3):
 
     setup_mock_s3(s3)
 
-    lines = load_all_lines(
-        bucket_name="test_bucket", prefix_filter="find", batch_size=batch_size
-    )
+    lines = load_all_lines(storage_path="s3://test_bucket/find", batch_size=batch_size)
 
     assert len(lines) == total_num_lines_to_return
 

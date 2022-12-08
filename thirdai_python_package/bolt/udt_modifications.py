@@ -11,26 +11,20 @@ def create_parquet_loader(path, batch_size):
     return thirdai.dataset.ParquetLoader(parquet_path=path, batch_size=batch_size)
 
 
-def create_cloud_instance_data_loader(path, batch_size, **kwargs):
-    parsed_url = urlparse(path, allow_fragments=False)
-    bucket = parsed_url.netloc
-    key = parsed_url.path.lstrip("/")
+def create_csv_data_loader(path, batch_size, **kwargs):
+    aws_credentials_file = (
+        kwargs["aws_credentials_file"] if "aws_credentials_file" in kwargs else None
+    )
+    gcp_credentials_file = (
+        kwargs["gcp_credentials"] if "gcp_crentials" in kwargs else None
+    )
 
-    if parsed_url.scheme == "s3":
-        return thirdai.dataset.S3DataLoader(
-            bucket_name=bucket, prefix_filter=key, batch_size=batch_size
-        )
-    if parsed_url.scheme == "gcs":
-        if "gcp_credentials" in kwargs:
-            gcp_credentials = kwargs["gcp_credentials"]
-        else:
-            gcp_credentials = None
-        return thirdai.dataset.GCSDataLoader(
-            bucket_name=bucket,
-            resource_path=key,
-            batch_size=batch_size,
-            gcp_credentials=gcp_credentials,
-        )
+    return thirdai.dataset.CSVDataLoader(
+        storage_path=path,
+        batch_size=batch_size,
+        aws_credentials_file=aws_credentials_file,
+        gcp_credentials_file=gcp_credentials_file,
+    )
 
 
 # This function defines train and eval methods that wrap the UDT train and
@@ -57,7 +51,8 @@ def modify_udt_classifier():
         callbacks: List[bolt.callbacks.Callback] = [],
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
-        gcp_credentials: Optional[str] = None,
+        aws_credentials_file: Optional[str] = None,
+        gcp_credentials_file: Optional[str] = None,
     ):
         if batch_size is None:
             batch_size = self.default_train_batch_size
@@ -87,7 +82,9 @@ def modify_udt_classifier():
         if filename.startswith("s3://"):
             return original_train_with_loader_method(
                 self,
-                create_cloud_instance_data_loader(filename, batch_size),
+                create_csv_data_loader(
+                    filename, batch_size, aws_credentials_file=aws_credentials_file
+                ),
                 train_config,
                 max_in_memory_batches,
             )
@@ -95,10 +92,10 @@ def modify_udt_classifier():
         if filename.startswith("gcs://"):
             return original_train_with_loader_method(
                 self,
-                create_cloud_instance_data_loader(
+                create_csv_data_loader(
                     path=filename,
                     batch_size=batch_size,
-                    gcp_credentials=gcp_credentials,
+                    gcp_credentials=gcp_credentials_file,
                 ),
                 train_config,
                 max_in_memory_batches,
@@ -121,7 +118,8 @@ def modify_udt_classifier():
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
         verbose: bool = True,
-        gcp_credentials: Optional[str] = None,
+        aws_credentials_file: Optional[str] = None,
+        gcp_credentials_file: Optional[str] = None,
     ):
         eval_config = bolt.EvalConfig()
         if not verbose:
@@ -147,19 +145,20 @@ def modify_udt_classifier():
         if filename.startswith("s3://"):
             return original_eval_with_loader_method(
                 self,
-                create_cloud_instance_data_loader(
+                create_csv_data_loader(
                     filename,
                     batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
+                    aws_credentials_file=aws_credentials_file,
                 ),
                 eval_config=eval_config,
             )
         if filename.startswith("gcs://"):
             return original_train_with_loader_method(
                 self,
-                create_cloud_instance_data_loader(
+                create_csv_data_loader(
                     path=filename,
                     batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
-                    gcp_credentials=gcp_credentials,
+                    gcp_credentials=gcp_credentials_file,
                 ),
                 eval_config=eval_config,
             )
