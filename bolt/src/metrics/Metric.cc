@@ -294,21 +294,16 @@ std::tuple<double, double, double> FMeasure::metrics() {
   double f_measure;
 
   /*
-    F = 1 / X where X = alpha * 1/P + (1 - alpha) * 1/R
-    X = alpha * R/PR + (1 - alpha) * P / PR
-      = (alpha * R + (1 - alpha) * P) / PR
-      = (alpha * (R - P) + P) / PR
-
-    F = 1 / X
-      = 1 / (alpha * (R - P) + P) / PR
-      = PR / (alpha * (R - P) + P)
+    P = Precision
+    R = Recall
+    F = (1 + beta^2) * PR) / (beta^2 * P + R)
   */
-  double denom = _alpha * (recall - prec) + prec;
+  double denom = _beta_squared * prec + recall;
 
   if (denom == 0) {
     f_measure = 0;
   } else {
-    f_measure = prec * recall / denom;
+    f_measure = (1 + _beta_squared) * prec * recall / denom;
   }
 
   return {prec, recall, f_measure};
@@ -443,7 +438,8 @@ void CategoricalCrossEntropy::record(const BoltVector& outputs,
 }
 
 bool FMeasure::isFMeasure(const std::string& name) {
-  return std::regex_match(name, std::regex(R"(f(0\.\d+)?_measure\(0\.\d+\))"));
+  return std::regex_match(name,
+                          std::regex(R"(f(\d+\.?\d*)?_measure\(0\.\d+\))"));
 }
 
 std::shared_ptr<Metric> FMeasure::make(const std::string& name) {
@@ -467,22 +463,22 @@ std::shared_ptr<Metric> FMeasure::make(const std::string& name) {
     throw std::invalid_argument(error_ss.str());
   }
 
-  float alpha = 0.5;
+  float beta = 1.0;
   // Name is f<optional alpha>_(<threshold>)
-  auto alpha_end = name.find('_');
-  auto alpha_len = alpha_end - 1;
-  if (alpha_len > 0) {
-    alpha = std::stof(name.substr(1, alpha_len));
+  auto beta_end = name.find('_');
+  auto beta_len = beta_end - 1;
+  if (beta_len > 0) {
+    beta = std::stof(name.substr(1, beta_len));
 
-    if (alpha <= 0) {
+    if (beta < 0) {
       std::stringstream error_ss;
-      error_ss << "FMeasure invoked with alpha = " << threshold
-               << ". The alpha should be between 0.0 and 1.0";
+      error_ss << "FMeasure invoked with alpha = " << beta
+               << ". The beta should be at least 0.";
       throw std::invalid_argument(error_ss.str());
     }
   }
 
-  return std::make_shared<FMeasure>(threshold, alpha);
+  return std::make_shared<FMeasure>(threshold, beta);
 }
 
 std::shared_ptr<Metric> makeMetric(const std::string& name) {
