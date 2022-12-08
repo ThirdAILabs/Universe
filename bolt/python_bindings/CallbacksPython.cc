@@ -95,7 +95,7 @@ void createCallbacksSubmodule(py::module_& module) {
            py::arg("monitored_metric"), py::arg("model_save_path"),
            py::arg("patience"), py::arg("min_delta"), R"pbdoc(
 This callback is intended to stop training early based on prediction results 
-from a given validation set. Requires withValidation(..) in TrainConfig. 
+from a given validation set. Requires validation data specified in train.
 Saves the best model to model_save_path.
 Args:
      monitored_metric (string): The metric to monitor for early stopping. The 
