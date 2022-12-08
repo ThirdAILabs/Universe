@@ -27,7 +27,7 @@ namespace thirdai::automl::models {
  * potential clients can tinker with without having to download a serialized
  * deployment config file.
  */
-class UniversalDeepTransformer : public ModelPipeline {
+class UniversalDeepTransformer final : public ModelPipeline {
   static constexpr const uint32_t DEFAULT_INFERENCE_BATCH_SIZE = 2048;
   static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;
   static constexpr const uint32_t DEFAULT_HIDDEN_DIM = 512;
@@ -56,9 +56,25 @@ class UniversalDeepTransformer : public ModelPipeline {
       const std::optional<std::string>& model_config = std::nullopt,
       const deployment::UserInputMap& options = {});
 
+  /**
+   * This wraps the predict method of the ModelPipeline to handle recusive
+   * predictions. If prediction_depth in the UDT instance is 1, then this
+   * behaves exactly as predict in the ModelPipeline. If prediction_depth > 1
+   * then this will call predict prediction_depth number of times, with the
+   *classes predicted by the previous calls to predict added as inputs to
+   *subsequent calls.
+   */
   py::object predict(MapInput sample, bool use_sparse_inference,
                      bool return_predicted_class);
 
+  /**
+   * This wraps the predictBatch method of the ModelPipeline to handle recusive
+   * predictions. If prediction_depth in the UDT instance is 1, then this
+   * behaves exactly as predictBatch in the ModelPipeline. If prediction_depth >
+   * 1 then this will call predictBatch prediction_depth number of times, with
+   * the classes predicted by the previous calls to predictBatch added as inputs
+   * to subsequent calls.
+   */
   py::object predictBatch(MapInputBatch samples, bool use_sparse_inference,
                           bool return_predicted_class);
 
