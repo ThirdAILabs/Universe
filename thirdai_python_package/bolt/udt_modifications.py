@@ -15,15 +15,15 @@ def create_csv_data_loader(path, batch_size, **kwargs):
     aws_credentials_file = (
         kwargs["aws_credentials_file"] if "aws_credentials_file" in kwargs else None
     )
-    gcp_credentials_file = (
-        kwargs["gcp_credentials"] if "gcp_crentials" in kwargs else None
+    gcs_credentials_file = (
+        kwargs["gcs_credentials_file"] if "gcs_crentials_file" in kwargs else None
     )
 
     return thirdai.dataset.CSVDataLoader(
         storage_path=path,
         batch_size=batch_size,
         aws_credentials_file=aws_credentials_file,
-        gcp_credentials_file=gcp_credentials_file,
+        gcs_credentials_file=gcs_credentials_file,
     )
 
 
@@ -52,7 +52,7 @@ def modify_udt_classifier():
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
         aws_credentials_file: Optional[str] = None,
-        gcp_credentials_file: Optional[str] = None,
+        gcs_credentials_file: Optional[str] = None,
     ):
         if batch_size is None:
             batch_size = self.default_train_batch_size
@@ -95,7 +95,7 @@ def modify_udt_classifier():
                 create_csv_data_loader(
                     path=filename,
                     batch_size=batch_size,
-                    gcp_credentials=gcp_credentials_file,
+                    gcs_credentials_file=gcs_credentials_file,
                 ),
                 train_config,
                 max_in_memory_batches,
@@ -119,7 +119,7 @@ def modify_udt_classifier():
         use_sparse_inference: bool = False,
         verbose: bool = True,
         aws_credentials_file: Optional[str] = None,
-        gcp_credentials_file: Optional[str] = None,
+        gcs_credentials_file: Optional[str] = None,
     ):
         eval_config = bolt.EvalConfig()
         if not verbose:
@@ -158,7 +158,7 @@ def modify_udt_classifier():
                 create_csv_data_loader(
                     path=filename,
                     batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
-                    gcp_credentials=gcp_credentials_file,
+                    gcs_credentials_file=gcs_credentials_file,
                 ),
                 eval_config=eval_config,
             )
