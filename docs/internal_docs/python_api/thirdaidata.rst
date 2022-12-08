@@ -1,4 +1,9 @@
 thirdai.data
 ===================================
 
-.. autoclass:: thirdai.data.semantic_type_inference
+.. automodule:: thirdai.data
+
+thirdai.data.transformations
+============================
+
+.. automodule:: thirdai.data.transformations
