@@ -64,8 +64,17 @@ class UniversalDeepTransformer final : public ModelPipeline {
    *classes predicted by the previous calls to predict added as inputs to
    *subsequent calls.
    */
-  py::object predict(MapInput sample, bool use_sparse_inference,
-                     bool return_predicted_class);
+  py::object predict(const MapInput& sample_in, bool use_sparse_inference,
+                     bool return_predicted_class) final;
+
+  py::object predict(const LineInput& sample, bool use_sparse_inference,
+                     bool return_predicted_class) final {
+    (void)sample;
+    (void)use_sparse_inference;
+    (void)return_predicted_class;
+    throw std::runtime_error(
+        "predict must be called with a dictionary of column names to values.");
+  }
 
   /**
    * This wraps the predictBatch method of the ModelPipeline to handle recusive
@@ -75,8 +84,20 @@ class UniversalDeepTransformer final : public ModelPipeline {
    * the classes predicted by the previous calls to predictBatch added as inputs
    * to subsequent calls.
    */
-  py::object predictBatch(MapInputBatch samples, bool use_sparse_inference,
-                          bool return_predicted_class);
+  py::object predictBatch(const MapInputBatch& samples_in,
+                          bool use_sparse_inference,
+                          bool return_predicted_class) final;
+
+  py::object predictBatch(const LineInputBatch& samples,
+                          bool use_sparse_inference,
+                          bool return_predicted_class) final {
+    (void)samples;
+    (void)use_sparse_inference;
+    (void)return_predicted_class;
+    throw std::runtime_error(
+        "predictBatch must be called with a list of dictionaries of column "
+        "names to values.");
+  }
 
   BoltVector embeddingRepresentation(const MapInput& input) {
     auto input_vector = _dataset_factory->featurizeInput(input);

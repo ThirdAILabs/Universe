@@ -3,10 +3,12 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/StringManipulation.h>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -27,6 +29,29 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
   auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
         embedding_dimension, prediction_depth] = processUDTOptions(options);
   std::string target_column = dataset_config->target;
+
+  if (prediction_depth > 1) {
+    if (!data::asCategorical(dataset_config->data_types.at(target_column))) {
+      throw std::invalid_argument(
+          "Expected target column to be categorical if prediction_depth > 1 is "
+          "used.");
+    }
+    for (uint32_t i = 1; i < prediction_depth; i++) {
+      std::string column_name = target_column + "_" + std::to_string(i);
+
+      if (!dataset_config->data_types.count(column_name)) {
+        std::stringstream error;
+        error << "Expected column '" << column_name
+              << "' to be defined if prediction_depth=" << prediction_depth
+              << ".";
+        throw std::invalid_argument(error.str());
+      }
+      if (!asCategorical(dataset_config->data_types.at(column_name))) {
+        throw std::invalid_argument("Expected column '" + column_name +
+                                    "' to be categorical.");
+      }
+    }
+  }
 
   auto [output_processor, regression_binning] =
       getOutputProcessor(dataset_config);
@@ -62,13 +87,17 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
                                   target_column, prediction_depth);
 }
 
-py::object UniversalDeepTransformer::predict(MapInput sample,
+py::object UniversalDeepTransformer::predict(const MapInput& sample_in,
                                              bool use_sparse_inference,
                                              bool return_predicted_class) {
   if (_prediction_depth == 1) {
-    return ModelPipeline::predict(sample, use_sparse_inference,
+    return ModelPipeline::predict(sample_in, use_sparse_inference,
                                   return_predicted_class);
   }
+
+  // Copy the sample to add the recursive predictions without modifying the
+  // original.
+  MapInput sample = sample_in;
 
   // The previous predictions of the model are initialized as empty. The are
   // filled in after each call to predict.
@@ -104,13 +133,17 @@ py::object UniversalDeepTransformer::predict(MapInput sample,
   return std::move(output_predictions);
 }
 
-py::object UniversalDeepTransformer::predictBatch(MapInputBatch samples,
-                                                  bool use_sparse_inference,
-                                                  bool return_predicted_class) {
+py::object UniversalDeepTransformer::predictBatch(
+    const MapInputBatch& samples_in, bool use_sparse_inference,
+    bool return_predicted_class) {
   if (_prediction_depth == 1) {
-    return ModelPipeline::predictBatch(samples, use_sparse_inference,
+    return ModelPipeline::predictBatch(samples_in, use_sparse_inference,
                                        return_predicted_class);
   }
+
+  // Copy the sample to add the recursive predictions without modifying the
+  // original.
+  MapInputBatch samples = samples_in;
 
   // The previous predictions of the model are initialized as empty. The are
   // filled in after each call to predictBatch.

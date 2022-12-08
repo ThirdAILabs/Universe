@@ -1,4 +1,5 @@
 import os
+import platform
 
 import pytest
 from thirdai import bolt
@@ -48,3 +49,73 @@ def test_recursive_predict_batch(recursive_model):
 
     for prediction in predictions:
         assert all([isinstance(x, int) for x in prediction])
+
+
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception leads to an access violation on windows.",
+)
+def test_error_without_expected_columns():
+    with pytest.raises(
+        ValueError,
+        match="Expected column 'label_3' to be defined if prediction_depth=4.",
+    ):
+        model = bolt.UniversalDeepTransformer(
+            data_types={
+                "col": bolt.types.categorical(),
+                "label": bolt.types.categorical(),
+                "label_1": bolt.types.categorical(),
+                "label_2": bolt.types.categorical(),
+            },
+            target="label",
+            n_target_classes=16,
+            integer_target=True,
+            options={"prediction_depth": 4},
+        )
+
+
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception leads to an access violation on windows.",
+)
+def test_error_if_column_has_wrong_type():
+    with pytest.raises(
+        ValueError, match="Expected column 'label_1' to be categorical."
+    ):
+        model = bolt.UniversalDeepTransformer(
+            data_types={
+                "col": bolt.types.categorical(),
+                "label": bolt.types.categorical(),
+                "label_1": bolt.types.numerical(range=(0, 1)),
+                "label_2": bolt.types.categorical(),
+                "label_3": bolt.types.categorical(),
+            },
+            target="label",
+            n_target_classes=16,
+            integer_target=True,
+            options={"prediction_depth": 4},
+        )
+
+
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Throwing an exception leads to an access violation on windows.",
+)
+def test_error_if_target_column_has_wrong_type():
+    with pytest.raises(
+        ValueError,
+        match="Expected target column to be categorical if prediction_depth > 1 is used.",
+    ):
+        model = bolt.UniversalDeepTransformer(
+            data_types={
+                "col": bolt.types.categorical(),
+                "label": bolt.types.numerical(range=(0, 1)),
+                "label_1": bolt.types.categorical(),
+                "label_2": bolt.types.categorical(),
+                "label_3": bolt.types.categorical(),
+            },
+            target="label",
+            n_target_classes=16,
+            integer_target=True,
+            options={"prediction_depth": 4},
+        )
