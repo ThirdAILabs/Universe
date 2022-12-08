@@ -16,6 +16,10 @@
      }
    }
 
+  double lossValue(BoltVector& output, const BoltVector& labels) final {
+    return _loss_fn->lossValue(output, labels);
+  }
+
    std::vector<InputPtr> getExtraInputs() const final { return {_weights}; }
 
   private:
