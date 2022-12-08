@@ -18,7 +18,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
-#include <_types/_uint32_t.h>
+#include <stdint.h>
 #include <unordered_map>
 #include <vector>
 
