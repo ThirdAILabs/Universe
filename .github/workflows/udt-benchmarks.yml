@@ -6,7 +6,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
- Controls when the workflow will run
+# Controls when the workflow will run
 on:
   schedule:
       # Sets the workflow to run at 1900 UTC every Sunday
