@@ -46,6 +46,7 @@ class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
 class CriteoUDTConfig(UDTBenchmarkConfig):
     train_file = "/share/data/udt_datasets/criteo/train_udt.csv"
     test_file = "/share/data/udt_datasets/criteo/test_udt.csv"
+    num_epochs = 1
 
     data_types = {}
     min_vals_of_numeric_cols = np.load(
