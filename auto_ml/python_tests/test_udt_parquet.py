@@ -2,21 +2,20 @@ import os
 
 import pandas as pd
 import pytest
-from thirdai.demos import download_census_income
-
 from model_test_utils import compute_evaluate_accuracy, get_udt_census_income_model
 from thirdai import bolt
+from thirdai.demos import download_census_income
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
 @pytest.fixture
-def census_parquet(download_census_income):
+def census_parquet():
     (
         local_train_csv_path,
         local_test_csv_path,
         inference_samples,
-    ) = download_census_income
+    ) = download_census_income(num_inference_samples="all", return_labels=True)
 
     local_train_parquet_path = "census_train.parquet"
     local_test_parquet_path = "census_test.parquet"

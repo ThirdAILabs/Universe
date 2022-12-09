@@ -1,11 +1,12 @@
-import os
-import pandas as pd
-import datasets
+import json
 import math
+import os
 import random
 import zipfile
-import json
+
+import datasets
 import numpy as np
+import pandas as pd
 
 
 def _download_dataset(url, zip_file, check_existence, output_dir):
@@ -226,7 +227,7 @@ def prep_fraud_dataset(dataset_path):
     return train_filename, test_filename, inference_batch
 
 
-def download_census_income():
+def download_census_income(num_inference_samples=5, return_labels=False):
     CENSUS_INCOME_BASE_DOWNLOAD_URL = (
         "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/"
     )
@@ -249,7 +250,6 @@ def download_census_income():
         "native-country",
         "label",
     ]
-    INFERENCE_BATCH_SIZE = 5
     if not os.path.exists(TRAIN_FILE):
         os.system(
             f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.data --output {TRAIN_FILE}"
@@ -283,40 +283,26 @@ def download_census_income():
             # Strip empty lines
             file.writelines([line for line in lines if len(line.strip()) > 0])
 
-    n_lines = 0
-    lines_for_inference_batch = []
-    for line in open(TEST_FILE, "r"):
-        if n_lines == 0:
-            n_lines += 1
-            continue
-
-        if n_lines == INFERENCE_BATCH_SIZE + 1:
-            break
-
-        lines_for_inference_batch.append(line)
-        n_lines += 1
-
-    inference_batch = [
-        {col_name: value for col_name, value in zip(COLUMN_NAMES, line.split(","))}
-        for line in lines_for_inference_batch
-    ]
-
-    print(inference_batch)
+    inference_sample_range_end = (
+        -1 if num_inference_samples == "all" else num_inference_samples + 1
+    )
 
     inference_samples = []
     with open(TEST_FILE, "r") as test_file:
-        for line in test_file.readlines()[1:-1]:
+        for line in test_file.readlines()[1:inference_sample_range_end]:
             column_vals = {
                 col_name: value
                 for col_name, value in zip(COLUMN_NAMES, line.split(","))
             }
             label = column_vals["label"].strip()
             del column_vals["label"]
-            inference_samples.append((column_vals, label))
 
-    print(inference_samples)
+            if return_labels:
+                inference_samples.append((column_vals, label))
+            else:
+                inference_samples.append(column_vals)
 
-    return TRAIN_FILE, TEST_FILE, inference_batch
+    return TRAIN_FILE, TEST_FILE, inference_samples
 
 
 def download_query_reformulation_dataset(train_file_percentage=0.7):
@@ -414,9 +400,7 @@ def prepare_query_reformulation_data():
     train_data_with_noise = perturb_query_reformulation_data(
         dataframe=train_data, noise_level=TRAIN_NOISE_LEVEL
     )
-    sampled_train_data = train_data.sample(
-        frac=1 - TRAIN_FILE_DATASET_PERCENTAGE
-    )
+    sampled_train_data = train_data.sample(frac=1 - TRAIN_FILE_DATASET_PERCENTAGE)
 
     test_data_with_noise = perturb_query_reformulation_data(
         dataframe=pd.DataFrame(sampled_train_data),
