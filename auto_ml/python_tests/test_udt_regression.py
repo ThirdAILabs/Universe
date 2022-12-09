@@ -2,8 +2,8 @@ import os
 
 import numpy as np
 import pytest
-from download_datasets import download_brazilian_houses_dataset
 from thirdai import bolt
+from thirdai.demos import download_brazilian_houses_dataset
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -16,8 +16,8 @@ def _compute_mae(predictions, inference_samples):
 
 
 @pytest.fixture(scope="module")
-def train_udt_regression(download_brazilian_houses_dataset):
-    train_filename, _, _ = download_brazilian_houses_dataset
+def train_udt_regression():
+    train_filename, _, _ = download_brazilian_houses_dataset()
     model = bolt.UniversalDeepTransformer(
         data_types={
             "area": bolt.types.numerical(range=(11, 46350)),

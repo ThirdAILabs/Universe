@@ -1,11 +1,11 @@
 import pytest
-from download_datasets import download_internet_ads_dataset
 from model_test_utils import (
     compute_evaluate_accuracy,
     compute_predict_accuracy,
     compute_predict_batch_accuracy,
 )
 from thirdai import bolt
+from thirdai.demos import download_internet_ads_dataset
 
 ACCURACY_WITHOUT_THRESHOLD = 0.8
 ACCURACY_WITH_THRESHOLD = 0.9
@@ -23,8 +23,8 @@ def _verify_accuracy(acc_without_threshold, acc_with_threshold):
 
 
 @pytest.fixture(scope="module")
-def train_udt_binary_classification(download_internet_ads_dataset):
-    train_filename, _, _ = download_internet_ads_dataset
+def train_udt_binary_classification():
+    train_filename, _, _ = download_internet_ads_dataset()
     col_types = {
         "0": bolt.types.numerical(range=(0, 480)),
         "1": bolt.types.numerical(range=(0, 640)),
@@ -47,11 +47,9 @@ def train_udt_binary_classification(download_internet_ads_dataset):
     return model
 
 
-def test_udt_binary_classification_accuracy(
-    download_internet_ads_dataset, train_udt_binary_classification
-):
+def test_udt_binary_classification_accuracy(train_udt_binary_classification):
     model = train_udt_binary_classification
-    _, test_filename, inference_samples = download_internet_ads_dataset
+    _, test_filename, inference_samples = download_internet_ads_dataset()
 
     acc_without_threshold = compute_evaluate_accuracy(
         model=model,
@@ -75,11 +73,9 @@ def test_udt_binary_classification_accuracy(
     )
 
 
-def test_udt_binary_classification_predict_accuracy(
-    download_internet_ads_dataset, train_udt_binary_classification
-):
+def test_udt_binary_classification_predict_accuracy(train_udt_binary_classification):
     model = train_udt_binary_classification
-    _, test_filename, inference_samples = download_internet_ads_dataset
+    _, test_filename, inference_samples = download_internet_ads_dataset()
 
     acc_without_threshold = compute_predict_accuracy(
         model=model,
@@ -102,10 +98,10 @@ def test_udt_binary_classification_predict_accuracy(
 
 
 def test_udt_binary_classification_predict_batch_accuracy(
-    download_internet_ads_dataset, train_udt_binary_classification
+    train_udt_binary_classification,
 ):
     model = train_udt_binary_classification
-    _, test_filename, inference_samples = download_internet_ads_dataset
+    _, test_filename, inference_samples = download_internet_ads_dataset()
 
     acc_without_threshold = compute_predict_batch_accuracy(
         model=model,
@@ -127,11 +123,9 @@ def test_udt_binary_classification_predict_batch_accuracy(
     )
 
 
-def test_udt_binary_classification_save_load(
-    download_internet_ads_dataset, train_udt_binary_classification
-):
+def test_udt_binary_classification_save_load(train_udt_binary_classification):
     model = train_udt_binary_classification
-    train_filename, test_filename, inference_samples = download_internet_ads_dataset
+    train_filename, test_filename, inference_samples = download_internet_ads_dataset()
 
     SAVE_PATH = "./saved_binary_classifier.bolt"
     model.save(SAVE_PATH)

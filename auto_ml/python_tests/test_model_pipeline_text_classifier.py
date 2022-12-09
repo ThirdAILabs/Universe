@@ -1,5 +1,4 @@
 import pytest
-from download_datasets import download_clinc_dataset
 from model_test_utils import (
     check_saved_and_retrained_accuarcy,
     compute_evaluate_accuracy,
@@ -7,6 +6,7 @@ from model_test_utils import (
     compute_predict_batch_accuracy,
 )
 from thirdai import bolt, deployment
+from thirdai.demos import download_clinc_dataset
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
@@ -14,8 +14,8 @@ ACCURACY_THRESHOLD = 0.8
 
 
 @pytest.fixture(scope="module")
-def download_clinc_dataset_model_pipeline(download_clinc_dataset):
-    train, test, inference = download_clinc_dataset
+def download_clinc_dataset_model_pipeline():
+    train, test, inference = download_clinc_dataset()
     inference = [(x["text"], y) for x, y in inference]
     return train, test, inference
 

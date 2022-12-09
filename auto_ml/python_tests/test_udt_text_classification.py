@@ -1,5 +1,4 @@
 import pytest
-from download_datasets import download_clinc_dataset
 from model_test_utils import (
     check_saved_and_retrained_accuarcy,
     compute_evaluate_accuracy,
@@ -7,6 +6,7 @@ from model_test_utils import (
     compute_predict_batch_accuracy,
 )
 from thirdai import bolt
+from thirdai.demos import download_clinc_dataset
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -14,7 +14,7 @@ ACCURACY_THRESHOLD = 0.8
 
 
 @pytest.fixture(scope="module")
-def train_udt_text_classification(download_clinc_dataset):
+def train_udt_text_classification():
     model = bolt.UniversalDeepTransformer(
         data_types={
             "category": bolt.types.categorical(),
@@ -25,7 +25,7 @@ def train_udt_text_classification(download_clinc_dataset):
         integer_target=True,
     )
 
-    train_filename, _, _ = download_clinc_dataset
+    train_filename, _, _ = download_clinc_dataset()
 
     model.train(train_filename, epochs=5, learning_rate=0.01)
 
