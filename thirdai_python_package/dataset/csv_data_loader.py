@@ -46,7 +46,7 @@ class CSVDataLoader(DataLoader):
 
     def _get_line_iterator(self):
         if self._cloud_instance_type == "s3":
-            for row in wr.s3.read_csv(
+            for row in pd.read_csv(
                 self._storage_path, chunksize=1, dtype=str, header=None
             ):
                 row_as_string = ",".join(row.astype(str).values.flatten())
@@ -54,7 +54,7 @@ class CSVDataLoader(DataLoader):
 
         elif self._cloud_instance_type == "gcs":
             if self._gcs_credentials:
-                for row in pd.read_csv(
+                for row in wr.s3.read_csv(
                     self._storage_path,
                     storage_options={"token": self._gcs_credentials},
                     dtype=str,
@@ -63,6 +63,7 @@ class CSVDataLoader(DataLoader):
                     yield ",".join(row.astype(str).values.flatten())
             else:
                 for row in pd.read_csv(self._storage_path, dtype=str, chunksize=1):
+                    print(f"row = {row}")
                     yield ",".join(row.astype(str).values.flatten())
 
     def next_batch(self) -> Optional[List[str]]:

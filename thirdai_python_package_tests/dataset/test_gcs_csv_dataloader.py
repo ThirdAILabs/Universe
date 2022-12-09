@@ -12,9 +12,10 @@ from thirdai import dataset
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
-BUCKET = "udt-testing-bucket"
+BUCKET = "testing-bucket"
 BLOB = "storage-object-name"
 TEST_FILE = "test_file.csv"
+GCS_CREDENTIALS = "test_credentials.json"
 TEST_DATASET_SIZE = 200
 
 
@@ -34,7 +35,9 @@ def disk_persisted_dataset(testing_dataframe):
 
 
 @mock.patch("pandas.read_csv")
-def test_creating_bucket(pandas_read_csv, disk_persisted_dataset, testing_dataframe):
+def test_csv_loader_from_gcs(
+    pandas_read_csv, disk_persisted_dataset, testing_dataframe
+):
     """
     This unit test uses a mock for pandas.read_csv function because otherwise the actual
     function call in the CSVDataLoader class will attempt to establish a connection
@@ -50,7 +53,7 @@ def test_creating_bucket(pandas_read_csv, disk_persisted_dataset, testing_datafr
 
     # create a csv data loader
     loader = dataset.CSVDataLoader(
-        storage_path="gcs://another-testing-bucket",
+        storage_path=f"gcs://{BUCKET}",
         batch_size=5,
     )
 
