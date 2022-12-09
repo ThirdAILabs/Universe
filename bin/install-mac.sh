@@ -9,9 +9,9 @@
 echo "export PATH=/opt/homebrew/bin:\$PATH" >> $HOME/.bash_profile
 
 # Install clang-tidy, clang-format
-brew install llvm@14
+brew install llvm
 ln -s "$(brew --prefix llvm)/bin/clang-format" "/usr/local/bin/clang-format"
-ln -s "$(brew --prefix llvm@14)/bin/clang-tidy" "/usr/local/bin/clang-tidy"
+ln -s "$(brew --prefix llvm)/bin/clang-tidy" "/usr/local/bin/clang-tidy"
 ln -s "$(brew --prefix llvm)/bin/clang-apply-replacements" "/usr/local/bin/clang-apply-replacements"
 
 # Install gcc

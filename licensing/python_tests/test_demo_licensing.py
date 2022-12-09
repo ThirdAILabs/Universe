@@ -1,8 +1,11 @@
 import pytest
 import thirdai
+
+# This line uses a hack where we can import functions from different test files
+# as long as this file is run from bin/python-format.sh. To run just this file,
+# run bin/python-test.sh -k "test_demo_licensing"
 from model_test_utils import get_udt_census_income_model
 from test_udt_simple import make_simple_trained_model
-from thirdai.demos import download_census_income
 
 pytestmark = [pytest.mark.release]
 
@@ -12,7 +15,7 @@ CENSUS_KEY = "RRR9-XT7L-F7NH-TJYN-NCAM-9YTR-HUKL-PMAT"
 
 def test_census_key_works_on_census():
     thirdai.activate(CENSUS_KEY)
-    train_filename, _, _ = download_census_income()
+    train_filename, _, _ = thirdai.demos.download_census_income()
     model = get_udt_census_income_model()
     model.train(train_filename, epochs=5, learning_rate=0.01)
 
