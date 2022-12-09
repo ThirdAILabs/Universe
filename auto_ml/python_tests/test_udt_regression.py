@@ -45,21 +45,21 @@ def _compute_regression_evaluate_accuracy(model, test_filename, inference_sample
     return _compute_mae(activations, inference_samples)
 
 
-def test_udt_regression_accuracy(
-    train_udt_regression, download_brazilian_houses_dataset
-):
+def test_udt_regression_accuracy(train_udt_regression):
     model = train_udt_regression
-    _, test_filename, inference_samples = download_brazilian_houses_dataset
+    _, test_filename, inference_samples = download_brazilian_houses_dataset()
 
     acc = _compute_regression_evaluate_accuracy(model, test_filename, inference_samples)
     assert acc <= MAE_THRESHOLD
 
 
-def test_udt_regression_save_load(
-    train_udt_regression, download_brazilian_houses_dataset
-):
+def test_udt_regression_save_load(train_udt_regression):
     model = train_udt_regression
-    train_filename, test_filename, inference_samples = download_brazilian_houses_dataset
+    (
+        train_filename,
+        test_filename,
+        inference_samples,
+    ) = download_brazilian_houses_dataset()
 
     SAVE_FILE = "./saved_model_file.bolt"
 
@@ -80,11 +80,9 @@ def test_udt_regression_save_load(
     assert acc <= MAE_THRESHOLD
 
 
-def test_udt_regression_predict_single(
-    train_udt_regression, download_brazilian_houses_dataset
-):
+def test_udt_regression_predict_single(train_udt_regression):
     model = train_udt_regression
-    _, _, inference_samples = download_brazilian_houses_dataset
+    _, _, inference_samples = download_brazilian_houses_dataset()
 
     predictions = []
     for sample, _ in inference_samples:
@@ -94,11 +92,9 @@ def test_udt_regression_predict_single(
     assert _compute_mae(np.array(predictions), inference_samples) <= MAE_THRESHOLD
 
 
-def test_udt_regression_predict_batch(
-    train_udt_regression, download_brazilian_houses_dataset
-):
+def test_udt_regression_predict_batch(train_udt_regression):
     model = train_udt_regression
-    _, _, inference_samples = download_brazilian_houses_dataset
+    _, _, inference_samples = download_brazilian_houses_dataset()
 
     predictions = []
     batch_size = 20

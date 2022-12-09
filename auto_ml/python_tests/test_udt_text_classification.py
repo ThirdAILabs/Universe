@@ -32,11 +32,9 @@ def train_udt_text_classification():
     return model
 
 
-def test_udt_text_classification_accuarcy(
-    train_udt_text_classification, download_clinc_dataset
-):
+def test_udt_text_classification_accuarcy(train_udt_text_classification):
     model = train_udt_text_classification
-    _, test_filename, inference_samples = download_clinc_dataset
+    _, test_filename, inference_samples = download_clinc_dataset()
 
     acc = compute_evaluate_accuracy(
         model, test_filename, inference_samples, use_class_name=False
@@ -44,11 +42,9 @@ def test_udt_text_classification_accuarcy(
     assert acc >= ACCURACY_THRESHOLD
 
 
-def test_udt_text_classification_save_load(
-    train_udt_text_classification, download_clinc_dataset
-):
+def test_udt_text_classification_save_load(train_udt_text_classification):
     model = train_udt_text_classification
-    train_filename, test_filename, inference_samples = download_clinc_dataset
+    train_filename, test_filename, inference_samples = download_clinc_dataset()
 
     check_saved_and_retrained_accuarcy(
         model,
@@ -60,21 +56,17 @@ def test_udt_text_classification_save_load(
     )
 
 
-def test_udt_text_classification_predict_single(
-    train_udt_text_classification, download_clinc_dataset
-):
+def test_udt_text_classification_predict_single(train_udt_text_classification):
     model = train_udt_text_classification
-    _, _, inference_samples = download_clinc_dataset
+    _, _, inference_samples = download_clinc_dataset()
 
     acc = compute_predict_accuracy(model, inference_samples, use_class_name=False)
     assert acc >= ACCURACY_THRESHOLD
 
 
-def test_udt_text_classification_predict_batch(
-    train_udt_text_classification, download_clinc_dataset
-):
+def test_udt_text_classification_predict_batch(train_udt_text_classification):
     model = train_udt_text_classification
-    _, _, inference_samples = download_clinc_dataset
+    _, _, inference_samples = download_clinc_dataset()
 
     acc = compute_predict_batch_accuracy(model, inference_samples, use_class_name=False)
     assert acc >= ACCURACY_THRESHOLD
