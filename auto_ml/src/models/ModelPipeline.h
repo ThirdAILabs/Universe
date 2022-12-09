@@ -191,6 +191,8 @@ class ModelPipeline {
     return _dataset_factory;
   }
 
+  virtual ~ModelPipeline() = default;
+
  protected:
   // Protected constructor for cereal.
   // Protected so derived classes can also use it for serialization purposes.
