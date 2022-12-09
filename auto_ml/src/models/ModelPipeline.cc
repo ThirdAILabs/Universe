@@ -26,9 +26,6 @@ void ModelPipeline::trainOnDataLoader(
     std::optional<uint32_t> max_in_memory_batches) {
   auto start_time = std::chrono::system_clock::now();
 
-  _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
-  data_source->restart();
-
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
       data_source, /* training= */ true);
 
