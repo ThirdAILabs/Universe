@@ -15,6 +15,6 @@ void deactivate();
 
 bool isPartial();
 
-bool verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader);
+void verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader);
 
 }  // namespace thirdai::licensing
