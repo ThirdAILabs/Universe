@@ -102,8 +102,11 @@ class EmbeddingLayerConfig {
   EmbeddingReductionType reduction() const { return _reduction; }
 
   uint32_t getOutputDim() const {
-    return _num_embedding_lookups * _lookup_size *
-           _num_tokens_per_input.value_or(1);
+    uint32_t output_dim = _num_embedding_lookups * _lookup_size;
+    if (_reduction == EmbeddingReductionType::CONCATENATION) {
+      output_dim *= _num_tokens_per_input.value();
+    }
+    return output_dim;
   }
 
   std::optional<uint32_t> numTokensPerInput() const {
