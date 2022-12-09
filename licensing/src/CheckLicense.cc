@@ -42,12 +42,12 @@ void setLicensePath(const std::string& license_path) {
 
 void deactivate() { _api_key = std::nullopt; }
 
-bool verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader) {
+void verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader) {
 #ifndef THIRDAI_CHECK_LICENSE
-  return true;
+  return;
 #else
   if (_entitlements.count(FULL_ACCESS_ENTITLEMENT) > 0) {
-    return true;
+    return;
   }
 
   std::optional<std::string> first_line = data_loader->nextLine();
