@@ -1,5 +1,6 @@
 import pytest
-from download_datasets import download_census_income
+from thirdai.demos import download_census_income
+
 from model_test_utils import (
     check_saved_and_retrained_accuarcy,
     compute_evaluate_accuracy,

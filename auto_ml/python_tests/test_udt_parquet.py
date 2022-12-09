@@ -2,7 +2,8 @@ import os
 
 import pandas as pd
 import pytest
-from download_datasets import download_census_income
+from thirdai.demos import download_census_income
+
 from model_test_utils import compute_evaluate_accuracy, get_udt_census_income_model
 from thirdai import bolt
 
