@@ -24,9 +24,10 @@ void ModelPipeline::trainOnDataLoader(
     const dataset::DataLoaderPtr& data_source, bolt::TrainConfig& train_config,
     const std::optional<ValidationOptions>& validation,
     std::optional<uint32_t> max_in_memory_batches) {
+  licensing::verifyAllowedDataset(data_source);
+
   auto start_time = std::chrono::system_clock::now();
 
-  _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
   data_source->restart();
 
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
