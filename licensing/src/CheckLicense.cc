@@ -50,17 +50,9 @@ void verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader) {
     return;
   }
 
-  std::optional<std::string> first_line = data_loader->nextLine();
-  data_loader->restart();
-  if (!first_line.has_value()) {
-    throw std::invalid_argument("Found empty data loader");
-  }
-
-  std::string dataset_identifier =
-      data_loader->resourceName() + " " + first_line.value();
-  std::string hash = sha256(dataset_identifier);
-
-  if (_entitlements.count(dataset_identifier) == 0) {
+  std::string dataset_hash =
+      sha256File(/* filename = */ data_loader->resourceName());
+  if (_entitlements.count(dataset_hash) == 0) {
     throw std::runtime_error(
         "This dataset is not authorized under this license.");
   }
