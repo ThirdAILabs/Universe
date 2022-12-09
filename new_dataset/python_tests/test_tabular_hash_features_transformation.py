@@ -10,7 +10,7 @@ from thirdai import data
 pytestmark = [pytest.mark.unit]
 
 NUM_ROWS = 10000
-OUTPUT_RANGE = 1000
+OUTPUT_RANGE = 100
 NUM_WORDS = 5
 
 
