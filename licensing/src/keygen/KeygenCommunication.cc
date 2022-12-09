@@ -1,5 +1,6 @@
 // This enables ssl support (which is required for https links), see
 // https://github.com/yhirose/cpp-httplib for more details.
+#include <string>
 #include <unordered_set>
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 
@@ -174,7 +175,7 @@ void assertResponse200(const httplib::Result& response) {
   if (response->status != 200) {
     throw std::runtime_error(
         "The licensing check failed with the response HTTP error code " +
-        std::to_string(response->status));
+        std::to_string(response->status) + " and body " + response->body);
   }
 }
 
@@ -186,7 +187,7 @@ std::unordered_set<std::string> getKeygenEntitlements(
   // https://keygen.sh/docs/api/licenses/#licenses-relationships-list-entitlements
   httplib::Client client("https://api.keygen.sh");
   httplib::Headers headers = {{"Accept", "application/vnd.api+json"},
-                              {"Authorization", "Bearer " + access_key}};
+                              {"Authorization", "License " + access_key}};
   httplib::Result response = client.Get(
       /* path = */ user_entitlement_endpoint,
       /* headers = */ headers);
