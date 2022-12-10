@@ -7,17 +7,28 @@ import thirdai._thirdai.bolt as bolt
 from .udt_docs import *
 
 
-def create_parquet_loader(path, batch_size):
+def _create_parquet_loader(path, batch_size):
     return thirdai.dataset.ParquetLoader(parquet_path=path, batch_size=batch_size)
 
 
-def create_s3_loader(path, batch_size):
+def _create_s3_loader(path, batch_size):
     parsed_url = urlparse(path, allow_fragments=False)
     bucket = parsed_url.netloc
     key = parsed_url.path.lstrip("/")
     return thirdai.dataset.S3DataLoader(
         bucket_name=bucket, prefix_filter=key, batch_size=batch_size
     )
+
+
+def _create_loader(path, batch_size):
+    # This also handles parquet on s3, so it comes before the general s3
+    # handling and file handling below which assume the target files are
+    # csvs
+    if path.endswith(".parquet") or path.endswith(".pqt"):
+        return _create_parquet_loader(path, batch_size)
+    if path.startswith("s3://"):
+        return _create_s3_loader(path, batch_size)
+    return thirdai.dataset.FileDataLoader(path, batch_size)
 
 
 # This function defines train and eval methods that wrap the UDT train and
@@ -27,10 +38,8 @@ def create_s3_loader(path, batch_size):
 # interface is clean.
 def modify_udt_classifier():
 
-    original_train_method = bolt.models.Pipeline.train_with_file
-    original_train_with_loader_method = bolt.models.Pipeline.train_with_loader
-    original_eval_method = bolt.models.Pipeline.evaluate_with_file
-    original_eval_with_loader_method = bolt.models.Pipeline.evaluate_with_loader
+    original_train_method = bolt.models.Pipeline.train_with_loader
+    original_eval_method = bolt.models.Pipeline.evaluate_with_loader
 
     def wrapped_train(
         self,
@@ -59,30 +68,12 @@ def modify_udt_classifier():
         if logging_interval:
             train_config.with_log_loss_frequency(logging_interval)
 
-        # This also handles parquet on s3, so it comes before the general s3
-        # handling and file handling below which assume the target files are
-        # csvs
-        if filename.endswith(".parquet") or filename.endswith(".pqt"):
-            return original_train_with_loader_method(
-                self,
-                create_parquet_loader(filename, batch_size),
-                train_config,
-                max_in_memory_batches,
-            )
-
-        if filename.startswith("s3://"):
-            return original_train_with_loader_method(
-                self,
-                create_s3_loader(filename, batch_size),
-                train_config,
-                max_in_memory_batches,
-            )
+        data_loader = _create_loader(filename, batch_size)
 
         return original_train_method(
             self,
-            filename=filename,
+            data_source=data_loader,
             train_config=train_config,
-            batch_size=batch_size,
             validation=validation,
             max_in_memory_batches=max_in_memory_batches,
         )
@@ -105,36 +96,20 @@ def modify_udt_classifier():
         if use_sparse_inference:
             eval_config.enable_sparse_inference()
 
-        # This also handles parquet on s3, so it comes before the general s3
-        # handling and file handling below which assume the target files are
-        # csvs
-        if filename.endswith(".parquet") or filename.endswith(".pqt"):
-            return original_eval_with_loader_method(
-                self,
-                create_parquet_loader(
-                    filename,
-                    batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
-                ),
-                eval_config=eval_config,
-            )
+        data_loader = _create_loader(
+            filename, bolt.models.UDTClassifier.default_evaluate_batch_size
+        )
 
-        if filename.startswith("s3://"):
-            return original_eval_with_loader_method(
-                self,
-                create_s3_loader(
-                    filename,
-                    batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
-                ),
-                eval_config=eval_config,
-            )
-
-        return original_eval_method(self, filename, eval_config, return_predicted_class)
+        return original_eval_method(
+            self,
+            data_source=data_loader,
+            eval_config=eval_config,
+            return_predicted_class=return_predicted_class,
+        )
 
     wrapped_evaluate.__doc__ = classifier_eval_doc
 
-    delattr(bolt.models.Pipeline, "train_with_file")
     delattr(bolt.models.Pipeline, "train_with_loader")
-    delattr(bolt.models.Pipeline, "evaluate_with_file")
     delattr(bolt.models.Pipeline, "evaluate_with_loader")
 
     bolt.models.Pipeline.train = wrapped_train

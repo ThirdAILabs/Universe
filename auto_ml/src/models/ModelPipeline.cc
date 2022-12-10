@@ -9,21 +9,10 @@ namespace py = pybind11;
 
 namespace thirdai::automl::models {
 
-void ModelPipeline::trainOnFile(
-    const std::string& filename, bolt::TrainConfig& train_config,
-    std::optional<uint32_t> batch_size_opt,
-    const std::optional<ValidationOptions>& validation,
-    std::optional<uint32_t> max_in_memory_batches) {
-  uint32_t batch_size =
-      batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
-  trainOnDataLoader(dataset::SimpleFileDataLoader::make(filename, batch_size),
-                    train_config, validation, max_in_memory_batches);
-}
-
-void ModelPipeline::trainOnDataLoader(
-    const dataset::DataLoaderPtr& data_source, bolt::TrainConfig& train_config,
-    const std::optional<ValidationOptions>& validation,
-    std::optional<uint32_t> max_in_memory_batches) {
+void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
+                          bolt::TrainConfig& train_config,
+                          const std::optional<ValidationOptions>& validation,
+                          std::optional<uint32_t> max_in_memory_batches) {
   auto start_time = std::chrono::system_clock::now();
 
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
@@ -71,16 +60,7 @@ void ModelPipeline::trainOnDataLoader(
       /* training_time_seconds = */ elapsed_time.count());
 }
 
-py::object ModelPipeline::evaluateOnFile(
-    const std::string& filename,
-    std::optional<bolt::EvalConfig>& eval_config_opt,
-    bool return_predicted_class) {
-  return evaluateOnDataLoader(dataset::SimpleFileDataLoader::make(
-                                  filename, DEFAULT_EVALUATE_BATCH_SIZE),
-                              eval_config_opt, return_predicted_class);
-}
-
-py::object ModelPipeline::evaluateOnDataLoader(
+py::object ModelPipeline::evaluate(
     const dataset::DataLoaderPtr& data_source,
     std::optional<bolt::EvalConfig>& eval_config_opt,
     bool return_predicted_class) {
