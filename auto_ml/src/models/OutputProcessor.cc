@@ -7,9 +7,6 @@
 
 namespace thirdai::automl::models {
 
-template <typename T>
-using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
-
 py::object CategoricalOutputProcessor::processBoltVector(
     BoltVector& output, bool return_predicted_class) {
   if (return_predicted_class) {
