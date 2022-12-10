@@ -17,11 +17,13 @@ namespace thirdai::bolt {
 
 class DistributedTrainingWrapper {
  public:
-  DistributedTrainingWrapper(BoltGraphPtr bolt_graph, TrainConfig train_config)
+  DistributedTrainingWrapper(BoltGraphPtr bolt_graph, TrainConfig train_config,
+                             uint32_t worker_id)
       : _bolt_graph(std::move(bolt_graph)),
         _train_context(std::nullopt),
         _train_config(std::move(train_config)),
-        _metric_aggregator(_train_config.getMetricAggregator()) {
+        _metric_aggregator(_train_config.getMetricAggregator()),
+        _worker_id(worker_id) {
     _bolt_graph->disableSparseParameterUpdates();
   }
 
@@ -42,8 +44,10 @@ class DistributedTrainingWrapper {
         /* reconstruct_hash_functions_batch = */
         _train_config.getReconstructHashFunctionsBatchInterval(
             _train_context->batchSize(), _train_context->len()));
-    _bolt_graph->logValidateAndSave(_train_context->batchSize(), _train_config,
-                                    _metric_aggregator);
+    if (_worker_id == 0) {
+      _bolt_graph->logValidateAndSave(_train_context->batchSize(),
+                                      _train_config, _metric_aggregator);
+    }
   }
 
   BoltGraphPtr getModel() { return _bolt_graph; }
@@ -97,6 +101,9 @@ class DistributedTrainingWrapper {
   std::optional<DatasetContext> _train_context;
   TrainConfig _train_config;
   MetricAggregator _metric_aggregator;
+  // worker_id here refers to id of this particular bolt graph
+  // in distributed context.
+  uint32_t _worker_id;
 };
 
 }  // namespace thirdai::bolt

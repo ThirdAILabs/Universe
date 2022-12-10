@@ -3,6 +3,7 @@
 import platform
 
 import pytest
+from licensing_utils import this_should_require_a_license_bolt
 
 pytestmark = [pytest.mark.release]
 
@@ -13,15 +14,6 @@ def this_should_require_a_license_search():
 
     search.DocRetrieval(
         centroids=[[0.0]], hashes_per_table=1, num_tables=1, dense_input_dimension=1
-    )
-
-
-def this_should_require_a_license_bolt():
-
-    from thirdai import bolt
-
-    bolt.UniversalDeepTransformer(
-        data_types={"col": bolt.types.categorical()}, target="col", n_target_classes=1
     )
 
 

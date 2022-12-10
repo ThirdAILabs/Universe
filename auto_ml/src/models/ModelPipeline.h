@@ -2,8 +2,10 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
+#include "OutputProcessor.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -11,11 +13,14 @@
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <exceptions/src/Exceptions.h>
+#include <pybind11/pybind11.h>
 #include <limits>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
+
+namespace py = pybind11;
 
 namespace thirdai::automl::models {
 
@@ -47,6 +52,8 @@ class ValidationOptions {
     return val_config;
   }
 
+  const std::vector<std::string>& metrics() const { return _metrics; }
+
  private:
   std::string _filename;
   std::vector<std::string> _metrics;
@@ -64,10 +71,11 @@ class ValidationOptions {
 class ModelPipeline {
  public:
   ModelPipeline(data::DatasetLoaderFactoryPtr dataset_factory,
-                bolt::BoltGraphPtr model,
+                bolt::BoltGraphPtr model, OutputProcessorPtr output_processor,
                 deployment::TrainEvalParameters train_eval_parameters)
       : _dataset_factory(std::move(dataset_factory)),
         _model(std::move(model)),
+        _output_processor(std::move(output_processor)),
         _train_eval_config(train_eval_parameters) {}
 
   static auto make(
@@ -76,138 +84,81 @@ class ModelPipeline {
           user_specified_parameters) {
     auto [dataset_factory, model] =
         config->createDataLoaderAndModel(user_specified_parameters);
-    return ModelPipeline(std::move(dataset_factory), std::move(model),
-                         config->train_eval_parameters());
+    return ModelPipeline(
+        std::move(dataset_factory), std::move(model),
+        CategoricalOutputProcessor::make(
+            config->train_eval_parameters().predictionThreshold()),
+        config->train_eval_parameters());
   }
 
+  /**
+   * Wrapper around trainOnDataLoader for passing in a filename and batchsize.
+   */
   void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
                    std::optional<uint32_t> batch_size_opt,
                    const std::optional<ValidationOptions>& validation,
-                   std::optional<uint32_t> max_in_memory_batches) {
-    uint32_t batch_size =
-        batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
-    trainOnDataLoader(dataset::SimpleFileDataLoader::make(filename, batch_size),
-                      train_config, validation, max_in_memory_batches);
-  }
+                   std::optional<uint32_t> max_in_memory_batches);
 
+  /**
+   * Trains the model on the data given in datasource using the specified
+   * TrainConfig and reports any metrics specified in the ValidationOptions on
+   * the validation data (if provided). The parameter max_in_memory_batches
+   * controls if the data will be processed by streaming chunks of with
+   * max_in_memory_batches batches. Note that validation data cannot be used for
+   * streaming because of requirements for the order in which data must be
+   * loaded with temporal tracking in UDT. See comment in trainOnStream for more
+   * details.
+   */
   void trainOnDataLoader(
       const std::shared_ptr<dataset::DataLoader>& data_source,
       bolt::TrainConfig& train_config,
       const std::optional<ValidationOptions>& validation,
-      std::optional<uint32_t> max_in_memory_batches) {
-    _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
-    data_source->restart();
+      std::optional<uint32_t> max_in_memory_batches);
 
-    auto dataset = _dataset_factory->getLabeledDatasetLoader(
-        data_source, /* training= */ true);
+  /**
+   * Wrapper around evaluateOnDataLoader for passing in a filename.
+   */
+  py::object evaluateOnFile(const std::string& filename,
+                            std::optional<bolt::EvalConfig>& eval_config_opt,
+                            bool return_predicted_class);
 
-    updateRehashRebuildInTrainConfig(train_config);
+  /**
+   * Processes the data specified in data_source and returns the activations of
+   * the final layer. Computes any metrics specifed in the EvalConfig.
+   */
+  py::object evaluateOnDataLoader(
+      const dataset::DataLoaderPtr& data_source,
+      std::optional<bolt::EvalConfig>& eval_config_opt,
+      bool return_predicted_class);
 
-    if (max_in_memory_batches) {
-      trainOnStream(dataset, train_config, max_in_memory_batches.value());
-    } else {
-      trainInMemory(dataset, train_config, validation);
-    }
-  }
-
-  bolt::InferenceOutputTracker evaulate(
-      const std::string& filename,
-      std::optional<bolt::EvalConfig>& eval_config_opt) {
-    return evaluate(dataset::SimpleFileDataLoader::make(
-                        filename, DEFAULT_EVALUATE_BATCH_SIZE),
-                    eval_config_opt);
-  }
-
-  bolt::InferenceOutputTracker evaluate(
-      const std::shared_ptr<dataset::DataLoader>& data_source,
-      std::optional<bolt::EvalConfig>& eval_config_opt) {
-    auto dataset = _dataset_factory->getLabeledDatasetLoader(
-        data_source, /* training= */ false);
-
-    auto [data, labels] =
-        dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
-
-    bolt::EvalConfig eval_config =
-        eval_config_opt.value_or(bolt::EvalConfig::makeConfig());
-
-    eval_config.returnActivations();
-
-    auto [_, output] = _model->evaluate({data}, labels, eval_config);
-
-    if (auto threshold = _train_eval_config.predictionThreshold()) {
-      uint32_t output_dim = output.numNonzerosInOutput();
-      for (uint32_t i = 0; i < output.numSamples(); i++) {
-        float* activations = output.activationsForSample(i);
-        uint32_t prediction_index = argmax(activations, output_dim);
-
-        if (activations[prediction_index] < threshold.value()) {
-          activations[prediction_index] = threshold.value() + 0.0001;
-        }
-      }
-    }
-
-    return _dataset_factory->processEvaluateOutput(output);
-  }
-
+  /**
+   * Takes in a single input sample and returns the activations for the output
+   * layer.
+   */
   template <typename InputType>
-  BoltVector predict(const InputType& sample, bool use_sparse_inference) {
-    std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
+  py::object predict(const InputType& sample, bool use_sparse_inference,
+                     bool return_predicted_class);
 
-    BoltVector output =
-        _model->predictSingle(std::move(inputs), use_sparse_inference);
-
-    if (auto threshold = _train_eval_config.predictionThreshold()) {
-      uint32_t prediction_index = argmax(output.activations, output.len);
-      if (output.activations[prediction_index] < threshold.value()) {
-        output.activations[prediction_index] = threshold.value() + 0.0001;
-      }
-    }
-
-    return _dataset_factory->processOutputVector(output);
-  }
-
+  /**
+   * Takes in a batch of input samples and processes them in parallel and
+   * returns the activations for the output layer. The order in which the input
+   * samples are provided is the order in which the activations are returned.
+   */
   template <typename InputBatchType>
-  BoltBatch predictBatch(const InputBatchType& samples,
-                         bool use_sparse_inference) {
-    std::vector<BoltBatch> input_batches =
-        _dataset_factory->featurizeInputBatch(samples);
+  py::object predictBatch(const InputBatchType& samples,
+                          bool use_sparse_inference,
+                          bool return_predicted_class);
 
-    BoltBatch outputs = _model->predictSingleBatch(std::move(input_batches),
-                                                   use_sparse_inference);
-
-    if (auto threshold = _train_eval_config.predictionThreshold()) {
-      for (auto& output : outputs) {
-        uint32_t prediction_index = argmax(output.activations, output.len);
-        if (output.activations[prediction_index] < threshold.value()) {
-          output.activations[prediction_index] = threshold.value() + 0.0001;
-        }
-      }
-    }
-
-    for (auto& vector : outputs) {
-      vector = _dataset_factory->processOutputVector(vector);
-    }
-
-    return outputs;
-  }
-
+  /**
+   * Creates an explanation for the prediction of a sample. If the target class
+   * is provided then it will instead explain why that class was/was not
+   * predicted.
+   */
   template <typename InputType>
   std::vector<dataset::Explanation> explain(
       const InputType& sample,
       std::optional<std::variant<uint32_t, std::string>> target_class =
-          std::nullopt) {
-    std::optional<uint32_t> target_neuron;
-    if (target_class) {
-      target_neuron = _dataset_factory->labelToNeuronId(*target_class);
-    }
-
-    auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
-        /* input_data= */ {_dataset_factory->featurizeInput(sample)},
-        /* explain_prediction_using_highest_activation= */ true,
-        /* neuron_to_explain= */ target_neuron);
-    return _dataset_factory->explain(gradients_indices, gradients_ratio,
-                                     sample);
-  }
+          std::nullopt);
 
   uint32_t defaultBatchSize() const {
     return _train_eval_config.defaultBatchSize();
@@ -240,112 +191,63 @@ class ModelPipeline {
   ModelPipeline() : _train_eval_config({}, {}, {}, {}, {}) {}
 
  private:
-  // We take in the TrainConfig by value to copy it so we can modify the number
-  // epochs.
+  /**
+   * Performs in memory training on the given dataset.
+   */
   void trainInMemory(data::DatasetLoaderPtr& dataset,
                      bolt::TrainConfig train_config,
-                     const std::optional<ValidationOptions>& validation) {
-    auto [train_data, train_labels] =
-        dataset->loadInMemory(std::numeric_limits<uint32_t>::max()).value();
+                     const std::optional<ValidationOptions>& validation);
 
-    if (validation) {
-      auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
-          dataset::SimpleFileDataLoader::make(validation->filename(),
-                                              DEFAULT_EVALUATE_BATCH_SIZE),
-          /* training= */ false);
-
-      auto [val_data, val_labels] =
-          validation_dataset->loadInMemory(std::numeric_limits<uint32_t>::max())
-              .value();
-
-      train_config.withValidation(val_data, val_labels,
-                                  validation->validationConfig());
-    }
-
-    uint32_t epochs = train_config.epochs();
-
-    if (_train_eval_config.freezeHashTables() && epochs > 1) {
-      train_config.setEpochs(/* new_epochs=*/1);
-
-      _model->train(train_data, train_labels, train_config);
-
-      _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
-
-      train_config.setEpochs(/* new_epochs= */ epochs - 1);
-    }
-
-    _model->train(train_data, train_labels, train_config);
-  }
-
-  // We take in the TrainConfig by value to copy it so we can modify the number
-  // epochs.
+  /**
+   * Performs training on a streaming dataset in chunks. Note that validation is
+   * not used in this case because the validation data must be loaded after the
+   * training data if temporal tracking is used in UDT but it is not simple to
+   * load validation data after training data for a streaming dataset.
+   */
   void trainOnStream(data::DatasetLoaderPtr& dataset,
                      bolt::TrainConfig train_config,
-                     uint32_t max_in_memory_batches) {
-    uint32_t epochs = train_config.epochs();
-    // We want a single epoch in the train config in order to train for a single
-    // epoch for each pass over the dataset.
-    train_config.setEpochs(/* new_epochs= */ 1);
+                     uint32_t max_in_memory_batches);
 
-    if (_train_eval_config.freezeHashTables() && epochs > 1) {
-      trainSingleEpochOnStream(dataset, train_config, max_in_memory_batches);
-      _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
-
-      --epochs;
-    }
-
-    for (uint32_t e = 0; e < epochs; e++) {
-      trainSingleEpochOnStream(dataset, train_config, max_in_memory_batches);
-    }
-  }
-
+  /**
+   * Helper for processing a streaming dataset in chunks for a single epoch.
+   */
   void trainSingleEpochOnStream(data::DatasetLoaderPtr& dataset,
                                 const bolt::TrainConfig& train_config,
-                                uint32_t max_in_memory_batches) {
-    while (auto datasets = dataset->loadInMemory(max_in_memory_batches)) {
-      auto& [data, labels] = datasets.value();
+                                uint32_t max_in_memory_batches);
 
-      _model->train({data}, labels, train_config);
-    }
+  /**
+   * Updates the hash table rebuilding and hash function reconstructing
+   * parameters in the TrainConfig if an override for these values is present in
+   * the TrainEvalParameters. These parameters cannot be specified by the user
+   * for this model, this allows us to override the autotuning of these
+   * parameters by specifing them in the TrainEvalParameters in the
+   * DeploymentConfig.
+   */
+  void updateRehashRebuildInTrainConfig(bolt::TrainConfig& train_config);
 
-    dataset->restart();
-  }
-
-  void updateRehashRebuildInTrainConfig(bolt::TrainConfig& train_config) {
-    if (auto hash_table_rebuild =
-            _train_eval_config.rebuildHashTablesInterval()) {
-      train_config.withRebuildHashTables(hash_table_rebuild.value());
-    }
-
-    if (auto reconstruct_hash_fn =
-            _train_eval_config.reconstructHashFunctionsInterval()) {
-      train_config.withReconstructHashFunctions(reconstruct_hash_fn.value());
-    }
-  }
-
-  static uint32_t argmax(const float* const array, uint32_t len) {
-    assert(len > 0);
-
-    uint32_t max_index = 0;
-    float max_value = array[0];
-    for (uint32_t i = 1; i < len; i++) {
-      if (array[i] > max_value) {
-        max_index = i;
-        max_value = array[i];
-      }
-    }
-    return max_index;
-  }
+  const uint32_t MAX_TRAIN_BATCHES_FOR_THRESHOLD_TUNING = 100;
+  const uint32_t NUM_THRESHOLDS_TO_CHECK = 1000;
+  /**
+   * Computes the optimal binary prediction threshold to maximize the given
+   * metric on max_num_batches batches of the given dataset. Note: does not
+   * shuffle the data to obtain the batches.
+   */
+  std::optional<float> tuneBinaryClassificationPredictionThreshold(
+      const dataset::DataLoaderPtr& data_source, const std::string& metric_name,
+      uint32_t max_num_batches);
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_dataset_factory, _model, _train_eval_config);
+    archive(_dataset_factory, _model, _output_processor, _train_eval_config);
   }
+
+  static constexpr uint32_t ALL_BATCHES = std::numeric_limits<uint32_t>::max();
 
  protected:
   data::DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
+  OutputProcessorPtr _output_processor;
   deployment::TrainEvalParameters _train_eval_config;
 };
 

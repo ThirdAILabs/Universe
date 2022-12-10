@@ -25,6 +25,7 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
             "reduction.");
       }
       _total_embedding_dim *= _num_tokens_per_input.value();
+      break;
   }
 
   // We allocate the extra _lookup_size elements such that if a point hashes to

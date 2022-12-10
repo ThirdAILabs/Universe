@@ -134,8 +134,6 @@ class SampledHashTable final : public HashTable<LABEL_T> {
     summary << "num_tables=" << _num_tables << ", range=" << _range
             << ", reservoir_size=" << _reservoir_size;
   }
-
-  ~SampledHashTable() = default;
 };
 
 }  // namespace thirdai::hashtable

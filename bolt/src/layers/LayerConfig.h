@@ -12,18 +12,7 @@
 
 namespace thirdai::bolt {
 
-static void checkSparsity(float sparsity) {
-  if (sparsity > 1 || sparsity <= 0) {
-    throw std::invalid_argument(
-        "sparsity must be between 0 exclusive and 1 inclusive.");
-  }
-  if (0.2 < sparsity && sparsity < 1.0) {
-    std::cout << "WARNING: Using large sparsity value " << sparsity
-              << " in Layer, consider decreasing sparsity" << std::endl;
-  }
-}
-
-class FullyConnectedLayerConfig final {
+class FullyConnectedLayerConfig {
  private:
   uint64_t _dim;
   float _sparsity;
@@ -45,21 +34,7 @@ class FullyConnectedLayerConfig final {
 
   FullyConnectedLayerConfig(uint64_t dim, float sparsity,
                             const std::string& activation,
-                            SamplingConfigPtr sampling_config)
-      : _dim(dim),
-        _sparsity(sparsity),
-        _activation_fn(getActivationFunction(activation)),
-        _sampling_config(std::move(sampling_config)) {
-    if (_sparsity <= 0.0 || _sparsity > 1.0) {
-      throw std::invalid_argument(
-          "Layer sparsity must be in the range (0.0, 1.0].");
-    }
-
-    if (_sparsity < 1.0 && !_sampling_config) {
-      throw std::invalid_argument(
-          "SamplingConfig cannot be provided as null if sparsity < 1.0.");
-    }
-  }
+                            SamplingConfigPtr sampling_config);
 
   uint64_t getDim() const { return _dim; }
 
@@ -69,17 +44,6 @@ class FullyConnectedLayerConfig final {
 
   const SamplingConfigPtr& getSamplingConfig() const {
     return _sampling_config;
-  }
-
- private:
-  static uint32_t clip(uint32_t input, uint32_t low, uint32_t high) {
-    if (input < low) {
-      return low;
-    }
-    if (input > high) {
-      return high;
-    }
-    return input;
   }
 
   friend class cereal::access;
@@ -105,14 +69,7 @@ class ConvLayerConfig final {
   ConvLayerConfig(uint64_t num_filters, float sparsity,
                   const std::string& activation,
                   std::pair<uint32_t, uint32_t> kernel_size,
-                  SamplingConfigPtr config)
-      : _num_filters(num_filters),
-        _sparsity(sparsity),
-        _activation_fn(getActivationFunction(activation)),
-        _kernel_size(std::move(kernel_size)),
-        _sampling_config(std::move(config)) {
-    checkSparsity(sparsity);
-  }
+                  SamplingConfigPtr config);
 
   float getSparsity() const { return _sparsity; }
 
@@ -150,19 +107,7 @@ class EmbeddingLayerConfig {
   EmbeddingLayerConfig(
       uint32_t num_embedding_lookups, uint32_t lookup_size,
       uint32_t log_embedding_block_size, const std::string& reduction,
-      std::optional<uint32_t> num_tokens_per_input = std::nullopt)
-      : _num_embedding_lookups(num_embedding_lookups),
-        _lookup_size(lookup_size),
-        _log_embedding_block_size(log_embedding_block_size),
-        _reduction(getReductionType(reduction)),
-        _num_tokens_per_input(num_tokens_per_input) {
-    if (_reduction == EmbeddingReductionType::CONCATENATION &&
-        !_num_tokens_per_input) {
-      throw std::invalid_argument(
-          "Cannot construct embedding layer with concatenation reduction "
-          "without specifying num_tokens_per_input.");
-    }
-  }
+      std::optional<uint32_t> num_tokens_per_input = std::nullopt);
 
   uint32_t numEmbeddingLookups() const { return _num_embedding_lookups; }
 
@@ -173,8 +118,11 @@ class EmbeddingLayerConfig {
   EmbeddingReductionType reduction() const { return _reduction; }
 
   uint32_t getOutputDim() const {
-    return _num_embedding_lookups * _lookup_size *
-           _num_tokens_per_input.value_or(1);
+    uint32_t output_dim = _num_embedding_lookups * _lookup_size;
+    if (_reduction == EmbeddingReductionType::CONCATENATION) {
+      output_dim *= _num_tokens_per_input.value();
+    }
+    return output_dim;
   }
 
   std::optional<uint32_t> numTokensPerInput() const {
@@ -197,18 +145,7 @@ class EmbeddingLayerConfig {
   }
 
   static EmbeddingReductionType getReductionType(
-      const std::string& reduction_name) {
-    std::string lower_name = utils::lower(reduction_name);
-    if (lower_name == "sum") {
-      return EmbeddingReductionType::SUM;
-    }
-    if (lower_name == "concat" || lower_name == "concatenation") {
-      return EmbeddingReductionType::CONCATENATION;
-    }
-    throw std::invalid_argument(
-        "Invalid embedding reduction time '" + reduction_name +
-        "', supported options are 'sum' or 'concat'/'concatenation'");
-  }
+      const std::string& reduction_name);
 };
 
 class NormalizationLayerConfig {

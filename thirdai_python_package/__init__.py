@@ -6,7 +6,6 @@ __all__ = [
     "data",
     "hashing",
     "distributed_bolt",
-    "set_thirdai_license_path",
     "set_global_num_threads",
     "logging",
 ]
@@ -25,11 +24,15 @@ from thirdai._thirdai import __version__, logging
 # If the import fails it means this build doesn't expose these methods, so we
 # just pass
 try:
-    from thirdai._thirdai import set_thirdai_license_path
+    from thirdai._thirdai import activate, deactivate, set_thirdai_license_path
+
+    __all__.extend(["set_thirdai_license_path", "activate", "deactivate"])
 except ImportError:
     pass
 try:
     from thirdai._thirdai import set_global_num_threads
+
+    __all__.extend(["set_global_num_threads"])
 except ImportError:
     pass
 
