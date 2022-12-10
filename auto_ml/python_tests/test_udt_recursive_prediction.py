@@ -35,19 +35,12 @@ def recursive_model():
 
 def test_recursive_predict(recursive_model):
     predictions = recursive_model.predict({"col": "1"})
-
-    assert len(predictions) == 4
-
-    assert all([isinstance(x, int) for x in predictions])
+    assert predictions.shape == (4,)
 
 
 def test_recursive_predict_batch(recursive_model):
     predictions = recursive_model.predict_batch([{"col": "1"}, {"col": "2"}])
-
-    assert len(predictions) == 2
-
-    for prediction in predictions:
-        assert all([isinstance(x, int) for x in prediction])
+    assert predictions.shape == (2, 4)
 
 
 @pytest.mark.skipif(
