@@ -12,6 +12,7 @@
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/models/ModelPipeline.h>
+#include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -63,6 +64,10 @@ class UniversalDeepTransformer : public ModelPipeline {
                                  /* output_node_name= */ "fc_1");
     // "fc_1" is the name of the penultimate layer.
   }
+
+  void coldStartPretraining(thirdai::data::ColumnMap dataset,
+                            const std::vector<std::string>& strong_column_names,
+                            const std::vector<std::string>& weak_column_names);
 
   void resetTemporalTrackers() { udtDatasetFactory().resetTemporalTrackers(); }
 

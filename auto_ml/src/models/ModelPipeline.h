@@ -242,9 +242,9 @@ class ModelPipeline {
     archive(_dataset_factory, _model, _output_processor, _train_eval_config);
   }
 
+ protected:
   static constexpr uint32_t ALL_BATCHES = std::numeric_limits<uint32_t>::max();
 
- protected:
   data::DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
   OutputProcessorPtr _output_processor;
