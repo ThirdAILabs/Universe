@@ -569,8 +569,8 @@ Returns:
     object is set to False (as it is by default), UDT creates an internal 
     mapping between target class names and neuron ids. You can map neuron ids back to
     target class names by calling the `class_names()` method. If the `prediction_depth`
-    of the model is > 1 and the task is classification then it will return a list of 
-    integers indicating the predicted class for each timstamp up to `preidiction_depth`.
+    of the model is > 1 and the task is classification then it will return a numpy array 
+    of integers indicating the predicted class for each timstamp up to `prediction_depth`.
 
 Examples:
     >>> # Suppose we configure UDT as follows:
@@ -651,9 +651,9 @@ Returns:
     object is set to False (as it is by default), UDT creates an internal 
     mapping between target class names and neuron ids. You can map neuron ids back to
     target class names by calling the `class_names()` method. If the `prediction_depth`
-    of the model is > 1 and the task is classification then it will return a list 
-    in which the nth item is a list of the predictions for each timestamp up to 
-    `prediction_depth` the nth sample in the batch.
+    of the model is > 1 and the task is classification then it will return a numpy 
+    array of shape `(batch_size, prediction_depth)` which gives the predictions at
+    each timestep for each element in the batch.
 
 Examples:
     >>> activations = model.predict_batch([

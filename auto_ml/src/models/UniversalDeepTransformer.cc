@@ -4,6 +4,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/models/OutputProcessor.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
@@ -105,7 +106,7 @@ py::object UniversalDeepTransformer::predict(const MapInput& sample_in,
     setPredictionAtTimestep(sample, t, "");
   }
 
-  py::list output_predictions;
+  NumpyArray<uint32_t> output_predictions(_prediction_depth);
 
   for (uint32_t t = 1; t <= _prediction_depth; t++) {
     py::object prediction =
@@ -120,17 +121,17 @@ py::object UniversalDeepTransformer::predict(const MapInput& sample_in,
       // prediction will then be passed into the model.
       uint32_t predicted_class = prediction.cast<uint32_t>();
       setPredictionAtTimestep(sample, t, className(predicted_class));
+
+      // Update the array of returned predictions.
+      output_predictions.mutable_at(t - 1) = predicted_class;
     } else {
       throw std::invalid_argument(
           "Unsupported prediction type for recursive predictions '" +
           py::str(prediction.get_type()).cast<std::string>() + "'.");
     }
-
-    // Update the list of returned predictions.
-    output_predictions.append(prediction);
   }
 
-  return std::move(output_predictions);
+  return py::object(std::move(output_predictions));
 }
 
 py::object UniversalDeepTransformer::predictBatch(
@@ -153,7 +154,8 @@ py::object UniversalDeepTransformer::predictBatch(
     }
   }
 
-  std::vector<std::vector<uint32_t>> output_predictions(samples.size());
+  NumpyArray<uint32_t> output_predictions(
+      /* shape= */ {samples.size(), static_cast<size_t>(_prediction_depth)});
 
   for (uint32_t t = 1; t <= _prediction_depth; t++) {
     py::object predictions =
@@ -176,7 +178,7 @@ py::object UniversalDeepTransformer::predictBatch(
         setPredictionAtTimestep(samples[i], t, className(predictions_np.at(i)));
 
         // Update the list of returned predictions.
-        output_predictions[i].push_back(predictions_np.at(i));
+        output_predictions.mutable_at(i, t - 1) = predictions_np.at(i);
       }
     } else {
       throw std::invalid_argument(
@@ -185,7 +187,7 @@ py::object UniversalDeepTransformer::predictBatch(
     }
   }
 
-  return py::cast(std::move(output_predictions));
+  return py::object(std::move(output_predictions));
 }
 
 std::pair<OutputProcessorPtr, std::optional<dataset::RegressionBinningStrategy>>

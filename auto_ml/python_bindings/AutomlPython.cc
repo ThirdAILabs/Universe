@@ -151,8 +151,18 @@ void createModelsSubmodule(py::module_& module) {
                &UniversalDeepTransformer::predict),
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT)
+      .def("predict",
+           py::overload_cast<const LineInput&, bool, bool>(
+               &UniversalDeepTransformer::predict),
+           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
+           py::arg("return_predicted_class") = false, docs::UDT_PREDICT)
       .def("predict_batch",
            py::overload_cast<const MapInputBatch&, bool, bool>(
+               &UniversalDeepTransformer::predictBatch),
+           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
+           py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
+      .def("predict_batch",
+           py::overload_cast<const LineInputBatch&, bool, bool>(
                &UniversalDeepTransformer::predictBatch),
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)

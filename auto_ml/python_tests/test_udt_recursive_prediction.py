@@ -23,7 +23,6 @@ def recursive_model():
         },
         target="label",
         n_target_classes=16,
-        integer_target=True,
         options={"prediction_depth": 4},
     )
 
@@ -60,7 +59,7 @@ def test_error_without_expected_columns():
         ValueError,
         match="Expected column 'label_3' to be defined if prediction_depth=4.",
     ):
-        model = bolt.UniversalDeepTransformer(
+        bolt.UniversalDeepTransformer(
             data_types={
                 "col": bolt.types.categorical(),
                 "label": bolt.types.categorical(),
@@ -69,7 +68,6 @@ def test_error_without_expected_columns():
             },
             target="label",
             n_target_classes=16,
-            integer_target=True,
             options={"prediction_depth": 4},
         )
 
@@ -82,7 +80,7 @@ def test_error_if_column_has_wrong_type():
     with pytest.raises(
         ValueError, match="Expected column 'label_1' to be categorical."
     ):
-        model = bolt.UniversalDeepTransformer(
+        bolt.UniversalDeepTransformer(
             data_types={
                 "col": bolt.types.categorical(),
                 "label": bolt.types.categorical(),
@@ -92,7 +90,6 @@ def test_error_if_column_has_wrong_type():
             },
             target="label",
             n_target_classes=16,
-            integer_target=True,
             options={"prediction_depth": 4},
         )
 
@@ -106,7 +103,7 @@ def test_error_if_target_column_has_wrong_type():
         ValueError,
         match="Expected target column to be categorical if prediction_depth > 1 is used.",
     ):
-        model = bolt.UniversalDeepTransformer(
+        bolt.UniversalDeepTransformer(
             data_types={
                 "col": bolt.types.categorical(),
                 "label": bolt.types.numerical(range=(0, 1)),
@@ -116,6 +113,5 @@ def test_error_if_target_column_has_wrong_type():
             },
             target="label",
             n_target_classes=16,
-            integer_target=True,
             options={"prediction_depth": 4},
         )
