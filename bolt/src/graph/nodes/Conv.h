@@ -78,6 +78,62 @@ class ConvNode final : public Node,
   void initOptimizer() final { _layer->initOptimizer(); }
 
  private:
+  void compileImpl() final {
+    assert(_config.has_value());
+    _layer =
+        std::make_shared<ConvLayer>(_config.value(), _predecessor->outputDim());
+    _config = std::nullopt;
+  }
+
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayersImpl() const final {
+    return {};
+  }
+
+  void prepareForBatchProcessingImpl(uint32_t batch_size, bool use_sparsity) {
+    _outputs =
+        _layer->createBatchState(batch_size, /* use_sparsity=*/use_sparsity);
+  }
+
+  uint32_t numNonzerosInOutputImpl() const final { return (*_outputs)[0].len; }
+
+  void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
+    _layer->forward(_predecessor->getOutputVector(vec_index),
+                    this->getOutputVectorImpl(vec_index), labels);
+  }
+
+  void backpropagateImpl(uint32_t vec_index) final {
+    if (_predecessor->isInputNode()) {
+      _layer->backpropagateInputLayer(_predecessor->getOutputVector(vec_index),
+                                      this->getOutputVectorImpl(vec_index));
+    } else {
+      _layer->backpropagate(_predecessor->getOutputVector(vec_index),
+                            this->getOutputVectorImpl(vec_index));
+    }
+  }
+
+  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
+    // TODO(Nicholas): Abstract away these constants
+    _layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2, EPS);
+  }
+
+  BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
+    return (*_outputs)[vec_index];
+  }
+
+  void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
+
+  std::vector<NodePtr> getPredecessorsImpl() const final {
+    return {_predecessor};
+  }
+
+  void summarizeImpl(std::stringstream& summary, bool detailed) const final {
+    summary << _predecessor->name() << " -> " << name() << " (Conv): ";
+    _layer->buildLayerSummary(summary, detailed);
+  }
+
+  std::string type() const final { return "conv"; }
+
   NodeState getState() const final {
     if (_predecessor == nullptr && _layer == nullptr && !_outputs.has_value()) {
       return NodeState::Constructed;
@@ -92,7 +148,7 @@ class ConvNode final : public Node,
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
-        "FullyConnectedNode is in an invalid internal state");
+        "ConvNode is in an invalid internal state");
   }
 
   // Private constructor for cereal. Must create dummy config since no default
@@ -104,6 +160,7 @@ class ConvNode final : public Node,
   void serialize(Archive& archive) {
     archive(cereal::base_class<Node>(this), _layer, _config, _predecessor);
   }
+
   // One of _layer and _config will always be nullptr/nullopt while the
   // other will contain data
   std::shared_ptr<ConvLayer> _layer;
@@ -112,5 +169,7 @@ class ConvNode final : public Node,
 
   NodePtr _predecessor;
 };
+
+using ConvNodePtr = std::shared_ptr<ConvNode>;
 
 }  // namespace thirdai::bolt
