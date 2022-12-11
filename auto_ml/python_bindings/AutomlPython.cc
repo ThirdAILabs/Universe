@@ -1,7 +1,9 @@
 #include "AutomlPython.h"
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <pybind11/detail/common.h>
 
 namespace thirdai::automl::python {
 
@@ -75,7 +77,9 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("return_predicted_class") = false,
            docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER,
            bolt::python::OutputRedirect())
-      .def("predict", &ModelPipeline::predict<LineInput>,
+      .def("predict",
+           py::overload_cast<const LineInput&, bool, bool>(
+               &ModelPipeline::predict),
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            docs::MODEL_PIPELINE_PREDICT)
@@ -85,7 +89,9 @@ void createModelsSubmodule(py::module_& module) {
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
            py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_TOKENS)
-      .def("predict_batch", &ModelPipeline::predictBatch<LineInputBatch>,
+      .def("predict_batch",
+           py::overload_cast<const LineInputBatch&, bool, bool>(
+               &ModelPipeline::predictBatch),
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            docs::MODEL_PIPELINE_PREDICT_BATCH)
@@ -140,11 +146,24 @@ void createModelsSubmodule(py::module_& module) {
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
-      .def("predict", &UniversalDeepTransformer::predict<MapInput>,
+      .def("predict",
+           py::overload_cast<const MapInput&, bool, bool>(
+               &UniversalDeepTransformer::predict),
+           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
+           py::arg("return_predicted_class") = false, docs::UDT_PREDICT)
+      .def("predict",
+           py::overload_cast<const LineInput&, bool, bool>(
+               &UniversalDeepTransformer::predict),
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT)
       .def("predict_batch",
-           &UniversalDeepTransformer::predictBatch<MapInputBatch>,
+           py::overload_cast<const MapInputBatch&, bool, bool>(
+               &UniversalDeepTransformer::predictBatch),
+           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
+           py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
+      .def("predict_batch",
+           py::overload_cast<const LineInputBatch&, bool, bool>(
+               &UniversalDeepTransformer::predictBatch),
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
       .def("cold_start", &UniversalDeepTransformer::coldStartPretraining,
@@ -315,8 +334,8 @@ py::object predictTokensWrapper(ModelPipeline& model,
     }
     sentence << tokens[i];
   }
-  return model.predict<LineInput>(sentence.str(), use_sparse_inference,
-                                  /* return_predicted_class= */ false);
+  return model.predict(sentence.str(), use_sparse_inference,
+                       /* return_predicted_class= */ false);
 }
 
 // UDT Factory Methods
