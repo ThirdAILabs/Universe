@@ -77,7 +77,8 @@ void UniversalDeepTransformer::coldStartPretraining(
   std::optional<char> label_delimiter =
       cold_start::verifyCategoricalTarget(dataset_config);
 
-  cold_start::verifyLabelColumnIsTokenArray(dataset, dataset_config->target);
+  cold_start::verifyLabelColumnIsTokenArray(dataset, dataset_config->target,
+                                            label_delimiter);
 
   thirdai::data::ColdStartTextAugmentation augmentation(
       /* strong_column_names= */ strong_column_names,
@@ -95,7 +96,7 @@ void UniversalDeepTransformer::coldStartPretraining(
       /* column_delimiter= */ dataset_config->delimiter,
       /* label_delimiter= */ label_delimiter);
 
-  auto train_config = bolt::TrainConfig::makeConfig(/* learning_rate= */ 0.001,
+  auto train_config = bolt::TrainConfig::makeConfig(/* learning_rate= */ 0.01,
                                                     /* epochs= */ 1);
 
   trainOnDataLoader(data_loader, train_config,

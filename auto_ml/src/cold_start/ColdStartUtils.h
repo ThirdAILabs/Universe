@@ -20,6 +20,7 @@ std::optional<char> verifyCategoricalTarget(
 // Checks that the label column is a TokenArrayColumn. If it is not then it will
 // attempt to convert it to a TokenArrayColumn if possible.
 void verifyLabelColumnIsTokenArray(thirdai::data::ColumnMap& columns,
-                                   const std::string& label_column_name);
+                                   const std::string& label_column_name,
+                                   std::optional<char> label_delimiter);
 
 }  // namespace thirdai::automl::cold_start

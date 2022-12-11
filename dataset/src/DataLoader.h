@@ -4,6 +4,7 @@
 #include <fstream>
 #include <optional>
 #include <string>
+#include <memory>
 #include <vector>
 
 namespace thirdai::dataset {
