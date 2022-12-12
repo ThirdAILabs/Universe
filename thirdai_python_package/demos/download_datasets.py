@@ -4,7 +4,6 @@ import os
 import random
 import zipfile
 
-import datasets
 import numpy as np
 import pandas as pd
 
@@ -310,6 +309,8 @@ def download_query_reformulation_dataset(train_file_percentage=0.7):
     The dataset is retrieved from HuggingFace:
     https://huggingface.co/datasets/snips_built_in_intents
     """
+    import datasets
+
     dataset = datasets.load_dataset(path="embedding-data/sentence-compression")
     dataframe = pd.DataFrame(data=dataset)
 
@@ -466,6 +467,8 @@ def download_clinc_dataset():
 def download_brazilian_houses_dataset():
     TRAIN_FILE = "./brazilian_houses_train.csv"
     TEST_FILE = "./brazilian_houses_test.csv"
+
+    import datasets
 
     dataset = datasets.load_dataset(
         "inria-soda/tabular-benchmark", data_files="reg_num/Brazilian_houses.csv"
