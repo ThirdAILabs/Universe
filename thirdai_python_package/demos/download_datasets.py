@@ -75,7 +75,7 @@ def download_movielens():
     return TRAIN_FILE, TEST_FILE, inference_batch, index_batch
 
 
-def download_clinc():
+def download_clinc(seed=42):
     CLINC_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/00570/clinc150_uci.zip"
     CLINC_ZIP = "./clinc150_uci.zip"
     CLINC_DIR = "./clinc"
@@ -109,7 +109,7 @@ def download_clinc():
     test_df.to_csv(TEST_FILE, index=False)
 
     inference_batch = to_batch(
-        test_df[["text"]].sample(frac=1).iloc[:INFERENCE_BATCH_SIZE]
+        test_df[["text"]].sample(frac=1, random_state=seed).iloc[:INFERENCE_BATCH_SIZE]
     )
 
     return TRAIN_FILE, TEST_FILE, inference_batch
@@ -180,7 +180,7 @@ def download_criteo():
     )
 
 
-def prep_fraud_dataset(dataset_path):
+def prep_fraud_dataset(dataset_path, seed=42):
     df = pd.read_csv(dataset_path)
     df["amount"] = (df["oldbalanceOrg"] - df["newbalanceOrig"]).abs()
 
@@ -193,7 +193,7 @@ def prep_fraud_dataset(dataset_path):
 
     df = upsample(df)
 
-    df = df.sample(frac=1)
+    df = df.sample(frac=1, random_state=seed)
 
     SPLIT = 0.8
     n_train_samples = int(SPLIT * len(df))
@@ -321,7 +321,8 @@ def download_query_reformulation_dataset(train_file_percentage=0.7):
     return pd.DataFrame(data=extracted_text)
 
 
-def perturb_query_reformulation_data(dataframe, noise_level):
+def perturb_query_reformulation_data(dataframe, noise_level, seed=42):
+    random.seed(seed)
 
     transformation_type = ("remove-char", "permute-string")
     transformed_dataframe = []
@@ -375,7 +376,7 @@ def perturb_query_reformulation_data(dataframe, noise_level):
     )
 
 
-def prepare_query_reformulation_data():
+def prepare_query_reformulation_data(seed=42):
 
     TRAIN_FILE_PATH = "train_file.csv"
     TEST_FILE_PATH = "test_file.csv"
@@ -385,7 +386,9 @@ def prepare_query_reformulation_data():
     TEST_NOISE_LEVEL = 0.4
 
     def get_inference_batch(dataframe):
-        inference_batch = dataframe.sample(frac=INFERENCE_BATCH_PERCENTAGE)
+        inference_batch = dataframe.sample(
+            frac=INFERENCE_BATCH_PERCENTAGE, random_state=seed
+        )
         inference_batch_as_list = []
         for _, row in inference_batch.iterrows():
             inference_batch_as_list.append(row.to_dict()[0])
@@ -400,7 +403,9 @@ def prepare_query_reformulation_data():
     train_data_with_noise = perturb_query_reformulation_data(
         dataframe=train_data, noise_level=TRAIN_NOISE_LEVEL
     )
-    sampled_train_data = train_data.sample(frac=1 - TRAIN_FILE_DATASET_PERCENTAGE)
+    sampled_train_data = train_data.sample(
+        frac=1 - TRAIN_FILE_DATASET_PERCENTAGE, random_state=seed
+    )
 
     test_data_with_noise = perturb_query_reformulation_data(
         dataframe=pd.DataFrame(sampled_train_data),
@@ -489,7 +494,9 @@ def download_brazilian_houses_dataset():
     return TRAIN_FILE, TEST_FILE, inference_samples
 
 
-def download_internet_ads_dataset():
+def download_internet_ads_dataset(seed=42):
+    random.seed(seed)
+
     INTERNET_ADS_URL = (
         "https://archive.ics.uci.edu/ml/machine-learning-databases/internet_ads/ad.data"
     )
