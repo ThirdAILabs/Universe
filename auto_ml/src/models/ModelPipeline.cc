@@ -2,6 +2,7 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
+#include <pybind11/stl.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <limits>
 
