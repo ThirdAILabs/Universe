@@ -5,6 +5,7 @@
 #include "OutputProcessor.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
@@ -135,19 +136,24 @@ class ModelPipeline {
    * Takes in a single input sample and returns the activations for the output
    * layer.
    */
-  template <typename InputType>
-  py::object predict(const InputType& sample, bool use_sparse_inference,
-                     bool return_predicted_class);
+  virtual py::object predict(const LineInput& sample, bool use_sparse_inference,
+                             bool return_predicted_class);
+
+  virtual py::object predict(const MapInput& sample, bool use_sparse_inference,
+                             bool return_predicted_class);
 
   /**
    * Takes in a batch of input samples and processes them in parallel and
    * returns the activations for the output layer. The order in which the input
    * samples are provided is the order in which the activations are returned.
    */
-  template <typename InputBatchType>
-  py::object predictBatch(const InputBatchType& samples,
-                          bool use_sparse_inference,
-                          bool return_predicted_class);
+  virtual py::object predictBatch(const LineInputBatch& samples,
+                                  bool use_sparse_inference,
+                                  bool return_predicted_class);
+
+  virtual py::object predictBatch(const MapInputBatch& samples,
+                                  bool use_sparse_inference,
+                                  bool return_predicted_class);
 
   /**
    * Creates an explanation for the prediction of a sample. If the target class
@@ -185,6 +191,8 @@ class ModelPipeline {
     return _dataset_factory;
   }
 
+  virtual ~ModelPipeline() = default;
+
  protected:
   // Protected constructor for cereal.
   // Protected so derived classes can also use it for serialization purposes.
@@ -214,6 +222,24 @@ class ModelPipeline {
   void trainSingleEpochOnStream(data::DatasetLoaderPtr& dataset,
                                 const bolt::TrainConfig& train_config,
                                 uint32_t max_in_memory_batches);
+
+  /**
+   * Takes in a single input sample and returns the activations for the output
+   * layer.
+   */
+  template <typename InputType>
+  py::object predictImpl(const InputType& sample, bool use_sparse_inference,
+                         bool return_predicted_class);
+
+  /**
+   * Takes in a batch of input samples and processes them in parallel and
+   * returns the activations for the output layer. The order in which the input
+   * samples are provided is the order in which the activations are returned.
+   */
+  template <typename InputBatchType>
+  py::object predictBatchImpl(const InputBatchType& samples,
+                              bool use_sparse_inference,
+                              bool return_predicted_class);
 
   /**
    * Updates the hash table rebuilding and hash function reconstructing
