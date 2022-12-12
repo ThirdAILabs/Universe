@@ -10,25 +10,11 @@ namespace py = pybind11;
 
 namespace thirdai::automl::models {
 
-void ModelPipeline::trainOnFile(
-    const std::string& filename, bolt::TrainConfig& train_config,
-    std::optional<uint32_t> batch_size_opt,
-    const std::optional<ValidationOptions>& validation,
-    std::optional<uint32_t> max_in_memory_batches) {
-  uint32_t batch_size =
-      batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
-  trainOnDataLoader(dataset::SimpleFileDataLoader::make(filename, batch_size),
-                    train_config, validation, max_in_memory_batches);
-}
-
-void ModelPipeline::trainOnDataLoader(
-    const dataset::DataLoaderPtr& data_source, bolt::TrainConfig& train_config,
-    const std::optional<ValidationOptions>& validation,
-    std::optional<uint32_t> max_in_memory_batches) {
+void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
+                          bolt::TrainConfig& train_config,
+                          const std::optional<ValidationOptions>& validation,
+                          std::optional<uint32_t> max_in_memory_batches) {
   auto start_time = std::chrono::system_clock::now();
-
-  _dataset_factory->preprocessDataset(data_source, max_in_memory_batches);
-  data_source->restart();
 
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
       data_source, /* training= */ true);
@@ -75,17 +61,7 @@ void ModelPipeline::trainOnDataLoader(
       /* training_time_seconds = */ elapsed_time.count());
 }
 
-py::object ModelPipeline::evaluateOnFile(
-    const std::string& filename,
-    std::optional<bolt::EvalConfig>& eval_config_opt,
-    bool return_predicted_class, bool return_metrics) {
-  return evaluateOnDataLoader(dataset::SimpleFileDataLoader::make(
-                                  filename, DEFAULT_EVALUATE_BATCH_SIZE),
-                              eval_config_opt, return_predicted_class,
-                              return_metrics);
-}
-
-py::object ModelPipeline::evaluateOnDataLoader(
+py::object ModelPipeline::evaluate(
     const dataset::DataLoaderPtr& data_source,
     std::optional<bolt::EvalConfig>& eval_config_opt,
     bool return_predicted_class, bool return_metrics) {
@@ -115,13 +91,22 @@ py::object ModelPipeline::evaluateOnDataLoader(
   return py_output;
 }
 
-template py::object ModelPipeline::predict(const LineInput&, bool, bool);
-template py::object ModelPipeline::predict(const MapInput&, bool, bool);
-
-template <typename InputType>
-py::object ModelPipeline::predict(const InputType& sample,
+py::object ModelPipeline::predict(const LineInput& sample,
                                   bool use_sparse_inference,
                                   bool return_predicted_class) {
+  return predictImpl(sample, use_sparse_inference, return_predicted_class);
+}
+
+py::object ModelPipeline::predict(const MapInput& sample,
+                                  bool use_sparse_inference,
+                                  bool return_predicted_class) {
+  return predictImpl(sample, use_sparse_inference, return_predicted_class);
+}
+
+template <typename InputType>
+py::object ModelPipeline::predictImpl(const InputType& sample,
+                                      bool use_sparse_inference,
+                                      bool return_predicted_class) {
   auto start_time = std::chrono::system_clock::now();
 
   std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);
@@ -140,15 +125,24 @@ py::object ModelPipeline::predict(const InputType& sample,
   return py_output;
 }
 
-template py::object ModelPipeline::predictBatch(const LineInputBatch&, bool,
-                                                bool);
-template py::object ModelPipeline::predictBatch(const MapInputBatch&, bool,
-                                                bool);
-
-template <typename InputBatchType>
-py::object ModelPipeline::predictBatch(const InputBatchType& samples,
+py::object ModelPipeline::predictBatch(const LineInputBatch& samples,
                                        bool use_sparse_inference,
                                        bool return_predicted_class) {
+  return predictBatchImpl(samples, use_sparse_inference,
+                          return_predicted_class);
+}
+
+py::object ModelPipeline::predictBatch(const MapInputBatch& samples,
+                                       bool use_sparse_inference,
+                                       bool return_predicted_class) {
+  return predictBatchImpl(samples, use_sparse_inference,
+                          return_predicted_class);
+}
+
+template <typename InputBatchType>
+py::object ModelPipeline::predictBatchImpl(const InputBatchType& samples,
+                                           bool use_sparse_inference,
+                                           bool return_predicted_class) {
   auto start_time = std::chrono::system_clock::now();
 
   std::vector<BoltBatch> input_batches =
