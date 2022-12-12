@@ -303,18 +303,26 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
       data_source, /* training= */ false);
 
-  auto [data, labels] = dataset->loadInMemory(max_num_batches).value();
+  auto loaded_data = dataset->loadInMemory(max_num_batches).value();
+  auto data = std::move(loaded_data.first);
+  auto labels = std::move(loaded_data.second);
 
   auto eval_config =
       bolt::EvalConfig::makeConfig().returnActivations().silence();
-  auto [_, activations] = _model->evaluate({data}, labels, eval_config);
+  auto output = _model->evaluate({data}, labels, eval_config);
+  auto& activations = output.second;
 
-  auto metric = bolt::makeMetric(metric_name);
+  auto global_metric = bolt::makeMetric(metric_name);
 
-  double best_metric_value = metric->worst();
+  double best_metric_value = global_metric->worst();
   std::optional<float> best_threshold = std::nullopt;
 
+#pragma omp parallel for default(none)                               \
+    shared(labels, global_metric, best_metric_value, best_threshold, \
+           metric_name, activations)
   for (uint32_t t_idx = 1; t_idx < NUM_THRESHOLDS_TO_CHECK; t_idx++) {
+    auto metric = bolt::makeMetric(metric_name);
+
     float threshold = static_cast<float>(t_idx) / NUM_THRESHOLDS_TO_CHECK;
 
     uint32_t sample_idx = 0;
@@ -346,9 +354,9 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
       }
     }
 
-    if (metric->betterThan(metric->value(), best_metric_value)) {
+#pragma omp critical
+    if (global_metric->betterThan(metric->value(), best_metric_value)) {
       best_metric_value = metric->value();
-      metric->reset();
       best_threshold = threshold;
     }
   }
