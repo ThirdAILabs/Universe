@@ -312,14 +312,11 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
   auto output = _model->evaluate({data}, labels, eval_config);
   auto& activations = output.second;
 
-  auto global_metric = bolt::makeMetric(metric_name);
-
-  double best_metric_value = global_metric->worst();
+  double best_metric_value = bolt::makeMetric(metric_name)->worst();
   std::optional<float> best_threshold = std::nullopt;
 
-#pragma omp parallel for default(none)                               \
-    shared(labels, global_metric, best_metric_value, best_threshold, \
-           metric_name, activations)
+#pragma omp parallel for default(none) shared( \
+    labels, best_metric_value, best_threshold, metric_name, activations)
   for (uint32_t t_idx = 1; t_idx < NUM_THRESHOLDS_TO_CHECK; t_idx++) {
     auto metric = bolt::makeMetric(metric_name);
 
@@ -355,7 +352,7 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
     }
 
 #pragma omp critical
-    if (global_metric->betterThan(metric->value(), best_metric_value)) {
+    if (metric->betterThan(metric->value(), best_metric_value)) {
       best_metric_value = metric->value();
       best_threshold = threshold;
     }
