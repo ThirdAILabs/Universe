@@ -136,8 +136,6 @@ class UniversalDeepTransformer final : public ModelPipeline {
     return deserialize_into;
   }
 
-  void setPredictionThreshold(float threshold);
-
  private:
   explicit UniversalDeepTransformer(ModelPipeline&& model,
                                     std::string target_column,

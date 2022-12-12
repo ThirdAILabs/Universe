@@ -51,7 +51,7 @@ void ModelPipeline::trainOnDataLoader(
               /* data_source= */ dataset::SimpleFileDataLoader::make(
                   validation->filename(), DEFAULT_EVALUATE_BATCH_SIZE),
               /* metric_name= */ validation->metrics().at(0),
-              /* max_num_batches= */ MAX_TRAIN_BATCHES_FOR_THRESHOLD_TUNING);
+              /* max_num_batches= */ ALL_BATCHES);
 
       binary_output->setPredictionTheshold(threshold);
     } else if (!train_config.metrics().empty()) {
@@ -232,8 +232,7 @@ void ModelPipeline::trainInMemory(
         validation_dataset->loadInMemory(ALL_BATCHES).value();
 
     train_config.withValidation(val_data, val_labels,
-                                validation->validationConfig(),
-                                validation->interval());
+                                validation->validationConfig());
   }
 
   uint32_t epochs = train_config.epochs();
@@ -304,23 +303,18 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
       data_source, /* training= */ false);
 
-  auto loaded_data = dataset->loadInMemory(max_num_batches).value();
-  auto data = std::move(loaded_data.first);
-  auto labels = std::move(loaded_data.second);
+  auto [data, labels] = dataset->loadInMemory(max_num_batches).value();
 
   auto eval_config =
       bolt::EvalConfig::makeConfig().returnActivations().silence();
-  auto output = _model->evaluate({data}, labels, eval_config);
-  auto& activations = output.second;
+  auto [_, activations] = _model->evaluate({data}, labels, eval_config);
 
-  double best_metric_value = bolt::makeMetric(metric_name)->worst();
+  auto metric = bolt::makeMetric(metric_name);
+
+  double best_metric_value = metric->worst();
   std::optional<float> best_threshold = std::nullopt;
 
-#pragma omp parallel for default(none) shared( \
-    labels, best_metric_value, best_threshold, metric_name, activations)
   for (uint32_t t_idx = 1; t_idx < NUM_THRESHOLDS_TO_CHECK; t_idx++) {
-    auto metric = bolt::makeMetric(metric_name);
-
     float threshold = static_cast<float>(t_idx) / NUM_THRESHOLDS_TO_CHECK;
 
     uint32_t sample_idx = 0;
@@ -352,9 +346,9 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
       }
     }
 
-#pragma omp critical
     if (metric->betterThan(metric->value(), best_metric_value)) {
       best_metric_value = metric->value();
+      metric->reset();
       best_threshold = threshold;
     }
   }

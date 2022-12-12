@@ -26,7 +26,6 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
-#include <unistd.h>
 #include <unordered_set>
 
 namespace thirdai::bolt {
