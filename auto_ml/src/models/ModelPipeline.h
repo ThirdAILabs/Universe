@@ -108,12 +108,13 @@ class ModelPipeline {
              std::optional<uint32_t> max_in_memory_batches);
 
   /**
-   * Processes the data specified in data_source and returns the activations of
-   * the final layer. Computes any metrics specifed in the EvalConfig.
+   * Processes the data specified in data_source and computes any metrics
+   * specifed in the EvalConfig. Returns the activations of the final layer by
+   * default, returns metrics if return_metrics = true.
    */
   py::object evaluate(const dataset::DataLoaderPtr& data_source,
                       std::optional<bolt::EvalConfig>& eval_config_opt,
-                      bool return_predicted_class);
+                      bool return_predicted_class, bool return_metrics);
 
   /**
    * Takes in a single input sample and returns the activations for the output
@@ -234,7 +235,7 @@ class ModelPipeline {
    */
   void updateRehashRebuildInTrainConfig(bolt::TrainConfig& train_config);
 
-  const uint32_t MAX_TRAIN_BATCHES_FOR_THRESHOLD_TUNING = 100;
+  const uint32_t MAX_SAMPLES_FOR_THRESHOLD_TUNING = 1000000;
   const uint32_t NUM_THRESHOLDS_TO_CHECK = 1000;
   /**
    * Computes the optimal binary prediction threshold to maximize the given
@@ -242,8 +243,8 @@ class ModelPipeline {
    * shuffle the data to obtain the batches.
    */
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
-      const dataset::DataLoaderPtr& data_source, const std::string& metric_name,
-      uint32_t max_num_batches);
+      const dataset::DataLoaderPtr& data_source,
+      const std::string& metric_name);
 
   friend class cereal::access;
   template <class Archive>

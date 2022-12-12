@@ -65,6 +65,7 @@ void createModelsSubmodule(py::module_& module) {
       .def("evaluate_with_loader", &ModelPipeline::evaluate,
            py::arg("data_source"), py::arg("eval_config") = std::nullopt,
            py::arg("return_predicted_class") = false,
+           py::arg("return_metrics") = false,
            docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER,
            bolt::python::OutputRedirect())
       .def("predict",
@@ -163,6 +164,11 @@ void createModelsSubmodule(py::module_& module) {
                 model.embeddingRepresentation(input));
           },
           py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
+      .def("get_prediction_threshold",
+           &UniversalDeepTransformer::getPredictionThreshold)
+      .def("set_prediction_threshold",
+           &UniversalDeepTransformer::setPredictionThreshold,
+           py::arg("threshold"))
       .def("index", &UniversalDeepTransformer::updateTemporalTrackers,
            py::arg("input_sample"), docs::UDT_INDEX,
            bolt::python::OutputRedirect())

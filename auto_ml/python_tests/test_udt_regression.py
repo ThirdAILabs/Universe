@@ -2,8 +2,8 @@ import os
 
 import numpy as np
 import pytest
+from download_dataset_fixtures import download_brazilian_houses_dataset
 from thirdai import bolt
-from thirdai.demos import download_brazilian_houses_dataset
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -16,8 +16,8 @@ def _compute_mae(predictions, inference_samples):
 
 
 @pytest.fixture(scope="module")
-def train_udt_regression():
-    train_filename, _, _ = download_brazilian_houses_dataset()
+def train_udt_regression(download_brazilian_houses_dataset):
+    train_filename, _, _ = download_brazilian_houses_dataset
     model = bolt.UniversalDeepTransformer(
         data_types={
             "area": bolt.types.numerical(range=(11, 46350)),
@@ -45,21 +45,21 @@ def _compute_regression_evaluate_accuracy(model, test_filename, inference_sample
     return _compute_mae(activations, inference_samples)
 
 
-def test_udt_regression_accuracy(train_udt_regression):
+def test_udt_regression_accuracy(
+    train_udt_regression, download_brazilian_houses_dataset
+):
     model = train_udt_regression
-    _, test_filename, inference_samples = download_brazilian_houses_dataset()
+    _, test_filename, inference_samples = download_brazilian_houses_dataset
 
     acc = _compute_regression_evaluate_accuracy(model, test_filename, inference_samples)
     assert acc <= MAE_THRESHOLD
 
 
-def test_udt_regression_save_load(train_udt_regression):
+def test_udt_regression_save_load(
+    train_udt_regression, download_brazilian_houses_dataset
+):
     model = train_udt_regression
-    (
-        train_filename,
-        test_filename,
-        inference_samples,
-    ) = download_brazilian_houses_dataset()
+    train_filename, test_filename, inference_samples = download_brazilian_houses_dataset
 
     SAVE_FILE = "./saved_model_file.bolt"
 
@@ -80,9 +80,11 @@ def test_udt_regression_save_load(train_udt_regression):
     assert acc <= MAE_THRESHOLD
 
 
-def test_udt_regression_predict_single(train_udt_regression):
+def test_udt_regression_predict_single(
+    train_udt_regression, download_brazilian_houses_dataset
+):
     model = train_udt_regression
-    _, _, inference_samples = download_brazilian_houses_dataset()
+    _, _, inference_samples = download_brazilian_houses_dataset
 
     predictions = []
     for sample, _ in inference_samples:
@@ -92,9 +94,11 @@ def test_udt_regression_predict_single(train_udt_regression):
     assert _compute_mae(np.array(predictions), inference_samples) <= MAE_THRESHOLD
 
 
-def test_udt_regression_predict_batch(train_udt_regression):
+def test_udt_regression_predict_batch(
+    train_udt_regression, download_brazilian_houses_dataset
+):
     model = train_udt_regression
-    _, _, inference_samples = download_brazilian_houses_dataset()
+    _, _, inference_samples = download_brazilian_houses_dataset
 
     predictions = []
     batch_size = 20

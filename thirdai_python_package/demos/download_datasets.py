@@ -4,7 +4,6 @@ import os
 import random
 import zipfile
 
-import datasets
 import numpy as np
 import pandas as pd
 
@@ -18,7 +17,7 @@ def _download_dataset(url, zip_file, check_existence, output_dir):
             zip_ref.extractall(output_dir)
 
 
-def to_batch(dataframe):
+def to_udt_input_batch(dataframe):
     return [
         {col_name: str(col_value) for col_name, col_value in record.items()}
         for record in dataframe.to_dict(orient="records")
@@ -69,50 +68,12 @@ def download_movielens():
     train_df.to_csv(TRAIN_FILE, index=False)
     test_df.to_csv(TEST_FILE, index=False)
 
-    index_batch = to_batch(df.iloc[:INFERENCE_BATCH_SIZE])
-    inference_batch = to_batch(df.iloc[:INFERENCE_BATCH_SIZE][["userId", "timestamp"]])
+    index_batch = to_udt_input_batch(df.iloc[:INFERENCE_BATCH_SIZE])
+    inference_batch = to_udt_input_batch(
+        df.iloc[:INFERENCE_BATCH_SIZE][["userId", "timestamp"]]
+    )
 
     return TRAIN_FILE, TEST_FILE, inference_batch, index_batch
-
-
-def download_clinc():
-    CLINC_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/00570/clinc150_uci.zip"
-    CLINC_ZIP = "./clinc150_uci.zip"
-    CLINC_DIR = "./clinc"
-    MAIN_FILE = CLINC_DIR + "/clinc150_uci/data_full.json"
-    TRAIN_FILE = "./clinc_train.csv"
-    TEST_FILE = "./clinc_test.csv"
-    INFERENCE_BATCH_SIZE = 5
-
-    _download_dataset(
-        url=CLINC_URL,
-        zip_file=CLINC_ZIP,
-        check_existence=[MAIN_FILE],
-        output_dir=CLINC_DIR,
-    )
-
-    samples = json.load(open(MAIN_FILE))
-
-    train_samples = samples["train"]
-    test_samples = samples["test"]
-
-    train_text, train_category = zip(*train_samples)
-    test_text, test_category = zip(*test_samples)
-
-    train_df = pd.DataFrame({"text": train_text, "category": train_category})
-    test_df = pd.DataFrame({"text": test_text, "category": test_category})
-
-    train_df["text"] = train_df["text"].apply(lambda x: x.replace(",", ""))
-    test_df["text"] = test_df["text"].apply(lambda x: x.replace(",", ""))
-
-    train_df.to_csv(TRAIN_FILE, index=False)
-    test_df.to_csv(TEST_FILE, index=False)
-
-    inference_batch = to_batch(
-        test_df[["text"]].sample(frac=1).iloc[:INFERENCE_BATCH_SIZE]
-    )
-
-    return TRAIN_FILE, TEST_FILE, inference_batch
 
 
 def download_criteo():
@@ -180,7 +141,7 @@ def download_criteo():
     )
 
 
-def prep_fraud_dataset(dataset_path):
+def prep_fraud_dataset(dataset_path, seed=42):
     df = pd.read_csv(dataset_path)
     df["amount"] = (df["oldbalanceOrg"] - df["newbalanceOrig"]).abs()
 
@@ -193,7 +154,7 @@ def prep_fraud_dataset(dataset_path):
 
     df = upsample(df)
 
-    df = df.sample(frac=1)
+    df = df.sample(frac=1, random_state=seed)
 
     SPLIT = 0.8
     n_train_samples = int(SPLIT * len(df))
@@ -207,7 +168,7 @@ def prep_fraud_dataset(dataset_path):
     test_df.to_csv(test_filename, index=False)
 
     INFERENCE_BATCH_SIZE = 5
-    inference_batch = to_batch(
+    inference_batch = to_udt_input_batch(
         df.iloc[:INFERENCE_BATCH_SIZE][
             [
                 "step",
@@ -310,6 +271,8 @@ def download_query_reformulation_dataset(train_file_percentage=0.7):
     The dataset is retrieved from HuggingFace:
     https://huggingface.co/datasets/snips_built_in_intents
     """
+    import datasets
+
     dataset = datasets.load_dataset(path="embedding-data/sentence-compression")
     dataframe = pd.DataFrame(data=dataset)
 
@@ -321,7 +284,8 @@ def download_query_reformulation_dataset(train_file_percentage=0.7):
     return pd.DataFrame(data=extracted_text)
 
 
-def perturb_query_reformulation_data(dataframe, noise_level):
+def perturb_query_reformulation_data(dataframe, noise_level, seed=42):
+    random.seed(seed)
 
     transformation_type = ("remove-char", "permute-string")
     transformed_dataframe = []
@@ -375,7 +339,7 @@ def perturb_query_reformulation_data(dataframe, noise_level):
     )
 
 
-def prepare_query_reformulation_data():
+def prepare_query_reformulation_data(seed=42):
 
     TRAIN_FILE_PATH = "train_file.csv"
     TEST_FILE_PATH = "test_file.csv"
@@ -385,7 +349,9 @@ def prepare_query_reformulation_data():
     TEST_NOISE_LEVEL = 0.4
 
     def get_inference_batch(dataframe):
-        inference_batch = dataframe.sample(frac=INFERENCE_BATCH_PERCENTAGE)
+        inference_batch = dataframe.sample(
+            frac=INFERENCE_BATCH_PERCENTAGE, random_state=seed
+        )
         inference_batch_as_list = []
         for _, row in inference_batch.iterrows():
             inference_batch_as_list.append(row.to_dict()[0])
@@ -400,7 +366,9 @@ def prepare_query_reformulation_data():
     train_data_with_noise = perturb_query_reformulation_data(
         dataframe=train_data, noise_level=TRAIN_NOISE_LEVEL
     )
-    sampled_train_data = train_data.sample(frac=1 - TRAIN_FILE_DATASET_PERCENTAGE)
+    sampled_train_data = train_data.sample(
+        frac=1 - TRAIN_FILE_DATASET_PERCENTAGE, random_state=seed
+    )
 
     test_data_with_noise = perturb_query_reformulation_data(
         dataframe=pd.DataFrame(sampled_train_data),
@@ -422,12 +390,12 @@ def download_clinc_dataset():
     TRAIN_FILE = "./clinc_train.csv"
     TEST_FILE = "./clinc_test.csv"
 
-    if not os.path.exists(CLINC_ZIP):
-        os.system(f"curl {CLINC_URL} --output {CLINC_ZIP}")
-
-    if not os.path.exists(MAIN_FILE):
-        with zipfile.ZipFile(CLINC_ZIP, "r") as zip_ref:
-            zip_ref.extractall(CLINC_DIR)
+    _download_dataset(
+        url=CLINC_URL,
+        zip_file=CLINC_ZIP,
+        check_existence=[MAIN_FILE],
+        output_dir=CLINC_DIR,
+    )
 
     samples = json.load(open(MAIN_FILE))
 
@@ -462,6 +430,8 @@ def download_brazilian_houses_dataset():
     TRAIN_FILE = "./brazilian_houses_train.csv"
     TEST_FILE = "./brazilian_houses_test.csv"
 
+    import datasets
+
     dataset = datasets.load_dataset(
         "inria-soda/tabular-benchmark", data_files="reg_num/Brazilian_houses.csv"
     )
@@ -489,7 +459,9 @@ def download_brazilian_houses_dataset():
     return TRAIN_FILE, TEST_FILE, inference_samples
 
 
-def download_internet_ads_dataset():
+def download_internet_ads_dataset(seed=42):
+    random.seed(seed)
+
     INTERNET_ADS_URL = (
         "https://archive.ics.uci.edu/ml/machine-learning-databases/internet_ads/ad.data"
     )
