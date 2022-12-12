@@ -298,4 +298,34 @@ UniversalDeepTransformer::processUDTOptions(
   return options;
 }
 
+std::optional<float> UniversalDeepTransformer::getPredictionThreshold() const {
+  auto output_processor =
+      std::dynamic_pointer_cast<BinaryOutputProcessor>(_output_processor);
+
+  if (output_processor) {
+    return output_processor->getPredictionThreshold();
+  }
+  throw std::invalid_argument(
+      "Can only call get_prediction_threshold for binary classiciation "
+      "tasks.");
+}
+
+void UniversalDeepTransformer::setPredictionThreshold(float threshold) {
+  if (threshold <= 0.0 || 1.0 <= threshold) {
+    throw std::invalid_argument(
+        "Prediction threshold must be in the range (0.0, 1.0).");
+  }
+
+  auto output_processor =
+      std::dynamic_pointer_cast<BinaryOutputProcessor>(_output_processor);
+
+  if (output_processor) {
+    output_processor->setPredictionTheshold(threshold);
+  } else {
+    throw std::invalid_argument(
+        "Can only call set_prediction_threshold for binary classiciation "
+        "tasks.");
+  }
+}
+
 }  // namespace thirdai::automl::models

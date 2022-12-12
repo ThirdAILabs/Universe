@@ -235,7 +235,7 @@ class ModelPipeline {
    */
   void updateRehashRebuildInTrainConfig(bolt::TrainConfig& train_config);
 
-  const uint32_t MAX_TRAIN_BATCHES_FOR_THRESHOLD_TUNING = 100;
+  const uint32_t MAX_SAMPLES_FOR_THRESHOLD_TUNING = 1000000;
   const uint32_t NUM_THRESHOLDS_TO_CHECK = 1000;
   /**
    * Computes the optimal binary prediction threshold to maximize the given
@@ -243,8 +243,8 @@ class ModelPipeline {
    * shuffle the data to obtain the batches.
    */
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
-      const dataset::DataLoaderPtr& data_source, const std::string& metric_name,
-      uint32_t max_num_batches);
+      const dataset::DataLoaderPtr& data_source,
+      const std::string& metric_name);
 
   friend class cereal::access;
   template <class Archive>

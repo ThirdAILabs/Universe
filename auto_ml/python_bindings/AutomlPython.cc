@@ -164,6 +164,11 @@ void createModelsSubmodule(py::module_& module) {
                 model.embeddingRepresentation(input));
           },
           py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
+      .def("get_prediction_threshold",
+           &UniversalDeepTransformer::getPredictionThreshold)
+      .def("set_prediction_threshold",
+           &UniversalDeepTransformer::setPredictionThreshold,
+           py::arg("threshold"))
       .def("index", &UniversalDeepTransformer::updateTemporalTrackers,
            py::arg("input_sample"), docs::UDT_INDEX,
            bolt::python::OutputRedirect())

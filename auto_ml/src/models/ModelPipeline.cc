@@ -37,8 +37,7 @@ void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
           tuneBinaryClassificationPredictionThreshold(
               /* data_source= */ dataset::SimpleFileDataLoader::make(
                   validation->filename(), DEFAULT_EVALUATE_BATCH_SIZE),
-              /* metric_name= */ validation->metrics().at(0),
-              /* max_num_batches= */ ALL_BATCHES);
+              /* metric_name= */ validation->metrics().at(0));
 
       binary_output->setPredictionTheshold(threshold);
     } else if (!train_config.metrics().empty()) {
@@ -48,8 +47,7 @@ void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
       std::optional<float> threshold =
           tuneBinaryClassificationPredictionThreshold(
               /* data_source= */ data_source,
-              /* metric_name= */ train_config.metrics().at(0),
-              /* max_num_batches= */ MAX_TRAIN_BATCHES_FOR_THRESHOLD_TUNING);
+              /* metric_name= */ train_config.metrics().at(0));
 
       binary_output->setPredictionTheshold(threshold);
     }
@@ -211,7 +209,8 @@ void ModelPipeline::trainInMemory(
         validation_dataset->loadInMemory(ALL_BATCHES).value();
 
     train_config.withValidation(val_data, val_labels,
-                                validation->validationConfig());
+                                validation->validationConfig(),
+                                validation->interval());
   }
 
   uint32_t epochs = train_config.epochs();
@@ -277,23 +276,30 @@ void ModelPipeline::updateRehashRebuildInTrainConfig(
 }
 
 std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
-    const dataset::DataLoaderPtr& data_source, const std::string& metric_name,
-    uint32_t max_num_batches) {
+    const dataset::DataLoaderPtr& data_source, const std::string& metric_name) {
+  uint32_t num_batches =
+      MAX_SAMPLES_FOR_THRESHOLD_TUNING / data_source->getMaxBatchSize();
+
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
       data_source, /* training= */ false);
 
-  auto [data, labels] = dataset->loadInMemory(max_num_batches).value();
+  auto loaded_data = dataset->loadInMemory(num_batches).value();
+  auto data = std::move(loaded_data.first);
+  auto labels = std::move(loaded_data.second);
 
   auto eval_config =
       bolt::EvalConfig::makeConfig().returnActivations().silence();
-  auto [_, activations] = _model->evaluate({data}, labels, eval_config);
+  auto output = _model->evaluate({data}, labels, eval_config);
+  auto& activations = output.second;
 
-  auto metric = bolt::makeMetric(metric_name);
-
-  double best_metric_value = metric->worst();
+  double best_metric_value = bolt::makeMetric(metric_name)->worst();
   std::optional<float> best_threshold = std::nullopt;
 
+#pragma omp parallel for default(none) shared( \
+    labels, best_metric_value, best_threshold, metric_name, activations)
   for (uint32_t t_idx = 1; t_idx < NUM_THRESHOLDS_TO_CHECK; t_idx++) {
+    auto metric = bolt::makeMetric(metric_name);
+
     float threshold = static_cast<float>(t_idx) / NUM_THRESHOLDS_TO_CHECK;
 
     uint32_t sample_idx = 0;
@@ -325,9 +331,9 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
       }
     }
 
+#pragma omp critical
     if (metric->betterThan(metric->value(), best_metric_value)) {
       best_metric_value = metric->value();
-      metric->reset();
       best_threshold = threshold;
     }
   }
