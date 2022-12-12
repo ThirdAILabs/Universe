@@ -51,7 +51,7 @@ void ModelPipeline::trainOnDataLoader(
               /* data_source= */ dataset::SimpleFileDataLoader::make(
                   validation->filename(), DEFAULT_EVALUATE_BATCH_SIZE),
               /* metric_name= */ validation->metrics().at(0),
-              /* max_num_batches= */ ALL_BATCHES);
+              /* max_num_batches= */ MAX_TRAIN_BATCHES_FOR_THRESHOLD_TUNING);
 
       binary_output->setPredictionTheshold(threshold);
     } else if (!train_config.metrics().empty()) {
@@ -232,7 +232,8 @@ void ModelPipeline::trainInMemory(
         validation_dataset->loadInMemory(ALL_BATCHES).value();
 
     train_config.withValidation(val_data, val_labels,
-                                validation->validationConfig());
+                                validation->validationConfig(),
+                                validation->interval());
   }
 
   uint32_t epochs = train_config.epochs();
