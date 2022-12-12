@@ -10,9 +10,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 batch_size = 64
 # Number of lines in each mock s3 file we will create (we create 4, see setup_mock_s3)
 num_lines_per_file = 100
-# We will have 4 files in the bucket, but should only parse batches from the
-# 3 whose keys start with find
-total_num_lines_to_return = num_lines_per_file * 3
+bucket_name = "test_bucket"
 
 # These fixtures allow us to take in a parameter to our tests called "s3" that
 # ensures all s3 calls will not call "actual" s3
@@ -37,25 +35,29 @@ def s3(aws_credentials):
 def setup_mock_s3(s3):
     s3.create_bucket(Bucket="test_bucket")
     s3.put_object(
-        Bucket="test_bucket",
+        Bucket=bucket_name,
         Key="find/numbers/zeros",
         Body="\n".join(["0"] * num_lines_per_file),
     )
     s3.put_object(
-        Bucket="test_bucket",
+        Bucket=bucket_name,
         Key="find/numbers/ones",
         Body="\n".join(["1"] * num_lines_per_file),
     )
     s3.put_object(
-        Bucket="test_bucket",
+        Bucket=bucket_name,
         Key="find/letters/ds",
         Body="\n".join(["d"] * num_lines_per_file),
     )
     s3.put_object(
-        Bucket="test_bucket",
+        Bucket=bucket_name,
         Key="dontfind/test",
         Body="\n".join(["X"] * num_lines_per_file),
     )
+
+
+def key_map():
+    return {"ones": "1", "ds": "d", "zeros": "0"}
 
 
 def load_all_batches(storage_path, batch_size):
@@ -91,18 +93,24 @@ def load_all_lines(storage_path, batch_size):
 def test_s3_data_loader_by_batch(s3):
     setup_mock_s3(s3)
 
-    batches = load_all_batches(
-        storage_path="s3://test_bucket/find", batch_size=batch_size
-    )
+    for key in s3.list_objects_v2(Bucket="test_bucket", Prefix="find")["Contents"]:
+        object = key["Key"]
+        batches = load_all_batches(
+            storage_path=f"s3://{bucket_name}/{object}", batch_size=batch_size
+        )
 
-    assert len(batches) == math.ceil(total_num_lines_to_return / batch_size)
+        assert len(batches) == math.ceil(num_lines_per_file / batch_size)
 
-    for batch in batches[:-1]:
-        assert len(batch) == batch_size
-    assert len(batches[-1]) == total_num_lines_to_return % batch_size
+        for batch in batches[:-1]:
+            assert len(batch) == batch_size
 
-    concatenated = "".join(["".join(batch) for batch in batches])
-    assert concatenated == "d" * 100 + "1" * 100 + "0" * 100
+        assert len(batches[-1]) == num_lines_per_file % batch_size
+
+        # check that the content matches what's expected
+        assert (
+            "".join(["".join(batch) for batch in batches])
+            == key_map()[object.split("/")[-1]] * num_lines_per_file
+        )
 
 
 # This is similar to test_s3_data_loader_by_batch, but additionally ensures
@@ -112,9 +120,13 @@ def test_s3_data_loader_by_line(s3):
 
     setup_mock_s3(s3)
 
-    lines = load_all_lines(storage_path="s3://test_bucket/find", batch_size=batch_size)
-
-    assert len(lines) == total_num_lines_to_return
-
-    concatenated = "".join(line for line in lines)
-    assert concatenated == "d" * 100 + "1" * 100 + "0" * 100
+    for key in s3.list_objects_v2(Bucket="test_bucket", Prefix="find")["Contents"]:
+        object = key["Key"]
+        lines = load_all_lines(
+            storage_path=f"s3://{bucket_name}/{object}", batch_size=batch_size
+        )
+        assert len(lines) == num_lines_per_file
+        assert (
+            "".join(line for line in lines)
+            == key_map()[object.split("/")[-1]] * num_lines_per_file
+        )

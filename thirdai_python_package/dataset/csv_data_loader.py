@@ -2,23 +2,23 @@ from io import BytesIO
 from typing import List, Optional
 from urllib.parse import urlparse
 
-import awswrangler as wr
 import pandas as pd
 from thirdai._thirdai.dataset import DataLoader
 
 
 class CSVDataLoader(DataLoader):
     """CSV data loader that can be used to load from a cloud
-    storage instance such at s3 and GCS.
+    storage instance such as s3 and GCS.
 
     Args:
-        storage_path: The cloud storage instance type. Supported options
-            include: "s3" and "gcs"
+        storage_path: Path to the CSV file.
         batch_size: Batch size
         aws_credentials_file: Path to a file containing AWS access key id
-            and AWS secret key
+            and AWS secret key. This is typically ~/.aws/credentials.
         gcs_credentials_file: Path to a file containing GCS credentials.
-            This is always a credentials.json file.
+            This is typically a credentials.json file. For the authorization
+            protocol to work, the credentials file must contain a project ID,
+            client E-mail, a token URI and a private key.
     """
 
     def __init__(
@@ -47,24 +47,26 @@ class CSVDataLoader(DataLoader):
     def _get_line_iterator(self):
         if self._cloud_instance_type == "s3":
             for row in pd.read_csv(
-                self._storage_path, chunksize=1, dtype=str, header=None
+                self._storage_path, chunksize=1, dtype="object", header=None
             ):
                 row_as_string = ",".join(row.astype(str).values.flatten())
                 yield row_as_string
 
         elif self._cloud_instance_type == "gcs":
             if self._gcs_credentials:
-                for row in wr.s3.read_csv(
+                for row in pd.read_csv(
                     self._storage_path,
                     storage_options={"token": self._gcs_credentials},
-                    dtype=str,
+                    dtype="object",
                     chunksize=1,
                 ):
                     yield ",".join(row.astype(str).values.flatten())
             else:
-                for row in pd.read_csv(self._storage_path, dtype=str, chunksize=1):
-                    print(f"row = {row}")
+                for row in pd.read_csv(self._storage_path, dtype="object", chunksize=1):
                     yield ",".join(row.astype(str).values.flatten())
+
+        else:
+            raise ValueError("Invalid data storage path")
 
     def next_batch(self) -> Optional[List[str]]:
         lines = []

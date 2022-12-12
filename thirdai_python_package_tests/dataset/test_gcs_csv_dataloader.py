@@ -48,7 +48,9 @@ def test_csv_loader_from_gcs(
     blob = bucket.blob(BLOB)
 
     blob.upload_from_filename(TEST_FILE)
-    pandas_read_csv.return_value = testing_dataframe.iterrows()
+    pandas_read_csv.return_value = testing_dataframe.apply(
+        lambda row: row.to_frame(), axis=1
+    )
     blob.upload_from_filename.assert_called_with(TEST_FILE)
 
     # create a csv data loader
@@ -62,9 +64,11 @@ def test_csv_loader_from_gcs(
         record = loader.next_line()
         if record == None:
             break
-        all_records.append(record[1])
+        row_entries = record.split(",")
+        all_records.append([int(col) for col in row_entries])
 
     assert len(all_records) == TEST_DATASET_SIZE
-    assert testing_dataframe.equals(pd.concat(all_records, axis=1).T)
+    all_records_dataframe = pd.DataFrame(all_records)
+    assert testing_dataframe.equals(all_records_dataframe)
 
     clean_up()
