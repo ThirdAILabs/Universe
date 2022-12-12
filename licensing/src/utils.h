@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cryptopp/files.h>    // FileSource
 #include <cryptopp/filters.h>  // HashFilter
 #include <cryptopp/hex.h>      // HexEncoder
