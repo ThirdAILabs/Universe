@@ -1,5 +1,5 @@
 import pytest
-from download_datasets import download_internet_ads_dataset
+from download_dataset_fixtures import download_internet_ads_dataset
 from model_test_utils import (
     compute_evaluate_accuracy,
     compute_predict_accuracy,

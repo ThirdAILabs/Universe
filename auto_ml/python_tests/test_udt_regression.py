@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import pytest
-from download_datasets import download_brazilian_houses_dataset
+from download_dataset_fixtures import download_brazilian_houses_dataset
 from thirdai import bolt
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
