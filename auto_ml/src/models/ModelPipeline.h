@@ -108,12 +108,13 @@ class ModelPipeline {
              std::optional<uint32_t> max_in_memory_batches);
 
   /**
-   * Processes the data specified in data_source and returns the activations of
-   * the final layer. Computes any metrics specifed in the EvalConfig.
+   * Processes the data specified in data_source and computes any metrics
+   * specifed in the EvalConfig. Returns the activations of the final layer by
+   * default, returns metrics if return_metrics = true.
    */
   py::object evaluate(const dataset::DataLoaderPtr& data_source,
                       std::optional<bolt::EvalConfig>& eval_config_opt,
-                      bool return_predicted_class);
+                      bool return_predicted_class, bool return_metrics);
 
   /**
    * Takes in a single input sample and returns the activations for the output

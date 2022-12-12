@@ -2,6 +2,7 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
+#include <pybind11/stl.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <limits>
 
@@ -63,7 +64,7 @@ void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
 py::object ModelPipeline::evaluate(
     const dataset::DataLoaderPtr& data_source,
     std::optional<bolt::EvalConfig>& eval_config_opt,
-    bool return_predicted_class) {
+    bool return_predicted_class, bool return_metrics) {
   auto start_time = std::chrono::system_clock::now();
 
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
@@ -76,10 +77,11 @@ py::object ModelPipeline::evaluate(
 
   eval_config.returnActivations();
 
-  auto [_, output] = _model->evaluate({data}, labels, eval_config);
+  auto [metrics, output] = _model->evaluate({data}, labels, eval_config);
 
-  auto py_output =
-      _output_processor->processOutputTracker(output, return_predicted_class);
+  auto py_output = return_metrics ? py::cast(metrics)
+                                  : _output_processor->processOutputTracker(
+                                        output, return_predicted_class);
 
   std::chrono::duration<double> elapsed_time =
       std::chrono::system_clock::now() - start_time;
