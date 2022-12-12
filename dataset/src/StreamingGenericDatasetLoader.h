@@ -104,9 +104,9 @@ class StreamingGenericDatasetLoader
 
   std::optional<std::tuple<BoltDatasetPtr, BoltDatasetPtr>>
   loadInMemoryWithMaxBatches(uint32_t max_in_memory_batches) {
-    // std::cout << "Loading vectors from '" + _data_loader->resourceName() +
-    // "'"
-    //           << std::endl;
+    std::cout << "loading data | source '" << _data_loader->resourceName()
+              << "'" << std::endl;
+
     auto start = std::chrono::high_resolution_clock::now();
 
     uint32_t batch_cnt = 0;
@@ -120,6 +120,10 @@ class StreamingGenericDatasetLoader
         std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
     if (input_batches.empty()) {
+      std::cout << "loading data | source '" << _data_loader->resourceName()
+                << "' | vectors 0 | batches 0 | time " << duration
+                << "s | complete\n"
+                << std::endl;
       return std::nullopt;
     }
 
@@ -127,9 +131,11 @@ class StreamingGenericDatasetLoader
         std::make_shared<BoltDataset>(std::move(input_batches)),
         std::make_shared<BoltDataset>(std::move(label_batches)));
 
-    std::cout << "Loaded " << std::get<0>(dataset)->len()
-              << " vectors from '" + _data_loader->resourceName() + "'"
-              << " in " << duration << " seconds." << std::endl;
+    std::cout << "loading data | source '" << _data_loader->resourceName()
+              << "' | vectors " << std::get<0>(dataset)->len() << " | batches "
+              << std::get<0>(dataset)->numBatches() << " | time " << duration
+              << "s | complete\n"
+              << std::endl;
 
     return dataset;
   }
