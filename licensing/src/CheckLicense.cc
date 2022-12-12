@@ -3,7 +3,7 @@
 #include <dataset/src/DataLoader.h>
 #include <optional>
 #include <stdexcept>
-#include <unordered_map>
+#include <unordered_set>
 #if THIRDAI_CHECK_LICENSE
 #include <licensing/src/file/SignedLicense.h>
 #include <licensing/src/keygen/KeygenCommunication.h>
@@ -47,6 +47,7 @@ void deactivate() {
 
 void verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader) {
 #ifndef THIRDAI_CHECK_LICENSE
+  (void)data_loader;
   return;
 #else
   if (_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
