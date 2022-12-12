@@ -76,46 +76,6 @@ def download_movielens():
     return TRAIN_FILE, TEST_FILE, inference_batch, index_batch
 
 
-def download_clinc(seed=42):
-    CLINC_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/00570/clinc150_uci.zip"
-    CLINC_ZIP = "./clinc150_uci.zip"
-    CLINC_DIR = "./clinc"
-    MAIN_FILE = CLINC_DIR + "/clinc150_uci/data_full.json"
-    TRAIN_FILE = "./clinc_train.csv"
-    TEST_FILE = "./clinc_test.csv"
-    INFERENCE_BATCH_SIZE = 5
-
-    _download_dataset(
-        url=CLINC_URL,
-        zip_file=CLINC_ZIP,
-        check_existence=[MAIN_FILE],
-        output_dir=CLINC_DIR,
-    )
-
-    samples = json.load(open(MAIN_FILE))
-
-    train_samples = samples["train"]
-    test_samples = samples["test"]
-
-    train_text, train_category = zip(*train_samples)
-    test_text, test_category = zip(*test_samples)
-
-    train_df = pd.DataFrame({"text": train_text, "category": train_category})
-    test_df = pd.DataFrame({"text": test_text, "category": test_category})
-
-    train_df["text"] = train_df["text"].apply(lambda x: x.replace(",", ""))
-    test_df["text"] = test_df["text"].apply(lambda x: x.replace(",", ""))
-
-    train_df.to_csv(TRAIN_FILE, index=False)
-    test_df.to_csv(TEST_FILE, index=False)
-
-    inference_batch = to_udt_input_batch(
-        test_df[["text"]].sample(frac=1, random_state=seed).iloc[:INFERENCE_BATCH_SIZE]
-    )
-
-    return TRAIN_FILE, TEST_FILE, inference_batch
-
-
 def download_criteo():
     CRITEO_URL = "http://go.criteo.net/criteo-research-kaggle-display-advertising-challenge-dataset.tar.gz"
     CRITEO_ZIP = "./criteo.tar.gz"
@@ -430,12 +390,12 @@ def download_clinc_dataset():
     TRAIN_FILE = "./clinc_train.csv"
     TEST_FILE = "./clinc_test.csv"
 
-    if not os.path.exists(CLINC_ZIP):
-        os.system(f"curl {CLINC_URL} --output {CLINC_ZIP}")
-
-    if not os.path.exists(MAIN_FILE):
-        with zipfile.ZipFile(CLINC_ZIP, "r") as zip_ref:
-            zip_ref.extractall(CLINC_DIR)
+    _download_dataset(
+        url=CLINC_URL,
+        zip_file=CLINC_ZIP,
+        check_existence=[MAIN_FILE],
+        output_dir=CLINC_DIR,
+    )
 
     samples = json.load(open(MAIN_FILE))
 
