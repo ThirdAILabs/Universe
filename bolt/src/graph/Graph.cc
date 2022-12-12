@@ -477,7 +477,7 @@ InferenceResult BoltGraph::evaluate(
 
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
       /*verbose=*/eval_config.verbose(),
-      /*description=*/"\nevaluate",  // Newline to cleanup output of validation.
+      /*description=*/"evaluate",  // Newline to cleanup output of validation.
       /*max_steps=*/predict_context.numBatches());
 
   auto test_start = std::chrono::high_resolution_clock::now();
