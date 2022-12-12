@@ -11,32 +11,23 @@ from thirdai.demos import (
 )
 
 
-def wrap(download_func):
-    train, test, inference = download_func()
-    yield train, test, inference
-    os.remove(train)
-    os.remove(test)
-
-
 @pytest.fixture(scope="session")
 def download_clinc_dataset():
-    yield from wrap(download_clinc_dataset_wrapped)
+    return download_clinc_dataset_wrapped()
 
 
 @pytest.fixture(scope="session")
 def download_internet_ads_dataset():
-    yield from wrap(download_internet_ads_dataset_wrapped)
+    return download_internet_ads_dataset_wrapped()
 
 
 @pytest.fixture(scope="session")
 def download_census_income():
-    yield from wrap(
-        lambda: download_census_income_wrapped(
-            num_inference_samples="all", return_labels=True
-        )
+    return download_census_income_wrapped(
+        num_inference_samples="all", return_labels=True
     )
 
 
 @pytest.fixture(scope="session")
 def download_brazilian_houses_dataset():
-    yield from wrap(download_brazilian_houses_dataset_wrapped)
+    return download_brazilian_houses_dataset_wrapped()
