@@ -10,7 +10,6 @@
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <licensing/src/CheckLicense.h>
 #include <cstdint>
 #include <memory>
 #include <optional>
