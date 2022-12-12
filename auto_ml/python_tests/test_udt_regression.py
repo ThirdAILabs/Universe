@@ -31,7 +31,7 @@ def train_udt_regression(download_brazilian_houses_dataset):
             "totalBRL": bolt.types.numerical(range=(6, 14)),
         },
         target="totalBRL",
-        options={"embedding_dimension": "100"},
+        options={"embedding_dimension": 100},
     )
 
     model.train(train_filename, epochs=20, learning_rate=0.01)
@@ -59,11 +59,7 @@ def test_udt_regression_save_load(
     train_udt_regression, download_brazilian_houses_dataset
 ):
     model = train_udt_regression
-    (
-        train_filename,
-        test_filename,
-        inference_samples,
-    ) = download_brazilian_houses_dataset
+    train_filename, test_filename, inference_samples = download_brazilian_houses_dataset
 
     SAVE_FILE = "./saved_model_file.bolt"
 

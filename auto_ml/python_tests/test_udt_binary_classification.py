@@ -48,7 +48,7 @@ def train_udt_binary_classification(download_internet_ads_dataset):
 
 
 def test_udt_binary_classification_accuracy(
-    train_udt_binary_classification, download_internet_ads_dataset
+    download_internet_ads_dataset, train_udt_binary_classification
 ):
     model = train_udt_binary_classification
     _, test_filename, inference_samples = download_internet_ads_dataset
@@ -76,7 +76,7 @@ def test_udt_binary_classification_accuracy(
 
 
 def test_udt_binary_classification_predict_accuracy(
-    train_udt_binary_classification, download_internet_ads_dataset
+    download_internet_ads_dataset, train_udt_binary_classification
 ):
     model = train_udt_binary_classification
     _, test_filename, inference_samples = download_internet_ads_dataset
@@ -102,7 +102,7 @@ def test_udt_binary_classification_predict_accuracy(
 
 
 def test_udt_binary_classification_predict_batch_accuracy(
-    train_udt_binary_classification, download_internet_ads_dataset
+    download_internet_ads_dataset, train_udt_binary_classification
 ):
     model = train_udt_binary_classification
     _, test_filename, inference_samples = download_internet_ads_dataset
@@ -128,7 +128,7 @@ def test_udt_binary_classification_predict_batch_accuracy(
 
 
 def test_udt_binary_classification_save_load(
-    train_udt_binary_classification, download_internet_ads_dataset
+    download_internet_ads_dataset, train_udt_binary_classification
 ):
     model = train_udt_binary_classification
     train_filename, test_filename, inference_samples = download_internet_ads_dataset
