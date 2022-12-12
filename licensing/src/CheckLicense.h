@@ -13,8 +13,6 @@ void activate(const std::string& api_key);
 
 void deactivate();
 
-bool isPartial();
-
 void verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader);
 
 }  // namespace thirdai::licensing

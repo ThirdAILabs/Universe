@@ -72,8 +72,8 @@ std::string base64Encode(const std::string& input) {
  * the message it signs.
  */
 std::string getOriginalKeygenMessage(const httplib::Result& res,
-                                     const std::string& api_path,
-                                     const std::string& api_verb) {
+                                     const std::string& request_type,
+                                     const std::string& api_path) {
   if (!res->has_header("date")) {
     throw std::runtime_error(
         "License was found to be valid, but did not find a date in the"
@@ -86,7 +86,7 @@ std::string getOriginalKeygenMessage(const httplib::Result& res,
 
   std::stringstream original_keygen_message_stream;
   original_keygen_message_stream
-      << "(request-target): " << api_verb << " " << api_path << "\n"
+      << "(request-target): " << request_type << " " << api_path << "\n"
       << "host: api.keygen.sh\n"
       << "date: " << date << "\n"
       << "digest: sha-256=" << base64_encoded_body_hash;
@@ -147,9 +147,10 @@ std::string getSignature(const httplib::Result& res) {
  * a Base64 encoding.
  */
 void verifyKeygenResponse(const httplib::Result& res,
-                          const std::string& api_path,
-                          const std::string& api_verb) {
-  std::string signed_data = getOriginalKeygenMessage(res, api_path, api_verb);
+                          const std::string& request_type,
+                          const std::string& api_path) {
+  std::string signed_data =
+      getOriginalKeygenMessage(res, request_type, api_path);
   std::string signature = getSignature(res);
   CryptoPP::ed25519::Verifier verifier = createVerifier();
 
@@ -192,8 +193,8 @@ std::unordered_set<std::string> getKeygenEntitlements(
       /* path = */ user_entitlement_endpoint,
       /* headers = */ headers);
   assertResponse200(response);
-  verifyKeygenResponse(response, /* api_path = */ user_entitlement_endpoint,
-                       /* api_verb = */ "get");
+  verifyKeygenResponse(response, /* request_type = */ "get",
+                       /* api_path = */ user_entitlement_endpoint);
 
   json response_body = json::parse(response->body);
   std::unordered_set<std::string> result;
@@ -232,8 +233,8 @@ std::unordered_set<std::string> verifyWithKeygen(
         detail);
   }
 
-  verifyKeygenResponse(response, /* api_path = */ VALIDATE_ENDPOINT,
-                       /* api_verb = */ "post");
+  verifyKeygenResponse(response, /* request_type = */ "post",
+                       /* api_path = */ VALIDATE_ENDPOINT);
 
   return getKeygenEntitlements(response_body, access_key);
 }

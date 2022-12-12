@@ -17,7 +17,7 @@ def test_census_key_works_on_census():
     thirdai.activate(CENSUS_KEY)
     train_filename, _, _ = thirdai.demos.download_census_income()
     model = get_udt_census_income_model()
-    model.train(train_filename, epochs=5, learning_rate=0.01)
+    model.train(train_filename, epochs=1, learning_rate=0.01)
 
 
 def test_census_key_fails_on_others():

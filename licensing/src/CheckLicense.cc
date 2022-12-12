@@ -40,19 +40,22 @@ void setLicensePath(const std::string& license_path) {
   _license_path = license_path;
 }
 
-void deactivate() { _api_key = std::nullopt; }
+void deactivate() {
+  _api_key = std::nullopt;
+  _entitlements.clear();
+}
 
 void verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader) {
 #ifndef THIRDAI_CHECK_LICENSE
   return;
 #else
-  if (_entitlements.count(FULL_ACCESS_ENTITLEMENT) > 0) {
+  if (_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
     return;
   }
 
   std::string dataset_hash =
       sha256File(/* filename = */ data_loader->resourceName());
-  if (_entitlements.count(dataset_hash) == 0) {
+  if (!_entitlements.count(dataset_hash)) {
     throw std::runtime_error(
         "This dataset is not authorized under this license.");
   }
