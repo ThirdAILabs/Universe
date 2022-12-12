@@ -84,10 +84,14 @@ class ProgressBar {
 
   void close(const std::string& comment) {
     std::cout << "\r" << comment;
+
     // Clear out any additional information that's longer than the comment.
-    for (uint32_t i = 0; i < _description.size() + BAR_SIZE + 9; i++) {
-      std::cout << ' ';
+    uint32_t current_line_len = _description.size() + BAR_SIZE + 9;
+    if (current_line_len > comment.size()) {
+      for (uint32_t i = 0; i < current_line_len - comment.size(); i++) {
+        std::cout << ' ';
+      }
     }
-    std::cout << "\n" << std::endl;
+    std::cout << '\n' << std::endl;
   }
 };
