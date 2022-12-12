@@ -17,7 +17,7 @@ if [ -d "${DATADIR}" ]; then
       --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
       --rm \
       -v $HOME/.aws/credentials:/root/.aws/credentials:ro \
-      --mount type=bind,source=${DATADIR},target=/data \
+      --mount type=bind,source=${DATADIR},target=/share/data \
       thirdai/universe_dev_build \
       bash -c "$1"
 else

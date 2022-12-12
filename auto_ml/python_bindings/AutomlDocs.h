@@ -561,14 +561,16 @@ Args:
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
 
 Returns: 
-    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
+    (np.ndarray, Tuple[np.ndarray, np.ndarray], or List[int]): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
     of the active neurons and activations if the output is sparse. The shape of 
     each array will be (num_nonzeros_in_output, ). When the 
     `consecutive_integer_ids` argument of target column's categorical ColumnType
     object is set to False (as it is by default), UDT creates an internal 
     mapping between target class names and neuron ids. You can map neuron ids back to
-    target class names by calling the `class_names()` method.
+    target class names by calling the `class_names()` method. If the `prediction_depth`
+    of the model is > 1 and the task is classification then it will return a numpy array 
+    of integers indicating the predicted class for each timstamp up to `prediction_depth`.
 
 Examples:
     >>> # Suppose we configure UDT as follows:
@@ -641,14 +643,17 @@ Args:
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
 
 Returns: 
-    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
+    (np.ndarray, Tuple[np.ndarray, np.ndarray], or List[List[int]]): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
     of the active neurons and activations if the output is sparse. The shape of 
     each array will be (batch_size, num_nonzeros_in_output). When the 
     `consecutive_integer_ids` argument of target column's categorical ColumnType
     object is set to False (as it is by default), UDT creates an internal 
     mapping between target class names and neuron ids. You can map neuron ids back to
-    target class names by calling the `class_names()` method.
+    target class names by calling the `class_names()` method. If the `prediction_depth`
+    of the model is > 1 and the task is classification then it will return a numpy 
+    array of shape `(batch_size, prediction_depth)` which gives the predictions at
+    each timestep for each element in the batch.
 
 Examples:
     >>> activations = model.predict_batch([

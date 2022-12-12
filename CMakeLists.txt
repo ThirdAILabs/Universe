@@ -336,6 +336,7 @@ pybind11_add_module(
   auto_ml/python_bindings/DeploymentPython.cc
   auto_ml/src/models/ModelPipeline.cc
   auto_ml/src/models/OutputProcessor.cc
+  auto_ml/src/models/UniversalDeepTransformer.cc
   telemetry/python_bindings/TelemetryPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
