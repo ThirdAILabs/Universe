@@ -2,9 +2,9 @@
 
 #include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
+#include <memory>
 #include <optional>
 #include <string>
-#include <memory>
 #include <vector>
 
 namespace thirdai::dataset {

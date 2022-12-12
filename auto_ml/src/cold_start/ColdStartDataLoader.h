@@ -23,8 +23,8 @@ class ColdStartDataLoader final : public dataset::DataLoader {
                    uint32_t batch_size, char column_delimiter,
                    std::optional<char> label_delimiter) {
     return std::make_shared<ColdStartDataLoader>(
-        column_map, text_column_name, label_column_name, batch_size,
-        column_delimiter, label_delimiter);
+        column_map, std::move(text_column_name), std::move(label_column_name),
+        batch_size, column_delimiter, label_delimiter);
   }
 
   std::optional<std::vector<std::string>> nextBatch() final;
