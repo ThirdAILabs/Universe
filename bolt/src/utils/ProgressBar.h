@@ -3,10 +3,10 @@
 #include <iostream>
 #include <optional>
 
-constexpr char OPEN = '[';
-constexpr char CLOSE = ']';
-constexpr char DONE = '=';
-constexpr char TODO = ' ';
+constexpr char OPEN_CHAR = '[';
+constexpr char CLOSE_CHAR = ']';
+constexpr char DONE_CHAR = '=';
+constexpr char TODO_CHAR = ' ';
 
 class ProgressBar {
  private:
@@ -30,15 +30,19 @@ class ProgressBar {
         _max_steps(max_steps),
         _description(std::move(description)) {
     std::cout << '\r' << _description << ": " << std::flush;
-    std::cout << OPEN;
+    std::cout << OPEN_CHAR;
     for (uint32_t i = 0; i < BAR_SIZE; i++) {
-      std::cout << TODO;
+      std::cout << TODO_CHAR;
     }
-    std::cout << CLOSE << " " << _prev_percent << "%";
+    std::cout << CLOSE_CHAR << " " << _prev_percent << "%";
 
-    // Clear out any left over output on the line, this is because the length of
-    // the bar for evaulate is slightly shorter than for train becuase of the
-    // description.
+    /**
+     * The description for train is 'train epoch N' whereas the description for
+     * evaluate is 'evaluate'. This means that if the train progress bar is
+     * interrupted by the evaluation progress bar during validation, it won't
+     * completely overwrite the previous training progress bar. This ensures
+     * that it will clear the training progress bar if N < 1,000,000.
+     */
     for (uint32_t i = 0; i < 10; i++) {
       std::cout << ' ';
     }
@@ -63,29 +67,41 @@ class ProgressBar {
     // Go back to start of line
     std::cout << '\r';
 
-    std::cout << _description << ": " << OPEN;
+    std::cout << _description << ": " << OPEN_CHAR;
 
     // Fill ticks
     uint32_t new_ticks = (new_percent + 1) / 2;
     for (uint32_t i = 0; i < new_ticks; i++) {
-      std::cout << DONE;
+      std::cout << DONE_CHAR;
     }
 
     // Fill the rest of the space
     for (uint32_t i = new_ticks; i < BAR_SIZE; i++) {
-      std::cout << TODO;
+      std::cout << TODO_CHAR;
     }
 
-    std::cout << CLOSE << " " << new_percent << "%" << std::flush;
+    std::cout << CLOSE_CHAR << " " << new_percent << "%" << std::flush;
 
     _prev_ticks = new_ticks;
     _prev_percent = new_percent;
   }
 
   void close(const std::string& comment) {
+    // This overwrites the progress bar with its closing comment so that the bar
+    // is not displayed after it completes.
     std::cout << "\r" << comment;
 
-    // Clear out any additional information that's longer than the comment.
+    /**
+     * Clear out any additional information that's longer than the comment.
+     * The +9 comes from:
+     *    +2 => ': ' after the description (2)
+     *    +2 => OPEN_CHAR + CLOSE_CHAR
+     *    +5 => ' 100%' at the end of the bar when its complete.
+     *
+     * Adding the 9 gives us the length of everything already printed as part of
+     * the bar, so we know if there is additional information that needs to be
+     * overwritten.
+     */
     uint32_t current_line_len = _description.size() + BAR_SIZE + 9;
     if (current_line_len > comment.size()) {
       for (uint32_t i = 0; i < current_line_len - comment.size(); i++) {

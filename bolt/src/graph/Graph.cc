@@ -26,6 +26,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <unistd.h>
 #include <unordered_set>
 
 namespace thirdai::bolt {
@@ -231,8 +232,8 @@ MetricData BoltGraph::train(
                                .count();
 
       std::string logline = fmt::format(
-          "train | epoch {} | train_steps {} | {} | train_batches {} | time {}s | "
-          "complete",
+          "train | epoch {} | train_steps {} | {} | train_batches {} | time "
+          "{}s | complete",
           _epoch, _updates, train_metrics.summary(),
           dataset_context.numBatches(), epoch_time);
 
@@ -517,8 +518,9 @@ InferenceResult BoltGraph::evaluate(
                           .count();
 
   std::string logline = fmt::format(
-      "evaluate | epoch {} | train_steps {} | {} | eval_batches {} | time {}ms", _epoch,
-      _updates, metrics.summary(), predict_context.numBatches(), test_time);
+      "evaluate | epoch {} | train_steps {} | {} | eval_batches {} | time {}ms",
+      _epoch, _updates, metrics.summary(), predict_context.numBatches(),
+      test_time);
 
   logging::info(logline);
   if (bar) {
