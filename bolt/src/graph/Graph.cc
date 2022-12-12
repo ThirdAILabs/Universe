@@ -70,7 +70,7 @@ void BoltGraph::logValidateAndSave(uint32_t batch_size,
                                    MetricAggregator& train_metrics) {
   if (train_config.logLossFrequency() != 0 &&
       _updates % train_config.logLossFrequency() == 0) {
-    logging::info("train | epoch {} | updates {} | {}", (_epoch), _updates,
+    logging::info("train | epoch {} | train_steps {} | {}", (_epoch), _updates,
                   train_metrics.summary());
   }
 
@@ -231,7 +231,7 @@ MetricData BoltGraph::train(
                                .count();
 
       std::string logline = fmt::format(
-          "train | epoch {} | updates {} | {} | batches {} | time {}s | "
+          "train | epoch {} | train_steps {} | {} | train_batches {} | time {}s | "
           "complete",
           _epoch, _updates, train_metrics.summary(),
           dataset_context.numBatches(), epoch_time);
@@ -517,7 +517,7 @@ InferenceResult BoltGraph::evaluate(
                           .count();
 
   std::string logline = fmt::format(
-      "evaluate | epoch {} | updates {} | {} | batches {} | time {}ms", _epoch,
+      "evaluate | epoch {} | train_steps {} | {} | eval_batches {} | time {}ms", _epoch,
       _updates, metrics.summary(), predict_context.numBatches(), test_time);
 
   logging::info(logline);

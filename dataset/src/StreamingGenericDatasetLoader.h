@@ -104,8 +104,12 @@ class StreamingGenericDatasetLoader
 
   std::optional<std::tuple<BoltDatasetPtr, BoltDatasetPtr>>
   loadInMemoryWithMaxBatches(uint32_t max_in_memory_batches) {
+#if THIRDAI_EXPOSE_ALL
+    // This is useful internally but we don't want to expose it to keep the
+    // output clear and simple.
     std::cout << "loading data | source '" << _data_loader->resourceName()
               << "'" << std::endl;
+#endif
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -120,10 +124,14 @@ class StreamingGenericDatasetLoader
         std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
     if (input_batches.empty()) {
+#if THIRDAI_EXPOSE_ALL
+      // This is to ensure that it always prints complete if it prints that it
+      // has started loading above.
       std::cout << "loading data | source '" << _data_loader->resourceName()
                 << "' | vectors 0 | batches 0 | time " << duration
                 << "s | complete\n"
                 << std::endl;
+#endif
       return std::nullopt;
     }
 
