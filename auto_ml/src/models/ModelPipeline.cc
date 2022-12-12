@@ -50,8 +50,7 @@ void ModelPipeline::trainOnDataLoader(
           tuneBinaryClassificationPredictionThreshold(
               /* data_source= */ dataset::SimpleFileDataLoader::make(
                   validation->filename(), DEFAULT_EVALUATE_BATCH_SIZE),
-              /* metric_name= */ validation->metrics().at(0),
-              /* max_num_batches= */ MAX_TRAIN_BATCHES_FOR_THRESHOLD_TUNING);
+              /* metric_name= */ validation->metrics().at(0));
 
       binary_output->setPredictionTheshold(threshold);
     } else if (!train_config.metrics().empty()) {
@@ -61,8 +60,7 @@ void ModelPipeline::trainOnDataLoader(
       std::optional<float> threshold =
           tuneBinaryClassificationPredictionThreshold(
               /* data_source= */ data_source,
-              /* metric_name= */ train_config.metrics().at(0),
-              /* max_num_batches= */ MAX_TRAIN_BATCHES_FOR_THRESHOLD_TUNING);
+              /* metric_name= */ train_config.metrics().at(0));
 
       binary_output->setPredictionTheshold(threshold);
     }
@@ -299,12 +297,14 @@ void ModelPipeline::updateRehashRebuildInTrainConfig(
 }
 
 std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
-    const dataset::DataLoaderPtr& data_source, const std::string& metric_name,
-    uint32_t max_num_batches) {
+    const dataset::DataLoaderPtr& data_source, const std::string& metric_name) {
+  uint32_t num_batches =
+      MAX_SAMPLES_FOR_THRESHOLD_TUNING / data_source->getMaxBatchSize();
+
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
       data_source, /* training= */ false);
 
-  auto loaded_data = dataset->loadInMemory(max_num_batches).value();
+  auto loaded_data = dataset->loadInMemory(num_batches).value();
   auto data = std::move(loaded_data.first);
   auto labels = std::move(loaded_data.second);
 
