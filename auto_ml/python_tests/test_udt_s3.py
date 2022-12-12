@@ -2,10 +2,10 @@ import os
 
 import boto3
 import pytest
+from download_dataset_fixtures import download_census_income
 from model_test_utils import compute_evaluate_accuracy, get_udt_census_income_model
 from moto import mock_s3
 from thirdai import bolt
-from thirdai.demos import download_census_income
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -55,10 +55,8 @@ def train_and_evaluate(model_to_test, train_path, test_path, inference_samples):
 
 
 @mock_s3
-def test_utd_census_income_s3(s3):
-    local_train_file, local_test_file, inference_samples = download_census_income(
-        num_inference_samples="all", return_labels=True
-    )
+def test_utd_census_income_s3(s3, download_census_income):
+    local_train_file, local_test_file, inference_samples = download_census_income
     s3_train_path, s3_test_path = setup_census_on_s3(
         s3, local_train_file, local_test_file
     )

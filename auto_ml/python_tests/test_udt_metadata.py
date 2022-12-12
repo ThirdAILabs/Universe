@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 import pytest
+from download_dataset_fixtures import download_census_income
 from thirdai import bolt
-from thirdai.demos import download_census_income
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -159,7 +159,7 @@ def get_accuracy_on_test_data(trained_model, original_test_df):
     return sum(result_ids == ground_truth) / len(result_ids)
 
 
-def test_metadata():
+def test_metadata(download_census_income):
     """Metadata support allows us to preprocess vectors from a metadata file
     that corresponds with a categorical column in the main dataset. When we load
     the main dataset, by appending the corresponding preprocessed vector.
@@ -178,9 +178,7 @@ def test_metadata():
     row indices. The main dataset will only consist of "id" and label columns.
     Thus, the model can only learn properly if it successfully uses metadata.
     """
-    orig_train_file, orig_test_file, _ = download_census_income(
-        num_inference_samples="all", return_labels=True
-    )
+    orig_train_file, orig_test_file, _ = download_census_income
 
     train_df = pd.read_csv(orig_train_file)
     test_df = pd.read_csv(orig_test_file)

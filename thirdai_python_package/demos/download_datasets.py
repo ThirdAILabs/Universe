@@ -17,7 +17,7 @@ def _download_dataset(url, zip_file, check_existence, output_dir):
             zip_ref.extractall(output_dir)
 
 
-def to_batch(dataframe):
+def to_udt_input_batch(dataframe):
     return [
         {col_name: str(col_value) for col_name, col_value in record.items()}
         for record in dataframe.to_dict(orient="records")
@@ -68,8 +68,10 @@ def download_movielens():
     train_df.to_csv(TRAIN_FILE, index=False)
     test_df.to_csv(TEST_FILE, index=False)
 
-    index_batch = to_batch(df.iloc[:INFERENCE_BATCH_SIZE])
-    inference_batch = to_batch(df.iloc[:INFERENCE_BATCH_SIZE][["userId", "timestamp"]])
+    index_batch = to_udt_input_batch(df.iloc[:INFERENCE_BATCH_SIZE])
+    inference_batch = to_udt_input_batch(
+        df.iloc[:INFERENCE_BATCH_SIZE][["userId", "timestamp"]]
+    )
 
     return TRAIN_FILE, TEST_FILE, inference_batch, index_batch
 
@@ -107,7 +109,7 @@ def download_clinc(seed=42):
     train_df.to_csv(TRAIN_FILE, index=False)
     test_df.to_csv(TEST_FILE, index=False)
 
-    inference_batch = to_batch(
+    inference_batch = to_udt_input_batch(
         test_df[["text"]].sample(frac=1, random_state=seed).iloc[:INFERENCE_BATCH_SIZE]
     )
 
@@ -206,7 +208,7 @@ def prep_fraud_dataset(dataset_path, seed=42):
     test_df.to_csv(test_filename, index=False)
 
     INFERENCE_BATCH_SIZE = 5
-    inference_batch = to_batch(
+    inference_batch = to_udt_input_batch(
         df.iloc[:INFERENCE_BATCH_SIZE][
             [
                 "step",
