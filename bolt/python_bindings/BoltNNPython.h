@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PybindUtils.h"
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <compression/python_bindings/ConversionUtils.h>
@@ -34,6 +35,14 @@ using ParameterArray =
 
 using SerializedCompressedVector =
     py::array_t<char, py::array::c_style | py::array::forcecast>;
+
+static uint64_t dimensionProduct(const std::vector<uint32_t>& dimensions) {
+  uint64_t product = 1;
+  for (uint32_t dim : dimensions) {
+    product *= dim;
+  }
+  return product;
+}
 
 class ParameterReference {
   using FloatCompressedVector =
@@ -138,17 +147,74 @@ class ParameterReference {
   }
 
  private:
-  static uint64_t dimensionProduct(const std::vector<uint32_t>& dimensions) {
-    uint64_t product = 1;
-    for (uint32_t dim : dimensions) {
-      product *= dim;
-    }
-    return product;
-  }
-
   float* _params;
   std::vector<uint32_t> _dimensions;
   uint64_t _total_dim;
 };
+class GradientReference {
+ public:
+  GradientReference(BoltGraph& model) {
+    uint64_t flattened_gradients_dim = 0;
+    for (NodePtr node : nodes) {
+      if (!node->isInputNode()) {
+        flattened_gradients_dim += dimensionProduct({node.outputDim()});
+        flattened_gradients_dim += dimensionProduct(
+            {node.outputDim(), node.getPredecessors()[0]->outputDim()})
+      }
+    }
+    _flattened_gradients_dim = flattened_gradients_dim;
+  }
 
+  ParameterArray get_gradients(BoltGraph& model) {
+    std::vector<NodePtr> nodes = model.getNodes();
+
+    float* param_copy = new float[_flattened_gradients_dim];
+    uint64_t node_gradient_pointer = 0;
+    for (NodePtr node : nodes) {
+      if (!node->isInputNode()) {
+        uint64_t flattened_node_bias_len = dimensionProduct({node.outputDim()});
+        std::copy(node.getBiasesPtr(),
+                  node.getBiasesPtr() + flattened_node_bias_len,
+                  param_copy + node_gradient_pointer);
+        node_gradient_pointer += flattened_node_bias_len;
+
+        uint64_t flattened_node_weight_len = dimensionProduct(
+            {node.outputDim(), node.getPredecessors()[0]->outputDim()});
+        std::copy(node.getWeightsPtr(),
+                  node.getWeightsPtr() + flattened_node_weight_len,
+                  param_copy + node_gradient_pointer);
+        node_gradient_pointer += flattened_node_weight_len;
+      }
+    }
+    py::capsule free_when_done(
+        params_copy, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    return ParameterArray(_flattened_gradients_dim, param_copy, free_when_done);
+  }
+
+  void set_gradients(BoltGraph& model, ParameterArray& new_params) {
+    std::vector<NodePtr> nodes = model.getNodes();
+    uint32_t node_gradient_pointer = 0;
+    for (NodePtr node : nodes) {
+      if (!node->isInputNode()) {
+        uint64_t flattened_node_bias_len = dimensionProduct({node.outputDim()});
+        std::copy(
+            new_params.data() + node_gradient_pointer,
+            new_params.data() + node_gradient_pointer + flattened_node_bias_len,
+            node.getBiasesPtr());
+        node_gradient_pointer += flattened_node_bias_len;
+
+        uint64_t flattened_node_weight_len = dimensionProduct(
+            {node.outputDim(), node.getPredecessors()[0]->outputDim()});
+        std::copy(new_params.data() + node_gradient_pointer,
+                  new_params.data() + node_gradient_pointer +
+                      flattened_node_weight_len,
+                  node.getWeightsPtr());
+        node_gradient_pointer += flattened_node_weight_len;
+      }
+    }
+  }
+
+  uint64_t _flattened_gradients_dim;
+}
 }  // namespace thirdai::bolt::python
