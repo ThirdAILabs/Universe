@@ -11,15 +11,6 @@ def _create_parquet_loader(path, batch_size):
     return thirdai.dataset.ParquetLoader(parquet_path=path, batch_size=batch_size)
 
 
-def _create_s3_loader(path, batch_size):
-    parsed_url = urlparse(path, allow_fragments=False)
-    bucket = parsed_url.netloc
-    key = parsed_url.path.lstrip("/")
-    return thirdai.dataset.S3DataLoader(
-        bucket_name=bucket, prefix_filter=key, batch_size=batch_size
-    )
-
-
 def _create_loader(path, batch_size, **kwargs):
     # This also handles parquet on s3, so it comes before the general s3 and gcs
     # handling and file handling below which assume the target files are
