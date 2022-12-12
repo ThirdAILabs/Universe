@@ -11,10 +11,6 @@
 #include <utility>
 #include <vector>
 
-using thirdai::dataset::SegmentedDenseFeatureVector;
-using thirdai::dataset::SegmentedFeatureVector;
-using thirdai::dataset::SegmentedSparseFeatureVector;
-
 namespace thirdai::dataset {
 
 struct VectorSegment {

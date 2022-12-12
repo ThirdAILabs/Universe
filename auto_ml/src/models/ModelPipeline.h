@@ -5,6 +5,8 @@
 #include "OutputProcessor.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
@@ -51,6 +53,8 @@ class ValidationOptions {
     return val_config;
   }
 
+  const std::vector<std::string>& metrics() const { return _metrics; }
+
  private:
   std::string _filename;
   std::vector<std::string> _metrics;
@@ -89,14 +93,6 @@ class ModelPipeline {
   }
 
   /**
-   * Wrapper around trainOnDataLoader for passing in a filename and batchsize.
-   */
-  void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
-                   std::optional<uint32_t> batch_size_opt,
-                   const std::optional<ValidationOptions>& validation,
-                   std::optional<uint32_t> max_in_memory_batches);
-
-  /**
    * Trains the model on the data given in datasource using the specified
    * TrainConfig and reports any metrics specified in the ValidationOptions on
    * the validation data (if provided). The parameter max_in_memory_batches
@@ -106,41 +102,41 @@ class ModelPipeline {
    * loaded with temporal tracking in UDT. See comment in trainOnStream for more
    * details.
    */
-  void trainOnDataLoader(
-      const std::shared_ptr<dataset::DataLoader>& data_source,
-      bolt::TrainConfig& train_config,
-      const std::optional<ValidationOptions>& validation,
-      std::optional<uint32_t> max_in_memory_batches);
-
-  /**
-   * Wrapper around evaluateOnDataLoader for passing in a filename.
-   */
-  py::object evaluateOnFile(const std::string& filename,
-                            std::optional<bolt::EvalConfig>& eval_config_opt);
+  void train(const std::shared_ptr<dataset::DataLoader>& data_source,
+             bolt::TrainConfig& train_config,
+             const std::optional<ValidationOptions>& validation,
+             std::optional<uint32_t> max_in_memory_batches);
 
   /**
    * Processes the data specified in data_source and returns the activations of
    * the final layer. Computes any metrics specifed in the EvalConfig.
    */
-  py::object evaluateOnDataLoader(
-      const std::shared_ptr<dataset::DataLoader>& data_source,
-      std::optional<bolt::EvalConfig>& eval_config_opt);
+  py::object evaluate(const dataset::DataLoaderPtr& data_source,
+                      std::optional<bolt::EvalConfig>& eval_config_opt,
+                      bool return_predicted_class);
 
   /**
    * Takes in a single input sample and returns the activations for the output
    * layer.
    */
-  template <typename InputType>
-  py::object predict(const InputType& sample, bool use_sparse_inference);
+  virtual py::object predict(const LineInput& sample, bool use_sparse_inference,
+                             bool return_predicted_class);
+
+  virtual py::object predict(const MapInput& sample, bool use_sparse_inference,
+                             bool return_predicted_class);
 
   /**
    * Takes in a batch of input samples and processes them in parallel and
    * returns the activations for the output layer. The order in which the input
    * samples are provided is the order in which the activations are returned.
    */
-  template <typename InputBatchType>
-  py::object predictBatch(const InputBatchType& samples,
-                          bool use_sparse_inference);
+  virtual py::object predictBatch(const LineInputBatch& samples,
+                                  bool use_sparse_inference,
+                                  bool return_predicted_class);
+
+  virtual py::object predictBatch(const MapInputBatch& samples,
+                                  bool use_sparse_inference,
+                                  bool return_predicted_class);
 
   /**
    * Creates an explanation for the prediction of a sample. If the target class
@@ -178,6 +174,8 @@ class ModelPipeline {
     return _dataset_factory;
   }
 
+  virtual ~ModelPipeline() = default;
+
  protected:
   // Protected constructor for cereal.
   // Protected so derived classes can also use it for serialization purposes.
@@ -209,6 +207,24 @@ class ModelPipeline {
                                 uint32_t max_in_memory_batches);
 
   /**
+   * Takes in a single input sample and returns the activations for the output
+   * layer.
+   */
+  template <typename InputType>
+  py::object predictImpl(const InputType& sample, bool use_sparse_inference,
+                         bool return_predicted_class);
+
+  /**
+   * Takes in a batch of input samples and processes them in parallel and
+   * returns the activations for the output layer. The order in which the input
+   * samples are provided is the order in which the activations are returned.
+   */
+  template <typename InputBatchType>
+  py::object predictBatchImpl(const InputBatchType& samples,
+                              bool use_sparse_inference,
+                              bool return_predicted_class);
+
+  /**
    * Updates the hash table rebuilding and hash function reconstructing
    * parameters in the TrainConfig if an override for these values is present in
    * the TrainEvalParameters. These parameters cannot be specified by the user
@@ -218,11 +234,24 @@ class ModelPipeline {
    */
   void updateRehashRebuildInTrainConfig(bolt::TrainConfig& train_config);
 
+  const uint32_t MAX_TRAIN_BATCHES_FOR_THRESHOLD_TUNING = 100;
+  const uint32_t NUM_THRESHOLDS_TO_CHECK = 1000;
+  /**
+   * Computes the optimal binary prediction threshold to maximize the given
+   * metric on max_num_batches batches of the given dataset. Note: does not
+   * shuffle the data to obtain the batches.
+   */
+  std::optional<float> tuneBinaryClassificationPredictionThreshold(
+      const dataset::DataLoaderPtr& data_source, const std::string& metric_name,
+      uint32_t max_num_batches);
+
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_dataset_factory, _model, _output_processor, _train_eval_config);
   }
+
+  static constexpr uint32_t ALL_BATCHES = std::numeric_limits<uint32_t>::max();
 
  protected:
   data::DatasetLoaderFactoryPtr _dataset_factory;

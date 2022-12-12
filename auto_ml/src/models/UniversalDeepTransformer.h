@@ -5,9 +5,6 @@
 #include <cereal/types/polymorphic.hpp>
 #include "OutputProcessor.h"
 #include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/nodes/FullyConnected.h>
-#include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
@@ -15,15 +12,12 @@
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/models/ModelPipeline.h>
-#include <utils/StringManipulation.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
 
 namespace thirdai::automl::models {
-
-using OptionsMap = std::unordered_map<std::string, std::string>;
 
 /**
  * UniversalDeepTransformer is a wrapper around the model pipeline that uses the
@@ -33,7 +27,7 @@ using OptionsMap = std::unordered_map<std::string, std::string>;
  * potential clients can tinker with without having to download a serialized
  * deployment config file.
  */
-class UniversalDeepTransformer : public ModelPipeline {
+class UniversalDeepTransformer final : public ModelPipeline {
   static constexpr const uint32_t DEFAULT_INFERENCE_BATCH_SIZE = 2048;
   static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;
   static constexpr const uint32_t DEFAULT_HIDDEN_DIM = 512;
@@ -60,47 +54,49 @@ class UniversalDeepTransformer : public ModelPipeline {
       bool integer_target = false, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::optional<std::string>& model_config = std::nullopt,
-      const std::unordered_map<std::string, std::string>& options = {}) {
-    auto dataset_config = std::make_shared<data::UDTConfig>(
-        std::move(data_types), std::move(temporal_tracking_relationships),
-        std::move(target_col), n_target_classes, integer_target,
-        std::move(time_granularity), lookahead, delimiter);
+      const deployment::UserInputMap& options = {});
 
-    auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
-          embedding_dimension] = processUDTOptions(options);
+  /**
+   * This wraps the predict method of the ModelPipeline to handle recusive
+   * predictions. If prediction_depth in the UDT instance is 1, then this
+   * behaves exactly as predict in the ModelPipeline. If prediction_depth > 1
+   * then this will call predict prediction_depth number of times, with the
+   *classes predicted by the previous calls to predict added as inputs to
+   *subsequent calls.
+   */
+  py::object predict(const MapInput& sample_in, bool use_sparse_inference,
+                     bool return_predicted_class) final;
 
-    auto [output_processor, regression_binning] =
-        getOutputProcessor(dataset_config);
+  py::object predict(const LineInput& sample, bool use_sparse_inference,
+                     bool return_predicted_class) final {
+    (void)sample;
+    (void)use_sparse_inference;
+    (void)return_predicted_class;
+    throw std::runtime_error(
+        "predict must be called with a dictionary of column names to values.");
+  }
 
-    auto dataset_factory = data::UDTDatasetFactory::make(
-        /* config= */ std::move(dataset_config),
-        /* force_parallel= */ parallel_data_processing,
-        /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
-        /* contextual_columns= */ contextual_columns,
-        /* regression_binning= */ regression_binning);
+  /**
+   * This wraps the predictBatch method of the ModelPipeline to handle recusive
+   * predictions. If prediction_depth in the UDT instance is 1, then this
+   * behaves exactly as predictBatch in the ModelPipeline. If prediction_depth >
+   * 1 then this will call predictBatch prediction_depth number of times, with
+   * the classes predicted by the previous calls to predictBatch added as inputs
+   * to subsequent calls.
+   */
+  py::object predictBatch(const MapInputBatch& samples_in,
+                          bool use_sparse_inference,
+                          bool return_predicted_class) final;
 
-    bolt::BoltGraphPtr model;
-    if (model_config) {
-      model =
-          loadUDTBoltGraph(/* input_nodes= */ dataset_factory->getInputNodes(),
-                           /* output_dim= */ dataset_factory->getLabelDim(),
-                           /* saved_model_config= */ model_config.value());
-    } else {
-      model = buildUDTBoltGraph(
-          /* input_nodes= */ dataset_factory->getInputNodes(),
-          /* output_dim= */ dataset_factory->getLabelDim(),
-          /* hidden_layer_size= */ embedding_dimension);
-    }
-    deployment::TrainEvalParameters train_eval_parameters(
-        /* rebuild_hash_tables_interval= */ std::nullopt,
-        /* reconstruct_hash_functions_interval= */ std::nullopt,
-        /* default_batch_size= */ DEFAULT_INFERENCE_BATCH_SIZE,
-        /* freeze_hash_tables= */ freeze_hash_tables,
-        /* prediction_threshold= */ std::nullopt);
-
-    return UniversalDeepTransformer({std::move(dataset_factory),
-                                     std::move(model), output_processor,
-                                     train_eval_parameters});
+  py::object predictBatch(const LineInputBatch& samples,
+                          bool use_sparse_inference,
+                          bool return_predicted_class) final {
+    (void)samples;
+    (void)use_sparse_inference;
+    (void)return_predicted_class;
+    throw std::runtime_error(
+        "predictBatch must be called with a list of dictionaries of column "
+        "names to values.");
   }
 
   BoltVector embeddingRepresentation(const MapInput& input) {
@@ -141,8 +137,12 @@ class UniversalDeepTransformer : public ModelPipeline {
   }
 
  private:
-  explicit UniversalDeepTransformer(ModelPipeline&& model)
-      : ModelPipeline(model) {}
+  explicit UniversalDeepTransformer(ModelPipeline&& model,
+                                    std::string target_column,
+                                    uint32_t prediction_depth)
+      : ModelPipeline(model),
+        _target_column(std::move(target_column)),
+        _prediction_depth(prediction_depth) {}
 
   /**
    * Returns the output processor to use to create the ModelPipeline. Also
@@ -151,58 +151,15 @@ class UniversalDeepTransformer : public ModelPipeline {
    */
   static std::pair<OutputProcessorPtr,
                    std::optional<dataset::RegressionBinningStrategy>>
-  getOutputProcessor(const data::UDTConfigPtr& dataset_config) {
-    if (auto num_config = data::asNumerical(
-            dataset_config->data_types.at(dataset_config->target))) {
-      uint32_t num_bins = dataset_config->n_target_classes.value_or(
-          data::UDTConfig::REGRESSION_DEFAULT_NUM_BINS);
-
-      auto regression_binning = dataset::RegressionBinningStrategy(
-          num_config->range.first, num_config->range.second, num_bins);
-
-      auto output_processor =
-          RegressionOutputProcessor::make(regression_binning);
-      return {output_processor, regression_binning};
-    }
-    return {CategoricalOutputProcessor::make(), std::nullopt};
-  }
+  getOutputProcessor(const data::UDTConfigPtr& dataset_config);
 
   static bolt::BoltGraphPtr loadUDTBoltGraph(
       const std::vector<bolt::InputPtr>& input_nodes, uint32_t output_dim,
-      const std::string& saved_model_config) {
-    auto model_config = deployment::ModelConfig::load(saved_model_config);
-
-    // This will pass the output (label) dimension of the model into the model
-    // config so that it can be used to determine the model architecture.
-    deployment::UserInputMap parameters = {
-        {deployment::DatasetLabelDimensionParameter::PARAM_NAME,
-         deployment::UserParameterInput(output_dim)}};
-
-    return model_config->createModel(input_nodes, parameters);
-  }
+      const std::string& saved_model_config);
 
   static bolt::BoltGraphPtr buildUDTBoltGraph(
       std::vector<bolt::InputPtr> input_nodes, uint32_t output_dim,
-      uint32_t hidden_layer_size) {
-    auto hidden = bolt::FullyConnectedNode::makeDense(hidden_layer_size,
-                                                      /* activation= */ "relu");
-    hidden->addPredecessor(input_nodes[0]);
-
-    auto sparsity =
-        deployment::AutotunedSparsityParameter::autotuneSparsity(output_dim);
-    const auto* activation = "softmax";
-    auto output = bolt::FullyConnectedNode::makeAutotuned(output_dim, sparsity,
-                                                          activation);
-    output->addPredecessor(hidden);
-
-    auto graph = std::make_shared<bolt::BoltGraph>(
-        /* inputs= */ input_nodes, output);
-
-    graph->compile(
-        bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
-
-    return graph;
-  }
+      uint32_t hidden_layer_size);
 
   data::UDTDatasetFactory& udtDatasetFactory() const {
     /*
@@ -219,60 +176,11 @@ class UniversalDeepTransformer : public ModelPipeline {
     bool force_parallel = false;
     bool freeze_hash_tables = true;
     uint32_t embedding_dimension = DEFAULT_HIDDEN_DIM;
+    uint32_t prediction_depth = 1;
   };
 
   static UDTOptions processUDTOptions(
-      const std::unordered_map<std::string, std::string>& options_map) {
-    auto options = UDTOptions();
-
-    for (const auto& [option_name, option_value] : options_map) {
-      auto option_value_lower = utils::lower(option_value);
-      if (option_name == "contextual_columns") {
-        if (option_value_lower == "true") {
-          options.contextual_columns = true;
-        } else if (option_value_lower == "false") {
-          options.contextual_columns = false;
-        } else {
-          throwOptionError(option_name, option_value,
-                           /* expected_option_values= */ "'True' or 'False'");
-        }
-      } else if (option_name == "force_parallel") {
-        if (option_value_lower == "true") {
-          options.force_parallel = true;
-        } else if (option_value_lower == "false") {
-          options.force_parallel = false;
-        } else {
-          throwOptionError(option_name, option_value,
-                           /* expected_option_values= */ "'True' or 'False'");
-        }
-      } else if (option_name == "freeze_hash_tables") {
-        if (option_value_lower == "true") {
-          options.freeze_hash_tables = true;
-        } else if (option_value_lower == "false") {
-          options.freeze_hash_tables = false;
-        } else {
-          throwOptionError(option_name, option_value,
-                           /* expected_option_values= */ "'True' or 'False'");
-        }
-      } else if (option_name == "embedding_dimension") {
-        uint32_t int_value = utils::toInteger(option_value.c_str());
-        if (int_value != 0) {
-          options.embedding_dimension = int_value;
-        } else {
-          throw std::invalid_argument("Invalid value for option '" +
-                                      option_name + "'. Received value '" +
-                                      option_value + "'.");
-        }
-      } else {
-        throw std::invalid_argument(
-            "Option '" + option_name +
-            "' is invalid. Possible options include 'contextual_columns', "
-            "'force_parallel', 'freeze_hash_tables', 'embedding_dimension'.");
-      }
-    }
-
-    return options;
-  }
+      const deployment::UserInputMap& options_map);
 
   static void throwOptionError(const std::string& option_name,
                                const std::string& given_option_value,
@@ -283,13 +191,22 @@ class UniversalDeepTransformer : public ModelPipeline {
         " but received value '" + given_option_value + "'.");
   }
 
+  void setPredictionAtTimestep(MapInput& sample, uint32_t step,
+                               const std::string& pred) {
+    sample[_target_column + "_" + std::to_string(step)] = pred;
+  }
+
+  std::string _target_column;
+  uint32_t _prediction_depth;
+
   // Private constructor for cereal.
   UniversalDeepTransformer() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<ModelPipeline>(this));
+    archive(cereal::base_class<ModelPipeline>(this), _target_column,
+            _prediction_depth);
   }
 };
 
