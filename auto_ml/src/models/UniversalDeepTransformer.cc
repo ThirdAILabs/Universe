@@ -306,7 +306,7 @@ std::optional<float> UniversalDeepTransformer::getPredictionThreshold() const {
     return output_processor->getPredictionThreshold();
   }
   throw std::invalid_argument(
-      "Can only call set_prediction_threshold for binary classiciation "
+      "Can only call get_prediction_threshold for binary classiciation "
       "tasks.");
 }
 
