@@ -84,6 +84,9 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
          (output.active_neurons != nullptr && !DENSE));
   assert(labels == nullptr || labels->len > 0);
 
+  // const std::string& file_name = "sampling_mode";
+  // std::ofstream file(file_name);
+
   selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels);
 
   float max_act = 0;
@@ -364,7 +367,9 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   }
 
   if (useRandomSampling()) {
+    std::cout << "Random Sampling Invoked..." << std::endl;
     randomNeuronSampling(input, output, labels);
+    
   } else {
     lshNeuronSampling<PREV_DENSE>(input, output, labels);
   }
