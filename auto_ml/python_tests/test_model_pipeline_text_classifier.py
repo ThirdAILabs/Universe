@@ -78,12 +78,12 @@ def train_model_pipeline_text_classifier(download_clinc_dataset_model_pipeline):
 
     train_filename, _, _ = download_clinc_dataset_model_pipeline
 
-    model.train(
-        filename=train_filename,
-        epochs=5,
-        learning_rate=0.01,
-        max_in_memory_batches=12,
-    )
+    # model.train(
+    #     filename=train_filename,
+    #     epochs=5,
+    #     learning_rate=0.01,
+    #     max_in_memory_batches=12,
+    # )
 
     return model
 

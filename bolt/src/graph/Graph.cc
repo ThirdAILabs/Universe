@@ -26,6 +26,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <unistd.h>
 #include <unordered_set>
 
 namespace thirdai::bolt {
@@ -223,6 +224,7 @@ MetricData BoltGraph::train(
                            train_metrics);
 
         callbacks.onBatchEnd(*this, train_state);
+        sleep(1);
       }
 
       auto train_end = std::chrono::high_resolution_clock::now();
@@ -503,6 +505,8 @@ InferenceResult BoltGraph::evaluate(
       processOutputCallback(eval_config.outputCallback(), batch_size);
 
       outputTracker.saveOutputBatch(_output, batch_size);
+
+      sleep(1);
     }
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();

@@ -29,12 +29,20 @@ class ProgressBar {
         _prev_percent(0),
         _max_steps(max_steps),
         _description(std::move(description)) {
-    std::cout << _description << ": " << std::flush;
+    std::cout << '\r' << _description << ": " << std::flush;
     std::cout << OPEN;
     for (uint32_t i = 0; i < BAR_SIZE; i++) {
       std::cout << TODO;
     }
-    std::cout << CLOSE << " " << _prev_percent << "%" << std::flush;
+    std::cout << CLOSE << " " << _prev_percent << "%";
+
+    // Clear out any left over output on the line, this is because the length of
+    // the bar for evaulate is slightly shorter than for train becuase of the
+    // description.
+    for (uint32_t i = 0; i < 10; i++) {
+      std::cout << ' ';
+    }
+    std::cout << std::flush;
   }
 
   static std::optional<ProgressBar> makeOptional(bool verbose,
@@ -76,6 +84,7 @@ class ProgressBar {
 
   void close(const std::string& comment) {
     std::cout << "\r" << comment;
+    // Clear out any additional information that's longer than the comment.
     for (uint32_t i = 0; i < _description.size() + BAR_SIZE + 9; i++) {
       std::cout << ' ';
     }
