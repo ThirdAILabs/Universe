@@ -183,7 +183,7 @@ class Worker:
         :return: Model Gradients
         :rtype: numpy.ndarray
         """
-        return get_gradients(self.model)
+        return self.model.gradient_reference.get_gradients()
 
     @timed
     def receive_gradients(self, averaged_gradients_ref=None):

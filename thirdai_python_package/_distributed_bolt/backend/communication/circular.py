@@ -2,7 +2,7 @@ from typing import Optional
 
 import ray
 
-from ...utils import get_gradients, set_gradients
+import numpy as np
 
 
 class Circular:
@@ -17,6 +17,7 @@ class Circular:
         self.partitions = []
         self.friend_gradients = []
         self.gradients = []
+        self.padding_length = 0
 
     def set_friend(self, friend):
         """
@@ -68,7 +69,13 @@ class Circular:
         self.model.compute_and_store_batch_gradients(batch_id)
 
         self.partitions = []
-        self.gradients = get_gradients(self.model)
+        self.gradients = self.model.gradient_reference.get_gradients()
+
+        # padding for creating 2-D matrix with number of rows equal to number of workers
+        self.padding_length = self.num_workers - len(self.gradients) % self.num_workers
+        self.gradients = np.append(self.gradients, np.zeros(self.padding_length))
+
+        self.gradients = np.reshape(self.gradients, (self.num_workers, -1))
 
         self.calculate_gradient_partitions()
 
@@ -81,7 +88,10 @@ class Circular:
         :return: returns True, after functions complete
         :rtype: bool
         """
-        set_gradients(self.model, self.gradients)
+        self.gradients = self.gradients[: -self.padding_length]
+        self.model.gradient_reference.set_gradients(
+            self.model, self.gradients.flatten()
+        )
 
     def update_partitions(
         self,

@@ -34,4 +34,4 @@ class Linear:
         :rtype: bool
         """
 
-        set_gradients(self.model, averaged_gradients)
+        self.model.gradient_reference.set_gradients(averaged_gradients)

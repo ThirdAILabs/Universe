@@ -29,15 +29,14 @@ class Gloo:
 
     def compute_and_store_batch_gradients(self, batch_no):
         self.model.compute_and_store_batch_gradients(batch_no)
-        self.gradients = np.array(get_gradients(self.model))
+        self.gradients = np.array(self.model.gradient_references.get_gradients())
 
     def receive_gradients(self):
-        for gradient_id in range(len(self.gradients)):
-            col.allreduce(
-                tensor=self.gradients[gradient_id],
-                group_name=self.group_name,
-                op=ReduceOp.SUM,
-            )
-            self.gradients[gradient_id] /= self.num_workers
+        col.allreduce(
+            tensor=self.gradients,
+            group_name=self.group_name,
+            op=ReduceOp.SUM,
+        )
+        self.gradients /= self.num_workers
 
-        set_gradients(self.model, self.gradients)
+        self.model.gradient_references.set_gradients(self.gradients)

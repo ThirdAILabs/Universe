@@ -3,6 +3,8 @@
 #include "PybindUtils.h"
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/nodes/Embedding.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <_types/_uint32_t.h>
 #include <compression/python_bindings/ConversionUtils.h>
@@ -154,90 +156,96 @@ class ParameterReference {
 };
 class GradientReference {
  public:
-  GradientReference(BoltGraph& model) {
+  GradientReference(BoltGraph& model) : _model(model) {
     std::vector<NodePtr> nodes = model.getNodes();
 
     // Calculating dimension for flattened gradient array
     uint64_t flattened_gradients_dim = 0;
     for (NodePtr node : nodes) {
       if (node->needGradientSharing()) {
-        switch (node->type()) {
-          case "embedding":
-            flattened_gradients_dim += static_cast<uint32_t>(
-                node.getRawEmbeddingBlockGradient().size());
-            break;
-          case "fc":
-            flattened_gradients_dim += dimensionProduct({node.outputDim()});
-            flattened_gradients_dim += dimensionProduct(
-                {node.outputDim(), node.getPredecessors()[0]->outputDim()});
-            break;
-          default:
-            std::string err =
-                "Gradient sharing logic is not implemented for " + node->name();
-            throw std::invalid_argument(err);
+        if (node->type() == "embedding") {
+          EmbeddingNode* embedding_node =
+              dynamic_cast<EmbeddingNode*>(node.get());
+          flattened_gradients_dim += static_cast<uint32_t>(
+              embedding_node->getRawEmbeddingBlockGradient().size());
+        } else if (node->type() == "fc") {
+          FullyConnectedNode* fc_node =
+              dynamic_cast<FullyConnectedNode*>(node.get());
+          flattened_gradients_dim += dimensionProduct({fc_node->outputDim()});
+          flattened_gradients_dim +=
+              dimensionProduct({fc_node->outputDim(),
+                                fc_node->getPredecessors()[0]->outputDim()});
+        } else {
+          std::string err =
+              "Gradient sharing logic is not implemented for " + node->type();
+          throw std::invalid_argument(err);
         }
       }
     }
     _flattened_gradients_dim = flattened_gradients_dim;
   }
 
-  ParameterArray get_gradients(BoltGraph& model) {
-    std::vector<NodePtr> nodes = model.getNodes();
+  ParameterArray get_gradients() {
+    std::vector<NodePtr> nodes = _model.getNodes();
 
     float* param_copy = new float[_flattened_gradients_dim];
     uint64_t node_gradient_pointer = 0;
     for (NodePtr node : nodes) {
       if (node->needGradientSharing()) {
-        switch (node->type()) {
-          case "embedding":
-            std::vector<float>& raw_embedding_block_gradient =
-                node.getRawEmbeddingBlockGradient();
-            uint32_t embedding_layer_length =
-                static_cast<uint32_t>(raw_embedding_block_gradient.size());
-            std::copy(
-                raw_embedding_block_gradient.data(),
-                raw_embedding_block_gradient.data() + embedding_layer_length,
-                param_copy + node_gradient_pointer);
-            node_gradient_pointer += embedding_layer_length;
+        if (node->type() == "embedding") {
+          EmbeddingNode* embedding_node =
+              dynamic_cast<EmbeddingNode*>(node.get());
+          std::vector<float>& raw_embedding_block_gradient =
+              embedding_node->getRawEmbeddingBlockGradient();
+          uint32_t embedding_layer_length =
+              static_cast<uint32_t>(raw_embedding_block_gradient.size());
+          std::copy(
+              raw_embedding_block_gradient.data(),
+              raw_embedding_block_gradient.data() + embedding_layer_length,
+              param_copy + node_gradient_pointer);
+          node_gradient_pointer += embedding_layer_length;
+        } else if (node->type() == "fc") {
+          FullyConnectedNode* fc_node =
+              dynamic_cast<FullyConnectedNode*>(node.get());
+          uint64_t flattened_node_bias_len =
+              dimensionProduct({fc_node->outputDim()});
+          std::copy(fc_node->getBiasGradientsPtr(),
+                    fc_node->getBiasGradientsPtr() + flattened_node_bias_len,
+                    param_copy + node_gradient_pointer);
+          node_gradient_pointer += flattened_node_bias_len;
 
-            break;
-          case "fc":
-            uint64_t flattened_node_bias_len =
-                dimensionProduct({node.outputDim()});
-            std::copy(node.getBiasGradientsPtr(),
-                      node.getBiasGradientsPtr() + flattened_node_bias_len,
-                      param_copy + node_gradient_pointer);
-            node_gradient_pointer += flattened_node_bias_len;
-
-            uint64_t flattened_node_weight_len = dimensionProduct(
-                {node.outputDim(), node.getPredecessors()[0]->outputDim()});
-            std::copy(node.getWeightGradientsPtr(),
-                      node.getWeightGradientsPtr() + flattened_node_weight_len,
-                      param_copy + node_gradient_pointer);
-            node_gradient_pointer += flattened_node_weight_len;
-
-            break;
-          default:
-            std::string err =
-                "Gradient sharing logic is not implemented for " + node->name();
-            throw std::invalid_argument(err);
+          uint64_t flattened_node_weight_len =
+              dimensionProduct({fc_node->outputDim(),
+                                fc_node->getPredecessors()[0]->outputDim()});
+          std::copy(
+              fc_node->getWeightGradientsPtr(),
+              fc_node->getWeightGradientsPtr() + flattened_node_weight_len,
+              param_copy + node_gradient_pointer);
+          node_gradient_pointer += flattened_node_weight_len;
+        } else {
+          std::string err =
+              "Gradient sharing logic is not implemented for " + node->type();
+          throw std::invalid_argument(err);
         }
       }
     }
+
     py::capsule free_when_done(
-        params_copy, [](void* ptr) { delete static_cast<float*>(ptr); });
+        param_copy, [](void* ptr) { delete static_cast<float*>(ptr); });
 
     return ParameterArray(_flattened_gradients_dim, param_copy, free_when_done);
   }
 
-  void set_gradients(BoltGraph& model, ParameterArray& new_params) {
-    std::vector<NodePtr> nodes = model.getNodes();
+  void set_gradients(ParameterArray& new_params) {
+    std::vector<NodePtr> nodes = _model.getNodes();
     uint32_t node_gradient_pointer = 0;
     for (NodePtr node : nodes) {
-      switch (node->type()) {
-        case "embedding":
+      if (node->needGradientSharing()) {
+        if (node->type() == "embedding") {
+          EmbeddingNode* embedding_node =
+              dynamic_cast<EmbeddingNode*>(node.get());
           std::vector<float>& raw_embedding_block_gradient =
-              node.getRawEmbeddingBlockGradient();
+              embedding_node->getRawEmbeddingBlockGradient();
           uint32_t embedding_layer_length =
               static_cast<uint32_t>(raw_embedding_block_gradient.size());
           std::copy(new_params.data() + node_gradient_pointer,
@@ -245,34 +253,34 @@ class GradientReference {
                         embedding_layer_length,
                     raw_embedding_block_gradient.data());
           node_gradient_pointer += embedding_layer_length;
-
-          break;
-        case "fc":
+        } else if (node->type() == "fc") {
+          FullyConnectedNode* fc_node =
+              dynamic_cast<FullyConnectedNode*>(node.get());
           uint64_t flattened_node_bias_len =
-              dimensionProduct({node.outputDim()});
+              dimensionProduct({fc_node->outputDim()});
           std::copy(new_params.data() + node_gradient_pointer,
                     new_params.data() + node_gradient_pointer +
                         flattened_node_bias_len,
-                    node.getBiasGradientsPtr());
+                    fc_node->getBiasGradientsPtr());
           node_gradient_pointer += flattened_node_bias_len;
 
-          uint64_t flattened_node_weight_len = dimensionProduct(
-              {node.outputDim(), node.getPredecessors()[0]->outputDim()});
+          uint64_t flattened_node_weight_len =
+              dimensionProduct({fc_node->outputDim(),
+                                fc_node->getPredecessors()[0]->outputDim()});
           std::copy(new_params.data() + node_gradient_pointer,
                     new_params.data() + node_gradient_pointer +
                         flattened_node_weight_len,
-                    node.getWeightGradientsPtr());
+                    fc_node->getWeightGradientsPtr());
           node_gradient_pointer += flattened_node_weight_len;
-
-          break;
-        default:
+        } else {
           std::string err =
-              "Gradient sharing logic is not implemented for " + node->name();
+              "Gradient sharing logic is not implemented for " + node->type();
           throw std::invalid_argument(err);
+        }
       }
     }
   }
-
+  BoltGraph& _model;
   uint64_t _flattened_gradients_dim;
-}
+};
 }  // namespace thirdai::bolt::python

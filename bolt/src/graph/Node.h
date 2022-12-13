@@ -178,6 +178,10 @@ class Node {
    */
   virtual bool needGradientSharing() = 0;
 
+  // Return a short all lowercase string representing the type of this node for
+  // use in printing the graph, e.g. concat, fc, input
+  virtual std::string type() const = 0;
+
  protected:
   virtual void compileImpl() = 0;
 
@@ -204,10 +208,6 @@ class Node {
 
   virtual void summarizeImpl(std::stringstream& summary,
                              bool detailed) const = 0;
-
-  // Return a short all lowercase string representing the type of this node for
-  // use in printing the graph, e.g. concat, fc, input
-  virtual std::string type() const = 0;
 
   enum NodeState {
     Constructed,
