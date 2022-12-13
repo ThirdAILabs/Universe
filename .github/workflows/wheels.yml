@@ -34,12 +34,12 @@ jobs:
             os: macos-12
             archs: x86_64
             deployment_target: "10.15"
-            additional_cmake_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=OFF"
+            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=OFF"
           - name: macos-arm64
             os: macos-12
             archs: arm64
             deployment_target: "11.0"
-            additional_cmake_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON"
+            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON"
 
 
     name: Build wheels on ${{ matrix.os }}
