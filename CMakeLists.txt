@@ -63,13 +63,14 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
   if(THIRDAI_BUILD_OPENSSL_FROM_SOURCE)
     # build our own or use prebuilts
-    set(OPENSSL_MODULES "no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des" CACHE STRING "OpenSSL configure options")
+    set(OPENSSL_MODULES
+        "no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des"
+        CACHE STRING "OpenSSL configure options")
 
     set(OPENSSL_BUILD_VERSION 3.0.7)
     # set up fake targets
     add_library(ssl_lib STATIC IMPORTED GLOBAL)
     add_library(crypto_lib STATIC IMPORTED GLOBAL)
-
 
     # set up prefix
     set(OPENSSL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
@@ -77,11 +78,16 @@ if(${LICENSE_BUILD_FLAG_FOUND})
     set(OPENSSL_LIBCRYPTO_PATH ${OPENSSL_PREFIX}/usr/local/lib/libcrypto.a)
 
     # set import locations
-    set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
-    set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
+    set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION
+                                             ${OPENSSL_LIBSSL_PATH})
+    set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION
+                                                ${OPENSSL_LIBCRYPTO_PATH})
 
     # set up openssl target
-    message(STATUS "Setting up OpenSSL at ${OPENSSL_LIBSSL_PATH}, ${OPENSSL_LIBCRYPTO_PATH}")
+    message(
+      STATUS
+        "Setting up OpenSSL at ${OPENSSL_LIBSSL_PATH}, ${OPENSSL_LIBCRYPTO_PATH}"
+    )
 
     include(BuildOpenSSL)
 
@@ -97,8 +103,12 @@ if(${LICENSE_BUILD_FLAG_FOUND})
     target_link_libraries(_crypto INTERFACE crypto_lib)
 
     # set include locations
-    target_include_directories(_ssl BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include/>)
-    target_include_directories(_crypto BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include/>)
+    target_include_directories(
+      _ssl BEFORE
+      INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include/>)
+    target_include_directories(
+      _crypto BEFORE
+      INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include/>)
 
     add_library(OpenSSL::SSL ALIAS _ssl)
     add_library(OpenSSL::Crypto ALIAS _crypto)
