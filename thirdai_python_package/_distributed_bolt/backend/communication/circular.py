@@ -87,7 +87,7 @@ class Circular:
         :return: returns True, after functions complete
         :rtype: bool
         """
-        self.gradients = self.gradients[: -self.padding_length]
+        self.gradients = self.gradients.flatten()[: -self.padding_length]
         self.model.gradient_reference().set_gradients(
             self.model, self.gradients.flatten()
         )
