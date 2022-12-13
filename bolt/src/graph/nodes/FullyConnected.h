@@ -92,6 +92,8 @@ class FullyConnectedNode final
 
   void disableSparseParameterUpdates() final;
 
+  bool needGradientSharing() final { return true; }
+
  private:
   void compileImpl() final;
 

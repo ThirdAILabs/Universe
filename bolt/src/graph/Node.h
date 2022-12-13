@@ -172,6 +172,12 @@ class Node {
 
   virtual ~Node() = default;
 
+  /**
+   * This function indicate whether this particular node needs to share its
+   * gradients in distributed setting.
+   */
+  virtual bool needGradientSharing() = 0;
+
  protected:
   virtual void compileImpl() = 0;
 
