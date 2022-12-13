@@ -155,17 +155,18 @@ class ParameterReference {
 };
 class GradientReference {
   /**
-   * This class implements gradient references, which returrns flattened
+   * This class implements gradient references, which return flattened
    * gradients. The gradients are flattened and stored as
-   * <node_1_bias><node_1_weights><node_2_bias><node_2_weights>. This class
-   * implements two function get_gradients and set_gradients. This class
+   * <node_1_bias><node_1_weights><node_2_bias><node_2_weights>. It
+   * implements two function get_gradients and set_gradients. It
    * flattens gradients for all the nodes which have needGradientSharing true.
    * Else, would raise an error stating that Gradient Flattening Logic not
    * added.
    *
    * get_gradients: It returns the gradients as a flattened ParameterArray
    *
-   * set_gradients: It set the gradients provided as argument to the bolt model.
+   * set_gradients: It set the gradients provided as an argument to the bolt
+   * model.
    */
  public:
   GradientReference(BoltGraph& model) : _model(model) {
