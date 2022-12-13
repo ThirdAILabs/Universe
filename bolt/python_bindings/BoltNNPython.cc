@@ -584,7 +584,11 @@ That's all for now, folks! More docs coming soon :)
           [](DistributedTrainingWrapper& node) { return node.getModel(); },
           py::return_value_policy::reference_internal,
           "The underlying Bolt model wrapped by this "
-          "DistributedTrainingWrapper.");
+          "DistributedTrainingWrapper.")
+      .def("gradient_reference", [](DistributedTrainingWrapper& node) {
+        return GradientReference(node.getModel();)
+        "Returns gradient reference for Distributed Training Wrapper"
+      });
 
   createLossesSubmodule(nn_submodule);
 }
