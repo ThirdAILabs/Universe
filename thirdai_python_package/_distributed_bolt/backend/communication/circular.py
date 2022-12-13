@@ -69,7 +69,7 @@ class Circular:
         self.model.compute_and_store_batch_gradients(batch_id)
 
         self.partitions = []
-        self.gradients = self.model.gradient_reference.get_gradients()
+        self.gradients = self.model.gradient_reference().get_gradients()
 
         # padding for creating 2-D matrix with number of rows equal to number of workers
         self.padding_length = self.num_workers - len(self.gradients) % self.num_workers
@@ -89,7 +89,7 @@ class Circular:
         :rtype: bool
         """
         self.gradients = self.gradients[: -self.padding_length]
-        self.model.gradient_reference.set_gradients(
+        self.model.gradient_reference().set_gradients(
             self.model, self.gradients.flatten()
         )
 

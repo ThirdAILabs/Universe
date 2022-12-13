@@ -7,8 +7,6 @@ import ray
 import ray.util.collective as col
 from ray.util.collective.types import Backend, ReduceOp
 
-from ...utils import get_gradients, set_gradients
-
 
 # TODO(pratik): Add tests for gloo, as soon as next version of pygloo is released.
 class Gloo:
@@ -29,7 +27,7 @@ class Gloo:
 
     def compute_and_store_batch_gradients(self, batch_no):
         self.model.compute_and_store_batch_gradients(batch_no)
-        self.gradients = np.array(self.model.gradient_references.get_gradients())
+        self.gradients = np.array(self.model.gradient_reference().get_gradients())
 
     def receive_gradients(self):
         col.allreduce(
@@ -39,4 +37,4 @@ class Gloo:
         )
         self.gradients /= self.num_workers
 
-        self.model.gradient_references.set_gradients(self.gradients)
+        self.model.gradient_reference().set_gradients(self.gradients)

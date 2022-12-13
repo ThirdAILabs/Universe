@@ -1,7 +1,5 @@
 import ray
 
-from ...utils import set_gradients
-
 
 class Linear:
     def __init__(self, model, id, primary_worker):
@@ -34,4 +32,4 @@ class Linear:
         :rtype: bool
         """
 
-        self.model.gradient_reference.set_gradients(averaged_gradients)
+        self.model.gradient_reference().set_gradients(averaged_gradients)
