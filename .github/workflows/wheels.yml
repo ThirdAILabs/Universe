@@ -29,15 +29,11 @@ jobs:
         # TODO(Josh): Decide if we want to add windows back at all
         # os: [windows-2019, ubuntu-20.04]
         os: [ubuntu-20.04]
-        # include:
-        #   - name: macos-x86_64
-        #     os: macos-12
-        #     archs: x86_64
-        #     deployment_target: "10.15"
-        #   - name: macos-arm64
-        #     os: macos-12
-        #     archs: arm64
-        #     deployment_target: "11.0"
+        include:
+          - name: macos-arm64
+            os: macos-12
+            archs: arm64
+            deployment_target: "11.0"
 
 
     name: Build wheels on ${{ matrix.os }}
@@ -89,7 +85,7 @@ jobs:
           # advantage to JIT compilation of python since most of our processing
           # happens in C++ (it can actually make it slower!). Also, on some
           # platforms numpy isn't available so our tests don't work.
-          CIBW_BUILD: "cp38-manylinux_x86_64"
+          CIBW_BUILD: cp310-macosx_arm64
           CIBW_BUILD_VERBOSITY: 3
 
           # On linux we copy a valid license to the home directory within the docker
