@@ -1,3 +1,6 @@
+# Adapted for cross-compilation use for the M1 wheel by jerin-thirdai, trimming
+# some excess fat.
+
 # MIT License
 #
 # Copyright (c) 2015-2021 The ViaDuck Project
@@ -29,7 +32,6 @@ include(ExternalProject)
 
 # find packages
 find_package(Git REQUIRED)
-find_package(PythonInterp 3 REQUIRED)
 
 # # used to apply various patches to OpenSSL
 find_program(PATCH_PROGRAM patch)
@@ -63,8 +65,6 @@ else()
 
     set(PERL_PATH_FIX_INSTALL true)
 
-    # python helper script for current building environment
-    set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/building_env.py ${OS} ${MSYS_BASH} ${MINGW_MAKE})
 
     # user-specified modules
     set(CONFIGURE_OPENSSL_MODULES ${OPENSSL_MODULES})
@@ -87,13 +87,15 @@ else()
     endif()
 
     # cross-compiling
+    separate_arguments(CONFIGURE_OPENSSL_MODULES)
+
     if (CROSS)
         set(COMMAND_CONFIGURE ./Configure ${CONFIGURE_OPENSSL_PARAMS} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} ${CONFIGURE_OPENSSL_MODULES} --prefix=/usr/local/)
         set(COMMAND_TEST "true")
     else()                   # detect host system automatically
         set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
         if (NOT COMMAND_TEST)
-            set(COMMAND_TEST ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} test)
+            set(COMMAND_TEST ${MAKE_PROGRAM} test)
         endif()
     endif()
 
@@ -104,20 +106,21 @@ else()
         ${OPENSSL_CHECK_HASH}
         UPDATE_COMMAND ""
 
-        CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        CONFIGURE_COMMAND ${COMMAND_CONFIGURE}
 
-        BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
+        BUILD_COMMAND  ${MAKE_PROGRAM} -j ${NUM_JOBS}
         BUILD_BYPRODUCTS ${OPENSSL_LIBSSL_PATH} ${OPENSSL_LIBCRYPTO_PATH}
 
         TEST_BEFORE_INSTALL 1
         TEST_COMMAND ${COMMAND_TEST}
 
-        INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${PERL_PATH_FIX_INSTALL}
-        COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} DESTDIR=${CMAKE_CURRENT_BINARY_DIR} install_sw ${INSTALL_OPENSSL_MAN}
+        INSTALL_COMMAND ${MAKE_PROGRAM} DESTDIR=${CMAKE_CURRENT_BINARY_DIR} install_sw ${INSTALL_OPENSSL_MAN}
         COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR} ${CMAKE_BINARY_DIR}                    # force CMake-reload
 
         LOG_INSTALL 1
         DOWNLOAD_NO_PROGRESS 1
+        BUILD_IN_SOURCE 1
     )
 
     # set git config values to openssl requirements (no impact on linux though)
