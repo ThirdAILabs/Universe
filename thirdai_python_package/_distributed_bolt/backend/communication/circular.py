@@ -88,9 +88,7 @@ class Circular:
         :rtype: bool
         """
         self.gradients = self.gradients.flatten()[: -self.padding_length]
-        self.model.gradient_reference().set_gradients(
-            self.model, self.gradients.flatten()
-        )
+        self.model.gradient_reference().set_gradients(self.model, self.gradients)
 
     def update_partitions(
         self,
