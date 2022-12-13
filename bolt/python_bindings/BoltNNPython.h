@@ -6,7 +6,6 @@
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/metrics/MetricAggregator.h>
-#include <_types/_uint32_t.h>
 #include <compression/python_bindings/ConversionUtils.h>
 #include <compression/src/CompressionFactory.h>
 #include <dataset/src/Datasets.h>
@@ -155,11 +154,23 @@ class ParameterReference {
   uint64_t _total_dim;
 };
 class GradientReference {
+  /**
+   * This class implements gradient references, which returrns flattened
+   * gradients. The gradients are flattened and stored as
+   * <node_1_bias><node_1_weights><node_2_bias><node_2_weights>. This class
+   * implements two function get_gradients and set_gradients. This class
+   * flattens gradients for all the nodes which have needGradientSharing true.
+   * Else, would raise an error stating that Gradient Flattening Logic not
+   * added.
+   *
+   * get_gradients: It returns the gradients as a flattened ParameterArray
+   *
+   * set_gradients: It set the gradients provided as argument to the bolt model.
+   */
  public:
   GradientReference(BoltGraph& model) : _model(model) {
     std::vector<NodePtr> nodes = model.getNodes();
 
-    // Calculating dimension for flattened gradient array
     uint64_t flattened_gradients_dim = 0;
     for (NodePtr node : nodes) {
       if (node->needGradientSharing()) {
