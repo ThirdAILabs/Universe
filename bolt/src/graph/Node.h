@@ -174,7 +174,9 @@ class Node {
 
   /**
    * This function indicate whether this particular node needs to share its
-   * gradients in distributed setting.
+   * gradients in distributed setting. If it is true, then make sure to
+   * implement the logic to flattening the gradients in
+   * GradientReference(bolt/python_bindings/BoltNNPython.h).
    */
   virtual bool needGradientSharing() = 0;
 
