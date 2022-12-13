@@ -155,12 +155,27 @@ class ParameterReference {
 class GradientReference {
  public:
   GradientReference(BoltGraph& model) {
+    std::vector<NodePtr> nodes = model.getNodes();
+
+    // Calculating dimension for flattened gradient array
     uint64_t flattened_gradients_dim = 0;
     for (NodePtr node : nodes) {
-      if (!node->isInputNode()) {
-        flattened_gradients_dim += dimensionProduct({node.outputDim()});
-        flattened_gradients_dim += dimensionProduct(
-            {node.outputDim(), node.getPredecessors()[0]->outputDim()})
+      if (node->needGradientSharing()) {
+        switch (node->type()) {
+          case "embedding":
+            flattened_gradients_dim += static_cast<uint32_t>(
+                node.getRawEmbeddingBlockGradient().size());
+            break;
+          case "fc":
+            flattened_gradients_dim += dimensionProduct({node.outputDim()});
+            flattened_gradients_dim += dimensionProduct(
+                {node.outputDim(), node.getPredecessors()[0]->outputDim()});
+            break;
+          default:
+            std::string err =
+                "Gradient sharing logic is not implemented for " + node->name();
+            throw std::invalid_argument(err);
+        }
       }
     }
     _flattened_gradients_dim = flattened_gradients_dim;
@@ -228,8 +243,8 @@ class GradientReference {
           std::copy(new_params.data() + node_gradient_pointer,
                     new_params.data() + node_gradient_pointer +
                         embedding_layer_length,
-                    raw_embedding_block_gradient.data())
-              node_gradient_pointer += embedding_layer_length;
+                    raw_embedding_block_gradient.data());
+          node_gradient_pointer += embedding_layer_length;
 
           break;
         case "fc":
