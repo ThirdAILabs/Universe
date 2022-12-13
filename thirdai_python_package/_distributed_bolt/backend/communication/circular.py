@@ -1,8 +1,7 @@
 from typing import Optional
 
-import ray
-
 import numpy as np
+import ray
 
 
 class Circular:
