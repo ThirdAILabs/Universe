@@ -76,22 +76,32 @@ if(${LICENSE_BUILD_FLAG_FOUND})
     set(OPENSSL_LIBSSL_PATH ${OPENSSL_PREFIX}/usr/local/lib/libssl.a)
     set(OPENSSL_LIBCRYPTO_PATH ${OPENSSL_PREFIX}/usr/local/lib/libcrypto.a)
 
-    # set up openssl target
-    include(BuildOpenSSL)
-
     # set import locations
     set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
     set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
 
-    # set include locations
-    set(OPENSSL_INCLUDE_PATH ${OPENSSL_PREFIX}/usr/local/include)
-    message(STATUS "OPENSSL_PREFIX ${OPENSSL_PREFIX}")
-    message(STATUS ${OPENSSL_INCLUDE_PATH})
-    target_include_directories(ssl_lib INTERFACE ${OPENSSL_INCLUDE_PATH})
-    target_include_directories(crypto_lib INTERFACE ${OPENSSL_INCLUDE_PATH})
+    # set up openssl target
+    message(STATUS "Setting up OpenSSL at ${OPENSSL_LIBSSL_PATH}, ${OPENSSL_LIBCRYPTO_PATH}")
 
-    add_library(OpenSSL::SSL ALIAS ssl_lib)
-    add_library(OpenSSL::Crypto ALIAS crypto_lib)
+    include(BuildOpenSSL)
+
+    # Add dependencies (force openssl to build before)
+    add_dependencies(ssl_lib openssl)
+    add_dependencies(crypto_lib openssl)
+
+    # Alias using CMake namespaces
+    add_library(_ssl INTERFACE)
+    add_library(_crypto INTERFACE)
+
+    target_link_libraries(_ssl INTERFACE ssl_lib)
+    target_link_libraries(_crypto INTERFACE crypto_lib)
+
+    # set include locations
+    target_include_directories(_ssl BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include/>)
+    target_include_directories(_crypto BEFORE INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include/>)
+
+    add_library(OpenSSL::SSL ALIAS _ssl)
+    add_library(OpenSSL::Crypto ALIAS _crypto)
 
   else(THIRDAI_BUILD_OPENSSL_FROM_SOURCE)
     find_package(OpenSSL 1.1.1 REQUIRED)

@@ -98,9 +98,9 @@ else()
     endif()
 
     # add openssl target
+    message(STATUS "Configuring ExternalProject OpenSSL for version ${OPENSSL_BUILD_VERSION}")
     ExternalProject_Add(openssl
         URL https://www.openssl.org/source/openssl-${OPENSSL_BUILD_VERSION}.tar.gz
-        # URL https://mirror.viaduck.org/openssl/openssl-${OPENSSL_BUILD_VERSION}.tar.gz
         ${OPENSSL_CHECK_HASH}
         UPDATE_COMMAND ""
 
@@ -117,6 +117,7 @@ else()
         COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR} ${CMAKE_BINARY_DIR}                    # force CMake-reload
 
         LOG_INSTALL 1
+        DOWNLOAD_NO_PROGRESS 1
     )
 
     # set git config values to openssl requirements (no impact on linux though)
