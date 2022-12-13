@@ -187,6 +187,7 @@ std::unordered_set<std::string> getKeygenEntitlements(
 
   // https://keygen.sh/docs/api/licenses/#licenses-relationships-list-entitlements
   httplib::Client client("https://api.keygen.sh");
+  client.enable_server_certificate_verification(false);
   httplib::Headers headers = {{"Accept", "application/vnd.api+json"},
                               {"Authorization", "License " + access_key}};
   httplib::Result response = client.Get(
@@ -207,6 +208,7 @@ std::unordered_set<std::string> getKeygenEntitlements(
 std::unordered_set<std::string> verifyWithKeygen(
     const std::string& access_key) {
   httplib::Client client("https://api.keygen.sh");
+  client.enable_server_certificate_verification(false);
   // These headers denote that we sending (Content-Type) and expect to receive
   // (Accept) json with additional "vendor specific" semantics. This is what
   // Keygen recommends, see
