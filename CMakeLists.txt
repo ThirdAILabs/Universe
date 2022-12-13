@@ -61,7 +61,41 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   # For now only require openssl if we are building with licensing, since we
   # only communicate with the internet (keygen) in that case
   add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
-  find_package(OpenSSL 1.1.1 REQUIRED)
+  if(THIRDAI_BUILD_OPENSSL_FROM_SOURCE)
+    # build our own or use prebuilts
+    set(OPENSSL_MODULES "no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des" CACHE STRING "OpenSSL configure options")
+
+    set(OPENSSL_BUILD_VERSION 3.0.7)
+    # set up fake targets
+    add_library(ssl_lib STATIC IMPORTED GLOBAL)
+    add_library(crypto_lib STATIC IMPORTED GLOBAL)
+
+
+    # set up prefix
+    set(OPENSSL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+    set(OPENSSL_LIBSSL_PATH ${OPENSSL_PREFIX}/usr/local/lib/libssl.a)
+    set(OPENSSL_LIBCRYPTO_PATH ${OPENSSL_PREFIX}/usr/local/lib/libcrypto.a)
+
+    # set up openssl target
+    include(BuildOpenSSL)
+
+    # set import locations
+    set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
+    set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
+
+    # set include locations
+    set(OPENSSL_INCLUDE_PATH ${OPENSSL_PREFIX}/usr/local/include)
+    message(STATUS "OPENSSL_PREFIX ${OPENSSL_PREFIX}")
+    message(STATUS ${OPENSSL_INCLUDE_PATH})
+    target_include_directories(ssl_lib INTERFACE ${OPENSSL_INCLUDE_PATH})
+    target_include_directories(crypto_lib INTERFACE ${OPENSSL_INCLUDE_PATH})
+
+    add_library(OpenSSL::SSL ALIAS ssl_lib)
+    add_library(OpenSSL::Crypto ALIAS crypto_lib)
+
+  else(THIRDAI_BUILD_OPENSSL_FROM_SOURCE)
+    find_package(OpenSSL 1.1.1 REQUIRED)
+  endif()
 
   set(JSON_BuildTests
       OFF
