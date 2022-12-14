@@ -12,6 +12,19 @@ loss_fn = "CategoricalCrossEntropyLoss"
 test_metrics = ["categorical_accuracy"]
 
 
+[[datasets]]
+format = "svm"
+path = "mnist/mnist"
+type_list = ["train_data", "train_labels"]
+batch_size = 250
+
+[[datasets]]
+format = "svm"
+path = "mnist/mnist.t"
+type_list = ["test_data", "test_labels"]
+batch_size = 250
+
+
 [[nodes]]
 type = "Input"
 name = "first"
