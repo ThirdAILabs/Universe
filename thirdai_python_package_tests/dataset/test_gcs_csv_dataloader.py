@@ -16,7 +16,8 @@ BUCKET = "testing-bucket"
 BLOB = "storage-object-name"
 TEST_FILE = "test_file.csv"
 GCS_CREDENTIALS = "test_credentials.json"
-TEST_DATASET_SIZE = 200
+TEST_DATASET_SIZE = 10
+NUMBER_OF_COLS = 2
 
 
 def clean_up():
@@ -26,7 +27,10 @@ def clean_up():
 
 @pytest.fixture(scope="module")
 def testing_dataframe():
-    return pd.DataFrame(np.random.randint(0, 100, size=(TEST_DATASET_SIZE, 2)))
+    dataframe = pd.DataFrame(
+        np.random.randint(0, 100, size=(TEST_DATASET_SIZE, NUMBER_OF_COLS))
+    )
+    return dataframe.applymap(str)
 
 
 @pytest.fixture(scope="module")
@@ -41,7 +45,7 @@ def test_csv_loader_from_gcs(
     """
     This unit test uses a mock for pandas.read_csv function because otherwise the actual
     function call in the CSVDataLoader class will attempt to establish a connection
-    with the given mock storage path for GCS, which will throw a network Error.
+    with the given storage path for GCS, which will throw a network Error.
     """
     storage_client = mock.create_autospec(storage.Client)
     bucket = storage_client.create_bucket(bucket_or_name=BUCKET, location="us-west1")
@@ -64,11 +68,15 @@ def test_csv_loader_from_gcs(
         record = loader.next_line()
         if record == None:
             break
-        row_entries = record.split(",")
-        all_records.append([int(col) for col in row_entries])
+        all_records.append(record)
 
-    assert len(all_records) == TEST_DATASET_SIZE
-    all_records_dataframe = pd.DataFrame(all_records)
+    aggregated_cols = [
+        list(all_records[i : i + NUMBER_OF_COLS])
+        for i in range(0, len(all_records), NUMBER_OF_COLS)
+    ]
+    assert len(aggregated_cols) == TEST_DATASET_SIZE
+    all_records_dataframe = pd.DataFrame(aggregated_cols)
+
     assert testing_dataframe.equals(all_records_dataframe)
 
     clean_up()

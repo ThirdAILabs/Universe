@@ -18,23 +18,19 @@ def _create_loader(path, batch_size, **kwargs):
     if path.endswith(".parquet") or path.endswith(".pqt"):
         return _create_parquet_loader(path, batch_size)
 
-    aws_credentials_file = (
-        kwargs["aws_credentials_file"] if "aws_credentials_file" in kwargs else None
-    )
-    gcs_credentials_file = (
-        kwargs["gcs_credentials_file"] if "gcs_crentials_file" in kwargs else None
+    gcs_credentials_path = (
+        kwargs["gcs_credentials_path"] if "gcs_crentials_file" in kwargs else None
     )
     if path.startswith("s3://"):
         return thirdai.dataset.CSVDataLoader(
             storage_path=path,
             batch_size=batch_size,
-            aws_credentials_file=aws_credentials_file,
         )
     elif path.startswith("gcs://"):
         return thirdai.dataset.CSVDataLoader(
             storage_path=path,
             batch_size=batch_size,
-            gcs_credentials_file=gcs_credentials_file,
+            gcs_credentials_path=gcs_credentials_path,
         )
 
     return thirdai.dataset.FileDataLoader(path, batch_size)
@@ -62,8 +58,7 @@ def modify_udt_classifier():
         callbacks: List[bolt.callbacks.Callback] = [],
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
-        aws_credentials_file: Optional[str] = None,
-        gcs_credentials_file: Optional[str] = None,
+        gcp_credentials_path: Optional[str] = None,
     ):
         if batch_size is None:
             batch_size = self.default_train_batch_size
@@ -82,8 +77,7 @@ def modify_udt_classifier():
         data_loader = _create_loader(
             filename,
             batch_size,
-            aws_credentials_file=aws_credentials_file,
-            gcs_credentials_file=gcs_credentials_file,
+            gcs_credentials_path=gcp_credentials_path,
         )
 
         return original_train_method(
@@ -103,8 +97,7 @@ def modify_udt_classifier():
         use_sparse_inference: bool = False,
         return_predicted_class: bool = False,
         verbose: bool = True,
-        aws_credentials_file: Optional[str] = None,
-        gcs_credentials_file: Optional[str] = None,
+        gcs_credentials_path: Optional[str] = None,
     ):
         eval_config = bolt.EvalConfig()
         if not verbose:
@@ -117,8 +110,7 @@ def modify_udt_classifier():
         data_loader = _create_loader(
             filename,
             bolt.models.UDTClassifier.default_evaluate_batch_size,
-            aws_credentials_file=aws_credentials_file,
-            gcs_credentials_file=gcs_credentials_file,
+            gcs_credentials_path=gcs_credentials_path,
         )
 
         return original_eval_method(

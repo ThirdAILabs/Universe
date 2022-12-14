@@ -109,9 +109,7 @@ def load_all_datasets(dataset_config):
         use_s3 = single_dataset_config.get("use_s3_on_aws", False) and is_ec2_instance()
         dataset_types = config_get_required(single_dataset_config, "type_list")
 
-        if format == "svm":
-            loaded_datasets = load_svm_dataset(single_dataset_config, use_s3)
-        elif format == "click":
+        if format == "click":
             loaded_datasets = load_click_through_dataset(single_dataset_config, use_s3)
         elif format == "click_labels":
             loaded_datasets = load_click_through_labels(single_dataset_config, use_s3)
@@ -317,21 +315,6 @@ def check_test_labels(datasets_map, key):
         raise ValueError(
             f"Must have 0 or 1 test label datasets but found {len(datasets_map[key])} test_labels."
         )
-
-
-def load_svm_dataset(dataset_config, use_s3):
-    batch_size = config_get_required(dataset_config, "batch_size")
-    if use_s3:
-        print("Using S3 to load SVM dataset", flush=True)
-        s3_prefix = "share/data/" + dataset_config["path"]
-        s3_bucket = "thirdai-corp"
-        data_loader = dataset.S3DataLoader(
-            bucket_name=s3_bucket, prefix_filter=s3_prefix, batch_size=batch_size
-        )
-        return dataset.load_bolt_svm_dataset(data_loader)
-    else:
-        dataset_path = find_full_filepath(config_get_required(dataset_config, "path"))
-        return dataset.load_bolt_svm_dataset(dataset_path, batch_size=batch_size)
 
 
 def load_click_through_dataset(dataset_config, use_s3):

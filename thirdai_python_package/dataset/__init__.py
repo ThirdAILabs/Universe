@@ -8,7 +8,3 @@ __all__.extend(dir(thirdai._thirdai.dataset))
 
 from .csv_data_loader import CSVDataLoader
 from .parquet_loader import ParquetLoader
-from .s3_data_loader import S3DataLoader
-
-__all__.append("CSVDdataLoader")
-__all__.append("S3DataLoader")
