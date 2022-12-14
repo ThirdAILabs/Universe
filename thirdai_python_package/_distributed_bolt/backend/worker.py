@@ -184,7 +184,7 @@ class Worker:
         return self.model.gradient_reference().get_gradients()
 
     @timed
-    def receive_gradients(self, averaged_gradients_ref=[]):
+    def receive_gradients(self, averaged_gradients_ref=None):
         """
         This function is called only when the communication pattern choosen
         is circular.
@@ -197,7 +197,7 @@ class Worker:
                     to communicate
         :type averaged_gradients_ref: RayObjectRef, optional
         """
-        if len(averaged_gradients_ref) == 0:
+        if self.communication_type != "linear":
             self.comm.receive_gradients()
         else:
             self.comm.receive_gradients(averaged_gradients_ref)
