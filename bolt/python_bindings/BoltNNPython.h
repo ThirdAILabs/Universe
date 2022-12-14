@@ -169,11 +169,11 @@ class GradientReference {
    * model.
    */
  public:
-  GradientReference(BoltGraph& model) : _model(model) {
+  explicit GradientReference(BoltGraph& model) : _model(model) {
     std::vector<NodePtr> nodes = model.getNodes();
 
     uint64_t flattened_gradients_dim = 0;
-    for (NodePtr node : nodes) {
+    for (NodePtr& node : nodes) {
       if (node->needGradientSharing()) {
         if (node->type() == "embedding") {
           EmbeddingNode* embedding_node =
@@ -202,7 +202,7 @@ class GradientReference {
 
     float* param_copy = new float[_flattened_gradients_dim];
     uint64_t node_gradient_pointer = 0;
-    for (NodePtr node : nodes) {
+    for (NodePtr& node : nodes) {
       if (node->needGradientSharing()) {
         if (node->type() == "embedding") {
           EmbeddingNode* embedding_node =
@@ -251,7 +251,7 @@ class GradientReference {
   void set_gradients(ParameterArray& new_params) {
     std::vector<NodePtr> nodes = _model.getNodes();
     uint32_t node_gradient_pointer = 0;
-    for (NodePtr node : nodes) {
+    for (NodePtr& node : nodes) {
       if (node->needGradientSharing()) {
         if (node->type() == "embedding") {
           EmbeddingNode* embedding_node =
