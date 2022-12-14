@@ -102,12 +102,13 @@ else()
   # cross-compiling
   separate_arguments(CONFIGURE_OPENSSL_MODULES)
 
-  if(CROSS)
+  if(OPENSSL_CROSS_COMPILE_MACOSX_ARM)
+    set(OPENSSL_CROSS_COMPILE_TARGET darwin64-arm64-cc)
+    message(STATUS "(cross)-Compiling for MacOSX ARM")
     set(COMMAND_CONFIGURE
-        ./Configure ${CONFIGURE_OPENSSL_PARAMS}
-        --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET}
-        ${CONFIGURE_OPENSSL_MODULES} --prefix=/usr/local/)
+        ./Configure ${CONFIGURE_OPENSSL_PARAMS} ${OPENSSL_CROSS_COMPILE_TARGET} ${CONFIGURE_OPENSSL_MODULES} --prefix=/usr/local/)
     set(COMMAND_TEST "true")
+
   else() # detect host system automatically
     set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS}
                           ${CONFIGURE_OPENSSL_MODULES})
