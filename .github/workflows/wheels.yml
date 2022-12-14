@@ -44,7 +44,6 @@ jobs:
 
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    if: ${{ matrix.name }} == 'macos-arm64'
 
     steps:
       - uses: actions/checkout@v2
