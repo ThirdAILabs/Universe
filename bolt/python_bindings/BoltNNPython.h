@@ -170,6 +170,11 @@ class GradientReference {
    * model.
    */
  public:
+  void dynamicCastFailError(NodePtr& node) {
+    std::string err = "Dynamic casting failed for " + node->type();
+    throw std::runtime_error(err)
+  }
+
   explicit GradientReference(BoltGraph& model) : _model(model) {
     std::vector<NodePtr> nodes = model.getNodes();
 
@@ -179,11 +184,19 @@ class GradientReference {
         if (node->type() == "embedding") {
           EmbeddingNode* embedding_node =
               dynamic_cast<EmbeddingNode*>(node.get());
+          if (embedding_node == NULL) {
+            dynamicCastFailError();
+          }
+
           flattened_gradients_dim += static_cast<uint32_t>(
               embedding_node->getRawEmbeddingBlockGradient().size());
         } else if (node->type() == "fc") {
           FullyConnectedNode* fc_node =
               dynamic_cast<FullyConnectedNode*>(node.get());
+          if (fc_node == NULL) {
+            dynamicCastFailError();
+          }
+
           flattened_gradients_dim += dimensionProduct({fc_node->outputDim()});
           flattened_gradients_dim +=
               dimensionProduct({fc_node->outputDim(),
@@ -252,13 +265,19 @@ class GradientReference {
                                            float* flattened_gradients_copy,
                                            uint64_t& raw_gradient_offset) {
     EmbeddingNode* embedding_node = dynamic_cast<EmbeddingNode*>(node.get());
+    if (embedding_node == NULL) {
+      dynamicCastFailError();
+    }
+
     std::vector<float>& raw_embedding_block_gradient =
         embedding_node->getRawEmbeddingBlockGradient();
+
     uint32_t embedding_layer_length =
         static_cast<uint32_t>(raw_embedding_block_gradient.size());
     std::copy(raw_embedding_block_gradient.data(),
               raw_embedding_block_gradient.data() + embedding_layer_length,
               flattened_gradients_copy + raw_gradient_offset);
+
     raw_gradient_offset += embedding_layer_length;
   }
 
@@ -266,16 +285,23 @@ class GradientReference {
                                                 float* flattened_gradients_copy,
                                                 uint64_t& raw_gradient_offset) {
     FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
+    if (fc_node == NULL) {
+      dynamicCastFailError();
+    }
+
     uint64_t flattened_node_bias_len = dimensionProduct({fc_node->outputDim()});
     std::copy(fc_node->getBiasGradientsPtr(),
               fc_node->getBiasGradientsPtr() + flattened_node_bias_len,
               flattened_gradients_copy + raw_gradient_offset);
+
     raw_gradient_offset += flattened_node_bias_len;
+
     uint64_t flattened_node_weight_len = dimensionProduct(
         {fc_node->outputDim(), fc_node->getPredecessors()[0]->outputDim()});
     std::copy(fc_node->getWeightGradientsPtr(),
               fc_node->getWeightGradientsPtr() + flattened_node_weight_len,
               flattened_gradients_copy + raw_gradient_offset);
+
     raw_gradient_offset += flattened_node_weight_len;
   }
 
@@ -283,14 +309,20 @@ class GradientReference {
       NodePtr& node, ParameterArray& flattened_gradients,
       uint64_t& raw_gradient_offset) {
     EmbeddingNode* embedding_node = dynamic_cast<EmbeddingNode*>(node.get());
+    if (embedding_node == NULL) {
+      dynamicCastFailError();
+    }
+
     std::vector<float>& raw_embedding_block_gradient =
         embedding_node->getRawEmbeddingBlockGradient();
+
     uint32_t embedding_layer_length =
         static_cast<uint32_t>(raw_embedding_block_gradient.size());
     std::copy(flattened_gradients.data() + raw_gradient_offset,
               flattened_gradients.data() + raw_gradient_offset +
                   embedding_layer_length,
               raw_embedding_block_gradient.data());
+
     raw_gradient_offset += embedding_layer_length;
   }
 
@@ -298,18 +330,25 @@ class GradientReference {
       NodePtr& node, ParameterArray& flattened_gradients,
       uint64_t& raw_gradient_offset) {
     FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
+    if (fc_node == NULL) {
+      dynamicCastFailError();
+    }
+
     uint64_t flattened_node_bias_len = dimensionProduct({fc_node->outputDim()});
     std::copy(flattened_gradients.data() + raw_gradient_offset,
               flattened_gradients.data() + raw_gradient_offset +
                   flattened_node_bias_len,
               fc_node->getBiasGradientsPtr());
+
     raw_gradient_offset += flattened_node_bias_len;
+
     uint64_t flattened_node_weight_len = dimensionProduct(
         {fc_node->outputDim(), fc_node->getPredecessors()[0]->outputDim()});
     std::copy(flattened_gradients.data() + raw_gradient_offset,
               flattened_gradients.data() + raw_gradient_offset +
                   flattened_node_weight_len,
               fc_node->getWeightGradientsPtr());
+
     raw_gradient_offset += flattened_node_weight_len;
   }
   BoltGraph& _model;
