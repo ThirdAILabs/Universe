@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
+import multiprocessing
 import os
 import subprocess
 import time
 from pathlib import Path
-import multiprocessing
 
 
 def get_our_files(patterns):
@@ -81,7 +81,9 @@ def run_clang_tidy():
         ):
             new_command_to_run, new_log_file = commmands_to_run.pop()
             print(new_command_to_run)
-            current_processes[new_log_file] = subprocess.Popen(new_command_to_run, shell=True)
+            current_processes[new_log_file] = subprocess.Popen(
+                new_command_to_run, shell=True
+            )
 
         time.sleep(1000)
 
