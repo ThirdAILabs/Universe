@@ -90,9 +90,9 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
           "the same hyperparamters.");
 
   py::class_<GradientReference>(nn_submodule, "GradientReference")
-      .def("get_gradients", &GradientReference::get_gradients,
+      .def("get_gradients", &GradientReference::getGradients,
            "Returns flattened gradients for the model")
-      .def("set_gradients", &GradientReference::set_gradients,
+      .def("set_gradients", &GradientReference::setGradients,
            py::arg("flattened_gradients"),
            "Set the gradients for the model with flattened_gradients provided");
 
