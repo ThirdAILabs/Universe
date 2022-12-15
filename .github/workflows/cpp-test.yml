@@ -20,8 +20,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   cpp-release-tests:
-    runs-on: 
-      labels: ubuntu-latest-16-cores
+    runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
@@ -36,8 +35,7 @@ jobs:
           bin/cpp-test.sh -V
           
   cpp-asan-tests:
-    runs-on: 
-      labels: ubuntu-latest-16-cores
+    runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
@@ -52,8 +50,7 @@ jobs:
           bin/cpp-test.sh -V
 
   cpp-debug-tests:
-    runs-on: 
-      labels: ubuntu-latest-16-cores
+    runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps

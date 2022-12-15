@@ -32,7 +32,7 @@ You can also directly run tests using pytest, but this script also ensures
 that the thirdai so file is on your path. 
 3. Run `$ bin/cpp-format.sh` from anywhere to format all C++ code.
 4. Run `$ bin/python-format.sh` from anywhere to format all Python code.
-4. Run `$ bin/lint.sh` from anywhere to run linting on all code (primarily 
+4. Run `$ bin/lint.py` from anywhere to run linting on all code (primarily 
 these are clang-tidy checks).
 5. Run `$ bin/generate_compile_commands.sh` from anywhere to generate the compile
 commands database (you shouldn't often need to do this manually, but try it

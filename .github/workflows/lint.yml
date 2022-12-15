@@ -29,4 +29,4 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}          
       - name: Run clang-tidy linting on all files
         run: |
-          bin/lint.sh
+          bin/lint.py
