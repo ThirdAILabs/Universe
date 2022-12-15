@@ -83,7 +83,6 @@ def train_distributed_bolt_check(pytest_request, ray_two_node_cluster_config):
         ]
     ]
     train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=3)
-    print(ray_two_node_cluster_config)
     distributed_model = db.DistributedDataParallel(
         cluster_config=ray_two_node_cluster_config(pytest_request.param),
         model=model,
