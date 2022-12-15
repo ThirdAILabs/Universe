@@ -20,7 +20,8 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   python-tests:
-    runs-on: ubuntu-latest
+    runs-on: 
+      labels: ubuntu-latest-16-cores
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
@@ -39,7 +40,8 @@ jobs:
         run: bin/python-test.sh -m integration
 
   distributed-python-tests:
-    runs-on: ubuntu-latest
+    runs-on: 
+      labels: ubuntu-latest-16-cores
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
