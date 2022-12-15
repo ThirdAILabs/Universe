@@ -170,9 +170,9 @@ class GradientReference {
    * model.
    */
  public:
-  void dynamicCastFailError(NodePtr& node) {
+  static void dynamicCastFailError(NodePtr& node) {
     std::string err = "Dynamic casting failed for " + node->type();
-    throw std::runtime_error(err)
+    throw std::runtime_error(err);
   }
 
   explicit GradientReference(BoltGraph& model) : _model(model) {
@@ -185,7 +185,7 @@ class GradientReference {
           EmbeddingNode* embedding_node =
               dynamic_cast<EmbeddingNode*>(node.get());
           if (embedding_node == NULL) {
-            dynamicCastFailError();
+            dynamicCastFailError(node);
           }
 
           flattened_gradients_dim += static_cast<uint32_t>(
@@ -194,7 +194,7 @@ class GradientReference {
           FullyConnectedNode* fc_node =
               dynamic_cast<FullyConnectedNode*>(node.get());
           if (fc_node == NULL) {
-            dynamicCastFailError();
+            dynamicCastFailError(node);
           }
 
           flattened_gradients_dim += dimensionProduct({fc_node->outputDim()});
@@ -266,7 +266,7 @@ class GradientReference {
                                            uint64_t& raw_gradient_offset) {
     EmbeddingNode* embedding_node = dynamic_cast<EmbeddingNode*>(node.get());
     if (embedding_node == NULL) {
-      dynamicCastFailError();
+      dynamicCastFailError(node);
     }
 
     std::vector<float>& raw_embedding_block_gradient =
@@ -286,7 +286,7 @@ class GradientReference {
                                                 uint64_t& raw_gradient_offset) {
     FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
     if (fc_node == NULL) {
-      dynamicCastFailError();
+      dynamicCastFailError(node);
     }
 
     uint64_t flattened_node_bias_len = dimensionProduct({fc_node->outputDim()});
@@ -310,7 +310,7 @@ class GradientReference {
       uint64_t& raw_gradient_offset) {
     EmbeddingNode* embedding_node = dynamic_cast<EmbeddingNode*>(node.get());
     if (embedding_node == NULL) {
-      dynamicCastFailError();
+      dynamicCastFailError(node);
     }
 
     std::vector<float>& raw_embedding_block_gradient =
@@ -331,7 +331,7 @@ class GradientReference {
       uint64_t& raw_gradient_offset) {
     FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
     if (fc_node == NULL) {
-      dynamicCastFailError();
+      dynamicCastFailError(node);
     }
 
     uint64_t flattened_node_bias_len = dimensionProduct({fc_node->outputDim()});
