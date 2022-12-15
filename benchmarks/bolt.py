@@ -110,7 +110,7 @@ def load_all_datasets(dataset_config):
         dataset_types = config_get_required(single_dataset_config, "type_list")
 
         if format == "svm":
-            loaded_datasets = load_svm_dataset(single_dataset_config, use_s3)
+            loaded_datasets = load_svm_dataset(single_dataset_config)
         elif format == "click":
             loaded_datasets = load_click_through_dataset(single_dataset_config, use_s3)
         elif format == "click_labels":
@@ -319,19 +319,11 @@ def check_test_labels(datasets_map, key):
         )
 
 
-def load_svm_dataset(dataset_config, use_s3):
+def load_svm_dataset(dataset_config):
     batch_size = config_get_required(dataset_config, "batch_size")
-    if use_s3:
-        print("Using S3 to load SVM dataset", flush=True)
-        s3_prefix = "share/data/" + dataset_config["path"]
-        s3_bucket = "thirdai-corp"
-        data_loader = dataset.S3DataLoader(
-            bucket_name=s3_bucket, prefix_filter=s3_prefix, batch_size=batch_size
-        )
-        return dataset.load_bolt_svm_dataset(data_loader)
-    else:
-        dataset_path = find_full_filepath(config_get_required(dataset_config, "path"))
-        return dataset.load_bolt_svm_dataset(dataset_path, batch_size=batch_size)
+
+    dataset_path = find_full_filepath(config_get_required(dataset_config, "path"))
+    return dataset.load_bolt_svm_dataset(dataset_path, batch_size=batch_size)
 
 
 def load_click_through_dataset(dataset_config, use_s3):

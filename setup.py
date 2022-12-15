@@ -197,6 +197,9 @@ setup(
             "tokenizers==0.11.6",
             "pyarrow",
             "prometheus_client",
+            "gcsfs",
+            "s3fs",
+            "mock",
         ],
         "benchmark": [
             "toml",
@@ -205,8 +208,10 @@ setup(
             "mlflow==1.23.1",
             "protobuf==3.19.6",
             "boto3",
+            "s3fs",
+            "gcsfs",
         ],
-        "distributed": ["ray", "toml", "protobuf==3.19.6"],
+        "distributed": ["ray", "toml", "protobuf==3.19.6", "mock", "gcsfs", "s3fs"],
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
         "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"],
     },

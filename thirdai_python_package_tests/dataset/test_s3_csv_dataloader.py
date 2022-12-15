@@ -8,11 +8,8 @@ from moto import mock_s3
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 batch_size = 64
-# Number of lines in each mock s3 file we will create (we create 4, see setup_mock_s3)
 num_lines_per_file = 100
-# We will have 4 files in the bucket, but should only parse batches from the
-# 3 whose keys start with find
-total_num_lines_to_return = num_lines_per_file * 3
+bucket_name = "test_bucket"
 
 # These fixtures allow us to take in a parameter to our tests called "s3" that
 # ensures all s3 calls will not call "actual" s3
@@ -37,33 +34,16 @@ def s3(aws_credentials):
 def setup_mock_s3(s3):
     s3.create_bucket(Bucket="test_bucket")
     s3.put_object(
-        Bucket="test_bucket",
-        Key="find/numbers/zeros",
-        Body="\n".join(["0"] * num_lines_per_file),
-    )
-    s3.put_object(
-        Bucket="test_bucket",
+        Bucket=bucket_name,
         Key="find/numbers/ones",
         Body="\n".join(["1"] * num_lines_per_file),
     )
-    s3.put_object(
-        Bucket="test_bucket",
-        Key="find/letters/ds",
-        Body="\n".join(["d"] * num_lines_per_file),
-    )
-    s3.put_object(
-        Bucket="test_bucket",
-        Key="dontfind/test",
-        Body="\n".join(["X"] * num_lines_per_file),
-    )
 
 
-def load_all_batches(bucket_name, prefix_filter, batch_size):
+def load_all_batches(storage_path, batch_size):
     from thirdai import dataset
 
-    loader = dataset.S3DataLoader(
-        bucket_name=bucket_name, prefix_filter=prefix_filter, batch_size=batch_size
-    )
+    loader = dataset.CSVDataLoader(storage_path=storage_path, batch_size=batch_size)
     batches = []
     while True:
         next_batch = loader.next_batch()
@@ -73,12 +53,10 @@ def load_all_batches(bucket_name, prefix_filter, batch_size):
     return batches
 
 
-def load_all_lines(bucket_name, prefix_filter, batch_size):
+def load_all_lines(storage_path, batch_size):
     from thirdai import dataset
 
-    loader = dataset.S3DataLoader(
-        bucket_name=bucket_name, prefix_filter=prefix_filter, batch_size=batch_size
-    )
+    loader = dataset.CSVDataLoader(storage_path=storage_path, batch_size=batch_size)
     lines = []
     while True:
         next_line = loader.next_line()
@@ -88,25 +66,23 @@ def load_all_lines(bucket_name, prefix_filter, batch_size):
     return lines
 
 
-# This test sets up a mock S3 bucket using moto, puts mock objects in the
-# bucket, and then ensures that the loader returns all of the lines from the
-# objects that follow the prefix in the correct batches.
 @mock_s3
 def test_s3_data_loader_by_batch(s3):
     setup_mock_s3(s3)
 
     batches = load_all_batches(
-        bucket_name="test_bucket", prefix_filter="find", batch_size=batch_size
+        storage_path=f"s3://{bucket_name}/find/numbers/ones", batch_size=batch_size
     )
 
-    assert len(batches) == math.ceil(total_num_lines_to_return / batch_size)
+    assert len(batches) == math.ceil(num_lines_per_file / batch_size)
 
     for batch in batches[:-1]:
         assert len(batch) == batch_size
-    assert len(batches[-1]) == total_num_lines_to_return % batch_size
 
-    concatenated = "".join(["".join(batch) for batch in batches])
-    assert concatenated == "d" * 100 + "1" * 100 + "0" * 100
+    assert len(batches[-1]) == num_lines_per_file % batch_size
+
+    # check that the content matches what's expected
+    assert "".join(["".join(batch) for batch in batches]) == "1" * num_lines_per_file
 
 
 # This is similar to test_s3_data_loader_by_batch, but additionally ensures
@@ -117,10 +93,7 @@ def test_s3_data_loader_by_line(s3):
     setup_mock_s3(s3)
 
     lines = load_all_lines(
-        bucket_name="test_bucket", prefix_filter="find", batch_size=batch_size
+        storage_path=f"s3://{bucket_name}/find/numbers/ones", batch_size=batch_size
     )
-
-    assert len(lines) == total_num_lines_to_return
-
-    concatenated = "".join(line for line in lines)
-    assert concatenated == "d" * 100 + "1" * 100 + "0" * 100
+    assert len(lines) == num_lines_per_file
+    assert "".join(line for line in lines) == "1" * num_lines_per_file
