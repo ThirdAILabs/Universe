@@ -93,8 +93,8 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
       .def("get_gradients", &GradientReference::get_gradients,
            "Returns flattened gradients for the model")
       .def("set_gradients", &GradientReference::set_gradients,
-           py::arg("new params"),
-           "Set the gradients for the model with new_params provided");
+           py::arg("flattened_gradients"),
+           "Set the gradients for the model with flattened_gradients provided");
 
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(nn_submodule,  // NOLINT

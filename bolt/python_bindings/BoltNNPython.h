@@ -159,9 +159,10 @@ class GradientReference {
    * gradients. The gradients are flattened and stored as
    * <node_1_bias><node_1_weights><node_2_bias><node_2_weights>. It
    * implements two function get_gradients and set_gradients. It
-   * flattens gradients for all the nodes which have needGradientSharing true.
-   * Else, would raise an error stating that Gradient Flattening Logic not
-   * added.
+   * flattens gradients for all the nodes which have hasParameters true.
+   * If a node has parameters but implementation of how to get the flattened
+   * parameters are not in this function, this will raise an exception stating
+   * that Gradient Flattening Logic is not implemented.
    *
    * get_gradients: It returns the gradients as a flattened ParameterArray
    *
@@ -174,7 +175,7 @@ class GradientReference {
 
     uint64_t flattened_gradients_dim = 0;
     for (NodePtr& node : nodes) {
-      if (node->needGradientSharing()) {
+      if (node->hasParameters()) {
         if (node->type() == "embedding") {
           EmbeddingNode* embedding_node =
               dynamic_cast<EmbeddingNode*>(node.get());
@@ -201,9 +202,9 @@ class GradientReference {
     std::vector<NodePtr> nodes = _model.getNodes();
 
     float* param_copy = new float[_flattened_gradients_dim];
-    uint64_t node_gradient_pointer = 0;
+    uint64_t raw_gradient_offset = 0;
     for (NodePtr& node : nodes) {
-      if (node->needGradientSharing()) {
+      if (node->hasParameters()) {
         if (node->type() == "embedding") {
           EmbeddingNode* embedding_node =
               dynamic_cast<EmbeddingNode*>(node.get());
@@ -214,8 +215,8 @@ class GradientReference {
           std::copy(
               raw_embedding_block_gradient.data(),
               raw_embedding_block_gradient.data() + embedding_layer_length,
-              param_copy + node_gradient_pointer);
-          node_gradient_pointer += embedding_layer_length;
+              param_copy + raw_gradient_offset);
+          raw_gradient_offset += embedding_layer_length;
         } else if (node->type() == "fc") {
           FullyConnectedNode* fc_node =
               dynamic_cast<FullyConnectedNode*>(node.get());
@@ -223,8 +224,8 @@ class GradientReference {
               dimensionProduct({fc_node->outputDim()});
           std::copy(fc_node->getBiasGradientsPtr(),
                     fc_node->getBiasGradientsPtr() + flattened_node_bias_len,
-                    param_copy + node_gradient_pointer);
-          node_gradient_pointer += flattened_node_bias_len;
+                    param_copy + raw_gradient_offset);
+          raw_gradient_offset += flattened_node_bias_len;
 
           uint64_t flattened_node_weight_len =
               dimensionProduct({fc_node->outputDim(),
@@ -232,8 +233,8 @@ class GradientReference {
           std::copy(
               fc_node->getWeightGradientsPtr(),
               fc_node->getWeightGradientsPtr() + flattened_node_weight_len,
-              param_copy + node_gradient_pointer);
-          node_gradient_pointer += flattened_node_weight_len;
+              param_copy + raw_gradient_offset);
+          raw_gradient_offset += flattened_node_weight_len;
         } else {
           std::string err =
               "Gradient sharing logic is not implemented for " + node->type();
@@ -248,11 +249,11 @@ class GradientReference {
     return ParameterArray(_flattened_gradients_dim, param_copy, free_when_done);
   }
 
-  void set_gradients(ParameterArray& new_params) {
+  void set_gradients(ParameterArray& flattened_gradients) {
     std::vector<NodePtr> nodes = _model.getNodes();
-    uint32_t node_gradient_pointer = 0;
+    uint32_t raw_gradient_offset = 0;
     for (NodePtr& node : nodes) {
-      if (node->needGradientSharing()) {
+      if (node->hasParameters()) {
         if (node->type() == "embedding") {
           EmbeddingNode* embedding_node =
               dynamic_cast<EmbeddingNode*>(node.get());
@@ -260,30 +261,30 @@ class GradientReference {
               embedding_node->getRawEmbeddingBlockGradient();
           uint32_t embedding_layer_length =
               static_cast<uint32_t>(raw_embedding_block_gradient.size());
-          std::copy(new_params.data() + node_gradient_pointer,
-                    new_params.data() + node_gradient_pointer +
+          std::copy(flattened_gradients.data() + raw_gradient_offset,
+                    flattened_gradients.data() + raw_gradient_offset +
                         embedding_layer_length,
                     raw_embedding_block_gradient.data());
-          node_gradient_pointer += embedding_layer_length;
+          raw_gradient_offset += embedding_layer_length;
         } else if (node->type() == "fc") {
           FullyConnectedNode* fc_node =
               dynamic_cast<FullyConnectedNode*>(node.get());
           uint64_t flattened_node_bias_len =
               dimensionProduct({fc_node->outputDim()});
-          std::copy(new_params.data() + node_gradient_pointer,
-                    new_params.data() + node_gradient_pointer +
+          std::copy(flattened_gradients.data() + raw_gradient_offset,
+                    flattened_gradients.data() + raw_gradient_offset +
                         flattened_node_bias_len,
                     fc_node->getBiasGradientsPtr());
-          node_gradient_pointer += flattened_node_bias_len;
+          raw_gradient_offset += flattened_node_bias_len;
 
           uint64_t flattened_node_weight_len =
               dimensionProduct({fc_node->outputDim(),
                                 fc_node->getPredecessors()[0]->outputDim()});
-          std::copy(new_params.data() + node_gradient_pointer,
-                    new_params.data() + node_gradient_pointer +
+          std::copy(flattened_gradients.data() + raw_gradient_offset,
+                    flattened_gradients.data() + raw_gradient_offset +
                         flattened_node_weight_len,
                     fc_node->getWeightGradientsPtr());
-          node_gradient_pointer += flattened_node_weight_len;
+          raw_gradient_offset += flattened_node_weight_len;
         } else {
           std::string err =
               "Gradient sharing logic is not implemented for " + node->type();

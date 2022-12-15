@@ -37,7 +37,7 @@ class ConcatenateNode final
 
   void initOptimizer() final {}
 
-  bool needGradientSharing() final { return false; }
+  bool hasParameters() final { return false; }
 
  private:
   void compileImpl() final { _compiled = true; }

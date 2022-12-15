@@ -16,7 +16,6 @@ class Circular:
         self.partitions = []
         self.friend_gradients = []
         self.gradients = []
-        self.padding_length = 0
 
     def set_friend(self, friend):
         """
@@ -33,18 +32,24 @@ class Circular:
         partition_length = int(len(self.gradients) / self.num_workers)
         remaining_length = len(self.gradients) % self.num_workers
         self.partitions = []
-        current_index = 0
-        for i in range(self.num_workers):
-            if i < remaining_length:
+        last_partition_end_index = 0
+        for worker_id in range(self.num_workers):
+            if worker_id < remaining_length:
                 self.partitions.append(
-                    (current_index, current_index + partition_length + 1)
+                    (
+                        last_partition_end_index,
+                        last_partition_end_index + partition_length + 1,
+                    )
                 )
-                current_index += partition_length + 1
+                last_partition_end_index += partition_length + 1
             else:
                 self.partitions.append(
-                    (current_index, current_index + partition_length)
+                    (
+                        last_partition_end_index,
+                        last_partition_end_index + partition_length,
+                    )
                 )
-                current_index += partition_length
+                last_partition_end_index += partition_length
 
     def compute_and_store_batch_gradients(self, batch_id: int):
         """

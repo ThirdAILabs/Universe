@@ -67,7 +67,7 @@ class SwitchNode final : public Node,
 
   void disableSparseParameterUpdates() final;
 
-  bool needGradientSharing() final { return false; }
+  bool hasParameters() final { return false; }
 
  private:
   void compileImpl() final;

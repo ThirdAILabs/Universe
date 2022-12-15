@@ -26,18 +26,20 @@ def test_all_reduce_circular_communication():
             circular_communicating_workers[(i - 1) % num_workers]
         )
 
-    weight_matrix_shapes = [(29,), (35,)]
+    flattened_weight_matrix_shapes = [(29,), (35,)]
 
-    weights_all_reduced_gt = [np.zeros(shape) for shape in weight_matrix_shapes]
+    weights_all_reduced_gt = [
+        np.zeros(shape) for shape in flattened_weight_matrix_shapes
+    ]
     # Set up mock initial gradients for each worker
     for i in range(num_workers):
         circular_communicating_workers[i].gradients = np.array(
             [
                 np.random.randint(100, size=shape).astype("float32")
-                for shape in weight_matrix_shapes
+                for shape in flattened_weight_matrix_shapes
             ]
         )
-        for j in range(len(weight_matrix_shapes)):
+        for j in range(len(flattened_weight_matrix_shapes)):
             weights_all_reduced_gt[j] += circular_communicating_workers[i].gradients[j]
         circular_communicating_workers[i].calculate_gradient_partitions()
 

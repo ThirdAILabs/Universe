@@ -92,7 +92,7 @@ class FullyConnectedNode final
 
   void disableSparseParameterUpdates() final;
 
-  bool needGradientSharing() final { return true; }
+  bool hasParameters() final { return true; }
 
   std::string type() const final { return "fc"; }
 

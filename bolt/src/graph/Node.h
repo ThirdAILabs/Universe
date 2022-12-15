@@ -178,7 +178,7 @@ class Node {
    * implement the logic to flattening the gradients in
    * GradientReference(bolt/python_bindings/BoltNNPython.h).
    */
-  virtual bool needGradientSharing() = 0;
+  virtual bool hasParameters() = 0;
 
   // Return a short all lowercase string representing the type of this node for
   // use in printing the graph, e.g. concat, fc, input

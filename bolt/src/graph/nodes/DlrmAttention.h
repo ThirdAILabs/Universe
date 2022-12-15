@@ -93,7 +93,7 @@ class DlrmAttentionNode final
 
   NodeState getState() const final;
 
-  bool needGradientSharing() final { return false; }
+  bool hasParameters() final { return false; }
 
  private:
   template <bool FC_OUTPUT_DENSE>

@@ -28,7 +28,7 @@ class DotProductNode final
 
   std::shared_ptr<DotProductNode> setPredecessors(NodePtr lhs, NodePtr rhs);
 
-  bool needGradientSharing() final { return false; }
+  bool hasParameters() final { return false; }
 
  protected:
   void compileImpl() final { _compiled = true; }
