@@ -63,10 +63,16 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
   if(THIRDAI_BUILD_OPENSSL_FROM_SOURCE)
     # build our own or use prebuilts
-    set(OPENSSL_MODULES
-        "no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des"
-        CACHE STRING "OpenSSL configure options")
 
+    # set(OPENSSL_MODULES "no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine
+    # no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost
+    # no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa
+    # no-rc2 no-des" CACHE STRING "OpenSSL configure options")
+
+    # Use default compile.
+    set(OPENSSL_MODULES
+        ""
+        CACHE STRING "OpenSSL configure options")
     set(OPENSSL_BUILD_VERSION 3.0.7)
     # set up fake targets
     add_library(ssl_lib STATIC IMPORTED GLOBAL)
@@ -95,7 +101,7 @@ if(${LICENSE_BUILD_FLAG_FOUND})
     add_dependencies(ssl_lib openssl)
     add_dependencies(crypto_lib openssl)
 
-    # Alias using CMake namespaces
+    # Create interface library
     add_library(_ssl INTERFACE)
     add_library(_crypto INTERFACE)
 
@@ -110,6 +116,7 @@ if(${LICENSE_BUILD_FLAG_FOUND})
       _crypto BEFORE
       INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include/>)
 
+    # Use cmake-namespace style aliases from here.
     add_library(OpenSSL::SSL ALIAS _ssl)
     add_library(OpenSSL::Crypto ALIAS _crypto)
 

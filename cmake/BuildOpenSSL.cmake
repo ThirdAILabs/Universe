@@ -1,6 +1,3 @@
-# Adapted for cross-compilation use for the M1 wheel by jerin-thirdai, trimming
-# some excess fat.
-
 # MIT License
 #
 # Copyright (c) 2015-2021 The ViaDuck Project
@@ -24,7 +21,12 @@
 # SOFTWARE.
 #
 
-# build openssl locally
+# Build OpenSSL locally.
+
+# 2023 December 16: Adapted for cross-compilation use for the M1 wheel by
+# @jerin-thirdai, trimming some excess. Original source is from
+# https://github.com/viaduck/openssl-cmake/, from commit
+# 777190bc4bdda3d48de3b5dd9c804669942b2210
 
 # includes
 include(ProcessorCount)
@@ -42,9 +44,8 @@ if(NOT PATCH_PROGRAM)
       "the requirement is always enforced")
 endif()
 
-# set variables
+# Parallelize OpenSSL build as an external project.
 ProcessorCount(NUM_JOBS)
-set(OS "UNIX")
 
 if(OPENSSL_BUILD_HASH)
   set(OPENSSL_CHECK_HASH URL_HASH SHA256=${OPENSSL_BUILD_HASH})
@@ -99,14 +100,16 @@ else()
     set(COMMAND_TEST "true")
   endif()
 
-  # cross-compiling
+  # cross-compiling @jerin-thirdai: This is added to convert the string into a
+  # cmake-list.
   separate_arguments(CONFIGURE_OPENSSL_MODULES)
 
   if(OPENSSL_CROSS_COMPILE_MACOSX_ARM)
     set(OPENSSL_CROSS_COMPILE_TARGET darwin64-arm64-cc)
     message(STATUS "(cross)-Compiling for MacOSX ARM")
     set(COMMAND_CONFIGURE
-        ./Configure ${CONFIGURE_OPENSSL_PARAMS} ${OPENSSL_CROSS_COMPILE_TARGET} ${CONFIGURE_OPENSSL_MODULES} --prefix=/usr/local/)
+        ./Configure ${CONFIGURE_OPENSSL_PARAMS} ${OPENSSL_CROSS_COMPILE_TARGET}
+        ${CONFIGURE_OPENSSL_MODULES} --prefix=/usr/local/)
     set(COMMAND_TEST "true")
 
   else() # detect host system automatically
