@@ -12,8 +12,8 @@ from thirdai import bolt, data
 
 pytestmark = [pytest.mark.distributed]
 
-TRAIN_FILE = "./clinc_train.csv"
-TEST_FILE = "./clinc_test.csv"
+TRAIN_FILE = "./clinc_train_distributed.csv"
+TEST_FILE = "./clinc_test_distributed.csv"
 MODEL_INPUT_DIM = 100000
 BATCH_SIZE = 256
 

@@ -1,5 +1,5 @@
 import pytest
-from download_datasets import download_internet_ads_dataset
+from download_dataset_fixtures import download_internet_ads_dataset
 from model_test_utils import (
     compute_evaluate_accuracy,
     compute_predict_accuracy,
@@ -161,3 +161,53 @@ def test_udt_binary_classification_save_load(
     )
 
     assert acc_with_threshold >= ACCURACY_WITH_THRESHOLD
+
+
+def test_get_set_prediction_threshold():
+    model = bolt.UniversalDeepTransformer(
+        data_types={"col": bolt.types.categorical()},
+        target="col",
+        n_target_classes=2,
+    )
+
+    model.set_prediction_threshold(0.5)
+
+    assert model.get_prediction_threshold() == 0.5
+
+
+def test_get_set_prediction_threshold_fails_for_non_binary_classification():
+    model = bolt.UniversalDeepTransformer(
+        data_types={"col": bolt.types.categorical()},
+        target="col",
+        n_target_classes=10,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Can only call set_prediction_threshold for binary classiciation tasks.",
+    ):
+        model.set_prediction_threshold(0.5)
+
+    with pytest.raises(
+        ValueError,
+        match="Can only call get_prediction_threshold for binary classiciation tasks.",
+    ):
+        model.get_prediction_threshold()
+
+
+def test_get_set_prediction_threshold_outside_of_range():
+    model = bolt.UniversalDeepTransformer(
+        data_types={"col": bolt.types.categorical()},
+        target="col",
+        n_target_classes=2,
+    )
+
+    with pytest.raises(
+        ValueError, match=r"Prediction threshold must be in the range \(0.0, 1.0\)."
+    ):
+        model.set_prediction_threshold(0.0)
+
+    with pytest.raises(
+        ValueError, match=r"Prediction threshold must be in the range \(0.0, 1.0\)."
+    ):
+        model.set_prediction_threshold(1.0)
