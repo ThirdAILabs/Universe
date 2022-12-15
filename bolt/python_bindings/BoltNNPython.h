@@ -211,7 +211,7 @@ class GradientReference {
     _flattened_gradients_dim = flattened_gradients_dim;
   }
 
-  ParameterArray get_gradients() {
+  ParameterArray getGradients() {
     std::vector<NodePtr> nodes = _model.getNodes();
 
     float* flattened_gradients_copy = new float[_flattened_gradients_dim];
@@ -240,7 +240,7 @@ class GradientReference {
                           free_when_done);
   }
 
-  void set_gradients(ParameterArray& flattened_gradients) {
+  void setGradients(ParameterArray& flattened_gradients) {
     std::vector<NodePtr> nodes = _model.getNodes();
     uint64_t raw_gradient_offset = 0;
     for (NodePtr& node : nodes) {
