@@ -66,18 +66,7 @@ class Node {
    * the Node's name. The Node should use the passed in LayerNameManager to get
    * the name for its Node type. This moves the Node from state 2 to state 3.
    */
-  void compile(LayerNameManager& name_manager) {
-    if (getState() == NodeState::Constructed) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call compile before setting predecessor(s) of this Node.");
-    }
-    if (getState() == NodeState::Compiled ||
-        getState() == NodeState::PreparedForBatchProcessing) {
-      throw exceptions::NodeStateMachineError("Cannot call compile twice.");
-    }
-    _name = name_manager.registerNodeAndGetName(/* node_type = */ type());
-    compileImpl();
-  }
+  void compile(LayerNameManager& name_manager);
 
   /*
    * Computes the forward pass for the node. The node will access its inputs
@@ -125,15 +114,7 @@ class Node {
    * will throw an error. Currently, it is only unknowable for the Input node,
    * so it is the responsibility of the caller to call isInputNode() first.
    */
-  uint32_t numNonzerosInOutput() const {
-    if (getState() != NodeState::PreparedForBatchProcessing) {
-      throw exceptions::NodeStateMachineError(
-          "Must call prepareForBatchProcessing before calling "
-          "numNonzerosInOutput.");
-    }
-
-    return numNonzerosInOutputImpl();
-  }
+  uint32_t numNonzerosInOutput() const;
 
   /*
     Initializes any state that the node must store for computations that is not
@@ -145,47 +126,18 @@ class Node {
 
     This moves the node from state 3 to state 4.
   */
-  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) {
-    if (getState() == NodeState::Constructed ||
-        getState() == NodeState::PredecessorsSet) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call prepareForBatchProcessing before calling compile.");
-    }
-
-    if (getState() == NodeState::PreparedForBatchProcessing) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call prepareForBatchProcessing consecutively (must call "
-          "cleanupAfterBatchProcessing in between).");
-    }
-
-    prepareForBatchProcessingImpl(batch_size, use_sparsity);
-  }
+  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity);
 
   /*
    * Do any cleanup to bring the Node into the same state it was in before
    * prepareForBatchProcessing was called. This moves the node from state 4 to
    * state 3.
    */
-  void cleanupAfterBatchProcessing() {
-    if (getState() != Node::PreparedForBatchProcessing) {
-      throw exceptions::NodeStateMachineError(
-          "Can only call cleanupAfterBatchProcessing after "
-          "prepareForBatchProcessing.");
-    }
-
-    cleanupAfterBatchProcessingImpl();
-  }
+  void cleanupAfterBatchProcessing();
 
   // Returns any predecessors of the node. This is used to traverse the graph
   // during compilation.
-  std::vector<NodePtr> getPredecessors() const {
-    if (getState() == NodeState::Constructed) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot get the predecessors for this layer because "
-          "they have not been set yet");
-    }
-    return getPredecessorsImpl();
-  }
+  std::vector<NodePtr> getPredecessors() const;
 
   /*
     Returns any fully connected layer objects used by the node. This list is
@@ -194,15 +146,7 @@ class Node {
     functions after a certain number of batches.
   */
   std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() {
-    if (getState() == NodeState::Constructed ||
-        getState() == NodeState::PredecessorsSet) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call getInternalFullyConnectedLayers before "
-          "calling compile.");
-    }
-    return getInternalFullyConnectedLayersImpl();
-  }
+  getInternalFullyConnectedLayers();
 
   // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;
@@ -211,33 +155,20 @@ class Node {
 
   // Prints out a single line summary in the format
   // (pred_names) -> node_name (NodeType): parameter_1=1, parameter_2=0 ...
-  void summarize(std::stringstream& summary, bool detailed) const {
-    if (getState() == NodeState::Constructed ||
-        getState() == NodeState::PredecessorsSet) {
-      throw exceptions::NodeStateMachineError(
-          "Can only summarize a node after compiling");
-    }
-    summarizeImpl(summary, detailed);
-  }
+  void summarize(std::stringstream& summary, bool detailed) const;
 
   // Returns the name of this node (only valid after the node has been
   // compiled).
-  const std::string& name() const {
-    if (getState() == NodeState::Constructed ||
-        getState() == NodeState::PredecessorsSet) {
-      throw exceptions::NodeStateMachineError(
-          "Can only get the name of a node after compiling");
-    }
-    return *_name;
-  }
+  const std::string& name() const;
 
-  // This function tells this Node it will be used during distributed training.
-  // This chiefly is relevant during paramemeter updates,
-  // when a Node needs to know that it cannot rely on its own tracking of which
-  // neurons were activated (since the gradient will also be aggregated from
-  // other machines), and so it should do a dense parameter update no matter
-  // what.
-  virtual void enableDistributedTraining() = 0;
+  /**
+   * This function prevents nodes from using sparse optimizations during
+   * parameter updates. This is to make updateParameters work during distributed
+   * training or disable the optimization in the few cases where they are not
+   * beneficial. By default it is a NOOP but nodes can override if they have
+   * parameters that they apply sparse updates to.
+   */
+  virtual void disableSparseParameterUpdates() {}
 
   virtual ~Node() = default;
 

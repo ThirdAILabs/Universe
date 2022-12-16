@@ -56,7 +56,7 @@ DragonVector<T>::DragonVector(const T* values_to_compress, uint32_t size,
 template <class T>
 void DragonVector<T>::sketch(const T* values, T threshold, uint32_t size,
                              uint32_t sketch_size) {
-  UniversalHash hash_function = UniversalHash(_seed_for_hashing);
+  UniversalHash hash_function(_seed_for_hashing);
 
   /*
    * TODO(TSK-567): MSVC complains about sharing values in the below block.
@@ -86,7 +86,7 @@ void DragonVector<T>::sketch(const T* values, T threshold, uint32_t size,
 template <class T>
 T DragonVector<T>::get(uint32_t index) const {
   uint32_t sketch_size = _indices.size();
-  UniversalHash hash_function = UniversalHash(_seed_for_hashing);
+  UniversalHash hash_function(_seed_for_hashing);
   uint32_t hash = hash_function.gethash(index) % sketch_size;
   return (_indices[hash] == index) * _values[hash];
 }
@@ -94,7 +94,7 @@ T DragonVector<T>::get(uint32_t index) const {
 template <class T>
 void DragonVector<T>::set(uint32_t index, T value) {
   uint32_t sketch_size = _indices.size();
-  UniversalHash hash_function = UniversalHash(_seed_for_hashing);
+  UniversalHash hash_function(_seed_for_hashing);
   uint32_t hash = hash_function.gethash(index) % sketch_size;
   _indices[hash] = index;
   _values[hash] = value;

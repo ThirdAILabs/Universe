@@ -3,12 +3,12 @@ from thirdai import bolt, deployment
 
 pytestmark = [pytest.mark.unit]
 
-CONFIG_FILE = "./saved_oracle_config"
+CONFIG_FILE = "./saved_udt_config"
 TRAIN_FILE = "tempTrainFile.csv"
 TEST_FILE = "tempTestFile.csv"
 
 
-def make_serialized_oracle_config():
+def make_serialized_udt_config():
     model_config = deployment.ModelConfig(
         input_names=["input"],
         nodes=[
@@ -28,15 +28,14 @@ def make_serialized_oracle_config():
                 predecessor="hidden",
             ),
         ],
-        loss=bolt.CategoricalCrossEntropyLoss(),
+        loss=bolt.nn.losses.CategoricalCrossEntropy(),
     )
 
-    dataset_config = deployment.OracleDatasetFactory(
-        config=deployment.UserSpecifiedParameter(
-            "config", type=deployment.OracleConfig
-        ),
-        parallel=deployment.ConstantParameter(False),
+    dataset_config = deployment.UDTDatasetFactory(
+        config=deployment.UserSpecifiedParameter("config", type=bolt.models.UDTConfig),
+        force_parallel=deployment.ConstantParameter(False),
         text_pairgram_word_limit=deployment.ConstantParameter(15),
+        contextual_columns=deployment.ConstantParameter(False),
     )
 
     train_eval_params = deployment.TrainEvalParameters(
@@ -61,8 +60,8 @@ def write_lines_to_file(file, lines):
             f.writelines(line + "\n")
 
 
-def make_simple_oracle_model():
-    make_serialized_oracle_config()
+def make_simple_udt_model():
+    make_serialized_udt_config()
 
     write_lines_to_file(
         TRAIN_FILE,
@@ -84,17 +83,18 @@ def make_simple_oracle_model():
         ],
     )
 
-    model = deployment.ModelPipeline(
+    model = bolt.models.Pipeline(
         config_path=CONFIG_FILE,
         parameters={
-            "config": deployment.OracleConfig(
+            "config": bolt.models.UDTConfig(
                 data_types={
-                    "userId": bolt.types.categorical(n_unique_classes=3),
-                    "movieId": bolt.types.categorical(n_unique_classes=3),
+                    "userId": bolt.types.categorical(),
+                    "movieId": bolt.types.categorical(),
                     "timestamp": bolt.types.date(),
                 },
                 temporal_tracking_relationships={"userId": ["movieId"]},
                 target="movieId",
+                n_target_classes=3,
             )
         },
     )
@@ -102,23 +102,21 @@ def make_simple_oracle_model():
     return model
 
 
-def test_oracle_save_load():
-    model = make_simple_oracle_model()
+def test_udt_save_load():
+    model = make_simple_udt_model()
 
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
     model.save("saveLoc")
     before_load_output = model.evaluate(TEST_FILE)
-    model = deployment.ModelPipeline.load("saveLoc")
+    model = bolt.models.Pipeline.load("saveLoc")
     after_load_output = model.evaluate(TEST_FILE)
 
     assert (before_load_output == after_load_output).all()
 
 
 def test_multiple_predict_returns_same():
-    model = make_simple_oracle_model()
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model = make_simple_udt_model()
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
 
     sample = "0,,2022-08-31"
     prev_result = model.predict(sample)
@@ -129,9 +127,8 @@ def test_multiple_predict_returns_same():
 
 
 def test_explanations_total_percentage():
-    model = make_simple_oracle_model()
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model = make_simple_udt_model()
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
 
     sample = "0,,2022-08-31"
     explanations = model.explain(sample)
@@ -143,10 +140,9 @@ def test_explanations_total_percentage():
 
 
 def test_index_changes_predict():
-    model = make_simple_oracle_model()
-    context = model.get_artifact("temporal_context")
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model = make_simple_udt_model()
+    context = model.get_data_processor()
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
 
     sample = "0,,2022-08-31"
 
@@ -160,14 +156,13 @@ def test_index_changes_predict():
 
 
 def test_context_serialization():
-    model = make_simple_oracle_model()
-    context = model.get_artifact("temporal_context")
-    train_config = bolt.graph.TrainConfig.make(epochs=2, learning_rate=0.01)
-    model.train(TRAIN_FILE, train_config, batch_size=2048)
+    model = make_simple_udt_model()
+    context = model.get_data_processor()
+    model.train(TRAIN_FILE, epochs=2, learning_rate=0.01, batch_size=2048)
 
     model.save("saveLoc")
-    saved_model = deployment.ModelPipeline.load("saveLoc")
-    saved_context = saved_model.get_artifact("temporal_context")
+    saved_model = bolt.models.Pipeline.load("saveLoc")
+    saved_context = saved_model.get_data_processor()
 
     sample = "0,,2022-08-31"
     update = "0,1,2022-08-31"

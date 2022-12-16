@@ -7,9 +7,7 @@ namespace thirdai::dataset::python {
 
 namespace py = pybind11;
 
-void createNewDatasetSubmodule(py::module_& module) {
-  auto dataset_submodule = module.def_submodule("new_dataset");
-
+void createDataSubmodule(py::module_& dataset_submodule) {
   // TODO(Josh): Add other numpy methods
   dataset_submodule.def("from_np", &numpy::denseNumpyToDataset,
                         py::arg("data"));

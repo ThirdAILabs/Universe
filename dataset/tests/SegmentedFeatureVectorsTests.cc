@@ -4,15 +4,12 @@
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
 #include <cstdlib>
+#include <optional>
 #include <random>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
-using thirdai::dataset::SegmentedDenseFeatureVector;
-using thirdai::dataset::SegmentedFeatureVector;
-using thirdai::dataset::SegmentedSparseFeatureVector;
 
 namespace thirdai::dataset {
 
@@ -175,6 +172,7 @@ class SegmentedFeatureVectorTest : public testing::Test {
 };
 
 class SegmentedSparseFeatureVectorTest : public SegmentedFeatureVectorTest {};
+class HashedSegmentedFeatureVectorTest : public SegmentedFeatureVectorTest {};
 class SegmentedDenseFeatureVectorTest : public SegmentedFeatureVectorTest {};
 
 /**
@@ -325,6 +323,95 @@ TEST_F(SegmentedDenseFeatureVectorTest, ProducesBoltVectorWithCorrectFeatures) {
   checkSegmentedFeatureVectorHasSegments(vec, segments);
   auto bolt_vec = vec.toBoltVector();
   checkBoltVectorHasSegments(bolt_vec, segments);
+}
+
+TEST_F(HashedSegmentedFeatureVectorTest,
+       ThrowsIfBlockAddsBothDenseAndSparseFeatures) {
+  // Sparse feature then dense
+  {
+    HashedSegmentedFeatureVector vec(/* hash_range= */ 100);
+    addVectorFeature(vec, 100);
+    vec.addSparseFeatureToSegment(/* index= */ 3, /* value= */ 1.0);
+    expectThrow(
+        [&]() { vec.addDenseFeatureToSegment(/* value = */ 1.0); },
+        "[HashedSegmentedFeatureVector::addDenseFeatureToSegment] A block "
+        "cannot add both dense and sparse features.");
+  }
+
+  // Dense feature then sparse
+  {
+    HashedSegmentedFeatureVector vec(/* hash_range= */ 100);
+    addVectorFeature(vec, 100);
+    vec.addDenseFeatureToSegment(/* value = */ 1.0);
+    expectThrow(
+        [&]() {
+          vec.addSparseFeatureToSegment(/* index= */ 3, /* value= */ 1.0);
+        },
+        "[HashedSegmentedFeatureVector::addSparseFeatureToSegment] A block "
+        "cannot add both dense and sparse features.");
+  }
+}
+
+TEST_F(HashedSegmentedFeatureVectorTest,
+       SameIndexFromSeparateBlocksHashToDifferentIndices) {
+  uint32_t hash_range = 100;
+  HashedSegmentedFeatureVector vec(hash_range);
+
+  // Simulate block 1
+  addVectorFeature(vec, 100);
+  vec.addSparseFeatureToSegment(/* index= */ 3, /* value= */ 1.0);
+
+  // Simulate block 2
+  addVectorFeature(vec, 100);
+  vec.addSparseFeatureToSegment(/* index= */ 3, /* value= */ 1.0);
+
+  auto bolt_vec = vec.toBoltVector();
+
+  ASSERT_EQ(bolt_vec.len, 2);
+  ASSERT_FALSE(bolt_vec.isDense());
+
+  ASSERT_NE(bolt_vec.active_neurons[0], bolt_vec.active_neurons[1]);
+  ASSERT_LT(bolt_vec.active_neurons[0], hash_range);
+  ASSERT_LT(bolt_vec.active_neurons[1], hash_range);
+
+  ASSERT_EQ(bolt_vec.activations[0], 1.0);
+  ASSERT_EQ(bolt_vec.activations[1], 1.0);
+}
+
+TEST_F(HashedSegmentedFeatureVectorTest, HashesAreConsistent) {
+  uint32_t hash_range = 100;
+
+  std::optional<uint32_t> hashed_feature_index;
+
+  for (uint32_t trial = 0; trial < 100; trial++) {
+    HashedSegmentedFeatureVector vec(hash_range);
+    addVectorFeature(vec, 100);
+    vec.addSparseFeatureToSegment(/* index= */ 3, /* value= */ 1.0);
+    auto bolt_vec = vec.toBoltVector();
+    ASSERT_EQ(bolt_vec.len, 1);
+    ASSERT_FALSE(bolt_vec.isDense());
+
+    if (hashed_feature_index) {
+      ASSERT_EQ(bolt_vec.active_neurons[0], *hashed_feature_index);
+    } else {
+      hashed_feature_index = bolt_vec.active_neurons[0];
+    }
+  }
+}
+
+TEST_F(HashedSegmentedFeatureVectorTest, IndexOutOfRangeGetsHashedIntoRange) {
+  uint32_t hash_range = 100;
+  HashedSegmentedFeatureVector vec(hash_range);
+
+  addVectorFeature(vec, 10000);
+  vec.addSparseFeatureToSegment(/* index= */ 3000, /* value= */ 1.0);
+
+  auto bolt_vec = vec.toBoltVector();
+
+  ASSERT_EQ(bolt_vec.len, 1);
+  ASSERT_FALSE(bolt_vec.isDense());
+
+  ASSERT_LT(bolt_vec.active_neurons[0], hash_range);
 }
 
 }  // namespace thirdai::dataset

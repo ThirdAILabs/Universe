@@ -1,7 +1,6 @@
 import mlflow
 import pytest
 from test_callbacks import train_model_with_callback
-from thirdai.bolt import MlflowCallback
 
 MOCK_TRACKING_URI = "dummy link"
 MOCK_EXPERIMENT_NAME = "dummy experiment"
@@ -13,6 +12,9 @@ MOCK_EXPERIMENT_ARGS_VALUE = "dummy value"
 
 @pytest.mark.unit
 def test_mlflow_callback(mocker):
+    # Import here to avoid collection error since experimental is not defined in release mode.
+    from thirdai.experimental import MlflowCallback
+
     set_tracking_uri_mock = mocker.patch("mlflow.set_tracking_uri")
     set_experiment_mock = mocker.patch("mlflow.set_experiment", return_value=1)
     start_run_mock = mocker.patch("mlflow.start_run")

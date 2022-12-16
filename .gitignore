@@ -31,7 +31,8 @@ thirdai.egg-info
 *.der
 
 # Docs
-docs/_*
+docs/internal_docs/_*
+docs/public_docs/_*
 
 # Wheels
 dist
@@ -43,6 +44,7 @@ wheelhouse
 # Data files
 *.svm
 *.csv
+*.parquet
 
 # Output files
 *.svg

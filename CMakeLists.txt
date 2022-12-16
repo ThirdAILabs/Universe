@@ -30,25 +30,43 @@ message(STATUS "Project version: ${PROJECT_VERSION_STRING_FULL}")
 message("====================================")
 message("\tBUILD MODE: ${CMAKE_BUILD_TYPE}")
 message("====================================")
-message("\tBuilding with feature flags: ${FEATURE_FLAGS}")
-separate_arguments(FEATURE_FLAGS)
-message("\tFeature flags seperated into CMake List: ${FEATURE_FLAGS}")
+message("\tBuilding with feature flags: ${THIRDAI_FEATURE_FLAGS}")
+separate_arguments(THIRDAI_FEATURE_FLAGS)
+message("\tFeature flags seperated into CMake List: ${THIRDAI_FEATURE_FLAGS}")
 message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
 message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
+
+option(THIRDAI_REPORT_BUILD_STEP_TIMES
+       "Report time using builtin for make/ninja compile-build steps" OFF)
+
+if(THIRDAI_REPORT_BUILD_STEP_TIMES)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CMAKE_COMMAND} -E time")
+endif(THIRDAI_REPORT_BUILD_STEP_TIMES)
 
 # Check if there is a license flag, and only if so add the cryptopp lib We have
 # two different License flags, one for if to build the license files
 # (THIRDAI_BUILD_LICENSE) and one for if to check the license
 # (THIRDAI_CHECK_LICENSE). If just the THIRDAI_CHECK_LICENSE flag is set there
 # will be a linker error.
-list(FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
+list(FIND THIRDAI_FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
 set(LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
 if(${LICENSE_BUILD_FLAG_FOUND})
   # Use our own source, also don't build tests.
   set(CRYPTOPP_BUILD_TESTING OFF)
   set(CRYPTOPP_SOURCES "${CMAKE_SOURCE_DIR}/deps/cryptopp")
   add_subdirectory(deps/cryptopp-cmake EXCLUDE_FROM_ALL)
+
+  # For now only require openssl if we are building with licensing, since we
+  # only communicate with the internet (keygen) in that case
+  add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
+  find_package(OpenSSL 1.1.1 REQUIRED)
+
+  set(JSON_BuildTests
+      OFF
+      CACHE INTERNAL "")
+  add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 endif()
 
 if(MSVC)
@@ -123,6 +141,7 @@ set(THIRDAI_COMPILE_OPTIONS
     -Wextra
     -Werror
     -Wno-unused-function
+    -Wno-ignored-optimization-argument
     -pedantic
     $<$<CONFIG:Debug>:-Og>
     $<$<CONFIG:Debug>:-g>
@@ -148,10 +167,16 @@ set(THIRDAI_COMPILE_OPTIONS
     $<$<CONFIG:RelWithAsan>:-funroll-loops>
     $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
     $<$<CONFIG:RelWithAsan>:-g>
-    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
+    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
+    $<$<CONFIG:CompileAnalysis>:-DNDEBUG>
+    $<$<CONFIG:CompileAnalysis>:-Ofast>
+    $<$<CONFIG:CompileAnalysis>:-fno-finite-math-only>
+    $<$<CONFIG:CompileAnalysis>:-funroll-loops>
+    $<$<CONFIG:CompileAnalysis>:-ftree-vectorize>
+    $<$<CONFIG:CompileAnalysis>:-ftime-trace>)
 
-set(ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
-                         $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
+set(THIRDAI_ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
+                                 $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
 
 # Custom command line options
 
@@ -169,14 +194,17 @@ set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
           "Timeout for GoogleTest discovery, configurable from command-line.")
 
 # Header only dependencies
-include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
 
 # Source dependencies
 add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
 add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
-
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
+# Turn off prometheus-cpp's testing build so that we don't try to build two
+# copies of gmock
+option(ENABLE_TESTING "" OFF)
+option(ENABLE_PUSH "" OFF)
+add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
 
 # PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
 # requires the boost and we dont want to add the boost dependencies, hence
@@ -206,60 +234,86 @@ include_directories(".")
 include_directories(${CMAKE_BINARY_DIR})
 
 # Our source directories
+add_subdirectory(auto_ml)
 add_subdirectory(bolt)
 add_subdirectory(bolt_vector)
 add_subdirectory(dataset)
-add_subdirectory(exceptions)
 add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
-add_subdirectory(utils)
-add_subdirectory(wrappers)
 add_subdirectory(compression)
+add_subdirectory(utils)
 
-# Only add the licensing subdirectory if the corresponding flag is set
+set(THIRDAI_SOURCES
+    bolt/src/graph/Graph.cc
+    bolt/src/graph/DatasetContext.cc
+    bolt/src/graph/Node.cc
+    bolt/src/graph/nodes/Switch.cc
+    bolt/src/graph/nodes/Concatenate.cc
+    bolt/src/graph/nodes/DlrmAttention.cc
+    bolt/src/graph/nodes/DotProduct.cc
+    bolt/src/graph/nodes/Embedding.cc
+    bolt/src/graph/nodes/FullyConnected.cc
+    bolt/src/graph/nodes/LayerNorm.cc
+    bolt/src/graph/nodes/Input.cc
+    bolt/src/graph/InferenceOutputTracker.cc
+    bolt/src/layers/EmbeddingLayer.cc
+    bolt/src/layers/FullyConnectedLayer.cc
+    bolt/src/layers/ConvLayer.cc
+    bolt/src/layers/LayerConfig.cc
+    bolt/src/layers/SamplingConfig.cc
+    bolt/src/loss_functions/LossFunctions.cc
+    bolt/src/metrics/Metric.cc
+    search/src/MaxFlash.cc
+    search/src/MaxFlashArray.cc
+    search/src/Flash.cc
+    hashing/src/DensifiedMinHash.cc
+    hashing/src/DWTA.cc
+    hashing/src/FastSRP.cc
+    hashing/src/MurmurHash.cc
+    hashing/src/MinHash.cc
+    hashing/src/SRP.cc
+    hashing/src/UniversalHash.cc
+    hashtable/src/SampledHashTable.cc
+    hashtable/src/VectorHashTable.cc
+    licensing/src/CheckLicense.cc
+    dataset/src/Vocabulary.cc
+    telemetry/src/PrometheusClient.cc
+    new_dataset/src/featurization_pipeline/transformations/Binning.cc
+    new_dataset/src/featurization_pipeline/transformations/StringHash.cc
+    new_dataset/src/featurization_pipeline/augmentations/ColdStartText.cc
+    new_dataset/src/featurization_pipeline/ColumnMap.cc
+    compression/src/CountSketch.cc
+    compression/src/DragonVector.cc
+    auto_ml/src/dataset_factories/SingleBlockDatasetFactory.cc
+    auto_ml/src/dataset_factories/udt/DataTypes.cc
+    auto_ml/src/dataset_factories/udt/FeatureComposer.cc
+    auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
+    auto_ml/src/deployment_config/BlockConfig.cc
+    auto_ml/src/deployment_config/DeploymentConfig.cc
+    auto_ml/src/deployment_config/HyperParameter.cc
+    auto_ml/src/deployment_config/ModelConfig.cc
+    auto_ml/src/deployment_config/NodeConfig.cc
+    auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactoryConfig.cc
+    auto_ml/src/deployment_config/dataset_configs/UDTDatasetFactoryConfig.cc
+    utils/Logging.cc)
+
+# Only add the licensing subdirectory and licensing cc files if the
+# corresponding flag is set
 if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
+  set(THIRDAI_SOURCES ${THIRDAI_SOURCES}
+                      licensing/src/keygen/KeygenCommunication.cc)
 endif()
 
-set(BOLT_SOURCES
-    bolt/src/auto_classifiers/AutoClassifierBase.cc bolt/src/graph/Graph.cc
-    bolt/src/layers/EmbeddingLayer.cc bolt/src/layers/FullyConnectedLayer.cc
-    bolt/src/layers/ConvLayer.cc)
-
-set(SEARCH_SOURCES search/src/MaxFlash.cc search/src/MaxFlashArray.cc)
-
-set(HASHING_SOURCES
-    hashing/src/DensifiedMinHash.cc hashing/src/DWTA.cc hashing/src/FastSRP.cc
-    hashing/src/MurmurHash.cc hashing/src/SRP.cc hashing/src/UniversalHash.cc)
-
-set(HASHTABLE_SOURCES hashtable/src/SampledHashTable.cc
-                      hashtable/src/VectorHashTable.cc)
-
-set(LICENSE_SOURCES wrappers/src/LicenseWrapper.cc)
-
-set(DATASET_SOURCES dataset/src/Vocabulary.cc)
-
-set(COMPRESSION_SOURCES compression/src/CountSketch.cc
-                        compression/src/DragonVector.cc)
-
-set(UTILS_SOURCES utils/Logging.cc)
-
-add_library(
-  thirdai STATIC
-  ${BOLT_SOURCES}
-  ${SEARCH_SOURCES}
-  ${HASHING_SOURCES}
-  ${HASHTABLE_SOURCES}
-  ${LICENSE_SOURCES}
-  ${DATASET_SOURCES}
-  ${COMPRESSION_SOURCES}
-  ${UTILS_SOURCES})
+add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
-                                     cereal::cereal)
+                                     cereal::cereal prometheus-cpp::pull)
 if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
+  target_link_libraries(
+    thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto OpenSSL::SSL
+                   nlohmann_json::nlohmann_json)
 endif()
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
@@ -271,13 +325,19 @@ pybind11_add_module(
   _thirdai
   python_bindings/thirdai.cc
   bolt/python_bindings/BoltPython.cc
-  bolt/python_bindings/BoltGraphPython.cc
+  bolt/python_bindings/BoltNNPython.cc
+  bolt/python_bindings/CallbacksPython.cc
   dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/DatasetPython.cc
+  new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
-  auto_classifiers/python_bindings/AutoClassifiersPython.cc
-  auto_ml/python_bindings/DeploymentPython.cc)
+  auto_ml/python_bindings/AutomlPython.cc
+  auto_ml/python_bindings/DeploymentPython.cc
+  auto_ml/src/models/ModelPipeline.cc
+  auto_ml/src/models/OutputProcessor.cc
+  auto_ml/src/models/UniversalDeepTransformer.cc
+  telemetry/python_bindings/TelemetryPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
 
@@ -287,8 +347,8 @@ if(NOT MSVC)
 endif()
 
 # Add feature flags passed in from python
-target_compile_definitions(thirdai PRIVATE ${FEATURE_FLAGS})
-target_compile_definitions(_thirdai PRIVATE ${FEATURE_FLAGS})
+target_compile_definitions(thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS})
+target_compile_definitions(_thirdai PRIVATE ${THIRDAI_FEATURE_FLAGS})
 
 # In debug mode we are using ASan (address sanitizer) to provide better
 # information on errors. We only run with this in debug mode because it carries
@@ -296,10 +356,10 @@ target_compile_definitions(_thirdai PRIVATE ${FEATURE_FLAGS})
 # https://github.com/google/sanitizers/wiki/AddressSanitizer for more
 # information.
 
-target_compile_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
+target_compile_options(thirdai PUBLIC ${THIRDAI_ASAN_COMPILE_OPTIONS})
 
-target_link_options(thirdai PUBLIC ${ASAN_COMPILE_OPTIONS})
+target_link_options(thirdai PUBLIC ${THIRDAI_ASAN_COMPILE_OPTIONS})
 
-target_compile_options(_thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})
+target_compile_options(_thirdai PRIVATE ${THIRDAI_ASAN_COMPILE_OPTIONS})
 
-target_link_options(_thirdai PRIVATE ${ASAN_COMPILE_OPTIONS})
+target_link_options(_thirdai PRIVATE ${THIRDAI_ASAN_COMPILE_OPTIONS})

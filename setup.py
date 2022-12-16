@@ -27,8 +27,10 @@ else:
     build_mode = "Release"
 if "THIRDAI_FEATURE_FLAGS" in os.environ:
     feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
+    is_public_release = "THIRDAI_EXPOSE_ALL" not in feature_flags
 else:
     feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
+    is_public_release = True
 
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
@@ -133,7 +135,7 @@ class CMakeBuild(build_ext):
                 cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
 
         build_args += ["-j{}".format(num_jobs)]
-        cmake_args += [f"-DFEATURE_FLAGS={feature_flags}"]
+        cmake_args += [f"-DTHIRDAI_FEATURE_FLAGS={feature_flags}"]
 
         build_dir = "build/"
         if not os.path.exists(build_dir):
@@ -149,6 +151,7 @@ with open("thirdai.version") as version_file:
     suffix = os.environ.get("THIRDAI_BUILD_IDENTIFIER", None)
     if suffix:
         version = "{}+{}".format(version, suffix)
+
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
@@ -167,38 +170,60 @@ setup(
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
-    install_requires=["numpy", "typing_extensions"],
+    install_requires=["numpy", "typing_extensions", "pandas>=1.2.0"],
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
         # The tokenizers requirement ensures that all of the [test] depedencies are
-        # installable from a wheel on an m1
+        # installable from a wheel on an m1.
+        # The latest version of MLFLOW available while building wheels is 1.23.1
+        # For MLFLOW to work, the alembic version of the backend databases for local
+        # MLFLOW and server MLFLOW should be the same. Hence, we are fixing the
+        # version of MLFLOW here. The version of protobuf that works with this
+        # MLFLOW is also being fixed.
         "test": [
             "pytest",
             "pytest-mock",
             "boto3",
             "moto",
-            "mlflow",
+            "mlflow==1.23.1",
+            "protobuf==3.19.6",
             "datasets",
             "torch",
             "toml",
             "psutil",
             "transformers",
+            "pandas>=1.2.0",
             "cryptography<=36.0.2",
             "tokenizers==0.11.6",
+            "pyarrow",
+            "prometheus_client",
+            "gcsfs",
+            "s3fs",
+            "mock",
         ],
         "benchmark": [
             "toml",
             "psutil",
             "scikit-learn",
-            "mlflow",
+            "mlflow==1.23.1",
+            "protobuf==3.19.6",
             "boto3",
+            "s3fs",
+            "gcsfs",
         ],
-        "distributed": ["ray", "toml"],
+        "distributed": ["ray", "toml", "protobuf==3.19.6", "mock", "gcsfs", "s3fs"],
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
         "docs": ["sphinx!=5.2.0.post0", "sphinx_rtd_theme"],
     },
     packages=["thirdai"]
-    + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],
+    + [
+        "thirdai." + p
+        for p in find_packages(
+            where="thirdai_python_package",
+            # We don't want the experimental submodule included in releases.
+            exclude=["experimental"] if is_public_release else [],
+        )
+    ],
     license="proprietary",
     package_dir={"thirdai": "thirdai_python_package"},
 )

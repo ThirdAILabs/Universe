@@ -4,9 +4,9 @@
 #include <cereal/types/vector.hpp>
 #include "GraphPropertyChecks.h"
 #include "nodes/FullyConnected.h"
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
@@ -29,16 +29,6 @@
 #include <unordered_set>
 
 namespace thirdai::bolt {
-
-namespace {
-template <class... Args>
-std::optional<ProgressBar> makeOptionalProgressBar(bool make, Args... args) {
-  if (!make) {
-    return std::nullopt;
-  }
-  return std::make_optional<ProgressBar>(args...);
-}
-}  // namespace
 
 void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
                         bool print_when_done) {
@@ -75,16 +65,12 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 #endif
 }
 
-/*
-  Provides support for logging, validation, and model saving
-  to distributed training.
-*/
-void BoltGraph::log_validate_and_save(uint32_t batch_size,
-                                      const TrainConfig& train_config,
-                                      MetricAggregator& train_metrics) {
+void BoltGraph::logValidateAndSave(uint32_t batch_size,
+                                   const TrainConfig& train_config,
+                                   MetricAggregator& train_metrics) {
   if (train_config.logLossFrequency() != 0 &&
       _updates % train_config.logLossFrequency() == 0) {
-    logging::info("train | epoch {} | updates {} | {}", (_epoch), _updates,
+    logging::info("train | epoch {} | train_steps {} | {}", (_epoch), _updates,
                   train_metrics.summary());
   }
 
@@ -114,8 +100,8 @@ void BoltGraph::log_validate_and_save(uint32_t batch_size,
     // added to the callback export.
 
     cleanupAfterBatchProcessing();
-    auto [validation_metrics, _] =
-        predict(validation->data(), validation->labels(), validation->config());
+    auto [validation_metrics, _] = evaluate(
+        validation->data(), validation->labels(), validation->config());
 
     if (save_context && _tracked_metric != nullptr) {
       auto query = validation_metrics.find(_tracked_metric->name());
@@ -209,8 +195,8 @@ MetricData BoltGraph::train(
     // some sort of RAII training context object whose destructor will
     // automatically delete the training state
     try {
-      std::optional<ProgressBar> bar = makeOptionalProgressBar(
-          /*make=*/train_config.verbose(),
+      std::optional<ProgressBar> bar = ProgressBar::makeOptional(
+          /*verbose=*/train_config.verbose(),
           /*description=*/fmt::format("train epoch {}", _epoch),
           /*max_steps=*/dataset_context.numBatches());
 
@@ -233,8 +219,8 @@ MetricData BoltGraph::train(
           bar->increment();
         }
 
-        log_validate_and_save(dataset_context.batchSize(), train_config,
-                              train_metrics);
+        logValidateAndSave(dataset_context.batchSize(), train_config,
+                           train_metrics);
 
         callbacks.onBatchEnd(*this, train_state);
       }
@@ -245,8 +231,8 @@ MetricData BoltGraph::train(
                                .count();
 
       std::string logline = fmt::format(
-          "train | epoch {} | updates {} | {} | batches {} | time {}s | "
-          "complete",
+          "train | epoch {} | train_steps {} | {} | train_batches {} | time "
+          "{}s | complete",
           _epoch, _updates, train_metrics.summary(),
           dataset_context.numBatches(), epoch_time);
 
@@ -269,8 +255,8 @@ MetricData BoltGraph::train(
     const std::optional<ValidationContext>& validation =
         train_config.getValidationContext();
     if (validation) {
-      auto [val_metrics, _] = predict(validation->data(), validation->labels(),
-                                      validation->config());
+      auto [val_metrics, _] = evaluate(validation->data(), validation->labels(),
+                                       validation->config());
       train_state.updateValidationMetrics(val_metrics);
     }
 
@@ -462,19 +448,18 @@ BoltGraph::getInputGradientSingle(
   }
 }
 
-InferenceResult BoltGraph::predict(
+InferenceResult BoltGraph::evaluate(
     const std::vector<dataset::BoltDatasetPtr>& test_data,
-    const dataset::BoltDatasetPtr& test_labels,
-    const PredictConfig& predict_config) {
+    const dataset::BoltDatasetPtr& test_labels, const EvalConfig& eval_config) {
   DatasetContext predict_context(test_data, test_labels);
 
   bool has_labels = (test_labels != nullptr);
 
-  MetricAggregator metrics = predict_config.getMetricAggregator();
+  MetricAggregator metrics = eval_config.getMetricAggregator();
 
   verifyCanPredict(
       predict_context, has_labels,
-      /* returning_activations = */ predict_config.shouldReturnActivations(),
+      /* returning_activations = */ eval_config.shouldReturnActivations(),
       /* num_metrics_tracked = */ metrics.getNumMetricsTracked());
 
   /*
@@ -484,15 +469,15 @@ InferenceResult BoltGraph::predict(
    we need this to be able to support the largest batch size.
   */
   prepareToProcessBatches(predict_context.batchSize(),
-                          predict_config.sparseInferenceEnabled());
+                          eval_config.sparseInferenceEnabled());
 
   InferenceOutputTracker outputTracker(
-      _output, predict_config.shouldReturnActivations(),
+      _output, eval_config.shouldReturnActivations(),
       /* total_num_samples = */ predict_context.len());
 
-  std::optional<ProgressBar> bar = makeOptionalProgressBar(
-      /*make=*/predict_config.verbose(),
-      /*description=*/"test",
+  std::optional<ProgressBar> bar = ProgressBar::makeOptional(
+      /*verbose=*/eval_config.verbose(),
+      /*description=*/"evaluate",  // Newline to cleanup output of validation.
       /*max_steps=*/predict_context.numBatches());
 
   auto test_start = std::chrono::high_resolution_clock::now();
@@ -515,7 +500,7 @@ InferenceResult BoltGraph::predict(
         bar->increment();
       }
 
-      processOutputCallback(predict_config.outputCallback(), batch_size);
+      processOutputCallback(eval_config.outputCallback(), batch_size);
 
       outputTracker.saveOutputBatch(_output, batch_size);
     }
@@ -532,8 +517,9 @@ InferenceResult BoltGraph::predict(
                           .count();
 
   std::string logline = fmt::format(
-      "predict | epoch {} | updates {} | {} | batches {} | time {}ms", _epoch,
-      _updates, metrics.summary(), predict_context.numBatches(), test_time);
+      "evaluate | epoch {} | train_steps {} | {} | eval_batches {} | time {}ms",
+      _epoch, _updates, metrics.summary(), predict_context.numBatches(),
+      test_time);
 
   logging::info(logline);
   if (bar) {
@@ -549,8 +535,9 @@ InferenceResult BoltGraph::predict(
 
 // Predicts on a single sample input for performance. Always returns
 // activations and doesn't calculate metrics.
-BoltVector BoltGraph::predictSingle(std::vector<BoltVector>&& test_data,
-                                    bool use_sparse_inference) {
+BoltVector BoltGraph::predictSingle(
+    std::vector<BoltVector>&& test_data, bool use_sparse_inference,
+    std::optional<std::string> output_node_name) {
   SingleBatchDatasetContext single_predict_context(std::move(test_data));
 
   verifyCanPredict(single_predict_context, /* has_labels = */ false,
@@ -565,8 +552,14 @@ BoltVector BoltGraph::predictSingle(std::vector<BoltVector>&& test_data,
   try {
     single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
     forward(/* vec_index = */ 0, nullptr);
-    BoltVector output_copy = _output->getOutputVector(
-        /* vec_index = */ 0);
+    BoltVector output_copy;
+    if (output_node_name) {
+      output_copy = getNodeByName(*output_node_name)
+                        ->getOutputVector(/* vec_index = */ 0);
+    } else {
+      output_copy = _output->getOutputVector(
+          /* vec_index = */ 0);
+    }
     cleanupAfterBatchProcessing();
     return output_copy;
   } catch (const std::exception& e) {
@@ -653,7 +646,6 @@ void BoltGraph::forward(uint32_t vec_index, const BoltVector* labels) {
 
 void BoltGraph::backpropagate(uint32_t vec_index) {
   for (auto node_itr = _nodes.rbegin(); node_itr != _nodes.rend(); ++node_itr) {
-    // std::cout << "NodeName = " << (*node_itr)->name() << std::endl;
     (*node_itr)->backpropagate(vec_index);
   }
 }
@@ -683,9 +675,9 @@ void BoltGraph::resetOutputGradients(uint32_t vec_index) {
   }
 }
 
-void BoltGraph::enableDistributedTraining() {
+void BoltGraph::disableSparseParameterUpdates() {
   for (NodePtr& node : _nodes) {
-    node->enableDistributedTraining();
+    node->disableSparseParameterUpdates();
   }
 }
 

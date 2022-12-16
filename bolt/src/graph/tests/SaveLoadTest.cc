@@ -1,6 +1,5 @@
 #include "TestDatasetGenerators.h"
 #include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/callbacks/Callback.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -53,12 +52,12 @@ class ModelWithLayers {
     model->train({data}, labels, train_config);
   }
 
-  InferenceMetricData predict(dataset::BoltDatasetPtr& data,
-                              dataset::BoltDatasetPtr& labels) const {
-    auto predict_config =
-        PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
+  InferenceMetricData evaluate(dataset::BoltDatasetPtr& data,
+                               dataset::BoltDatasetPtr& labels) const {
+    auto eval_config =
+        EvalConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
-    return model->predict({data}, labels, predict_config).first;
+    return model->evaluate({data}, labels, eval_config).first;
   }
 
   InputPtr input;
@@ -81,7 +80,7 @@ TEST(SaveLoadDAGTest, SaveAndLoadGraph) {
 
   model.train(data, labels, /* epochs= */ 4);
 
-  auto test_metrics1 = model.predict(data, labels);
+  auto test_metrics1 = model.evaluate(data, labels);
 
   ASSERT_GE(test_metrics1["categorical_accuracy"], 0.95);
 
@@ -90,9 +89,9 @@ TEST(SaveLoadDAGTest, SaveAndLoadGraph) {
 
   auto new_model = BoltGraph::load(save_loc);
 
-  auto predict_config =
-      PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
-  auto test_metrics2 = new_model->predict({data}, labels, predict_config);
+  auto eval_config =
+      EvalConfig::makeConfig().withMetrics({"categorical_accuracy"});
+  auto test_metrics2 = new_model->evaluate({data}, labels, eval_config);
 
   ASSERT_GE(test_metrics2.first["categorical_accuracy"], 0.9);
 
@@ -111,7 +110,7 @@ TEST(SaveLoadDAGTest, SaveFullyConnectedParameters) {
 
   model.train(data, labels, /* epochs= */ 4);
 
-  auto test_metrics1 = model.predict(data, labels);
+  auto test_metrics1 = model.evaluate(data, labels);
   ASSERT_GE(test_metrics1["categorical_accuracy"], 0.95);
 
   std::string hidden_1_loc = "./hidden_1_params";
@@ -128,7 +127,7 @@ TEST(SaveLoadDAGTest, SaveFullyConnectedParameters) {
   new_model.hidden2->loadParameters(hidden_2_loc);
   new_model.output->loadParameters(output_loc);
 
-  auto test_metrics2 = model.predict(data, labels);
+  auto test_metrics2 = model.evaluate(data, labels);
   ASSERT_GE(test_metrics2["categorical_accuracy"], 0.95);
 
   ASSERT_EQ(test_metrics1["categorical_accuracy"],
@@ -167,15 +166,14 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
       TrainConfig::makeConfig(/* learning_rate= */ 0.001, /* epochs= */ 10)
           .silence();
 
-  PredictConfig predict_config = PredictConfig::makeConfig()
-                                     .withMetrics({"categorical_accuracy"})
-                                     .silence();
+  EvalConfig eval_config =
+      EvalConfig::makeConfig().withMetrics({"categorical_accuracy"}).silence();
 
   model.train(
       /* train_data= */ {data}, labels, train_config);
 
-  auto test_metrics = model.predict(
-      /* test_data= */ {data}, labels, predict_config);
+  auto test_metrics = model.evaluate(
+      /* test_data= */ {data}, labels, eval_config);
 
   ASSERT_GT(test_metrics.first["categorical_accuracy"], 0.9);
 
@@ -184,8 +182,8 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
 
   auto loaded_model = BoltGraph::load(save_filename);
 
-  auto new_test_metrics = loaded_model->predict(
-      /* test_data= */ {data}, labels, predict_config);
+  auto new_test_metrics = loaded_model->evaluate(
+      /* test_data= */ {data}, labels, eval_config);
 
   ASSERT_EQ(new_test_metrics.first["categorical_accuracy"],
             test_metrics.first["categorical_accuracy"]);
@@ -193,10 +191,12 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
   model.train(
       /* train_data= */ {data}, labels, train_config);
 
-  auto new_trained_test_metrics = loaded_model->predict(
-      /* test_data= */ {data}, labels, predict_config);
+  auto new_trained_test_metrics = loaded_model->evaluate(
+      /* test_data= */ {data}, labels, eval_config);
 
   ASSERT_GT(new_trained_test_metrics.first["categorical_accuracy"], 0.9);
+
+  ASSERT_FALSE(std::remove(save_filename.c_str()));
 }
 
 }  // namespace thirdai::bolt::tests

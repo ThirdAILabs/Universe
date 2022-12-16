@@ -364,6 +364,50 @@ TEST(MetricTest, FMeasure) {
   ASSERT_DOUBLE_EQ(metric.value(), 0.6);
 }
 
+TEST(MetricTest, FMeasureWithVariableBeta) {
+  {  // beta is a positive integer
+    std::string metric_name = "f2_measure(0.8)";
+    ASSERT_TRUE(FMeasure::isFMeasure(metric_name));
+
+    auto metric = FMeasure::make(metric_name);
+
+    //                                          tp: 1, fp: 3, fn: 0
+    //                         thresholded_neurons: 0, 3, 4, 5
+    BoltVector dense_pred_1 =
+        BoltVector::makeDenseVector({1.0, 0.2, 0.0, 1.0, 0.9, 0.8, 0.5, 0.0});
+    BoltVector dense_label_1 =
+        BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+
+    // Check correct value is computed for each sample
+    metric->record(dense_pred_1, dense_label_1);
+    // Precision = 1 / 4
+    // Recall = 1
+    // F2 = ((1 + 2 * 2) * 1/4 * 1) / (2 * 2 * 1/4 + 1)
+    ASSERT_DOUBLE_EQ(metric->value(), 0.625);
+  }
+
+  {  // beta is a float between 0.0 and 1.0
+    std::string metric_name = "f0.5_measure(0.8)";
+    ASSERT_TRUE(FMeasure::isFMeasure(metric_name));
+
+    auto metric = FMeasure::make(metric_name);
+
+    //                                          tp: 1, fp: 0, fn: 3
+    //                         thresholded_neurons: 0
+    BoltVector dense_pred_1 =
+        BoltVector::makeDenseVector({0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+    BoltVector dense_label_1 =
+        BoltVector::makeDenseVector({1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0});
+
+    // Check correct value is computed for each sample
+    metric->record(dense_pred_1, dense_label_1);
+    // Precision = 1
+    // Recall = 1 / 4
+    // F0.5 = ((1 + 0.5 * 20.5) * 1 * 1/4) / (0.5 * 0.5 * 1 + 1/4)
+    ASSERT_DOUBLE_EQ(metric->value(), 0.625);
+  }
+}
+
 /**
  * Tests that the Weighted Mean Absolute Percentage Error (WMAPE)
  * metric is thread-safe and can run in parallel.
