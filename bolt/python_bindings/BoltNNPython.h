@@ -249,8 +249,8 @@ class GradientReference {
           getEmbeddingFromGradientVector(node, flattened_gradients,
                                          raw_gradient_offset);
         } else if (node->type() == "fc") {
-          getFullyConnectedToGradientVector(node, flattened_gradients,
-                                            raw_gradient_offset);
+          getFullyConnectedFromGradientVector(node, flattened_gradients,
+                                              raw_gradient_offset);
         } else {
           std::string err =
               "Gradient sharing logic is not implemented for " + node->type();
@@ -326,7 +326,7 @@ class GradientReference {
     raw_gradient_offset += embedding_layer_length;
   }
 
-  static void getFullyConnectedToGradientVector(
+  static void getFullyConnectedFromGradientVector(
       NodePtr& node, ParameterArray& flattened_gradients,
       uint64_t& raw_gradient_offset) {
     FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
