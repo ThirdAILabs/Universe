@@ -200,6 +200,7 @@ setup(
             "gcsfs",
             "s3fs",
             "mock",
+            "google-cloud-storage"
         ],
         "benchmark": [
             "toml",
