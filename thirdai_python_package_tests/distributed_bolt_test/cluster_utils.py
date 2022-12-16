@@ -21,10 +21,13 @@ def ray_two_node_cluster_config():
     )
     mini_cluster.add_node(num_cpus=1)
 
-    # directly yielding mini_cluster returns a generator of that,
-    # rather than cluster_config itself. This way, we are returning yielding this
-    # function, calling which in turns returns cluster config.
+    # directly yielding mini_cluster returns a generator for cluster_config,
+    # rather than cluster_config itself and those generators were just using
+    # the default communication_type(= "linear"), even after parametrizing it
+    # . doing it this way make sure we are getting the cluster_config for the
+    # communication type provided
     def _make_cluster_config(communication_type="linear"):
+
         # We set the working_dir for the cluster equal to this directory
         # so that pickle works. Otherwise, unpickling the function
         # defined in test_mock_cluster_arbitrary_streaming_data_loader.py would not
