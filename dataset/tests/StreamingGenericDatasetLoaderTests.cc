@@ -4,19 +4,28 @@
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <memory>
+#include <string>
 #include <tuple>
 
 namespace thirdai::dataset {
 
 class StreamingGenericDatasetLoaderTests : public ::testing::Test {
  public:
-  void SetUp() override { writeMockFile(); }
+  // We need this custom setup method to be called at the beginning of every
+  // test with a different file name so that we can safely run tests in parallel
+  // (if all mock files have the same name, there will be race conditions on
+  // the file)
+  static void setUp(const std::string& filename) {
+    _mock_file_name = filename;
+    writeMockFile(filename);
+  }
 
-  void TearDown() override { ASSERT_FALSE(remove(MOCK_FILE)); }
+  void TearDown() override { ASSERT_FALSE(remove(_mock_file_name.c_str())); }
 
   static StreamingGenericDatasetLoader makeMockPipeline(bool shuffle,
                                                         uint32_t seed = 0) {
@@ -30,10 +39,12 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     std::vector<std::shared_ptr<Block>> input_blocks({mock_block, mock_block});
     std::vector<std::shared_ptr<Block>> label_blocks({mock_block});
 
-    return {
-        MOCK_FILE,    input_blocks,
-        label_blocks, batch_size,
-        shuffle,      DatasetShuffleConfig(n_batches_in_shuffle_buffer, seed)};
+    return {_mock_file_name,
+            input_blocks,
+            label_blocks,
+            batch_size,
+            shuffle,
+            DatasetShuffleConfig(n_batches_in_shuffle_buffer, seed)};
   }
 
   static std::tuple<BoltDatasetPtr, BoltDatasetPtr> streamToInMemoryDataset(
@@ -164,8 +175,8 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
   }
 
  private:
-  static void writeMockFile() {
-    std::ofstream file(MOCK_FILE);
+  static void writeMockFile(const std::string& mock_file_name) {
+    std::ofstream file(mock_file_name);
     for (uint32_t i = 0; i < mock_file_lines; i++) {
       file << i << std::endl;
     }
@@ -220,7 +231,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
   }
 
  protected:
-  static constexpr const char* MOCK_FILE = "mock.txt";
+  inline static std::string _mock_file_name;
 
   /*
     The last batch will be smaller.
@@ -235,6 +246,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
 };
 
 TEST_F(StreamingGenericDatasetLoaderTests, CorrectUnshuffledInMemoryData) {
+  StreamingGenericDatasetLoaderTests::setUp("mock0.txt");
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ false);
   auto in_memory_data = unshuffled_pipeline.loadInMemory();
   assertCorrectVectors(in_memory_data);
@@ -242,6 +254,7 @@ TEST_F(StreamingGenericDatasetLoaderTests, CorrectUnshuffledInMemoryData) {
 }
 
 TEST_F(StreamingGenericDatasetLoaderTests, CorrectUnshuffledStreamedData) {
+  StreamingGenericDatasetLoaderTests::setUp("mock1.txt");
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ false);
   auto streamed_data = streamToInMemoryDataset(std::move(unshuffled_pipeline));
   assertCorrectVectors(streamed_data);
@@ -250,6 +263,7 @@ TEST_F(StreamingGenericDatasetLoaderTests, CorrectUnshuffledStreamedData) {
 
 TEST_F(StreamingGenericDatasetLoaderTests,
        CorrectVectorsInShuffledInMemoryData) {
+  StreamingGenericDatasetLoaderTests::setUp("mock2.txt");
   auto shuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto in_memory_data = shuffled_pipeline.loadInMemory();
   assertCorrectVectors(in_memory_data);
@@ -258,6 +272,7 @@ TEST_F(StreamingGenericDatasetLoaderTests,
 
 TEST_F(StreamingGenericDatasetLoaderTests,
        CorrectVectorsInShuffledStreamedData) {
+  StreamingGenericDatasetLoaderTests::setUp("mock3.txt");
   auto shuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto streamed_data = streamToInMemoryDataset(std::move(shuffled_pipeline));
   assertCorrectVectors(streamed_data);
@@ -266,6 +281,7 @@ TEST_F(StreamingGenericDatasetLoaderTests,
 
 TEST_F(StreamingGenericDatasetLoaderTests,
        ShuffledInMemoryDataSameSeedSameOrder) {
+  StreamingGenericDatasetLoaderTests::setUp("mock4.txt");
   uint32_t seed = 10;
   auto shuffled_pipeline_1 = makeMockPipeline(/* shuffle = */ true, seed);
   auto shuffled_pipeline_2 = makeMockPipeline(/* shuffle = */ true, seed);
@@ -276,6 +292,7 @@ TEST_F(StreamingGenericDatasetLoaderTests,
 
 TEST_F(StreamingGenericDatasetLoaderTests,
        ShuffledStreamedDataSameSeedSameOrder) {
+  StreamingGenericDatasetLoaderTests::setUp("mock5.txt");
   uint32_t seed = 10;
   auto shuffled_pipeline_1 = makeMockPipeline(/* shuffle = */ true, seed);
   auto shuffled_pipeline_2 = makeMockPipeline(/* shuffle = */ true, seed);
@@ -288,6 +305,7 @@ TEST_F(StreamingGenericDatasetLoaderTests,
 
 TEST_F(StreamingGenericDatasetLoaderTests,
        ShuffledInMemoryDataDifferentSeedDifferentOrder) {
+  StreamingGenericDatasetLoaderTests::setUp("mock6.txt");
   auto shuffled_pipeline_1 =
       makeMockPipeline(/* shuffle = */ true, /* seed = */ 1);
   auto shuffled_pipeline_2 =
@@ -299,6 +317,7 @@ TEST_F(StreamingGenericDatasetLoaderTests,
 
 TEST_F(StreamingGenericDatasetLoaderTests,
        ShuffledStreamedDataDifferentSeedDifferentOrder) {
+  StreamingGenericDatasetLoaderTests::setUp("mock7.txt");
   auto shuffled_pipeline_1 =
       makeMockPipeline(/* shuffle = */ true, /* seed = */ 1);
   auto shuffled_pipeline_2 =
@@ -312,6 +331,7 @@ TEST_F(StreamingGenericDatasetLoaderTests,
 
 TEST_F(StreamingGenericDatasetLoaderTests,
        ShuffledInMemoryDataIsShuffledEnough) {
+  StreamingGenericDatasetLoaderTests::setUp("mock8.txt");
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto in_memory_data = unshuffled_pipeline.loadInMemory();
   assertShuffledEnough(in_memory_data);
@@ -319,6 +339,7 @@ TEST_F(StreamingGenericDatasetLoaderTests,
 
 TEST_F(StreamingGenericDatasetLoaderTests,
        ShuffledStreamedDataIsShuffledEnough) {
+  StreamingGenericDatasetLoaderTests::setUp("mock9.txt");
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto streamed_data = streamToInMemoryDataset(std::move(unshuffled_pipeline));
   assertShuffledEnough(streamed_data);
