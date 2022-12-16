@@ -27,7 +27,7 @@ namespace thirdai::automl::models {
  * potential clients can tinker with without having to download a serialized
  * deployment config file.
  */
-class UniversalDeepTransformer : public ModelPipeline {
+class UniversalDeepTransformer final : public ModelPipeline {
   static constexpr const uint32_t DEFAULT_INFERENCE_BATCH_SIZE = 2048;
   static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;
   static constexpr const uint32_t DEFAULT_HIDDEN_DIM = 512;
@@ -55,6 +55,49 @@ class UniversalDeepTransformer : public ModelPipeline {
       uint32_t lookahead = 0, char delimiter = ',',
       const std::optional<std::string>& model_config = std::nullopt,
       const deployment::UserInputMap& options = {});
+
+  /**
+   * This wraps the predict method of the ModelPipeline to handle recusive
+   * predictions. If prediction_depth in the UDT instance is 1, then this
+   * behaves exactly as predict in the ModelPipeline. If prediction_depth > 1
+   * then this will call predict prediction_depth number of times, with the
+   *classes predicted by the previous calls to predict added as inputs to
+   *subsequent calls.
+   */
+  py::object predict(const MapInput& sample_in, bool use_sparse_inference,
+                     bool return_predicted_class) final;
+
+  py::object predict(const LineInput& sample, bool use_sparse_inference,
+                     bool return_predicted_class) final {
+    (void)sample;
+    (void)use_sparse_inference;
+    (void)return_predicted_class;
+    throw std::runtime_error(
+        "predict must be called with a dictionary of column names to values.");
+  }
+
+  /**
+   * This wraps the predictBatch method of the ModelPipeline to handle recusive
+   * predictions. If prediction_depth in the UDT instance is 1, then this
+   * behaves exactly as predictBatch in the ModelPipeline. If prediction_depth >
+   * 1 then this will call predictBatch prediction_depth number of times, with
+   * the classes predicted by the previous calls to predictBatch added as inputs
+   * to subsequent calls.
+   */
+  py::object predictBatch(const MapInputBatch& samples_in,
+                          bool use_sparse_inference,
+                          bool return_predicted_class) final;
+
+  py::object predictBatch(const LineInputBatch& samples,
+                          bool use_sparse_inference,
+                          bool return_predicted_class) final {
+    (void)samples;
+    (void)use_sparse_inference;
+    (void)return_predicted_class;
+    throw std::runtime_error(
+        "predictBatch must be called with a list of dictionaries of column "
+        "names to values.");
+  }
 
   BoltVector embeddingRepresentation(const MapInput& input) {
     auto input_vector = _dataset_factory->featurizeInput(input);
@@ -93,9 +136,17 @@ class UniversalDeepTransformer : public ModelPipeline {
     return deserialize_into;
   }
 
+  std::optional<float> getPredictionThreshold() const;
+
+  void setPredictionThreshold(float threshold);
+
  private:
-  explicit UniversalDeepTransformer(ModelPipeline&& model)
-      : ModelPipeline(model) {}
+  explicit UniversalDeepTransformer(ModelPipeline&& model,
+                                    std::string target_column,
+                                    uint32_t prediction_depth)
+      : ModelPipeline(model),
+        _target_column(std::move(target_column)),
+        _prediction_depth(prediction_depth) {}
 
   /**
    * Returns the output processor to use to create the ModelPipeline. Also
@@ -129,6 +180,7 @@ class UniversalDeepTransformer : public ModelPipeline {
     bool force_parallel = false;
     bool freeze_hash_tables = true;
     uint32_t embedding_dimension = DEFAULT_HIDDEN_DIM;
+    uint32_t prediction_depth = 1;
   };
 
   static UDTOptions processUDTOptions(
@@ -143,13 +195,22 @@ class UniversalDeepTransformer : public ModelPipeline {
         " but received value '" + given_option_value + "'.");
   }
 
+  void setPredictionAtTimestep(MapInput& sample, uint32_t step,
+                               const std::string& pred) {
+    sample[_target_column + "_" + std::to_string(step)] = pred;
+  }
+
+  std::string _target_column;
+  uint32_t _prediction_depth;
+
   // Private constructor for cereal.
   UniversalDeepTransformer() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<ModelPipeline>(this));
+    archive(cereal::base_class<ModelPipeline>(this), _target_column,
+            _prediction_depth);
   }
 };
 

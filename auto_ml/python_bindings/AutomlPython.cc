@@ -1,7 +1,9 @@
 #include "AutomlPython.h"
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <pybind11/detail/common.h>
 
 namespace thirdai::automl::python {
 
@@ -55,27 +57,20 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("parameters") = py::dict(),
            docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG,
            bolt::python::OutputRedirect())
-      .def("train_with_file", &ModelPipeline::trainOnFile, py::arg("filename"),
-           py::arg("train_config"), py::arg("batch_size") = std::nullopt,
-           py::arg("validation") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt,
-           docs::MODEL_PIPELINE_TRAIN_FILE, bolt::python::OutputRedirect())
-      .def("train_with_loader", &ModelPipeline::trainOnDataLoader,
-           py::arg("data_source"), py::arg("train_config"),
-           py::arg("validation") = std::nullopt,
+      .def("train_with_loader", &ModelPipeline::train, py::arg("data_source"),
+           py::arg("train_config"), py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
            docs::MODEL_PIPELINE_TRAIN_DATA_LOADER,
            bolt::python::OutputRedirect())
-      .def("evaluate_with_file", &ModelPipeline::evaluateOnFile,
-           py::arg("filename"), py::arg("eval_config") = std::nullopt,
-           py::arg("return_predicted_class") = false,
-           docs::MODEL_PIPELINE_EVALUATE_FILE, bolt::python::OutputRedirect())
-      .def("evaluate_with_loader", &ModelPipeline::evaluateOnDataLoader,
+      .def("evaluate_with_loader", &ModelPipeline::evaluate,
            py::arg("data_source"), py::arg("eval_config") = std::nullopt,
            py::arg("return_predicted_class") = false,
+           py::arg("return_metrics") = false,
            docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER,
            bolt::python::OutputRedirect())
-      .def("predict", &ModelPipeline::predict<LineInput>,
+      .def("predict",
+           py::overload_cast<const LineInput&, bool, bool>(
+               &ModelPipeline::predict),
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            docs::MODEL_PIPELINE_PREDICT)
@@ -85,7 +80,9 @@ void createModelsSubmodule(py::module_& module) {
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
            py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_TOKENS)
-      .def("predict_batch", &ModelPipeline::predictBatch<LineInputBatch>,
+      .def("predict_batch",
+           py::overload_cast<const LineInputBatch&, bool, bool>(
+               &ModelPipeline::predictBatch),
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false,
            docs::MODEL_PIPELINE_PREDICT_BATCH)
@@ -140,11 +137,24 @@ void createModelsSubmodule(py::module_& module) {
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
-      .def("predict", &UniversalDeepTransformer::predict<MapInput>,
+      .def("predict",
+           py::overload_cast<const MapInput&, bool, bool>(
+               &UniversalDeepTransformer::predict),
+           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
+           py::arg("return_predicted_class") = false, docs::UDT_PREDICT)
+      .def("predict",
+           py::overload_cast<const LineInput&, bool, bool>(
+               &UniversalDeepTransformer::predict),
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT)
       .def("predict_batch",
-           &UniversalDeepTransformer::predictBatch<MapInputBatch>,
+           py::overload_cast<const MapInputBatch&, bool, bool>(
+               &UniversalDeepTransformer::predictBatch),
+           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
+           py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
+      .def("predict_batch",
+           py::overload_cast<const LineInputBatch&, bool, bool>(
+               &UniversalDeepTransformer::predictBatch),
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
       .def(
@@ -154,6 +164,11 @@ void createModelsSubmodule(py::module_& module) {
                 model.embeddingRepresentation(input));
           },
           py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
+      .def("get_prediction_threshold",
+           &UniversalDeepTransformer::getPredictionThreshold)
+      .def("set_prediction_threshold",
+           &UniversalDeepTransformer::setPredictionThreshold,
+           py::arg("threshold"))
       .def("index", &UniversalDeepTransformer::updateTemporalTrackers,
            py::arg("input_sample"), docs::UDT_INDEX,
            bolt::python::OutputRedirect())
@@ -312,8 +327,8 @@ py::object predictTokensWrapper(ModelPipeline& model,
     }
     sentence << tokens[i];
   }
-  return model.predict<LineInput>(sentence.str(), use_sparse_inference,
-                                  /* return_predicted_class= */ false);
+  return model.predict(sentence.str(), use_sparse_inference,
+                       /* return_predicted_class= */ false);
 }
 
 // UDT Factory Methods

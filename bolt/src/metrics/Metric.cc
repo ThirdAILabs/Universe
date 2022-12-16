@@ -293,10 +293,17 @@ std::tuple<double, double, double> FMeasure::metrics() {
       static_cast<double>(_true_positive) / (_true_positive + _false_negative);
   double f_measure;
 
-  if (prec == 0 && recall == 0) {
+  /*
+    P = Precision
+    R = Recall
+    F = (1 + beta^2) * PR) / (beta^2 * P + R)
+  */
+  double denom = _beta_squared * prec + recall;
+
+  if (denom == 0) {
     f_measure = 0;
   } else {
-    f_measure = (2 * prec * recall) / (prec + recall);
+    f_measure = (1 + _beta_squared) * prec * recall / denom;
   }
 
   return {prec, recall, f_measure};
@@ -431,7 +438,8 @@ void CategoricalCrossEntropy::record(const BoltVector& outputs,
 }
 
 bool FMeasure::isFMeasure(const std::string& name) {
-  return std::regex_match(name, std::regex(R"(f_measure\(0\.\d+\))"));
+  return std::regex_match(name,
+                          std::regex(R"(f(\d+\.?\d*)?_measure\(0\.\d+\))"));
 }
 
 std::shared_ptr<Metric> FMeasure::make(const std::string& name) {
@@ -455,7 +463,22 @@ std::shared_ptr<Metric> FMeasure::make(const std::string& name) {
     throw std::invalid_argument(error_ss.str());
   }
 
-  return std::make_shared<FMeasure>(threshold);
+  float beta = 1.0;
+  // Name is f<optional alpha>_(<threshold>)
+  auto beta_end = name.find('_');
+  auto beta_len = beta_end - 1;
+  if (beta_len > 0) {
+    beta = std::stof(name.substr(1, beta_len));
+
+    if (beta < 0) {
+      std::stringstream error_ss;
+      error_ss << "FMeasure invoked with alpha = " << beta
+               << ". The beta should be at least 0.";
+      throw std::invalid_argument(error_ss.str());
+    }
+  }
+
+  return std::make_shared<FMeasure>(threshold, beta);
 }
 
 std::shared_ptr<Metric> makeMetric(const std::string& name) {

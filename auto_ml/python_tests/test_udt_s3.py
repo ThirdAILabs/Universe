@@ -2,7 +2,7 @@ import os
 
 import boto3
 import pytest
-from download_datasets import download_census_income
+from download_dataset_fixtures import download_census_income
 from model_test_utils import compute_evaluate_accuracy, get_udt_census_income_model
 from moto import mock_s3
 from thirdai import bolt

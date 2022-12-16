@@ -34,10 +34,11 @@ jobs:
             os: macos-12
             archs: x86_64
             deployment_target: "10.15"
-          - name: macos-arm64
-            os: macos-12
-            archs: arm64
-            deployment_target: "11.0"
+          # TODO(Josh): Add this back when we get arm64 builds working in cloud again
+          # - name: macos-arm64
+          #   os: macos-12
+          #   archs: arm64
+          #   deployment_target: "11.0"
 
 
     name: Build wheels on ${{ matrix.os }}
@@ -106,7 +107,7 @@ jobs:
           # test our distributed pipeline.
           #
           # TODO(any): A more future proof solution when stuff starts working.
-          CIBW_SKIP: "cp36-macosx_arm64 cp37-macox_arm64 cp311-*"
+          CIBW_SKIP: "cp36-* cp37-macox_arm64 cp311-*"
 
 
       - name: Upload wheels
