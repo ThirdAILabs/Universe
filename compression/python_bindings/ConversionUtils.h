@@ -63,7 +63,7 @@ convertPyListToCompressedVectors(const py::list& py_compressed_vectors) {
 
 template <class T>
 SerializedCompressedVector createNumpyArrayFromCompressedVector(
-    char* serialized_compressed_vector, uint32_t serialized_size,
+    uint32_t serialized_size, char* serialized_compressed_vector,
     CompressedVector<T> compressed_vector) {
   std::visit(
       thirdai::compression::SerializeVisitor<T>(serialized_compressed_vector),

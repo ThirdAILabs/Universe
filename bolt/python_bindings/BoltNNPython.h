@@ -99,16 +99,8 @@ class ParameterReference {
 
     char* serialized_compressed_vector = new char[serialized_size];
 
-    std::visit(thirdai::compression::SerializeVisitor<float>(
-                   serialized_compressed_vector),
-               compressed_vector);
-
-    py::capsule free_when_done(serialized_compressed_vector, [](void* ptr) {
-      delete static_cast<char*>(ptr);
-    });
-
-    return SerializedCompressedVector(
-        serialized_size, serialized_compressed_vector, free_when_done);
+    return compression::python::createNumpyArrayFromCompressedVector(
+        serialized_size, serialized_compressed_vector, compressed_vector);
   }
 
   static SerializedCompressedVector concat(
@@ -124,17 +116,9 @@ class ParameterReference {
                    concatenated_compressed_vector);
 
     char* serialized_compressed_vector = new char[serialized_size];
-
-    std::visit(thirdai::compression::SerializeVisitor<float>(
-                   serialized_compressed_vector),
-               concatenated_compressed_vector);
-
-    py::capsule free_when_done(serialized_compressed_vector, [](void* ptr) {
-      delete static_cast<char*>(ptr);
-    });
-
-    return SerializedCompressedVector(
-        serialized_size, serialized_compressed_vector, free_when_done);
+    return compression::python::createNumpyArrayFromCompressedVector(
+        serialized_size, serialized_compressed_vector,
+        concatenated_compressed_vector);
   }
 
   static SerializedCompressedVector add(
@@ -142,25 +126,17 @@ class ParameterReference {
     std::vector<FloatCompressedVector> compressed_vectors =
         thirdai::compression::python::convertPyListToCompressedVectors<float>(
             py_compressed_vectors);
-    FloatCompressedVector concatenated_compressed_vector =
+    FloatCompressedVector aggregated_compressed_vector =
         thirdai::compression::add(std::move(compressed_vectors));
 
     uint32_t serialized_size =
         std::visit(thirdai::compression::SizeVisitor<float>(),
-                   concatenated_compressed_vector);
+                   aggregated_compressed_vector);
 
     char* serialized_compressed_vector = new char[serialized_size];
-
-    std::visit(thirdai::compression::SerializeVisitor<float>(
-                   serialized_compressed_vector),
-               concatenated_compressed_vector);
-
-    py::capsule free_when_done(serialized_compressed_vector, [](void* ptr) {
-      delete static_cast<char*>(ptr);
-    });
-
-    return SerializedCompressedVector(
-        serialized_size, serialized_compressed_vector, free_when_done);
+    return compression::python::createNumpyArrayFromCompressedVector(
+        serialized_size, serialized_compressed_vector,
+        aggregated_compressed_vector);
   }
 
  private:
