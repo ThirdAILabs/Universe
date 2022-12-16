@@ -42,7 +42,7 @@ def run_clang_tidy():
     # Contains a list of (command, log_path) pairs
     commmands_to_run = []
 
-    for cc_file in get_our_files(["*.cc"]):
+    for cc_file in list(get_our_files(["*.cc"])):
         from pathlib import Path
 
         log_file_location = Path("clang_tidy_logs") / Path(cc_file).relative_to(
@@ -61,8 +61,9 @@ def run_clang_tidy():
     total_errors = 0
     # Map from log_path: process
     current_processes = {}
-    while len(commmands_to_run) > 0:
-        for log_file_location in current_processes:
+    while len(commmands_to_run) > 0 or len(current_processes) > 0:
+        current_process_keys = list(current_processes.keys())
+        for log_file_location in current_process_keys:
             process = current_processes[log_file_location]
             status = process.poll()
             if status == None:
@@ -85,7 +86,7 @@ def run_clang_tidy():
                 new_command_to_run, shell=True
             )
 
-        time.sleep(1000)
+        time.sleep(1)
 
     if total_errors > 0:
         exit(total_errors)
