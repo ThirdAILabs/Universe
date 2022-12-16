@@ -39,6 +39,7 @@ message("====================================")
 
 option(THIRDAI_REPORT_BUILD_STEP_TIMES
        "Report time using builtin for make/ninja compile-build steps" OFF)
+option(THIRDAI_BUILD_OPENSSL_FROM_SOURCE "Build OpenSSL from source" OFF)
 
 if(THIRDAI_REPORT_BUILD_STEP_TIMES)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
@@ -62,12 +63,8 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   # only communicate with the internet (keygen) in that case
   add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
   if(THIRDAI_BUILD_OPENSSL_FROM_SOURCE)
-    # build our own or use prebuilts
-
-    # set(OPENSSL_MODULES "no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine
-    # no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost
-    # no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa
-    # no-rc2 no-des" CACHE STRING "OpenSSL configure options")
+    # This path is meant to be activated only for M1 cross-compile on MacOS. Any
+    # other paths are potentially untested.
 
     # Use default compile.
     set(OPENSSL_MODULES

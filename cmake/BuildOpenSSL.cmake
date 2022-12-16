@@ -23,7 +23,7 @@
 
 # Build OpenSSL locally.
 
-# 2023 December 16: Adapted for cross-compilation use for the M1 wheel by
+# 2022 December 16: Adapted for cross-compilation use for the M1 wheel by
 # @jerin-thirdai, trimming some excess. Original source is from
 # https://github.com/viaduck/openssl-cmake/, from commit
 # 777190bc4bdda3d48de3b5dd9c804669942b2210
