@@ -2,6 +2,7 @@
 
 #include "Node.h"
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <bolt_vector/src/BoltVector.h>
 
 namespace thirdai::bolt {
 
@@ -12,10 +13,6 @@ class InferenceOutputTracker {
   // processing
   InferenceOutputTracker(const NodePtr& output_node, bool save_activations,
                          uint32_t total_num_samples);
-
-  InferenceOutputTracker(std::optional<std::vector<uint32_t>> active_neurons,
-                         std::vector<float> activations,
-                         uint32_t num_nonzeros_per_sample);
 
   void saveOutputBatch(const NodePtr& output_node, uint32_t batch_size);
 
@@ -30,6 +27,8 @@ class InferenceOutputTracker {
   uint32_t* activeNeuronsForSample(uint32_t index);
 
   float* activationsForSample(uint32_t index);
+
+  BoltVector getSampleAsNonOwningBoltVector(uint32_t index);
 
   uint32_t numNonzerosInOutput() const { return _num_nonzeros_per_sample; }
 

@@ -1,16 +1,15 @@
 classifier_train_doc = """
     Trains a UniversalDeepTransformer (UDT) on a given dataset using a file on disk
-    or on S3. If the file is on S3, it should be in the normal s3 form, i.e.
-    s3://bucket/path/to/key. We currently support csv and parquet format files.
-    If the file is parquet, it should end in .parquet or .pqt. Otherwise, we 
-    will assume it is a csv file.
+    or in a cloud storage bucket, such as s3 or google cloud storage (GCS). If the
+    file is on S3, it should be in the normal s3 form, i.e. s3://bucket/path/to/key.
+    For files in GCS, the path should have the form gcs://bucket/path/to/filename.
+    We currently support csv and parquet format files. If the file is parquet, it 
+    should end in .parquet or .pqt. Otherwise, we will assume it is a csv file.
 
     Args:
-        filename (str): Path to the dataset file. Can be a path to a file on
-            disk or an S3 resource identifier. If the filename is on S3 this
-            function will use boto3 internally to load the file (normal boto3
-            credential options apply). If multiple files match the bucket and
-            prefix, then this will train on all of them.
+        filename (str): Path to the dataset file. It Can be a path to a file on
+            disk or an S3 or GCS resource identifier. If the file is on s3 or GCS,
+            regular credentials files will be required for authentication. 
         learning_rate (float): Optional, uses default if not provided.
         epochs (int): Optional, uses default if not provided.
         validation (Optional[bolt.Validation]): This is an optional parameter that 
@@ -48,6 +47,14 @@ classifier_train_doc = """
         keep track of the last few movies that a user has watched to better 
         recommend the next movie. `model.train()` automatically updates UDT's 
         temporal context.
+        - If the prediction task is binary classification then the model will attempt 
+        to find an optimal threshold for predictions that will be used if `return_predicted_class=True`
+        is passed to calls to evaluate, predict, and predict_batch. The optimal threshold
+        will be selected based on what threshold maximizes the first validation metric
+        on the validation data. If no validation data or metrics are passed in then 
+        it will use the first 100 batches of the training data and the first training
+        metric. If there is also no training metrics then it will not choose a prediction
+        threshold. 
     """
 
 classifier_eval_doc = """
@@ -58,7 +65,8 @@ classifier_eval_doc = """
 
     Args:
         filename (str): Path to the dataset file. Like train, this can be a path
-            to a local file or a path to an S3 file.
+            to a local file or a path to a file that lives in an s3 or google cloud
+            storage (GCS) bucket. 
         metrics (List[str]): List of metrics to compute during evaluation. 
         use_sparse_inference (bool): Optional, defaults to False, determines if 
             sparse inference is used during evaluation. 

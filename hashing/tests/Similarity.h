@@ -57,6 +57,8 @@ class Similarity {
 
   /** Returns the similarity of the two sparse input vectors. */
   virtual float getSim(const SparseVector& v1, const SparseVector& v2) = 0;
+
+  virtual ~Similarity() = default;
 };
 
 }  // namespace thirdai::hashing

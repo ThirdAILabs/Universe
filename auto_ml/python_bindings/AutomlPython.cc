@@ -1,7 +1,9 @@
 #include "AutomlPython.h"
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <pybind11/detail/common.h>
 
 namespace thirdai::automl::python {
 
@@ -32,7 +34,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
-           py::arg("options") = models::OptionsMap(), docs::UDT_INIT,
+           py::arg("options") = py::dict(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
            py::arg("source_column"), py::arg("target_column"),
@@ -55,26 +57,22 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("parameters") = py::dict(),
            docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG,
            bolt::python::OutputRedirect())
-      .def("train_with_file", &ModelPipeline::trainOnFile, py::arg("filename"),
-           py::arg("train_config"), py::arg("batch_size") = std::nullopt,
-           py::arg("validation") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt,
-           docs::MODEL_PIPELINE_TRAIN_FILE, bolt::python::OutputRedirect())
-      .def("train_with_loader", &ModelPipeline::trainOnDataLoader,
-           py::arg("data_source"), py::arg("train_config"),
-           py::arg("validation") = std::nullopt,
+      .def("train_with_loader", &ModelPipeline::train, py::arg("data_source"),
+           py::arg("train_config"), py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
            docs::MODEL_PIPELINE_TRAIN_DATA_LOADER,
            bolt::python::OutputRedirect())
-      .def("evaluate_with_file", &evaluateOnFileWrapper, py::arg("filename"),
-           py::arg("eval_config") = std::nullopt,
-           docs::MODEL_PIPELINE_EVALUATE_FILE, bolt::python::OutputRedirect())
-      .def("evaluate_with_loader", &evaluateOnDataLoaderWrapper,
+      .def("evaluate_with_loader", &ModelPipeline::evaluate,
            py::arg("data_source"), py::arg("eval_config") = std::nullopt,
+           py::arg("return_predicted_class") = false,
+           py::arg("return_metrics") = false,
            docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER,
            bolt::python::OutputRedirect())
-      .def("predict", &predictWrapper<ModelPipeline, LineInput>,
+      .def("predict",
+           py::overload_cast<const LineInput&, bool, bool>(
+               &ModelPipeline::predict),
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
+           py::arg("return_predicted_class") = false,
            docs::MODEL_PIPELINE_PREDICT)
       .def("explain", &ModelPipeline::explain<LineInput>,
            py::arg("input_sample"), py::arg("target_class") = std::nullopt,
@@ -82,8 +80,11 @@ void createModelsSubmodule(py::module_& module) {
       .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
            py::arg("use_sparse_inference") = false,
            docs::MODEL_PIPELINE_PREDICT_TOKENS)
-      .def("predict_batch", &predictBatchWrapper<ModelPipeline, LineInputBatch>,
+      .def("predict_batch",
+           py::overload_cast<const LineInputBatch&, bool, bool>(
+               &ModelPipeline::predictBatch),
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
+           py::arg("return_predicted_class") = false,
            docs::MODEL_PIPELINE_PREDICT_BATCH)
       .def("save", &ModelPipeline::save, py::arg("filename"),
            docs::MODEL_PIPELINE_SAVE)
@@ -132,24 +133,42 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
-           py::arg("options") = models::OptionsMap(), docs::UDT_INIT,
+           py::arg("options") = deployment::UserInputMap{}, docs::UDT_INIT,
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
-      .def("predict", &predictWrapper<UniversalDeepTransformer, MapInput>,
+      .def("predict",
+           py::overload_cast<const MapInput&, bool, bool>(
+               &UniversalDeepTransformer::predict),
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
-           docs::UDT_PREDICT)
+           py::arg("return_predicted_class") = false, docs::UDT_PREDICT)
+      .def("predict",
+           py::overload_cast<const LineInput&, bool, bool>(
+               &UniversalDeepTransformer::predict),
+           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
+           py::arg("return_predicted_class") = false, docs::UDT_PREDICT)
       .def("predict_batch",
-           &predictBatchWrapper<UniversalDeepTransformer, MapInputBatch>,
+           py::overload_cast<const MapInputBatch&, bool, bool>(
+               &UniversalDeepTransformer::predictBatch),
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
-           docs::UDT_PREDICT_BATCH)
+           py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
+      .def("predict_batch",
+           py::overload_cast<const LineInputBatch&, bool, bool>(
+               &UniversalDeepTransformer::predictBatch),
+           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
+           py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
       .def(
           "embedding_representation",
           [](UniversalDeepTransformer& model, const MapInput& input) {
-            return convertBoltVectorToNumpy(
+            return models::convertBoltVectorToNumpy(
                 model.embeddingRepresentation(input));
           },
           py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
+      .def("get_prediction_threshold",
+           &UniversalDeepTransformer::getPredictionThreshold)
+      .def("set_prediction_threshold",
+           &UniversalDeepTransformer::setPredictionThreshold,
+           py::arg("threshold"))
       .def("index", &UniversalDeepTransformer::updateTemporalTrackers,
            py::arg("input_sample"), docs::UDT_INDEX,
            bolt::python::OutputRedirect())
@@ -251,8 +270,7 @@ void createUDTTemporalSubmodule(py::module_& module) {
                              docs::UDT_NUMERICAL_TEMPORAL);
 }
 
-ModelPipeline createPipeline(const deployment::DeploymentConfigPtr& config,
-                             const py::dict& parameters) {
+deployment::UserInputMap createUserInputMap(const py::dict& parameters) {
   deployment::UserInputMap cpp_parameters;
   for (const auto& [k, v] : parameters) {
     if (!py::isinstance<py::str>(k)) {
@@ -283,6 +301,12 @@ ModelPipeline createPipeline(const deployment::DeploymentConfigPtr& config,
     }
   }
 
+  return cpp_parameters;
+}
+
+ModelPipeline createPipeline(const deployment::DeploymentConfigPtr& config,
+                             const py::dict& parameters) {
+  deployment::UserInputMap cpp_parameters = createUserInputMap(parameters);
   return ModelPipeline::make(config, cpp_parameters);
 }
 
@@ -291,33 +315,6 @@ ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
   auto config = deployment::DeploymentConfig::load(config_path);
 
   return createPipeline(config, parameters);
-}
-
-py::object evaluateOnDataLoaderWrapper(
-    ModelPipeline& model,
-    const std::shared_ptr<dataset::DataLoader>& data_source,
-    std::optional<bolt::EvalConfig>& eval_config) {
-  auto output = model.evaluate(data_source, eval_config);
-
-  return convertInferenceTrackerToNumpy(output);
-}
-
-py::object evaluateOnFileWrapper(ModelPipeline& model,
-                                 const std::string& filename,
-                                 std::optional<bolt::EvalConfig>& eval_config) {
-  return evaluateOnDataLoaderWrapper(
-      model,
-      dataset::SimpleFileDataLoader::make(filename,
-                                          models::DEFAULT_EVALUATE_BATCH_SIZE),
-      eval_config);
-}
-
-template <typename Model, typename InputType>
-py::object predictWrapper(Model& model, const InputType& sample,
-                          bool use_sparse_inference) {
-  BoltVector output =
-      model.template predict<InputType>(sample, use_sparse_inference);
-  return convertBoltVectorToNumpy(output);
 }
 
 py::object predictTokensWrapper(ModelPipeline& model,
@@ -330,16 +327,8 @@ py::object predictTokensWrapper(ModelPipeline& model,
     }
     sentence << tokens[i];
   }
-  return predictWrapper(model, sentence.str(), use_sparse_inference);
-}
-
-template <typename Model, typename InputBatchType>
-py::object predictBatchWrapper(Model& model, const InputBatchType& samples,
-                               bool use_sparse_inference) {
-  BoltBatch outputs = model.template predictBatch<InputBatchType>(
-      samples, use_sparse_inference);
-
-  return convertBoltBatchToNumpy(outputs);
+  return model.predict(sentence.str(), use_sparse_inference,
+                       /* return_predicted_class= */ false);
 }
 
 // UDT Factory Methods
@@ -360,7 +349,7 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
     std::string target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    const std::unordered_map<std::string, std::string>& options) {
+    const py::dict& options) {
   (void)obj;
   return UniversalDeepTransformer::buildUDT(
       /* data_types = */ std::move(data_types),
@@ -372,7 +361,7 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
       /* time_granularity = */ std::move(time_granularity),
       /* lookahead = */ lookahead, /* delimiter = */ delimiter,
       /* model_config= */ model_config,
-      /* options = */ options);
+      /* options = */ createUserInputMap(options));
 }
 
 void UDTFactory::save_classifier(const UniversalDeepTransformer& classifier,
@@ -407,94 +396,6 @@ py::object UDTFactory::load(const std::string& filename) {
   }
 
   throw std::invalid_argument("Found an invalid header byte in the saved file");
-}
-
-template <typename T>
-using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
-
-py::object convertInferenceTrackerToNumpy(
-    bolt::InferenceOutputTracker& output) {
-  uint32_t num_samples = output.numSamples();
-  uint32_t inference_dim = output.numNonzerosInOutput();
-
-  const uint32_t* active_neurons_ptr = output.getNonowningActiveNeuronPointer();
-  const float* activations_ptr = output.getNonowningActivationPointer();
-
-  py::object output_handle = py::cast(std::move(output));
-
-  NumpyArray<float> activations_array(
-      /* shape= */ {num_samples, inference_dim},
-      /* strides= */ {inference_dim * sizeof(float), sizeof(float)},
-      /* ptr= */ activations_ptr, /* base= */ output_handle);
-
-  if (!active_neurons_ptr) {
-    return py::object(std::move(activations_array));
-  }
-
-  // See comment above activations_array for the python memory reasons behind
-  // passing in active_neuron_handle
-  NumpyArray<uint32_t> active_neurons_array(
-      /* shape= */ {num_samples, inference_dim},
-      /* strides= */ {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
-      /* ptr= */ active_neurons_ptr, /* base= */ output_handle);
-
-  return py::make_tuple(std::move(activations_array),
-                        std::move(active_neurons_array));
-}
-
-py::object convertBoltVectorToNumpy(const BoltVector& vector) {
-  NumpyArray<float> activations_array(vector.len);
-  std::copy(vector.activations, vector.activations + vector.len,
-            activations_array.mutable_data());
-
-  if (vector.isDense()) {
-    return py::object(std::move(activations_array));
-  }
-
-  NumpyArray<uint32_t> active_neurons_array(vector.len);
-  std::copy(vector.active_neurons, vector.active_neurons + vector.len,
-            active_neurons_array.mutable_data());
-
-  return py::make_tuple(active_neurons_array, activations_array);
-}
-
-py::object convertBoltBatchToNumpy(const BoltBatch& batch) {
-  uint32_t length = batch[0].len;
-
-  NumpyArray<float> activations_array(
-      /* shape= */ {batch.getBatchSize(), length});
-
-  std::optional<NumpyArray<uint32_t>> active_neurons_array = std::nullopt;
-  if (!batch[0].isDense()) {
-    active_neurons_array =
-        NumpyArray<uint32_t>(/* shape= */ {batch.getBatchSize(), length});
-  }
-
-  for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
-    if (batch[i].len != length) {
-      throw std::invalid_argument(
-          "Cannot convert BoltBatch without constant lengths to a numpy "
-          "array.");
-    }
-    if (batch[i].isDense() != !active_neurons_array.has_value()) {
-      throw std::invalid_argument(
-          "Cannot convert BoltBatch without constant sparsity to a numpy "
-          "array.");
-    }
-
-    std::copy(batch[i].activations, batch[i].activations + length,
-              activations_array.mutable_data() + i * length);
-    if (active_neurons_array) {
-      std::copy(batch[i].active_neurons, batch[i].active_neurons + length,
-                active_neurons_array->mutable_data() + i * length);
-    }
-  }
-
-  if (active_neurons_array) {
-    return py::make_tuple(std::move(active_neurons_array.value()),
-                          std::move(activations_array));
-  }
-  return py::object(std::move(activations_array));
 }
 
 }  // namespace thirdai::automl::python

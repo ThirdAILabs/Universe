@@ -23,32 +23,17 @@ void createUDTTemporalSubmodule(py::module_& module);
 
 // Python wrappers for ModelPipline methods
 
+deployment::UserInputMap createUserInputMap(const py::dict& parameters);
+
 ModelPipeline createPipeline(const deployment::DeploymentConfigPtr& config,
                              const py::dict& parameters);
 
 ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
                                             const py::dict& parameters);
 
-py::object evaluateOnDataLoaderWrapper(
-    ModelPipeline& model,
-    const std::shared_ptr<dataset::DataLoader>& data_source,
-    std::optional<bolt::EvalConfig>& eval_config);
-
-py::object evaluateOnFileWrapper(ModelPipeline& model,
-                                 const std::string& filename,
-                                 std::optional<bolt::EvalConfig>& eval_config);
-
-template <typename Model, typename InputType>
-py::object predictWrapper(Model& model, const InputType& sample,
-                          bool use_sparse_inference);
-
 py::object predictTokensWrapper(ModelPipeline& model,
                                 const std::vector<uint32_t>& tokens,
                                 bool use_sparse_inference);
-
-template <typename Model, typename InputBatchType>
-py::object predictBatchWrapper(Model& model, const InputBatchType& samples,
-                               bool use_sparse_inference);
 
 // UDT Factory
 class UDTFactory {
@@ -63,7 +48,7 @@ class UDTFactory {
       std::string target_col, std::optional<uint32_t> n_target_classes,
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
-      const std::unordered_map<std::string, std::string>& options);
+      const py::dict& options);
 
   // These need to be here instead of inside UDTFactory because otherwise I was
   // getting weird linking errors
@@ -78,14 +63,5 @@ class UDTFactory {
 
   static py::object load(const std::string& filename);
 };
-
-// TODO(Nicholas): Move these to central location and use as helpers here and in
-// bolt.
-//  Helper functions for numpy conversions.
-py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
-
-py::object convertBoltVectorToNumpy(const BoltVector& vector);
-
-py::object convertBoltBatchToNumpy(const BoltBatch& batch);
 
 }  // namespace thirdai::automl::python

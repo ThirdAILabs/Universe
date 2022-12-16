@@ -101,7 +101,7 @@ Returns:
 Examples:
     >>> train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     >>> model.train(
-            data_source=dataset.S3DataLoader(...), train_config=train_config, max_in_memory_batches=12
+            data_source=dataset.CSVDataLoader(...), train_config=train_config, max_in_memory_batches=12
         )
 
 )pbdoc";
@@ -115,12 +115,19 @@ Args:
     eval_config (Option[bolt.EvalConfig]): The predict config is optional
         and allows for specification of metrics to compute and whether to use sparse
         inference.
+    return_predicted_class (bool): Optional, defaults to false. When true the model
+        will output the predicted class for each sample rather than the activations 
+        of the final layer. This has no effect for regression models.
+    return_metrics (bool): Optional, defaults to false. When true, the model will
+        output the evaluation metrics rather than activations of the final layer.
+        If true, this nullifies the `return_predicted_class` argument.
 
 Returns:
-    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
-    Returns a numpy array of the activations if the output is dense, or a tuple 
-    of the active neurons and activations if the output is sparse. The shape of 
-    each array will be (dataset_length, num_nonzeros_in_output).
+    (np.ndarray or Tuple[np.ndarray, np.ndarray] or Dict): 
+    If return_metrics = True, returns a dictionary that maps metric names to their
+    values. Otherwise, returns a numpy array of the activations if the output is 
+    dense, or a tuple of the active neurons and activations if the output is sparse. 
+    The shape of each array will be (dataset_length, num_nonzeros_in_output).
 
 Examples:
     >>> eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
@@ -137,15 +144,22 @@ Args:
     eval_config (Option[bolt.EvalConfig]): The predict config is optional
         and allows for specification of metrics to compute and whether to use sparse
         inference.
+    return_predicted_class (bool): Optional, defaults to false. When true the model
+        will output the predicted class for each sample rather than the activations 
+        of the final layer. This has no effect for regression models.
+    return_metrics (bool): Optional, defaults to false. When true, the model will
+        output the evaluation metrics rather than activations of the final layer.
+        If true, this nullifies the `return_predicted_class` argument.
 
 Returns:
-    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
-    Returns a numpy array of the activations if the output is dense, or a tuple 
-    of the active neurons and activations if the output is sparse. The shape of 
-    each array will be (dataset_length, num_nonzeros_in_output).
+    (np.ndarray or Tuple[np.ndarray, np.ndarray] or Dict): 
+    If return_metrics = True, returns a dictionary that maps metric names to their
+    values. Otherwise, returns a numpy array of the activations if the output is 
+    dense, or a tuple of the active neurons and activations if the output is sparse. 
+    The shape of each array will be (dataset_length, num_nonzeros_in_output).
 
 Examples:
-    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.S3DataLoader(...))
+    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.CSVDataLoader(...))
 
 )pbdoc";
 
@@ -157,7 +171,9 @@ Args:
         same way as the dataset, and thus should be the same format as a line in 
         the dataset, except with the label columns removed.
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
-
+    return_predicted_class (bool): Optional, defaults to false. When true the model
+        will output the predicted class rather than the activations 
+        of the final layer. This has no effect for regression models.
 Returns: 
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
@@ -223,6 +239,9 @@ Args:
         be the same format as a line in the dataset, except with the label columns 
         removed.
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
+    return_predicted_class (bool): Optional, defaults to false. When true the model
+        will output the predicted class for each sample rather than the activations 
+        of the final layer. This has no effect for regression models.
 
 Returns: 
     (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
@@ -236,41 +255,6 @@ Examples:
             "The dog sat", 
             "The cow ate grass"
         ])
-
-)pbdoc";
-
-const char* const MODEL_PIPELINE_LOAD_VALIDATION_DATA = R"pbdoc(
-Loads a given dataset for validation. 
-
-Args:
-    filename (str): The validation dataset file.
-
-Returns:
-    Tuple[List[dataset.BoltDataset], dataset.BoltDataset]:
-    This function returns a tuple of input BoltDatasets and a BoltDataset for the
-    labels.
-
-Examples:
-    >>> eval_config = (
-            bolt.EvalConfig()
-            .with_metrics(["categorical_accuracy"])
-            .enable_sparse_inference()
-        )
-    >>> val_data, val_labels = model.load_validation_data("./validation_file")
-    >>> train_config = bolt.TrainConfig(
-            epochs=1, learning_rate=0.001
-        ).with_validation(
-            validation_data=val_data,
-            validation_labels=val_labels,
-            eval_config=eval_config,
-            validation_frequency=10,
-        )
-
-    >>> model.train(
-            filename="./train_file",
-            train_config=train_config,
-            batch_size=256,
-        )
 
 )pbdoc";
 
@@ -585,14 +569,16 @@ Args:
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
 
 Returns: 
-    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
+    (np.ndarray, Tuple[np.ndarray, np.ndarray], or List[int]): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
     of the active neurons and activations if the output is sparse. The shape of 
     each array will be (num_nonzeros_in_output, ). When the 
     `consecutive_integer_ids` argument of target column's categorical ColumnType
     object is set to False (as it is by default), UDT creates an internal 
     mapping between target class names and neuron ids. You can map neuron ids back to
-    target class names by calling the `class_names()` method.
+    target class names by calling the `class_names()` method. If the `prediction_depth`
+    of the model is > 1 and the task is classification then it will return a numpy array 
+    of integers indicating the predicted class for each timstamp up to `prediction_depth`.
 
 Examples:
     >>> # Suppose we configure UDT as follows:
@@ -665,14 +651,17 @@ Args:
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
 
 Returns: 
-    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
+    (np.ndarray, Tuple[np.ndarray, np.ndarray], or List[List[int]]): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
     of the active neurons and activations if the output is sparse. The shape of 
     each array will be (batch_size, num_nonzeros_in_output). When the 
     `consecutive_integer_ids` argument of target column's categorical ColumnType
     object is set to False (as it is by default), UDT creates an internal 
     mapping between target class names and neuron ids. You can map neuron ids back to
-    target class names by calling the `class_names()` method.
+    target class names by calling the `class_names()` method. If the `prediction_depth`
+    of the model is > 1 and the task is classification then it will return a numpy 
+    array of shape `(batch_size, prediction_depth)` which gives the predictions at
+    each timestep for each element in the batch.
 
 Examples:
     >>> activations = model.predict_batch([

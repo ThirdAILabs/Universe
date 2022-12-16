@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import pytest
-from download_datasets import download_brazilian_houses_dataset
+from download_dataset_fixtures import download_brazilian_houses_dataset
 from thirdai import bolt
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
@@ -12,7 +12,7 @@ MAE_THRESHOLD = 0.3
 
 def _compute_mae(predictions, inference_samples):
     labels = [y for _, y in inference_samples]
-    return np.mean(np.abs(predictions[:, 0] - labels))
+    return np.mean(np.abs(predictions - labels))
 
 
 @pytest.fixture(scope="module")
@@ -31,7 +31,7 @@ def train_udt_regression(download_brazilian_houses_dataset):
             "totalBRL": bolt.types.numerical(range=(6, 14)),
         },
         target="totalBRL",
-        options={"embedding_dimension": "100"},
+        options={"embedding_dimension": 100},
     )
 
     model.train(train_filename, epochs=20, learning_rate=0.01)

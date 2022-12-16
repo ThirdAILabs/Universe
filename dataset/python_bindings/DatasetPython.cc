@@ -235,10 +235,10 @@ void createDatasetSubmodule(py::module_& module) {
                   std::optional<std::unordered_map<uint32_t, uint32_t>>
                       col_to_num_bins = std::nullopt) {
                  return std::make_shared<TabularMetadata>(
-                     column_dtypes, col_min_maxes,
+                     std::move(column_dtypes), std::move(col_min_maxes),
                      ThreadSafeVocabulary::make(std::move(class_name_to_id),
                                                 /* fixed = */ true),
-                     column_names, col_to_num_bins);
+                     std::move(column_names), std::move(col_to_num_bins));
                }),
            py::arg("column_dtypes"), py::arg("col_min_maxes"),
            py::arg("class_name_to_id") =
@@ -268,6 +268,12 @@ void createDatasetSubmodule(py::module_& module) {
       .def("next_line", &DataLoader::nextLine)
       .def("resource_name", &DataLoader::resourceName)
       .def("restart", &DataLoader::restart);
+
+  py::class_<SimpleFileDataLoader, DataLoader,
+             std::shared_ptr<SimpleFileDataLoader>>(dataset_submodule,
+                                                    "FileDataLoader")
+      .def(py::init<const std::string&, uint32_t>(), py::arg("filename"),
+           py::arg("batch_size"));
 
   py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleBufferConfig")
       .def(py::init<size_t, uint32_t>(), py::arg("n_batches") = 1000,
