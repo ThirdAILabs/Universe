@@ -7,18 +7,25 @@ import time
 from pathlib import Path
 
 
-def get_our_files(patterns):
-    for pattern in patterns:
-        for header in Path(".").rglob(pattern):
-            header = str(header.resolve())
-            if "/deps/" in header or "/build/" in header:
-                continue
-            yield header
+# Checks whether a given filename is a dependency or in the build directory
+# (and so we should not lint it)
+def not_our_file(filename):
+    return "/deps/" in filename or "/build/" in filename
+
+
+# Returns all files that match the passed in glob pattern and that are one of
+# "our" files (not a build artifact or a dependency)
+def get_our_files(pattern):
+    for filename in Path(".").rglob(pattern):
+        filename = str(filename.resolve())
+        if not_our_file(filename):
+            continue
+        yield filename
 
 
 def pragma_once_check():
     files_that_need_pragma = []
-    for header in get_our_files(["*.h"]):
+    for header in get_our_files("*.h"):
         with open(header) as f:
             if f.readline().strip() != "#pragma once":
                 files_that_need_pragma.append(header)
@@ -36,13 +43,21 @@ def universe_dir():
     return Path(__file__).parent.parent
 
 
+# This function runs clang-tidy on all .cc files in our codebase in parallel.
+# It first gets a list of all .cc files and creates a list of clang-tidy command
+# line invocations and associated log file. Then, it runs up to max_concurrent
+# of the commands in parallel and monitors for when commands finish, replacing
+# them with the next command from the list if there are any left. It keeps doing
+# that until all commands have finished. If there were errors, this function
+# exits() with the number of errors and prints the logs from each of the files
+# with errors. Otherwise, it just returns.
 def run_clang_tidy():
     # Maximum number of concurrent jobs to run
     max_concurrent = int(1.5 * multiprocessing.cpu_count())
     # Contains a list of (command, log_path) pairs
     commmands_to_run = []
 
-    for cc_file in list(get_our_files(["*.cc"])):
+    for cc_file in list(get_our_files("*.cc")):
         from pathlib import Path
 
         log_file_location = Path("clang_tidy_logs") / Path(cc_file).relative_to(
