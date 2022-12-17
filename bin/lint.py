@@ -43,6 +43,60 @@ def universe_dir():
     return Path(__file__).parent.parent
 
 
+# Check if any processes are finished, and if so collect their status. Return
+# the sum of errors found across finished processes.
+def reap_processes(log_path_to_running_process, log_paths):
+    errors_found = 0
+    for log_path in log_paths:
+        process = log_path_to_running_process[log_path]
+        status = process.poll()
+        if status == None:
+            continue
+
+        errors_found += status
+        print(f"Found {status} errors for file with log path {log_path}.")
+        if status > 0:
+            with open(log_path) as f:
+                print(f.read())
+
+        log_path_to_running_process.pop(log_path)
+    return errors_found
+
+
+# Starts new processes from commands_to_run (and pops them from the list) if
+# there is enough room in the number of current processes running
+def try_starting_new_processes(
+    commands_to_run, log_path_to_running_process, max_concurrent
+):
+    while (
+        len(commands_to_run) > 0 and len(log_path_to_running_process) < max_concurrent
+    ):
+        new_command_to_run, new_log_file = commands_to_run.pop()
+        print(new_command_to_run)
+        log_path_to_running_process[new_log_file] = subprocess.Popen(
+            new_command_to_run, shell=True
+        )
+
+
+# Returns a list of all (clang tidy command, log_path) pairs for all .cc file
+# we need to lint
+def get_clang_tidy_commands_to_run():
+    commands_to_run = []
+
+    for cc_file in list(get_our_files("*.cc")):
+        from pathlib import Path
+
+        log_path = Path("clang_tidy_logs") / Path(cc_file).relative_to(
+            universe_dir()
+        ).with_suffix(".log")
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path = str(log_path.resolve())
+        commands_to_run.append(
+            (f"clang-tidy  -quiet {cc_file} > {log_path} 2>&1 ", log_path)
+        )
+    return commands_to_run
+
+
 # This function runs clang-tidy on all .cc files in our codebase in parallel.
 # It first gets a list of all .cc files and creates a list of clang-tidy command
 # line invocations and associated log file. Then, it runs up to max_concurrent
@@ -52,55 +106,22 @@ def universe_dir():
 # exits() with the number of errors and prints the logs from each of the files
 # with errors. Otherwise, it just returns.
 def run_clang_tidy():
-    # Maximum number of concurrent jobs to run
-    max_concurrent = int(1.5 * multiprocessing.cpu_count())
-    # Contains a list of (command, log_path) pairs
-    commmands_to_run = []
-
-    for cc_file in list(get_our_files("*.cc")):
-        from pathlib import Path
-
-        log_file_location = Path("clang_tidy_logs") / Path(cc_file).relative_to(
-            universe_dir()
-        ).with_suffix(".log")
-        log_file_location.parent.mkdir(parents=True, exist_ok=True)
-        log_file_location = str(log_file_location.resolve())
-        commmands_to_run.append(
-            (
-                f"clang-tidy  -quiet {cc_file} > {log_file_location} 2>&1 ",
-                log_file_location,
-            )
-        )
+    max_concurrent_jobs = int(1.5 * multiprocessing.cpu_count())
 
     # Total number of errors summed across processes
     total_errors = 0
+
     # Map from log_path: process
-    current_processes = {}
-    while len(commmands_to_run) > 0 or len(current_processes) > 0:
-        current_process_keys = list(current_processes.keys())
-        for log_file_location in current_process_keys:
-            process = current_processes[log_file_location]
-            status = process.poll()
-            if status == None:
-                continue
+    log_path_to_running_process = {}
 
-            total_errors += status
-            print(f"Found {status} errors for file with log path {log_file_location}.")
-            if status > 0:
-                with open(log_file_location) as f:
-                    print(f.read())
+    commands_to_run = get_clang_tidy_commands_to_run()
 
-            current_processes.pop(log_file_location)
-
-        while (
-            len(commmands_to_run) > 0 and len(current_processes.keys()) < max_concurrent
-        ):
-            new_command_to_run, new_log_file = commmands_to_run.pop()
-            print(new_command_to_run)
-            current_processes[new_log_file] = subprocess.Popen(
-                new_command_to_run, shell=True
-            )
-
+    while len(commands_to_run) > 0 or len(log_path_to_running_process) > 0:
+        log_paths = list(log_path_to_running_process.keys())
+        total_errors += reap_processes(log_path_to_running_process, log_paths)
+        try_starting_new_processes(
+            commands_to_run, log_path_to_running_process, max_concurrent_jobs
+        )
         time.sleep(1)
 
     if total_errors > 0:
