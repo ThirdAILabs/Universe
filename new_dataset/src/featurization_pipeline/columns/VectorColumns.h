@@ -1,6 +1,7 @@
 #pragma once
 
 #include <new_dataset/src/featurization_pipeline/Column.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 
@@ -217,6 +218,30 @@ class CppDenseArrayColumn final : public ArrayColumn<float> {
 
  private:
   std::vector<std::vector<float>> _data;
+};
+
+class CppTokenContributionColumn : public TokenContributionColumn {
+ public:
+  CppTokenContributionColumn() {}
+  explicit CppTokenContributionColumn(
+      std::vector<std::vector<Contribution<uint32_t>>> data)
+      : _data(std::move(data)) {
+    check2DArrayNonEmpty<Contribution<uint32_t>>(_data);
+  }
+
+  uint64_t numRows() const final { return _data.size(); }
+
+  typename ArrayColumn<Contribution<uint32_t>>::RowReference operator[](
+      uint64_t n) const final {
+    return {_data[n].data(), _data[n].size()};
+  }
+
+  void insert(const std::vector<Contribution<uint32_t>>& row_values) final {
+    _data.push_back(row_values);
+  }
+
+ private:
+  std::vector<std::vector<Contribution<uint32_t>>> _data;
 };
 
 }  // namespace thirdai::data::columns

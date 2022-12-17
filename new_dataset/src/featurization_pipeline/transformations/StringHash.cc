@@ -27,4 +27,7 @@ uint32_t StringHash::hash(const std::string& str) const {
   return hash;
 }
 
+void StringHash::backpropagate(
+    ContributionColumnMap& /*contribuition_columns*/) {}
+
 }  // namespace thirdai::data

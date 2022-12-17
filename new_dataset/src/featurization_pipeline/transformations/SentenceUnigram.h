@@ -53,6 +53,8 @@ class SentenceUnigram : public Transformation {
     column_map.setColumn(_output_column_name, output_column);
   }
 
+  void backpropagate(ContributionColumnMap& /*contribuition_columns*/) final {}
+
  private:
   columns::SparseArrayColumnPtr deduplicatedUnigramColumn(
       const columns::StringColumnPtr& input_column, uint32_t num_rows) {

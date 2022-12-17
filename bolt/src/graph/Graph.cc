@@ -353,6 +353,75 @@ BoltVector BoltGraph::getLabelVectorNeuronsToExplain(uint32_t required_index,
   return label_vector;
 }
 
+std::pair<std::optional<std::vector<std::vector<uint32_t>>>,
+          std::vector<std::vector<float>>>
+BoltGraph::getInputGradientsBatch(
+    std::vector<BoltBatch>&& input_data,
+    bool explain_prediction_using_highest_activation,
+    std::optional<uint32_t> neuron_to_explain) {
+  SingleBatchDatasetContext single_input_gradients_context(
+      std::move(input_data));
+
+  uint32_t batch_size = single_input_gradients_context.batchSize();
+
+  prepareToProcessBatches(/*batch_size= */ batch_size, /* use_sparsity=*/true);
+
+  verifyCanGetInputGradientSingle(single_input_gradients_context,
+                                  explain_prediction_using_highest_activation,
+                                  _output->numNonzerosInOutput());
+
+  try {
+    single_input_gradients_context.setInputs(/* batch_idx = */ 0, _inputs);
+
+    std::vector<std::vector<float>> input_dataset_grad;
+    std::vector<std::vector<uint32_t>> input_dataset_indices;
+
+    for (uint32_t vec_index = 0; vec_index < batch_size; vec_index++) {
+      BoltVector& input_vector = _inputs[0]->getOutputVector(vec_index);
+
+      std::vector<float> normalised_vec_grad(input_vector.len, 0.0);
+
+      input_vector.gradients = normalised_vec_grad.data();
+      BoltVector label_vector;
+      if (!neuron_to_explain) {
+        label_vector = getLabelVectorExplainPrediction(
+            vec_index, explain_prediction_using_highest_activation);
+      } else {
+        label_vector = getLabelVectorNeuronsToExplain(
+            /*required_index= */ *neuron_to_explain, vec_index);
+      }
+      if (!input_vector.isDense()) {
+        std::vector<uint32_t> input_vector_indices(
+            input_vector.active_neurons,
+            input_vector.active_neurons + input_vector.len);
+        input_dataset_indices.push_back(input_vector_indices);
+      }
+      resetOutputGradients(vec_index);
+      _loss->lossGradients(_output->getOutputVector(vec_index), label_vector,
+                           batch_size);
+      backpropagate(vec_index);
+      input_vector.gradients = nullptr;
+
+      for (uint32_t i = 0; i < input_vector.len; i++) {
+        if (input_vector.activations[i] != 0) {
+          normalised_vec_grad[i] /= input_vector.activations[i];
+        }
+      }
+
+      input_dataset_grad.push_back(normalised_vec_grad);
+    }
+    cleanupAfterBatchProcessing();
+    if (input_dataset_indices.empty()) {
+      return std::make_pair(std::nullopt, input_dataset_grad);
+    }
+    return std::make_pair(input_dataset_indices, input_dataset_grad);
+
+  } catch (const std::exception& e) {
+    cleanupAfterBatchProcessing();
+    throw;
+  }
+}
+
 /**
  * @brief For given input get the input gradients when backpropagated the loss
  * with respect to the mentioned label by user.

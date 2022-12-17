@@ -1,7 +1,12 @@
 #include "ColumnMap.h"
 #include <dataset/src/utils/SegmentedFeatureVector.h>
+#include <new_dataset/src/featurization_pipeline/Column.h>
+#include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <exception>
+#include <memory>
+#include <optional>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace thirdai::data {
 
@@ -22,6 +27,66 @@ ColumnMap::ColumnMap(
     num_rows = column->numRows();
   }
   _num_rows = num_rows.value();
+}
+
+ContributionColumnMap ColumnMap::getContributions(
+    const std::vector<std::string>& column_names,
+    const std::vector<std::vector<float>>& gradients,
+    const std::optional<std::vector<std::vector<uint32_t>>>& indices) {
+  auto output_columns = selectColumns(column_names);
+  if (numRows() != gradients.size()) {
+    throw std::invalid_argument(
+        "gradients size and number of rows doesn't match.");
+  }
+  std::vector<uint32_t> column_dims;
+  column_dims.push_back(0);
+  for (const auto& col : output_columns) {
+    if (auto output_dimension = col->dimension()) {
+      column_dims.push_back(output_dimension->dim + column_dims.back());
+    } else {
+      throw std::invalid_argument(
+          "Cannot convert column without dimension to get contributions.");
+    }
+  }
+  std::vector<columns::CppTokenContributionColumn> contribution_columns(
+      output_columns.size());
+  for (uint32_t vec_idx = 0; vec_idx < numRows(); vec_idx++) {
+    std::vector<std::vector<columns::Contribution<uint32_t>>>
+        contribuition_rows(output_columns.size());
+    uint32_t k = 0;
+    for (uint32_t i = 0; i < output_columns.size(); i++) {
+      if (indices) {
+        uint32_t j;
+        for (j = k; j < indices->at(vec_idx).size() &&
+                    indices->at(vec_idx)[j] < column_dims[i + 1];
+             j++) {
+          contribuition_rows[i].push_back(columns::Contribution<uint32_t>(
+              indices->at(vec_idx)[j], gradients[vec_idx][j]));
+        }
+        k = j;
+      } else {
+        uint32_t j;
+        for (j = k; j < gradients[vec_idx].size(); j++) {
+          if (j < column_dims[i + 1]) {
+            contribuition_rows[i].push_back(
+                columns::Contribution<uint32_t>(j, gradients[vec_idx][j]));
+          } else {
+            break;
+          }
+        }
+        k = j;
+      }
+      contribution_columns[i].insert(contribuition_rows[i]);
+    }
+  }
+  std::unordered_map<std::string, columns::ContibutionColumnBasePtr>
+      contribution_map;
+  for (uint32_t i = 0; i < contribution_columns.size(); i++) {
+    contribution_map[column_names[i]] =
+        std::make_shared<columns::CppTokenContributionColumn>(
+            contribution_columns[i]);
+  }
+  return ContributionColumnMap(contribution_map);
 }
 
 dataset::BoltDatasetPtr ColumnMap::convertToDataset(

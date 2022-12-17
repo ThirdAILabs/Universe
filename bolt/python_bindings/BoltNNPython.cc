@@ -427,6 +427,10 @@ That's all for now, folks! More docs coming soon :)
           "corresponding indices for sparse inputs."
           " and (1) list of gradients "
           "corresponds to the input vector.")
+      .def("get_input_gradients_batch", &BoltGraph::getInputGradientsBatch,
+           py::arg("input_data"),
+           py::arg("explain_prediction_using_highest_activation") = true,
+           py::arg("neuron_to_explain") = std::nullopt)
 #endif
       .def(
           "explain_prediction",

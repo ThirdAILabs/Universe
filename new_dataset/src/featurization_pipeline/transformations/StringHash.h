@@ -22,6 +22,8 @@ class StringHash final : public Transformation {
 
   void apply(ColumnMap& columns) final;
 
+  void backpropagate(ContributionColumnMap& contribuition_columns) final;
+
  private:
   // Private constructor for cereal.
   StringHash()

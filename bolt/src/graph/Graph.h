@@ -70,6 +70,13 @@ class BoltGraph {
       bool explain_prediction_using_highest_activation = true,
       std::optional<uint32_t> neuron_to_explain = std::nullopt);
 
+  std::pair<std::optional<std::vector<std::vector<uint32_t>>>,
+            std::vector<std::vector<float>>>
+  getInputGradientsBatch(
+      std::vector<BoltBatch>&& input_data,
+      bool explain_prediction_using_highest_activation = true,
+      std::optional<uint32_t> neuron_to_explain = std::nullopt);
+
   BoltVector predictSingle(
       std::vector<BoltVector>&& test_data, bool use_sparse_inference,
       std::optional<std::string> output_node_name = std::nullopt);

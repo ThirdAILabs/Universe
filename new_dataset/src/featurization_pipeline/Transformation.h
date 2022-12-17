@@ -2,6 +2,7 @@
 
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <memory>
+#include <optional>
 
 namespace thirdai::data {
 
@@ -18,6 +19,8 @@ namespace thirdai::data {
 class Transformation {
  public:
   virtual void apply(ColumnMap& columns) = 0;
+
+  virtual void backpropagate(ContributionColumnMap& contribuition_columns) = 0;
 
   // TODO(Nicholas/Josh): Add method for if the transformation can be
   // distributed (i.e. no state).

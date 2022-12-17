@@ -61,6 +61,8 @@ class TokenPairgram : public Transformation {
     column_map.setColumn(_output_column_name, output_column);
   }
 
+  void backpropagate(ContributionColumnMap& /*contribuition_columns*/) final {}
+
  private:
   // Private constructor for cereal.
   TokenPairgram()

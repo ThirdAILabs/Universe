@@ -283,6 +283,7 @@ set(THIRDAI_SOURCES
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
     new_dataset/src/featurization_pipeline/augmentations/ColdStartText.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc
+    new_dataset/src/featurization_pipeline/ContributionColumnMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/dataset_factories/SingleBlockDatasetFactory.cc

@@ -32,6 +32,11 @@ void BinningTransformation::apply(ColumnMap& columns) {
   columns.setColumn(_output_column_name, output_column);
 }
 
+void BinningTransformation::backpropagate(
+    ContributionColumnMap& /*contribuition_columns*/) {
+      
+    }
+
 std::optional<uint32_t> BinningTransformation::getBin(float value) const {
   if (value >= _exclusive_max_value || value < _inclusive_min_value) {
     return std::nullopt;

@@ -2,6 +2,8 @@
 #include "FeaturizationDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
 #include <new_dataset/src/featurization_pipeline/Augmentation.h>
+#include <new_dataset/src/featurization_pipeline/Column.h>
+#include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
@@ -13,6 +15,7 @@
 #include <new_dataset/src/featurization_pipeline/transformations/TabularHashedFeatures.h>
 #include <new_dataset/src/featurization_pipeline/transformations/TokenPairgram.h>
 #include <pybind11/stl.h>
+#include <memory>
 #include <optional>
 #include <string>
 
@@ -64,6 +67,18 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
                                                            "DenseArrayColumn")
       .def(py::init<const columns::NumpyArray<float>&>(), py::arg("array"),
            docs::DENSE_ARRAY_COLUMN);
+  auto contribution_columns_submodule =
+      dataset_submodule.def_submodule("contribution_columns");
+
+  py::class_<columns::ContibutionColumnBase, columns::ContibutionColumnBasePtr>(
+      contribution_columns_submodule, "ContributionColumn")
+      .def("num_rows", &columns::ContibutionColumnBase::numRows);
+
+  py::class_<columns::CppTokenContributionColumn,
+             columns::ContibutionColumnBase,
+             std::shared_ptr<columns::CppTokenContributionColumn>>(
+      contribution_columns_submodule, "TokenContributionColumn")
+      .def("num_rows", &columns::CppTokenContributionColumn::numRows);
 
   auto augmentations_submodule =
       dataset_submodule.def_submodule("augmentations");
@@ -140,9 +155,17 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
       .def("convert_to_dataset", &ColumnMap::convertToDataset,
            py::arg("columns"), py::arg("batch_size"),
            docs::COLUMN_MAP_TO_DATASET)
+      .def("get_contribution_columns", &ColumnMap::getContributions,
+           py::arg("columns"), py::arg("gradients"),
+           py::arg("indices") = std::nullopt)
       .def("num_rows", &ColumnMap::numRows)
       .def("__getitem__", &ColumnMap::getColumn)
       .def("columns", &ColumnMap::columns);
+
+  py::class_<ContributionColumnMap>(dataset_submodule, "ContributionColumnMap")
+      .def(py::init<std::unordered_map<std::string,
+                                       columns::ContibutionColumnBasePtr>>(),
+           py::arg("contribution_columns"));
 
   py::class_<FeaturizationPipeline, FeaturizationPipelinePtr>(
       dataset_submodule, "FeaturizationPipeline",

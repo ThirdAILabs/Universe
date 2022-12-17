@@ -4,6 +4,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/string.hpp>
+#include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <exception>
@@ -30,6 +31,8 @@ class BinningTransformation final : public Transformation {
         _num_bins(num_bins) {}
 
   void apply(ColumnMap& columns) final;
+
+  void backpropagate(ContributionColumnMap& contribuition_columns) final;
 
  private:
   // Private constructor for cereal.

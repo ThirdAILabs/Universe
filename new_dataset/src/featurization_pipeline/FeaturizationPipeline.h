@@ -27,6 +27,13 @@ class FeaturizationPipeline {
     return columns;
   }
 
+  ContributionColumnMap explain(ContributionColumnMap contribution_columns) {
+    for(auto& transformation: _transformations) {
+      transformation->backpropagate(contribution_columns);
+    }
+    return contribution_columns;
+  }
+
   void save(const std::string& filename) const {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);

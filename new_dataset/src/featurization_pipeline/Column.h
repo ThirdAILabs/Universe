@@ -13,6 +13,14 @@ struct DimensionInfo {
   bool is_dense;
 };
 
+template <typename T>
+struct Contribution {
+  Contribution(T value, float gradient) : value(value), gradient(gradient) {}
+  T value;
+  float gradient;
+  std::string time_frame;
+};
+
 class Column {
  public:
   virtual uint64_t numRows() const = 0;
@@ -150,5 +158,29 @@ using SparseArrayColumn = ArrayColumn<std::pair<uint32_t, float>>;
 using TokenArrayColumnPtr = std::shared_ptr<TokenArrayColumn>;
 using DenseArrayColumnPtr = std::shared_ptr<DenseArrayColumn>;
 using SparseArrayColumnPtr = std::shared_ptr<SparseArrayColumn>;
+
+class ContibutionColumnBase {
+ public:
+  virtual uint64_t numRows() const = 0;
+
+  virtual ~ContibutionColumnBase() = default;
+};
+
+using ContibutionColumnBasePtr = std::shared_ptr<ContibutionColumnBase>;
+
+template <typename T>
+class ContibutionColumn : public ContibutionColumnBase {
+ public:
+  virtual typename ArrayColumn<Contribution<T>>::RowReference operator[](
+      uint64_t n) const = 0;
+
+  virtual void insert(const std::vector<Contribution<T>>& row_values) = 0;
+
+  virtual ~ContibutionColumn() = default;
+};
+
+using TokenContributionColumn = ContibutionColumn<uint32_t>;
+
+using TokenContributionColumnPtr = std::shared_ptr<TokenContributionColumn>;
 
 }  // namespace thirdai::data::columns
