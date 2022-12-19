@@ -92,6 +92,10 @@ class FullyConnectedNode final
 
   void disableSparseParameterUpdates() final;
 
+  bool hasParameters() final { return true; }
+
+  std::string type() const final { return "fc"; }
+
  private:
   void compileImpl() final;
 
@@ -122,8 +126,6 @@ class FullyConnectedNode final
   }
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final;
-
-  std::string type() const final { return "fc"; }
 
   NodeState getState() const final;
 

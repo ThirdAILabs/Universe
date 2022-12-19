@@ -37,6 +37,8 @@ class ConcatenateNode final
 
   void initOptimizer() final {}
 
+  bool hasParameters() final { return false; }
+
  private:
   void compileImpl() final { _compiled = true; }
 
