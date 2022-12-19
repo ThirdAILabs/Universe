@@ -1,0 +1,20 @@
+
+{
+    "key": "name",
+    "values": {
+        "name": {
+            "alias": "name",
+            "type": "str",
+            "tag": "info",
+            "description": "Experiment name"
+        },
+        "experiment_id": {
+            "alias": "experiment_id",
+            "type": "str",
+            "tag": "info",
+            "description": "Experiment ID"
+        }
+    },
+    "unmatched_policy": "add",
+    "not_found_policy": "ignore"
+}

@@ -1,0 +1,11 @@
+
+benchmarks:
+  - Amazon Polarity 
+
+mlflow:
+  format: report_format.yaml
+  report_format: null
+  uri: http://thirdai:rwRp8GBNVplnLCIveMIz@ec2-184-73-150-35.compute-1.amazonaws.com
+notion:
+  page_id: e46fefa1-9c57-4d3d-86c2-9fe8192c64f0
+  token: secret_uidszsWqFwr2rcYe3VKNjOihw184E6lD0kaE8FbWfMD

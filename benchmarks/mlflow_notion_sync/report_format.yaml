@@ -1,0 +1,125 @@
+elements:
+    # -- Information about the run -- #
+    user_id:
+        alias: User
+        type: string
+        tag: info
+        description: The user ID of the user who ran the experiment.
+
+    status:
+        alias: Status
+        type: select
+        tag: info
+        description: The status of the experiment.
+        options:
+            - FINISHED
+            - RUNNING
+            - FAILED
+            - KILLED
+            - UNFINISHED
+            - SCHEDULED
+
+    start_time:
+        alias: Start Time
+        type: timestamp
+        tag: info
+        description: The time the experiment was started.
+
+    end_time:
+        alias: End Time
+        type: timestamp
+        tag: info
+        description: The time the experiment was ended.
+
+    # -- All the metrics logged during the run -- #
+    # Note: this is only final metrics
+    train_loss:
+        alias: Train Loss
+        type: float
+        tag: metrics
+        description: The training loss of the model.
+
+    accuracy:
+        alias: Accuracy
+        type: float
+        tag: metrics
+        description: The final accuracy of the model.
+
+    test_loss:
+        alias: Test Loss
+        type: float
+        tag: metrics
+        description: The test loss of the model.
+
+    # -- All the params used -- #
+    batch_size:
+        alias: Batch Size
+        type: integer
+        tag: params
+        description: The batch size of the model.
+
+    epochs:
+        alias: Epochs
+        type: integer
+        tag: params
+        description: The number of epochs to run.
+
+    lr:
+        alias: Learning Rate
+        type: float
+        tag: params
+        description: The learning rate of the model.
+
+    gamma:
+        alias: Gamma
+        type: float
+        tag: params
+        description: The gamma of the model.
+
+    # -- Tags about the run -- #
+    mlflow.runName:
+        alias: Name
+        type: string
+        tag: tags
+        description: The name of the run.
+
+    mlflow.note.content:
+        alias: Description
+        type: string
+        tag: tags
+        description: The description of the run.
+
+# Order in which the report will be populated
+order:
+    # Use the alias for each element
+    - Name
+    - User
+    - Start Time
+    - End Time
+    - Status 
+    - Train loss
+    - Accuracy
+    - Test loss
+    - Batch Size 
+    - Description 
+    - Gamma 
+    - Learning Rate 
+    - Epochs 
+
+# Declare policies
+# policies:
+#     # policy if an element not listed above is found (ignore/add)
+#     unmatched_policy:
+#         # Set this for each tag
+#         info: ignore
+#         metrics: ignore
+#         params: ignore
+#         tags: ignore
+
+#     # Policy if a listed element is not found (ignore/error)
+#     notfound_policy:
+#         # Set this for each tag
+#         info: ignore
+#         metrics: ignore
+#         params: ignore
+#         tags: ignore

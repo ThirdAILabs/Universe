@@ -1,0 +1,11 @@
+mlsync==0.1.4
+notion_client==1.0.0
+python-dotenv==0.20.0
+requests==2.22.0
+PyYAML==6.0
+python-dotenv==0.20.0
+torch
+torchmetrics
+torchvision
+pytorch_lightning
+mlflow

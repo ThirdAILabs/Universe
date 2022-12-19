@@ -1,0 +1,213 @@
+{
+    "121f81b28b684772bc57ca9fffa72991": {
+        "run_uuid": {
+            "key": "run_uuid",
+            "value": "121f81b28b684772bc57ca9fffa72991",
+            "type": "<class 'str'>"
+        },
+        "experiment_id": {
+            "key": "experiment_id",
+            "value": "29",
+            "type": "<class 'str'>"
+        },
+        "User": {
+            "alias": "User",
+            "type": "string",
+            "tag": "info",
+            "description": "The user ID of the user who ran the experiment.",
+            "key": "user_id",
+            "value": "string"
+        },
+        "Status": {
+            "alias": "Status",
+            "type": "select",
+            "tag": "info",
+            "description": "The status of the experiment.",
+            "options": [
+                "FINISHED",
+                "RUNNING",
+                "FAILED",
+                "KILLED",
+                "UNFINISHED",
+                "SCHEDULED"
+            ],
+            "key": "status",
+            "value": "select"
+        },
+        "Start Time": {
+            "alias": "Start Time",
+            "type": "timestamp",
+            "tag": "info",
+            "description": "The time the experiment was started.",
+            "key": "start_time",
+            "value": "timestamp"
+        },
+        "End Time": {
+            "alias": "End Time",
+            "type": "timestamp",
+            "tag": "info",
+            "description": "The time the experiment was ended.",
+            "key": "end_time",
+            "value": "timestamp"
+        },
+        "artifact_uri": {
+            "key": "artifact_uri",
+            "value": "s3://mlflow-artifacts-199696198976/29/121f81b28b684772bc57ca9fffa72991/artifacts",
+            "type": "<class 'str'>"
+        },
+        "lifecycle_stage": {
+            "key": "lifecycle_stage",
+            "value": "active",
+            "type": "<class 'str'>"
+        },
+        "run_id": {
+            "key": "run_id",
+            "value": "121f81b28b684772bc57ca9fffa72991",
+            "type": "<class 'str'>"
+        },
+        "categorical_accuracy": {
+            "key": "categorical_accuracy",
+            "value": 0.05738298214572945,
+            "type": "<class 'float'>",
+            "data": {
+                "key": "categorical_accuracy",
+                "value": [
+                    [
+                        0.05738298214572945
+                    ]
+                ],
+                "timestamp": [
+                    1664287400128
+                ],
+                "step": [
+                    0
+                ]
+            }
+        },
+        "epoch_times": {
+            "key": "epoch_times",
+            "value": 577.0,
+            "type": "<class 'float'>",
+            "data": {
+                "key": "epoch_times",
+                "value": [
+                    [
+                        577.0
+                    ]
+                ],
+                "timestamp": [
+                    1664287399968
+                ],
+                "step": [
+                    0
+                ]
+            }
+        },
+        "test_time": {
+            "key": "test_time",
+            "value": 238515.0,
+            "type": "<class 'float'>",
+            "data": {
+                "key": "test_time",
+                "value": [
+                    [
+                        238515.0
+                    ]
+                ],
+                "timestamp": [
+                    1664287400128
+                ],
+                "step": [
+                    0
+                ]
+            }
+        },
+        "Epochs": {
+            "alias": "Epochs",
+            "type": "integer",
+            "tag": "params",
+            "description": "The number of epochs to run.",
+            "key": "epochs",
+            "value": "integer",
+            "data": null
+        },
+        "hidden_dim": {
+            "key": "hidden_dim",
+            "value": "2048",
+            "type": "<class 'str'>",
+            "data": null
+        },
+        "hidden_sparsity": {
+            "key": "hidden_sparsity",
+            "value": "0.1",
+            "type": "<class 'str'>",
+            "data": null
+        },
+        "input_dim": {
+            "key": "input_dim",
+            "value": "100000",
+            "type": "<class 'str'>",
+            "data": null
+        },
+        "learning_rate": {
+            "key": "learning_rate",
+            "value": "0.0001",
+            "type": "<class 'str'>",
+            "data": null
+        },
+        "output_dim": {
+            "key": "output_dim",
+            "value": "30224",
+            "type": "<class 'str'>",
+            "data": null
+        },
+        "output_layer_sparsity": {
+            "key": "output_layer_sparsity",
+            "value": "0.02",
+            "type": "<class 'str'>",
+            "data": null
+        },
+        "Name": {
+            "alias": "Name",
+            "type": "string",
+            "tag": "tags",
+            "description": "The name of the run.",
+            "key": "mlflow.runName",
+            "value": "string",
+            "data": null
+        },
+        "mlflow.source.git.commit": {
+            "key": "mlflow.source.git.commit",
+            "value": "5a96bd0076ddf9333dd1590b5d29f761de70b12d",
+            "type": "<class 'str'>",
+            "data": null
+        },
+        "mlflow.source.name": {
+            "key": "mlflow.source.name",
+            "value": "text_classification/run_test.py",
+            "type": "<class 'str'>",
+            "data": null
+        },
+        "mlflow.source.type": {
+            "key": "mlflow.source.type",
+            "value": "LOCAL",
+            "type": "<class 'str'>",
+            "data": null
+        },
+        "mlflow.user": {
+            "key": "mlflow.user",
+            "value": "blaise",
+            "type": "<class 'str'>",
+            "data": null
+        },
+        "uid": {
+            "alias": "id",
+            "type": "string",
+            "tag": "info",
+            "key": "id",
+            "description": "The Unique ID of the benchmark run",
+            "value": "121f81b28b684772bc57ca9fffa72991",
+            "data": null
+        }
+    }
+}
