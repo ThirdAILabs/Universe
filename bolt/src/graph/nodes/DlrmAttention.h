@@ -93,6 +93,8 @@ class DlrmAttentionNode final
 
   NodeState getState() const final;
 
+  bool hasParameters() final { return false; }
+
  private:
   template <bool FC_OUTPUT_DENSE>
   static float fcOutputEmbeddingDotProduct(const BoltVector& fc_output,
