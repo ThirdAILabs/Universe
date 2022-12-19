@@ -211,6 +211,7 @@ setup(
             "boto3",
             "s3fs",
             "gcsfs",
+            "numpy==1.23.5",
         ],
         "distributed": ["ray", "toml", "protobuf==3.19.6", "mock", "gcsfs", "s3fs"],
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
