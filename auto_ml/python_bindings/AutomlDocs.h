@@ -101,7 +101,7 @@ Returns:
 Examples:
     >>> train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     >>> model.train(
-            data_source=dataset.S3DataLoader(...), train_config=train_config, max_in_memory_batches=12
+            data_source=dataset.CSVDataLoader(...), train_config=train_config, max_in_memory_batches=12
         )
 
 )pbdoc";
@@ -159,7 +159,7 @@ Returns:
     The shape of each array will be (dataset_length, num_nonzeros_in_output).
 
 Examples:
-    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.S3DataLoader(...))
+    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.CSVDataLoader(...))
 
 )pbdoc";
 
