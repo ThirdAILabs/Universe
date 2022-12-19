@@ -32,9 +32,6 @@
 include(ProcessorCount)
 include(ExternalProject)
 
-# find packages
-find_package(Git REQUIRED)
-
 # Parallelize OpenSSL build as an external project.
 ProcessorCount(NUM_JOBS)
 
