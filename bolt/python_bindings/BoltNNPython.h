@@ -110,7 +110,6 @@ class ParameterReference {
 
   static SerializedCompressedVector add(
       const py::object& py_compressed_vectors) {
-    std::cout << "Inside add function for parameter reference" << std::endl;
     std::vector<FloatCompressedVector> compressed_vectors =
         thirdai::compression::python::convertPyListToCompressedVectors<float>(
             py_compressed_vectors);

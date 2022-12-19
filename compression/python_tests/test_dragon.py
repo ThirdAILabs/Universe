@@ -85,6 +85,8 @@ def test_concat_values_dragon_vector():
             assert 2 * old_first_layer_weights[i] == new_first_layer_weights[i]
 
 
+# The estimation of a DragonVector does not change on adding with an identical
+# DragonVector
 def test_add_dragon_vector():
     model = build_simple_hidden_layer_model(
         input_dim=INPUT_DIM, hidden_dim=HIDDEN_DIM, output_dim=OUTPUT_DIM
@@ -105,7 +107,6 @@ def test_add_dragon_vector():
     first_layer.weights.set(aggregated_weights)
 
     new_first_layer_weights = first_layer.weights.copy().flatten()
-    print("omae omae")
     for i, values in enumerate(new_first_layer_weights):
         if values != 0:
             assert old_first_layer_weights[i] == new_first_layer_weights[i]
