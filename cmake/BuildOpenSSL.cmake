@@ -35,15 +35,6 @@ include(ExternalProject)
 # find packages
 find_package(Git REQUIRED)
 
-# # used to apply various patches to OpenSSL
-find_program(PATCH_PROGRAM patch)
-if(NOT PATCH_PROGRAM)
-  message(
-    FATAL_ERROR
-      "Cannot find patch utility. This is only required for Android cross-compilation but due to script complexity "
-      "the requirement is always enforced")
-endif()
-
 # Parallelize OpenSSL build as an external project.
 ProcessorCount(NUM_JOBS)
 
@@ -142,57 +133,4 @@ else()
     LOG_INSTALL 1
     DOWNLOAD_NO_PROGRESS 1
     BUILD_IN_SOURCE 1)
-
-  # set git config values to openssl requirements (no impact on linux though)
-  ExternalProject_Add_Step(
-    openssl setGitConfig
-    COMMAND ${GIT_EXECUTABLE} config --global core.autocrlf false
-    COMMAND ${GIT_EXECUTABLE} config --global core.eol lf
-    DEPENDEES
-    DEPENDERS download
-    ALWAYS ON)
-
-  # set, don't abort if it fails (due to variables being empty). To realize this
-  # we must only call git if the configs are set globally, otherwise do a no-op
-  # command ("echo 1", since "true" is not available everywhere)
-  if(GIT_CORE_AUTOCRLF)
-    set(GIT_CORE_AUTOCRLF_CMD ${GIT_EXECUTABLE} config --global core.autocrlf
-                              ${GIT_CORE_AUTOCRLF})
-  else()
-    set(GIT_CORE_AUTOCRLF_CMD echo)
-  endif()
-  if(GIT_CORE_EOL)
-    set(GIT_CORE_EOL_CMD ${GIT_EXECUTABLE} config --global core.eol
-                         ${GIT_CORE_EOL})
-  else()
-    set(GIT_CORE_EOL_CMD echo)
-  endif()
-  #
-
-  # set git config values to previous values
-  ExternalProject_Add_Step(
-    openssl restoreGitConfig
-    # unset first (is required, since old value could be omitted, which wouldn't
-    # take any effect in "set"
-    COMMAND ${GIT_EXECUTABLE} config --global --unset core.autocrlf
-    COMMAND ${GIT_EXECUTABLE} config --global --unset core.eol
-    COMMAND ${GIT_CORE_AUTOCRLF_CMD}
-    COMMAND ${GIT_CORE_EOL_CMD}
-    DEPENDEES download
-    DEPENDERS configure
-    ALWAYS ON)
-
-  # write environment to file, is picked up by python script
-  get_cmake_property(_variableNames VARIABLES)
-  foreach(_variableName ${_variableNames})
-    if(NOT _variableName MATCHES "lines")
-      set(OUT_FILE "${OUT_FILE}${_variableName}=\"${${_variableName}}\"\n")
-    endif()
-  endforeach()
-  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/buildenv.txt ${OUT_FILE})
-
-  set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION
-                                           ${OPENSSL_LIBSSL_PATH})
-  set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION
-                                              ${OPENSSL_LIBCRYPTO_PATH})
 endif()
