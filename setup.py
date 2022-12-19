@@ -170,7 +170,7 @@ setup(
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
-    install_requires=["numpy", "typing_extensions", "pandas>=1.2.0"],
+    install_requires=["numpy==1.23.5", "typing_extensions", "pandas>=1.2.0"],
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
         # The tokenizers requirement ensures that all of the [test] depedencies are
@@ -200,7 +200,6 @@ setup(
             "gcsfs",
             "s3fs",
             "mock",
-            "numpy==1.23.5",
         ],
         "benchmark": [
             "toml",
@@ -211,7 +210,6 @@ setup(
             "boto3",
             "s3fs",
             "gcsfs",
-            "numpy==1.23.5",
         ],
         "distributed": ["ray", "toml", "protobuf==3.19.6", "mock", "gcsfs", "s3fs"],
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
