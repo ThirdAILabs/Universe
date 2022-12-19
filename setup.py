@@ -200,6 +200,7 @@ setup(
             "gcsfs",
             "s3fs",
             "mock",
+            "numpy==1.23.5",
         ],
         "benchmark": [
             "toml",
