@@ -93,14 +93,8 @@ class ParameterReference {
     FloatCompressedVector compressed_vector = thirdai::compression::compress(
         _params, static_cast<uint32_t>(_total_dim), compression_scheme,
         compression_density, seed_for_hashing, sample_population_size);
-
-    uint32_t serialized_size = std::visit(
-        thirdai::compression::SizeVisitor<float>(), compressed_vector);
-
-    char* serialized_compressed_vector = new char[serialized_size];
-
     return compression::python::createNumpyArrayFromCompressedVector(
-        serialized_size, serialized_compressed_vector, compressed_vector);
+        compressed_vector);
   }
 
   static SerializedCompressedVector concat(
@@ -110,32 +104,19 @@ class ParameterReference {
             py_compressed_vectors);
     FloatCompressedVector concatenated_compressed_vector =
         thirdai::compression::concat(std::move(compressed_vectors));
-
-    uint32_t serialized_size =
-        std::visit(thirdai::compression::SizeVisitor<float>(),
-                   concatenated_compressed_vector);
-
-    char* serialized_compressed_vector = new char[serialized_size];
     return compression::python::createNumpyArrayFromCompressedVector(
-        serialized_size, serialized_compressed_vector,
         concatenated_compressed_vector);
   }
 
   static SerializedCompressedVector add(
       const py::object& py_compressed_vectors) {
+    std::cout << "Inside add function for parameter reference" << std::endl;
     std::vector<FloatCompressedVector> compressed_vectors =
         thirdai::compression::python::convertPyListToCompressedVectors<float>(
             py_compressed_vectors);
     FloatCompressedVector aggregated_compressed_vector =
         thirdai::compression::add(std::move(compressed_vectors));
-
-    uint32_t serialized_size =
-        std::visit(thirdai::compression::SizeVisitor<float>(),
-                   aggregated_compressed_vector);
-
-    char* serialized_compressed_vector = new char[serialized_size];
     return compression::python::createNumpyArrayFromCompressedVector(
-        serialized_size, serialized_compressed_vector,
         aggregated_compressed_vector);
   }
 

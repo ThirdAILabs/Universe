@@ -51,11 +51,11 @@ class AddVisitor {
  public:
   void operator()(DragonVector<T>& vector_to_add_to,
                   const DragonVector<T>& vector_to_add) {
-    vector_to_add_to.extend(vector_to_add);
+    vector_to_add_to.add(vector_to_add);
   }
   void operator()(CountSketch<T>& vector_to_add_to,
                   const CountSketch<T>& vector_to_add) {
-    vector_to_add_to.extend(vector_to_add);
+    vector_to_add_to.add(vector_to_add);
   }
   void operator()(DragonVector<T>& vector_to_add_to,
                   const CountSketch<T>& vector_to_add) {
@@ -108,6 +108,21 @@ class SerializeVisitor {
 
  private:
   char* _serialized_data;
+};
+
+template <class T>
+class DivideVisitor {
+ public:
+  explicit DivideVisitor(uint32_t divisor) : _divisor(divisor) {}
+
+  void operator()(DragonVector<T>& dragon_vector) { (void)dragon_vector; }
+
+  void operator()(CountSketch<T>& count_sketch) {
+    count_sketch.divide(_divisor);
+  }
+
+ private:
+  uint32_t _divisor;
 };
 
 template <class T>
@@ -177,7 +192,6 @@ inline std::variant<DragonVector<T>, CountSketch<T>> add(
   }
   // We initialize a compressed vector from the first element of the input
   // vector, and then keep on extending it with the rest of the elements.
-
   std::variant<DragonVector<T>, CountSketch<T>> initial_compressed_vector(
       compressed_vectors[0]);
   size_t num_vectors = compressed_vectors.size();
@@ -185,6 +199,8 @@ inline std::variant<DragonVector<T>, CountSketch<T>> add(
     std::visit(AddVisitor<T>(), initial_compressed_vector,
                compressed_vectors[i]);
   }
+  std::visit(DivideVisitor<T>(static_cast<uint32_t>(compressed_vectors.size())),
+             initial_compressed_vector);
   return initial_compressed_vector;
 }
 }  // namespace thirdai::compression

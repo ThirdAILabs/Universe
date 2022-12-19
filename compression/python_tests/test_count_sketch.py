@@ -5,10 +5,40 @@ pytestmark = [pytest.mark.unit, pytest.mark.integration]
 import numpy as np
 from thirdai import bolt, dataset
 
-from utils import compressed_training
+from utils import build_simple_hidden_layer_model, compressed_training
 
 LEARNING_RATE = 0.002
 ACCURACY_THRESHOLD = 0.8
+
+INPUT_DIM = 10
+HIDDEN_DIM = 10
+OUTPUT_DIM = 10
+
+
+def test_add_count_sketch():
+    model = build_simple_hidden_layer_model(
+        input_dim=INPUT_DIM, hidden_dim=HIDDEN_DIM, output_dim=OUTPUT_DIM
+    )
+    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
+
+    first_layer = model.get_layer("fc_1")
+    old_first_layer_weights = first_layer.weights.copy().flatten()
+
+    # getting the compressed gradients
+    compressed_weights = first_layer.weights.compress(
+        compression_scheme="count_sketch",
+        compression_density=0.3,
+        seed_for_hashing=1,
+        sample_population_size=1,
+    )
+    aggregated_weights = bolt.nn.ParameterReference.add([compressed_weights])
+    first_layer.weights.set(aggregated_weights)
+
+    new_first_layer_weights = first_layer.weights.copy().flatten()
+    for i, values in enumerate(new_first_layer_weights):
+        if values != 0:
+            assert old_first_layer_weights[i] == new_first_layer_weights[i]
+
 
 # Tests compressed training by compressing and decompressing weights between
 # every batch update

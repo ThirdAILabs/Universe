@@ -52,6 +52,8 @@ class CountSketch final : public CompressedVector<T> {
 
   void add(const CountSketch<T>& other_sketch);
 
+  void divide(uint32_t divisor);
+
   uint32_t numSketches() const;
 
   uint32_t size() const final;
