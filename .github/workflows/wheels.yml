@@ -14,7 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main, "jp_wheel-build-improvs"]
+    branches: [main]
   release:
     types:
       - published
