@@ -1,0 +1,102 @@
+#include "LayerConfig.h"
+
+namespace thirdai::bolt {
+
+static void checkSparsity(float sparsity) {
+  if (sparsity > 1 || sparsity <= 0) {
+    throw std::invalid_argument(
+        "sparsity must be between 0 exclusive and 1 inclusive.");
+  }
+  if (0.2 < sparsity && sparsity < 1.0) {
+    std::cout << "WARNING: Using large sparsity value " << sparsity
+              << " in Layer, consider decreasing sparsity" << std::endl;
+  }
+}
+
+FullyConnectedLayerConfig::FullyConnectedLayerConfig(
+    uint64_t dim, float sparsity, const std::string& activation,
+    SamplingConfigPtr sampling_config)
+    : _dim(dim),
+      _sparsity(sparsity),
+      _activation_fn(getActivationFunction(activation)),
+      _sampling_config(std::move(sampling_config)) {
+  if (_sparsity <= 0.0 || _sparsity > 1.0) {
+    throw std::invalid_argument(
+        "Layer sparsity must be in the range (0.0, 1.0].");
+  }
+
+  if (_sparsity < 1.0 && !_sampling_config) {
+    throw std::invalid_argument(
+        "SamplingConfig cannot be provided as null if sparsity < 1.0.");
+  }
+}
+
+ConvLayerConfig::ConvLayerConfig(uint64_t _num_filters, float _sparsity,
+                                 ActivationFunction _act_func,
+                                 SamplingConfigPtr _config,
+                                 std::pair<uint32_t, uint32_t> _kernel_size,
+                                 uint32_t _num_patches)
+    : num_filters(_num_filters),
+      sparsity(_sparsity),
+      act_func(_act_func),
+      sampling_config(std::move(_config)),
+      kernel_size(std::move(_kernel_size)),
+      num_patches(_num_patches) {
+  checkSparsity(sparsity);
+}
+
+ConvLayerConfig::ConvLayerConfig(uint64_t _num_filters, float _sparsity,
+                                 ActivationFunction _act_func,
+                                 std::pair<uint32_t, uint32_t> _kernel_size,
+                                 uint32_t _num_patches)
+    : num_filters(_num_filters),
+      sparsity(_sparsity),
+      act_func(_act_func),
+      kernel_size(std::move(_kernel_size)),
+      num_patches(_num_patches) {
+  checkSparsity(sparsity);
+  if (sparsity < 1.0) {
+    uint32_t rp = (static_cast<uint32_t>(log2(num_filters)) / 3) * 3;
+    uint32_t k = rp / 3;
+    uint32_t rs = (num_filters * 4) / (1 << rp);
+    uint32_t l = sparsity < 0.1 ? 256 : 64;
+    sampling_config = std::make_unique<DWTASamplingConfig>(
+        /*num_tables= */ l,
+        /* hashes_per_table= */ k, rs);
+  } else {
+    sampling_config = nullptr;
+  }
+}
+
+EmbeddingLayerConfig::EmbeddingLayerConfig(
+    uint32_t num_embedding_lookups, uint32_t lookup_size,
+    uint32_t log_embedding_block_size, const std::string& reduction,
+    std::optional<uint32_t> num_tokens_per_input)
+    : _num_embedding_lookups(num_embedding_lookups),
+      _lookup_size(lookup_size),
+      _log_embedding_block_size(log_embedding_block_size),
+      _reduction(getReductionType(reduction)),
+      _num_tokens_per_input(num_tokens_per_input) {
+  if (_reduction == EmbeddingReductionType::CONCATENATION &&
+      !_num_tokens_per_input) {
+    throw std::invalid_argument(
+        "Cannot construct embedding layer with concatenation reduction "
+        "without specifying num_tokens_per_input.");
+  }
+}
+
+EmbeddingReductionType EmbeddingLayerConfig::getReductionType(
+    const std::string& reduction_name) {
+  std::string lower_name = utils::lower(reduction_name);
+  if (lower_name == "sum") {
+    return EmbeddingReductionType::SUM;
+  }
+  if (lower_name == "concat" || lower_name == "concatenation") {
+    return EmbeddingReductionType::CONCATENATION;
+  }
+  throw std::invalid_argument(
+      "Invalid embedding reduction time '" + reduction_name +
+      "', supported options are 'sum' or 'concat'/'concatenation'");
+}
+
+}  // namespace thirdai::bolt

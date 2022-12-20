@@ -63,18 +63,12 @@ class TrainStateManager:
 
         # We initialize the sum of gradient variables by setting them equal to the
         # first set of gradients
-        self.gradient_averages = [
-            np.array(gradients_list[0][i]) for i in range(len(gradients_list[0]))
-        ]
+        self.gradient_averages = np.array(gradients_list[0])
 
         for worker_id in range(1, len(gradients_list)):
-            for gradient_id in range(len(self.gradient_averages)):
-                self.gradient_averages[gradient_id] += gradients_list[worker_id][
-                    gradient_id
-                ]
+            self.gradient_averages += gradients_list[worker_id]
 
-        for gradient_id in range(len(self.gradient_averages)):
-            self.gradient_averages[gradient_id] /= len(self.workers)
+        self.gradient_averages /= len(self.workers)
 
         # Here we are putting the references for averaged gradients in the ray plasma store.
         # This allows us to do just a single copy of the gradient array to shared disk, instead
@@ -86,6 +80,36 @@ class TrainStateManager:
                 for worker in self.workers
             ]
         )
+
+    def run_circular_cluster_communication(self):
+        """
+        This function first call the workers to compute the gradients on their network
+        and then implements Baidu's All Ring All Reduce algorithm for communication.
+        Read more about that here:
+        https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/.
+        """
+
+        num_workers = len(self.workers)
+
+        # TODO(Pratik): Clean up this function. It is unclear what update_id
+        # is, and the input to process_ring has a strange interaction between
+        # reduce and should_avg_gradients. Maybe we can make this an enum,
+        # something like [DONT_REDUCE, REDUCE, REDUCE_AND_AVERAGE_GRADIENTS].
+        for update_id, reduce in [
+            (num_workers, True),
+            (num_workers + 1, False),
+        ]:
+            for node in range(num_workers - 1):
+                should_avg_gradients = node == num_workers - 2
+                ray.get(
+                    [
+                        worker.process_ring.remote(
+                            update_id, avg_gradients=should_avg_gradients, reduce=reduce
+                        )
+                        for worker in self.workers
+                    ]
+                )
+                update_id -= 1
 
     def train_batch(self, epoch):
         """
@@ -126,11 +150,7 @@ class TrainStateManager:
         if self.communication_type == "linear":
             self.run_linear_cluster_communication()
         elif self.communication_type == "circular":
-            ray.get(
-                self.primary_worker.run_circular_cluster_communication.remote(
-                    self.workers
-                )
-            )
+            self.run_circular_cluster_communication()
             ray.get([worker.receive_gradients.remote() for worker in self.workers])
         elif self.communication_type == "gloo":
             ray.get([worker.receive_gradients.remote() for worker in self.workers])
@@ -139,12 +159,10 @@ class TrainStateManager:
 
     def _update_parameters(self):
         """
-        Calls primary worker for updating parameters across all nodes
+        Calls each update_parameters on each worker to update parameters
         """
         start_update_parameter_time = time.time()
-        ray.get(
-            self.primary_worker.update_parameters_across_cluster.remote(self.workers)
-        )
+        ray.get([worker.update_parameters.remote() for worker in self.workers])
         self.bolt_computation_time += time.time() - start_update_parameter_time
 
     def _log_post_batch(self, epoch):

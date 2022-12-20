@@ -6,7 +6,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/variant.hpp>
 #include <bolt/src/layers/LayerConfig.h>
-#include <auto_ml/src/deployment_config/dataset_configs/udt/UDTConfig.h>
+#include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <cstdint>
 #include <optional>
 #include <sstream>
@@ -30,7 +30,7 @@ class UserParameterInput {
   explicit UserParameterInput(std::string str_val)
       : _value(std::move(str_val)) {}
 
-  explicit UserParameterInput(UDTConfigPtr udt_config)
+  explicit UserParameterInput(data::UDTConfigPtr udt_config)
       : _value(std::move(udt_config)) {}
 
   bool resolveBooleanParam(const std::string& param_name) const {
@@ -69,9 +69,9 @@ class UserParameterInput {
     }
   }
 
-  UDTConfigPtr resolveUDTConfigPtr(const std::string& param_name) const {
+  data::UDTConfigPtr resolveUDTConfigPtr(const std::string& param_name) const {
     try {
-      return std::get<UDTConfigPtr>(_value);
+      return std::get<data::UDTConfigPtr>(_value);
     } catch (const std::bad_variant_access& e) {
       throw std::invalid_argument("Expected parameter '" + param_name +
                                   "'to be of type UDTConfig.");
@@ -84,7 +84,7 @@ class UserParameterInput {
   // Private constructor for Cereal.
   UserParameterInput() {}
 
-  std::variant<bool, uint32_t, float, std::string, UDTConfigPtr> _value;
+  std::variant<bool, uint32_t, float, std::string, data::UDTConfigPtr> _value;
 
   // Private constructor for cereal.
   // UserParameterInput() {}
@@ -156,30 +156,7 @@ class OptionMappedParameter final : public HyperParameter<T> {
                                                       std::move(values));
   }
 
-  T resolve(const UserInputMap& user_specified_parameters) const final {
-    if (!user_specified_parameters.count(_option_name)) {
-      throw std::invalid_argument("UserSpecifiedParameter '" + _option_name +
-                                  "' not specified by user but is required to "
-                                  "construct ModelPipeline.");
-    }
-
-    std::string option = user_specified_parameters.at(_option_name)
-                             .resolveStringParam(_option_name);
-
-    if (!_values.count(option)) {
-      std::stringstream error;
-      error << "Invalid option '" << option << "' for '" << _option_name
-            << "'. Supported options are: [ ";
-      for (const auto& option : _values) {
-        error << "'" << option.first << "' ";
-      }
-      error << "].";
-
-      throw std::invalid_argument(error.str());
-    }
-
-    return _values.at(option);
-  }
+  T resolve(const UserInputMap& user_specified_parameters) const final;
 
  private:
   std::string _option_name;
@@ -200,7 +177,7 @@ class UserSpecifiedParameter : public HyperParameter<T> {
   static_assert(std::is_same_v<T, bool> || std::is_same_v<T, uint32_t> ||
                     std::is_same_v<T, float> ||
                     std::is_same_v<T, std::string> ||
-                    std::is_same_v<T, UDTConfigPtr>,
+                    std::is_same_v<T, data::UDTConfigPtr>,
                 "User specified parameter must be bool, uint32_t, float, "
                 "std::string, or UDTConfig");
 
@@ -212,34 +189,7 @@ class UserSpecifiedParameter : public HyperParameter<T> {
     return std::make_shared<UserSpecifiedParameter<T>>(std::move(param_name));
   }
 
-  T resolve(const UserInputMap& user_specified_parameters) const final {
-    if (!user_specified_parameters.count(_param_name)) {
-      throw std::invalid_argument("UserSpecifiedParameter '" + _param_name +
-                                  "' not specified by user but is required to "
-                                  "construct ModelPipeline.");
-    }
-
-    if constexpr (std::is_same<T, bool>::value) {
-      return user_specified_parameters.at(_param_name)
-          .resolveBooleanParam(_param_name);
-    }
-    if constexpr (std::is_same<T, uint32_t>::value) {
-      return user_specified_parameters.at(_param_name)
-          .resolveIntegerParam(_param_name);
-    }
-    if constexpr (std::is_same<T, float>::value) {
-      return user_specified_parameters.at(_param_name)
-          .resolveFloatParam(_param_name);
-    }
-    if constexpr (std::is_same<T, std::string>::value) {
-      return user_specified_parameters.at(_param_name)
-          .resolveStringParam(_param_name);
-    }
-    if constexpr (std::is_same<T, UDTConfigPtr>::value) {
-      return user_specified_parameters.at(_param_name)
-          .resolveUDTConfigPtr(_param_name);
-    }
-  }
+  T resolve(const UserInputMap& user_specified_parameters) const final;
 
  private:
   std::string _param_name;
@@ -272,19 +222,7 @@ class AutotunedSparsityParameter final : public HyperParameter<float> {
   explicit AutotunedSparsityParameter(std::string dimension_param_name)
       : _dimension_param_name(std::move(dimension_param_name)) {}
 
-  float resolve(const UserInputMap& user_specified_parameters) const final {
-    if (!user_specified_parameters.count(_dimension_param_name)) {
-      throw std::invalid_argument("UserSpecifiedParameter '" +
-                                  _dimension_param_name +
-                                  "' not specified by user but is required to "
-                                  "construct ModelPipeline.");
-    }
-
-    uint32_t dim = user_specified_parameters.at(_dimension_param_name)
-                       .resolveIntegerParam(_dimension_param_name);
-
-    return autotuneSparsity(dim);
-  }
+  float resolve(const UserInputMap& user_specified_parameters) const final;
 
   /**
    * Chooses the best sparsity for a layer of a given dimension.
@@ -294,18 +232,7 @@ class AutotunedSparsityParameter final : public HyperParameter<float> {
    * and 260. Note that the following code assums that the sparsity_values
    * vector is sorted by increasing dimension threshold.
    */
-  static float autotuneSparsity(uint32_t dim) {
-    std::vector<std::pair<uint32_t, float>> sparsity_values = {
-        {450, 1.0},   {900, 0.2},    {1800, 0.1},
-        {4000, 0.05}, {10000, 0.02}, {20000, 0.01}};
-
-    for (const auto& [dim_threshold, sparsity] : sparsity_values) {
-      if (dim < dim_threshold) {
-        return sparsity;
-      }
-    }
-    return 0.05;
-  }
+  static float autotuneSparsity(uint32_t dim);
 
  private:
   std::string _dimension_param_name;
@@ -345,38 +272,3 @@ class DatasetLabelDimensionParameter final : public HyperParameter<uint32_t> {
 };
 
 }  // namespace thirdai::automl::deployment
-
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<bool>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<uint32_t>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<float>)
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment::ConstantParameter<std::string>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<
-                     thirdai::bolt::SamplingConfigPtr>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::ConstantParameter<
-                     thirdai::automl::deployment::UDTConfigPtr>)
-
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<bool>)
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment::OptionMappedParameter<uint32_t>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<float>)
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment::OptionMappedParameter<std::string>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<
-                     thirdai::bolt::SamplingConfigPtr>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::OptionMappedParameter<
-                     thirdai::automl::deployment::UDTConfigPtr>)
-
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UserSpecifiedParameter<bool>)
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment::UserSpecifiedParameter<uint32_t>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UserSpecifiedParameter<float>)
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment::UserSpecifiedParameter<std::string>)
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::UserSpecifiedParameter<
-                     thirdai::automl::deployment::UDTConfigPtr>)
-
-CEREAL_REGISTER_TYPE(thirdai::automl::deployment::AutotunedSparsityParameter)
-
-CEREAL_REGISTER_TYPE(
-    thirdai::automl::deployment::DatasetLabelDimensionParameter)

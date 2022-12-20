@@ -24,11 +24,7 @@ class Input final : public Node {
  private:
   explicit Input(uint32_t expected_input_dim,
                  std::optional<std::pair<uint32_t, uint32_t>>
-                     num_nonzeros_range = std::nullopt)
-      : _compiled(false),
-        _input_batch(nullptr),
-        _expected_input_dim(expected_input_dim),
-        _num_nonzeros_range(std::move(num_nonzeros_range)) {}
+                     num_nonzeros_range = std::nullopt);
 
  public:
   static std::shared_ptr<Input> make(uint32_t expected_dim) {
@@ -43,15 +39,7 @@ class Input final : public Node {
   // This class does not own this memory, but we pass it in as a pointer that
   // will be stored as a field so it can be used in future method calls. It is
   // only valid until the next time cleanupAfterBatchProcessing is called.
-  void setInputs(BoltBatch* inputs) {
-    assert(inputs != nullptr);
-    inputs->verifyExpectedDimension(
-        /* expected_dimension = */ _expected_input_dim,
-        /* num_nonzeros_range = */ _num_nonzeros_range,
-        /* origin_string = */
-        "We found an Input BoltVector larger than the expected input dim");
-    _input_batch = inputs;
-  }
+  void setInputs(BoltBatch* inputs);
 
   uint32_t expectedInputDim() const { return _expected_input_dim; }
 
@@ -67,14 +55,10 @@ class Input final : public Node {
     throw std::logic_error("Should not call initOptimizer() on Input node");
   }
 
+  bool hasParameters() final { return false; }
+
  private:
-  void compileImpl() final {
-    if (_expected_input_dim == 0) {
-      throw exceptions::GraphCompilationFailure(
-          "Cannot have input layer with dimension 0.");
-    }
-    _compiled = true;
-  }
+  void compileImpl() final;
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayersImpl() const final {
@@ -82,13 +66,7 @@ class Input final : public Node {
   }
 
   void prepareForBatchProcessingImpl(uint32_t batch_size,
-                                     bool use_sparsity) final {
-    (void)batch_size;
-    (void)use_sparsity;
-    throw exceptions::NodeStateMachineError(
-        "Should never call prepareForBatchProcessing on Input (instead should "
-        "call setInputs).");
-  }
+                                     bool use_sparsity) final;
 
   uint32_t numNonzerosInOutputImpl() const final {
     throw std::logic_error(
@@ -114,55 +92,15 @@ class Input final : public Node {
 
   void cleanupAfterBatchProcessingImpl() final { _input_batch = nullptr; }
 
-  void summarizeImpl(std::stringstream& summary, bool detailed) const final {
-    (void)detailed;
-    summary << name() << " (Input): dim=" << _expected_input_dim;
-    if (_num_nonzeros_range) {
-      summary << ", num_nonzeros_range=[" << _num_nonzeros_range->first << ","
-              << _num_nonzeros_range->second << "]";
-    }
-    summary << "\n";
-  }
+  void summarizeImpl(std::stringstream& summary, bool detailed) const final;
 
   std::string type() const final { return "input"; }
 
   std::vector<NodePtr> getPredecessorsImpl() const final { return {}; }
 
-  NodeState getState() const final {
-    if (!_compiled && _input_batch == nullptr) {
-      return NodeState::PredecessorsSet;
-    }
-    if (_compiled && _input_batch == nullptr) {
-      return NodeState::Compiled;
-    }
-    if (_compiled && _input_batch != nullptr) {
-      return NodeState::PreparedForBatchProcessing;
-    }
-    throw exceptions::NodeStateMachineError(
-        "InputNode is in an invalid internal state");
-  }
+  NodeState getState() const final;
 
-  void checkDimForInput(const BoltVector& vec) const {
-    if (vec.isDense()) {
-      if (vec.len != _expected_input_dim) {
-        throw std::invalid_argument(
-            "Received dense BoltVector with dimension=" +
-            std::to_string(vec.len) + " in input layer with dimension=" +
-            std::to_string(_expected_input_dim));
-      }
-    } else {
-      for (uint32_t i = 0; i < vec.len; i++) {
-        uint32_t active_neuron = vec.active_neurons[i];
-        if (active_neuron >= _expected_input_dim) {
-          throw std::invalid_argument(
-              "Received sparse BoltVector with active_neuron=" +
-              std::to_string(active_neuron) +
-              " in input layer with dimension=" +
-              std::to_string(_expected_input_dim));
-        }
-      }
-    }
-  }
+  void checkDimForInput(const BoltVector& vec) const;
 
   // Private constructor for cereal.
   Input() : _num_nonzeros_range(std::nullopt) {}
@@ -182,5 +120,3 @@ class Input final : public Node {
 using InputPtr = std::shared_ptr<Input>;
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::Input)

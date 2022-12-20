@@ -36,35 +36,11 @@ class ModelConfig {
 
   bolt::BoltGraphPtr createModel(
       std::vector<bolt::InputPtr> inputs,
-      const UserInputMap& user_specified_parameters) const {
-    if (_input_names.size() != inputs.size()) {
-      throw std::invalid_argument(
-          "Number of inputs in model config does not match number of inputs "
-          "returned from data loader.");
-    }
+      const UserInputMap& user_specified_parameters) const;
 
-    PredecessorsMap predecessors;
-    for (uint32_t i = 0; i < _input_names.size(); i++) {
-      predecessors.insert(/* name= */ _input_names[i], /* node= */ inputs[i]);
-    }
+  void save(const std::string& filename);
 
-    for (uint32_t i = 0; i < _nodes.size() - 1; i++) {
-      auto node =
-          _nodes[i]->createNode(predecessors, user_specified_parameters);
-      predecessors.insert(/* name= */ _nodes[i]->name(), /* node= */ node);
-    }
-
-    auto output =
-        _nodes.back()->createNode(predecessors, user_specified_parameters);
-    // This is to check that there is not another node with this name.
-    predecessors.insert(/* name= */ _nodes.back()->name(), /* node= */ output);
-
-    auto model = std::make_shared<bolt::BoltGraph>(inputs, output);
-
-    model->compile(_loss);
-
-    return model;
-  }
+  static std::shared_ptr<ModelConfig> load(const std::string& filename);
 
  private:
   std::vector<std::string> _input_names;

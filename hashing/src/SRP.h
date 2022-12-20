@@ -1,4 +1,4 @@
-// #pragma once
+#pragma once
 
 #include "HashFunction.h"
 #include <cstdint>
@@ -30,7 +30,7 @@ class SparseRandomProjection final : public HashFunction {
 
   std::string getName() const final { return "SRP"; }
 
-  ~SparseRandomProjection();
+  ~SparseRandomProjection() final;
 };
 
 }  // namespace thirdai::hashing

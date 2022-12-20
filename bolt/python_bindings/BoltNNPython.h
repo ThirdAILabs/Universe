@@ -1,7 +1,10 @@
 #pragma once
 
 #include "PybindUtils.h"
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/nodes/Embedding.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <compression/python_bindings/ConversionUtils.h>
 #include <compression/src/CompressionFactory.h>
@@ -35,16 +38,24 @@ using ParameterArray =
 using SerializedCompressedVector =
     py::array_t<char, py::array::c_style | py::array::forcecast>;
 
+uint64_t static dimensionProduct(const std::vector<uint32_t>& dimensions) {
+  uint64_t product = 1;
+  for (uint32_t dim : dimensions) {
+    product *= dim;
+  }
+  return product;
+}
+
 class ParameterReference {
   using FloatCompressedVector =
       std::variant<thirdai::compression::DragonVector<float>,
                    thirdai::compression::CountSketch<float>>;
 
  public:
-  ParameterReference(float* params, std::vector<uint32_t> dimensions)
-      : _params(params), _dimensions(std::move(dimensions)) {
-    _total_dim = dimensionProduct(_dimensions);
-  }
+  ParameterReference(float* params, const std::vector<uint32_t>& dimensions)
+      : _params(params),
+        _dimensions(dimensions),
+        _total_dim(dimensionProduct(dimensions)) {}
 
   ParameterArray copy() const {
     float* params_copy = new float[_total_dim];
@@ -138,17 +149,209 @@ class ParameterReference {
   }
 
  private:
-  static uint64_t dimensionProduct(const std::vector<uint32_t>& dimensions) {
-    uint64_t product = 1;
-    for (uint32_t dim : dimensions) {
-      product *= dim;
-    }
-    return product;
-  }
-
   float* _params;
   std::vector<uint32_t> _dimensions;
   uint64_t _total_dim;
 };
+class GradientReference {
+  /**
+   * This class implements gradient references, which return flattened
+   * gradients. The gradients are flattened and stored as
+   * <node_1_bias><node_1_weights><node_2_bias><node_2_weights>. It
+   * implements two function get_gradients and set_gradients. It
+   * flattens gradients for all the nodes which have hasParameters true.
+   * If a node has parameters but implementation of how to get the flattened
+   * parameters are not in this function, this will raise an exception stating
+   * that Gradient Flattening Logic is not implemented.
+   *
+   * get_gradients: It returns the gradients as a flattened ParameterArray
+   *
+   * set_gradients: It set the gradients provided as an argument to the bolt
+   * model.
+   */
+ public:
+  static void dynamicCastFailError(NodePtr& node) {
+    std::string err = "Dynamic casting failed for " + node->type();
+    throw std::runtime_error(err);
+  }
 
+  explicit GradientReference(BoltGraph& model) : _model(model) {
+    std::vector<NodePtr> nodes = model.getNodes();
+
+    uint64_t flattened_gradients_dim = 0;
+    for (NodePtr& node : nodes) {
+      if (node->hasParameters()) {
+        if (node->type() == "embedding") {
+          EmbeddingNode* embedding_node =
+              dynamic_cast<EmbeddingNode*>(node.get());
+          if (embedding_node == NULL) {
+            dynamicCastFailError(node);
+          }
+
+          flattened_gradients_dim += static_cast<uint32_t>(
+              embedding_node->getRawEmbeddingBlockGradient().size());
+        } else if (node->type() == "fc") {
+          FullyConnectedNode* fc_node =
+              dynamic_cast<FullyConnectedNode*>(node.get());
+          if (fc_node == NULL) {
+            dynamicCastFailError(node);
+          }
+
+          flattened_gradients_dim += dimensionProduct({fc_node->outputDim()});
+          flattened_gradients_dim +=
+              dimensionProduct({fc_node->outputDim(),
+                                fc_node->getPredecessors()[0]->outputDim()});
+        } else {
+          std::string err =
+              "Gradient sharing logic is not implemented for " + node->type();
+          throw std::invalid_argument(err);
+        }
+      }
+    }
+    _flattened_gradients_dim = flattened_gradients_dim;
+  }
+
+  ParameterArray getGradients() {
+    std::vector<NodePtr> nodes = _model.getNodes();
+
+    float* flattened_gradients_copy = new float[_flattened_gradients_dim];
+    uint64_t raw_gradient_offset = 0;
+    for (NodePtr& node : nodes) {
+      if (node->hasParameters()) {
+        if (node->type() == "embedding") {
+          addEmbeddingToGradientVector(node, flattened_gradients_copy,
+                                       raw_gradient_offset);
+        } else if (node->type() == "fc") {
+          addFullyConnectedToGradientVector(node, flattened_gradients_copy,
+                                            raw_gradient_offset);
+        } else {
+          std::string err =
+              "Gradient sharing logic is not implemented for " + node->type();
+          throw std::invalid_argument(err);
+        }
+      }
+    }
+
+    py::capsule free_when_done(flattened_gradients_copy, [](void* ptr) {
+      delete static_cast<float*>(ptr);
+    });
+
+    return ParameterArray(_flattened_gradients_dim, flattened_gradients_copy,
+                          free_when_done);
+  }
+
+  void setGradients(ParameterArray& flattened_gradients) {
+    std::vector<NodePtr> nodes = _model.getNodes();
+    uint64_t raw_gradient_offset = 0;
+    for (NodePtr& node : nodes) {
+      if (node->hasParameters()) {
+        if (node->type() == "embedding") {
+          getEmbeddingFromGradientVector(node, flattened_gradients,
+                                         raw_gradient_offset);
+        } else if (node->type() == "fc") {
+          getFullyConnectedFromGradientVector(node, flattened_gradients,
+                                              raw_gradient_offset);
+        } else {
+          std::string err =
+              "Gradient sharing logic is not implemented for " + node->type();
+          throw std::invalid_argument(err);
+        }
+      }
+    }
+  }
+
+ private:
+  static void addEmbeddingToGradientVector(NodePtr& node,
+                                           float* flattened_gradients_copy,
+                                           uint64_t& raw_gradient_offset) {
+    EmbeddingNode* embedding_node = dynamic_cast<EmbeddingNode*>(node.get());
+    if (embedding_node == NULL) {
+      dynamicCastFailError(node);
+    }
+
+    std::vector<float>& raw_embedding_block_gradient =
+        embedding_node->getRawEmbeddingBlockGradient();
+
+    uint32_t embedding_layer_length =
+        static_cast<uint32_t>(raw_embedding_block_gradient.size());
+    std::copy(raw_embedding_block_gradient.data(),
+              raw_embedding_block_gradient.data() + embedding_layer_length,
+              flattened_gradients_copy + raw_gradient_offset);
+
+    raw_gradient_offset += embedding_layer_length;
+  }
+
+  static void addFullyConnectedToGradientVector(NodePtr& node,
+                                                float* flattened_gradients_copy,
+                                                uint64_t& raw_gradient_offset) {
+    FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
+    if (fc_node == NULL) {
+      dynamicCastFailError(node);
+    }
+
+    uint64_t flattened_node_bias_len = dimensionProduct({fc_node->outputDim()});
+    std::copy(fc_node->getBiasGradientsPtr(),
+              fc_node->getBiasGradientsPtr() + flattened_node_bias_len,
+              flattened_gradients_copy + raw_gradient_offset);
+
+    raw_gradient_offset += flattened_node_bias_len;
+
+    uint64_t flattened_node_weight_len = dimensionProduct(
+        {fc_node->outputDim(), fc_node->getPredecessors()[0]->outputDim()});
+    std::copy(fc_node->getWeightGradientsPtr(),
+              fc_node->getWeightGradientsPtr() + flattened_node_weight_len,
+              flattened_gradients_copy + raw_gradient_offset);
+
+    raw_gradient_offset += flattened_node_weight_len;
+  }
+
+  static void getEmbeddingFromGradientVector(
+      NodePtr& node, ParameterArray& flattened_gradients,
+      uint64_t& raw_gradient_offset) {
+    EmbeddingNode* embedding_node = dynamic_cast<EmbeddingNode*>(node.get());
+    if (embedding_node == NULL) {
+      dynamicCastFailError(node);
+    }
+
+    std::vector<float>& raw_embedding_block_gradient =
+        embedding_node->getRawEmbeddingBlockGradient();
+
+    uint32_t embedding_layer_length =
+        static_cast<uint32_t>(raw_embedding_block_gradient.size());
+    std::copy(flattened_gradients.data() + raw_gradient_offset,
+              flattened_gradients.data() + raw_gradient_offset +
+                  embedding_layer_length,
+              raw_embedding_block_gradient.data());
+
+    raw_gradient_offset += embedding_layer_length;
+  }
+
+  static void getFullyConnectedFromGradientVector(
+      NodePtr& node, ParameterArray& flattened_gradients,
+      uint64_t& raw_gradient_offset) {
+    FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
+    if (fc_node == NULL) {
+      dynamicCastFailError(node);
+    }
+
+    uint64_t flattened_node_bias_len = dimensionProduct({fc_node->outputDim()});
+    std::copy(flattened_gradients.data() + raw_gradient_offset,
+              flattened_gradients.data() + raw_gradient_offset +
+                  flattened_node_bias_len,
+              fc_node->getBiasGradientsPtr());
+
+    raw_gradient_offset += flattened_node_bias_len;
+
+    uint64_t flattened_node_weight_len = dimensionProduct(
+        {fc_node->outputDim(), fc_node->getPredecessors()[0]->outputDim()});
+    std::copy(flattened_gradients.data() + raw_gradient_offset,
+              flattened_gradients.data() + raw_gradient_offset +
+                  flattened_node_weight_len,
+              fc_node->getWeightGradientsPtr());
+
+    raw_gradient_offset += flattened_node_weight_len;
+  }
+  BoltGraph& _model;
+  uint64_t _flattened_gradients_dim;
+};
 }  // namespace thirdai::bolt::python

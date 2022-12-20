@@ -78,6 +78,8 @@ class RayTrainingClusterConfig:
         # Ray expicitly forces the OMP_NUM_THREADS in environment to 1.
         # So, we need to change the OMP_NUM_THREADS to support parallization
         num_omp_threads = str(get_num_cpus())
+        if requested_cpus_per_node != -1:
+            num_omp_threads = str(requested_cpus_per_node)
         self.logging.info("Setting OMP_NUM_THREADS to " + num_omp_threads)
 
         # We do a deepcopy here so we do not unexpectedly modify the input.
@@ -116,13 +118,12 @@ class RayTrainingClusterConfig:
             f"Using {num_cpus_to_use} cpus / node (user requested {requested_cpus_per_node})"
         )
 
-        # TODO(Josh/Pratik): investigate the correct setting for max concurrency
         self.primary_worker_config = PrimaryWorker.options(
-            num_cpus=num_cpus_to_use, max_concurrency=100
+            num_cpus=num_cpus_to_use, max_concurrency=2
         )
 
         self.replica_worker_configs = [
-            ReplicaWorker.options(num_cpus=num_cpus_to_use, max_concurrency=100)
+            ReplicaWorker.options(num_cpus=num_cpus_to_use, max_concurrency=2)
             for _ in range(self.num_workers - 1)
         ]
 

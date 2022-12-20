@@ -3,11 +3,13 @@
 #include <bolt/python_bindings/BoltPython.h>
 #include <bolt/python_bindings/CallbacksPython.h>
 #include <hashing/python_bindings/HashingPython.h>
+#include <auto_ml/python_bindings/AutomlPython.h>
 #include <auto_ml/python_bindings/DeploymentPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <new_dataset/python_bindings/DatasetPython.h>
 #include <new_dataset/python_bindings/FeaturizationPython.h>
 #include <search/python_bindings/DocSearchPython.h>
+#include <telemetry/python_bindings/TelemetryPython.h>
 #include <utils/Logging.h>
 #include <utils/Version.h>
 
@@ -18,7 +20,7 @@
 #include <pybind11/stl.h>
 
 // Licensing wrapper
-#include <wrappers/src/LicenseWrapper.h>
+#include <licensing/src/CheckLicense.h>
 
 #ifndef __clang__
 #include <omp.h>
@@ -104,10 +106,19 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 #endif
 
 #if THIRDAI_CHECK_LICENSE
-  m.def("set_thirdai_license_path",
-        &thirdai::licensing::LicenseWrapper::setLicensePath,
+  m.def("set_thirdai_license_path", &thirdai::licensing::setLicensePath,
         py::arg("license_path"),
-        "Set a license filepath for any future calls to the thirdai library.");
+        "Set a license filepath for any future calls to ThirdAI functions. "
+        "License file verification will be treated as a fallback if activate "
+        "has not been called.");
+
+  m.def("activate", &thirdai::licensing::activate, py::arg("api_key"),
+        "Set a ThirdAI API access key to authenticate future calls to ThirdAI "
+        "functions.");
+
+  m.def("deactivate", &thirdai::licensing::deactivate,
+        "Remove the currently stored ThirdAI access key. Future calls to "
+        "ThirdAI functions may fail.");
 #endif
 
   m.attr("__version__") = thirdai::version();
@@ -120,6 +131,9 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // TODO(Josh/Nick): Deprecate this call and change NewDataset/new_dataset to
   // Dataset/dataset everyone in the codebase.
   thirdai::dataset::python::createDatasetSubmodule(m);
+
+  // Telemetry submodule
+  thirdai::telemetry::python::createTelemetrySubmodule(m);
 
   // Data Submodule
   auto data_submodule = m.def_submodule("data");
@@ -134,16 +148,15 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   thirdai::bolt::python::createBoltSubmodule(bolt_submodule);
   thirdai::bolt::python::createBoltNNSubmodule(bolt_submodule);
   thirdai::bolt::python::createCallbacksSubmodule(bolt_submodule);
-  thirdai::automl::deployment::python::createUDTFactory(bolt_submodule);
 
+  // Automl in Bolt
+  thirdai::automl::python::defineAutomlInModule(bolt_submodule);
+  thirdai::automl::python::createModelsSubmodule(bolt_submodule);
+  thirdai::automl::python::createUDTTypesSubmodule(bolt_submodule);
+  thirdai::automl::python::createUDTTemporalSubmodule(bolt_submodule);
+
+  // Search Submodule
   thirdai::search::python::createSearchSubmodule(m);
-
-  // Models Submodule
-  auto models_submodule = bolt_submodule.def_submodule("models");
-  thirdai::bolt::python::createModelsSubmodule(bolt_submodule);
-  thirdai::automl::deployment::python::createModelPipeline(models_submodule);
-  thirdai::automl::deployment::python::createUDTClassifierAndGenerator(
-      models_submodule);
 
   // Deployment submodule
   thirdai::automl::deployment::python::createDeploymentSubmodule(m);

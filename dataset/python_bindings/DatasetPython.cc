@@ -235,10 +235,10 @@ void createDatasetSubmodule(py::module_& module) {
                   std::optional<std::unordered_map<uint32_t, uint32_t>>
                       col_to_num_bins = std::nullopt) {
                  return std::make_shared<TabularMetadata>(
-                     column_dtypes, col_min_maxes,
+                     std::move(column_dtypes), std::move(col_min_maxes),
                      ThreadSafeVocabulary::make(std::move(class_name_to_id),
                                                 /* fixed = */ true),
-                     column_names, col_to_num_bins);
+                     std::move(column_names), std::move(col_to_num_bins));
                }),
            py::arg("column_dtypes"), py::arg("col_min_maxes"),
            py::arg("class_name_to_id") =
@@ -268,6 +268,12 @@ void createDatasetSubmodule(py::module_& module) {
       .def("next_line", &DataLoader::nextLine)
       .def("resource_name", &DataLoader::resourceName)
       .def("restart", &DataLoader::restart);
+
+  py::class_<SimpleFileDataLoader, DataLoader,
+             std::shared_ptr<SimpleFileDataLoader>>(dataset_submodule,
+                                                    "FileDataLoader")
+      .def(py::init<const std::string&, uint32_t>(), py::arg("filename"),
+           py::arg("batch_size"));
 
   py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleBufferConfig")
       .def(py::init<size_t, uint32_t>(), py::arg("n_batches") = 1000,
@@ -333,7 +339,25 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("i"), py::return_value_policy::reference)
       .def("__len__", &BoltDataset::numBatches)
       .def("save", &BoltDataset::save, py::arg("filename"))
-      .def_static("load", &BoltDataset::load, py::arg("filename"));
+      .def_static("load", &BoltDataset::load, py::arg("filename"))
+      .def(py::init([](const py::iterable& iterable) {
+             using Batches = std::vector<BoltBatch>;
+             auto batches = iterable.cast<Batches>();
+             std::shared_ptr<BoltDataset> dataset =
+                 std::make_shared<InMemoryDataset<BoltBatch>>(
+                     std::move(batches));
+             return dataset;
+           }),
+           py::arg("batches"), R"pbdoc(
+            Construct a BoltDataset from an iterable of BoltBatches. Makes
+            copies in the process which can potentially be costly, use judiciously.
+            
+            Args: 
+                batches (Iterable[BoltBatch]): Batches
+
+            Returns:
+                BoltDataset: The constructed dataset.
+           )pbdoc");
 
   py::class_<numpy::WrappedNumpyVectors,  // NOLINT
              std::shared_ptr<numpy::WrappedNumpyVectors>, BoltDataset>(
@@ -353,7 +377,23 @@ void createDatasetSubmodule(py::module_& module) {
            static_cast<BoltVector& (BoltBatch::*)(size_t i)>(
                &BoltBatch::operator[]),
            py::arg("i"), py::return_value_policy::reference)
-      .def("__len__", &BoltBatch::getBatchSize);
+      .def("__len__", &BoltBatch::getBatchSize)
+      .def(py::init([](const py::iterable& iterable) {
+             using Vectors = std::vector<BoltVector>;
+             auto vectors = iterable.cast<Vectors>();
+             BoltBatch batch(std::move(vectors));
+             return batch;
+           }),
+           py::arg("vectors"), R"pbdoc(
+            Construct a BoltBatch from an iterable of BoltVectors. Makes copies
+            in the process which can be costly, use judiciously.
+
+            Args: 
+                vectors (Iterable[BoltVector]): BoltVectors constituting the Batch.
+
+            Returns:
+                BoltBatch: The constructed Batch.
+           )pbdoc");
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", SvmDatasetLoader::loadDatasetFromFile,

@@ -26,16 +26,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, ubuntu-20.04]
+        # TODO(Josh): Decide if we want to add windows back at all
+        # os: [windows-2019, ubuntu-20.04]
+        os: [ubuntu-20.04]
         include:
           - name: macos-x86_64
             os: macos-12
             archs: x86_64
             deployment_target: "10.15"
+            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=OFF"
           - name: macos-arm64
             os: macos-12
             archs: arm64
             deployment_target: "11.0"
+            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON -DOPENSSL_CROSS_COMPILE_MACOSX_ARM=ON"
 
 
     name: Build wheels on ${{ matrix.os }}
@@ -50,6 +54,13 @@ jobs:
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
         env:
+
+          # We need this to get Openssl1.1 working on Manylinux (which has a 
+          # CentOS base image). See
+          # https://github.com/facebook/folly/issues/1762
+          CIBW_ENVIRONMENT_LINUX: >
+            CMAKE_ARGS="-DOPENSSL_ROOT_DIR:PATH=/usr/lib64/openssl11;/usr/include/openssl11"
+
           # The following is to relax the discovery timeout (from a default 5) so that
           # cibuildwheel GitHub workflow does not timeout on test-discovery.
           # 
@@ -63,11 +74,19 @@ jobs:
               KMP_DUPLICATE_LIB_OK=TRUE
 
           CIBW_ENVIRONMENT_MACOS:
+            CMAKE_ARGS='${{ matrix.cmake_additional_args }}'
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
+            OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
+            OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
 
           # Mac and windows will use this path, since they do not run in docker
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
          
+          CIBW_BEFORE_BUILD_LINUX: >
+            yum update -y && yum clean all &&
+            yum install openssl11-devel -y
+          CIBW_BEFORE_BUILD_MACOS: brew install openssl
+
           # TODO(josh): Get cross compiling working to build more types of wheels
           # Online compile cpython wheels (pytorch does this too), no big 
           # advantage to JIT compilation of python since most of our processing
@@ -90,7 +109,7 @@ jobs:
           # test our distributed pipeline.
           #
           # TODO(any): A more future proof solution when stuff starts working.
-          CIBW_SKIP: "cp36-macosx_arm64 cp37-macox_arm64 cp311-*"
+          CIBW_SKIP: "cp36-* cp37-macox_arm64 cp311-*"
 
 
       - name: Upload wheels

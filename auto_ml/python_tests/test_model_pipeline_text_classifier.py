@@ -1,5 +1,5 @@
 import pytest
-from download_datasets import download_clinc_dataset
+from download_dataset_fixtures import download_clinc_dataset
 from model_test_utils import (
     check_saved_and_retrained_accuarcy,
     compute_evaluate_accuracy,
@@ -78,10 +78,10 @@ def train_model_pipeline_text_classifier(download_clinc_dataset_model_pipeline):
 
     train_filename, _, _ = download_clinc_dataset_model_pipeline
 
-    train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     model.train(
         filename=train_filename,
-        train_config=train_config,
+        epochs=5,
+        learning_rate=0.01,
         max_in_memory_batches=12,
     )
 
@@ -120,7 +120,47 @@ def test_model_pipeline_text_classifier_predict_batch(
     assert acc >= ACCURACY_THRESHOLD
 
 
-def test_model_pipeline_text_classification_save_load(
+def test_model_pipeline_text_classifier_accuracy_return_class(
+    train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
+):
+    model = train_model_pipeline_text_classifier
+    _, test_filename, inference_samples = download_clinc_dataset_model_pipeline
+
+    acc = compute_evaluate_accuracy(
+        model,
+        test_filename,
+        inference_samples,
+        use_class_name=False,
+        use_activations=False,
+    )
+    assert acc >= ACCURACY_THRESHOLD
+
+
+def test_model_pipeline_text_classifier_predict_single_return_class(
+    train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
+):
+    model = train_model_pipeline_text_classifier
+    _, _, inference_samples = download_clinc_dataset_model_pipeline
+
+    acc = compute_predict_accuracy(
+        model, inference_samples, use_class_name=False, use_activations=False
+    )
+    assert acc >= ACCURACY_THRESHOLD
+
+
+def test_model_pipeline_text_classifier_predict_batch_return_class(
+    train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
+):
+    model = train_model_pipeline_text_classifier
+    _, _, inference_samples = download_clinc_dataset_model_pipeline
+
+    acc = compute_predict_batch_accuracy(
+        model, inference_samples, use_class_name=False, use_activations=False
+    )
+    assert acc >= ACCURACY_THRESHOLD
+
+
+def test_model_pipeline_text_classifier_save_load(
     train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
 ):
     model = train_model_pipeline_text_classifier
@@ -137,33 +177,22 @@ def test_model_pipeline_text_classification_save_load(
         inference_samples,
         use_class_name=False,
         accuracy=ACCURACY_THRESHOLD,
+        model_type="Pipeline",
     )
 
 
 # Because validatation doesn't return anything there isn't anything specific to test
 # here, this is just a sanity check that using validation produces no errors.
-def test_model_pipeline_text_classification_train_with_validation(
+def test_model_pipeline_text_classifier_train_with_validation(
     train_model_pipeline_text_classifier, download_clinc_dataset_model_pipeline
 ):
     model = train_model_pipeline_text_classifier
     train_filename, test_filename, _ = download_clinc_dataset_model_pipeline
 
-    eval_config = (
-        bolt.EvalConfig()
-        .with_metrics(["categorical_accuracy"])
-        .enable_sparse_inference()
-    )
-
-    val_data, val_labels = model.load_validation_data(test_filename)
-
-    train_config = bolt.TrainConfig(epochs=1, learning_rate=0.001).with_validation(
-        validation_data=val_data,
-        validation_labels=val_labels,
-        eval_config=eval_config,
-        validation_frequency=10,
+    validation = bolt.Validation(
+        filename=test_filename, interval=4, metrics=["categorical_accuracy"]
     )
 
     model.train(
-        filename=train_filename,
-        train_config=train_config,
+        filename=train_filename, epochs=1, learning_rate=0.001, validation=validation
     )

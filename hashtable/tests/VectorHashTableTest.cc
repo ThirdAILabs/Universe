@@ -45,15 +45,15 @@ TEST(VectorHashTableTest, ExactRetrievalTest) {
 
     // Count query
     std::vector<uint32_t> counts(num_items, 0);
-    test_table.queryByCount(&test_hashes[0], counts);
+    test_table.queryByCount(test_hashes.data(), counts);
 
     // Vector query
     std::vector<uint32_t> result_vector(0);
-    test_table.queryByVector(&test_hashes[0], result_vector);
+    test_table.queryByVector(test_hashes.data(), result_vector);
 
     // Set query
     std::unordered_set<uint32_t> result_set(0);
-    test_table.queryBySet(&test_hashes[0], result_set);
+    test_table.queryBySet(test_hashes.data(), result_set);
 
     for (uint32_t item = 0; item < num_items; item++) {
       uint32_t expected_count = 0;

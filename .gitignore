@@ -44,6 +44,7 @@ wheelhouse
 # Data files
 *.svm
 *.csv
+*.parquet
 
 # Output files
 *.svg
@@ -56,6 +57,9 @@ env
 
 # Datasets downloaded during tests
 mnist_data
+
+# Clang tidy
+clang_tidy_logs
 
 # -- Begin vim .gitignore
 # Swap

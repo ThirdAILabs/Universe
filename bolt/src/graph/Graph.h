@@ -1,6 +1,5 @@
 #pragma once
 
-#include <wrappers/src/LicenseWrapper.h>
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
@@ -15,6 +14,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <licensing/src/CheckLicense.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -42,13 +42,13 @@ class BoltGraph {
         _updates(0),
         _tracked_metric(nullptr),
         _first(true) {
-    thirdai::licensing::LicenseWrapper::checkLicense();
+    thirdai::licensing::checkLicense();
   }
 
   /*
-    When the layers are initially defined the only have information about their
-    own dimensions, parameters etc. During compile the layers can use the
-    information from their predecessor(s) such as output dim to fully
+    When the layers are initially defined the only have information about
+    their own dimensions, parameters etc. During compile the layers can use
+    the information from their predecessor(s) such as output dim to fully
     initialize their parameters. Additionally in this function checks are
     performed to ensure the graph is properly formatted. For instance if
     CategoricalCrossEntropy loss is used, then it can verify that the output
@@ -94,9 +94,9 @@ class BoltGraph {
 
   void freezeHashTables(bool insert_labels_if_not_found);
 
-  // This only saves the graph in the compiled state, that is any parameters and
-  // graph structure are preserved, but any state related to train or predict is
-  // discarded.
+  // This only saves the graph in the compiled state, that is any parameters
+  // and graph structure are preserved, but any state related to train or
+  // predict is discarded.
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
@@ -111,9 +111,11 @@ class BoltGraph {
 
   uint32_t outputDim() const { return _output->outputDim(); }
 
+  std::vector<NodePtr> getNodes() { return _nodes; }
+
  private:
   // Private constructor for cereal.
-  BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
+  BoltGraph() { thirdai::licensing::checkLicense(); }
 
   void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);
@@ -170,9 +172,9 @@ class BoltGraph {
                       uint32_t reconstruct_hash_functions_batch);
 
   // This function prevents nodes from using sparse optimizations during
-  // parameter updates. This is to make updateParameters work during distributed
-  // training or disable the optimization in the few cases where they are not
-  // beneficial.
+  // parameter updates. This is to make updateParameters work during
+  // distributed training or disable the optimization in the few cases where
+  // they are not beneficial.
   void disableSparseParameterUpdates();
 
   constexpr bool checkBatchInterval(uint32_t num_batches) const {
@@ -195,8 +197,8 @@ class BoltGraph {
   // Output layer.
   NodePtr _output;
 
-  // Input layers. When train is called, the ith input is fed into the ith input
-  // layer.
+  // Input layers. When train is called, the ith input is fed into the ith
+  // input layer.
   std::vector<InputPtr> _inputs;
 
   // List of the sparse layers in the graph. This is so that we can do

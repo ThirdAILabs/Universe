@@ -1,5 +1,5 @@
 import pytest
-from download_datasets import download_clinc_dataset
+from download_dataset_fixtures import download_clinc_dataset
 from model_test_utils import (
     check_saved_and_retrained_accuarcy,
     compute_evaluate_accuracy,
@@ -27,8 +27,7 @@ def train_udt_text_classification(download_clinc_dataset):
 
     train_filename, _, _ = download_clinc_dataset
 
-    train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
-    model.train(train_filename, train_config)
+    model.train(train_filename, epochs=5, learning_rate=0.01)
 
     return model
 

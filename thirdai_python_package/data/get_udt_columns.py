@@ -1,13 +1,39 @@
+from typing import Dict
+
 import pandas as pd
 import thirdai._thirdai.bolt as bolt
 
 from .type_inference import semantic_type_inference
 
 
-def get_udt_col_types(filename, n_rows=1e6):
+def get_udt_col_types(
+    filename: str, n_rows: int = 1e6
+) -> Dict[str, bolt.types.ColumnType]:
+    """Returns a best guess for the types and metadata of the columns of the
+            input file.
+
+    Args:
+        filename (str): Path to a csv or a parquet stored locally or on aws/gcp/etc
+            (anything that can be read by pandas.read_csv or pandas.read_parquet).
+
+    Returns:
+        (Dict[str, bolt.types.ColumnType]):
+        A map from column name to our best guess for ColumnType.
+    """
     column_types = semantic_type_inference(filename)
 
-    df = pd.read_csv(filename, nrows=n_rows, low_memory=False)
+    try:
+        if filename.endswith(".pqt") or filename.endswith(".parquet"):
+            df = pd.read_parquet(filename)
+        else:
+            df = pd.read_csv(filename, nrows=n_rows, low_memory=False)
+    except:
+        raise ValueError(
+            "UDT currently supports all files that can be read using "
+            "pandas.read_parquet (for .pqt or .parquet files) or "
+            "pandas.read_csv (for all other files). Please convert your files "
+            "to one of the supported formats."
+        )
 
     udt_column_types = {}
 

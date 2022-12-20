@@ -1,14 +1,16 @@
 #include "FeaturizationPython.h"
 #include "FeaturizationDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <new_dataset/src/featurization_pipeline/Augmentation.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
+#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <new_dataset/src/featurization_pipeline/columns/NumpyColumns.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <new_dataset/src/featurization_pipeline/transformations/Binning.h>
-#include <new_dataset/src/featurization_pipeline/transformations/CrossColumnPairgram.h>
 #include <new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.h>
 #include <new_dataset/src/featurization_pipeline/transformations/StringHash.h>
+#include <new_dataset/src/featurization_pipeline/transformations/TabularHashedFeatures.h>
 #include <new_dataset/src/featurization_pipeline/transformations/TokenPairgram.h>
 #include <pybind11/stl.h>
 #include <optional>
@@ -63,6 +65,32 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
       .def(py::init<const columns::NumpyArray<float>&>(), py::arg("array"),
            docs::DENSE_ARRAY_COLUMN);
 
+  auto augmentations_submodule =
+      dataset_submodule.def_submodule("augmentations");
+
+  py::class_<Augmentation, std::shared_ptr<Augmentation>>(  // NOLINT
+      augmentations_submodule, "Augmentation")
+      .def("apply", &Augmentation::apply);
+
+  py::class_<ColdStartTextAugmentation, Augmentation,
+             std::shared_ptr<ColdStartTextAugmentation>>(
+      augmentations_submodule, "ColdStartText")
+      .def(py::init<std::vector<std::string>, std::vector<std::string>,
+                    std::string, std::string, std::optional<uint32_t>,
+                    std::optional<uint32_t>, std::optional<uint32_t>,
+                    std::optional<uint32_t>, uint32_t, std::optional<uint32_t>,
+                    std::optional<uint32_t>, uint32_t>(),
+           py::arg("strong_columns"), py::arg("weak_columns"),
+           py::arg("label_column"), py::arg("output_column"),
+           py::arg("weak_min_len") = std::nullopt,
+           py::arg("weak_max_len") = std::nullopt,
+           py::arg("weak_chunk_len") = std::nullopt,
+           py::arg("weak_sample_num_words") = std::nullopt,
+           py::arg("weak_sample_reps") = 1,
+           py::arg("strong_max_len") = std::nullopt,
+           py::arg("strong_sample_num_words") = std::nullopt,
+           py::arg("seed") = 42803);
+
   auto transformations_submodule =
       dataset_submodule.def_submodule("transformations");
 
@@ -85,12 +113,13 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
            py::arg("output_range") = std::nullopt, py::arg("seed") = 42,
            docs::STRING_HASH);
 
-  py::class_<CrossColumnPairgram, Transformation,
-             std::shared_ptr<CrossColumnPairgram>>(transformations_submodule,
-                                                   "CrossColumnPairgram")
-      .def(py::init<std::vector<std::string>, std::string, uint32_t>(),
+  py::class_<TabularHashedFeatures, Transformation,
+             std::shared_ptr<TabularHashedFeatures>>(transformations_submodule,
+                                                     "TabularHashedFeatures")
+      .def(py::init<std::vector<std::string>, std::string, uint32_t, bool>(),
            py::arg("input_columns"), py::arg("output_column"),
-           py::arg("output_range"), docs::COLUMN_PAIRGRAM);
+           py::arg("output_range"), py::arg("use_pairgrams") = false,
+           docs::COLUMN_PAIRGRAM);
 
   py::class_<SentenceUnigram, Transformation, std::shared_ptr<SentenceUnigram>>(
       transformations_submodule, "SentenceUnigram")

@@ -37,6 +37,15 @@ message("\tC++ compiler: ${CMAKE_CXX_COMPILER}")
 message("\tC compiler: ${CMAKE_C_COMPILER}")
 message("====================================")
 
+option(THIRDAI_REPORT_BUILD_STEP_TIMES
+       "Report time using builtin for make/ninja compile-build steps" OFF)
+option(THIRDAI_BUILD_OPENSSL_FROM_SOURCE "Build OpenSSL from source" OFF)
+
+if(THIRDAI_REPORT_BUILD_STEP_TIMES)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CMAKE_COMMAND} -E time")
+endif(THIRDAI_REPORT_BUILD_STEP_TIMES)
+
 # Check if there is a license flag, and only if so add the cryptopp lib We have
 # two different License flags, one for if to build the license files
 # (THIRDAI_BUILD_LICENSE) and one for if to check the license
@@ -49,6 +58,73 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   set(CRYPTOPP_BUILD_TESTING OFF)
   set(CRYPTOPP_SOURCES "${CMAKE_SOURCE_DIR}/deps/cryptopp")
   add_subdirectory(deps/cryptopp-cmake EXCLUDE_FROM_ALL)
+
+  # For now only require openssl if we are building with licensing, since we
+  # only communicate with the internet (keygen) in that case
+  add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
+  if(THIRDAI_BUILD_OPENSSL_FROM_SOURCE)
+    # This path is meant to be activated only for M1 cross-compile on MacOS. Any
+    # other paths are potentially untested.
+
+    # Use default compile.
+    set(OPENSSL_MODULES
+        ""
+        CACHE STRING "OpenSSL configure options")
+    set(OPENSSL_BUILD_VERSION 3.0.7)
+    # set up fake targets
+    add_library(ssl_lib STATIC IMPORTED GLOBAL)
+    add_library(crypto_lib STATIC IMPORTED GLOBAL)
+
+    # set up prefix
+    set(OPENSSL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+    set(OPENSSL_LIBSSL_PATH ${OPENSSL_PREFIX}/usr/local/lib/libssl.a)
+    set(OPENSSL_LIBCRYPTO_PATH ${OPENSSL_PREFIX}/usr/local/lib/libcrypto.a)
+
+    # set import locations
+    set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION
+                                             ${OPENSSL_LIBSSL_PATH})
+    set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION
+                                                ${OPENSSL_LIBCRYPTO_PATH})
+
+    # set up openssl target
+    message(
+      STATUS
+        "Setting up OpenSSL at ${OPENSSL_LIBSSL_PATH}, ${OPENSSL_LIBCRYPTO_PATH}"
+    )
+
+    include(BuildOpenSSL)
+
+    # Add dependencies (force openssl to build before)
+    add_dependencies(ssl_lib openssl)
+    add_dependencies(crypto_lib openssl)
+
+    # Create interface library
+    add_library(_ssl INTERFACE)
+    add_library(_crypto INTERFACE)
+
+    target_link_libraries(_ssl INTERFACE ssl_lib)
+    target_link_libraries(_crypto INTERFACE crypto_lib)
+
+    # set include locations
+    target_include_directories(
+      _ssl BEFORE
+      INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include/>)
+    target_include_directories(
+      _crypto BEFORE
+      INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include/>)
+
+    # Use cmake-namespace style aliases from here.
+    add_library(OpenSSL::SSL ALIAS _ssl)
+    add_library(OpenSSL::Crypto ALIAS _crypto)
+
+  else(THIRDAI_BUILD_OPENSSL_FROM_SOURCE)
+    find_package(OpenSSL 1.1.1 REQUIRED)
+  endif()
+
+  set(JSON_BuildTests
+      OFF
+      CACHE INTERNAL "")
+  add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 endif()
 
 if(MSVC)
@@ -123,6 +199,7 @@ set(THIRDAI_COMPILE_OPTIONS
     -Wextra
     -Werror
     -Wno-unused-function
+    -Wno-ignored-optimization-argument
     -pedantic
     $<$<CONFIG:Debug>:-Og>
     $<$<CONFIG:Debug>:-g>
@@ -148,7 +225,13 @@ set(THIRDAI_COMPILE_OPTIONS
     $<$<CONFIG:RelWithAsan>:-funroll-loops>
     $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
     $<$<CONFIG:RelWithAsan>:-g>
-    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>)
+    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
+    $<$<CONFIG:CompileAnalysis>:-DNDEBUG>
+    $<$<CONFIG:CompileAnalysis>:-Ofast>
+    $<$<CONFIG:CompileAnalysis>:-fno-finite-math-only>
+    $<$<CONFIG:CompileAnalysis>:-funroll-loops>
+    $<$<CONFIG:CompileAnalysis>:-ftree-vectorize>
+    $<$<CONFIG:CompileAnalysis>:-ftime-trace>)
 
 set(THIRDAI_ASAN_COMPILE_OPTIONS $<$<CONFIG:RelWithAsan>:-fsanitize=address>
                                  $<$<CONFIG:DebugWithAsan>:-fsanitize=address>)
@@ -174,8 +257,12 @@ include_directories(deps/eigen)
 # Source dependencies
 add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
 add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
-
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
+# Turn off prometheus-cpp's testing build so that we don't try to build two
+# copies of gmock
+option(ENABLE_TESTING "" OFF)
+option(ENABLE_PUSH "" OFF)
+add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
 
 # PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
 # requires the boost and we dont want to add the boost dependencies, hence
@@ -205,27 +292,36 @@ include_directories(".")
 include_directories(${CMAKE_BINARY_DIR})
 
 # Our source directories
+add_subdirectory(auto_ml)
 add_subdirectory(bolt)
 add_subdirectory(bolt_vector)
 add_subdirectory(dataset)
-add_subdirectory(exceptions)
 add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
-add_subdirectory(utils)
-add_subdirectory(wrappers)
 add_subdirectory(compression)
-
-# Only add the licensing subdirectory if the corresponding flag is set
-if(${LICENSE_BUILD_FLAG_FOUND})
-  add_subdirectory(licensing)
-endif()
+add_subdirectory(utils)
 
 set(THIRDAI_SOURCES
     bolt/src/graph/Graph.cc
+    bolt/src/graph/DatasetContext.cc
+    bolt/src/graph/Node.cc
+    bolt/src/graph/nodes/Switch.cc
+    bolt/src/graph/nodes/Concatenate.cc
+    bolt/src/graph/nodes/DlrmAttention.cc
+    bolt/src/graph/nodes/DotProduct.cc
+    bolt/src/graph/nodes/Embedding.cc
+    bolt/src/graph/nodes/FullyConnected.cc
+    bolt/src/graph/nodes/LayerNorm.cc
+    bolt/src/graph/nodes/Input.cc
+    bolt/src/graph/InferenceOutputTracker.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc
     bolt/src/layers/ConvLayer.cc
+    bolt/src/layers/LayerConfig.cc
+    bolt/src/layers/SamplingConfig.cc
+    bolt/src/loss_functions/LossFunctions.cc
+    bolt/src/metrics/Metric.cc
     search/src/MaxFlash.cc
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
@@ -238,21 +334,44 @@ set(THIRDAI_SOURCES
     hashing/src/UniversalHash.cc
     hashtable/src/SampledHashTable.cc
     hashtable/src/VectorHashTable.cc
-    wrappers/src/LicenseWrapper.cc
+    licensing/src/CheckLicense.cc
     dataset/src/Vocabulary.cc
+    telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
+    new_dataset/src/featurization_pipeline/augmentations/ColdStartText.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
+    auto_ml/src/dataset_factories/SingleBlockDatasetFactory.cc
+    auto_ml/src/dataset_factories/udt/DataTypes.cc
+    auto_ml/src/dataset_factories/udt/FeatureComposer.cc
+    auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
+    auto_ml/src/deployment_config/BlockConfig.cc
+    auto_ml/src/deployment_config/DeploymentConfig.cc
+    auto_ml/src/deployment_config/HyperParameter.cc
+    auto_ml/src/deployment_config/ModelConfig.cc
+    auto_ml/src/deployment_config/NodeConfig.cc
+    auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactoryConfig.cc
+    auto_ml/src/deployment_config/dataset_configs/UDTDatasetFactoryConfig.cc
     utils/Logging.cc)
+
+# Only add the licensing subdirectory and licensing cc files if the
+# corresponding flag is set
+if(${LICENSE_BUILD_FLAG_FOUND})
+  add_subdirectory(licensing)
+  set(THIRDAI_SOURCES ${THIRDAI_SOURCES}
+                      licensing/src/keygen/KeygenCommunication.cc)
+endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
-                                     cereal::cereal)
+                                     cereal::cereal prometheus-cpp::pull)
 if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp)
+  target_link_libraries(
+    thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto OpenSSL::SSL
+                   nlohmann_json::nlohmann_json)
 endif()
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
@@ -271,7 +390,12 @@ pybind11_add_module(
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
-  auto_ml/python_bindings/DeploymentPython.cc)
+  auto_ml/python_bindings/AutomlPython.cc
+  auto_ml/python_bindings/DeploymentPython.cc
+  auto_ml/src/models/ModelPipeline.cc
+  auto_ml/src/models/OutputProcessor.cc
+  auto_ml/src/models/UniversalDeepTransformer.cc
+  telemetry/python_bindings/TelemetryPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
 

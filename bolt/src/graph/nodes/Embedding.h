@@ -20,16 +20,7 @@ class EmbeddingNode final : public Node,
  private:
   EmbeddingNode(uint32_t num_embedding_lookups, uint32_t lookup_size,
                 uint32_t log_embedding_block_size, const std::string& reduction,
-                std::optional<uint32_t> num_tokens_per_input)
-      : _embedding_layer(nullptr),
-        _config(EmbeddingLayerConfig(
-            /* num_embedding_lookups= */ num_embedding_lookups,
-            /* lookup_size= */ lookup_size,
-            /* log_embedding_block_size= */ log_embedding_block_size,
-            /* reduction= */ reduction,
-            /* num_tokens_per_input= */ num_tokens_per_input)),
-        _outputs(std::nullopt),
-        _token_input(nullptr) {}
+                std::optional<uint32_t> num_tokens_per_input);
 
  public:
   static std::shared_ptr<EmbeddingNode> make(
@@ -41,26 +32,9 @@ class EmbeddingNode final : public Node,
         num_tokens_per_input));
   }
 
-  uint32_t outputDim() const final {
-    NodeState node_state = getState();
-    if (node_state == NodeState::Constructed ||
-        node_state == NodeState::PredecessorsSet) {
-      return _config->getOutputDim();
-    }
-    return _embedding_layer->getOutputDim();
-  }
+  uint32_t outputDim() const final;
 
-  std::shared_ptr<EmbeddingNode> addInput(InputPtr input) {
-    if (getState() != NodeState::Constructed) {
-      throw exceptions::NodeStateMachineError(
-          "EmbeddingNodes have exactly one TokenInput node as input and the "
-          "addInput function cannot be called more than once.");
-    }
-
-    _token_input = std::move(input);
-
-    return shared_from_this();
-  }
+  std::shared_ptr<EmbeddingNode> addInput(InputPtr input);
 
   bool isInputNode() const final { return false; }
 
@@ -68,36 +42,9 @@ class EmbeddingNode final : public Node,
 
   std::string type() const final { return "embedding"; }
 
-  NodeState getState() const final {
-    if (_token_input == nullptr && _embedding_layer == nullptr &&
-        !_outputs.has_value()) {
-      return NodeState::Constructed;
-    }
-    if (_token_input != nullptr && _embedding_layer == nullptr &&
-        !_outputs.has_value()) {
-      return NodeState::PredecessorsSet;
-    }
-    if (_token_input != nullptr && _embedding_layer != nullptr &&
-        !_outputs.has_value()) {
-      return NodeState::Compiled;
-    }
-    if (_token_input != nullptr && _embedding_layer != nullptr &&
-        _outputs.has_value()) {
-      return NodeState::PreparedForBatchProcessing;
-    }
-    throw exceptions::NodeStateMachineError(
-        "EmbeddingNode is in an invalid internal state");
-  }
+  NodeState getState() const final;
 
-  void disableSparseParameterUpdates() final {
-    if (getState() != NodeState::Compiled &&
-        getState() != NodeState::PreparedForBatchProcessing) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call disable_sparse_parameter_updates until the model "
-          "containing the node is compiled.");
-    }
-    _embedding_layer->disableSparseParameterUpdates();
-  }
+  void disableSparseParameterUpdates() final;
 
   std::vector<float>& getRawEmbeddingBlock() {
     return _embedding_layer->getRawEmbeddingBlock();
@@ -107,44 +54,22 @@ class EmbeddingNode final : public Node,
     return _embedding_layer->getRawEmbeddingBlockGradient();
   }
 
+  bool hasParameters() final { return true; }
+
  private:
-  void compileImpl() final {
-    assert(_config.has_value());
-    _embedding_layer = std::make_shared<EmbeddingLayer>(_config.value());
-    _config = std::nullopt;
-  }
+  void compileImpl() final;
 
   void prepareForBatchProcessingImpl(uint32_t batch_size,
-                                     bool use_sparsity) final {
-    (void)use_sparsity;
+                                     bool use_sparsity) final;
 
-    _embedding_layer->initializeLayer(batch_size);
-    _outputs = _embedding_layer->createBatchState(batch_size);
-  }
+  void forwardImpl(uint32_t vec_index, const BoltVector* labels) final;
 
-  void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
-    (void)labels;
+  void backpropagateImpl(uint32_t vec_index) final;
 
-    _embedding_layer->forward(
-        /* vec_index= */ vec_index,
-        /* tokens= */ _token_input->getOutputVector(vec_index),
-        /* output= */ (*_outputs)[vec_index]);
-  }
-
-  void backpropagateImpl(uint32_t vec_index) final {
-    _embedding_layer->backpropagate(
-        /* vec_index= */ vec_index,
-        /* output= */ (*_outputs)[vec_index]);
-  }
-
-  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
-    _embedding_layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2,
-                                       EPS);
-  }
+  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final;
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
     assert(getState() == NodeState::PreparedForBatchProcessing);
-
     return (*_outputs)[vec_index];
   }
 
@@ -164,11 +89,7 @@ class EmbeddingNode final : public Node,
     return {};
   }
 
-  void summarizeImpl(std::stringstream& summary, bool detailed) const final {
-    (void)detailed;
-    summary << _token_input->name() << " -> " << name() << ": (Embedding):";
-    _embedding_layer->buildLayerSummary(summary);
-  }
+  void summarizeImpl(std::stringstream& summary, bool detailed) const final;
 
   // Private constructor for cereal.
   EmbeddingNode() : _config(std::nullopt), _outputs(std::nullopt) {}
@@ -196,5 +117,3 @@ class EmbeddingNode final : public Node,
 using EmbeddingNodePtr = std::shared_ptr<EmbeddingNode>;
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::EmbeddingNode)
