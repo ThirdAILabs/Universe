@@ -174,6 +174,18 @@ class Node {
 
   virtual ~Node() = default;
 
+  /**
+   * This function indicate whether this particular node needs to share its
+   * gradients in distributed setting. If it is true, then make sure to
+   * implement the logic to flattening the gradients in
+   * GradientReference(bolt/python_bindings/BoltNNPython.h).
+   */
+  virtual bool hasParameters() = 0;
+
+  // Return a short all lowercase string representing the type of this node for
+  // use in printing the graph, e.g. concat, fc, input
+  virtual std::string type() const = 0;
+
  protected:
   virtual void compileImpl() = 0;
 
@@ -200,10 +212,6 @@ class Node {
 
   virtual void summarizeImpl(std::stringstream& summary,
                              bool detailed) const = 0;
-
-  // Return a short all lowercase string representing the type of this node for
-  // use in printing the graph, e.g. concat, fc, input
-  virtual std::string type() const = 0;
 
   enum NodeState {
     Constructed,

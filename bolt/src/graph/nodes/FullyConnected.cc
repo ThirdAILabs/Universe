@@ -276,8 +276,6 @@ void FullyConnectedNode::summarizeImpl(std::stringstream& summary,
   _layer->buildLayerSummary(summary, detailed);
 }
 
-std::string FullyConnectedNode::type() const { return "fc"; }
-
 Node::NodeState FullyConnectedNode::getState() const {
   if (_predecessor == nullptr && _layer == nullptr && !_outputs.has_value()) {
     return NodeState::Constructed;

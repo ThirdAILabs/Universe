@@ -74,6 +74,10 @@ class FullyConnectedNode final
   float* getBiasGradientsPtr();
   void disableSparseParameterUpdates() final;
 
+  bool hasParameters() final { return true; }
+
+  std::string type() const final { return "fc"; }
+
  private:
   void compileImpl() final;
 
@@ -98,8 +102,6 @@ class FullyConnectedNode final
   std::vector<NodePtr> getPredecessorsImpl() const final;
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final;
-
-  std::string type() const final;
 
   NodeState getState() const final;
 
