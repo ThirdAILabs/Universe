@@ -3,6 +3,7 @@ from urllib.parse import urlparse
 
 import thirdai
 import thirdai._thirdai.bolt as bolt
+import thirdai.distributed_bolt as dist_bolt
 
 from .udt_docs import *
 
@@ -90,6 +91,45 @@ def modify_udt_classifier():
 
     wrapped_train.__doc__ = classifier_train_doc
 
+    def train_distributed(
+        self,
+        cluster_config: dist_bolt.RayTrainingClusterConfig,
+        filenames: str,
+        learning_rate: float = 0.001,
+        epochs: int = 3,
+        batch_size: Optional[int] = None,
+        max_in_memory_batches: Optional[int] = None,
+        gcp_credentials_path: Optional[str] = None,
+    ):
+        if batch_size is None:
+            batch_size = self.default_train_batch_size
+
+        train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
+
+        train_sources = [
+            _create_loader(
+                filename,
+                batch_size,
+                gcs_credentials_path=gcp_credentials_path,
+            )
+            for filename in filenames
+        ]
+
+        model = self.get_model()
+
+        dist_bolt.DistributedDataParallel(
+            cluster_config=cluster_config,
+            model=model,
+            train_config=train_config,
+            train_sources=train_sources,
+        )
+        model = dist_bolt.get_model()
+
+        self.set_model(model)
+
+        metrics = dist_bolt.train()
+        return metrics
+
     def wrapped_evaluate(
         self,
         filename: str,
@@ -126,6 +166,7 @@ def modify_udt_classifier():
 
     delattr(bolt.models.Pipeline, "train_with_loader")
     delattr(bolt.models.Pipeline, "evaluate_with_loader")
+    setattr(bolt.models.Pipeline, "train_distributed", train_distributed)
 
     bolt.models.Pipeline.train = wrapped_train
     bolt.models.Pipeline.evaluate = wrapped_evaluate

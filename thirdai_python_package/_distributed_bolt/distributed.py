@@ -140,6 +140,7 @@ class DistributedDataParallel:
         model: bolt.nn.Model,
         train_config: bolt.TrainConfig,
         train_sources: List[DatasetLoader],
+        data_processor=None,
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -179,6 +180,7 @@ class DistributedDataParallel:
             train_config=train_config,
             communication_type=cluster_config.communication_type,
             log_dir=cluster_config.log_dir,
+            data_processor=data_processor,
         )
 
         self.replica_workers = []
@@ -195,6 +197,7 @@ class DistributedDataParallel:
                     primary_worker=self.primary_worker,
                     communication_type=cluster_config.communication_type,
                     log_dir=cluster_config.log_dir,
+                    data_processor=data_processor,
                 )
             )
 

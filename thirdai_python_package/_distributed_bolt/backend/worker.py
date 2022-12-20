@@ -42,6 +42,7 @@ class Worker:
         train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
+        data_processor,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
@@ -92,6 +93,8 @@ class Worker:
             raise ValueError(
                 "There must be at least one loadable dataset in the passed in data source."
             )
+        self.dataset = data_processor(self.train_source, training=True)
+        self.get_data = True
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.
@@ -205,6 +208,41 @@ class Worker:
             self.comm.receive_gradients(averaged_gradients_ref)
 
     @timed
+    def _try_load_new_datasets_into_model(self):
+        """
+        Returns whether the load was successful (if the generator stream is over
+        then this will fail until we call restart on it).
+        """
+
+        if self.data_processor == None:
+            load = self.train_source.next()
+
+            if load == None:
+                self.train_data = None
+                self.train_labels = None
+                return False
+
+            self.train_data, self.train_labels = load
+            self.model.set_datasets(self.train_data, self.train_labels)
+            self.batch_id_within_dataset = 0
+
+            # This case should not be true since we currently require datasets
+            # to be nonempty, but this is a good hedge against future data
+            # pipeline changes
+            if self.model.num_batches() == 0:
+                return False
+
+            return True
+        else:
+            if self.get_data:
+                self.train_data, self.train_label = self.dataset.load_in_memory()
+                return True
+            else:
+                self.train_data = None
+                self.train_label = None
+                return False
+
+    @timed
     def update_parameters(self):
         """
         This function calls updateParameter function inside bolt, which
@@ -212,7 +250,7 @@ class Worker:
         """
         self.model.update_parameters()
 
-    def num_of_batches(self) -> int:
+    def num_of_batches(self):
         """
         This function returns the total number of batches the workers have.
         """
@@ -220,28 +258,3 @@ class Worker:
 
     def model(self):
         return self.model.model
-
-    @timed
-    def _try_load_new_datasets_into_model(self) -> bool:
-        """
-        Returns whether the load was successful (if the generator stream is over
-        then this will fail until we call restart on it).
-        """
-        load = self.train_source.next()
-
-        if load == None:
-            self.train_data = None
-            self.train_labels = None
-            return False
-
-        self.train_data, self.train_labels = load
-        self.model.set_datasets(self.train_data, self.train_labels)
-        self.batch_id_within_dataset = 0
-
-        # This case should not be true since we currently require datasets
-        # to be nonempty, but this is a good hedge against future data
-        # pipeline changes
-        if self.model.num_batches() == 0:
-            return False
-
-        return True

@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
 #include "OutputProcessor.h"
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
@@ -174,6 +175,10 @@ class ModelPipeline {
   data::DatasetLoaderFactoryPtr getDataProcessor() const {
     return _dataset_factory;
   }
+
+  void setModel(bolt::BoltGraphPtr& trained_model) { _model = trained_model; }
+
+  bolt::BoltGraphPtr getModel() { return _model; }
 
   virtual ~ModelPipeline() = default;
 

@@ -27,6 +27,7 @@ class PrimaryWorker(Worker):
         train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
+        data_processor,
     ):
 
         super().__init__(
@@ -38,6 +39,7 @@ class PrimaryWorker(Worker):
             train_config=train_config,
             communication_type=communication_type,
             log_dir=log_dir,
+            data_processor=data_processor,
         )
 
     def gradients_avg(self):
