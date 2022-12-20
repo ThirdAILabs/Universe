@@ -1,7 +1,7 @@
 import pytest
 from thirdai import bolt, deployment
 
-pytest = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit]
 
 
 def get_config(
