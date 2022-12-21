@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cereal/access.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
