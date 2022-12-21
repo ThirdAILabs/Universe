@@ -14,6 +14,42 @@ void DatasetBase::serialize(Archive& archive) {
 }
 
 template <class BATCH_T>
+InMemoryDataset<BATCH_T>::InMemoryDataset(std::vector<BATCH_T>&& batches)
+    : _batches(std::move(batches)) {
+  if (_batches.empty()) {
+    throw std::invalid_argument(
+        "Must pass in at least one batch to the dataset constructor but "
+        "found 0.");
+  }
+  _batch_size = _batches.front().getBatchSize();
+  if (_batch_size == 0) {
+    throw std::invalid_argument(
+        "The first batch was found to have an invalid length of 0.");
+  }
+
+  for (uint64_t i = 1; i < _batches.size() - 1; i++) {
+    uint64_t current_batch_size = _batches.at(i).getBatchSize();
+    if (current_batch_size != _batch_size) {
+      throw std::invalid_argument(
+          "All batches but the last batch must have the same size.");
+    }
+  }
+
+  uint64_t last_batch_size = _batches.back().getBatchSize();
+  if (last_batch_size > _batch_size) {
+    throw std::invalid_argument(
+        "The last batch in the dataset is larger than the others, when it "
+        "should be equal to or smaller than them in length.");
+  }
+  if (last_batch_size == 0) {
+    throw std::invalid_argument(
+        "The last batch was found to have an invalid length of 0.");
+  }
+
+  _len = _batch_size * (_batches.size() - 1) + last_batch_size;
+}
+
+template <class BATCH_T>
 template <class Archive>
 void InMemoryDataset<BATCH_T>::serialize(Archive& archive) {
   archive(cereal::base_class<DatasetBase>(this), _batches, _len, _batch_size);
