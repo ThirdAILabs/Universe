@@ -1,8 +1,37 @@
 import json
 import os
+import time
 from typing import List, Tuple
 
 import yaml
+
+
+def typify(value, value_type):
+    # print(f"VALUE = {value}")
+    # print(f"TYPE OF VAL-TYPE = {value_type}")
+    # print('TYPIFY CALLED WITH THE FOLLOWING PARAMS...')
+    # print(f"value = {value}, type of value = {type(value)}")
+    # print(f"value tyep = {value_type}, type of value type = {type(value_type)}")
+    try:
+        if value_type == "int" or value_type == "integer":
+            value = int(value)
+        elif value_type == "float":
+            value = float(value)
+        elif value_type == "bool":
+            value = bool(value)
+        elif value_type == "str" or value_type == "string":
+            value = str(value)
+        elif value_type == "select":
+            pass
+        elif value_type == "timestamp":
+            value = time.strftime("%a, %d %b %H:%M:%S", time.localtime(value))
+        else:
+            print("WARNING: Unsupported value type: " + value_type)
+    except Exception as e:
+        print(f"UNSUPPORTED TYPE IS {value_type}")
+        print(f"Unsupported value type: {value_type}, {e}")
+
+    return value
 
 
 def parse_config(config_file_path: str) -> Tuple[str, str, str, List[str]]:
@@ -55,6 +84,8 @@ def compare_reports(previous_report, new_report):
     # compare old and new experiments
     for experiment_name in previous_report:
         # if the experiment is not in the new report, then it is deleted
+        # Here we add all pages IDs (runs) as a list of deleted runs
+        # Each run has a separate page_id
         if experiment_name not in new_report:
             diff["deleted"][experiment_name] = {
                 "deleted": list(previous_report[experiment_name]["runs"].keys())
@@ -93,10 +124,10 @@ def compare_reports(previous_report, new_report):
                 # add to the updated experiments
                 diff["updated"][experiment_name] = diff_run_report
 
-        # compare the new and old experiments
-        for experiment_name in new_report:
-            # if the experiment is not in the old report, then it is added
-            if experiment_name not in previous_report:
-                diff["new"][experiment_name] = experiment_name
+    # compare the new and old experiments
+    for experiment_name in new_report:
+        # if the experiment is not in the old report, then it is added
+        if experiment_name not in previous_report:
+            diff["new"][experiment_name] = experiment_name
 
     return diff

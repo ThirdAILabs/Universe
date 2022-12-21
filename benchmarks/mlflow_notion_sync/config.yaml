@@ -1,7 +1,6 @@
 
 benchmarks:
-  - Amazon Polarity 
-
+  - Cookie Monster
 mlflow:
   format: report_format.yaml
   report_format: null

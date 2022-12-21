@@ -1,7 +1,8 @@
 import argparse
+import json
 import time
 
-from mlflow_notion import MLFlowReportGenerator, NotionFormatGenerator
+from mlflow_notion import MLFlowExperimentsReport, NotionFormatGenerator
 
 from utils import compare_reports, get_report_format, parse_config, parse_report_format
 
@@ -57,7 +58,7 @@ def synchronize_current_report_with_notion(
                 "database_id": database_id,
                 "pages": {},
             }
-            # create rows for each run
+            # # create rows for each run
             for run_uid, run in notion_report[experiment_name]["rows"].items():
                 response = notion_format_generator.handle_crud_operation(
                     database_id=database_id, properties=run, operation="create"
@@ -69,7 +70,6 @@ def synchronize_current_report_with_notion(
 
     elif command == "update":
         # New runs are added at the end of the table
-        # TODO support adding new columns
         assert diff_report is not None
 
         # update existing tables for all experiments
@@ -124,81 +124,72 @@ def synchronize_current_report_with_notion(
             )
 
 
-def main():
+def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Synchronize Weekly Benchmarks between MlFlow and Notion"
     )
 
-    parser.add_argument("--mlflow-uri", type=str, default="")
+    parser.add_argument("--mlflow_uri", type=str, help="The URI for MLFlow Experiments")
+    parser.add_argument(
+        "--auth_config",
+        type=str,
+        default="benchmarks/mlflow_notion_sync/config.yaml",
+        help="Path to a config yaml file with credentials used to authenticate Notion and MLFlow API calls.",
+    )
 
+    parser.add_argument(
+        "--report_format",
+        type=str,
+        default="benchmarks/mlflow_notion_sync/mlsync_config.yaml",
+        help="Path to the base format used to synchronize runs from MLFlow and Notion.",
+    )
+
+    args = parser.parse_args()
+    return args
+
+
+def main():
+
+    args = parse_arguments()
     mlflow_uri, notion_page_id, notion_token, benchmarks = parse_config(
-        "benchmarks/mlflow_notion_sync/mlsync_config.yaml"
+        args.auth_config
     )
 
-    notion_report_format = get_report_format(
-        "benchmarks/mlflow_notion_sync/report_format.yaml"
-    )
+    report_format = get_report_format(args.report_format)
 
-    benchmark_experiment_report_format = parse_report_format(
-        "benchmarks/mlflow_notion_sync/format.json"
+    mlflow_report_generator = MLFlowExperimentsReport(
+        uri=mlflow_uri, benchmarks=benchmarks, base_report_format=report_format
     )
-    mlflow_report_generator = MLFlowReportGenerator(
-        uri=mlflow_uri,
-        benchmarks=benchmarks,
-        notion_report_format=notion_report_format,
-        benchmark_experiment_report_format=benchmark_experiment_report_format,
-    )
-
-    # final_report = mlflow_report_generator.create_final_benchmark_report()
-
-    # with open("benchmarks/mlflow_notion_sync/final_report.json", "w") as f:
-    #     json.dump(final_report, f)
 
     notion_format_generator = NotionFormatGenerator(
         token_id=notion_token,
         page_id=notion_page_id,
-        report_format=notion_report_format,
     )
 
-    databases = notion_format_generator.retrieve_databases()
-    # print(f"type of dbs = {type(databases)}")
-    # print(f"databases = {databases}")
+    previous_report = notion_format_generator.generate_notion_report()
 
-    past_report = notion_format_generator.format_in()
+    # pull from mlflow
+    new_mlflow_report = mlflow_report_generator.create_final_benchmark_report()
 
-    while True:
-        # pull from mlflow
-        new_mlflow_report = mlflow_report_generator.create_final_benchmark_report()
+    diff_report = compare_reports(
+        previous_report=previous_report, new_report=new_mlflow_report
+    )
 
-        diff_report = compare_reports(
-            previous_report=past_report, new_report=new_mlflow_report
-        )
-
-        print(f"DIFF REPORT = {diff_report}")
-        print(f"PAST REPORT = {past_report}")
-        print(f"NEW REPORT = {new_mlflow_report}")
-        if diff_report:
-            print("Adding new benchmark results to Notion ...")
-
-            if diff_report["new"]:
-                print("new experiments found. Adding benchmarks to Notion ...")
-                synchronize_current_report_with_notion(
-                    notion_format_generator=notion_format_generator,
-                    report=new_mlflow_report,
-                    diff_report=diff_report,
-                    crud_command="create",
-                )
-            if diff_report["updated"]:
-                print("updating existing benchmark experiments ...")
-                synchronize_current_report_with_notion(
-                    notion_format_generator=notion_format_generator,
-                    report=new_mlflow_report,
-                    diff_report=diff_report,
-                    crud_command="update",
-                )
-
-        # time.sleep(2)
-        break
+    if diff_report:
+        if len(diff_report["new"]) != 0:
+            synchronize_current_report_with_notion(
+                notion_format_generator=notion_format_generator,
+                report=new_mlflow_report,
+                diff_report=diff_report,
+                command="create",
+            )
+        elif len(diff_report["updated"]) != 0:
+            synchronize_current_report_with_notion(
+                notion_format_generator=notion_format_generator,
+                report=new_mlflow_report,
+                diff_report=diff_report,
+                command="update",
+            )
 
 
 if __name__ == "__main__":

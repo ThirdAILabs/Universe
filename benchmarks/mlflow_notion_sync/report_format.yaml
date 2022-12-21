@@ -1,125 +1,130 @@
-elements:
-    # -- Information about the run -- #
-    user_id:
-        alias: User
-        type: string
-        tag: info
-        description: The user ID of the user who ran the experiment.
+run: 
+  key: run_id
+  values: 
+    user_id: 
+      alias: User 
+      type: string 
+      tag: info 
+      description: ID of the user who ran the benchmark experiment 
 
     status:
-        alias: Status
-        type: select
-        tag: info
-        description: The status of the experiment.
-        options:
-            - FINISHED
-            - RUNNING
-            - FAILED
-            - KILLED
-            - UNFINISHED
-            - SCHEDULED
+      alias: Status 
+      type: select 
+      tag: info 
+      description: Experiment status 
+      options: 
+        - FINISHED 
+        - RUNNING 
+        - FAILED 
+        - KILLED 
+        - UNFINISHED
+        - SCHEDULED 
 
     start_time:
-        alias: Start Time
-        type: timestamp
-        tag: info
-        description: The time the experiment was started.
+      alias: Start Time 
+      type: timestamp 
+      tag: info 
+      description: The starting time of the experiment
 
     end_time:
-        alias: End Time
-        type: timestamp
-        tag: info
-        description: The time the experiment was ended.
+      alias: End Time 
+      type: timestamp
+      tag: info 
+      description: The end time of the experiment 
 
-    # -- All the metrics logged during the run -- #
-    # Note: this is only final metrics
-    train_loss:
-        alias: Train Loss
-        type: float
-        tag: metrics
-        description: The training loss of the model.
+    # Logged metrics. A certain benchmark experiment 
+    # might have different metrics, which will be automatically
+    # added to the list of metrics reported
+    train_loss: 
+      alias: Train Loss 
+      type: float 
+      tag: metrics 
+      description: Model's training loss 
 
-    accuracy:
-        alias: Accuracy
-        type: float
-        tag: metrics
-        description: The final accuracy of the model.
+    accuracy: 
+      alias: Accuracy 
+      type: float 
+      tag: metrics 
+      description: Model's accuracy 
 
-    test_loss:
-        alias: Test Loss
-        type: float
-        tag: metrics
-        description: The test loss of the model.
+    test_loss: 
+      alias: Test Loss 
+      type: float 
+      tag: metrics 
+      description: Model's test loss 
 
-    # -- All the params used -- #
-    batch_size:
-        alias: Batch Size
-        type: integer
-        tag: params
-        description: The batch size of the model.
+    batch_size: 
+      alias: Batch Size 
+      type: int 
+      tag: params 
+      description: Batch size 
 
-    epochs:
-        alias: Epochs
-        type: integer
-        tag: params
-        description: The number of epochs to run.
+    epochs: 
+      alias: Epochs 
+      type: int 
+      tag: params 
+      description: The number of epochs. 
 
     lr:
-        alias: Learning Rate
-        type: float
-        tag: params
-        description: The learning rate of the model.
+      alias: Learning Rate 
+      type: float 
+      tag: params 
+      description: Model's learning rate 
 
-    gamma:
-        alias: Gamma
-        type: float
-        tag: params
-        description: The gamma of the model.
-
-    # -- Tags about the run -- #
     mlflow.runName:
-        alias: Name
-        type: string
-        tag: tags
-        description: The name of the run.
+      alias: Name 
+      type: string 
+      tag: tags 
+      description: Name of the run 
 
-    mlflow.note.content:
-        alias: Description
-        type: string
-        tag: tags
-        description: The description of the run.
+    mlflow.note.content: 
+      alias: Description
+      type: string 
+      tag: tags 
+      description: Description of the run 
 
-# Order in which the report will be populated
-order:
-    # Use the alias for each element
-    - Name
-    - User
-    - Start Time
-    - End Time
-    - Status 
-    - Train loss
-    - Accuracy
-    - Test loss
-    - Batch Size 
-    - Description 
-    - Gamma 
-    - Learning Rate 
-    - Epochs 
+experiment:
+  key: name 
+  values: 
+    name: 
+      alias: name 
+      type: str
+      tag: info 
+      description: Experiment name 
+    
+    experiment_id: 
+      alias: experiment_id
+      type: str 
+      tag: info 
+      description: Experiment ID 
 
-# Declare policies
-# policies:
-#     # policy if an element not listed above is found (ignore/add)
-#     unmatched_policy:
-#         # Set this for each tag
-#         info: ignore
-#         metrics: ignore
-#         params: ignore
-#         tags: ignore
+order: 
+  - Name 
+  - User 
+  - Start Time 
+  - End Time 
+  - Status 
+  - Train Loss 
+  - Accuracy
+  - Test Loss 
+  - Batch Size 
+  - Description 
+  - Learning Rate 
+  - Epochs 
 
-#     # Policy if a listed element is not found (ignore/error)
-#     notfound_policy:
-#         # Set this for each tag
-#         info: ignore
-#         metrics: ignore
-#         params: ignore
-#         tags: ignore
+alias_table: 
+  User: user_id 
+  Status: status 
+  Start Time: start_time 
+  End Time: end_time 
+  Train Loss: train_loss 
+  Accuracy: accuracy 
+  Test Loss: test_loss 
+  Batch Size: batch_size 
+  Epochs: epochs 
+  Learning Rate: learning rate 
+  Name: mlflow.runName 
+  Description: mlflow.note.content 
+
+
+    

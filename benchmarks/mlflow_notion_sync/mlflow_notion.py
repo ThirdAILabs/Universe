@@ -1,68 +1,59 @@
-import argparse
 import json
 import logging
 import sys
 from typing import List, Tuple
 from urllib.parse import urlparse
 
-import mlflow
 import notion_client
 import requests
 import yaml
 
+from utils import typify
 
-class MLFlowReportGenerator:
-    """Generates a report for experiments from MLFlow
+
+class MLFlowExperimentsReport:
+    """Generates a report for the benchmark experiments from MLFlow.
+
+    Experiments reports are constructed as python dictionaries, and
+    each report consists of the details of each run with the reported
+    metrics.
 
     Args:
-        - uri: MLFlow URI
-        - benchmarks: A list of benchmark experiments. Example,
-        - notion_report_format:
-        - benchmark_experiment_report_format:
+        - uri: MLFlow base URI
+        - benchmarks: A list of benchmark experiments.
+        - base_report_format: Custom report format for the experiments.
+            This serves as a template report that can be modified
+            depending on the parameters that a specific experiment
+            has in a single experiment run.
 
     """
+
+    MLFLOW_LIST_ENDPOINT = "/api/2.0/preview/mlflow/experiments/list"
+    MLFLOW_SEARCH_ENDPOINT = "/api/2.0/mlflow/runs/search"
+    MLFLOW_GET_HISTORY_ENDPOINT = "/api/2.0/mlflow/metrics/get-history"
 
     def __init__(
         self,
         uri,
         benchmarks: List[str],
-        notion_report_format: dict,
-        benchmark_experiment_report_format: dict,
+        base_report_format: dict,
     ) -> None:
         self.base_uri = uri
-        self.notion_report_format = self.finalize_report_format(
-            notion_report_format, benchmark_experiment_report_format
-        )
-
-        mlflow.set_tracking_uri(self.base_uri)
+        self.report_format = base_report_format
 
         self.benchmarks = benchmarks
         self.experiment_reports = {}
         self.__extract_benchmark_metadata()
 
-    def finalize_report_format(
-        self, notion_report_format: dict, benchmark_experiment_report_format: dict
-    ) -> dict:
-
-        # format for each run provided by user
-        # Each run should have a unique ID. This field must exist.
-        run_report_format = {
-            "key": "run_id",
-            "values": notion_report_format["elements"],
-        }
-        alias_table = {}
-        for key, value in run_report_format["values"].items():
-            alias_table[value["alias"]] = key
-
-        return {
-            "run": run_report_format,
-            "experiment": benchmark_experiment_report_format,
-            "order": notion_report_format["order"],
-            "alias_table": alias_table,
-        }
-
     def __extract_benchmark_metadata(self) -> None:
-        experiments_uri = self.base_uri + "/api/2.0/preview/mlflow/experiments/list"
+        """
+        Retrieves the metadata for all runs in each benchmark
+        experiment specified.
+        Using the `get-by-name` API endpoint would probably be
+        a bit faster, but not significantly faster than using
+        the `list` endpoint.
+        """
+        experiments_uri = self.base_uri + self.MLFLOW_LIST_ENDPOINT
         experiments_list = requests.get(experiments_uri).json()
 
         self.experiment_reports["experiments"] = []
@@ -73,18 +64,25 @@ class MLFlowReportGenerator:
     def __get_experiment_runs(
         self,
         experiment_id: str,
-        filter_string: str = None,
-        order_by: List[str] = None,
-        max_results=1,
+        max_results=100,
     ) -> dict:
+        """
+        Retrieves `max_results` runs for the experiment with the
+        given ID.
+        Args:
+            - experiment_id: ID of the benchmark experiment
+            - max_results: Maximum number of runs desired.
 
+        For more parameters to use with the search endpoint, checkout
+        https://www.mlflow.org/docs/latest/rest-api.html#search-experiments
+        """
+
+        endpoint = self.base_uri + self.MLFLOW_SEARCH_ENDPOINT
         runs = requests.post(
-            self.base_uri + "/api/2.0/mlflow/runs/search",
+            endpoint,
             json={
                 "experiment_ids": [experiment_id],
-                "filter_string": filter_string,
                 "max_results": max_results,
-                "order_by": order_by,
                 "page_token": None,
             },
         ).json()
@@ -95,16 +93,15 @@ class MLFlowReportGenerator:
         """
         Gets a list of all values for the specified metric for a given run.
         """
-        metric_history = requests.get(
-            self.base_uri + "/api/2.0/mlflow/metrics/get-history",
+        endpoint_uri = self.base_uri + self.MLFLOW_GET_HISTORY_ENDPOINT
+        return requests.get(
+            endpoint_uri,
             json={"run_id": run_id, "metric_key": metric_key},
         ).json()
 
-        return metric_history
-
     def __generate_benchmark_experiment(self):
         report = {}
-        experiment_report_format = self.notion_report_format["experiment"]
+        experiment_report_format = self.report_format["experiment"]
 
         experiment_report_format_keys = experiment_report_format["values"].keys()
 
@@ -146,6 +143,9 @@ class MLFlowReportGenerator:
         return metric_info
 
     def create_final_benchmark_report(self) -> dict:
+        """
+        Generates the final report for each benchmark experiment.
+        """
 
         runs = {
             experiment["experiment_id"]: self.__get_experiment_runs(
@@ -161,25 +161,26 @@ class MLFlowReportGenerator:
             experiment_id = benchmark_experiment["experiment_id"]
             # create runs for each experiment
             benchmark_experiment["runs"] = {}
-            report = self.__generate_single_benchmark_run_report(
+            reports_run = self.__generate_single_benchmark_run_report(
                 runs=runs[experiment_id]
             )
 
             # add the runs to the experiment
-            benchmark_experiment["runs"] = report
+            benchmark_experiment["runs"] = reports_run
 
         # step 4: generate the report
+        report = {k: v for k, v in report.items() if v["runs"]}
         return report
 
     def __generate_single_benchmark_run_report(self, runs):
         report = {}
 
-        elements = self.notion_report_format["run"]["values"]
+        elements = self.report_format["run"]["values"]
 
         # iterate through the run report
         for index, benchmark_run in enumerate(runs["runs"]):
             # step 1: create a unique id for the run
-            run_key = self.notion_report_format["run"]["key"]
+            run_key = self.report_format["run"]["key"]
 
             run_id = benchmark_run["info"][run_key]
 
@@ -194,7 +195,7 @@ class MLFlowReportGenerator:
                     report[run_id][alias] = {
                         **elements[key],
                         "key": key,
-                        "value": val_type,
+                        "value": typify(value, val_type),
                     }
 
                 else:
@@ -231,7 +232,7 @@ class MLFlowReportGenerator:
                             report[run_id][alias] = {
                                 **elements[key],
                                 "key": key,
-                                "value": val_type,
+                                "value": typify(value, val_type),
                                 "data": metric_data,
                             }
                         else:
@@ -266,10 +267,8 @@ class NotionFormatGenerator:
         "select": {"select": {"options": []}},
     }
 
-    def __init__(self, token_id, page_id, report_format) -> None:
-        self.report_format = report_format
+    def __init__(self, token_id, page_id) -> None:
         self.notion_client = notion_client.Client(auth=token_id, log_level=logging.INFO)
-
         self.__page_id = page_id
         self.__notion_state = {}
 
@@ -299,8 +298,8 @@ class NotionFormatGenerator:
 
     @staticmethod
     def convert_type_to_notion_style(value_type):
-        number_types = {"float", "int", "integer"}
-        rich_text_types = {"str", "string", "timestamp"}
+        number_types = {"<class 'float'>", "float", "int", "<class 'int'>", "integer"}
+        rich_text_types = {"<class 'str'>", "str", "string", "timestamp"}
 
         if value_type in number_types:
             return "number"
@@ -310,12 +309,13 @@ class NotionFormatGenerator:
             return value_type
 
     def _get_notion_property(self, property_type, metadata):
-
         property_type = self.convert_type_to_notion_style(property_type)
 
         if property_type in self.NOTION_PROPERTIES:
             notion_property = self.NOTION_PROPERTIES[property_type]
         else:
+            print(f"property type = {property_type}")
+            print(f"actual type of variable = {type(property_type)}")
             sys.exit(f"unknown type of property: {property_type}")
 
         return notion_property
@@ -332,9 +332,10 @@ class NotionFormatGenerator:
             property["number"] = metadata
         elif property_type == "rich_text":
             property["rich_text"] = [{"text": {"content": metadata}}]
-
         else:
             sys.exit(f"unknown type of property: {property_type}")
+
+        return property
 
     def read_notion_property(self, property_object):
         if property_object["type"] == "rich_text":
@@ -348,8 +349,9 @@ class NotionFormatGenerator:
         else:
             sys.exit(f"unknown property type: {property_object['type']}")
 
-    def format_in(self):
+    def generate_notion_report(self):
         databases = self.retrieve_databases()
+
         state, report = {}, {}
 
         for database in databases["results"]:
@@ -357,7 +359,7 @@ class NotionFormatGenerator:
             if database["parent"]["page_id"] != self.__page_id:
                 continue
             # If database is not empty
-            if database["title"]:
+            if len(database["title"]) != 0:
                 # get name and ID of the database
                 db_name = database["title"][0]["text"]["content"]
                 db_id = database["id"]
@@ -371,13 +373,18 @@ class NotionFormatGenerator:
                 pages = self.notion_client.databases.query(database_id=db_id)
                 pages = pages["results"] if pages else []
 
-                # print(f"PAGES FROM format_in: {pages}")
                 for page in pages:
                     page_id = page["id"]
+
                     page_uid = self.read_notion_property(page["properties"]["uid"])
                     page_properties = {}
                     for page_property_name, page_property in page["properties"].items():
-                        print(f"PAGE PROPERTY = {page_property}")
+                        # print(f"PAGE PROPERTY being generated ...")
+                        if (
+                            page_property["type"] == "rich_text"
+                            and len(page_property["rich_text"]) == 0
+                        ):
+                            continue
                         page_properties[page_property_name] = self.read_notion_property(
                             page_property
                         )
@@ -450,6 +457,7 @@ class NotionFormatGenerator:
 
         # each experiment becomes a database
         for experiment_name, experiment in report.items():
+
             experiment_report = {}
 
             # create the properties of the database
@@ -459,14 +467,14 @@ class NotionFormatGenerator:
                 for key, value in run.items():
                     # add only newly encountered properites
                     if key not in experiment_property:
-                        # chick the type of the element
+                        # check the type of the element
 
                         val_type = "title" if (key == "Name") else value["type"]
                         # Metadata needed for some types of properties
                         if val_type == "select":
                             metadata = value["options"]
                         else:
-                            metadata = None
+                            metadata = value["value"]
 
                         experiment_property[key] = self._get_notion_property(
                             val_type, metadata
@@ -485,6 +493,11 @@ class NotionFormatGenerator:
                     run_property[key] = self.create_notion_property(
                         val_type, value["value"]
                     )
+
+                    if run_property[key] == None:
+                        print("???????")
+                        print(f"property type = {val_type}")
+                        print(f"Value = {value['value']}")
 
                 run_properties[run_uid] = run_property
 
