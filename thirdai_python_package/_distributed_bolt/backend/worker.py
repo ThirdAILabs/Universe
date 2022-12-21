@@ -6,6 +6,7 @@ from time import time
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, logging
 
+from ..utils import _create_loader
 
 def timed(f):
     @wraps(f)
@@ -91,7 +92,7 @@ class Worker:
             raise ValueError(
                 "There must be at least one loadable dataset in the passed in data source."
             )
-        self.dataset = data_processor(self.train_source, training=True)
+        self.dataset = data_processor(_create_loader(self.train_source, batch_size=256), training=True)
         self.get_data = True
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183

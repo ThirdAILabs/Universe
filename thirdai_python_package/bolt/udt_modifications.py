@@ -106,15 +106,6 @@ def modify_udt_classifier():
 
         train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
 
-        train_sources = [
-            _create_loader(
-                filename,
-                batch_size,
-                gcs_credentials_path=gcp_credentials_path,
-            )
-            for filename in filenames
-        ]
-
         model = self.get_model()
 
         dist_bolt.DistributedDataParallel(
