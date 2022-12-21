@@ -14,9 +14,8 @@ namespace thirdai::bolt::python {
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim);
 
-inline void printCopyWarning(const std::string& array_name,
-                             const py::str& dtype_recv,
-                             const std::string& dtype_expected);
+void printCopyWarning(const std::string& array_name, const py::str& dtype_recv,
+                      const std::string& dtype_expected);
 
 void biasDimensionCheck(
     const py::array_t<float, py::array::c_style | py::array::forcecast>& biases,
