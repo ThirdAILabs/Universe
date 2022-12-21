@@ -116,12 +116,6 @@ void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
   }
 }
 
-// Takes in the activations arrays (if they were allocated) and returns the
-// python tuple containing the metrics computed, along with the activations
-// and active neurons if those are not nullptrs. Note that just the
-// active_neuron pointer can be null if the output is dense. The
-// activation_handle object is a python object that owns the data for
-// the activations array, and likewise for the active_neuron_handle.
 py::tuple constructPythonInferenceTuple(
     py::dict&& py_metric_data, uint32_t num_samples, uint32_t inference_dim,
     const float* activations, const uint32_t* active_neurons,
@@ -159,8 +153,6 @@ py::tuple constructPythonInferenceTuple(
                         active_neurons_array);
 }
 
-// Helper method where the handles for active_neurons and activations are
-// automatically constructed assuming no other c++ object owns their memory
 py::tuple constructPythonInferenceTuple(py::dict&& py_metric_data,
                                         uint32_t num_samples,
                                         uint32_t inference_dim,

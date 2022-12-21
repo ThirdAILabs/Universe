@@ -388,7 +388,7 @@ endif()
 pybind11_add_module(
   _thirdai
   python_bindings/thirdai.cc
-  bolt/python_bindings/ConversionUtils.cc
+  bolt/python_bindings/PybindUtils.cc
   bolt/python_bindings/BoltPython.cc
   bolt/python_bindings/BoltNNPython.cc
   bolt/python_bindings/CallbacksPython.cc
