@@ -186,3 +186,5 @@ void DotProductNode::applyFunctionToOverlappingNeurons(
 }
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::DotProductNode)
