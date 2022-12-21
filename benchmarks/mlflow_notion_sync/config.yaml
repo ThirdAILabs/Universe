@@ -1,6 +1,12 @@
 
 benchmarks:
-  - Cookie Monster
+  - Amazon Polarity 
+  - Amazon670k Product Recommendation
+  - Criteo DLRM 46M
+  - Criteo DLRM 1M
+  - MLM Fully Connected 
+  - MLM Switch Layer 
+  - Mnist 
 mlflow:
   format: report_format.yaml
   report_format: null

@@ -7,11 +7,6 @@ import yaml
 
 
 def typify(value, value_type):
-    # print(f"VALUE = {value}")
-    # print(f"TYPE OF VAL-TYPE = {value_type}")
-    # print('TYPIFY CALLED WITH THE FOLLOWING PARAMS...')
-    # print(f"value = {value}, type of value = {type(value)}")
-    # print(f"value tyep = {value_type}, type of value type = {type(value_type)}")
     try:
         if value_type == "int" or value_type == "integer":
             value = int(value)
@@ -28,7 +23,6 @@ def typify(value, value_type):
         else:
             print("WARNING: Unsupported value type: " + value_type)
     except Exception as e:
-        print(f"UNSUPPORTED TYPE IS {value_type}")
         print(f"Unsupported value type: {value_type}, {e}")
 
     return value
@@ -77,9 +71,6 @@ def compare_reports(previous_report, new_report):
     diff = {"new": {}, "deleted": {}, "updated": {}}
     if previous_report == new_report:
         return {}
-
-    # if not previous_report:
-    #     return new_report
 
     # compare old and new experiments
     for experiment_name in previous_report:
