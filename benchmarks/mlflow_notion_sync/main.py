@@ -63,6 +63,9 @@ def synchronize_current_report_with_notion(
                 response = notion_format_generator.handle_crud_operation(
                     database_id=database_id, properties=run, operation="create"
                 )
+                notion_format_generator.notion_state[experiment_name]["pages"][
+                    run_uid
+                ] = {"page_id": response["id"]}
 
     elif command == "update":
         # New runs are added at the end of the table

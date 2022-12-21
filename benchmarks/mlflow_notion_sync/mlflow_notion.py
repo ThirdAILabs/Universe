@@ -208,6 +208,27 @@ class MLFlowExperimentsReport:
 
             # step 3: add other data to the report
             for element_type in ["metrics", "params", "tags"]:
+
+                if "Name" not in report[run_id]:
+                    report[run_id]["Name"] = {
+                        "alias": "Name",
+                        "type": "title",
+                        "tag": "info",
+                        "key": "id",
+                        "description": "The unique ID of the run",
+                        "value": "NULL",
+                        "data": None,
+                    }
+                if "uid" not in report[run_id]:
+                    report[run_id]["uid"] = {
+                        "alias": "id",
+                        "type": "string",
+                        "tag": "info",
+                        "key": "id",
+                        "description": "Unique ID for the run",
+                        "value": str(run_id),
+                        "data": None,
+                    }
                 # make sure the element type is in the benchmark run
                 if element_type in benchmark_run["data"]:
                     for metric in benchmark_run["data"][element_type]:
@@ -243,17 +264,6 @@ class MLFlowExperimentsReport:
                                 "data": metric_data,
                             }
 
-            # add "uid" to the report to uniquely identify the run
-            if "uid" not in report[run_id]:
-                report[run_id]["uid"] = {
-                    "alias": "id",
-                    "type": "string",
-                    "tag": "info",
-                    "key": "id",
-                    "description": "The Unique ID of the benchmark run",
-                    "value": str(run_id),
-                    "data": None,
-                }
         return report
 
 
@@ -384,6 +394,10 @@ class NotionFormatGenerator:
                     page_uid = self.read_notion_property(page["properties"]["uid"])
                     page_properties = {}
                     for page_property_name, page_property in page["properties"].items():
+                        # if page_property_name == "Name" and len(
+                        #     page_property["title"] == 0
+                        # ):
+                        #     page_properties[page_property_name] = "NULL"
                         if (
                             page_property["type"] == "rich_text"
                             and len(page_property["rich_text"]) == 0
