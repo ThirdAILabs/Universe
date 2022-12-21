@@ -139,7 +139,7 @@ class DistributedDataParallel:
         cluster_config: RayTrainingClusterConfig,
         model: bolt.nn.Model,
         train_config: bolt.TrainConfig,
-        train_sources: List[DatasetLoader],
+        train_sources: Union[List[DatasetLoader], List[str]],
         data_processor=None,
     ):
         """
