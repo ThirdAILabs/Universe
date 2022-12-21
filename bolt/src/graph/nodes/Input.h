@@ -55,6 +55,8 @@ class Input final : public Node {
     throw std::logic_error("Should not call initOptimizer() on Input node");
   }
 
+  bool hasParameters() final { return false; }
+
  private:
   void compileImpl() final;
 

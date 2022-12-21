@@ -6,8 +6,6 @@ from time import time
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, logging
 
-from ..utils import get_gradients
-
 
 def timed(f):
     @wraps(f)
@@ -186,7 +184,7 @@ class Worker:
         :return: Model Gradients
         :rtype: numpy.ndarray
         """
-        return get_gradients(self.model)
+        return self.model.gradient_reference().get_gradients()
 
     @timed
     def receive_gradients(self, averaged_gradients_ref=None):
@@ -202,7 +200,7 @@ class Worker:
                     to communicate
         :type averaged_gradients_ref: RayObjectRef, optional
         """
-        if averaged_gradients_ref == None:
+        if self.communication_type != "linear":
             self.comm.receive_gradients()
         else:
             self.comm.receive_gradients(averaged_gradients_ref)

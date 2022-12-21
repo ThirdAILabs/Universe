@@ -6,7 +6,7 @@ import pytest
 
 
 @pytest.fixture(scope="module")
-def ray_two_node_cluster_config(communication_type="linear"):
+def ray_two_node_cluster_config():
 
     # Do these imports here so pytest collection doesn't fail if ray isn't installed
     import ray
@@ -21,21 +21,30 @@ def ray_two_node_cluster_config(communication_type="linear"):
     )
     mini_cluster.add_node(num_cpus=1)
 
-    # We set the working_dir for the cluster equal to this directory
-    # so that pickle works. Otherwise, unpickling the function
-    # defined in test_mock_cluster_arbitrary_streaming_data_loader.py would not
-    # work, since pickle needs to be able to import the file the object/function
-    # was originally defined in.
-    working_dir = os.path.dirname(os.path.realpath(__file__))
-    cluster_config = db.RayTrainingClusterConfig(
-        num_workers=2,
-        requested_cpus_per_node=1,
-        communication_type=communication_type,
-        cluster_address=mini_cluster.address,
-        runtime_env={"working_dir": working_dir},
-        ignore_reinit_error=True,
-    )
-    yield cluster_config
+    # directly yielding mini_cluster returns a generator for cluster_config,
+    # rather than cluster_config itself and those generators were just using
+    # the default communication_type(= "linear"), even after parametrizing it
+    # . doing it this way make sure we are getting the cluster_config for the
+    # communication type provided
+    def _make_cluster_config(communication_type="linear"):
+
+        # We set the working_dir for the cluster equal to this directory
+        # so that pickle works. Otherwise, unpickling the function
+        # defined in test_mock_cluster_arbitrary_streaming_data_loader.py would not
+        # work, since pickle needs to be able to import the file the object/function
+        # was originally defined in.
+        working_dir = os.path.dirname(os.path.realpath(__file__))
+        cluster_config = db.RayTrainingClusterConfig(
+            num_workers=2,
+            requested_cpus_per_node=1,
+            communication_type=communication_type,
+            cluster_address=mini_cluster.address,
+            runtime_env={"working_dir": working_dir},
+            ignore_reinit_error=True,
+        )
+        return cluster_config
+
+    yield _make_cluster_config
 
     ray.shutdown()
     mini_cluster.shutdown()
