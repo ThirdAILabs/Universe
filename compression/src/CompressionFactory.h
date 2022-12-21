@@ -188,7 +188,7 @@ inline std::variant<DragonVector<T>, CountSketch<T>> add(
     std::vector<std::variant<DragonVector<T>, CountSketch<T>>>
         compressed_vectors) {
   if (compressed_vectors.empty()) {
-    throw std::logic_error("No compressed vectors provided for concatenating.");
+    throw std::logic_error("No compressed vectors provided for addition.");
   }
   // We initialize a compressed vector from the first element of the input
   // vector, and then keep on extending it with the rest of the elements.

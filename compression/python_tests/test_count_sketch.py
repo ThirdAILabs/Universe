@@ -40,8 +40,7 @@ def test_concat_values_count_sketch():
     new_first_layer_weights = first_layer.weights.copy().flatten()
 
     for i, values in enumerate(new_first_layer_weights):
-        if values != 0:
-            assert old_first_layer_weights[i] == new_first_layer_weights[i]
+        assert old_first_layer_weights[i] == new_first_layer_weights[i]
 
 
 def test_add_count_sketch():
@@ -66,8 +65,7 @@ def test_add_count_sketch():
 
     new_first_layer_weights = first_layer.weights.copy().flatten()
     for i, values in enumerate(new_first_layer_weights):
-        if values != 0:
-            assert old_first_layer_weights[i] == new_first_layer_weights[i]
+        assert old_first_layer_weights[i] == new_first_layer_weights[i]
 
 
 # Tests compressed training by compressing and decompressing weights between
