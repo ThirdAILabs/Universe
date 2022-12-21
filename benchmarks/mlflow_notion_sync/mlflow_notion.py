@@ -314,8 +314,6 @@ class NotionFormatGenerator:
         if property_type in self.NOTION_PROPERTIES:
             notion_property = self.NOTION_PROPERTIES[property_type]
         else:
-            print(f"property type = {property_type}")
-            print(f"actual type of variable = {type(property_type)}")
             sys.exit(f"unknown type of property: {property_type}")
 
         return notion_property
@@ -379,7 +377,6 @@ class NotionFormatGenerator:
                     page_uid = self.read_notion_property(page["properties"]["uid"])
                     page_properties = {}
                     for page_property_name, page_property in page["properties"].items():
-                        # print(f"PAGE PROPERTY being generated ...")
                         if (
                             page_property["type"] == "rich_text"
                             and len(page_property["rich_text"]) == 0
@@ -493,11 +490,6 @@ class NotionFormatGenerator:
                     run_property[key] = self.create_notion_property(
                         val_type, value["value"]
                     )
-
-                    if run_property[key] == None:
-                        print("???????")
-                        print(f"property type = {val_type}")
-                        print(f"Value = {value['value']}")
 
                 run_properties[run_uid] = run_property
 
