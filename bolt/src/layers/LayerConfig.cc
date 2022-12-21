@@ -16,17 +16,6 @@ void checkSparsity(float sparsity) {
   }
 }
 
-uint32_t FullyConnectedLayerConfig::clip(uint32_t input, uint32_t low,
-                                         uint32_t high) {
-  if (input < low) {
-    return low;
-  }
-  if (input > high) {
-    return high;
-  }
-  return input;
-}
-
 template <class Archive>
 void FullyConnectedLayerConfig::serialize(Archive& archive) {
   archive(_dim, _sparsity, _activation_fn, _sampling_config);

@@ -45,8 +45,6 @@ class FullyConnectedLayerConfig {
   }
 
  private:
-  static uint32_t clip(uint32_t input, uint32_t low, uint32_t high);
-
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive);
