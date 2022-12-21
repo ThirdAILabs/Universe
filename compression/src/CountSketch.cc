@@ -41,6 +41,10 @@ CountSketch<T>::CountSketch(
    * than even sketch sizes.  Hence, sketch sizes are forced to be odd. We need
    * to look more into why this happens.
    */
+  if (num_sketches <= 0) {
+    throw std::invalid_argument(
+        "Atleast one sketch is needed for Count Sketching the values");
+  }
   sketch_size = sketch_size % 2 == 0 ? sketch_size + 1 : sketch_size;
   _count_sketches.assign(num_sketches, std::vector<T>(sketch_size, 0));
   for (uint32_t i = 0; i < num_sketches; i++) {
@@ -148,12 +152,10 @@ void CountSketch<T>::divide(uint32_t divisor) {
   if (divisor == 0) {
     throw std::invalid_argument("Cannot divide a Count Sketch by 0");
   }
-  uint32_t sketch_size = static_cast<uint32_t>(_count_sketches[0].size());
   uint32_t num_sketches = numSketches();
-  // #pragma omp parallel for default(none) \
-//     shared(num_sketches, divisor, sketch_size)
+#pragma omp parallel for default(none) shared(num_sketches, divisor)
   for (uint32_t sketch_id = 0; sketch_id < num_sketches; sketch_id++) {
-    for (uint32_t i = 0; i < sketch_size; i++) {
+    for (uint32_t i = 0; i < _count_sketches[0].size(); i++) {
       _count_sketches[sketch_id][i] /= divisor;
     }
   }
