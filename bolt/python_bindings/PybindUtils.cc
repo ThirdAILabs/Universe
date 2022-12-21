@@ -70,8 +70,6 @@ void layerIndexCheck(uint32_t layer_index, uint32_t num_layers) {
   }
 }
 
-//  Checks that the dimensions of the given numpy array match the expected
-//  dimensions.
 void checkNumpyArrayDimensions(
     const std::vector<uint32_t>& expected_dimensions,
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
