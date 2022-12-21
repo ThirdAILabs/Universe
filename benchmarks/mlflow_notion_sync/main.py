@@ -63,10 +63,6 @@ def synchronize_current_report_with_notion(
                 response = notion_format_generator.handle_crud_operation(
                     database_id=database_id, properties=run, operation="create"
                 )
-                page_id = response["id"]
-                notion_format_generator[experiment_name]["pages"][run_uid] = {
-                    "page_id": page_id
-                }
 
     elif command == "update":
         # New runs are added at the end of the table
@@ -140,7 +136,7 @@ def parse_arguments():
     parser.add_argument(
         "--report_format",
         type=str,
-        default="benchmarks/mlflow_notion_sync/mlsync_config.yaml",
+        default="benchmarks/mlflow_notion_sync/report_format.yaml",
         help="Path to the base format used to synchronize runs from MLFlow and Notion.",
     )
 

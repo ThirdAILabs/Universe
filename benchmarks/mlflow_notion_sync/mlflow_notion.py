@@ -288,7 +288,7 @@ class NotionFormatGenerator:
     def notion_state(self, state):
         self.__notion_state = state
 
-    def __retrieve_page(self):
+    def __query_database(self, db_id):
         try:
             page_object = self.notion_client.pages.retrieve(self.__page_id)
         except Exception as exception:
@@ -367,8 +367,15 @@ class NotionFormatGenerator:
                 # update notion state
                 state[db_name] = {"database_id": db_id, "pages": {}}
 
-                # get all pages (runs) in the database
-                pages = self.notion_client.databases.query(database_id=db_id)
+                # get all pages (runs) in the database. This is within a try-except
+                # block because notion_client may return a database_id even after
+                # it has been deleted due to eventual consistency.
+                # This block ensures that we only access databases (i.e., experiment)
+                # that are still active.
+                try:
+                    pages = self.notion_client.databases.query(database_id=db_id)
+                except Exception as e:
+                    continue
                 pages = pages["results"] if pages else []
 
                 for page in pages:
