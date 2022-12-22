@@ -285,6 +285,7 @@ set(THIRDAI_SOURCES
     new_dataset/src/featurization_pipeline/ColumnMap.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
+    compression/src/CompressionFactory.cc
     auto_ml/src/dataset_factories/SingleBlockDatasetFactory.cc
     auto_ml/src/dataset_factories/udt/DataTypes.cc
     auto_ml/src/dataset_factories/udt/FeatureComposer.cc
