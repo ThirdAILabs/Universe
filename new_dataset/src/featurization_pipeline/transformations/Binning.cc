@@ -2,7 +2,8 @@
 
 namespace thirdai::data {
 
-void BinningTransformation::apply(ColumnMap& columns) {
+void BinningTransformation::apply(ColumnMap& columns,
+                                  bool /*prepare_for_backpropagate*/) {
   auto column = columns.getDenseFeatureColumn(_input_column_name);
 
   std::vector<uint32_t> binned_values(column->numRows());
@@ -33,9 +34,7 @@ void BinningTransformation::apply(ColumnMap& columns) {
 }
 
 void BinningTransformation::backpropagate(
-    ContributionColumnMap& /*contribuition_columns*/) {
-      
-    }
+    ColumnMap& /*columns*/, ContributionColumnMap& /*contribuition_columns*/) {}
 
 std::optional<uint32_t> BinningTransformation::getBin(float value) const {
   if (value >= _exclusive_max_value || value < _inclusive_min_value) {

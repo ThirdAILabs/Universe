@@ -15,6 +15,7 @@ struct DimensionInfo {
 
 template <typename T>
 struct Contribution {
+  Contribution() {}
   Contribution(T value, float gradient) : value(value), gradient(gradient) {}
   T value;
   float gradient;
@@ -171,8 +172,7 @@ using ContibutionColumnBasePtr = std::shared_ptr<ContibutionColumnBase>;
 template <typename T>
 class ContibutionColumn : public ContibutionColumnBase {
  public:
-  virtual typename ArrayColumn<Contribution<T>>::RowReference operator[](
-      uint64_t n) const = 0;
+  virtual std::vector<Contribution<T>> getRow(uint64_t n) const = 0;
 
   virtual void insert(const std::vector<Contribution<T>>& row_values) = 0;
 
@@ -180,6 +180,7 @@ class ContibutionColumn : public ContibutionColumnBase {
 };
 
 using TokenContributionColumn = ContibutionColumn<uint32_t>;
+using StringContributionColumn = ContibutionColumn<std::string>;
 
 using TokenContributionColumnPtr = std::shared_ptr<TokenContributionColumn>;
 

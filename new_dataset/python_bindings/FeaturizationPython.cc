@@ -26,6 +26,15 @@ namespace py = pybind11;
 void createFeaturizationSubmodule(py::module_& dataset_submodule) {
   auto columns_submodule = dataset_submodule.def_submodule("columns");
 
+  py::class_<columns::Contribution<std::string>>(columns_submodule,
+                                                 "StringContribution")
+      .def_readonly("value", &columns::Contribution<std::string>::value)
+      .def_readonly("gradient", &columns::Contribution<std::string>::gradient);
+  py::class_<columns::Contribution<uint32_t>>(columns_submodule,
+                                              "TokenContribution")
+      .def_readonly("value", &columns::Contribution<uint32_t>::value)
+      .def_readonly("gradient", &columns::Contribution<uint32_t>::gradient);
+
   py::class_<columns::Column, columns::ColumnPtr>(columns_submodule, "Column",
                                                   docs::COLUMN_BASE)
       .def("dimension_info", &columns::Column::dimension);
@@ -74,11 +83,22 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
       contribution_columns_submodule, "ContributionColumn")
       .def("num_rows", &columns::ContibutionColumnBase::numRows);
 
+  py::class_<columns::CppStringContributionColumn,
+             columns::ContibutionColumnBase,
+             std::shared_ptr<columns::CppStringContributionColumn>>(
+      contribution_columns_submodule, "StringContributionColumn")
+      .def("num_rows", &columns::CppStringContributionColumn::numRows)
+      .def("get_row", &columns::CppStringContributionColumn::getRow,
+           py::arg("row_number"));
+
   py::class_<columns::CppTokenContributionColumn,
              columns::ContibutionColumnBase,
              std::shared_ptr<columns::CppTokenContributionColumn>>(
       contribution_columns_submodule, "TokenContributionColumn")
-      .def("num_rows", &columns::CppTokenContributionColumn::numRows);
+      .def("num_rows", &columns::CppTokenContributionColumn::numRows)
+      .def("get_row", &columns::CppTokenContributionColumn::getRow,
+           py::arg("row_number"));
+  ;
 
   auto augmentations_submodule =
       dataset_submodule.def_submodule("augmentations");
@@ -165,7 +185,9 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
   py::class_<ContributionColumnMap>(dataset_submodule, "ContributionColumnMap")
       .def(py::init<std::unordered_map<std::string,
                                        columns::ContibutionColumnBasePtr>>(),
-           py::arg("contribution_columns"));
+           py::arg("contribution_columns"))
+      .def("num_rows", &ContributionColumnMap::numRows)
+      .def("getitem", &ContributionColumnMap::getColumn, py::arg("name"));
 
   py::class_<FeaturizationPipeline, FeaturizationPipelinePtr>(
       dataset_submodule, "FeaturizationPipeline",
@@ -173,7 +195,10 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
       .def(py::init<std::vector<TransformationPtr>>(),
            py::arg("transformations"), docs::FEATURIZATION_PIPELINE_INIT)
       .def("featurize", &FeaturizationPipeline::featurize, py::arg("columns"),
+           py::arg("want_explanations") = false,
            docs::FEATURIZATION_PIPELINE_FEATURIZE)
+      .def("explain", &FeaturizationPipeline::explain, py::arg("columns"),
+           py::arg("contribution_columns"))
       .def(bolt::python::getPickleFunction<FeaturizationPipeline>());
 }
 

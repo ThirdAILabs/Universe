@@ -28,7 +28,7 @@ class TokenPairgram : public Transformation {
         _output_column_name(std::move(output_column_name)),
         _output_range(output_range) {}
 
-  void apply(ColumnMap& column_map) final {
+  void apply(ColumnMap& column_map, bool /*prepare_for_backpropagate*/) final {
     columns::TokenArrayColumnPtr input_column =
         column_map.getTokenArrayColumn(_input_column_name);
     uint32_t num_rows = column_map.numRows();
@@ -61,7 +61,8 @@ class TokenPairgram : public Transformation {
     column_map.setColumn(_output_column_name, output_column);
   }
 
-  void backpropagate(ContributionColumnMap& /*contribuition_columns*/) final {}
+  void backpropagate(ColumnMap& /*columns*/,
+                     ContributionColumnMap& /*contribuition_columns*/) final {}
 
  private:
   // Private constructor for cereal.

@@ -19,17 +19,19 @@ class FeaturizationPipeline {
   explicit FeaturizationPipeline(std::vector<TransformationPtr> transformations)
       : _transformations(std::move(transformations)) {}
 
-  ColumnMap featurize(ColumnMap columns) {
+  ColumnMap featurize(ColumnMap columns,
+                      bool prepare_for_backpropagate = false) {
     for (auto& transformation : _transformations) {
-      transformation->apply(columns);
+      transformation->apply(columns, prepare_for_backpropagate);
     }
 
     return columns;
   }
 
-  ContributionColumnMap explain(ContributionColumnMap contribution_columns) {
-    for(auto& transformation: _transformations) {
-      transformation->backpropagate(contribution_columns);
+  ContributionColumnMap explain(ColumnMap columns,
+                                ContributionColumnMap contribution_columns) {
+    for (auto& transformation : _transformations) {
+      transformation->backpropagate(columns, contribution_columns);
     }
     return contribution_columns;
   }

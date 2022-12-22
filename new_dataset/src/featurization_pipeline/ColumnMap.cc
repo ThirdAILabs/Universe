@@ -1,4 +1,5 @@
 #include "ColumnMap.h"
+#include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
@@ -31,10 +32,10 @@ ColumnMap::ColumnMap(
 
 ContributionColumnMap ColumnMap::getContributions(
     const std::vector<std::string>& column_names,
-    const std::vector<std::vector<float>>& gradients,
+    const std::vector<std::vector<float>>& raw_gradients,
     const std::optional<std::vector<std::vector<uint32_t>>>& indices) {
   auto output_columns = selectColumns(column_names);
-  if (numRows() != gradients.size()) {
+  if (numRows() != raw_gradients.size()) {
     throw std::invalid_argument(
         "gradients size and number of rows doesn't match.");
   }
@@ -48,25 +49,27 @@ ContributionColumnMap ColumnMap::getContributions(
           "Cannot convert column without dimension to get contributions.");
     }
   }
+  std::vector<std::vector<float>> gradients =
+      bolt::getPercentagesFromGradients(raw_gradients);
   std::vector<columns::CppTokenContributionColumn> contribution_columns(
       output_columns.size());
   for (uint32_t vec_idx = 0; vec_idx < numRows(); vec_idx++) {
     std::vector<std::vector<columns::Contribution<uint32_t>>>
         contribuition_rows(output_columns.size());
-    uint32_t k = 0;
+    uint32_t start_index = 0;
     for (uint32_t i = 0; i < output_columns.size(); i++) {
       if (indices) {
         uint32_t j;
-        for (j = k; j < indices->at(vec_idx).size() &&
-                    indices->at(vec_idx)[j] < column_dims[i + 1];
+        for (j = start_index; j < indices->at(vec_idx).size() &&
+                              indices->at(vec_idx)[j] < column_dims[i + 1];
              j++) {
           contribuition_rows[i].push_back(columns::Contribution<uint32_t>(
               indices->at(vec_idx)[j], gradients[vec_idx][j]));
         }
-        k = j;
+        start_index = j;
       } else {
         uint32_t j;
-        for (j = k; j < gradients[vec_idx].size(); j++) {
+        for (j = start_index; j < gradients[vec_idx].size(); j++) {
           if (j < column_dims[i + 1]) {
             contribuition_rows[i].push_back(
                 columns::Contribution<uint32_t>(j, gradients[vec_idx][j]));
@@ -74,7 +77,7 @@ ContributionColumnMap ColumnMap::getContributions(
             break;
           }
         }
-        k = j;
+        start_index = j;
       }
       contribution_columns[i].insert(contribuition_rows[i]);
     }

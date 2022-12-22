@@ -32,7 +32,7 @@ class TabularHashedFeatures : public Transformation {
         _output_range(output_range),
         _use_pairgrams(use_pairgrams) {}
 
-  void apply(ColumnMap& column_map) final {
+  void apply(ColumnMap& column_map, bool /*prepare_for_backpropagate*/) final {
     std::vector<columns::TokenColumnPtr> columns;
     // we hash the name of each column here so we can combine hashes later on
     // and have unique values across columns
@@ -86,7 +86,8 @@ class TabularHashedFeatures : public Transformation {
     column_map.setColumn(_output_column_name, output_column);
   }
 
-  void backpropagate(ContributionColumnMap& /*contribuition_columns*/) final {}
+  void backpropagate(ColumnMap& /*columns*/,
+                     ContributionColumnMap& /*contribuition_columns*/) final {}
 
  private:
   // Private constructor for cereal.

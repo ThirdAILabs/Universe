@@ -18,11 +18,15 @@ class ContributionColumnMap {
       std::unordered_map<std::string, columns::ContibutionColumnBasePtr>
           columns);
 
-  columns::ContibutionColumnBasePtr getContributionColumn(
-      const std::string& name);
+  columns::TokenContributionColumnPtr getTokenContributionColumn(
+      const std::string& name) const;
+
+  uint64_t numRows() const { return _num_rows; }
 
   void setColumn(const std::string& name,
                  columns::ContibutionColumnBasePtr column);
+
+  columns::ContibutionColumnBasePtr getColumn(const std::string& name) const;
 
  private:
   std::unordered_map<std::string, columns::ContibutionColumnBasePtr>

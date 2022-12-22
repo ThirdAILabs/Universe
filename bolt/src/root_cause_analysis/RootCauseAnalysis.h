@@ -105,4 +105,22 @@ inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
   return explanations;
 }
 
+inline std::vector<std::vector<float>> getPercentagesFromGradients(
+    const std::vector<std::vector<float>>& gradients_ratio) {
+  std::vector<std::vector<float>> gradients_percentage(gradients_ratio.size());
+  for (uint32_t i = 0; i < gradients_ratio.size(); i++) {
+    std::vector<float> gradient_percentage(gradients_ratio[i].size());
+    float ratio_sum = 0;
+    for (float gradient_ratio : gradients_ratio[i]) {
+      ratio_sum += std::abs(gradient_ratio);
+    }
+
+    for (uint32_t j = 0; j < gradients_ratio[i].size(); j++) {
+      gradient_percentage[j] = (gradients_ratio[i][j] / ratio_sum) * 100;
+    }
+    gradients_percentage[i] = gradient_percentage;
+  }
+  return gradients_percentage;
+}
+
 }  // namespace thirdai::bolt

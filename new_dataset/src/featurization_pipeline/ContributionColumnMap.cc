@@ -1,6 +1,7 @@
 #include "ColumnMap.h"
 #include <new_dataset/src/featurization_pipeline/Column.h>
 #include <exception>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -27,13 +28,27 @@ ContributionColumnMap::ContributionColumnMap(
   _num_rows = num_rows.value();
 }
 
-columns::ContibutionColumnBasePtr ContributionColumnMap::getContributionColumn(
-    const std::string& name) {
+columns::ContibutionColumnBasePtr ContributionColumnMap::getColumn(
+    const std::string& name) const {
   if (!_contribuition_columns.count(name)) {
     throw std::invalid_argument("Unable to find column with name '" + name +
                                 "'.");
   }
   return _contribuition_columns.at(name);
+}
+
+columns::TokenContributionColumnPtr
+ContributionColumnMap::getTokenContributionColumn(
+    const std::string& name) const {
+  auto column = std::dynamic_pointer_cast<columns::TokenContributionColumn>(
+      getColumn(name));
+  if (!column) {
+    throw std::invalid_argument(
+        "Column '" + name +
+        "' cannot be converted to TokenContributionColumn.");
+  }
+
+  return column;
 }
 
 void ContributionColumnMap::setColumn(

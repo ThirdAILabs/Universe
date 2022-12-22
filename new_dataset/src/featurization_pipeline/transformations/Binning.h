@@ -30,9 +30,10 @@ class BinningTransformation final : public Transformation {
         _binsize((exclusive_max_value - inclusive_min_value) / num_bins),
         _num_bins(num_bins) {}
 
-  void apply(ColumnMap& columns) final;
+  void apply(ColumnMap& columns, bool prepare_for_backpropagate) final;
 
-  void backpropagate(ContributionColumnMap& contribuition_columns) final;
+  void backpropagate(ColumnMap& columns,
+                     ContributionColumnMap& contribuition_columns) final;
 
  private:
   // Private constructor for cereal.

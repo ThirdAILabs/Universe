@@ -229,12 +229,11 @@ class CppTokenContributionColumn : public TokenContributionColumn {
     check2DArrayNonEmpty<Contribution<uint32_t>>(_data);
   }
 
-  uint64_t numRows() const final { return _data.size(); }
-
-  typename ArrayColumn<Contribution<uint32_t>>::RowReference operator[](
-      uint64_t n) const final {
-    return {_data[n].data(), _data[n].size()};
+  std::vector<Contribution<uint32_t>> getRow(uint64_t n) const final {
+    return _data[n];
   }
+
+  uint64_t numRows() const final { return _data.size(); }
 
   void insert(const std::vector<Contribution<uint32_t>>& row_values) final {
     _data.push_back(row_values);
@@ -242,6 +241,28 @@ class CppTokenContributionColumn : public TokenContributionColumn {
 
  private:
   std::vector<std::vector<Contribution<uint32_t>>> _data;
+};
+
+class CppStringContributionColumn : public StringContributionColumn {
+ public:
+  explicit CppStringContributionColumn(
+      std::vector<std::vector<Contribution<std::string>>> data)
+      : _data(std::move(data)) {
+    check2DArrayNonEmpty<Contribution<std::string>>(_data);
+  }
+
+  std::vector<Contribution<std::string>> getRow(uint64_t n) const final {
+    return _data[n];
+  }
+
+  uint64_t numRows() const final { return _data.size(); }
+
+  void insert(const std::vector<Contribution<std::string>>& row_values) final {
+    _data.push_back(row_values);
+  }
+
+ private:
+  std::vector<std::vector<Contribution<std::string>>> _data;
 };
 
 }  // namespace thirdai::data::columns

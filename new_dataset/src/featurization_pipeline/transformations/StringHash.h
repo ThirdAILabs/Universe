@@ -20,9 +20,10 @@ class StringHash final : public Transformation {
         _output_range(output_range),
         _seed(seed) {}
 
-  void apply(ColumnMap& columns) final;
+  void apply(ColumnMap& columns, bool prepare_for_backpropagate) final;
 
-  void backpropagate(ContributionColumnMap& contribuition_columns) final;
+  void backpropagate(ColumnMap& columns,
+                     ContributionColumnMap& contribuition_columns) final;
 
  private:
   // Private constructor for cereal.
@@ -45,6 +46,7 @@ class StringHash final : public Transformation {
   std::string _output_column_name;
   std::optional<uint32_t> _output_range;
   uint32_t _seed;
+  std::optional<std::vector<uint32_t>> _hash_values;
 };
 
 }  // namespace thirdai::data

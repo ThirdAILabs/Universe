@@ -18,9 +18,11 @@ namespace thirdai::data {
  */
 class Transformation {
  public:
-  virtual void apply(ColumnMap& columns) = 0;
+  virtual void apply(ColumnMap& columns,  // NOLINT
+                     bool prepare_for_backpropagate = false) = 0;
 
-  virtual void backpropagate(ContributionColumnMap& contribuition_columns) = 0;
+  virtual void backpropagate(ColumnMap& columns,
+                             ContributionColumnMap& contribuition_columns) = 0;
 
   // TODO(Nicholas/Josh): Add method for if the transformation can be
   // distributed (i.e. no state).
