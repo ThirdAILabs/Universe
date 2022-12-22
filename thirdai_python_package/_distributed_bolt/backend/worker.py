@@ -88,12 +88,12 @@ class Worker:
                 )
             )
 
+        self.dataset = data_processor.get_dataset_loader(_create_loader(self.train_source, batch_size=256), training=True)
+        self.get_data = True
         if not self._try_load_new_datasets_into_model():
             raise ValueError(
                 "There must be at least one loadable dataset in the passed in data source."
             )
-        self.dataset = data_processor(_create_loader(self.train_source, batch_size=256), training=True)
-        self.get_data = True
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.
@@ -213,7 +213,7 @@ class Worker:
         then this will fail until we call restart on it).
         """
 
-        if self.data_processor == None:
+        if self.dataset == None:
             load = self.train_source.next()
 
             if load == None:
@@ -235,6 +235,7 @@ class Worker:
         else:
             if self.get_data:
                 self.train_data, self.train_label = self.dataset.load_in_memory()
+                self.get_data = False
                 return True
             else:
                 self.train_data = None

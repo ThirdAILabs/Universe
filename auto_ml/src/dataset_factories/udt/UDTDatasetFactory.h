@@ -40,6 +40,9 @@
 
 namespace thirdai::automl::data {
 
+class UDTDatasetFactory;
+using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
+
 class UDTDatasetFactory final : public DatasetLoaderFactory {
  public:
   explicit UDTDatasetFactory(UDTConfigPtr config, bool force_parallel,
@@ -142,6 +145,31 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   uint32_t getLabelDim() final { return _label_dim; }
+
+  void save(const std::string& filename) const {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    save_stream(filestream);
+  }
+
+  void save_stream(std::ostream& output_stream) const {
+    cereal::BinaryOutputArchive oarchive(output_stream);
+    oarchive(*this);
+  }
+
+  UDTDatasetFactoryPtr load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    return load_stream(filestream);
+  }
+
+  UDTDatasetFactoryPtr load_stream(std::istream& input_stream) {
+    cereal::BinaryInputArchive iarchive(input_stream);
+    std::shared_ptr<UDTDatasetFactory> deserialize_into(
+        new UDTDatasetFactory());
+    iarchive(*deserialize_into);
+    return deserialize_into;
+  }
 
  private:
   PreprocessedVectorsMap processAllMetadata();
@@ -319,7 +347,5 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
             _regression_binning);
   }
 };
-
-using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
 }  // namespace thirdai::automl::data

@@ -103,6 +103,9 @@ void createModelsSubmodule(py::module_& module) {
 
   py::class_<data::UDTDatasetFactory, data::UDTDatasetFactoryPtr>(
       models_submodule, "TemporalContext")
+      .def("get_dataset_loader",
+           &data::UDTDatasetFactory::getLabeledDatasetLoader,
+           py::arg("data_loader"), py::arg("training"))
       .def("reset", &data::UDTDatasetFactory::resetTemporalTrackers,
            docs::TEMPORAL_CONTEXT_RESET)
       .def("update_temporal_trackers",
@@ -112,7 +115,8 @@ void createModelsSubmodule(py::module_& module) {
       .def("batch_update_temporal_trackers",
            py::overload_cast<const LineInputBatch&>(
                &data::UDTDatasetFactory::batchUpdateTemporalTrackers),
-           py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
+           py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH)
+      .def(bolt::python::getPickleFunction<data::UDTDatasetFactory>());
 
   py::class_<data::UDTConfig, data::UDTConfigPtr>(models_submodule, "UDTConfig")
       .def(py::init<data::ColumnDataTypes,

@@ -112,7 +112,8 @@ def modify_udt_classifier():
             cluster_config=cluster_config,
             model=model,
             train_config=train_config,
-            train_sources=train_sources,
+            train_sources=filenames,
+            data_processor=self.get_data_processor()
         )
         model = dist_bolt.get_model()
 
