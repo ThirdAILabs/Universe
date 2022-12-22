@@ -157,13 +157,13 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     oarchive(*this);
   }
 
-  UDTDatasetFactoryPtr load(const std::string& filename) {
+  static UDTDatasetFactoryPtr load(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     return load_stream(filestream);
   }
 
-  UDTDatasetFactoryPtr load_stream(std::istream& input_stream) {
+  static UDTDatasetFactoryPtr load_stream(std::istream& input_stream) {
     cereal::BinaryInputArchive iarchive(input_stream);
     std::shared_ptr<UDTDatasetFactory> deserialize_into(
         new UDTDatasetFactory());
