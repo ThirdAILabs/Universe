@@ -4,7 +4,7 @@ from collections import defaultdict
 
 import pandas as pd
 import pytest
-from download_datasets import download_clinc_dataset
+from download_dataset_fixtures import download_clinc_dataset
 from model_test_utils import compute_evaluate_accuracy
 from thirdai import bolt
 

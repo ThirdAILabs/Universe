@@ -232,8 +232,8 @@ void UniversalDeepTransformer::coldStartPretraining(
   auto train_config = bolt::TrainConfig::makeConfig(/* learning_rate= */ 0.01,
                                                     /* epochs= */ 1);
 
-  train(data_loader, train_config,
-        /* validation= */ std::nullopt, ALL_BATCHES);
+  train(data_loader, train_config, /* validation= */ std::nullopt,
+        /* max_in_memory_batches= */ std::nullopt);
 
   // We reset the dataset factory in case the ordering of the label and text
   // columns we assume here does not match the user's dataset.
