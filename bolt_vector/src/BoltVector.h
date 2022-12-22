@@ -172,7 +172,8 @@ class BoltBatch {
 
   auto end() { return _vectors.end(); }
 
-  uint32_t getBatchSize() const { return _vectors.size(); }
+  // Returns the number of vectors constituting the batch.
+  uint32_t size() const { return _vectors.size(); }
 
   /*
    * Throws an exception if the vector is not of the passed in

@@ -20,8 +20,8 @@ class ShuffleBatchBuffer {
         _batch_size(batch_size) {}
 
   void insertBatch(std::tuple<BoltBatch, BoltBatch>&& batch, bool shuffle) {
-    checkConsistentBatchSize(std::get<0>(batch).getBatchSize(),
-                             std::get<1>(batch).getBatchSize());
+    checkConsistentBatchSize(std::get<0>(batch).size(),
+                             std::get<1>(batch).size());
 
     _input_batches.push_back(std::move(std::get<0>(batch)));
     _label_batches.push_back(std::move(std::get<1>(batch)));
@@ -104,11 +104,11 @@ class ShuffleBatchBuffer {
                                  std::mt19937& gen) {
     assert(input_batches.size() > 0);
     size_t n_old_vecs = (input_batches.size() - 1) * expected_batch_size;
-    size_t n_vecs = n_old_vecs + input_batches.back().getBatchSize();
+    size_t n_vecs = n_old_vecs + input_batches.back().size();
     std::uniform_int_distribution<> dist(
         0, n_vecs - 1);  // Accepts a closed interval
 
-    for (size_t i = 0; i < input_batches.back().getBatchSize(); i++) {
+    for (size_t i = 0; i < input_batches.back().size(); i++) {
       size_t swap_with = dist(gen);
       /*
         Only swap with vectors in old batches for two reasons:

@@ -23,14 +23,14 @@ class HashFunction {
    * so on.
    */
   std::vector<uint32_t> hashBatchParallel(const BoltBatch& batch) const {
-    std::vector<uint32_t> result(_num_tables * batch.getBatchSize());
+    std::vector<uint32_t> result(_num_tables * batch.size());
     hashBatchParallel(batch, result.data());
     return result;
   }
 
   void hashBatchParallel(const BoltBatch& batch, uint32_t* output) const {
 #pragma omp parallel for default(none) shared(batch, output)
-    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+    for (uint32_t v = 0; v < batch.size(); v++) {
       if (batch[v].isDense()) {
         hashSingleDense(batch[v].activations, batch[v].len,
                         output + v * _num_tables);

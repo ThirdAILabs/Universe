@@ -82,7 +82,7 @@ class SingleBatchDatasetContext final : public DatasetContextBase {
 
   uint64_t numVectorDatasets() const override { return _data.size(); }
 
-  uint32_t batchSize() const { return _data.front().getBatchSize(); }
+  uint32_t batchSize() const { return _data.front().size(); }
 
   std::vector<BoltBatch> _data;
 };

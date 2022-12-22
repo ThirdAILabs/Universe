@@ -21,21 +21,21 @@ InMemoryDataset<BATCH_T>::InMemoryDataset(std::vector<BATCH_T>&& batches)
         "Must pass in at least one batch to the dataset constructor but "
         "found 0.");
   }
-  _batch_size = _batches.front().getBatchSize();
+  _batch_size = _batches.front().size();
   if (_batch_size == 0) {
     throw std::invalid_argument(
         "The first batch was found to have an invalid length of 0.");
   }
 
   for (uint64_t i = 1; i < _batches.size() - 1; i++) {
-    uint64_t current_batch_size = _batches.at(i).getBatchSize();
+    uint64_t current_batch_size = _batches.at(i).size();
     if (current_batch_size != _batch_size) {
       throw std::invalid_argument(
           "All batches but the last batch must have the same size.");
     }
   }
 
-  uint64_t last_batch_size = _batches.back().getBatchSize();
+  uint64_t last_batch_size = _batches.back().size();
   if (last_batch_size > _batch_size) {
     throw std::invalid_argument(
         "The last batch in the dataset is larger than the others, when it "

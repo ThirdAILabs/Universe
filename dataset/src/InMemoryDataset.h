@@ -65,7 +65,7 @@ class InMemoryDataset : public DatasetBase {
   uint64_t batchSize() const final { return _batch_size; }
 
   uint64_t batchSize(uint64_t batch_idx) const final {
-    return _batches[batch_idx].getBatchSize();
+    return _batches[batch_idx].size();
   }
 
   static std::shared_ptr<InMemoryDataset<BATCH_T>> load(

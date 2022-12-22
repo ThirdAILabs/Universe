@@ -37,7 +37,7 @@ MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,
 template <typename LABEL_T>
 uint64_t MaxFlashArray<LABEL_T>::addDocument(const BoltBatch& batch) {
   LABEL_T num_elements =
-      std::min<uint64_t>(batch.getBatchSize(), _max_allowable_doc_size);
+      std::min<uint64_t>(batch.size(), _max_allowable_doc_size);
   const std::vector<uint32_t> hashes = hash(batch);
   _maxflash_array.push_back(std::make_unique<MaxFlash<LABEL_T>>(
       _hash_function->numTables(), _hash_function->range(), num_elements,
@@ -61,13 +61,13 @@ std::vector<float> MaxFlashArray<LABEL_T>::getDocumentScores(
 #pragma omp for
     for (uint64_t i = 0; i < result.size(); i++) {
       uint64_t flash_index = documents_to_query.at(i);
-      result[i] = _maxflash_array.at(flash_index)
-                      ->getScore(hashes, query.getBatchSize(), buffer,
-                                 _collision_count_to_sim);
+      result[i] =
+          _maxflash_array.at(flash_index)
+              ->getScore(hashes, query.size(), buffer, _collision_count_to_sim);
       // We normalize different size queries (thereby computing avg sim instead
       // of max sim) in order to not overweight long queries. This only matters
       // when different queries can have different number of embeddings.
-      result[i] /= query.getBatchSize();
+      result[i] /= query.size();
     }
   }
 

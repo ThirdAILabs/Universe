@@ -163,7 +163,7 @@ class DocSearch {
   std::vector<std::pair<std::string, std::string>> queryWithCentroids(
       const BoltBatch& embeddings, const std::vector<uint32_t>& centroid_ids,
       uint32_t top_k, uint32_t num_to_rerank) const {
-    if (embeddings.getBatchSize() == 0) {
+    if (embeddings.size() == 0) {
       throw std::invalid_argument("Need at least one query vector but found 0");
     }
     if (top_k == 0) {
@@ -174,7 +174,7 @@ class DocSearch {
       throw std::invalid_argument(
           "The passed in top_k must be <= the passed in num_to_rerank");
     }
-    for (uint32_t i = 0; i < embeddings.getBatchSize(); i++) {
+    for (uint32_t i = 0; i < embeddings.size(); i++) {
       if (embeddings[i].len != _dense_dim) {
         throw std::invalid_argument("Embedding " + std::to_string(i) +
                                     " has dimension " +
@@ -242,8 +242,8 @@ class DocSearch {
   // then concatenates all of the centroid ids across the batch.
   std::vector<uint32_t> getNearestCentroids(const BoltBatch& batch,
                                             uint32_t nprobe) const {
-    Eigen::MatrixXf eigen_batch(batch.getBatchSize(), _dense_dim);
-    for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
+    Eigen::MatrixXf eigen_batch(batch.size(), _dense_dim);
+    for (uint32_t i = 0; i < batch.size(); i++) {
       for (uint32_t d = 0; d < _dense_dim; d++) {
         eigen_batch(i, d) = batch[i].activations[d];
       }
@@ -251,11 +251,11 @@ class DocSearch {
 
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         eigen_result = eigen_batch * _centroids;
-    std::vector<uint32_t> nearest_centroids(batch.getBatchSize() * nprobe);
+    std::vector<uint32_t> nearest_centroids(batch.size() * nprobe);
 
 #pragma omp parallel for default(none) \
     shared(batch, eigen_result, nprobe, nearest_centroids)
-    for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
+    for (uint32_t i = 0; i < batch.size(); i++) {
       std::vector<uint32_t> probe_results = argmax(eigen_result.row(i), nprobe);
       for (uint32_t p = 0; p < nprobe; p++) {
         nearest_centroids.at(i * nprobe + p) = probe_results.at(p);

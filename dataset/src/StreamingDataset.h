@@ -66,7 +66,7 @@ class StreamingDataset {
     auto start = std::chrono::high_resolution_clock::now();
 
     while (auto batch_tuple = nextBatchTuple()) {
-      len += std::get<0>(batch_tuple.value()).getBatchSize();
+      len += std::get<0>(batch_tuple.value()).size();
 
       /**
        * std::apply allows for a tuple to be applied to function that accepts a

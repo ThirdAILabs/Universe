@@ -23,8 +23,8 @@ py::object CategoricalOutputProcessor::processBoltVector(
 py::object CategoricalOutputProcessor::processBoltBatch(
     BoltBatch& outputs, bool return_predicted_class) {
   if (return_predicted_class) {
-    NumpyArray<uint32_t> predictions(outputs.getBatchSize());
-    for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
+    NumpyArray<uint32_t> predictions(outputs.size());
+    for (uint32_t i = 0; i < outputs.size(); i++) {
       predictions.mutable_at(i) = outputs[i].getHighestActivationId();
     }
     return py::object(std::move(predictions));
@@ -82,9 +82,9 @@ py::object RegressionOutputProcessor::processBoltVector(
 py::object RegressionOutputProcessor::processBoltBatch(
     BoltBatch& outputs, bool return_predicted_class) {
   (void)return_predicted_class;  // No classes to return in regression;
-  NumpyArray<float> output_array(outputs.getBatchSize());
+  NumpyArray<float> output_array(outputs.size());
 
-  for (uint32_t vec_id = 0; vec_id < outputs.getBatchSize(); vec_id++) {
+  for (uint32_t vec_id = 0; vec_id < outputs.size(); vec_id++) {
     float value = unbinActivations(outputs[vec_id]);
 
     output_array.mutable_at(vec_id) = value;
@@ -133,13 +133,13 @@ py::object BinaryOutputProcessor::processBoltVector(
 
 py::object BinaryOutputProcessor::processBoltBatch(
     BoltBatch& outputs, bool return_predicted_class) {
-  assert(outputs.getBatchSize() == 0 || outputs.begin()->isDense());
-  assert(outputs.getBatchSize() == 0 || outputs.begin()->len == 2);
+  assert(outputs.size() == 0 || outputs.begin()->isDense());
+  assert(outputs.size() == 0 || outputs.begin()->len == 2);
 
   if (return_predicted_class) {
-    NumpyArray<uint32_t> predictions(outputs.getBatchSize());
+    NumpyArray<uint32_t> predictions(outputs.size());
 
-    for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
+    for (uint32_t i = 0; i < outputs.size(); i++) {
       predictions.mutable_at(i) =
           binaryActivationsToPrediction(outputs[i].activations);
     }
@@ -228,15 +228,15 @@ py::object convertBoltBatchToNumpy(const BoltBatch& batch) {
   uint32_t length = batch[0].len;
 
   NumpyArray<float> activations_array(
-      /* shape= */ {batch.getBatchSize(), length});
+      /* shape= */ {batch.size(), length});
 
   std::optional<NumpyArray<uint32_t>> active_neurons_array = std::nullopt;
   if (!batch[0].isDense()) {
     active_neurons_array =
-        NumpyArray<uint32_t>(/* shape= */ {batch.getBatchSize(), length});
+        NumpyArray<uint32_t>(/* shape= */ {batch.size(), length});
   }
 
-  for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
+  for (uint32_t i = 0; i < batch.size(); i++) {
     if (batch[i].len != length) {
       throw std::invalid_argument(
           "Cannot convert BoltBatch without constant lengths to a numpy "

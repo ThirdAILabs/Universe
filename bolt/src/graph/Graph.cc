@@ -290,13 +290,13 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
       "Passed in label BoltVector is larger than the output dim");
 
 #pragma omp parallel for default(none) shared(batch_labels, metrics)
-  for (uint64_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
+  for (uint64_t vec_id = 0; vec_id < batch_labels.size(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
 
     resetOutputGradients(vec_id);
 
     _loss->lossGradients(_output->getOutputVector(vec_id), batch_labels[vec_id],
-                         batch_labels.getBatchSize());
+                         batch_labels.size());
 
     backpropagate(vec_id);
 

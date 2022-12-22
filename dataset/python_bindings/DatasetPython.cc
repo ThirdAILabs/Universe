@@ -366,7 +366,7 @@ void createDatasetSubmodule(py::module_& module) {
   // TODO(josh): Add __iter__ method so we can do foreach loops in pthon and c++
   // TODO(josh): This segfaults if the user passes in an index that is too large
   py::class_<BoltBatch>(dataset_submodule, "BoltBatch")
-      .def("batch_size", &BoltBatch::getBatchSize)
+      .def("batch_size", &BoltBatch::size)
       // We need to explicitly static cast these methods because there are
       // multiple candidate "[]" methods (one const and one not const)
       .def("get",
@@ -377,7 +377,7 @@ void createDatasetSubmodule(py::module_& module) {
            static_cast<BoltVector& (BoltBatch::*)(size_t i)>(
                &BoltBatch::operator[]),
            py::arg("i"), py::return_value_policy::reference)
-      .def("__len__", &BoltBatch::getBatchSize)
+      .def("__len__", &BoltBatch::size)
       .def(py::init([](const py::iterable& iterable) {
              using Vectors = std::vector<BoltVector>;
              auto vectors = iterable.cast<Vectors>();
@@ -477,10 +477,10 @@ void createDatasetSubmodule(py::module_& module) {
 
 bool denseBoltDatasetMatchesDenseMatrix(
     BoltDataset& dataset, std::vector<std::vector<float>>& matrix) {
-  uint32_t batch_size = dataset.at(0).getBatchSize();
+  uint32_t batch_size = dataset.at(0).size();
   for (uint32_t batch_idx = 0; batch_idx < dataset.numBatches(); batch_idx++) {
     auto& batch = dataset.at(batch_idx);
-    for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
+    for (uint32_t vec_idx = 0; vec_idx < batch.size(); vec_idx++) {
       auto& vec = batch[vec_idx];
       uint32_t row = batch_idx * batch_size + vec_idx;
       for (uint32_t col = 0; col < vec.len; col++) {
@@ -536,7 +536,7 @@ bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2) {
   for (uint32_t batch_idx = 0; batch_idx < dataset1.numBatches(); batch_idx++) {
     auto& batch1 = dataset1[batch_idx];
     auto& batch2 = dataset2[batch_idx];
-    for (uint32_t vec_idx = 0; vec_idx < batch1.getBatchSize(); vec_idx++) {
+    for (uint32_t vec_idx = 0; vec_idx < batch1.size(); vec_idx++) {
       auto& vec1 = batch1[vec_idx];
       auto& vec2 = batch2[vec_idx];
       for (uint32_t elem_idx = 0; elem_idx < vec1.len; elem_idx++) {

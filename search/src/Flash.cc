@@ -78,15 +78,15 @@ void Flash<LABEL_T>::addDataset(
 template <typename LABEL_T>
 void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
                               const std::vector<LABEL_T>& labels) {
-  if (batch.getBatchSize() != labels.size()) {
+  if (batch.size() != labels.size()) {
     throw std::invalid_argument("Batch size and number of labels must match.");
   }
 
   std::vector<uint32_t> hashes = hashBatch(batch);
 
-  assert(hashes.size() == batch.getBatchSize() * _num_tables);
+  assert(hashes.size() == batch.size() * _num_tables);
 
-  _hashtable->insert(batch.getBatchSize(), labels.data(), hashes.data());
+  _hashtable->insert(batch.size(), labels.data(), hashes.data());
 }
 
 template <typename LABEL_T>
@@ -98,12 +98,12 @@ std::vector<uint32_t> Flash<LABEL_T>::hashBatch(const BoltBatch& batch) const {
 template <typename LABEL_T>
 std::vector<std::vector<LABEL_T>> Flash<LABEL_T>::queryBatch(
     const BoltBatch& batch, uint32_t top_k, bool pad_zeros) const {
-  std::vector<std::vector<LABEL_T>> results(batch.getBatchSize());
+  std::vector<std::vector<LABEL_T>> results(batch.size());
   auto hashes = hashBatch(batch);
 
 #pragma omp parallel for default(none) \
     shared(batch, top_k, results, hashes, pad_zeros)
-  for (uint64_t vec_id = 0; vec_id < batch.getBatchSize(); vec_id++) {
+  for (uint64_t vec_id = 0; vec_id < batch.size(); vec_id++) {
     std::vector<LABEL_T> query_result;
     _hashtable->queryByVector(hashes.data() + vec_id * _num_tables,
                               query_result);

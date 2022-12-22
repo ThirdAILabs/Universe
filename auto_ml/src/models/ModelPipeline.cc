@@ -158,7 +158,7 @@ py::object ModelPipeline::predictBatchImpl(const InputBatchType& samples,
       std::chrono::system_clock::now() - start_time;
   telemetry::client.trackBatchPredictions(
       /* inference_time_seconds = */ elapsed_time.count(),
-      /* num_inferences = */ outputs.getBatchSize());
+      /* num_inferences = */ outputs.size());
 
   return py_output;
 }

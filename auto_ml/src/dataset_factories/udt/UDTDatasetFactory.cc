@@ -164,7 +164,7 @@ UDTDatasetFactory::preprocessedVectorsFromDataset(
       vectors->len());
 
   for (uint32_t batch = 0; batch < vectors->numBatches(); batch++) {
-    for (uint32_t vec = 0; vec < vectors->at(batch).getBatchSize(); vec++) {
+    for (uint32_t vec = 0; vec < vectors->at(batch).size(); vec++) {
       auto id = ids->at(batch)[vec].active_neurons[0];
       auto key = key_vocab.getString(id);
       preprocessed_vectors[key] = std::move(vectors->at(batch)[vec]);

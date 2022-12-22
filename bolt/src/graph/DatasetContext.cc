@@ -67,14 +67,14 @@ SingleBatchDatasetContext::SingleBatchDatasetContext(
 SingleBatchDatasetContext::SingleBatchDatasetContext(
     std::vector<BoltBatch>&& batches)
     : _data(std::move(batches)) {
-  uint32_t first_batch_size = _data.front().getBatchSize();
+  uint32_t first_batch_size = _data.front().size();
   for (const auto& batch : _data) {
-    if (batch.getBatchSize() != first_batch_size) {
+    if (batch.size() != first_batch_size) {
       throw std::invalid_argument(
           "All batches must have the same batch size, "
           "but found " +
           std::to_string(first_batch_size) + " for one batch size and " +
-          std::to_string(batch.getBatchSize()) + " for another");
+          std::to_string(batch.size()) + " for another");
     }
   }
 }
