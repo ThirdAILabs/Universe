@@ -2,6 +2,7 @@
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <pybind11/detail/common.h>
 
@@ -93,13 +94,19 @@ void createModelsSubmodule(py::module_& module) {
       .def("get_data_processor", &ModelPipeline::getDataProcessor,
            docs::MODEL_PIPELINE_GET_DATA_PROCESSOR)
       .def("get_model", &ModelPipeline::getModel)
-      .def("set_model", &ModelPipeline::setModel)
+      .def("set_model", &ModelPipeline::setModel, py::arg("trained_model"))
       .def_property_readonly("default_train_batch_size",
                              &ModelPipeline::defaultBatchSize)
       .def_property_readonly_static(
           "default_evaluate_batch_size", [](const py::object& /* self */) {
             return models::DEFAULT_EVALUATE_BATCH_SIZE;
           });
+
+  py::class_<data::GenericDatasetLoader, data::GenericDatasetLoaderPtr>(
+      models_submodule, "GenericDatasetLoader")
+      .def("load_in_memory", &data::GenericDatasetLoader::loadInMemory,
+           py::arg("max_in_memory_batches"))
+      .def("restart", &data::GenericDatasetLoader::restart);
 
   py::class_<data::UDTDatasetFactory, data::UDTDatasetFactoryPtr>(
       models_submodule, "TemporalContext")

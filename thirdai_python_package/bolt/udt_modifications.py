@@ -108,18 +108,21 @@ def modify_udt_classifier():
 
         model = self.get_model()
 
-        dist_bolt.DistributedDataParallel(
+        dist_model = dist_bolt.DistributedDataParallel(
             cluster_config=cluster_config,
             model=model,
             train_config=train_config,
             train_sources=filenames,
             data_processor=self.get_data_processor()
         )
-        model = dist_bolt.get_model()
+        
+        metrics = dist_model.train()
 
-        self.set_model(model)
 
-        metrics = dist_bolt.train()
+        model = dist_model.get_model()
+
+        self.set_model(trained_model=model)
+
         return metrics
 
     def wrapped_evaluate(

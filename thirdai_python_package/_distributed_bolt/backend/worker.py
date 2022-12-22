@@ -168,7 +168,11 @@ class Worker:
 
     @timed
     def move_to_next_epoch(self):
-        self.train_source.restart()
+        if self.dataset==None:
+            self.train_source.restart()
+        else:
+            self.dataset.restart()
+            self.get_data=True
         self._try_load_new_datasets_into_model()
 
     @timed
@@ -234,12 +238,14 @@ class Worker:
             return True
         else:
             if self.get_data:
-                self.train_data, self.train_label = self.dataset.load_in_memory()
+                self.train_data, self.train_labels = self.dataset.load_in_memory(20000)
+                self.model.set_datasets(self.train_data, self.train_labels)
+                self.batch_id_within_dataset = 0
                 self.get_data = False
                 return True
             else:
                 self.train_data = None
-                self.train_label = None
+                self.train_labels = None
                 return False
 
     @timed
