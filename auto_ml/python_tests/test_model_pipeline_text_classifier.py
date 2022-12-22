@@ -1,5 +1,5 @@
 import pytest
-from download_datasets import download_clinc_dataset
+from download_dataset_fixtures import download_clinc_dataset
 from model_test_utils import (
     check_saved_and_retrained_accuarcy,
     compute_evaluate_accuracy,

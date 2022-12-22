@@ -1,9 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
-#include <cereal/types/optional.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/vector.hpp>
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/metrics/MetricAggregator.h>
@@ -243,37 +239,13 @@ class TrainConfig {
     return std::max<uint32_t>(reconstruct_param / batch_size, 1);
   }
 
-  void save(const std::string& filename) const {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    save_stream(filestream);
-  }
+  void save(const std::string& filename) const;
 
-  void save_stream(std::ostream& output_stream) const {
-    if (_callbacks.numCallbacks() != 0) {
-      throw std::runtime_error(
-          "Cannot serialize a training config that has callbacks.");
-    }
-    if (_validation_context.has_value()) {
-      throw std::runtime_error(
-          "Cannot serialize a training config that has a validation context.");
-    }
-    cereal::BinaryOutputArchive oarchive(output_stream);
-    oarchive(*this);
-  }
+  void save_stream(std::ostream& output_stream) const;
 
-  static TrainConfigPtr load(const std::string& filename) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    return load_stream(filestream);
-  }
+  static TrainConfigPtr load(const std::string& filename);
 
-  static TrainConfigPtr load_stream(std::istream& input_stream) {
-    cereal::BinaryInputArchive iarchive(input_stream);
-    std::shared_ptr<TrainConfig> deserialize_into(new TrainConfig());
-    iarchive(*deserialize_into);
-    return deserialize_into;
-  }
+  static TrainConfigPtr load_stream(std::istream& input_stream);
 
   uint32_t logLossFrequency() const { return _log_loss_frequency; }
 
@@ -306,10 +278,7 @@ class TrainConfig {
   // For now, we also don't serialize the validation context, and similarly
   // check this in the save method.
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_epochs, _learning_rate, _metric_names, _verbose,
-            _rebuild_hash_tables, _reconstruct_hash_functions, _save_context);
-  }
+  void serialize(Archive& archive);
 
   uint32_t _epochs;
   float _learning_rate;

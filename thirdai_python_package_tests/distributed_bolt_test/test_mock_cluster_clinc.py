@@ -12,8 +12,8 @@ from thirdai import bolt, data
 
 pytestmark = [pytest.mark.distributed]
 
-TRAIN_FILE = "./clinc_train.csv"
-TEST_FILE = "./clinc_test.csv"
+TRAIN_FILE = "./clinc_train_distributed.csv"
+TEST_FILE = "./clinc_test_distributed.csv"
 MODEL_INPUT_DIM = 100000
 BATCH_SIZE = 256
 
@@ -117,7 +117,7 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
 
     train_config = bolt.TrainConfig(learning_rate=0.01, epochs=5)
     distributed_model = db.DistributedDataParallel(
-        cluster_config=ray_two_node_cluster_config,
+        cluster_config=ray_two_node_cluster_config("linear"),
         model=clinc_model,
         train_config=train_config,
         train_sources=train_sources,
@@ -128,7 +128,6 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
     return distributed_model.get_model(), x_featurizer, y_featurizer
 
 
-@pytest.mark.parametrize("ray_two_node_cluster_config", ["linear"], indirect=True)
 def test_distributed_classifer_accuracy(distributed_trained_clinc):
     model, x_featurizer, y_featurizer = distributed_trained_clinc
     test_data = data.pandas_to_columnmap(

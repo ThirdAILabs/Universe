@@ -11,6 +11,7 @@
 #include <memory.h>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 
 namespace thirdai::dataset::numpy {
@@ -197,11 +198,33 @@ inline void verifySparseNumpyTuple(const py::tuple& tup) {
 inline BoltDatasetPtr numpyArraysToSparseBoltDataset(
     const NumpyArray<uint32_t>& indices, const NumpyArray<float>& values,
     const NumpyArray<uint32_t>& offsets, uint64_t batch_size) {
+  if (offsets.shape(0) == 0) {
+    throw std::invalid_argument(
+        "Offsets array must be at least of size 1, since it has n + 1 entries "
+        "(where n is the number of vectors in the sparse dataset)");
+  }
   uint64_t num_examples = static_cast<uint64_t>(offsets.shape(0) - 1);
 
-  uint32_t* indices_raw_data = const_cast<uint32_t*>(indices.data());
-  float* values_raw_data = const_cast<float*>(values.data());
   uint32_t* offsets_raw_data = const_cast<uint32_t*>(offsets.data());
+  uint32_t total_data_size = offsets_raw_data[num_examples];
+
+  if (total_data_size != indices.shape(0)) {
+    throw std::invalid_argument(
+        "According to the offsets array, the flattened indices array should be "
+        "of length " +
+        std::to_string(total_data_size) + ", but it is actually of length " +
+        std::to_string(indices.shape(0)));
+  }
+  uint32_t* indices_raw_data = const_cast<uint32_t*>(indices.data());
+
+  if (total_data_size != values.shape(0)) {
+    throw std::invalid_argument(
+        "According to the offsets array, the flattened values array should be "
+        "of length " +
+        std::to_string(total_data_size) + ", but it is actually of length " +
+        std::to_string(values.shape(0)));
+  }
+  float* values_raw_data = const_cast<float*>(values.data());
 
   // Build batches
 

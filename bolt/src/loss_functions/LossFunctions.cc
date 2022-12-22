@@ -1,6 +1,7 @@
 #include "LossFunctions.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 namespace thirdai::bolt {
 
@@ -47,6 +48,67 @@ void LossFunction::computeLossGradientsImpl(BoltVector& output,
         elementLossGradient(label_val, output.activations[i], batch_size);
   }
 }
+
+template <class Archive>
+void LossFunction::serialize(Archive& archive) {
+  (void)archive;
+}
+
+template <class Archive>
+void CategoricalCrossEntropyLoss::serialize(Archive& archive) {
+  archive(cereal::base_class<LossFunction>(this));
+}
+
+template <class Archive>
+void BinaryCrossEntropyLoss::serialize(Archive& archive) {
+  archive(cereal::base_class<LossFunction>(this));
+}
+
+template <class Archive>
+void MeanSquaredError::serialize(Archive& archive) {
+  archive(cereal::base_class<LossFunction>(this));
+}
+
+template <class Archive>
+void WeightedMeanAbsolutePercentageErrorLoss::serialize(Archive& archive) {
+  archive(cereal::base_class<LossFunction>(this));
+}
+
+template <class Archive>
+void MarginBCE::serialize(Archive& archive) {
+  archive(cereal::base_class<LossFunction>(this), _positive_margin,
+          _negative_margin, _bound);
+}
+
+template void CategoricalCrossEntropyLoss::serialize(
+    cereal::BinaryOutputArchive&);
+template void BinaryCrossEntropyLoss::serialize(cereal::BinaryOutputArchive&);
+template void MeanSquaredError::serialize(cereal::BinaryOutputArchive&);
+template void WeightedMeanAbsolutePercentageErrorLoss::serialize(
+    cereal::BinaryOutputArchive&);
+
+template void CategoricalCrossEntropyLoss::serialize(
+    cereal::BinaryInputArchive&);
+template void BinaryCrossEntropyLoss::serialize(cereal::BinaryInputArchive&);
+template void MeanSquaredError::serialize(cereal::BinaryInputArchive&);
+template void WeightedMeanAbsolutePercentageErrorLoss::serialize(
+    cereal::BinaryInputArchive&);
+
+template void CategoricalCrossEntropyLoss::serialize(
+    cereal::PortableBinaryInputArchive&);
+template void BinaryCrossEntropyLoss::serialize(
+    cereal::PortableBinaryInputArchive&);
+template void MeanSquaredError::serialize(cereal::PortableBinaryInputArchive&);
+template void WeightedMeanAbsolutePercentageErrorLoss::serialize(
+    cereal::PortableBinaryInputArchive&);
+
+template void CategoricalCrossEntropyLoss::serialize(
+    cereal::PortableBinaryOutputArchive&);
+template void BinaryCrossEntropyLoss::serialize(
+    cereal::PortableBinaryOutputArchive&);
+template void MeanSquaredError::serialize(cereal::PortableBinaryOutputArchive&);
+template void WeightedMeanAbsolutePercentageErrorLoss::serialize(
+    cereal::PortableBinaryOutputArchive&);
 
 }  // namespace thirdai::bolt
 

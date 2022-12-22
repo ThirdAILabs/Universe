@@ -2,7 +2,6 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <memory>
@@ -27,6 +26,8 @@ class DotProductNode final
   void initOptimizer() final {}
 
   std::shared_ptr<DotProductNode> setPredecessors(NodePtr lhs, NodePtr rhs);
+
+  bool hasParameters() final { return false; }
 
  protected:
   void compileImpl() final { _compiled = true; }

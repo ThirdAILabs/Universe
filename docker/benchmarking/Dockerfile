@@ -26,6 +26,8 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
     cmake \
     clang-format \
     gdb \
+    htop \
+    tmux \
     # Install python and pip
     python3 \
     python3-dev \

@@ -93,14 +93,6 @@ class ModelPipeline {
   }
 
   /**
-   * Wrapper around trainOnDataLoader for passing in a filename and batchsize.
-   */
-  void trainOnFile(const std::string& filename, bolt::TrainConfig& train_config,
-                   std::optional<uint32_t> batch_size_opt,
-                   const std::optional<ValidationOptions>& validation,
-                   std::optional<uint32_t> max_in_memory_batches);
-
-  /**
    * Trains the model on the data given in datasource using the specified
    * TrainConfig and reports any metrics specified in the ValidationOptions on
    * the validation data (if provided). The parameter max_in_memory_batches
@@ -110,27 +102,19 @@ class ModelPipeline {
    * loaded with temporal tracking in UDT. See comment in trainOnStream for more
    * details.
    */
-  void trainOnDataLoader(
-      const std::shared_ptr<dataset::DataLoader>& data_source,
-      bolt::TrainConfig& train_config,
-      const std::optional<ValidationOptions>& validation,
-      std::optional<uint32_t> max_in_memory_batches);
+  void train(const std::shared_ptr<dataset::DataLoader>& data_source,
+             bolt::TrainConfig& train_config,
+             const std::optional<ValidationOptions>& validation,
+             std::optional<uint32_t> max_in_memory_batches);
 
   /**
-   * Wrapper around evaluateOnDataLoader for passing in a filename.
+   * Processes the data specified in data_source and computes any metrics
+   * specifed in the EvalConfig. Returns the activations of the final layer by
+   * default, returns metrics if return_metrics = true.
    */
-  py::object evaluateOnFile(const std::string& filename,
-                            std::optional<bolt::EvalConfig>& eval_config_opt,
-                            bool return_predicted_class);
-
-  /**
-   * Processes the data specified in data_source and returns the activations of
-   * the final layer. Computes any metrics specifed in the EvalConfig.
-   */
-  py::object evaluateOnDataLoader(
-      const dataset::DataLoaderPtr& data_source,
-      std::optional<bolt::EvalConfig>& eval_config_opt,
-      bool return_predicted_class);
+  py::object evaluate(const dataset::DataLoaderPtr& data_source,
+                      std::optional<bolt::EvalConfig>& eval_config_opt,
+                      bool return_predicted_class, bool return_metrics);
 
   /**
    * Takes in a single input sample and returns the activations for the output
@@ -251,7 +235,7 @@ class ModelPipeline {
    */
   void updateRehashRebuildInTrainConfig(bolt::TrainConfig& train_config);
 
-  const uint32_t MAX_TRAIN_BATCHES_FOR_THRESHOLD_TUNING = 100;
+  const uint32_t MAX_SAMPLES_FOR_THRESHOLD_TUNING = 1000000;
   const uint32_t NUM_THRESHOLDS_TO_CHECK = 1000;
   /**
    * Computes the optimal binary prediction threshold to maximize the given
@@ -259,8 +243,8 @@ class ModelPipeline {
    * shuffle the data to obtain the batches.
    */
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
-      const dataset::DataLoaderPtr& data_source, const std::string& metric_name,
-      uint32_t max_num_batches);
+      const dataset::DataLoaderPtr& data_source,
+      const std::string& metric_name);
 
   friend class cereal::access;
   template <class Archive>

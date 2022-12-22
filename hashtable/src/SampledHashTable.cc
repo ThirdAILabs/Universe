@@ -1,4 +1,7 @@
 #include "SampledHashTable.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include <cassert>
 #include <random>
 
@@ -180,4 +183,25 @@ template class SampledHashTable<uint16_t>;
 template class SampledHashTable<uint32_t>;
 template class SampledHashTable<uint64_t>;
 
+template <class LABEL_T>
+template <class Archive>
+void SampledHashTable<LABEL_T>::serialize(Archive& archive) {
+  archive(cereal::base_class<HashTable<LABEL_T>>(this), _num_tables,
+          _reservoir_size, _range, _max_rand, _data, _counters, _gen_rand);
+}
+
+template void SampledHashTable<uint8_t>::serialize(
+    cereal::BinaryOutputArchive& archive);
+template void SampledHashTable<uint16_t>::serialize(
+    cereal::BinaryOutputArchive& archive);
+template void SampledHashTable<uint32_t>::serialize(
+    cereal::BinaryOutputArchive& archive);
+template void SampledHashTable<uint64_t>::serialize(
+    cereal::BinaryOutputArchive& archive);
+
 }  // namespace thirdai::hashtable
+
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint8_t>)
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint16_t>)
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint32_t>)
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint64_t>)

@@ -1,16 +1,19 @@
 // This enables ssl support (which is required for https links), see
 // https://github.com/yhirose/cpp-httplib for more details.
+#include <string>
+#include <unordered_set>
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 
 #include "KeygenCommunication.h"
-#include "cryptopp/sha.h"       // SHA256
-#include "cryptopp/xed25519.h"  // Ed25519
 #include <cpp-httplib/httplib.h>
 #include <cryptopp/base64.h>  // Base64 decoder
 #include <cryptopp/files.h>
 #include <cryptopp/hex.h>
 #include <cryptopp/integer.h>
+#include <cryptopp/sha.h>       // SHA256
+#include <cryptopp/xed25519.h>  // Ed25519
 #include <json/include/nlohmann/json.hpp>
+#include <licensing/src/utils.h>
 #include <iostream>
 #include <stdexcept>
 
@@ -37,22 +40,6 @@ CryptoPP::ed25519Verifier createVerifier() {
                                 /* pumpAll = */ true,
                                 /* attachment = */ new CryptoPP::Base64Decoder);
   return CryptoPP::ed25519::Verifier(source);
-}
-
-/*
- * This method returns a SHA256 hash on the input string.
- * See https://www.cryptopp.com/wiki/SHA2 for more details.
- */
-std::string sha256(const std::string& input) {
-  std::string digest;
-  CryptoPP::SHA256 hash;
-
-  hash.Update(reinterpret_cast<const CryptoPP::byte*>(input.data()),
-              input.length());
-  digest.resize(hash.DigestSize());
-  hash.Final(reinterpret_cast<CryptoPP::byte*>(digest.data()));
-
-  return digest;
 }
 
 /*
@@ -84,7 +71,9 @@ std::string base64Encode(const std::string& input) {
  * This assumption is necessary because Keygen includes this data as part of
  * the message it signs.
  */
-std::string getOriginalKeygenMessage(const httplib::Result& res) {
+std::string getOriginalKeygenMessage(const httplib::Result& res,
+                                     const std::string& request_type,
+                                     const std::string& api_path) {
   if (!res->has_header("date")) {
     throw std::runtime_error(
         "License was found to be valid, but did not find a date in the"
@@ -97,7 +86,7 @@ std::string getOriginalKeygenMessage(const httplib::Result& res) {
 
   std::stringstream original_keygen_message_stream;
   original_keygen_message_stream
-      << "(request-target): post " << VALIDATE_ENDPOINT << "\n"
+      << "(request-target): " << request_type << " " << api_path << "\n"
       << "host: api.keygen.sh\n"
       << "date: " << date << "\n"
       << "digest: sha-256=" << base64_encoded_body_hash;
@@ -149,7 +138,7 @@ std::string getSignature(const httplib::Result& res) {
  * signature (which we also parse from the header). The message we build and
  * verify is in the format
  *
- * (request-target): get /v1/accounts/thirdai/licenses/actions/validate-key\n
+ * (request-target): [get|post] api_path\n
  * host: api.keygen.sh\n
  * date: Wed, 09 Jun 2021 16:08:15 GMT\n
  * digest: sha-256=827Op2un8OT9KJuN1siRs5h6mxjrUh4LJag66dQjnIM=
@@ -157,8 +146,11 @@ std::string getSignature(const httplib::Result& res) {
  * where the digest is a sha-256 hash of the body of the request, converted into
  * a Base64 encoding.
  */
-void verifyKeygenResponse(const httplib::Result& res) {
-  std::string signed_data = getOriginalKeygenMessage(res);
+void verifyKeygenResponse(const httplib::Result& res,
+                          const std::string& request_type,
+                          const std::string& api_path) {
+  std::string signed_data =
+      getOriginalKeygenMessage(res, request_type, api_path);
   std::string signature = getSignature(res);
   CryptoPP::ed25519::Verifier verifier = createVerifier();
 
@@ -174,8 +166,59 @@ void verifyKeygenResponse(const httplib::Result& res) {
   }
 }
 
-void verifyWithKeygen(const std::string& access_key) {
+void assertResponse200(const httplib::Result& response) {
+  if (!response) {
+    throw std::runtime_error("Licensing check failed with HTTP error: " +
+                             httplib::to_string(response.error()) +
+                             ". Make sure you're connected to the internet.");
+  }
+
+  if (response->status != 200) {
+    throw std::runtime_error(
+        "The licensing check failed with the response HTTP error code " +
+        std::to_string(response->status) + " and body " + response->body);
+  }
+}
+
+std::unordered_set<std::string> getKeygenEntitlements(
+    const json& result_body, const std::string& access_key) {
+  std::string user_entitlement_endpoint =
+      result_body["data"]["relationships"]["entitlements"]["links"]["related"];
+
+  // https://keygen.sh/docs/api/licenses/#licenses-relationships-list-entitlements
   httplib::Client client("https://api.keygen.sh");
+  // We need this because for some strange reason building a wheel on github
+  // actions and then installing locally makes ssl server certificate
+  // verification fail. It isn't a huge problem to ignore it because we verify
+  // all keygen resposes anyways.
+  client.enable_server_certificate_verification(false);
+
+  httplib::Headers headers = {{"Accept", "application/vnd.api+json"},
+                              {"Authorization", "License " + access_key}};
+  httplib::Result response = client.Get(
+      /* path = */ user_entitlement_endpoint,
+      /* headers = */ headers);
+  assertResponse200(response);
+  verifyKeygenResponse(response, /* request_type = */ "get",
+                       /* api_path = */ user_entitlement_endpoint);
+
+  json response_body = json::parse(response->body);
+  std::unordered_set<std::string> result;
+  for (const json& entitlement : response_body["data"]) {
+    result.insert(entitlement["attributes"]["code"]);
+  }
+  return result;
+}
+
+std::unordered_set<std::string> verifyWithKeygen(
+    const std::string& access_key) {
+  httplib::Client client("https://api.keygen.sh");
+  // We need this because for some strange reason building a wheel on github
+  // actions and then installing locally makes ssl server certificate
+  // verification fail. It isn't a huge problem to ignore it because we verify
+  // all keygen resposes anyways.
+  client.enable_server_certificate_verification(false);
+
   // These headers denote that we sending (Content-Type) and expect to receive
   // (Accept) json with additional "vendor specific" semantics. This is what
   // Keygen recommends, see
@@ -185,35 +228,26 @@ void verifyWithKeygen(const std::string& access_key) {
   json body;
   body["meta"]["key"] = access_key;
 
-  httplib::Result res = client.Post(
+  httplib::Result response = client.Post(
       /* path = */ VALIDATE_ENDPOINT,
       /* headers = */ headers,
       /* body = */ body.dump(), /* content_type = */ "application/json");
+  assertResponse200(response);
 
-  if (!res) {
-    throw std::runtime_error("Licensing check failed with HTTP error: " +
-                             httplib::to_string(res.error()) +
-                             ". Make sure you're connected to the internet.");
-  }
+  json response_body = json::parse(response->body);
+  bool license_is_valid = response_body["meta"]["valid"];
+  std::string detail = response_body["meta"]["detail"];
 
-  if (res->status != 200) {
-    throw std::runtime_error(
-        "The licensing check failed with the response HTTP error code " +
-        std::to_string(res->status));
-  }
-
-  json result_body = json::parse(res->body);
-
-  bool is_valid = result_body["meta"]["valid"];
-  std::string detail = result_body["meta"]["detail"];
-
-  if (!is_valid) {
+  if (!license_is_valid) {
     throw std::runtime_error(
         "The licensing server says that your license is invalid. It returned "
         "the following message: " +
         detail);
   }
 
-  verifyKeygenResponse(res);
+  verifyKeygenResponse(response, /* request_type = */ "post",
+                       /* api_path = */ VALIDATE_ENDPOINT);
+
+  return getKeygenEntitlements(response_body, access_key);
 }
 }  // namespace thirdai::licensing

@@ -8,17 +8,33 @@ import thirdai._thirdai.bolt as bolt
 from .udt_docs import *
 
 
-def create_parquet_loader(path, batch_size):
+def _create_parquet_loader(path, batch_size):
     return thirdai.dataset.ParquetLoader(parquet_path=path, batch_size=batch_size)
 
 
-def create_s3_loader(path, batch_size):
-    parsed_url = urlparse(path, allow_fragments=False)
-    bucket = parsed_url.netloc
-    key = parsed_url.path.lstrip("/")
-    return thirdai.dataset.S3DataLoader(
-        bucket_name=bucket, prefix_filter=key, batch_size=batch_size
+def _create_loader(path, batch_size, **kwargs):
+    # This also handles parquet on s3, so it comes before the general s3 and gcs
+    # handling and file handling below which assume the target files are
+    # CSVs
+    if path.endswith(".parquet") or path.endswith(".pqt"):
+        return _create_parquet_loader(path, batch_size)
+
+    gcs_credentials_path = (
+        kwargs["gcs_credentials_path"] if "gcs_crentials_file" in kwargs else None
     )
+    if path.startswith("s3://"):
+        return thirdai.dataset.CSVDataLoader(
+            storage_path=path,
+            batch_size=batch_size,
+        )
+    elif path.startswith("gcs://"):
+        return thirdai.dataset.CSVDataLoader(
+            storage_path=path,
+            batch_size=batch_size,
+            gcs_credentials_path=gcs_credentials_path,
+        )
+
+    return thirdai.dataset.FileDataLoader(path, batch_size)
 
 
 # This function defines train and eval methods that wrap the UDT train and
@@ -28,10 +44,8 @@ def create_s3_loader(path, batch_size):
 # interface is clean.
 def modify_udt_classifier():
 
-    original_train_method = bolt.models.Pipeline.train_with_file
-    original_train_with_loader_method = bolt.models.Pipeline.train_with_loader
-    original_eval_method = bolt.models.Pipeline.evaluate_with_file
-    original_eval_with_loader_method = bolt.models.Pipeline.evaluate_with_loader
+    original_train_method = bolt.models.Pipeline.train_with_loader
+    original_eval_method = bolt.models.Pipeline.evaluate_with_loader
     original_cold_start_method = bolt.models.UDTClassifier.cold_start
 
     def wrapped_train(
@@ -46,6 +60,7 @@ def modify_udt_classifier():
         callbacks: List[bolt.callbacks.Callback] = [],
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
+        gcp_credentials_path: Optional[str] = None,
     ):
         if batch_size is None:
             batch_size = self.default_train_batch_size
@@ -61,30 +76,16 @@ def modify_udt_classifier():
         if logging_interval:
             train_config.with_log_loss_frequency(logging_interval)
 
-        # This also handles parquet on s3, so it comes before the general s3
-        # handling and file handling below which assume the target files are
-        # csvs
-        if filename.endswith(".parquet") or filename.endswith(".pqt"):
-            return original_train_with_loader_method(
-                self,
-                create_parquet_loader(filename, batch_size),
-                train_config,
-                max_in_memory_batches,
-            )
-
-        if filename.startswith("s3://"):
-            return original_train_with_loader_method(
-                self,
-                create_s3_loader(filename, batch_size),
-                train_config,
-                max_in_memory_batches,
-            )
+        data_loader = _create_loader(
+            filename,
+            batch_size,
+            gcs_credentials_path=gcp_credentials_path,
+        )
 
         return original_train_method(
             self,
-            filename=filename,
+            data_source=data_loader,
             train_config=train_config,
-            batch_size=batch_size,
             validation=validation,
             max_in_memory_batches=max_in_memory_batches,
         )
@@ -97,7 +98,9 @@ def modify_udt_classifier():
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
         return_predicted_class: bool = False,
+        return_metrics: bool = False,
         verbose: bool = True,
+        gcs_credentials_path: Optional[str] = None,
     ):
         eval_config = bolt.EvalConfig()
         if not verbose:
@@ -107,30 +110,19 @@ def modify_udt_classifier():
         if use_sparse_inference:
             eval_config.enable_sparse_inference()
 
-        # This also handles parquet on s3, so it comes before the general s3
-        # handling and file handling below which assume the target files are
-        # csvs
-        if filename.endswith(".parquet") or filename.endswith(".pqt"):
-            return original_eval_with_loader_method(
-                self,
-                create_parquet_loader(
-                    filename,
-                    batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
-                ),
-                eval_config=eval_config,
-            )
+        data_loader = _create_loader(
+            filename,
+            bolt.models.UDTClassifier.default_evaluate_batch_size,
+            gcs_credentials_path=gcs_credentials_path,
+        )
 
-        if filename.startswith("s3://"):
-            return original_eval_with_loader_method(
-                self,
-                create_s3_loader(
-                    filename,
-                    batch_size=bolt.models.UDTClassifier.default_evaluate_batch_size,
-                ),
-                eval_config=eval_config,
-            )
-
-        return original_eval_method(self, filename, eval_config, return_predicted_class)
+        return original_eval_method(
+            self,
+            data_source=data_loader,
+            eval_config=eval_config,
+            return_predicted_class=return_predicted_class,
+            return_metrics=return_metrics,
+        )
 
     wrapped_evaluate.__doc__ = classifier_eval_doc
 
@@ -147,9 +139,7 @@ def modify_udt_classifier():
             weak_column_names,
         )
 
-    delattr(bolt.models.Pipeline, "train_with_file")
     delattr(bolt.models.Pipeline, "train_with_loader")
-    delattr(bolt.models.Pipeline, "evaluate_with_file")
     delattr(bolt.models.Pipeline, "evaluate_with_loader")
     delattr(bolt.models.UDTClassifier, "cold_start")
 

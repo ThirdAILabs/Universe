@@ -232,8 +232,8 @@ void UniversalDeepTransformer::coldStartPretraining(
   auto train_config = bolt::TrainConfig::makeConfig(/* learning_rate= */ 0.01,
                                                     /* epochs= */ 1);
 
-  trainOnDataLoader(data_loader, train_config,
-                    /* validation= */ std::nullopt, ALL_BATCHES);
+  train(data_loader, train_config,
+        /* validation= */ std::nullopt, ALL_BATCHES);
 
   // We reset the dataset factory in case the ordering of the label and text
   // columns we assume here does not match the user's dataset.
@@ -346,6 +346,36 @@ UniversalDeepTransformer::processUDTOptions(
   }
 
   return options;
+}
+
+std::optional<float> UniversalDeepTransformer::getPredictionThreshold() const {
+  auto output_processor =
+      std::dynamic_pointer_cast<BinaryOutputProcessor>(_output_processor);
+
+  if (output_processor) {
+    return output_processor->getPredictionThreshold();
+  }
+  throw std::invalid_argument(
+      "Can only call get_prediction_threshold for binary classiciation "
+      "tasks.");
+}
+
+void UniversalDeepTransformer::setPredictionThreshold(float threshold) {
+  if (threshold <= 0.0 || 1.0 <= threshold) {
+    throw std::invalid_argument(
+        "Prediction threshold must be in the range (0.0, 1.0).");
+  }
+
+  auto output_processor =
+      std::dynamic_pointer_cast<BinaryOutputProcessor>(_output_processor);
+
+  if (output_processor) {
+    output_processor->setPredictionTheshold(threshold);
+  } else {
+    throw std::invalid_argument(
+        "Can only call set_prediction_threshold for binary classiciation "
+        "tasks.");
+  }
 }
 
 }  // namespace thirdai::automl::models

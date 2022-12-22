@@ -57,24 +57,15 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("parameters") = py::dict(),
            docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG,
            bolt::python::OutputRedirect())
-      .def("train_with_file", &ModelPipeline::trainOnFile, py::arg("filename"),
-           py::arg("train_config"), py::arg("batch_size") = std::nullopt,
-           py::arg("validation") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt,
-           docs::MODEL_PIPELINE_TRAIN_FILE, bolt::python::OutputRedirect())
-      .def("train_with_loader", &ModelPipeline::trainOnDataLoader,
-           py::arg("data_source"), py::arg("train_config"),
-           py::arg("validation") = std::nullopt,
+      .def("train_with_loader", &ModelPipeline::train, py::arg("data_source"),
+           py::arg("train_config"), py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
            docs::MODEL_PIPELINE_TRAIN_DATA_LOADER,
            bolt::python::OutputRedirect())
-      .def("evaluate_with_file", &ModelPipeline::evaluateOnFile,
-           py::arg("filename"), py::arg("eval_config") = std::nullopt,
-           py::arg("return_predicted_class") = false,
-           docs::MODEL_PIPELINE_EVALUATE_FILE, bolt::python::OutputRedirect())
-      .def("evaluate_with_loader", &ModelPipeline::evaluateOnDataLoader,
+      .def("evaluate_with_loader", &ModelPipeline::evaluate,
            py::arg("data_source"), py::arg("eval_config") = std::nullopt,
            py::arg("return_predicted_class") = false,
+           py::arg("return_metrics") = false,
            docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER,
            bolt::python::OutputRedirect())
       .def("predict",
@@ -176,6 +167,11 @@ void createModelsSubmodule(py::module_& module) {
                 model.embeddingRepresentation(input));
           },
           py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
+      .def("get_prediction_threshold",
+           &UniversalDeepTransformer::getPredictionThreshold)
+      .def("set_prediction_threshold",
+           &UniversalDeepTransformer::setPredictionThreshold,
+           py::arg("threshold"))
       .def("index", &UniversalDeepTransformer::updateTemporalTrackers,
            py::arg("input_sample"), docs::UDT_INDEX,
            bolt::python::OutputRedirect())
