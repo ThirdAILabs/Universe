@@ -303,7 +303,10 @@ add_subdirectory(compression)
 add_subdirectory(utils)
 
 set(THIRDAI_SOURCES
+    bolt_vector/src/BoltVector.cc
     bolt/src/graph/Graph.cc
+    bolt/src/graph/ExecutionConfig.cc
+    bolt/src/graph/nodes/FullyConnected.cc
     bolt/src/graph/DatasetContext.cc
     bolt/src/graph/Node.cc
     bolt/src/graph/nodes/Switch.cc
@@ -336,11 +339,14 @@ set(THIRDAI_SOURCES
     hashtable/src/VectorHashTable.cc
     licensing/src/CheckLicense.cc
     dataset/src/Vocabulary.cc
+    dataset/src/InMemoryDataset.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
+    new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.cc
     new_dataset/src/featurization_pipeline/augmentations/ColdStartText.cc
     new_dataset/src/featurization_pipeline/ColumnMap.cc
+    new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/dataset_factories/SingleBlockDatasetFactory.cc
@@ -382,6 +388,7 @@ endif()
 pybind11_add_module(
   _thirdai
   python_bindings/thirdai.cc
+  bolt/python_bindings/PybindUtils.cc
   bolt/python_bindings/BoltPython.cc
   bolt/python_bindings/BoltNNPython.cc
   bolt/python_bindings/CallbacksPython.cc

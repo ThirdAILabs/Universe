@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cereal/access.hpp>
-#include <cereal/types/optional.hpp>
 #include "LayerUtils.h"
 #include "SamplingConfig.h"
 #include <utils/StringManipulation.h>
@@ -46,11 +44,10 @@ class FullyConnectedLayerConfig {
     return _sampling_config;
   }
 
+ private:
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_dim, _sparsity, _activation_fn, _sampling_config);
-  }
+  void serialize(Archive& archive);
 };
 
 struct ConvLayerConfig {
@@ -124,10 +121,7 @@ class EmbeddingLayerConfig {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_num_embedding_lookups, _lookup_size, _log_embedding_block_size,
-            _reduction, _num_tokens_per_input);
-  }
+  void serialize(Archive& archive);
 
   static EmbeddingReductionType getReductionType(
       const std::string& reduction_name);
@@ -177,9 +171,7 @@ class NormalizationLayerConfig {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_beta_regularizer, _gamma_regularizer, _epsilon);
-  }
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::bolt
