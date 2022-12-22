@@ -1,5 +1,6 @@
 #include "DotProduct.h"
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 namespace thirdai::bolt {
 

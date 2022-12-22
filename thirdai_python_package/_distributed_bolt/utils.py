@@ -28,41 +28,6 @@ def get_num_cpus():
         return 1
 
 
-def get_gradients(wrapped_model):
-    """
-    :return: list of gradients, in order of node traversal. The order is
-    guarenteed to be the same for all nodes because the model is compiled before
-    being distributed.
-    """
-    nodes = wrapped_model.model.nodes()
-    gradients = []
-    for node in nodes:
-        if hasattr(node, "weight_gradients"):
-            gradients.append(node.weight_gradients.copy())
-        if hasattr(node, "bias_gradients"):
-            gradients.append(node.bias_gradients.copy())
-
-    return gradients
-
-
-def set_gradients(wrapped_model, gradients):
-    """
-    This function sets the gradients in the current network to the
-    gradients provided, in the same order as get_gradients
-    """
-    nodes = wrapped_model.model.nodes()
-    gradient_position = 0
-    for node in nodes:
-        if hasattr(node, "weight_gradients"):
-            node.weight_gradients.set(gradients[gradient_position])
-            gradient_position += 1
-        if hasattr(node, "bias_gradients"):
-            node.bias_gradients.set(gradients[gradient_position])
-            gradient_position += 1
-
-    return gradients
-
-
 def _pandas_iterator(path, chunksize, node_index, num_nodes, sep):
     import pandas as pd
 

@@ -67,6 +67,8 @@ class SwitchNode final : public Node,
 
   void disableSparseParameterUpdates() final;
 
+  bool hasParameters() final { return false; }
+
  private:
   void compileImpl() final;
 
