@@ -11,18 +11,26 @@ BoltVector::BoltVector()
     : active_neurons(nullptr),
       activations(nullptr),
       gradients(nullptr),
-      len(0),
-      _owns_data(true) {}
+      len(0) {}
 
-BoltVector::BoltVector(uint32_t* an, float* a, float* g, uint32_t l)
-    : active_neurons(an),
-      activations(a),
-      gradients(g),
-      len(l),
-      _owns_data(false) {}
+BoltVector::BoltVector(const uint32_t* active_neurons_src,
+                       const float* activations_src, const float* gradients_src,
+                       uint32_t length)
+    : BoltVector(length, active_neurons_src == nullptr,
+                 gradients_src == nullptr) {
+  if (active_neurons_src) {
+    std::copy(active_neurons_src, active_neurons_src + length, active_neurons);
+  }
+
+  std::copy(activations_src, activations_src + length, activations);
+
+  if (gradients_src) {
+    std::copy(gradients_src, gradients_src + length, gradients);
+  }
+}
 
 BoltVector::BoltVector(uint32_t l, bool is_dense, bool has_gradient /* = true*/)
-    : len(l), _owns_data(true) {
+    : len(l) {
   if (!is_dense) {
     active_neurons = new uint32_t[len];
   } else {
@@ -142,11 +150,6 @@ BoltVector BoltVector::copy() const {
   BoltVector vec;
   vec.len = this->len;
 
-  // Since we are copying the data underlying the original vector to create,
-  // this vector, this vector will always own its own data, even if the vector
-  // it is copying from does not.
-  vec._owns_data = true;
-
   vec.activations = new float[len];
   std::copy(this->activations, this->activations + len, vec.activations);
 
@@ -166,8 +169,7 @@ BoltVector BoltVector::copy() const {
 
 // TODO(Josh): Delete copy constructor and copy assignment (will help when
 // we've moved to new Dataset and removed BoltBatches)
-BoltVector::BoltVector(const BoltVector& other)
-    : len(other.len), _owns_data(true) {
+BoltVector::BoltVector(const BoltVector& other) : len(other.len) {
   if (other.active_neurons != nullptr) {
     active_neurons = new uint32_t[len];
     std::copy(other.active_neurons, other.active_neurons + len, active_neurons);
@@ -190,8 +192,7 @@ BoltVector::BoltVector(BoltVector&& other) noexcept
     : active_neurons(other.active_neurons),
       activations(other.activations),
       gradients(other.gradients),
-      len(other.len),
-      _owns_data(other._owns_data) {
+      len(other.len) {
   other.active_neurons = nullptr;
   other.activations = nullptr;
   other.gradients = nullptr;
@@ -205,7 +206,6 @@ BoltVector& BoltVector::operator=(const BoltVector& other) {
   freeMemory();
 
   this->len = other.len;
-  this->_owns_data = true;
 
   if (other.active_neurons != nullptr) {
     active_neurons = new uint32_t[len];
@@ -231,7 +231,6 @@ BoltVector& BoltVector::operator=(BoltVector&& other) noexcept {
   this->len = other.len;
   freeMemory();
 
-  this->_owns_data = other._owns_data;
   this->active_neurons = other.active_neurons;
   this->activations = other.activations;
   this->gradients = other.gradients;
@@ -384,11 +383,9 @@ FoundActiveNeuron BoltVector::findSparseActiveNeuron(
 
 void BoltVector::freeMemory() {  // NOLINT clang tidy thinks this method should
                                  // be const
-  if (_owns_data) {
-    delete[] this->active_neurons;
-    delete[] this->activations;
-    delete[] this->gradients;
-  }
+  delete[] this->active_neurons;
+  delete[] this->activations;
+  delete[] this->gradients;
 }
 
 template <class Archive>

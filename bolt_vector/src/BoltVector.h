@@ -38,7 +38,8 @@ struct BoltVector {
 
   BoltVector();
 
-  BoltVector(uint32_t* an, float* a, float* g, uint32_t l);
+  BoltVector(const uint32_t* active_neurons_src, const float* activations_src,
+             const float* gradients_src, uint32_t length);
 
   BoltVector(uint32_t l, bool is_dense, bool has_gradient = true);
 
@@ -119,8 +120,6 @@ struct BoltVector {
    * array must not be nullptr.
    */
   FoundActiveNeuron findSparseActiveNeuron(uint32_t active_neuron) const;
-
-  bool _owns_data;
 
   void freeMemory();
 
