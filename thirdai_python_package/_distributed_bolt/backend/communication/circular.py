@@ -1,8 +1,7 @@
 from typing import Optional
 
+import numpy as np
 import ray
-
-from ...utils import get_gradients, set_gradients
 
 
 class Circular:
@@ -30,24 +29,27 @@ class Circular:
         self.friend = friend
 
     def calculate_gradient_partitions(self):
-        for gradient in self.gradients:
-            partition_length = int(len(gradient) / self.num_workers)
-            remaining_length = len(gradient) % self.num_workers
-            partition_start_end_list = []
-            current_index = 0
-            for i in range(self.num_workers):
-                if i < remaining_length:
-                    partition_start_end_list.append(
-                        (current_index, current_index + partition_length + 1)
+        partition_length = int(len(self.gradients) / self.num_workers)
+        remaining_length = len(self.gradients) % self.num_workers
+        self.partitions = []
+        last_partition_end_index = 0
+        for worker_id in range(self.num_workers):
+            if worker_id < remaining_length:
+                self.partitions.append(
+                    (
+                        last_partition_end_index,
+                        last_partition_end_index + partition_length + 1,
                     )
-                    current_index += partition_length + 1
-                else:
-                    partition_start_end_list.append(
-                        (current_index, current_index + partition_length)
+                )
+                last_partition_end_index += partition_length + 1
+            else:
+                self.partitions.append(
+                    (
+                        last_partition_end_index,
+                        last_partition_end_index + partition_length,
                     )
-                    current_index += partition_length
-
-            self.partitions.append(partition_start_end_list)
+                )
+                last_partition_end_index += partition_length
 
     def compute_and_store_batch_gradients(self, batch_id: int):
         """
@@ -68,7 +70,7 @@ class Circular:
         self.model.compute_and_store_batch_gradients(batch_id)
 
         self.partitions = []
-        self.gradients = get_gradients(self.model)
+        self.gradients = np.array(self.model.gradient_reference().get_gradients())
 
         self.calculate_gradient_partitions()
 
@@ -81,7 +83,7 @@ class Circular:
         :return: returns True, after functions complete
         :rtype: bool
         """
-        set_gradients(self.model, self.gradients)
+        self.model.gradient_reference().set_gradients(self.gradients)
 
     def update_partitions(
         self,
@@ -100,26 +102,19 @@ class Circular:
         :param avg_gradients: Defaults to False.
         :type avg_gradients: bool, optional
         """
-        for i in range(len(self.friend_gradients)):
 
-            # Getting the indices of the partition to work on
-            start_row_index, end_row_index = self.partitions[i][partition_id]
+        # Getting the indices of the partition to work on
+        start_row_index, end_row_index = self.partitions[partition_id]
 
-            if start_row_index < end_row_index:
+        if start_row_index < end_row_index:
 
-                # arrays should be numpy arrays for the following operation, otherwise it will just get appened to the list
-                if reduce:
-                    self.gradients[i][
-                        start_row_index:end_row_index
-                    ] += self.friend_gradients[i]
-                    if avg_gradients:
-                        self.gradients[i][
-                            start_row_index:end_row_index
-                        ] /= self.num_workers
-                else:
-                    self.gradients[i][
-                        start_row_index:end_row_index
-                    ] = self.friend_gradients[i]
+            # arrays should be numpy arrays for the following operation, otherwise it will just get appened to the list
+            if reduce:
+                self.gradients[start_row_index:end_row_index] += self.friend_gradients
+                if avg_gradients:
+                    self.gradients[start_row_index:end_row_index] /= self.num_workers
+            else:
+                self.gradients[start_row_index:end_row_index] = self.friend_gradients
 
     def process_ring(
         self,
@@ -162,19 +157,16 @@ class Circular:
         :rtype: numpy.ndarray
         """
         partition_id = (update_id + self.id) % self.num_workers
-        our_partitions = [partition[partition_id] for partition in self.partitions]
+        (start_row_index, end_row_index) = self.partitions[partition_id]
 
-        gradient_subarrays = []
-        for (start_row_index, end_row_index), gradient in zip(
-            our_partitions, self.gradients
-        ):
-            if start_row_index < end_row_index:
-                gradient_subarrays.append(gradient[start_row_index:end_row_index])
-            else:
-                # This won't happen in most use cases since the number
-                # of parameters in the array would have to be less than the
-                # number of nodes (assuming even partitions), but we include
-                # it to handle the edge case gracefully.
-                gradient_subarrays.append(None)
+        send_gradients = []
+        if start_row_index < end_row_index:
+            send_gradients = self.gradients[start_row_index:end_row_index]
+        else:
+            # This won't happen in most use cases since the number
+            # of parameters in the array would have to be less than the
+            # number of nodes (assuming even partitions), but we include
+            # it to handle the edge case gracefully.
+            send_gradients = None
 
-        return gradient_subarrays
+        return send_gradients

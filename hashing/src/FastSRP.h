@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cereal/types/polymorphic.hpp>
-#include <cereal/types/vector.hpp>
 #include "HashFunction.h"
 #include <cstdint>
 
@@ -34,15 +32,9 @@ class FastSRP final : public HashFunction {
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<HashFunction>(this), _hashes_per_table,
-            _num_hashes, _log_num_hashes, _dim, _binsize, _permute,
-            _rand_double_hash_seed, _bin_map, _positions, _rand_bits);
-  }
+  void serialize(Archive& archive);
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   FastSRP() : HashFunction(0, 0){};
 };
 
 }  // namespace thirdai::hashing
-
-CEREAL_REGISTER_TYPE(thirdai::hashing::FastSRP)

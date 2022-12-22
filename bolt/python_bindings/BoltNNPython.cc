@@ -89,6 +89,13 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
           "Note: Only concatenate compressed vectors of the same type with "
           "the same hyperparamters.");
 
+  py::class_<GradientReference>(nn_submodule, "GradientReference")
+      .def("get_gradients", &GradientReference::getGradients,
+           "Returns flattened gradients for the model")
+      .def("set_gradients", &GradientReference::setGradients,
+           py::arg("flattened_gradients"),
+           "Set the gradients for the model with flattened_gradients provided");
+
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(nn_submodule,  // NOLINT
                                      "InferenceOutput");
@@ -588,7 +595,14 @@ That's all for now, folks! More docs coming soon :)
           [](DistributedTrainingWrapper& node) { return node.getModel(); },
           py::return_value_policy::reference_internal,
           "The underlying Bolt model wrapped by this "
-          "DistributedTrainingWrapper.");
+          "DistributedTrainingWrapper.")
+      .def(
+          "gradient_reference",
+          [](DistributedTrainingWrapper& node) {
+            return GradientReference(*node.getModel().get());
+          },
+          py::return_value_policy::reference_internal,
+          "Returns gradient reference for Distributed Training Wrapper");
 
   createLossesSubmodule(nn_submodule);
 }

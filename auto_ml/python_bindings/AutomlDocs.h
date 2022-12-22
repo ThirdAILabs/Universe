@@ -101,7 +101,7 @@ Returns:
 Examples:
     >>> train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     >>> model.train(
-            data_source=dataset.S3DataLoader(...), train_config=train_config, max_in_memory_batches=12
+            data_source=dataset.CSVDataLoader(...), train_config=train_config, max_in_memory_batches=12
         )
 
 )pbdoc";
@@ -118,12 +118,16 @@ Args:
     return_predicted_class (bool): Optional, defaults to false. When true the model
         will output the predicted class for each sample rather than the activations 
         of the final layer. This has no effect for regression models.
+    return_metrics (bool): Optional, defaults to false. When true, the model will
+        output the evaluation metrics rather than activations of the final layer.
+        If true, this nullifies the `return_predicted_class` argument.
 
 Returns:
-    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
-    Returns a numpy array of the activations if the output is dense, or a tuple 
-    of the active neurons and activations if the output is sparse. The shape of 
-    each array will be (dataset_length, num_nonzeros_in_output).
+    (np.ndarray or Tuple[np.ndarray, np.ndarray] or Dict): 
+    If return_metrics = True, returns a dictionary that maps metric names to their
+    values. Otherwise, returns a numpy array of the activations if the output is 
+    dense, or a tuple of the active neurons and activations if the output is sparse. 
+    The shape of each array will be (dataset_length, num_nonzeros_in_output).
 
 Examples:
     >>> eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
@@ -143,15 +147,19 @@ Args:
     return_predicted_class (bool): Optional, defaults to false. When true the model
         will output the predicted class for each sample rather than the activations 
         of the final layer. This has no effect for regression models.
+    return_metrics (bool): Optional, defaults to false. When true, the model will
+        output the evaluation metrics rather than activations of the final layer.
+        If true, this nullifies the `return_predicted_class` argument.
 
 Returns:
-    (np.ndarray or Tuple[np.ndarray, np.ndarray]): 
-    Returns a numpy array of the activations if the output is dense, or a tuple 
-    of the active neurons and activations if the output is sparse. The shape of 
-    each array will be (dataset_length, num_nonzeros_in_output).
+    (np.ndarray or Tuple[np.ndarray, np.ndarray] or Dict): 
+    If return_metrics = True, returns a dictionary that maps metric names to their
+    values. Otherwise, returns a numpy array of the activations if the output is 
+    dense, or a tuple of the active neurons and activations if the output is sparse. 
+    The shape of each array will be (dataset_length, num_nonzeros_in_output).
 
 Examples:
-    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.S3DataLoader(...))
+    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.CSVDataLoader(...))
 
 )pbdoc";
 
