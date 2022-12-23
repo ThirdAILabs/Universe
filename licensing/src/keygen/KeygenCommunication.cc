@@ -31,18 +31,6 @@ const std::string VALIDATE_ENDPOINT =
     "/v1/accounts/thirdai/licenses/actions/validate-key";
 
 /*
- * This method creates an ed25519Verifier that uses the thirdai Keygen public
- * key (KEYGEN_PUBLIC_KEY_BASE64_DER) for verifying messages signed with the
- * thirdai Keygen private key.
- */
-CryptoPP::ed25519Verifier createVerifier() {
-  CryptoPP::StringSource source(/* string = */ KEYGEN_PUBLIC_KEY_BASE64_DER,
-                                /* pumpAll = */ true,
-                                /* attachment = */ new CryptoPP::Base64Decoder);
-  return CryptoPP::ed25519::Verifier(source);
-}
-
-/*
  * This method returns the Base64 encoding of the passed in binary string.
  * See https://www.cryptopp.com/wiki/Base64Encoder for more details.
  */
@@ -152,7 +140,8 @@ void verifyKeygenResponse(const httplib::Result& res,
   std::string signed_data =
       getOriginalKeygenMessage(res, request_type, api_path);
   std::string signature = getSignature(res);
-  CryptoPP::ed25519::Verifier verifier = createVerifier();
+  CryptoPP::ed25519::Verifier verifier =
+      createVerifierFromBase64String(KEYGEN_PUBLIC_KEY_BASE64_DER);
 
   bool valid = verifier.VerifyMessage(
       reinterpret_cast<const CryptoPP::byte*>(signed_data.data()),

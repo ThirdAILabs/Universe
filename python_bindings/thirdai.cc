@@ -119,6 +119,15 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   m.def("deactivate", &thirdai::licensing::deactivate,
         "Remove the currently stored ThirdAI access key. Future calls to "
         "ThirdAI functions may fail.");
+
+  m.def(
+      "start_heartbeat", &thirdai::licensing::startHeartbeat,
+      py::arg("license_server_url"),
+      "Starts a ThirdAI heartbeat endpoint to remain authenticated for future "
+      "calls to ThirdAI functions.");
+
+  m.def("end_heartbeat", &thirdai::licensing::endHeartbeat,
+        "Ends the current ThirdAI heartbeat.");
 #endif
 
   m.attr("__version__") = thirdai::version();

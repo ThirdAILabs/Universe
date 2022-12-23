@@ -1,11 +1,13 @@
 
 #include "CheckLicense.h"
 #include <dataset/src/DataLoader.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <unordered_set>
 #if THIRDAI_CHECK_LICENSE
 #include <licensing/src/file/SignedLicense.h>
+#include <licensing/src/heartbeat/Heartbeat.h>
 #include <licensing/src/keygen/KeygenCommunication.h>
 #include <licensing/src/utils.h>
 #endif
@@ -18,6 +20,10 @@ static std::optional<std::string> _license_path = {};
 static std::optional<std::string> _api_key = {};
 static std::unordered_set<std::string> _entitlements = {};
 
+#ifdef THIRDAI_CHECK_LICENSE
+static std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
+#endif
+
 void checkLicense() {
 #if THIRDAI_CHECK_LICENSE
 #pragma message( \
@@ -28,21 +34,14 @@ void checkLicense() {
     return;
   }
 
+  if (_heartbeat_thread != nullptr) {
+    _heartbeat_thread->verify();
+  }
+
   SignedLicense::findVerifyAndCheckLicense(_license_path);
   _entitlements.insert(FULL_ACCESS_ENTITLEMENT);
 
 #endif
-}
-
-void activate(const std::string& api_key) { _api_key = api_key; }
-
-void setLicensePath(const std::string& license_path) {
-  _license_path = license_path;
-}
-
-void deactivate() {
-  _api_key = std::nullopt;
-  _entitlements.clear();
 }
 
 void verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader) {
@@ -63,4 +62,20 @@ void verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader) {
 #endif
 }
 
+void activate(const std::string& api_key) { _api_key = api_key; }
+
+void deactivate() {
+  _api_key = std::nullopt;
+  _entitlements.clear();
+}
+
+void startHeartbeat(const std::string& heartbeat_url) {
+  _heartbeat_thread = std::make_unique<HeartbeatThread>(heartbeat_url);
+}
+
+void endHeartbeat() { _heartbeat_thread = nullptr; }
+
+void setLicensePath(const std::string& license_path) {
+  _license_path = license_path;
+}
 }  // namespace thirdai::licensing
