@@ -1,9 +1,11 @@
 #include "Heartbeat.h"
+#include <stdexcept>
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include <cpp-httplib/httplib.h>
 #include <cryptopp/base64.h>  // Base64 decoder
 #include <cryptopp/xed25519.h>
 #include <json/include/nlohmann/json.hpp>
+#include <licensing/src/utils.h>
 #include <chrono>
 
 namespace thirdai::licensing {
@@ -13,8 +15,13 @@ using json = nlohmann::json;
 const std::string THIRDAI_PUBLIC_KEY_BASE64_DER =
     "MCowBQYDK2VwAyEAqA9j+Pk81yUz7FPZfg94bez6m1j8j1jiLctTjmB2s7w=";
 
-HeartbeatThread::HeartbeatThread(const std::string& url) {
-  doSingleHeartbeat(url);
+HeartbeatThread::HeartbeatThread(const std::string& url)
+    : _machine_id(getRandomIdentifier(/* numBytesRandomness = */ 32)),
+      _verified(true),
+      _should_terminate(false) {
+  if (!doSingleHeartbeat(url)) {
+    throw std::runtime_error("Could not establish initial connection to licensing server.");
+  }
   _heartbeat_thread = std::thread(&HeartbeatThread::heartbeatThread, this, url);
 }
 
@@ -34,12 +41,24 @@ HeartbeatThread::~HeartbeatThread() {
   _heartbeat_thread.join();
 }
 
+int64_t currentEpochSeconds() {
+  return std::chrono::duration_cast<std::chrono::milliseconds>(
+                         std::chrono::system_clock::now().time_since_epoch())
+                         .count();
+}
+
 void HeartbeatThread::heartbeatThread(const std::string& url) {
+  int64_t last_validation = currentEpochSeconds();
   while (!_should_terminate) {
+    if (doSingleHeartbeat(url)) {
+      last_validation = currentEpochSeconds();
+    }
+
+    _verified = last_validation - currentEpochSeconds() < VALIDATION_FAIL_TIMEOUT_SECONDS;
+
     std::this_thread::sleep_for(
-        std::chrono::seconds(THREAD_SLEEP_PERIOD_SECONDS));
+      std::chrono::seconds(THREAD_SLEEP_PERIOD_SECONDS));
   }
-  doSingleHeartbeat(url);
 }
 
 bool verifyResponse(const std::string& submitted_machine_id,
@@ -61,33 +80,29 @@ bool verifyResponse(const std::string& submitted_machine_id,
       decoded_signature.size());
 }
 
-void HeartbeatThread::doSingleHeartbeat(const std::string& url) {
+bool HeartbeatThread::doSingleHeartbeat(const std::string& url) {
   httplib::Client client(url);
   // See KeygenCommunication.cc for why we need this
   client.enable_server_certificate_verification(false);
-  client.Get("/heartbeat");
   json body;
   body["machine_id"] = _machine_id;
-  body["metadata"] =
-      std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(
-                         std::chrono::system_clock::now().time_since_epoch())
-                         .count());
+  body["metadata"] = std::to_string(currentEpochSeconds());
 
   httplib::Result response = client.Post(
       /* path = */ "/heartbeat",
       /* headers = */ {},
       /* body = */ body.dump(), /* content_type = */ "application/json");
   if (!response || response->status != 200) {
-    return;
+    return false;
   }
 
   if (!verifyResponse(/* submitted_machine_id = */ body["machine_id"],
                       /* submitted_metadata = */ body["metadata"],
                       /* base64_signature = */ response->body)) {
-    return;
+    return false;
   }
 
-  _verified = true;
+  return true;
 }
 
 }  // namespace thirdai::licensing

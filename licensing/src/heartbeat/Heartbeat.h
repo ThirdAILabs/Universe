@@ -1,4 +1,3 @@
-#include <licensing/src/utils.h>
 #include <atomic>
 #include <stdexcept>
 #include <string>
@@ -26,11 +25,11 @@ class HeartbeatThread {
  private:
   void heartbeatThread(const std::string& url);
 
-  void doSingleHeartbeat(const std::string& url);
+  bool doSingleHeartbeat(const std::string& url);
 
-  std::string _machine_id = getRandomIdentifier(/* numBytesRandomness = */ 32);
-  std::atomic_bool _verified = false;
-  std::atomic_bool _should_terminate = false;
+  std::string _machine_id;
+  std::atomic_bool _verified;
+  std::atomic_bool _should_terminate;
   std::thread _heartbeat_thread;
 };
 

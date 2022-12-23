@@ -24,9 +24,23 @@ from thirdai._thirdai import __version__, logging
 # If the import fails it means this build doesn't expose these methods, so we
 # just pass
 try:
-    from thirdai._thirdai import activate, deactivate, set_thirdai_license_path
+    from thirdai._thirdai import (
+        activate,
+        deactivate,
+        end_heartbeat,
+        set_thirdai_license_path,
+        start_heartbeat,
+    )
 
-    __all__.extend(["set_thirdai_license_path", "activate", "deactivate"])
+    __all__.extend(
+        [
+            "set_thirdai_license_path",
+            "activate",
+            "deactivate",
+            "start_heartbeat",
+            "end_heartbeat",
+        ]
+    )
 except ImportError:
     pass
 try:

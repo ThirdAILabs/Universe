@@ -1,3 +1,7 @@
 import thirdai
+import time
 
-thirdai.heartbeat("localhost:8080")
+thirdai.start_heartbeat("http://localhost:8080")
+
+
+time.sleep(1)
