@@ -1,7 +1,6 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/Datasets.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
 #include <memory>

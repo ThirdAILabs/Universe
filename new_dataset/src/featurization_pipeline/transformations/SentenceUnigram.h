@@ -33,7 +33,7 @@ class SentenceUnigram : public Transformation {
                   bool deduplicate,
                   std::optional<uint32_t> output_range = std::nullopt);
 
-  void apply(ColumnMap& column_map,bool /*prepare_for_backpropagate*/) final;
+  void apply(ColumnMap& column_map, bool /*prepare_for_backpropagate*/) final;
 
   void backpropagate(ColumnMap& /*columns*/,
                      ContributionColumnMap& /*contribuition_columns*/) final {}

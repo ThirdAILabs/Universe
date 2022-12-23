@@ -15,7 +15,8 @@ SentenceUnigram::SentenceUnigram(
       _deduplicate(deduplicate),
       _output_range(output_range) {}
 
-void SentenceUnigram::apply(ColumnMap& column_map,bool  /*prepare_for_backpropagate*/) {
+void SentenceUnigram::apply(ColumnMap& column_map,
+                            bool /*prepare_for_backpropagate*/) {
   auto input_column = column_map.getStringColumn(_input_column_name);
   uint32_t num_rows = column_map.numRows();
 
