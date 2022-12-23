@@ -52,6 +52,7 @@ def test_udt_cold_start(download_clinc_dataset, cold_start_dataset):
         filename=cold_start_filename,
         strong_column_names=["text"],
         weak_column_names=[weak_column],
+        learning_rate=0.01,
     )
 
     empty_train_file = "./empty_clinc.csv"

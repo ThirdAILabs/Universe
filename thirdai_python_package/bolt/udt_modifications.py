@@ -131,12 +131,14 @@ def modify_udt_classifier():
         filename: str,
         strong_column_names: List[str],
         weak_column_names: List[str],
+        learning_rate: float,
     ):
         original_cold_start_method(
             self,
             thirdai.data.pandas_to_columnmap(pd.read_csv(filename)),
             strong_column_names,
             weak_column_names,
+            learning_rate,
         )
 
     delattr(bolt.models.Pipeline, "train_with_loader")

@@ -50,8 +50,6 @@ std::optional<std::string> ColdStartDataLoader::getConcatenatedColumns() {
     return std::nullopt;
   }
 
-  std::string row = (*_text_column)[_row_idx];
-
   auto labels = (*_label_column)[_row_idx];
 
   if (labels.size() > 1 && !_label_delimiter) {
@@ -59,12 +57,16 @@ std::optional<std::string> ColdStartDataLoader::getConcatenatedColumns() {
         "Expected label delimiter if the are multiple labels per sample.");
   }
 
+  std::string row = std::to_string(labels[0]);
+
+  for (uint32_t label_idx = 1; label_idx < labels.size(); label_idx++) {
+    row.push_back(*_label_delimiter);
+    row.append(std::to_string(labels[label_idx]));
+  }
+
   row.push_back(_column_delimiter);
 
-  for (uint32_t label : labels) {
-    row.append(std::to_string(label));
-    row.push_back(*_label_delimiter);
-  }
+  row.append((*_text_column)[_row_idx]);
 
   _row_idx++;
 

@@ -110,7 +110,8 @@ class UniversalDeepTransformer final : public ModelPipeline {
 
   void coldStartPretraining(thirdai::data::ColumnMap dataset,
                             const std::vector<std::string>& strong_column_names,
-                            const std::vector<std::string>& weak_column_names);
+                            const std::vector<std::string>& weak_column_names,
+                            float learning_rate);
 
   void resetTemporalTrackers() { udtDatasetFactory().resetTemporalTrackers(); }
 

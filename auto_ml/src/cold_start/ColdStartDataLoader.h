@@ -42,7 +42,7 @@ class ColdStartDataLoader final : public dataset::DataLoader {
   std::optional<std::string> getConcatenatedColumns();
 
   std::string getHeader() const {
-    return _text_column_name + _column_delimiter + _label_column_name;
+    return _label_column_name + _column_delimiter + _text_column_name;
   }
 
   thirdai::data::columns::StringColumnPtr _text_column;

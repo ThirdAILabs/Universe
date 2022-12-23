@@ -200,7 +200,7 @@ py::object UniversalDeepTransformer::predictBatch(
 void UniversalDeepTransformer::coldStartPretraining(
     thirdai::data::ColumnMap dataset,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names) {
+    const std::vector<std::string>& weak_column_names, float learning_rate) {
   auto dataset_config = udtDatasetFactory().config();
 
   cold_start::verifyTaskIsColdStartCompatible(dataset_config);
@@ -229,8 +229,9 @@ void UniversalDeepTransformer::coldStartPretraining(
       /* column_delimiter= */ dataset_config->delimiter,
       /* label_delimiter= */ label_delimiter);
 
-  auto train_config = bolt::TrainConfig::makeConfig(/* learning_rate= */ 0.01,
-                                                    /* epochs= */ 1);
+  auto train_config =
+      bolt::TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
+                                    /* epochs= */ 1);
 
   train(data_loader, train_config, /* validation= */ std::nullopt,
         /* max_in_memory_batches= */ std::nullopt);
