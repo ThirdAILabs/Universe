@@ -42,8 +42,7 @@ void LossFunction::computeLossGradientsImpl(BoltVector& output,
   */
   for (uint32_t i = 0; i < output.len; i++) {
     uint32_t active_neuron = OUTPUT_DENSE ? i : output.active_neurons[i];
-    float label_val =
-        labels.findActiveNeuron<LABEL_DENSE>(active_neuron).activation;
+    float label_val = labels.find(active_neuron).activation;
     output.gradients[i] =
         elementLossGradient(label_val, output.activations[i], batch_size);
   }

@@ -93,7 +93,7 @@ class MetricUtilities {
 
     for (uint32_t i = 0; i < output.len; i++) {
       uint32_t active_neuron = OUTPUT_DENSE ? i : output.active_neurons[i];
-      const auto found = labels.findActiveNeuron<LABEL_DENSE>(active_neuron);
+      const auto found = labels.find(active_neuron);
       float label_val = found.activation;
       if (found.pos.has_value()) {
         labels_positions_touched[found.pos.value()] = true;

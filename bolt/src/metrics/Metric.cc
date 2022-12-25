@@ -99,8 +99,8 @@ float MeanSquaredErrorMetric::computeMSE(const BoltVector& output,
 
     float error = 0.0;
     for (uint32_t i = 0; i < dim; i++) {
-      float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
-      float act = output.findActiveNeuron<OUTPUT_DENSE>(i).activation;
+      float label = labels.find(i).activation;
+      float act = output.find(i).activation;
       float delta = label - act;
       error += delta * delta;
     }
@@ -113,16 +113,14 @@ float MeanSquaredErrorMetric::computeMSE(const BoltVector& output,
   // also in the output active neurons.
   float error = 0.0;
   for (uint32_t i = 0; i < output.len; i++) {
-    float label = labels.findActiveNeuron<LABEL_DENSE>(output.active_neurons[i])
-                      .activation;
+    float label = labels.find(output.active_neurons[i]).activation;
     float act = output.activations[i];
     float delta = label - act;
     error += delta * delta;
   }
 
   for (uint32_t i = 0; i < labels.len; i++) {
-    auto output_neuron =
-        output.findActiveNeuron<OUTPUT_DENSE>(labels.active_neurons[i]);
+    auto output_neuron = output.find(labels.active_neurons[i]);
     // Skip any neurons that were in the active neuron set since the loss was
     // already computed for them.
     if (!output_neuron.pos) {
@@ -191,10 +189,7 @@ void RecallAtK::record(const BoltVector& output, const BoltVector& labels) {
 
   uint32_t matches = 0;
   while (!top_k.empty()) {
-    if (labels
-            .findActiveNeuronNoTemplate(
-                /* active_neuron= */ top_k.top().second)
-            .activation > 0) {
+    if (labels.find(/* active_neuron= */ top_k.top().second).activation > 0) {
       matches++;
     }
     top_k.pop();
@@ -262,7 +257,7 @@ void FMeasure::record(const BoltVector& output, const BoltVector& labels) {
       /* max_count_to_return = */ std::numeric_limits<uint32_t>::max());
 
   for (uint32_t pred : predictions) {
-    if (labels.findActiveNeuronNoTemplate(pred).activation > 0) {
+    if (labels.find(pred).activation > 0) {
       _true_positive++;
     } else {
       _false_positive++;
@@ -272,7 +267,7 @@ void FMeasure::record(const BoltVector& output, const BoltVector& labels) {
   for (uint32_t pos = 0; pos < labels.len; pos++) {
     uint32_t label_active_neuron =
         labels.isDense() ? pos : labels.active_neurons[pos];
-    if (labels.findActiveNeuronNoTemplate(label_active_neuron).activation > 0) {
+    if (labels.find(label_active_neuron).activation > 0) {
       if (std::find(predictions.begin(), predictions.end(),
                     label_active_neuron) == predictions.end()) {
         _false_negative++;

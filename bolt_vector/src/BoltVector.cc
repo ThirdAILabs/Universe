@@ -244,20 +244,23 @@ void BoltVector::zeroOutGradients() {  // NOLINT clang-tidy thinks this should
  * allows us to reuse that information and prevent checking at every
  * iteration.
  */
-template <bool DENSE>
-FoundActiveNeuron BoltVector::findActiveNeuron(uint32_t active_neuron) const {
-  if (DENSE) {
-    return {active_neuron, activations[active_neuron]};
-  }
-  return findSparseActiveNeuron(active_neuron);
-}
 
-FoundActiveNeuron BoltVector::findActiveNeuronNoTemplate(
-    uint32_t active_neuron) const {
+FoundActiveNeuron BoltVector::find(uint32_t active_neuron) const {
   if (isDense()) {
     return {active_neuron, activations[active_neuron]};
   }
-  return findSparseActiveNeuron(active_neuron);
+
+  // Else not dense
+  assert(active_neurons != nullptr);
+
+  const uint32_t* start = active_neurons;
+  const uint32_t* end = active_neurons + len;
+  const uint32_t* itr = std::find(start, end, active_neuron);
+  if (itr == end) {
+    return {{}, 0.0};
+  }
+  uint32_t pos = std::distance(start, itr);
+  return {pos, activations[pos]};
 }
 
 bool BoltVector::isDense() const { return this->active_neurons == nullptr; }
@@ -347,20 +350,6 @@ std::string BoltVector::toString() const {
 
 BoltVector::~BoltVector() noexcept { freeMemory(); }
 
-FoundActiveNeuron BoltVector::findSparseActiveNeuron(
-    uint32_t active_neuron) const {
-  assert(active_neurons != nullptr);
-
-  const uint32_t* start = active_neurons;
-  const uint32_t* end = active_neurons + len;
-  const uint32_t* itr = std::find(start, end, active_neuron);
-  if (itr == end) {
-    return {{}, 0.0};
-  }
-  uint32_t pos = std::distance(start, itr);
-  return {pos, activations[pos]};
-}
-
 void BoltVector::freeMemory() {  // NOLINT clang tidy thinks this method should
                                  // be const
   delete[] this->active_neurons;
@@ -409,11 +398,6 @@ void BoltVector::load(Archive& archive) {
 
 template uint32_t BoltVector::activeNeuronAtIndex<true>(uint32_t index) const;
 template uint32_t BoltVector::activeNeuronAtIndex<false>(uint32_t index) const;
-
-template FoundActiveNeuron thirdai::BoltVector::findActiveNeuron<true>(
-    uint32_t index) const;
-template FoundActiveNeuron thirdai::BoltVector::findActiveNeuron<false>(
-    uint32_t index) const;
 
 template void BoltVector::load(cereal::PortableBinaryInputArchive& archive);
 template void BoltVector::load(cereal::BinaryInputArchive& archive);

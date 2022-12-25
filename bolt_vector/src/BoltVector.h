@@ -80,10 +80,7 @@ struct BoltVector {
    * allows us to reuse that information and prevent checking at every
    * iteration.
    */
-  template <bool DENSE>
-  FoundActiveNeuron findActiveNeuron(uint32_t active_neuron) const;
-
-  FoundActiveNeuron findActiveNeuronNoTemplate(uint32_t active_neuron) const;
+  FoundActiveNeuron find(uint32_t active_neuron) const;
 
   bool isDense() const;
 
@@ -112,7 +109,6 @@ struct BoltVector {
    * a sparse vector. Assumes that the vector is sparse; the active_neurons
    * array must not be nullptr.
    */
-  FoundActiveNeuron findSparseActiveNeuron(uint32_t active_neuron) const;
 
   void freeMemory();
 
