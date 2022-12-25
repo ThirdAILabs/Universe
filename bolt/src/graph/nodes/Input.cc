@@ -74,11 +74,11 @@ void Input::checkDimForInput(const BoltVector& vec) const {
     }
   } else {
     for (uint32_t i = 0; i < vec.len; i++) {
-      uint32_t active_neuron = vec.active_neurons[i];
-      if (active_neuron >= _expected_input_dim) {
+      uint32_t neuron = vec.neurons[i];
+      if (neuron >= _expected_input_dim) {
         throw std::invalid_argument(
-            "Received sparse BoltVector with active_neuron=" +
-            std::to_string(active_neuron) + " in input layer with dimension=" +
+            "Received sparse BoltVector with neuron=" + std::to_string(neuron) +
+            " in input layer with dimension=" +
             std::to_string(_expected_input_dim));
       }
     }

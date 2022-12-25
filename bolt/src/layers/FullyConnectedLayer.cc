@@ -77,11 +77,11 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
                                       const BoltVector* labels) {
   assert((input.len <= _prev_dim && !PREV_DENSE) ||
          (input.len == _prev_dim && PREV_DENSE));
-  assert((input.active_neurons == nullptr && PREV_DENSE) ||
-         (input.active_neurons != nullptr && !PREV_DENSE));
+  assert((input.neurons == nullptr && PREV_DENSE) ||
+         (input.neurons != nullptr && !PREV_DENSE));
   assert((output.len <= _dim && !DENSE) || (output.len == _dim && DENSE));
-  assert((output.active_neurons == nullptr && DENSE) ||
-         (output.active_neurons != nullptr && !DENSE));
+  assert((output.neurons == nullptr && DENSE) ||
+         (output.neurons != nullptr && !DENSE));
   assert(labels == nullptr || labels->len > 0);
 
   selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels);
@@ -163,14 +163,14 @@ void FullyConnectedLayer::markActiveNeuronsForUpdate(const BoltVector& input,
 
   if constexpr (!DENSE) {
     for (uint64_t n = 0; n < len_out; n++) {
-      uint64_t act_neuron = output.active_neurons[n];
+      uint64_t act_neuron = output.neurons[n];
       _is_active[act_neuron] = true;
     }
   }
 
   if constexpr (!PREV_DENSE) {
     for (uint64_t i = 0; i < input.len; i++) {
-      uint64_t act_neuron = input.active_neurons[i];
+      uint64_t act_neuron = input.neurons[i];
       _prev_is_active[act_neuron] = true;
     }
   }
@@ -275,11 +275,11 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
                                             BoltVector& output) {
   assert((input.len <= _prev_dim && !PREV_DENSE) ||
          (input.len == _prev_dim && PREV_DENSE));
-  assert((input.active_neurons == nullptr && PREV_DENSE) ||
-         (input.active_neurons != nullptr && !PREV_DENSE));
+  assert((input.neurons == nullptr && PREV_DENSE) ||
+         (input.neurons != nullptr && !PREV_DENSE));
   assert((output.len <= _dim && !DENSE) || (output.len == _dim && DENSE));
-  assert((output.active_neurons == nullptr && DENSE) ||
-         (output.active_neurons != nullptr && !DENSE));
+  assert((output.neurons == nullptr && DENSE) ||
+         (output.neurons != nullptr && !DENSE));
   assert(_weight_optimizer.has_value() && _bias_optimizer.has_value());
 
   uint32_t len_out = nonzerosInOutput<DENSE>();
@@ -390,8 +390,7 @@ void FullyConnectedLayer::randomNeuronSampling(const BoltVector& input,
   uint32_t label_len = 0;
   if (labels) {
     label_len = std::min<uint64_t>(labels->len, _sparse_dim);
-    std::copy(labels->active_neurons, labels->active_neurons + label_len,
-              output.active_neurons);
+    std::copy(labels->neurons, labels->neurons + label_len, output.neurons);
   }
 
   // This is because rand() is not threadsafe and because we want to make the
@@ -406,7 +405,7 @@ void FullyConnectedLayer::randomNeuronSampling(const BoltVector& input,
   uint64_t neurons_to_sample = _sparse_dim - label_len;
 
   wrapAroundCopy(/* src= */ _rand_neurons.data(), /* src_len= */ _dim,
-                 /* dest= */ output.active_neurons + label_len,
+                 /* dest= */ output.neurons + label_len,
                  /* copy_size= */ neurons_to_sample,
                  /* starting_offset= */ random_offset);
 }
@@ -419,16 +418,16 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
 
   uint32_t label_len = labels != nullptr ? labels->len : 0;
   for (uint32_t i = 0; i < label_len; i++) {
-    assert(labels->active_neurons[i] < _dim);
-    active_set.insert(labels->active_neurons[i]);
+    assert(labels->neurons[i] < _dim);
+    active_set.insert(labels->neurons[i]);
   }
 
   std::vector<uint32_t> hashes(_hasher->numTables());
   if constexpr (PREV_DENSE) {
     _hasher->hashSingleDense(input.activations, input.len, hashes.data());
   } else {
-    _hasher->hashSingleSparse(input.active_neurons, input.activations,
-                              input.len, hashes.data());
+    _hasher->hashSingleSparse(input.neurons, input.activations, input.len,
+                              hashes.data());
   }
 
   if (_sampling_mode == BoltSamplingMode::FreezeHashTablesWithInsertions) {
@@ -465,8 +464,8 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
     if (cnt == _sparse_dim) {
       break;
     }
-    output.active_neurons[cnt++] = labels->active_neurons[i];
-    active_set.erase(labels->active_neurons[i]);
+    output.neurons[cnt++] = labels->neurons[i];
+    active_set.erase(labels->neurons[i]);
   }
 
   for (auto x : active_set) {
@@ -474,7 +473,7 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
       break;
     }
     assert(x < _dim);
-    output.active_neurons[cnt++] = x;
+    output.neurons[cnt++] = x;
   }
 }
 

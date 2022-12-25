@@ -80,7 +80,7 @@ class ClickThroughBatchProcessor final
          feature_idx < cols.size() - index_of_first_categorical_feature;
          feature_idx++) {
       if (cols[index_of_first_categorical_feature + feature_idx].empty()) {
-        categorical_features.active_neurons[feature_idx] = 0;
+        categorical_features.neurons[feature_idx] = 0;
         categorical_features.activations[feature_idx] = 0;
         continue;
       }
@@ -88,7 +88,7 @@ class ClickThroughBatchProcessor final
       uint32_t val = std::strtoul(
           cols[index_of_first_categorical_feature + feature_idx].data(), &end,
           /* base= */ 10);
-      categorical_features.active_neurons[feature_idx] = val;
+      categorical_features.neurons[feature_idx] = val;
       categorical_features.activations[feature_idx] = 1.0;
     }
 

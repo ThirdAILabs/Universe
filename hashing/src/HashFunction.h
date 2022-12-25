@@ -35,8 +35,8 @@ class HashFunction {
         hashSingleDense(batch[v].activations, batch[v].len,
                         output + v * _num_tables);
       } else {
-        hashSingleSparse(batch[v].active_neurons, batch[v].activations,
-                         batch[v].len, output + v * _num_tables);
+        hashSingleSparse(batch[v].neurons, batch[v].activations, batch[v].len,
+                         output + v * _num_tables);
       }
     }
   }

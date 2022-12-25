@@ -26,8 +26,8 @@ template <bool OUTPUT_DENSE, bool LABEL_DENSE>
 void LossFunction::computeLossGradientsImpl(BoltVector& output,
                                             const BoltVector& labels,
                                             uint32_t batch_size) const {
-  assert(!(OUTPUT_DENSE && output.active_neurons != nullptr));
-  assert(!LABEL_DENSE || labels.active_neurons == nullptr);
+  assert(!(OUTPUT_DENSE && output.neurons != nullptr));
+  assert(!LABEL_DENSE || labels.neurons == nullptr);
   if (OUTPUT_DENSE && LABEL_DENSE) {
     assert(output.len == labels.len);
   }
@@ -41,8 +41,8 @@ void LossFunction::computeLossGradientsImpl(BoltVector& output,
     the output layer.
   */
   for (uint32_t i = 0; i < output.len; i++) {
-    uint32_t active_neuron = OUTPUT_DENSE ? i : output.active_neurons[i];
-    float label_val = labels.find(active_neuron).activation;
+    uint32_t neuron = OUTPUT_DENSE ? i : output.neurons[i];
+    float label_val = labels.find(neuron).activation;
     output.gradients[i] =
         elementLossGradient(label_val, output.activations[i], batch_size);
   }

@@ -59,11 +59,11 @@ void createDatasetSubmodule(py::module_& module) {
           return py::object(std::move(activations_array));
         }
 
-        NumpyArray<uint32_t> active_neurons_array(vector.len);
-        std::copy(vector.active_neurons, vector.active_neurons + vector.len,
-                  active_neurons_array.mutable_data());
+        NumpyArray<uint32_t> neurons_array(vector.len);
+        std::copy(vector.neurons, vector.neurons + vector.len,
+                  neurons_array.mutable_data());
 
-        return py::make_tuple(active_neurons_array, activations_array);
+        return py::make_tuple(neurons_array, activations_array);
       });
 
   py::class_<Explanation>(dataset_submodule, "Explanation",

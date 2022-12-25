@@ -13,7 +13,7 @@ InferenceOutputTracker::InferenceOutputTracker(const NodePtr& output_node,
   (void)_num_samples;
 
   bool output_sparse = !output_node->getOutputVector(0).isDense();
-  bool save_active_neurons = save_activations && output_sparse;
+  bool save_neurons = save_activations && output_sparse;
   uint64_t total_output_length = _num_nonzeros_per_sample * _num_samples;
 
   try {
@@ -22,10 +22,10 @@ InferenceOutputTracker::InferenceOutputTracker(const NodePtr& output_node,
     } else {
       _activations = std::nullopt;
     }
-    if (save_active_neurons) {
-      _active_neurons = std::vector<uint32_t>(total_output_length);
+    if (save_neurons) {
+      _neurons = std::vector<uint32_t>(total_output_length);
     } else {
-      _active_neurons = std::nullopt;
+      _neurons = std::nullopt;
     }
   } catch (std::bad_alloc& e) {
     throw std::invalid_argument(
@@ -53,11 +53,10 @@ void InferenceOutputTracker::saveOutputBatch(const NodePtr& output_node,
     }
 
     if (activeNeuronsSaved()) {
-      assert(current_output_vec.active_neurons != nullptr);
-      std::copy(current_output_vec.active_neurons,
-                current_output_vec.active_neurons + _num_nonzeros_per_sample,
-                &(_active_neurons->at(_num_nonzeros_per_sample *
-                                      _current_vec_index)));
+      assert(current_output_vec.neurons != nullptr);
+      std::copy(current_output_vec.neurons,
+                current_output_vec.neurons + _num_nonzeros_per_sample,
+                &(_neurons->at(_num_nonzeros_per_sample * _current_vec_index)));
     }
 
     _current_vec_index++;
@@ -73,17 +72,17 @@ const float* InferenceOutputTracker::getNonowningActivationPointer() const {
 
 const uint32_t* InferenceOutputTracker::getNonowningActiveNeuronPointer()
     const {
-  if (!_active_neurons.has_value()) {
+  if (!_neurons.has_value()) {
     return nullptr;
   }
-  return _active_neurons->data();
+  return _neurons->data();
 }
 
 uint32_t* InferenceOutputTracker::activeNeuronsForSample(uint32_t index) {
-  if (!_active_neurons.has_value()) {
+  if (!_neurons.has_value()) {
     return nullptr;
   }
-  return _active_neurons->data() + index * _num_nonzeros_per_sample;
+  return _neurons->data() + index * _num_nonzeros_per_sample;
 }
 
 float* InferenceOutputTracker::activationsForSample(uint32_t index) {

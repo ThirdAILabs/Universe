@@ -116,7 +116,7 @@ float RegressionOutputProcessor::unbinActivations(
   if (output.isDense()) {
     return _regression_binning.unbin(predicted_bin_index);
   }
-  return _regression_binning.unbin(output.active_neurons[predicted_bin_index]);
+  return _regression_binning.unbin(output.neurons[predicted_bin_index]);
 }
 
 py::object BinaryOutputProcessor::processBoltVector(
@@ -183,7 +183,7 @@ py::object convertInferenceTrackerToNumpy(
   uint32_t num_samples = output.numSamples();
   uint32_t inference_dim = output.numNonzerosInOutput();
 
-  const uint32_t* active_neurons_ptr = output.getNonowningActiveNeuronPointer();
+  const uint32_t* neurons_ptr = output.getNonowningActiveNeuronPointer();
   const float* activations_ptr = output.getNonowningActivationPointer();
 
   py::object output_handle = py::cast(std::move(output));
@@ -193,19 +193,18 @@ py::object convertInferenceTrackerToNumpy(
       /* strides= */ {inference_dim * sizeof(float), sizeof(float)},
       /* ptr= */ activations_ptr, /* base= */ output_handle);
 
-  if (!active_neurons_ptr) {
+  if (!neurons_ptr) {
     return py::object(std::move(activations_array));
   }
 
   // See comment above activations_array for the python memory reasons behind
-  // passing in active_neuron_handle
-  NumpyArray<uint32_t> active_neurons_array(
+  // passing in neuron_handle
+  NumpyArray<uint32_t> neurons_array(
       /* shape= */ {num_samples, inference_dim},
       /* strides= */ {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
-      /* ptr= */ active_neurons_ptr, /* base= */ output_handle);
+      /* ptr= */ neurons_ptr, /* base= */ output_handle);
 
-  return py::make_tuple(std::move(activations_array),
-                        std::move(active_neurons_array));
+  return py::make_tuple(std::move(activations_array), std::move(neurons_array));
 }
 
 py::object convertBoltVectorToNumpy(const BoltVector& vector) {
@@ -217,11 +216,11 @@ py::object convertBoltVectorToNumpy(const BoltVector& vector) {
     return py::object(std::move(activations_array));
   }
 
-  NumpyArray<uint32_t> active_neurons_array(vector.len);
-  std::copy(vector.active_neurons, vector.active_neurons + vector.len,
-            active_neurons_array.mutable_data());
+  NumpyArray<uint32_t> neurons_array(vector.len);
+  std::copy(vector.neurons, vector.neurons + vector.len,
+            neurons_array.mutable_data());
 
-  return py::make_tuple(active_neurons_array, activations_array);
+  return py::make_tuple(neurons_array, activations_array);
 }
 
 py::object convertBoltBatchToNumpy(const BoltBatch& batch) {
@@ -230,10 +229,9 @@ py::object convertBoltBatchToNumpy(const BoltBatch& batch) {
   NumpyArray<float> activations_array(
       /* shape= */ {batch.size(), length});
 
-  std::optional<NumpyArray<uint32_t>> active_neurons_array = std::nullopt;
+  std::optional<NumpyArray<uint32_t>> neurons_array = std::nullopt;
   if (!batch[0].isDense()) {
-    active_neurons_array =
-        NumpyArray<uint32_t>(/* shape= */ {batch.size(), length});
+    neurons_array = NumpyArray<uint32_t>(/* shape= */ {batch.size(), length});
   }
 
   for (uint32_t i = 0; i < batch.size(); i++) {
@@ -242,7 +240,7 @@ py::object convertBoltBatchToNumpy(const BoltBatch& batch) {
           "Cannot convert BoltBatch without constant lengths to a numpy "
           "array.");
     }
-    if (batch[i].isDense() != !active_neurons_array.has_value()) {
+    if (batch[i].isDense() != !neurons_array.has_value()) {
       throw std::invalid_argument(
           "Cannot convert BoltBatch without constant sparsity to a numpy "
           "array.");
@@ -250,14 +248,14 @@ py::object convertBoltBatchToNumpy(const BoltBatch& batch) {
 
     std::copy(batch[i].activations, batch[i].activations + length,
               activations_array.mutable_data() + i * length);
-    if (active_neurons_array) {
-      std::copy(batch[i].active_neurons, batch[i].active_neurons + length,
-                active_neurons_array->mutable_data() + i * length);
+    if (neurons_array) {
+      std::copy(batch[i].neurons, batch[i].neurons + length,
+                neurons_array->mutable_data() + i * length);
     }
   }
 
-  if (active_neurons_array) {
-    return py::make_tuple(std::move(active_neurons_array.value()),
+  if (neurons_array) {
+    return py::make_tuple(std::move(neurons_array.value()),
                           std::move(activations_array));
   }
   return py::object(std::move(activations_array));

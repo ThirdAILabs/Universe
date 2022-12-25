@@ -95,12 +95,12 @@ void ConcatenateNode::forwardImpl(uint32_t vec_index,
     if (!current_input.isDense()) {
       assert(!output_vector.isDense());
       uint32_t neuron_index_offset = neuron_index_offsets.at(input_node_id);
-      std::copy(current_input.active_neurons,
-                current_input.active_neurons + current_input.len,
-                output_vector.active_neurons + start_position);
+      std::copy(current_input.neurons,
+                current_input.neurons + current_input.len,
+                output_vector.neurons + start_position);
       for (uint32_t output_position = start_position;
            output_position < end_position; output_position++) {
-        output_vector.active_neurons[output_position] += neuron_index_offset;
+        output_vector.neurons[output_position] += neuron_index_offset;
       }
     }
   }
@@ -190,8 +190,8 @@ void ConcatenateNode::fillSparseBatchWithConsecutiveIndices(
       uint32_t start_position = positional_offsets.at(input_node_id);
       uint32_t end_position = positional_offsets.at(input_node_id + 1);
       uint32_t neuron_index_offset = neuron_index_offsets.at(input_node_id);
-      std::iota(vec.active_neurons + start_position,
-                vec.active_neurons + end_position, neuron_index_offset);
+      std::iota(vec.neurons + start_position, vec.neurons + end_position,
+                neuron_index_offset);
     }
   }
 }

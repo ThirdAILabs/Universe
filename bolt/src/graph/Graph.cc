@@ -413,9 +413,8 @@ BoltGraph::getInputGradientSingle(
     }
 
     if (!input_vector.isDense()) {
-      input_vector_indices.assign(
-          input_vector.active_neurons,
-          input_vector.active_neurons + input_vector.len);
+      input_vector_indices.assign(input_vector.neurons,
+                                  input_vector.neurons + input_vector.len);
     }
 
     resetOutputGradients(/* vec_index= */ 0);
