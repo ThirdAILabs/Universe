@@ -113,13 +113,6 @@ void BoltVector::sortActiveNeurons() {  // NOLINT: clang-tidy thinks this should
   }
 }
 
-BoltVector BoltVector::makeDenseVector(const std::vector<float>& values) {
-  BoltVector vec(values.size(), /* is_dense = */ true,
-                 /* has_gradient = */ false);
-  std::copy(values.begin(), values.end(), vec.activations);
-  return vec;
-}
-
 BoltVector BoltVector::sparse(const std::vector<uint32_t>& indices,
                               const std::vector<float>& values,
                               bool has_gradient /*= true*/) {
@@ -133,11 +126,13 @@ BoltVector BoltVector::sparse(const std::vector<uint32_t>& indices,
   return vector;
 }
 
-BoltVector BoltVector::makeDenseVectorWithGradients(
-    const std::vector<float>& values) {
-  auto vector = makeDenseVector(values);
-  vector.gradients = new float[vector.len];
-  std::fill(vector.gradients, vector.gradients + vector.len, 0);
+BoltVector BoltVector::dense(const std::vector<float>& values,
+                             bool has_gradient /*=true*/) {
+  BoltVector vector(values.size(), /* is_dense = */ true, has_gradient);
+  std::copy(values.begin(), values.end(), vector.activations);
+  if (has_gradient) {
+    std::fill(vector.gradients, vector.gradients + vector.len, 0);
+  }
   return vector;
 }
 

@@ -92,7 +92,7 @@ class ClickThroughBatchProcessor final
       categorical_features.activations[feature_idx] = 1.0;
     }
 
-    return {BoltVector::makeDenseVector(dense_features),
+    return {BoltVector::dense(dense_features, /*has_gradient=*/false),
             std::move(categorical_features), std::move(label)};
   }
 

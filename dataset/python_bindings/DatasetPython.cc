@@ -299,8 +299,8 @@ void createDatasetSubmodule(py::module_& module) {
                         py::arg("indices"), py::arg("values"),
                         py::arg("has_gradient") = false);
 
-  dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
-                        py::arg("values"));
+  dataset_submodule.def("make_dense_vector", &BoltVector::dense,
+                        py::arg("values"), py::arg("has_gradient") = false);
 
   dataset_submodule.def(
       "load_click_through_dataset",

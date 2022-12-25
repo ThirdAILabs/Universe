@@ -323,11 +323,12 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
          */
         if (activations.activationsForSample(sample_idx++)[1] >= threshold) {
           metric->record(
-              /* output= */ BoltVector::makeDenseVector({0, 1.0}),
+              /* output= */ BoltVector::dense({0, 1.0}, /*has_gradient=*/false),
               /* labels= */ label_vec);
         } else {
           metric->record(
-              /* output= */ BoltVector::makeDenseVector({1.0, 0.0}),
+              /* output= */ BoltVector::dense({1.0, 0.0},
+                                              /*has_gradient=*/false),
               /* labels= */ label_vec);
         }
       }

@@ -254,7 +254,7 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
   }
 
   BoltVector toBoltVector() final {
-    return BoltVector::makeDenseVector(_values);
+    return BoltVector::dense(_values, /*has_gradient=*/false);
   };
 
   IndexToSegmentFeatureMap getIndexToSegmentFeatureMapImpl() final {
