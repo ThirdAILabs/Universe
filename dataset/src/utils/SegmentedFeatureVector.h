@@ -81,7 +81,7 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
   }
 
   BoltVector toBoltVector() final {
-    return BoltVector::makeSparseVector(_indices, _values);
+    return BoltVector::sparse(_indices, _values, /*has_gradient=*/false);
   }
 
   IndexToSegmentFeatureMap getIndexToSegmentFeatureMapImpl() final {
@@ -175,7 +175,7 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
   }
 
   BoltVector toBoltVector() final {
-    return BoltVector::makeSparseVector(_indices, _values);
+    return BoltVector::sparse(_indices, _values, /*has_gradient=*/false);
   }
 
   IndexToSegmentFeatureMap getIndexToSegmentFeatureMapImpl() final {

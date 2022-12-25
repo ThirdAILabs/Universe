@@ -148,8 +148,8 @@ inline BoltDatasetPtr numpyTokensToBoltDataset(
           &token_raw_data[(vector_id + 1) * tokens_per_vector]);
 
       std::vector<float> vec_activations(tokens_per_vector, 1.0);
-      current_token_batch.push_back(
-          BoltVector::makeSparseVector(vec_tokens, vec_activations));
+      current_token_batch.push_back(BoltVector::sparse(
+          vec_tokens, vec_activations, /*has_gradient=*/false));
     }
 
     batches.emplace_back(std::move(current_token_batch));

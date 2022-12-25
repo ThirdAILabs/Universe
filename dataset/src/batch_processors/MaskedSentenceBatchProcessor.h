@@ -82,15 +82,17 @@ class MaskedSentenceBatchProcessor final
       unigram_index++;
     }
 
-    BoltVector label = BoltVector::makeSparseVector(
-        masked_word_ids, std::vector<float>(masked_word_ids.size(), 1.0));
+    BoltVector label = BoltVector::sparse(
+        masked_word_ids, std::vector<float>(masked_word_ids.size(), 1.0),
+        /*has_gradient=*/false);
 
     auto pairgrams = TextEncodingUtils::computePairgramsFromUnigrams(
         unigrams, _output_range);
 
     return {std::move(pairgrams),
-            BoltVector::makeSparseVector(
-                masked_indices, std::vector<float>(masked_tokens_size, 1.0)),
+            BoltVector::sparse(masked_indices,
+                               std::vector<float>(masked_tokens_size, 1.0),
+                               /*has_gradient=*/false),
             std::move(label)};
   }
 

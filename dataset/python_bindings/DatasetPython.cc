@@ -295,8 +295,9 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_input_dim", &StreamingGenericDatasetLoader::getInputDim)
       .def("get_label_dim", &StreamingGenericDatasetLoader::getLabelDim);
 
-  dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
-                        py::arg("indices"), py::arg("values"));
+  dataset_submodule.def("make_sparse_vector", &BoltVector::sparse,
+                        py::arg("indices"), py::arg("values"),
+                        py::arg("has_gradient") = false);
 
   dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
                         py::arg("values"));

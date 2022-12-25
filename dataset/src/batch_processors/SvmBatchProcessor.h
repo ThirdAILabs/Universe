@@ -29,8 +29,9 @@ class SvmBatchProcessor final : public UnaryBoltBatchProcessor {
     } while ((*start++) == ',');
 
     float label_val = _softmax_for_multiclass ? 1.0 / labels.size() : 1.0;
-    BoltVector labels_vec = BoltVector::makeSparseVector(
-        labels, std::vector<float>(labels.size(), label_val));
+    BoltVector labels_vec =
+        BoltVector::sparse(labels, std::vector<float>(labels.size(), label_val),
+                           /*has_gradient=*/false);
 
     // Parse the vector itself. The elements are given in <index>:<value>
     // pairs with tabs or spaces between each pair. There should also be a
@@ -50,7 +51,8 @@ class SvmBatchProcessor final : public UnaryBoltBatchProcessor {
       }
     } while (*start != '\n' && start < line_end);
 
-    BoltVector data_vec = BoltVector::makeSparseVector(indices, values);
+    BoltVector data_vec =
+        BoltVector::sparse(indices, values, /*has_gradient=*/false);
 
     return std::make_pair(std::move(data_vec), std::move(labels_vec));
   }

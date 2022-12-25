@@ -52,13 +52,11 @@ struct BoltVector {
 
   void sortActiveNeurons();
 
-  static BoltVector makeSparseVector(const std::vector<uint32_t>& indices,
-                                     const std::vector<float>& values);
-
   static BoltVector makeDenseVector(const std::vector<float>& values);
 
-  static BoltVector makeSparseVectorWithGradients(
-      const std::vector<uint32_t>& indices, const std::vector<float>& values);
+  static BoltVector sparse(const std::vector<uint32_t>& indices,
+                           const std::vector<float>& values,
+                           bool has_gradient = true);
 
   static BoltVector makeDenseVectorWithGradients(
       const std::vector<float>& values);

@@ -336,7 +336,7 @@ BoltVector BoltGraph::getLabelVectorExplainPrediction(
     required_index =
         _output->getOutputVector(vec_id).getSecondHighestActivationId();
   }
-  return BoltVector::makeSparseVector({required_index}, {1.0});
+  return BoltVector::sparse({required_index}, {1.0}, /*has_gradient=*/false);
 }
 
 BoltVector BoltGraph::getLabelVectorNeuronsToExplain(uint32_t required_index,
@@ -348,7 +348,7 @@ BoltVector BoltGraph::getLabelVectorNeuronsToExplain(uint32_t required_index,
         std::to_string(_output->outputDim()));
   }
   BoltVector label_vector =
-      BoltVector::makeSparseVector({required_index}, {1.0});
+      BoltVector::sparse({required_index}, {1.0}, /*has_gradient=*/false);
   forward(vec_id, &label_vector);
   return label_vector;
 }

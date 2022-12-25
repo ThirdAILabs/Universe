@@ -90,7 +90,7 @@ class TextEncodingUtils {
                          values.push_back(value);
                        });
 
-    return BoltVector::makeSparseVector(indices, values);
+    return BoltVector::sparse(indices, values, /*has_gradient=*/false);
   }
 
   struct PairGram {
@@ -159,7 +159,7 @@ class TextEncodingUtils {
                          values.push_back(value);
                        });
 
-    return BoltVector::makeSparseVector(indices, values);
+    return BoltVector::sparse(indices, values, /*has_gradient=*/false);
   }
 
   /**
@@ -179,7 +179,7 @@ class TextEncodingUtils {
                          values.push_back(value);
                        });
 
-    return BoltVector::makeSparseVector(indices, values);
+    return BoltVector::sparse(indices, values, /*has_gradient=*/false);
   }
 
   /**

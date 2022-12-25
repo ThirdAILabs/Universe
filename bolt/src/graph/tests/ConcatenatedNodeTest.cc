@@ -132,12 +132,13 @@ TEST(ConcatenatedNodeTest, DenseConcatTest) {
 }
 
 TEST(ConcatenatedNodeTest, SparseConcatTest) {
-  BoltVector node_1_output = BoltVector::makeSparseVectorWithGradients(
-      /* indices = */ {100}, /* values = */ {0.25});
-  BoltVector node_2_output = BoltVector::makeSparseVectorWithGradients(
-      /* indices = */ {17, 3}, /* values = */ {0.5, 0.75});
-  BoltVector node_3_output = BoltVector::makeSparseVectorWithGradients(
-      /* indices = */ {1}, /* values = */ {0.25});
+  BoltVector node_1_output = BoltVector::sparse(
+      /* indices = */ {100}, /* values = */ {0.25}, /*has_gradient=*/true);
+  BoltVector node_2_output = BoltVector::sparse(
+      /* indices = */ {17, 3}, /* values = */ {0.5, 0.75},
+      /*has_gradient=*/true);
+  BoltVector node_3_output = BoltVector::sparse(
+      /* indices = */ {1}, /* values = */ {0.25}, /*has_gradient=*/true);
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       testConcatForwardAndBackwardPass(
           /* input_dense_dims = */ {1000, 25, 2},
@@ -151,8 +152,9 @@ TEST(ConcatenatedNodeTest, SparseConcatTest) {
 }
 
 TEST(ConcatenatedNodeTest, SparseAndDenseConcatTest) {
-  BoltVector node_1_output = BoltVector::makeSparseVectorWithGradients(
-      /* indices = */ {17, 3}, /* values = */ {0.5, 0.75});
+  BoltVector node_1_output = BoltVector::sparse(
+      /* indices = */ {17, 3}, /* values = */ {0.5, 0.75},
+      /*has_gradient=*/true);
   BoltVector node_2_output =
       BoltVector::makeDenseVectorWithGradients(/* values = */ {0.25, 0, 0.25});
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
