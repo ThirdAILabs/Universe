@@ -128,7 +128,6 @@ BoltVector BoltVector::sparse(const std::vector<uint32_t>& indices,
   std::copy(indices.begin(), indices.end(), vector.active_neurons);
   std::copy(values.begin(), values.end(), vector.activations);
   if (has_gradient) {
-    vector.gradients = new float[values.size()];
     std::fill(vector.gradients, vector.gradients + vector.len, 0);
   }
   return vector;
