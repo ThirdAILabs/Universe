@@ -83,8 +83,8 @@ class MetricUtilities {
         std::is_convertible<PROCESS_ELEM_PAIR_LAMBDA_T,
                             std::function<void(float, float)>>::value);
 
-    assert(!(OUTPUT_DENSE && output.neurons != nullptr));
-    assert(!LABEL_DENSE || labels.neurons == nullptr);
+    assert(!(OUTPUT_DENSE && output.active_neurons != nullptr));
+    assert(!LABEL_DENSE || labels.active_neurons == nullptr);
     if (OUTPUT_DENSE && LABEL_DENSE) {
       assert(output.len == labels.len);
     }
@@ -92,8 +92,8 @@ class MetricUtilities {
     std::vector<bool> labels_positions_touched(labels.len);
 
     for (uint32_t i = 0; i < output.len; i++) {
-      uint32_t neuron = OUTPUT_DENSE ? i : output.neurons[i];
-      const auto found = labels.find(neuron);
+      uint32_t active_neuron = OUTPUT_DENSE ? i : output.active_neurons[i];
+      const auto found = labels.find(active_neuron);
       float label_val = found.activation;
       if (found.pos.has_value()) {
         labels_positions_touched[found.pos.value()] = true;

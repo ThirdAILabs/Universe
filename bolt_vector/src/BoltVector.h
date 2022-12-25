@@ -31,14 +31,14 @@ struct FoundActiveNeuron {
 
 struct BoltVector {
  public:
-  uint32_t* neurons;
+  uint32_t* active_neurons;
   float* activations;
   float* gradients;
   uint32_t len;
 
   BoltVector();
 
-  BoltVector(const uint32_t* neurons_src, const float* activations_src,
+  BoltVector(const uint32_t* active_neurons_src, const float* activations_src,
              const float* gradients_src, uint32_t length);
 
   BoltVector(uint32_t l, bool is_dense, bool has_gradient = true);
@@ -106,7 +106,7 @@ struct BoltVector {
  private:
   /**
    * Finds the position and activation (value) of an active neuron in
-   * a sparse vector. Assumes that the vector is sparse; the neurons
+   * a sparse vector. Assumes that the vector is sparse; the active_neurons
    * array must not be nullptr.
    */
 
@@ -185,7 +185,7 @@ class BoltBatch {
         }
       } else {
         for (uint32_t i = 0; i < vec.len; i++) {
-          uint32_t active_neuron = vec.neurons[i];
+          uint32_t active_neuron = vec.active_neurons[i];
           if (active_neuron >= expected_dimension) {
             throw std::invalid_argument(
                 origin_string +

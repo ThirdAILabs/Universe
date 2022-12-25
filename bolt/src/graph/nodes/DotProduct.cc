@@ -118,8 +118,8 @@ float DotProductNode::denseSparseDotProduct(const BoltVector& dense_vec,
 
   float total = 0;
   for (uint32_t i = 0; i < sparse_vec.len; i++) {
-    assert(sparse_vec.neurons[i] < dense_vec.len);
-    total += dense_vec.activations[sparse_vec.neurons[i]] *
+    assert(sparse_vec.active_neurons[i] < dense_vec.len);
+    total += dense_vec.activations[sparse_vec.active_neurons[i]] *
              sparse_vec.activations[i];
   }
   return total;
@@ -130,11 +130,11 @@ void DotProductNode::denseSparseDotProductBackward(
   assert(dense_vec.isDense() && !sparse_vec.isDense());
 
   for (uint32_t i = 0; i < sparse_vec.len; i++) {
-    assert(sparse_vec.neurons[i] < dense_vec.len);
+    assert(sparse_vec.active_neurons[i] < dense_vec.len);
 
-    uint32_t neuron = sparse_vec.neurons[i];
-    sparse_vec.gradients[i] += grad * dense_vec.activations[neuron];
-    dense_vec.gradients[neuron] += grad * sparse_vec.activations[i];
+    uint32_t active_neuron = sparse_vec.active_neurons[i];
+    sparse_vec.gradients[i] += grad * dense_vec.activations[active_neuron];
+    dense_vec.gradients[active_neuron] += grad * sparse_vec.activations[i];
   }
 }
 
@@ -173,11 +173,11 @@ void DotProductNode::applyFunctionToOverlappingNeurons(
   uint32_t a_index = 0;
   uint32_t b_index = 0;
   while (a_index < a.len && b_index < b.len) {
-    if (a.neurons[a_index] == b.neurons[b_index]) {
+    if (a.active_neurons[a_index] == b.active_neurons[b_index]) {
       func(a_index, b_index);
       a_index++;
       b_index++;
-    } else if (a.neurons[a_index] < b.neurons[b_index]) {
+    } else if (a.active_neurons[a_index] < b.active_neurons[b_index]) {
       a_index++;
     } else {
       b_index++;

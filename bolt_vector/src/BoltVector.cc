@@ -8,14 +8,18 @@
 namespace thirdai {
 
 BoltVector::BoltVector()
-    : neurons(nullptr), activations(nullptr), gradients(nullptr), len(0) {}
+    : active_neurons(nullptr),
+      activations(nullptr),
+      gradients(nullptr),
+      len(0) {}
 
-BoltVector::BoltVector(const uint32_t* neurons_src,
+BoltVector::BoltVector(const uint32_t* active_neurons_src,
                        const float* activations_src, const float* gradients_src,
                        uint32_t length)
-    : BoltVector(length, neurons_src == nullptr, gradients_src == nullptr) {
-  if (neurons_src) {
-    std::copy(neurons_src, neurons_src + length, neurons);
+    : BoltVector(length, active_neurons_src == nullptr,
+                 gradients_src == nullptr) {
+  if (active_neurons_src) {
+    std::copy(active_neurons_src, active_neurons_src + length, active_neurons);
   }
 
   std::copy(activations_src, activations_src + length, activations);
@@ -28,9 +32,9 @@ BoltVector::BoltVector(const uint32_t* neurons_src,
 BoltVector::BoltVector(uint32_t l, bool is_dense, bool has_gradient /* = true*/)
     : len(l) {
   if (!is_dense) {
-    neurons = new uint32_t[len];
+    active_neurons = new uint32_t[len];
   } else {
-    neurons = nullptr;
+    active_neurons = nullptr;
   }
   activations = new float[len];
   if (has_gradient) {
@@ -52,7 +56,7 @@ uint32_t BoltVector::getHighestActivationId() const {
   if (isDense()) {
     return id;
   }
-  return neurons[id];
+  return active_neurons[id];
 }
 
 uint32_t BoltVector::getSecondHighestActivationId() const {
@@ -78,7 +82,7 @@ uint32_t BoltVector::getSecondHighestActivationId() const {
   if (isDense()) {
     return second_max_id;
   }
-  return neurons[second_max_id];
+  return active_neurons[second_max_id];
 }
 
 void BoltVector::sortActiveNeurons() {  // NOLINT: clang-tidy thinks this should
@@ -88,13 +92,13 @@ void BoltVector::sortActiveNeurons() {  // NOLINT: clang-tidy thinks this should
   std::vector<std::pair<uint32_t, float>> contents;
   contents.reserve(len);
   for (uint32_t i = 0; i < len; i++) {
-    contents.emplace_back(neurons[i], activations[i]);
+    contents.emplace_back(active_neurons[i], activations[i]);
   }
 
   std::sort(contents.begin(), contents.end());
 
   for (uint32_t i = 0; i < len; i++) {
-    neurons[i] = contents[i].first;
+    active_neurons[i] = contents[i].first;
     activations[i] = contents[i].second;
   }
 }
@@ -104,7 +108,7 @@ BoltVector BoltVector::sparse(const std::vector<uint32_t>& indices,
                               bool has_gradient /*= true*/) {
   assert(indices.size() == values.size());
   BoltVector vector(indices.size(), /* is_dense = */ false, has_gradient);
-  std::copy(indices.begin(), indices.end(), vector.neurons);
+  std::copy(indices.begin(), indices.end(), vector.active_neurons);
   std::copy(values.begin(), values.end(), vector.activations);
   if (has_gradient) {
     std::fill(vector.gradients, vector.gradients + vector.len, 0);
@@ -129,9 +133,10 @@ BoltVector BoltVector::copy() const {
   vec.activations = new float[len];
   std::copy(this->activations, this->activations + len, vec.activations);
 
-  if (this->neurons != nullptr) {
-    vec.neurons = new uint32_t[len];
-    std::copy(this->neurons, this->neurons + len, vec.neurons);
+  if (this->active_neurons != nullptr) {
+    vec.active_neurons = new uint32_t[len];
+    std::copy(this->active_neurons, this->active_neurons + len,
+              vec.active_neurons);
   }
 
   if (this->gradients != nullptr) {
@@ -145,11 +150,11 @@ BoltVector BoltVector::copy() const {
 // TODO(Josh): Delete copy constructor and copy assignment (will help when
 // we've moved to new Dataset and removed BoltBatches)
 BoltVector::BoltVector(const BoltVector& other) : len(other.len) {
-  if (other.neurons != nullptr) {
-    neurons = new uint32_t[len];
-    std::copy(other.neurons, other.neurons + len, neurons);
+  if (other.active_neurons != nullptr) {
+    active_neurons = new uint32_t[len];
+    std::copy(other.active_neurons, other.active_neurons + len, active_neurons);
   } else {
-    neurons = nullptr;
+    active_neurons = nullptr;
   }
 
   activations = new float[len];
@@ -164,11 +169,11 @@ BoltVector::BoltVector(const BoltVector& other) : len(other.len) {
 }
 
 BoltVector::BoltVector(BoltVector&& other) noexcept
-    : neurons(other.neurons),
+    : active_neurons(other.active_neurons),
       activations(other.activations),
       gradients(other.gradients),
       len(other.len) {
-  other.neurons = nullptr;
+  other.active_neurons = nullptr;
   other.activations = nullptr;
   other.gradients = nullptr;
   other.len = 0;
@@ -182,11 +187,11 @@ BoltVector& BoltVector::operator=(const BoltVector& other) {
 
   this->len = other.len;
 
-  if (other.neurons != nullptr) {
-    neurons = new uint32_t[len];
-    std::copy(other.neurons, other.neurons + len, neurons);
+  if (other.active_neurons != nullptr) {
+    active_neurons = new uint32_t[len];
+    std::copy(other.active_neurons, other.active_neurons + len, active_neurons);
   } else {
-    neurons = nullptr;
+    active_neurons = nullptr;
   }
 
   activations = new float[len];
@@ -206,11 +211,11 @@ BoltVector& BoltVector::operator=(BoltVector&& other) noexcept {
   this->len = other.len;
   freeMemory();
 
-  this->neurons = other.neurons;
+  this->active_neurons = other.active_neurons;
   this->activations = other.activations;
   this->gradients = other.gradients;
 
-  other.neurons = nullptr;
+  other.active_neurons = nullptr;
   other.activations = nullptr;
   other.gradients = nullptr;
   other.len = 0;
@@ -223,7 +228,7 @@ uint32_t BoltVector::activeNeuronAtIndex(uint32_t index) const {
   if (DENSE) {
     return index;
   }
-  return neurons[index];
+  return active_neurons[index];
 }
 
 void BoltVector::zeroOutGradients() {  // NOLINT clang-tidy thinks this should
@@ -246,10 +251,10 @@ FoundActiveNeuron BoltVector::find(uint32_t active_neuron) const {
   }
 
   // Else not dense
-  assert(neurons != nullptr);
+  assert(active_neurons != nullptr);
 
-  const uint32_t* start = neurons;
-  const uint32_t* end = neurons + len;
+  const uint32_t* start = active_neurons;
+  const uint32_t* end = active_neurons + len;
   const uint32_t* itr = std::find(start, end, active_neuron);
   if (itr == end) {
     return {{}, 0.0};
@@ -258,7 +263,7 @@ FoundActiveNeuron BoltVector::find(uint32_t active_neuron) const {
   return {pos, activations[pos]};
 }
 
-bool BoltVector::isDense() const { return this->neurons == nullptr; }
+bool BoltVector::isDense() const { return this->active_neurons == nullptr; }
 
 // Returns the active neuron ID's that are greater than activation_threshold.
 // Returns at most max_count_to_return (if number of neurons exceeds
@@ -283,12 +288,12 @@ std::vector<uint32_t> BoltVector::getThresholdedNeurons(
       return thresholded;
     }
 
-    uint32_t neuron = this->isDense() ? id : neurons[id];
+    uint32_t neuron = this->isDense() ? id : active_neurons[id];
     thresholded.push_back(neuron);
   }
 
   if (return_at_least_one && thresholded.empty()) {
-    uint32_t max_act_neuron = this->isDense() ? ids[0] : neurons[ids[0]];
+    uint32_t max_act_neuron = this->isDense() ? ids[0] : active_neurons[ids[0]];
     thresholded.push_back(max_act_neuron);
   }
 
@@ -298,11 +303,11 @@ std::vector<uint32_t> BoltVector::getThresholdedNeurons(
 TopKActivationsQueue BoltVector::findKLargestActivations(uint32_t k) const {
   TopKActivationsQueue top_k;
   for (uint32_t pos = 0; pos < std::min(k, len); pos++) {
-    uint32_t idx = isDense() ? pos : neurons[pos];
+    uint32_t idx = isDense() ? pos : active_neurons[pos];
     top_k.push({activations[pos], idx});
   }
   for (uint32_t pos = k; pos < len; pos++) {
-    uint32_t idx = isDense() ? pos : neurons[pos];
+    uint32_t idx = isDense() ? pos : active_neurons[pos];
     ValueIndexPair val_idx_pair = {activations[pos], idx};
     // top_k.top() is minimum element.
     if (val_idx_pair > top_k.top()) {
@@ -326,7 +331,7 @@ std::ostream& operator<<(std::ostream& out, const BoltVector& vec) {
     }
   } else {
     for (size_t i = 0; i < vec.len; i++) {
-      out << "(" << vec.neurons[i] << ", " << vec.activations[i] << ")";
+      out << "(" << vec.active_neurons[i] << ", " << vec.activations[i] << ")";
       if (i < vec.len - 1) {
         out << ", ";
       }
@@ -347,7 +352,7 @@ BoltVector::~BoltVector() noexcept { freeMemory(); }
 
 void BoltVector::freeMemory() {  // NOLINT clang tidy thinks this method should
                                  // be const
-  delete[] this->neurons;
+  delete[] this->active_neurons;
   delete[] this->activations;
   delete[] this->gradients;
 }
@@ -360,7 +365,7 @@ void BoltVector::save(Archive& archive) const {
   archive(is_sparse, has_gradients);
 
   if (is_sparse) {
-    archive(cereal::binary_data(neurons, len * sizeof(uint32_t)));
+    archive(cereal::binary_data(active_neurons, len * sizeof(uint32_t)));
   }
 
   archive(cereal::binary_data(activations, len * sizeof(float)));
@@ -378,8 +383,8 @@ void BoltVector::load(Archive& archive) {
   archive(is_sparse, has_gradients);
 
   if (is_sparse) {
-    neurons = new uint32_t[len];
-    archive(cereal::binary_data(neurons, len * sizeof(uint32_t)));
+    active_neurons = new uint32_t[len];
+    archive(cereal::binary_data(active_neurons, len * sizeof(uint32_t)));
   }
 
   activations = new float[len];

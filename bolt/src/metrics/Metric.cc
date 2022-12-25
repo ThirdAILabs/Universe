@@ -22,7 +22,7 @@ void CategoricalAccuracy::record(const BoltVector& output,
 
   // The nueron with the largest activation is the prediction
   uint32_t pred =
-      output.isDense() ? *max_act_index : output.neurons[*max_act_index];
+      output.isDense() ? *max_act_index : output.active_neurons[*max_act_index];
 
   if (labels.isDense()) {
     // If labels are dense we check if the prediction has a non-zero label.
@@ -32,8 +32,8 @@ void CategoricalAccuracy::record(const BoltVector& output,
   } else {
     // If the labels are sparse then we have to search the list of labels for
     // the prediction.
-    const uint32_t* label_start = labels.neurons;
-    const uint32_t* label_end = labels.neurons + labels.len;
+    const uint32_t* label_start = labels.active_neurons;
+    const uint32_t* label_end = labels.active_neurons + labels.len;
     if (std::find(label_start, label_end, pred) != label_end) {
       _correct++;
     }
@@ -113,14 +113,14 @@ float MeanSquaredErrorMetric::computeMSE(const BoltVector& output,
   // also in the output active neurons.
   float error = 0.0;
   for (uint32_t i = 0; i < output.len; i++) {
-    float label = labels.find(output.neurons[i]).activation;
+    float label = labels.find(output.active_neurons[i]).activation;
     float act = output.activations[i];
     float delta = label - act;
     error += delta * delta;
   }
 
   for (uint32_t i = 0; i < labels.len; i++) {
-    auto output_neuron = output.find(labels.neurons[i]);
+    auto output_neuron = output.find(labels.active_neurons[i]);
     // Skip any neurons that were in the active neuron set since the loss was
     // already computed for them.
     if (!output_neuron.pos) {
@@ -189,7 +189,7 @@ void RecallAtK::record(const BoltVector& output, const BoltVector& labels) {
 
   uint32_t matches = 0;
   while (!top_k.empty()) {
-    if (labels.find(/* neuron= */ top_k.top().second).activation > 0) {
+    if (labels.find(/* active_neuron= */ top_k.top().second).activation > 0) {
       matches++;
     }
     top_k.pop();
@@ -265,10 +265,11 @@ void FMeasure::record(const BoltVector& output, const BoltVector& labels) {
   }
 
   for (uint32_t pos = 0; pos < labels.len; pos++) {
-    uint32_t label_neuron = labels.isDense() ? pos : labels.neurons[pos];
-    if (labels.find(label_neuron).activation > 0) {
-      if (std::find(predictions.begin(), predictions.end(), label_neuron) ==
-          predictions.end()) {
+    uint32_t label_active_neuron =
+        labels.isDense() ? pos : labels.active_neurons[pos];
+    if (labels.find(label_active_neuron).activation > 0) {
+      if (std::find(predictions.begin(), predictions.end(),
+                    label_active_neuron) == predictions.end()) {
         _false_negative++;
       }
     }
@@ -347,8 +348,8 @@ void CategoricalCrossEntropy::record(const BoltVector& outputs,
       // but log(0+EPS) takes care of those. We only need to add terms if
       // there's labels active. For the non-active labels, 0*log(x) = 0.
       for (uint32_t i = 0; i < outputs.len; i++) {
-        const uint32_t* label_start = labels.neurons;
-        const uint32_t* label_end = labels.neurons + labels.len;
+        const uint32_t* label_start = labels.active_neurons;
+        const uint32_t* label_end = labels.active_neurons + labels.len;
 
         // Find the position of the active neuron if it exists in the labels.
         const uint32_t* label_query = std::find(label_start, label_end, i);
@@ -375,8 +376,8 @@ void CategoricalCrossEntropy::record(const BoltVector& outputs,
     if (labels.isDense()) {
       // (Sparse Output, Dense Label)
       for (uint32_t i = 0; i < labels.len; i++) {
-        const uint32_t* output_start = outputs.neurons;
-        const uint32_t* output_end = outputs.neurons + outputs.len;
+        const uint32_t* output_start = outputs.active_neurons;
+        const uint32_t* output_end = outputs.active_neurons + outputs.len;
 
         // Find the position of the active neuron if it exists in the labels.
         const uint32_t* output_query = std::find(output_start, output_end, i);
@@ -401,12 +402,12 @@ void CategoricalCrossEntropy::record(const BoltVector& outputs,
       // We iterate over labels with non-zero activations. 0*log(x) = 0, so we
       // can ignore these terms.
       for (uint32_t i = 0; i < labels.len; i++) {
-        const uint32_t* output_start = outputs.neurons;
-        const uint32_t* output_end = outputs.neurons + outputs.len;
+        const uint32_t* output_start = outputs.active_neurons;
+        const uint32_t* output_end = outputs.active_neurons + outputs.len;
 
         // Find the position of the active neuron if it exists in the labels.
         const uint32_t* output_query =
-            std::find(output_start, output_end, labels.neurons[i]);
+            std::find(output_start, output_end, labels.active_neurons[i]);
 
         if (output_query != output_end) {
           // Compute output_index to lookup the value from outputs

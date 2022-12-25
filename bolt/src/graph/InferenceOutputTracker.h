@@ -40,14 +40,14 @@ class InferenceOutputTracker {
 
   // This will only return a valid value AFTER the object has been constructed,
   // so don't call it from the constructor
-  bool activeNeuronsSaved() const { return _neurons.has_value(); }
+  bool activeNeuronsSaved() const { return _active_neurons.has_value(); }
 
  private:
   uint64_t _num_nonzeros_per_sample;
   uint64_t _num_samples;
   uint64_t _current_vec_index;
   std::optional<std::vector<float>> _activations;
-  std::optional<std::vector<uint32_t>> _neurons;
+  std::optional<std::vector<uint32_t>> _active_neurons;
 };
 
 using InferenceResult = std::pair<InferenceMetricData, InferenceOutputTracker>;

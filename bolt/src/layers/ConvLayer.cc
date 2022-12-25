@@ -97,13 +97,13 @@ void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
   // elements to loop through to calculate a dot product filter act on a patch
   uint32_t effective_patch_dim = PREV_DENSE ? _patch_dim : _sparse_patch_dim;
 
-  // input.neurons[i] is an index into input.activations with an offset
+  // input.active_neurons[i] is an index into input.activations with an offset
   // we mod here to remove that offset
   std::vector<uint32_t> prev_active_filters(input.len);  // unused if DENSE
   if (!PREV_DENSE) {
     // TODO(david) calculate once instead of in both forward and backward?
     for (uint32_t i = 0; i < input.len; i++) {
-      prev_active_filters[i] = input.neurons[i] % _patch_dim;
+      prev_active_filters[i] = input.active_neurons[i] % _patch_dim;
     }
   }
 
@@ -138,7 +138,7 @@ float ConvLayer::calculateFilterActivation(
     const BoltVector& input, const BoltVector& output, uint32_t in_patch,
     uint64_t out_idx, std::vector<uint32_t> prev_active_filters,
     uint32_t effective_patch_dim) {
-  uint64_t act_neuron = DENSE ? out_idx : output.neurons[out_idx];
+  uint64_t act_neuron = DENSE ? out_idx : output.active_neurons[out_idx];
   assert(act_neuron < _dim);
 
   uint32_t act_filter = act_neuron % _num_filters;  // remove offset again
@@ -199,7 +199,7 @@ void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
   std::vector<uint32_t> prev_active_filters(input.len);  // unused if DENSE
   if (!PREV_DENSE) {
     for (uint32_t i = 0; i < input.len; i++) {
-      prev_active_filters[i] = input.neurons[i] % _patch_dim;
+      prev_active_filters[i] = input.active_neurons[i] % _patch_dim;
     }
   }
 
@@ -209,7 +209,7 @@ void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
     output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
     assert(!std::isnan(output.gradients[n]));
 
-    uint32_t act_neuron = DENSE ? n : output.neurons[n];
+    uint32_t act_neuron = DENSE ? n : output.active_neurons[n];
     uint32_t act_filter = act_neuron % _num_filters;
 
     uint32_t out_patch = n / num_active_filters;
@@ -265,7 +265,7 @@ void ConvLayer::selectActiveFilters(
       break;
     }
     assert(x < _num_filters);
-    output.neurons[out_patch * _num_sparse_filters + cnt] =
+    output.active_neurons[out_patch * _num_sparse_filters + cnt] =
         out_patch * _num_filters + x;
     cnt++;
   }

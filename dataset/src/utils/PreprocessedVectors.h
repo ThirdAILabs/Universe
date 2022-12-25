@@ -30,7 +30,8 @@ struct PreprocessedVectors {
       }
     } else {
       for (uint32_t i = 0; i < vector.len; i++) {
-        vec.addSparseFeatureToSegment(vector.neurons[i], vector.activations[i]);
+        vec.addSparseFeatureToSegment(vector.active_neurons[i],
+                                      vector.activations[i]);
       }
     }
   }

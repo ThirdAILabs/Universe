@@ -155,7 +155,7 @@ Node::NodeState SwitchNode::getState() const {
 uint32_t SwitchNode::getActiveLayer(uint32_t vec_index) {
   // There will only be one token indicating which layer to use.
   assert(_token_input->getOutputVector(vec_index).len == 1);
-  return _token_input->getOutputVector(vec_index).neurons[0];
+  return _token_input->getOutputVector(vec_index).active_neurons[0];
 }
 
 }  // namespace thirdai::bolt
