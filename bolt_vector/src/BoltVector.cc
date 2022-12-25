@@ -124,8 +124,7 @@ BoltVector BoltVector::sparse(const std::vector<uint32_t>& indices,
                               const std::vector<float>& values,
                               bool has_gradient /*= true*/) {
   assert(indices.size() == values.size());
-  BoltVector vector(indices.size(), /* is_dense = */ false,
-                    /* has_gradient = */ false);
+  BoltVector vector(indices.size(), /* is_dense = */ false, has_gradient);
   std::copy(indices.begin(), indices.end(), vector.active_neurons);
   std::copy(values.begin(), values.end(), vector.activations);
   if (has_gradient) {
