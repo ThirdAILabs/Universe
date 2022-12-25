@@ -99,7 +99,8 @@ class ClickThroughBatchProcessor final
   static BoltVector getLabelVector(const std::string_view& label_str) {
     char* end;
     uint32_t label = std::strtol(label_str.data(), &end, 10);
-    return BoltVector::singleElementSparseVector(label);
+    return BoltVector::sparse(/*labels=*/{label},
+                              /*activations=*/{1.0});
   }
 
   uint32_t _num_dense_features, _expected_num_cols;

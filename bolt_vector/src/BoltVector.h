@@ -43,9 +43,6 @@ struct BoltVector {
 
   BoltVector(uint32_t l, bool is_dense, bool has_gradient = true);
 
-  static BoltVector singleElementSparseVector(uint32_t active_neuron,
-                                              float activation = 1.0);
-
   uint32_t getHighestActivationId() const;
 
   uint32_t getSecondHighestActivationId() const;
