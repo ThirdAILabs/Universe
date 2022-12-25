@@ -223,9 +223,8 @@ BoltVector& BoltVector::operator=(BoltVector&& other) noexcept {
   return *this;
 }
 
-template <bool DENSE>
-uint32_t BoltVector::activeNeuronAtIndex(uint32_t index) const {
-  if (DENSE) {
+uint32_t BoltVector::neuron(uint32_t index) const {
+  if (isDense()) {
     return index;
   }
   return active_neurons[index];
@@ -395,9 +394,6 @@ void BoltVector::load(Archive& archive) {
     archive(cereal::binary_data(gradients, len * sizeof(float)));
   }
 }
-
-template uint32_t BoltVector::activeNeuronAtIndex<true>(uint32_t index) const;
-template uint32_t BoltVector::activeNeuronAtIndex<false>(uint32_t index) const;
 
 template void BoltVector::load(cereal::PortableBinaryInputArchive& archive);
 template void BoltVector::load(cereal::BinaryInputArchive& archive);

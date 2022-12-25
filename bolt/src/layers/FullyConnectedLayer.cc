@@ -97,16 +97,12 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   }
 
   for (uint64_t n = 0; n < len_out; n++) {
-    // Because DENSE is known at compile time the compiler can remove this
-    // conditional
-    uint64_t act_neuron = output.activeNeuronAtIndex<DENSE>(n);
+    uint64_t act_neuron = output.neuron(n);
     assert(act_neuron < _dim);
 
     float act = _biases[act_neuron];
     for (uint64_t i = 0; i < input.len; i++) {
-      // Because PREV_DENSE is known at compile time the compiler can remove
-      // this conditional
-      uint32_t prev_act_neuron = input.activeNeuronAtIndex<PREV_DENSE>(i);
+      uint32_t prev_act_neuron = input.neuron(i);
       assert(prev_act_neuron < _prev_dim);
 
       act += _weights[act_neuron * _prev_dim + prev_act_neuron] *
@@ -296,15 +292,13 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
     }
 
     assert(!std::isnan(output.gradients[n]));
-    // Because DENSE is known at compile time the compiler can remove this
-    // conditional
-    uint32_t act_neuron = output.activeNeuronAtIndex<DENSE>(n);
+    uint32_t act_neuron = output.neuron(n);
     assert(act_neuron < _dim);
 
     for (uint64_t i = 0; i < input.len; i++) {
       // Because PREV_DENSE is known at compile time the compiler can remove
       // this conditional
-      uint32_t prev_act_neuron = input.activeNeuronAtIndex<PREV_DENSE>(i);
+      uint32_t prev_act_neuron = input.neuron(i);
       assert(prev_act_neuron < _prev_dim);
 
       _weight_optimizer->gradients[act_neuron * _prev_dim + prev_act_neuron] +=

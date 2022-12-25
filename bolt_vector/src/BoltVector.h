@@ -68,8 +68,7 @@ struct BoltVector {
 
   BoltVector& operator=(BoltVector&& other) noexcept;
 
-  template <bool DENSE>
-  uint32_t activeNeuronAtIndex(uint32_t index) const;
+  uint32_t neuron(uint32_t index) const;
 
   void zeroOutGradients();
 

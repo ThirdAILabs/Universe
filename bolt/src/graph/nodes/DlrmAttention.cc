@@ -180,8 +180,7 @@ float DlrmAttentionNode::fcOutputEmbeddingDotProduct(
     const BoltVector& fc_output, const float* embedding) {
   float total = 0.0;
   for (uint32_t i = 0; i < fc_output.len; i++) {
-    total += fc_output.activations[i] *
-             embedding[fc_output.activeNeuronAtIndex<FC_OUTPUT_DENSE>(i)];
+    total += fc_output.activations[i] * embedding[fc_output.neuron(i)];
   }
   return total;
 }
@@ -191,7 +190,7 @@ void DlrmAttentionNode::fcOutputEmbeddingDotProductBackward(
     float dot_product_gradient, const BoltVector& fc_output,
     const float* embedding, float* emb_gradient) {
   for (uint32_t i = 0; i < fc_output.len; i++) {
-    uint32_t active_neuron = fc_output.activeNeuronAtIndex<FC_OUTPUT_DENSE>(i);
+    uint32_t active_neuron = fc_output.neuron(i);
     fc_output.gradients[i] += dot_product_gradient * embedding[active_neuron];
     emb_gradient[active_neuron] +=
         dot_product_gradient * fc_output.activations[i];
