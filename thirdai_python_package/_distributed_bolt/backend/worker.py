@@ -167,7 +167,8 @@ class Worker:
 
         self.batch_id_within_dataset += 1
         if self.batch_id_within_dataset == self.model.num_batches():
-            return self._try_load_new_datasets_into_model()
+            x = self._try_load_new_datasets_into_model()
+            return x
         elif self.batch_id_within_dataset > self.model.num_batches():
             raise ValueError(
                 "Found a batch id higher than the number of batches which we should have caught during the last batch."
@@ -254,6 +255,9 @@ class Worker:
         This function returns the total number of batches the workers have.
         """
         return self.model.num_batches()
+
+    def freeze_hash_tables(self):
+        self.model.freeze_hash_tables(True)
 
     def model(self):
         return self.model.model

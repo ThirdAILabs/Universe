@@ -98,7 +98,7 @@ def modify_udt_classifier():
         learning_rate: float = 0.001,
         epochs: int = 3,
         batch_size: Optional[int] = 256,
-        max_in_memory_batches: Optional[int] = 2147483647,
+        max_in_memory_batches: Optional[int] = -1,
         gcp_credentials_path: Optional[str] = None,
     ):
         if batch_size is None:
@@ -119,7 +119,11 @@ def modify_udt_classifier():
             batch_size=batch_size,
         )
 
-        metrics = dist_model.train()
+        # We are freezing hashtables by default for distributed training after one epoch,
+        # Ideally we should read freezehashtables from UDTOptions and then pass
+        # it to distributed Wrapper. However, for the time being we are just
+        # initializing freeze-hash-tables=True by default.
+        metrics = dist_model.train(freeze_hash_tables=True)
 
         model = dist_model.get_model()
 

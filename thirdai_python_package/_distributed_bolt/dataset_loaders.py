@@ -41,8 +41,10 @@ class UDTDatasetLoader(DatasetLoader):
         self.max_in_memory_batches = max_in_memory_batches
 
     def next(self):
-        load = self.generator.load_in_memory(self.max_in_memory_batches)
-        print(load)
+        if self.max_in_memory_batches == -1:
+            load = self.generator.load_in_memory()
+        else:
+            load = self.generator.load_in_memory(self.max_in_memory_batches)
         if load == None:
             return None
 

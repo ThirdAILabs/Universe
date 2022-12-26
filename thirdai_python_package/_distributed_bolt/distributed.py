@@ -143,7 +143,7 @@ class DistributedDataParallel:
         batch_size: int,
         max_in_memory_batches: int,
         gcp_credentials_path: Optional[str] = None,
-        data_processor = None,
+        data_processor=None,
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -220,7 +220,7 @@ class DistributedDataParallel:
             f"Data loaded on all nodes, minimmum num batches is {self.num_of_batches}."
         )
 
-    def train(self) -> Dict[str, Union[int, str]]:
+    def train(self, freeze_hash_tables=False) -> Dict[str, Union[int, str]]:
         """
         Runs distributed training on the passed in Bolt model on the passed in
         Ray cluster. Note that this method does not call finish_training on the
@@ -243,11 +243,26 @@ class DistributedDataParallel:
         )
 
         total_batches_trained = 0
-        for epoch in range(self.train_config.num_epochs):
-            while train_state_manager.train_batch(epoch):
+        if freeze_hash_tables:
+            while train_state_manager.train_batch(0):
                 total_batches_trained += 1
             total_batches_trained += 1
             train_state_manager.move_to_next_epoch()
+
+            train_state_manager.freeze_hash_tables()
+
+            for epoch in range(self.train_config.num_epochs - 1):
+                while train_state_manager.train_batch(epoch + 1):
+                    total_batches_trained += 1
+                total_batches_trained += 1
+                train_state_manager.move_to_next_epoch()
+
+        else:
+            for epoch in range(self.train_config.num_epochs):
+                while train_state_manager.train_batch(epoch):
+                    total_batches_trained += 1
+                total_batches_trained += 1
+                train_state_manager.move_to_next_epoch()
 
         return {
             "time": time.time() - train_start,

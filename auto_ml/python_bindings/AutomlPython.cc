@@ -5,6 +5,7 @@
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <pybind11/detail/common.h>
+#include <limits>
 
 namespace thirdai::automl::python {
 
@@ -105,7 +106,8 @@ void createModelsSubmodule(py::module_& module) {
   py::class_<data::GenericDatasetLoader, data::GenericDatasetLoaderPtr>(
       models_submodule, "GenericDatasetLoader")
       .def("load_in_memory", &data::GenericDatasetLoader::loadInMemory,
-           py::arg("max_in_memory_batches"))
+           py::arg("max_in_memory_batches") =
+               std::numeric_limits<uint32_t>::max())
       .def("restart", &data::GenericDatasetLoader::restart);
 
   py::class_<data::UDTDatasetFactory, data::UDTDatasetFactoryPtr>(

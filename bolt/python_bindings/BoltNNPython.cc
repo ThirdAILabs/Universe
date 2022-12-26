@@ -592,6 +592,9 @@ That's all for now, folks! More docs coming soon :)
           py::return_value_policy::reference_internal,
           "The underlying Bolt model wrapped by this "
           "DistributedTrainingWrapper.")
+      .def("freeze_hash_tables",
+           &thirdai::bolt::DistributedTrainingWrapper::freezeHashTables,
+           py::arg("insert_labels_if_not_found"))
       .def(
           "gradient_reference",
           [](DistributedTrainingWrapper& node) {
