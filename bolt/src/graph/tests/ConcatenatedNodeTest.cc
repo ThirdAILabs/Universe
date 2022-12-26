@@ -102,9 +102,9 @@ void testConcatForwardAndBackwardPass(
 
     for (uint32_t output_index = starting_output_index;
          output_index < ending_output_index; output_index++) {
-      auto output_neuron = output.findActiveNeuronNoTemplate(output_index);
-      auto input_neuron = current_input.findActiveNeuronNoTemplate(
-          output_index - starting_output_index);
+      auto output_neuron = output.find(output_index);
+      auto input_neuron =
+          current_input.find(output_index - starting_output_index);
       ASSERT_EQ(input_neuron.activation, output_neuron.activation);
       float input_gradient =
           gradientFromActiveNeuron(current_input, input_neuron);
