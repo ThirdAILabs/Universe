@@ -6,7 +6,8 @@ from time import time
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, logging
 
-from ..utils import _create_loader
+from ..dataset_loaders import UDTDatasetLoader
+
 
 def timed(f):
     @wraps(f)
@@ -42,13 +43,23 @@ class Worker:
         communication_type: str,
         log_dir: str,
         data_processor,
+        max_in_memory_batches: int,
+        gcp_credentials_path: str,
+        batch_size: int,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
         DistributedWrapper with the dataset read in.
         """
 
-        self.train_source = train_source
+        self.train_source = UDTDatasetLoader(
+            train_file=train_source,
+            batch_size=batch_size,
+            gcp_credentials_path=gcp_credentials_path,
+            max_in_memory_batches=max_in_memory_batches,
+            data_processor=data_processor,
+        )
+
         logging.setup(
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
@@ -88,8 +99,6 @@ class Worker:
                 )
             )
 
-        self.dataset = data_processor.get_dataset_loader(_create_loader(self.train_source, batch_size=256), training=True)
-        self.get_data = True
         if not self._try_load_new_datasets_into_model():
             raise ValueError(
                 "There must be at least one loadable dataset in the passed in data source."
@@ -168,11 +177,7 @@ class Worker:
 
     @timed
     def move_to_next_epoch(self):
-        if self.dataset==None:
-            self.train_source.restart()
-        else:
-            self.dataset.restart()
-            self.get_data=True
+        self.train_source.restart()
         self._try_load_new_datasets_into_model()
 
     @timed
@@ -217,36 +222,24 @@ class Worker:
         then this will fail until we call restart on it).
         """
 
-        if self.dataset == None:
-            load = self.train_source.next()
+        load = self.train_source.next()
 
-            if load == None:
-                self.train_data = None
-                self.train_labels = None
-                return False
+        if load == None:
+            self.train_data = None
+            self.train_labels = None
+            return False
 
-            self.train_data, self.train_labels = load
-            self.model.set_datasets(self.train_data, self.train_labels)
-            self.batch_id_within_dataset = 0
+        self.train_data, self.train_labels = load
+        self.model.set_datasets(self.train_data, self.train_labels)
+        self.batch_id_within_dataset = 0
 
-            # This case should not be true since we currently require datasets
-            # to be nonempty, but this is a good hedge against future data
-            # pipeline changes
-            if self.model.num_batches() == 0:
-                return False
+        # This case should not be true since we currently require datasets
+        # to be nonempty, but this is a good hedge against future data
+        # pipeline changes
+        if self.model.num_batches() == 0:
+            return False
 
-            return True
-        else:
-            if self.get_data:
-                self.train_data, self.train_labels = self.dataset.load_in_memory(20000)
-                self.model.set_datasets(self.train_data, self.train_labels)
-                self.batch_id_within_dataset = 0
-                self.get_data = False
-                return True
-            else:
-                self.train_data = None
-                self.train_labels = None
-                return False
+        return True
 
     @timed
     def update_parameters(self):

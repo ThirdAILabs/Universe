@@ -97,8 +97,8 @@ def modify_udt_classifier():
         filenames: str,
         learning_rate: float = 0.001,
         epochs: int = 3,
-        batch_size: Optional[int] = None,
-        max_in_memory_batches: Optional[int] = None,
+        batch_size: Optional[int] = 256,
+        max_in_memory_batches: Optional[int] = 2147483647,
         gcp_credentials_path: Optional[str] = None,
     ):
         if batch_size is None:
@@ -113,11 +113,13 @@ def modify_udt_classifier():
             model=model,
             train_config=train_config,
             train_sources=filenames,
-            data_processor=self.get_data_processor()
+            data_processor=self.get_data_processor(),
+            max_in_memory_batches=max_in_memory_batches,
+            gcp_credentials_path=gcp_credentials_path,
+            batch_size=batch_size,
         )
-        
-        metrics = dist_model.train()
 
+        metrics = dist_model.train()
 
         model = dist_model.get_model()
 

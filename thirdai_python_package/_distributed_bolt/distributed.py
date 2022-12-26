@@ -3,7 +3,7 @@ import os
 import tempfile
 import textwrap
 import time
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 
 import ray
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
@@ -140,7 +140,10 @@ class DistributedDataParallel:
         model: bolt.nn.Model,
         train_config: bolt.TrainConfig,
         train_sources: Union[List[DatasetLoader], List[str]],
-        data_processor=None,
+        batch_size: int,
+        max_in_memory_batches: int,
+        gcp_credentials_path: Optional[str] = None,
+        data_processor = None,
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -181,6 +184,9 @@ class DistributedDataParallel:
             communication_type=cluster_config.communication_type,
             log_dir=cluster_config.log_dir,
             data_processor=data_processor,
+            max_in_memory_batches=max_in_memory_batches,
+            gcp_credentials_path=gcp_credentials_path,
+            batch_size=batch_size,
         )
 
         self.replica_workers = []
@@ -198,6 +204,9 @@ class DistributedDataParallel:
                     communication_type=cluster_config.communication_type,
                     log_dir=cluster_config.log_dir,
                     data_processor=data_processor,
+                    max_in_memory_batches=max_in_memory_batches,
+                    gcp_credentials_path=gcp_credentials_path,
+                    batch_size=batch_size,
                 )
             )
 

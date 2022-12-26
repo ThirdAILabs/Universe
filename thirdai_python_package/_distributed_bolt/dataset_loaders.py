@@ -3,6 +3,8 @@ from typing import Callable, List, Optional, Tuple, Union
 
 from thirdai import data, dataset, deployment
 
+from .utils import _create_loader
+
 
 class DatasetLoader(ABC):
     @abstractmethod
@@ -17,6 +19,37 @@ class DatasetLoader(ABC):
     @abstractmethod
     def restart() -> None:
         pass
+
+
+class UDTDatasetLoader(DatasetLoader):
+    def __init__(
+        self,
+        train_file: str,
+        batch_size: int,
+        gcp_credentials_path: str,
+        max_in_memory_batches: int,
+        data_processor,
+    ):
+        self.generator = data_processor.get_dataset_loader(
+            _create_loader(
+                train_file,
+                batch_size=batch_size,
+                gcp_credentials_path=gcp_credentials_path,
+            ),
+            training=True,
+        )
+        self.max_in_memory_batches = max_in_memory_batches
+
+    def next(self):
+        load = self.generator.load_in_memory(self.max_in_memory_batches)
+        print(load)
+        if load == None:
+            return None
+
+        return load
+
+    def restart(self):
+        self.generator.restart()
 
 
 class GenericInMemoryDatasetLoader(DatasetLoader):
