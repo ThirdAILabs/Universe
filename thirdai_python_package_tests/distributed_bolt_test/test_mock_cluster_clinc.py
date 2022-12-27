@@ -3,7 +3,7 @@ import os
 import datasets
 import pandas as pd
 import pytest
-from utils import (
+from distributed_utils import (
     check_models_are_same_on_first_two_nodes,
     ray_two_node_cluster_config,
     write_dataset_to_csv_clinc,

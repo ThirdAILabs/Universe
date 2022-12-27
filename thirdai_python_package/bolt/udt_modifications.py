@@ -95,14 +95,23 @@ def modify_udt_classifier():
         self,
         cluster_config: dist_bolt.RayTrainingClusterConfig,
         filenames: str,
+        batch_size: Optional[int] = None,
         learning_rate: float = 0.001,
         epochs: int = 3,
-        batch_size: Optional[int] = 256,
         max_in_memory_batches: Optional[int] = -1,
         gcp_credentials_path: Optional[str] = None,
+        metrics: List[str] = [],
+        verbose: bool = True,
     ):
+
+        # calculating batch size per node
+        batch_size = batch_size // cluster_config.num_workers
         if batch_size is None:
             batch_size = self.default_train_batch_size
+        if not verbose:
+            train_config.silence()
+        if metrics:
+            train_config.with_metrics(metrics)
 
         train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
 
