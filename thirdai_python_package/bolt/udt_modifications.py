@@ -103,10 +103,33 @@ def modify_udt_classifier():
         metrics: List[str] = [],
         verbose: bool = True,
     ):
+        """
+        This function trains UDT in the distributed setting. ThirdAI uses Ray
+        Core(https://docs.ray.io/en/latest/ray-core/walkthrough.html) for its
+        distributed offering. This function assumes there is a ray cluster already
+        running on the machine where this function is called or the machine should
+        have an access to a ray cluster.
+
+        To start a ray cluster see here:(https://docs.ray.io/en/latest/ray-core/walkthrough.html)
+
+        Args:
+            cluster_config (dist_bolt.RayTrainingClusterConfig): _description_
+            filenames (str): _description_
+            batch_size (Optional[int], optional): _description_. Defaults to None.
+            learning_rate (float, optional): _description_. Defaults to 0.001.
+            epochs (int, optional): _description_. Defaults to 3.
+            max_in_memory_batches (Optional[int], optional): _description_. Defaults to -1.
+            gcp_credentials_path (Optional[str], optional): _description_. Defaults to None.
+            metrics (List[str], optional): _description_. Defaults to [].
+            verbose (bool, optional): _description_. Defaults to True.
+
+        Returns:
+            Dict: returns
+        """
 
         data_processor = self.get_data_processor()
 
-        # checks and raises error if the given UDT is not supported in distributed context
+        # checks and raises an error if the given UDT is not supported in distributed context
         data_processor.can_distribute()
 
         # calculating batch size per node
