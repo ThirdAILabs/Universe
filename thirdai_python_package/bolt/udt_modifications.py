@@ -171,7 +171,7 @@ def modify_udt_classifier():
 
         train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
 
-        model = self.get_model()
+        model = self._get_model()
 
         dist_model = dist_bolt.DistributedDataParallel(
             cluster_config=cluster_config,
@@ -192,7 +192,7 @@ def modify_udt_classifier():
 
         model = dist_model.get_model()
 
-        self.set_model(trained_model=model)
+        self._set_model(trained_model=model)
 
         return metrics
 

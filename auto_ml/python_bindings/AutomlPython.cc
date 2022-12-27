@@ -94,8 +94,8 @@ void createModelsSubmodule(py::module_& module) {
                   docs::MODEL_PIPELINE_LOAD)
       .def("get_data_processor", &ModelPipeline::getDataProcessor,
            docs::MODEL_PIPELINE_GET_DATA_PROCESSOR)
-      .def("get_model", &ModelPipeline::getModel)
-      .def("set_model", &ModelPipeline::setModel, py::arg("trained_model"))
+      .def("_get_model", &ModelPipeline::getModel)
+      .def("_set_model", &ModelPipeline::setModel, py::arg("trained_model"))
       .def_property_readonly("default_train_batch_size",
                              &ModelPipeline::defaultBatchSize)
       .def_property_readonly_static(
