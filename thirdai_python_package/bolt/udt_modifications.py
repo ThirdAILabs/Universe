@@ -94,7 +94,7 @@ def modify_udt_classifier():
     def train_distributed(
         self,
         cluster_config: dist_bolt.RayTrainingClusterConfig,
-        filenames: str,
+        filenames: List[str],
         batch_size: Optional[int] = None,
         learning_rate: float = 0.001,
         epochs: int = 3,
@@ -113,18 +113,45 @@ def modify_udt_classifier():
         To start a ray cluster see here:(https://docs.ray.io/en/latest/ray-core/walkthrough.html)
 
         Args:
-            cluster_config (dist_bolt.RayTrainingClusterConfig): _description_
-            filenames (str): _description_
-            batch_size (Optional[int], optional): _description_. Defaults to None.
-            learning_rate (float, optional): _description_. Defaults to 0.001.
-            epochs (int, optional): _description_. Defaults to 3.
-            max_in_memory_batches (Optional[int], optional): _description_. Defaults to -1.
-            gcp_credentials_path (Optional[str], optional): _description_. Defaults to None.
-            metrics (List[str], optional): _description_. Defaults to [].
-            verbose (bool, optional): _description_. Defaults to True.
+            cluster_config (thirdai.distributed_bolt.RayTrainingClusterConfig):
+                Here, you can describe the configuration for your cluster training,
+                It includes declaring the number of workers, communication you want to use and
+                the cluster address if a remote cluster is used.
+            filenames (List[str]): List of all the split files. The current design assumes all
+                the files are accessible by all the nodes.
+
+                Note: If the split training files are very big and can't be stored on all the nodes.
+                Then, one way around is to save the individual file on all nodes, with same name.
+            batch_size (Optional[int], optional): Batch Size for distributed training. It is the
+                batch size for overall training, per node batch size is batch_size//num_nodes.
+                Defaults to None.
+            learning_rate (float, optional): Learning rate for distributed training. Defaults to 0.001.
+            epochs (int, optional): Number of epochs to train. Defaults to 3.
+            max_in_memory_batches (Optional[int], optional): The maximum number of batches to load in
+                memory at a given time. If this is specified then the dataset will be processed
+                in a streaming fashion. Defaults to -1.
+            gcp_credentials_path (Optional[str], optional): Credentials for GCP, if using GCP for data
+                loading. Defaults to None.
+            metrics (List[str], optional): Metrics to be logged during training. Defaults to [].
+            verbose (bool, optional): Prints info about training. Defaults to True.
 
         Returns:
             Dict: returns
+
+        Example:
+
+            import thirdai
+            cluster_config = thirdai.distributed_bolt.RayTrainingClusterConfig(
+                num_workers=2,
+                communication_type=communication_type,
+                cluster_address=mini_cluster.address,
+                runtime_env={"working_dir": working_dir},
+                ignore_reinit_error=True,
+            )
+            udt_model.train_distributed(
+                cluster_config=rcluster_config,
+                filenames=filenames,
+            )
         """
 
         data_processor = self.get_data_processor()
