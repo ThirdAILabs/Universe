@@ -106,7 +106,7 @@ def modify_udt_classifier():
 
         data_processor = self.get_data_processor()
 
-        # checks and raises error if the following UDT is not supported in distributed context
+        # checks and raises error if the given UDT is not supported in distributed context
         data_processor.can_distribute()
 
         # calculating batch size per node

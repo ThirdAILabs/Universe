@@ -172,10 +172,17 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   void canDistribute() {
-    if (!_config->integer_target) {
+    auto target_type = _config->data_types.at(_config->target);
+    if (asCategorical(target_type)) {
       std::invalid_argument(
-          "Distributed currently supported just for numeric labels, with label "
-          "belonging to [0,n_targets_classes-1]");
+          "UDT with categorical target cannot be trained in distributed "
+          "setting. Please convert the categorical target column into "
+          "numerical target to train UDT in distributed setting.");
+    }
+    if (!_temporal_relationships.empty()) {
+      std::invalid_argument(
+          "UDT with temporal relationships cannot be trained in distributed "
+          "setting.");
     }
   }
 
