@@ -117,6 +117,15 @@ class UniversalDeepTransformer final : public ModelPipeline {
     udtDatasetFactory().batchUpdateTemporalTrackers(updates);
   }
 
+  void updateMetadata(const std::string& col_name, const MapInput& update) {
+    udtDatasetFactory().updateMetadata(col_name, update);
+  }
+
+  void updateMetadataBatch(const std::string& col_name,
+                           const MapInputBatch& updates) {
+    udtDatasetFactory().updateMetadataBatch(col_name, updates);
+  }
+
   auto className(uint32_t neuron_id) const {
     return udtDatasetFactory().className(neuron_id);
   }

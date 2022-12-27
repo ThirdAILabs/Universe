@@ -1,5 +1,6 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
+#include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
 #include <stdexcept>
 
 namespace thirdai::automl::data {
@@ -103,25 +104,28 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
       dataset::SimpleFileDataLoader::make(metadata->metadata_file,
                                           /* target_batch_size= */ 2048);
 
-  auto column_numbers = makeColumnNumberMap(*data_loader, metadata->delimiter);
+  _metadata_column_number_maps[col_name] =
+      makeColumnNumberMap(*data_loader, metadata->delimiter);
 
-  auto input_blocks = buildMetadataInputBlocks(*metadata, *column_numbers);
+  auto input_blocks = buildMetadataInputBlocks(
+      *metadata, *_metadata_column_number_maps[col_name]);
 
   auto key_vocab = dataset::ThreadSafeVocabulary::make(
       /* vocab_size= */ 0, /* limit_vocab_size= */ false);
   auto label_block = dataset::StringLookupCategoricalBlock::make(
-      column_numbers->at(metadata->key), key_vocab);
+      _metadata_column_number_maps[col_name]->at(metadata->key), key_vocab);
+
+  _metadata_processors[col_name] = dataset::GenericBatchProcessor::make(
+      /* input_blocks= */ std::move(input_blocks),
+      /* label_blocks= */ {std::move(label_block)},
+      /* has_header= */ false, /* delimiter= */ metadata->delimiter,
+      /* parallel= */ true, /* hash_range= */ _config->hash_range);
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
   dataset::StreamingGenericDatasetLoader metadata_loader(
       /* loader= */ data_loader,
-      /* processor= */
-      dataset::GenericBatchProcessor::make(
-          /* input_blocks= */ std::move(input_blocks),
-          /* label_blocks= */ {std::move(label_block)},
-          /* has_header= */ false, /* delimiter= */ metadata->delimiter,
-          /* parallel= */ true, /* hash_range= */ _config->hash_range));
+      /* processor= */ _metadata_processors[col_name]);
 
   return preprocessedVectorsFromDataset(metadata_loader, *key_vocab);
 }
@@ -173,6 +177,39 @@ UDTDatasetFactory::preprocessedVectorsFromDataset(
 
   return std::make_shared<dataset::PreprocessedVectors>(
       std::move(preprocessed_vectors), dataset.getInputDim());
+}
+
+void UDTDatasetFactory::updateMetadata(const std::string& col_name,
+                                       const MapInput& update) {
+  verifyColumnMetadataExists(col_name);
+
+  const auto& data_type = _config->data_types.at(col_name);
+  const auto& key_col = asCategorical(data_type)->metadata_config->key;
+  const auto& key = update.at(key_col);
+
+  auto vec =
+      boltVectorFromInput(*_metadata_processors.at(col_name),
+                          *_metadata_column_number_maps.at(col_name), update);
+  _vectors_map.at(col_name)->vectors[key] = vec;
+}
+
+void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
+                                            const MapInputBatch& updates) {
+  verifyColumnMetadataExists(col_name);
+
+  const auto& data_type = _config->data_types.at(col_name);
+  const auto metadata_config = asCategorical(data_type)->metadata_config;
+  const auto& key_col = metadata_config->key;
+  auto delimiter = metadata_config->delimiter;
+
+  auto [batch, _] = _metadata_processors.at(col_name)->createBatch(
+      lineInputBatchFromMapInputBatch(
+          *_metadata_column_number_maps.at(col_name), delimiter, updates));
+
+  for (uint32_t update_idx = 0; update_idx < updates.size(); update_idx++) {
+    const auto& key = updates.at(update_idx).at(key_col);
+    _vectors_map.at(col_name)->vectors[key] = batch[update_idx];
+  }
 }
 
 dataset::GenericBatchProcessorPtr
@@ -258,23 +295,23 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildInputBlocks(
 }
 
 std::vector<std::string_view> UDTDatasetFactory::toVectorOfStringViews(
-    const MapInput& input) {
+    const ColumnNumberMap& column_number_map, const MapInput& input) {
   verifyColumnNumberMapIsInitialized();
-  std::vector<std::string_view> string_view_input(
-      _column_number_map->numCols());
+  std::vector<std::string_view> string_view_input(column_number_map.numCols());
   for (const auto& [col_name, val] : input) {
-    string_view_input[_column_number_map->at(col_name)] =
+    string_view_input[column_number_map.at(col_name)] =
         std::string_view(val.data(), val.length());
   }
   return string_view_input;
 }
 
 std::vector<std::string> UDTDatasetFactory::lineInputBatchFromMapInputBatch(
+    const ColumnNumberMap& column_number_map, char delimiter,
     const MapInputBatch& input_maps) {
   std::vector<std::string> string_batch(input_maps.size());
   for (uint32_t i = 0; i < input_maps.size(); i++) {
-    auto vals = toVectorOfStringViews(input_maps[i]);
-    string_batch[i] = concatenateWithDelimiter(vals, _config->delimiter);
+    auto vals = toVectorOfStringViews(column_number_map, input_maps[i]);
+    string_batch[i] = concatenateWithDelimiter(vals, delimiter);
   }
   return string_batch;
 }
