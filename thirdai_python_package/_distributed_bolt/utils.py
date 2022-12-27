@@ -27,6 +27,8 @@ def get_num_cpus():
     except (ImportError):
         print("Could not find num_cpus, setting num_cpus to DEFAULT=1")
         return 1
+
+
 def _create_parquet_loader(path, batch_size):
     return thirdai.dataset.ParquetLoader(parquet_path=path, batch_size=batch_size)
 
@@ -55,6 +57,7 @@ def _create_loader(path, batch_size, **kwargs):
 
     return thirdai.dataset.FileDataLoader(path, batch_size)
 
+
 def _pandas_iterator(path, chunksize, node_index, num_nodes, sep):
     import pandas as pd
 
@@ -64,7 +67,6 @@ def _pandas_iterator(path, chunksize, node_index, num_nodes, sep):
                 yield chunk
     while True:
         yield None
-
 
 
 class PandasColumnMapGenerator(data.ColumnMapGenerator):

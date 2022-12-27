@@ -3,7 +3,7 @@ import os
 import tempfile
 import textwrap
 import time
-from typing import Dict, List, Union, Optional
+from typing import Dict, List, Optional, Union
 
 import ray
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
