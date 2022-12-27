@@ -171,6 +171,14 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     return deserialize_into;
   }
 
+  void canDistribute() {
+    if (!_config->integer_target) {
+      std::invalid_argument(
+          "Distributed currently supported just for numeric labels, with label "
+          "belonging to [0,n_targets_classes-1]");
+    }
+  }
+
  private:
   PreprocessedVectorsMap processAllMetadata();
 

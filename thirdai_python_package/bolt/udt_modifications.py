@@ -104,8 +104,14 @@ def modify_udt_classifier():
         verbose: bool = True,
     ):
 
+        data_processor = self.get_data_processor()
+
+        # checks and raises error if the following UDT is not supported in distributed context
+        data_processor.can_distribute()
+
         # calculating batch size per node
         batch_size = batch_size // cluster_config.num_workers
+
         if batch_size is None:
             batch_size = self.default_train_batch_size
         if not verbose:
@@ -122,7 +128,7 @@ def modify_udt_classifier():
             model=model,
             train_config=train_config,
             train_sources=filenames,
-            data_processor=self.get_data_processor(),
+            data_processor=data_processor,
             max_in_memory_batches=max_in_memory_batches,
             gcp_credentials_path=gcp_credentials_path,
             batch_size=batch_size,
