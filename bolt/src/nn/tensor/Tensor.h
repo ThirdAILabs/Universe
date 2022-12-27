@@ -14,26 +14,19 @@ namespace thirdai::bolt::nn::tensor {
 
 class Tensor {
  public:
-  Tensor(uint32_t dim, bool sparse, std::optional<uint32_t> num_nonzeros)
-      : _dim(dim), _sparse(sparse), _num_nonzeros(num_nonzeros) {
-    if (!_sparse) {
-      _num_nonzeros = _dim;
-    }
-  }
+  Tensor(uint32_t dim, bool sparse, std::optional<uint32_t> num_nonzeros);
 
   virtual BoltVector& getVector(uint32_t index) = 0;
 
-  uint32_t dim() const { return _dim; }
+  uint32_t dim() const;
 
-  std::optional<uint32_t> numNonzeros() const { return _num_nonzeros; }
+  std::optional<uint32_t> numNonzeros() const;
 
-  bool sparse() const { return _sparse; }
+  bool sparse() const;
 
-  void addDependantOp(ops::OpPtr op) {
-    _dependant_ops.push_back(std::move(op));
-  }
+  void addDependantOp(ops::OpPtr op);
 
-  const std::vector<ops::OpPtr>& dependantOps() const { return _dependant_ops; }
+  const std::vector<ops::OpPtr>& dependantOps() const;
 
  private:
   // TODO(Nicholas): Update this to support N dimensions (not required for V0).
