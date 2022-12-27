@@ -1,12 +1,13 @@
 import os
-import random
 
 import datasets
 import pandas as pd
 import pytest
-from cluster_utils import (
+from utils import (
     check_models_are_same_on_first_two_nodes,
     ray_two_node_cluster_config,
+    write_dataset_to_csv_clinc,
+    remove_files,
 )
 from thirdai import bolt, data
 
@@ -18,41 +19,15 @@ MODEL_INPUT_DIM = 100000
 BATCH_SIZE = 256
 
 
-def write_dataset_to_csv(dataset, filename):
-    data = []
-    for item in dataset:
-        sentence = item["text"]
-        sentence = sentence.replace(",", "")
-        label = item["intent"]
-        data.append((sentence, label))
-
-    random.shuffle(data)
-
-    with open(filename, "w") as file:
-        file.write("intent,text\n")
-        lines = [f'{label_name},"{sentence}"\n' for sentence, label_name in data]
-        file.writelines(lines)
-
-
 def download_clinc_dataset():
     clinc_dataset = datasets.load_dataset("clinc_oos", "small")
-    write_dataset_to_csv(clinc_dataset["train"], TRAIN_FILE)
-    write_dataset_to_csv(clinc_dataset["test"], TEST_FILE)
-
-
-def remove_files():
-    for file in [TRAIN_FILE, TEST_FILE]:
-        if os.path.exists(file):
-            os.remove(file)
+    write_dataset_to_csv_clinc(clinc_dataset["train"], TRAIN_FILE)
+    write_dataset_to_csv_clinc(clinc_dataset["test"], TEST_FILE)
 
 
 def setup_module():
-    remove_files()
+    remove_files([TRAIN_FILE, TEST_FILE])
     download_clinc_dataset()
-
-
-# def teardown_module():
-#     remove_files()
 
 
 @pytest.fixture(scope="module")
@@ -79,7 +54,7 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
 
     # Because we explicitly specified the Ray working folder as this test
     # directory, but the current working directory where we downloaded mnist
-    # may be anywhere, we give explicit paths for the mnist filenames
+    # may be anywhere, we give explicit paths for the clinc filenames
     columnmap_generators = [
         db.PandasColumnMapGenerator(
             path=f"{os.getcwd()}/{TRAIN_FILE}",

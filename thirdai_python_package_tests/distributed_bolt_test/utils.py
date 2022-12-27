@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import pytest
+import random
 
 
 @pytest.fixture(scope="module")
@@ -72,3 +73,26 @@ def check_models_are_same_on_first_two_nodes(distributed_model):
             assert np.allclose(layer_1.weights.get(), layer_2.weights.get())
         if hasattr(layer_1, "biases"):
             assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
+
+
+def write_dataset_to_csv_clinc(dataset, filename, node_id=0, total_nodes=1):
+    data = []
+    for item_id, item in enumerate(dataset):
+        if item_id % total_nodes == node_id:
+            sentence = item["text"]
+            sentence = sentence.replace(",", "")
+            label = item["intent"]
+            data.append((sentence, label))
+
+    random.shuffle(data)
+
+    with open(filename, "w") as file:
+        file.write("intent,text\n")
+        lines = [f'{label_name},"{sentence}"\n' for sentence, label_name in data]
+        file.writelines(lines)
+
+
+def remove_files(file_names):
+    for file in file_names:
+        if os.path.exists(file):
+            os.remove(file)
