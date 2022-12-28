@@ -1,31 +1,23 @@
 import os
 
-import datasets
 import pytest
 from distributed_utils import (
     ray_two_node_cluster_config,
     remove_files,
-    write_dataset_to_csv_clinc,
 )
 from thirdai import bolt, data
+from thirdai.demos import download_clinc_dataset
 
 pytestmark = [pytest.mark.distributed]
 
-TRAIN_FILE_1 = "./clinc_train_distributed_1.csv"
-TRAIN_FILE_2 = "./clinc_train_distributed_2.csv"
-TEST_FILE = "./clinc_test_distributed.csv"
-
-
-def download_clinc_dataset():
-    clinc_dataset = datasets.load_dataset("clinc_oos", "small")
-    write_dataset_to_csv_clinc(clinc_dataset["train"], TRAIN_FILE_1, 0, 2)
-    write_dataset_to_csv_clinc(clinc_dataset["train"], TRAIN_FILE_2, 1, 2)
-    write_dataset_to_csv_clinc(clinc_dataset["test"], TEST_FILE)
+TRAIN_FILE_1 = "./clinc_train_0.csv"
+TRAIN_FILE_2 = "./clinc_train_1.csv"
+TEST_FILE = "./clinc_test.csv"
 
 
 def setup_module():
     remove_files([TRAIN_FILE_1, TRAIN_FILE_2, TEST_FILE])
-    download_clinc_dataset()
+    download_clinc_dataset(num_training_files=2, clinc_small=True)
 
 
 def test_distributed_udt_clinc(ray_two_node_cluster_config):
@@ -34,10 +26,10 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
 
     udt_model = bolt.UniversalDeepTransformer(
         data_types={
-            "intent": bolt.types.categorical(),
+            "category": bolt.types.categorical(),
             "text": bolt.types.text(),
         },
-        target="intent",
+        target="category",
         n_target_classes=151,
         integer_target=True,
     )
@@ -52,7 +44,9 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
 
     assert (
         udt_model.evaluate(
-            TEST_FILE, metrics=["categorical_accuracy"], return_metrics=True
+            f"{os.getcwd()}/{TEST_FILE}",
+            metrics=["categorical_accuracy"],
+            return_metrics=True,
         )["categorical_accuracy"]
         > 0.7
     )
