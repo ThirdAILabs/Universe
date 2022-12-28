@@ -1,6 +1,6 @@
 import pytest
 from dataset_utils import sparse_bolt_dataset_to_numpy
-from thirdai import data
+from thirdai import data, bolt
 
 pytestmark = [pytest.mark.unit]
 
@@ -26,11 +26,47 @@ def get_two_col_hashed_string_dataset(col_length, output_range):
         ]
     )
 
-    columns = featurizer.featurize(columns)
+    return featurizer, columns
 
-    return columns.convert_to_dataset(
+
+def test_string():
+    col_length = 100
+    output_range = 100
+    featurizer, columns = get_two_col_hashed_string_dataset(col_length, output_range)
+    columns = featurizer.featurize(columns, True)
+    string_dataset = columns.convert_to_dataset(
         ["column1_hashes", "column2_hashes"], batch_size=col_length
     )
+    input_layer = bolt.nn.Input(dim=100000)
+    hidden_layer = bolt.nn.FullyConnected(dim=100, activation="relu", sparsity=1)(
+        input_layer
+    )
+    output_layer = bolt.nn.FullyConnected(dim=151, sparsity=1, activation="softmax")(
+        hidden_layer
+    )
+
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
+    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
+
+    indices, gradients = model.get_input_gradients_batch([string_dataset[0]])
+
+    assert len(indices) == col_length
+    assert len(gradients) == col_length
+
+    contribution_columns = columns.get_contribution_columns(
+        ["column1_hashes", "column2_hashes"], gradients, indices
+    )
+
+    explanations = featurizer.explain(columns, contribution_columns)
+
+    for i in range(col_length):
+        sw = explanations.getitem("column1").get_row(i)
+
+        sw1 = explanations.getitem("column1_hashes").get_row(i)
+
+        for j in range(len(sw)):
+
+            assert sw[j].gradient == sw1[j].gradient
 
 
 # Tests that if we hash two columns and then turn them into a dataset, the sparse
@@ -40,9 +76,15 @@ def test_string_hash_consistency():
     col_length = 100
     output_range = 100
 
-    indices, _ = sparse_bolt_dataset_to_numpy(
-        get_two_col_hashed_string_dataset(col_length, output_range)
+    featurizer, columns = get_two_col_hashed_string_dataset(col_length, output_range)
+
+    columns = featurizer.featurize(columns)
+
+    string_dataset = columns.convert_to_dataset(
+        ["column1_hashes", "column2_hashes"], batch_size=col_length
     )
+
+    indices, _ = sparse_bolt_dataset_to_numpy(string_dataset)
 
     for i1, i2 in indices:
         assert i1 + output_range == i2
@@ -55,9 +97,15 @@ def test_string_hash_distribution():
     col_length = 10000
     output_range = 100
 
-    indices, _ = sparse_bolt_dataset_to_numpy(
-        get_two_col_hashed_string_dataset(col_length, output_range)
+    featurizer, columns = get_two_col_hashed_string_dataset(col_length, output_range)
+
+    columns = featurizer.featurize(columns)
+
+    string_dataset = columns.convert_to_dataset(
+        ["column1_hashes", "column2_hashes"], batch_size=col_length
     )
+
+    indices, _ = sparse_bolt_dataset_to_numpy(string_dataset)
 
     hash_counts = [0 for _ in range(output_range)]
     for i1, _ in indices:
