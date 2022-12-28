@@ -27,8 +27,13 @@ class CategoricalBlock : public Block {
   // Declaration included from BlockInterface.h
   friend CategoricalBlockTest;
 
-  CategoricalBlock(uint32_t col, uint32_t dim, std::optional<char> delimiter)
-      : _dim(dim), _col(col), _delimiter(delimiter) {}
+  CategoricalBlock(ColumnIdentifier col, uint32_t dim,
+                   std::optional<char> delimiter)
+      : _dim(dim), _col(std::move(col)), _delimiter(delimiter) {}
+
+  void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
+    _col.updateColumnNumber(column_number_map);
+  };
 
   uint32_t featureDim() const final { return _dim; };
 
@@ -39,7 +44,8 @@ class CategoricalBlock : public Block {
   Explanation explainIndex(
       uint32_t index_within_block,
       const std::vector<std::string_view>& input_row) final {
-    return {_col, getResponsibleCategory(index_within_block, input_row[_col])};
+    return {_col.number(),
+            getResponsibleCategory(index_within_block, input_row[_col])};
   }
 
   /*
@@ -52,14 +58,24 @@ class CategoricalBlock : public Block {
       const std::string_view& category_value) const = 0;
 
  protected:
-  std::exception_ptr buildSegment(
-      const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
+  std::exception_ptr buildSegment(const RowInput& input_row,
+                                  SegmentedFeatureVector& vec) final {
+    return buildSegmentImpl(input_row, vec);
+  }
+
+  std::exception_ptr buildSegment(const MapInput& input_map,
+                                  SegmentedFeatureVector& vec) final {
+    return buildSegmentImpl(input_map, vec);
+  }
+
+  template <typename InputType>
+  std::exception_ptr buildSegmentImpl(const InputType& input_map,
+                                      SegmentedFeatureVector& vec) {
     if (!_delimiter) {
-      return encodeCategory(input_row.at(_col), vec);
+      return encodeCategory(input_map.at(_col), vec);
     }
 
-    auto csv_category_set = std::string(input_row[_col]);
+    auto csv_category_set = std::string(input_map.at(_col));
     auto categories =
         ProcessorUtils::parseCsvRow(csv_category_set, _delimiter.value());
     for (auto category : categories) {
@@ -81,7 +97,7 @@ class CategoricalBlock : public Block {
   CategoricalBlock() {}
 
  private:
-  uint32_t _col;
+  ColumnIdentifier _col;
   std::optional<char> _delimiter;
 
   friend class cereal::access;
@@ -95,14 +111,14 @@ using CategoricalBlockPtr = std::shared_ptr<CategoricalBlock>;
 
 class NumericalCategoricalBlock final : public CategoricalBlock {
  public:
-  NumericalCategoricalBlock(uint32_t col, uint32_t n_classes,
+  NumericalCategoricalBlock(ColumnIdentifier col, uint32_t n_classes,
                             std::optional<char> delimiter = std::nullopt)
-      : CategoricalBlock(col, n_classes, delimiter) {}
+      : CategoricalBlock(std::move(col), n_classes, delimiter) {}
 
-  static auto make(uint32_t col, uint32_t n_classes,
+  static auto make(ColumnIdentifier col, uint32_t n_classes,
                    std::optional<char> delimiter = std::nullopt) {
-    return std::make_shared<NumericalCategoricalBlock>(col, n_classes,
-                                                       delimiter);
+    return std::make_shared<NumericalCategoricalBlock>(std::move(col),
+                                                       n_classes, delimiter);
   }
 
   std::string getResponsibleCategory(
@@ -141,27 +157,28 @@ using NumericalCategoricalBlockPtr = std::shared_ptr<NumericalCategoricalBlock>;
 
 class StringLookupCategoricalBlock final : public CategoricalBlock {
  public:
-  StringLookupCategoricalBlock(uint32_t col, ThreadSafeVocabularyPtr vocab,
+  StringLookupCategoricalBlock(ColumnIdentifier col,
+                               ThreadSafeVocabularyPtr vocab,
                                std::optional<char> delimiter = std::nullopt)
-      : CategoricalBlock(col,
+      : CategoricalBlock(std::move(col),
                          /* dim= */ vocab->vocabSize(), delimiter),
         _vocab(std::move(vocab)) {}
 
-  StringLookupCategoricalBlock(uint32_t col, uint32_t n_classes,
+  StringLookupCategoricalBlock(ColumnIdentifier col, uint32_t n_classes,
                                std::optional<char> delimiter = std::nullopt)
-      : StringLookupCategoricalBlock(col, ThreadSafeVocabulary::make(n_classes),
-                                     delimiter) {}
+      : StringLookupCategoricalBlock(
+            std::move(col), ThreadSafeVocabulary::make(n_classes), delimiter) {}
 
-  static auto make(uint32_t col, ThreadSafeVocabularyPtr vocab,
+  static auto make(ColumnIdentifier col, ThreadSafeVocabularyPtr vocab,
                    std::optional<char> delimiter = std::nullopt) {
-    return std::make_shared<StringLookupCategoricalBlock>(col, std::move(vocab),
-                                                          delimiter);
+    return std::make_shared<StringLookupCategoricalBlock>(
+        std::move(col), std::move(vocab), delimiter);
   }
 
-  static auto make(uint32_t col, uint32_t n_classes,
+  static auto make(ColumnIdentifier col, uint32_t n_classes,
                    std::optional<char> delimiter = std::nullopt) {
-    return std::make_shared<StringLookupCategoricalBlock>(col, n_classes,
-                                                          delimiter);
+    return std::make_shared<StringLookupCategoricalBlock>(std::move(col),
+                                                          n_classes, delimiter);
   }
 
   ThreadSafeVocabularyPtr getVocabulary() const { return _vocab; }
@@ -206,16 +223,16 @@ using StringLookupCategoricalBlockPtr =
 
 class MetadataCategoricalBlock final : public CategoricalBlock {
  public:
-  MetadataCategoricalBlock(uint32_t col, PreprocessedVectorsPtr vectors,
+  MetadataCategoricalBlock(ColumnIdentifier col, PreprocessedVectorsPtr vectors,
                            std::optional<char> delimiter = std::nullopt)
-      : CategoricalBlock(col,
+      : CategoricalBlock(std::move(col),
                          /* dim= */ vectors->dim, delimiter),
         _vectors(std::move(vectors)) {}
 
-  static auto make(uint32_t col, PreprocessedVectorsPtr vectors,
+  static auto make(ColumnIdentifier col, PreprocessedVectorsPtr vectors,
                    std::optional<char> delimiter = std::nullopt) {
-    return std::make_shared<MetadataCategoricalBlock>(col, std::move(vectors),
-                                                      delimiter);
+    return std::make_shared<MetadataCategoricalBlock>(
+        std::move(col), std::move(vectors), delimiter);
   }
 
   std::string getResponsibleCategory(
@@ -306,11 +323,12 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
  public:
   // Note: min and max are soft thresholds and values outside the range will be
   // truncated to within the range.
-  RegressionCategoricalBlock(uint32_t col,
+  RegressionCategoricalBlock(ColumnIdentifier col,
                              RegressionBinningStrategy binning_strategy,
                              uint32_t correct_label_radius,
                              bool labels_sum_to_one)
-      : CategoricalBlock(/* col= */ col, /* dim= */ binning_strategy.numBins(),
+      : CategoricalBlock(/* col= */ std::move(col),
+                         /* dim= */ binning_strategy.numBins(),
                          /* delimiter= */ std::nullopt),
         _binning_strategy(binning_strategy),
         _correct_label_radius(correct_label_radius) {
@@ -321,10 +339,12 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
     }
   }
 
-  static auto make(uint32_t col, RegressionBinningStrategy binning_strategy,
+  static auto make(ColumnIdentifier col,
+                   RegressionBinningStrategy binning_strategy,
                    uint32_t correct_label_radius, bool labels_sum_to_one) {
     return std::make_shared<RegressionCategoricalBlock>(
-        col, binning_strategy, correct_label_radius, labels_sum_to_one);
+        std::move(col), binning_strategy, correct_label_radius,
+        labels_sum_to_one);
   }
 
   std::string getResponsibleCategory(

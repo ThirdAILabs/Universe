@@ -14,17 +14,23 @@ namespace thirdai::dataset {
 
 class UserCountHistoryBlock final : public Block {
  public:
-  UserCountHistoryBlock(uint32_t user_col, uint32_t count_col,
-                        uint32_t timestamp_col,
+  UserCountHistoryBlock(ColumnIdentifier user_col, ColumnIdentifier count_col,
+                        ColumnIdentifier timestamp_col,
                         QuantityHistoryTrackerPtr history,
                         bool should_update_history = true,
                         bool include_current_row = false)
-      : _user_col(user_col),
-        _count_col(count_col),
-        _timestamp_col(timestamp_col),
+      : _user_col(std::move(user_col)),
+        _count_col(std::move(count_col)),
+        _timestamp_col(std::move(timestamp_col)),
         _history(std::move(history)),
         _should_update_history(should_update_history),
         _include_current_row(include_current_row) {}
+
+  void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
+    _user_col.updateColumnNumber(column_number_map);
+    _count_col.updateColumnNumber(column_number_map);
+    _timestamp_col.updateColumnNumber(column_number_map);
+  }
 
   uint32_t featureDim() const final { return _history->historyLength(); }
   bool isDense() const final { return true; }
@@ -66,23 +72,34 @@ class UserCountHistoryBlock final : public Block {
     auto keyword = "between " + start_time_str + " and " + end_time_str +
                    " value is " + movement;
 
-    return {_count_col, keyword};
+    return {_count_col.number(), keyword};
   }
 
-  static auto make(size_t user_col, size_t count_col, size_t timestamp_col,
+  static auto make(ColumnIdentifier user_col, ColumnIdentifier count_col,
+                   ColumnIdentifier timestamp_col,
                    QuantityHistoryTrackerPtr history,
                    bool should_update_history = true,
                    bool include_current_row = false) {
     return std::make_shared<UserCountHistoryBlock>(
-        user_col, count_col, timestamp_col, history, should_update_history,
-        include_current_row);
+        std::move(user_col), std::move(count_col), std::move(timestamp_col),
+        history, should_update_history, include_current_row);
   }
 
  protected:
-  std::exception_ptr buildSegment(
-      const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
-    auto [user, time_seconds, val] = getUserTimeVal(input_row);
+  std::exception_ptr buildSegment(const RowInput& input_row,
+                                  SegmentedFeatureVector& vec) final {
+    return buildSegmentImpl(input_row, vec);
+  }
+
+  std::exception_ptr buildSegment(const MapInput& input_map,
+                                  SegmentedFeatureVector& vec) final {
+    return buildSegmentImpl(input_map, vec);
+  }
+
+  template <typename InputType>
+  std::exception_ptr buildSegmentImpl(const InputType& input,
+                                      SegmentedFeatureVector& vec) {
+    auto [user, time_seconds, val] = getUserTimeVal(input);
 
     auto counts = indexAndGetCountsFromHistory(
         user, time_seconds, val,
@@ -95,17 +112,18 @@ class UserCountHistoryBlock final : public Block {
   }
 
  private:
+  template <typename InputType>
   std::tuple<std::string, int64_t, float> getUserTimeVal(
-      const std::vector<std::string_view>& input_row) const {
-    auto user = std::string(input_row.at(_user_col));
+      const InputType& input) const {
+    auto user = std::string(input.at(_user_col));
 
-    auto time = TimeObject(input_row.at(_timestamp_col));
+    auto time = TimeObject(input.at(_timestamp_col));
     int64_t time_seconds = time.secondsSinceEpoch();
 
     float val;
     if (_include_current_row || _should_update_history) {
       char* end;
-      val = std::strtof(input_row.at(_count_col).data(), &end);
+      val = std::strtof(input.at(_count_col).data(), &end);
       if (std::isnan(val) || std::isinf(val)) {
         val = 0.0;
       }
@@ -172,9 +190,9 @@ class UserCountHistoryBlock final : public Block {
     }
   }
 
-  uint32_t _user_col;
-  uint32_t _count_col;
-  uint32_t _timestamp_col;
+  ColumnIdentifier _user_col;
+  ColumnIdentifier _count_col;
+  ColumnIdentifier _timestamp_col;
   QuantityHistoryTrackerPtr _history;
 
   bool _should_update_history;

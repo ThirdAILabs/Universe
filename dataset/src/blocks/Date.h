@@ -22,11 +22,15 @@ class DateBlockTests;
  * TODO(Geordie): try out other features
  * such as day of month, day of year, year, etc.
  */
-class DateBlock : public Block {
+class DateBlock final : public Block {
   friend DateBlockTests;
 
  public:
-  explicit DateBlock(uint32_t col) : _col(col) {}
+  explicit DateBlock(ColumnIdentifier col) : _col(std::move(col)) {}
+
+  void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
+    _col.updateColumnNumber(column_number_map);
+  }
 
   uint32_t featureDim() const final {
     return day_of_week_dim + month_of_year_dim + week_of_month_dim +
@@ -66,10 +70,12 @@ class DateBlock : public Block {
     } else {
       reason = "week_of_year";
     }
-    return {_col, reason};
+    return {_col.number(), reason};
   }
 
-  static auto make(uint32_t col) { return std::make_shared<DateBlock>(col); }
+  static auto make(ColumnIdentifier col) {
+    return std::make_shared<DateBlock>(std::move(col));
+  }
 
  protected:
   static constexpr uint32_t day_of_week_dim = 7;
@@ -77,13 +83,23 @@ class DateBlock : public Block {
   static constexpr uint32_t week_of_month_dim = 5;
   static constexpr uint32_t week_of_year_dim = 53;
 
-  std::exception_ptr buildSegment(
-      const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
+  std::exception_ptr buildSegment(const RowInput& input_row,
+                                  SegmentedFeatureVector& vec) final {
+    return buildSegmentImpl(input_row, vec);
+  }
+
+  std::exception_ptr buildSegment(const MapInput& input_map,
+                                  SegmentedFeatureVector& vec) final {
+    return buildSegmentImpl(input_map, vec);
+  }
+
+  template <typename InputType>
+  std::exception_ptr buildSegmentImpl(const InputType& input,
+                                      SegmentedFeatureVector& vec) {
     TimeObject time;
 
     try {
-      time = TimeObject(input_row[_col]);
+      time = TimeObject(input.at(_col));
     } catch (const std::invalid_argument& e) {
       return std::make_exception_ptr(e);
     }
@@ -109,7 +125,7 @@ class DateBlock : public Block {
   }
 
  private:
-  uint32_t _col;
+  ColumnIdentifier _col;
 
   // Constructor for Cereal
   DateBlock() {}
