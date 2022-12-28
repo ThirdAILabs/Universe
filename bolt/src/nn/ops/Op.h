@@ -11,7 +11,7 @@ class Op {
 
   virtual void backpropagate(uint32_t index_in_batch) = 0;
 
-  virtual void updateParameters(float learning_rate) = 0;
+  virtual void updateParameters(float learning_rate, uint32_t train_steps) = 0;
 
   virtual void initOptimizer() = 0;
 

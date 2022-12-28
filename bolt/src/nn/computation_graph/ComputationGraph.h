@@ -24,6 +24,8 @@ class ComputationGraph {
   void trainOnBatch(const std::vector<BoltBatch>& inputs,
                     const std::vector<BoltBatch>& labels);
 
+  void updateParameters(float learning_rate);
+
  private:
   void forward(uint32_t index_in_batch);
 
@@ -51,6 +53,8 @@ class ComputationGraph {
 
   std::vector<ops::OpPtr> _op_schedule;
   ActivationsManager _activations;
+
+  uint32_t _train_steps;
 };
 
 }  // namespace thirdai::bolt::nn::computation_graph

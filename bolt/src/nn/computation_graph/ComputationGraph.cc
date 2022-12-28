@@ -13,7 +13,8 @@ ComputationGraph::ComputationGraph(
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
-      _activations({}) {
+      _activations({}),
+      _train_steps(0) {
   for (const auto& loss : _losses) {
     _label_inputs.push_back(loss->labels());
   }
@@ -67,6 +68,12 @@ void ComputationGraph::trainOnBatch(const std::vector<BoltBatch>& inputs,
        index_in_batch < inputs.at(0).getBatchSize(); index_in_batch++) {
     forward(index_in_batch);
     backpropagate(index_in_batch);
+  }
+}
+
+void ComputationGraph::updateParameters(float learning_rate) {
+  for (auto& op : _op_schedule) {
+    op->updateParameters(learning_rate, ++_train_steps);
   }
 }
 
