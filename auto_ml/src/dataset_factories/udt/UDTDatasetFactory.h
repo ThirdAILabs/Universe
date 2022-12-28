@@ -83,9 +83,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) final;
 
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
-    auto input_row =
-        dataset::ProcessorUtils::parseCsvRow(input, _config->delimiter);
-    return featurizeInputImpl(input_row, /* should_update_history= */ false);
+    return featurizeInputImpl(input, /* should_update_history= */ false);
   }
 
   std::vector<BoltVector> featurizeInput(const MapInput& input) final {
@@ -93,8 +91,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   std::vector<BoltVector> updateTemporalTrackers(const LineInput& input) {
-    auto input_row =
-        dataset::ProcessorUtils::parseCsvRow(input, _config->delimiter);
     return featurizeInputImpl(input, /* should_update_history= */ true);
   }
 
@@ -132,9 +128,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio,
       const LineInput& sample) final {
-    return explainImpl(
-        gradients_indices, gradients_ratio,
-        dataset::ProcessorUtils::parseCsvRow(sample, _config->delimiter));
+    return explainImpl(gradients_indices, gradients_ratio, sample);
   }
 
   std::vector<dataset::Explanation> explain(

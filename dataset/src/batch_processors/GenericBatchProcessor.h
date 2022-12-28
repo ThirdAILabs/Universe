@@ -78,12 +78,16 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     }
   };
 
+  RowInput rowInputFromLineInput(const LineInput& input) const {
+    return ProcessorUtils::parseCsvRow(input, _delimiter);
+  }
+
   std::tuple<BoltBatch, BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> batch_inputs(rows.size());
     std::vector<BoltVector> batch_labels(rows.size());
 
-    auto first_row = ProcessorUtils::parseCsvRow(rows.at(0), _delimiter);
+    auto first_row = rowInputFromLineInput(rows.at(0));
     prepareInputBlocksForBatch(first_row);
     for (auto& block : _label_blocks) {
       block->prepareForBatch(first_row);
@@ -101,7 +105,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     shared(rows, batch_inputs, batch_labels, num_columns_error, \
            block_err) if (_parallel)
     for (size_t i = 0; i < rows.size(); ++i) {
-      auto columns = ProcessorUtils::parseCsvRow(rows[i], _delimiter);
+      auto columns = rowInputFromLineInput(rows[i]);
       if (columns.size() < _expected_num_cols) {
         std::stringstream error_ss;
         error_ss << "[ProcessorUtils::parseCsvRow] Expected "
@@ -194,13 +198,23 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   }
 
   template <typename InputType>
-  std::exception_ptr makeInputVector(InputType& sample, BoltVector& vector) {
+  std::exception_ptr makeInputVector(const InputType& sample,
+                                     BoltVector& vector) {
     return makeVector(sample, vector, _input_blocks, _input_blocks_dense,
                       /* hash_range= */ _hash_range);
   }
 
+  template <>
+  std::exception_ptr makeInputVector(const LineInput& sample,
+                                     BoltVector& vector) {
+    auto input_row = rowInputFromLineInput(sample);
+    return makeVector(input_row, vector, _input_blocks, _input_blocks_dense,
+                      /* hash_range= */ _hash_range);
+  }
+
   template <typename InputType>
-  std::exception_ptr makeLabelVector(InputType& sample, BoltVector& vector) {
+  std::exception_ptr makeLabelVector(const InputType& sample,
+                                     BoltVector& vector) {
     // Never hash labels.
     return makeVector(sample, vector, _label_blocks, _label_blocks_dense,
                       /* hash_range= */ std::nullopt);
@@ -219,12 +233,25 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     return segmented_vector->getIndexToSegmentFeatureMap();
   }
 
+  template <>
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(const LineInput& input) {
+    auto input_row = rowInputFromLineInput(input);
+    return getIndexToSegmentFeatureMap(input_row);
+  }
+
   template <typename InputType>
   Explanation explainFeature(const InputType& input,
                              const SegmentFeature& segment_feature) {
     std::shared_ptr<Block> relevant_block =
         _input_blocks[segment_feature.segment_idx];
     return relevant_block->explainIndex(segment_feature.feature_idx, input);
+  }
+
+  template <>
+  Explanation explainFeature(const LineInput& input,
+                             const SegmentFeature& segment_feature) {
+    auto input_row = rowInputFromLineInput(input);
+    return explainFeature(input_row, segment_feature);
   }
 
   static std::shared_ptr<GenericBatchProcessor> make(
