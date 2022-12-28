@@ -128,7 +128,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio,
       const LineInput& sample) final {
-    return explainImpl(gradients_indices, gradients_ratio, sample);
+    return explainImpl(gradients_indices, gradients_ratio,
+                       toVectorOfStringViews(sample));
   }
 
   std::vector<dataset::Explanation> explain(
@@ -193,9 +194,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const std::vector<float>& gradients_ratio, const InputType& sample) {
     verifyProcessorsAreInitialized();
 
-    auto input_row = toVectorOfStringViews(sample);
     auto result = bolt::getSignificanceSortedExplanations(
-        gradients_indices, gradients_ratio, input_row,
+        gradients_indices, gradients_ratio, sample,
         _unlabeled_non_updating_processor);
 
     for (auto& response : result) {

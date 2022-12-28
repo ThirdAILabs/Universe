@@ -197,24 +197,25 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                       /* hash_range= */ std::nullopt);
   }
 
-  IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(
-      const std::vector<std::string_view>& input_row) {
+  template <typename InputType>
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(const InputType& input) {
     BoltVector vector;
     auto segmented_vector =
         makeSegmentedFeatureVector(_input_blocks_dense, _hash_range,
                                    /* store_segment_feature_map= */ true);
-    if (auto err = addFeaturesToSegmentedVector(input_row, *segmented_vector,
+    if (auto err = addFeaturesToSegmentedVector(input, *segmented_vector,
                                                 _input_blocks)) {
       std::rethrow_exception(err);
     }
     return segmented_vector->getIndexToSegmentFeatureMap();
   }
 
-  Explanation explainFeature(const std::vector<std::string_view>& input_row,
+  template <typename InputType>
+  Explanation explainFeature(const InputType& input,
                              const SegmentFeature& segment_feature) {
     std::shared_ptr<Block> relevant_block =
         _input_blocks[segment_feature.segment_idx];
-    return relevant_block->explainIndex(segment_feature.feature_idx, input_row);
+    return relevant_block->explainIndex(segment_feature.feature_idx, input);
   }
 
   static std::shared_ptr<GenericBatchProcessor> make(
