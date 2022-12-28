@@ -97,11 +97,11 @@ udt_cold_start_doc = """
     This method performs cold start pretraining for the model. This is a type of 
     pretraining for text classification models that is especially useful for query 
     to product recommendation models. It requires that the model takes in a single 
-    text input and has a categorical output. It can raw data like a product catalog
-    and pretrain the recommendation model. The dataset it takes in should be a csv
-    file that gives product/category ids and some number of text columns where 
-    for a given row the text is related to the product/category also specified by
-    that row.
+    text input and has a categorical output. It can consume raw data like a product 
+    catalog and pretrain the recommendation model. The dataset it takes in should 
+    be a csv file that gives a product/category id column and some number of text 
+    columns, where for a given row the text is related to the product/category also 
+    specified by that row.
 
     Args:
         filename (str): Path to the dataset used for pretraining.
@@ -121,7 +121,7 @@ udt_cold_start_doc = """
             while there is a correlation, parts of the description may be fairly 
             similar between products or be too general to completly identify which
             products the correspond to.
-        learning_rate (float): THe learning rate to use for the pretraining.
+        learning_rate (float): The learning rate to use for the pretraining.
 
     Returns:
         None.
@@ -141,9 +141,4 @@ udt_cold_start_doc = """
                 weak_column_names=["description", "bullet_points"],
                 learning_rate=0.0001,
             )
-
-
-
-
-
 """
