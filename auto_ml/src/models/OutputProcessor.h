@@ -181,7 +181,7 @@ class BinaryOutputProcessor final : public OutputProcessor {
  private:
   uint32_t binaryActivationsToPrediction(const float* activations);
 
-  std::optional<float> _prediction_threshold = 0.0;
+  std::optional<float> _prediction_threshold;
 
   friend class cereal::access;
   template <class Archive>
