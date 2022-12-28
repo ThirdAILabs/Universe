@@ -6,7 +6,6 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
-#include "ColumnNumberMap.h"
 #include "DataTypes.h"
 #include "FeatureComposer.h"
 #include "TemporalContext.h"
@@ -24,6 +23,7 @@
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
@@ -39,6 +39,8 @@
 #include <vector>
 
 namespace thirdai::automl::data {
+
+using dataset::ColumnNumberMapPtr;
 
 class UDTDatasetFactory final : public DatasetLoaderFactory {
  public:
@@ -60,11 +62,11 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
     _vectors_map = processAllMetadata();
 
-    ColumnNumberMap mock_column_number_map(_config->data_types);
-    auto mock_processor = makeLabeledUpdatingProcessor(mock_column_number_map);
+    _labeled_history_updating_processor = makeLabeledUpdatingProcessor();
+    _unlabeled_non_updating_processor = makeUnlabeledNonUpdatingProcessor();
 
-    _input_dim = mock_processor->getInputDim();
-    _label_dim = mock_processor->getLabelDim();
+    _labeled_history_updating_processor->getInputDim();
+    _labeled_history_updating_processor->getLabelDim();
   }
 
   static std::shared_ptr<UDTDatasetFactory> make(
@@ -150,12 +152,11 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
       const std::string& col_name, const CategoricalDataTypePtr& categorical);
 
-  static ColumnNumberMapPtr makeColumnNumberMap(
+  static ColumnNumberMapPtr makeColumnNumberMapFromHeader(
       dataset::DataLoader& data_loader, char delimiter);
 
   std::vector<dataset::BlockPtr> buildMetadataInputBlocks(
-      const CategoricalMetadataConfig& metadata_config,
-      const ColumnNumberMap& column_numbers) const;
+      const CategoricalMetadataConfig& metadata_config) const;
 
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
       dataset::StreamingGenericDatasetLoader& dataset,
@@ -214,10 +215,9 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
    * automatically updates the temporal context, as well as for manually
    * updating the temporal context.
    */
-  dataset::GenericBatchProcessorPtr makeLabeledUpdatingProcessor(
-      const ColumnNumberMap& column_number_map);
+  dataset::GenericBatchProcessorPtr makeLabeledUpdatingProcessor();
 
-  dataset::BlockPtr getLabelBlock(const ColumnNumberMap& column_number_map);
+  dataset::BlockPtr getLabelBlock();
 
   /**
    * The Unlabeled non-updating processor is used for inference and
@@ -227,11 +227,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
    * movie that he ends up watching is not available during inference. Thus, we
    * should not update the history.
    */
-  dataset::GenericBatchProcessorPtr makeUnlabeledNonUpdatingProcessor(
-      const ColumnNumberMap& column_number_map) {
+  dataset::GenericBatchProcessorPtr makeUnlabeledNonUpdatingProcessor() {
     auto processor = dataset::GenericBatchProcessor::make(
-        buildInputBlocks(/* column_numbers= */ column_number_map,
-                         /* should_update_history= */ false),
+        buildInputBlocks(
+            /* should_update_history= */ false),
         /* label_blocks= */ {}, /* has_header= */ false,
         /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
         /* hash_range= */ _config->hash_range);
@@ -251,8 +250,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     }
   }
 
-  std::vector<dataset::BlockPtr> buildInputBlocks(
-      const ColumnNumberMap& column_numbers, bool should_update_history);
+  std::vector<dataset::BlockPtr> buildInputBlocks(bool should_update_history);
 
   dataset::GenericBatchProcessor& getProcessor(bool should_update_history) {
     return should_update_history ? *_labeled_history_updating_processor

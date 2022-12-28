@@ -69,6 +69,15 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     }
   }
 
+  void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
+    for (const auto& block : _input_blocks) {
+      block->updateColumnNumbers(column_number_map);
+    }
+    for (const auto& block : _label_blocks) {
+      block->updateColumnNumbers(column_number_map);
+    }
+  };
+
   std::tuple<BoltBatch, BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> batch_inputs(rows.size());

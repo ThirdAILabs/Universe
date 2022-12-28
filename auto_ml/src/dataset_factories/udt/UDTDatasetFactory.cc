@@ -4,33 +4,19 @@
 
 namespace thirdai::automl::data {
 
+using dataset::ColumnNumberMap;
+
 DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     std::shared_ptr<dataset::DataLoader> data_loader, bool training) {
-  auto current_column_number_map =
-      makeColumnNumberMap(*data_loader, _config->delimiter);
-
-  if (!_column_number_map) {
-    _column_number_map = std::move(current_column_number_map);
-    _column_number_to_name = _column_number_map->getColumnNumToColNameMap();
-  } else if (!_column_number_map->equals(*current_column_number_map)) {
-    throw std::invalid_argument("Column positions should not change.");
-  }
-
-  if (!_labeled_history_updating_processor) {
-    _labeled_history_updating_processor =
-        makeLabeledUpdatingProcessor(*_column_number_map);
-  }
-
-  // We initialize the inference batch processor here because we need the
-  // column number map.
-  if (!_unlabeled_non_updating_processor) {
-    _unlabeled_non_updating_processor =
-        makeUnlabeledNonUpdatingProcessor(*_column_number_map);
-  }
+  auto column_number_map =
+      makeColumnNumberMapFromHeader(*data_loader, _config->delimiter);
 
   // The batch processor will treat the next line as a header
   // Restart so batch processor does not skip a sample.
   data_loader->restart();
+
+  _labeled_history_updating_processor->updateColumnNumbers(*column_number_map);
+  _unlabeled_non_updating_processor->updateColumnNumbers(*column_number_map);
 
   return std::make_unique<GenericDatasetLoader>(
       data_loader, _labeled_history_updating_processor,
@@ -103,9 +89,10 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
       dataset::SimpleFileDataLoader::make(metadata->metadata_file,
                                           /* target_batch_size= */ 2048);
 
-  auto column_numbers = makeColumnNumberMap(*data_loader, metadata->delimiter);
+  auto column_numbers =
+      makeColumnNumberMapFromHeader(*data_loader, metadata->delimiter);
 
-  auto input_blocks = buildMetadataInputBlocks(*metadata, *column_numbers);
+  auto input_blocks = buildMetadataInputBlocks(*metadata);
 
   auto key_vocab = dataset::ThreadSafeVocabulary::make(
       /* vocab_size= */ 0, /* limit_vocab_size= */ false);
@@ -126,7 +113,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   return preprocessedVectorsFromDataset(metadata_loader, *key_vocab);
 }
 
-ColumnNumberMapPtr UDTDatasetFactory::makeColumnNumberMap(
+ColumnNumberMapPtr UDTDatasetFactory::makeColumnNumberMapFromHeader(
     dataset::DataLoader& data_loader, char delimiter) {
   auto header = data_loader.nextLine();
   if (!header) {
@@ -138,8 +125,7 @@ ColumnNumberMapPtr UDTDatasetFactory::makeColumnNumberMap(
 }
 
 std::vector<dataset::BlockPtr> UDTDatasetFactory::buildMetadataInputBlocks(
-    const CategoricalMetadataConfig& metadata_config,
-    const ColumnNumberMap& column_numbers) const {
+    const CategoricalMetadataConfig& metadata_config) const {
   UDTConfig feature_config(
       /* data_types= */ metadata_config.column_data_types,
       /* temporal_tracking_relationships= */ {},
@@ -150,8 +136,8 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildMetadataInputBlocks(
   PreprocessedVectorsMap empty_vectors_map;
 
   return FeatureComposer::makeNonTemporalFeatureBlocks(
-      feature_config, empty_temporal_relationships, column_numbers,
-      empty_vectors_map, _text_pairgram_word_limit, _contextual_columns);
+      feature_config, empty_temporal_relationships, empty_vectors_map,
+      _text_pairgram_word_limit, _contextual_columns);
 }
 
 dataset::PreprocessedVectorsPtr
@@ -176,17 +162,15 @@ UDTDatasetFactory::preprocessedVectorsFromDataset(
 }
 
 dataset::GenericBatchProcessorPtr
-UDTDatasetFactory::makeLabeledUpdatingProcessor(
-    const ColumnNumberMap& column_number_map) {
+UDTDatasetFactory::makeLabeledUpdatingProcessor() {
   if (!_config->data_types.count(_config->target)) {
     throw std::invalid_argument(
         "data_types parameter must include the target column.");
   }
 
-  dataset::BlockPtr label_block = getLabelBlock(column_number_map);
+  dataset::BlockPtr label_block = getLabelBlock();
 
-  auto input_blocks = buildInputBlocks(/* column_numbers= */ column_number_map,
-                                       /* should_update_history= */ true);
+  auto input_blocks = buildInputBlocks(/* should_update_history= */ true);
 
   auto processor = dataset::GenericBatchProcessor::make(
       std::move(input_blocks), {label_block}, /* has_header= */ true,
@@ -195,10 +179,8 @@ UDTDatasetFactory::makeLabeledUpdatingProcessor(
   return processor;
 }
 
-dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
-    const ColumnNumberMap& column_number_map) {
+dataset::BlockPtr UDTDatasetFactory::getLabelBlock() {
   auto target_type = _config->data_types.at(_config->target);
-  auto target_col_num = column_number_map.at(_config->target);
 
   if (asCategorical(target_type)) {
     auto target_config = asCategorical(target_type);
@@ -208,7 +190,7 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
     }
     if (_config->integer_target) {
       return dataset::NumericalCategoricalBlock::make(
-          /* col= */ target_col_num,
+          /* col= */ _config->target,
           /* n_classes= */ _config->n_target_classes.value(),
           /* delimiter= */ target_config->delimiter);
     }
@@ -217,7 +199,7 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
           /* vocab_size= */ _config->n_target_classes.value());
     }
     return dataset::StringLookupCategoricalBlock::make(
-        /* col= */ target_col_num, /* vocab= */ _vocabs.at(_config->target),
+        /* col= */ _config->target, /* vocab= */ _vocabs.at(_config->target),
         /* delimiter= */ target_config->delimiter);
   }
   if (asNumerical(target_type)) {
@@ -227,7 +209,7 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
     }
 
     return dataset::RegressionCategoricalBlock::make(
-        /* col= */ target_col_num,
+        /* col= */ _config->target,
         /* binning_strategy= */ _regression_binning.value(),
         /* correct_label_radius= */
         UDTConfig::REGRESSION_CORRECT_LABEL_RADIUS,
@@ -238,10 +220,10 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
 }
 
 std::vector<dataset::BlockPtr> UDTDatasetFactory::buildInputBlocks(
-    const ColumnNumberMap& column_numbers, bool should_update_history) {
+    bool should_update_history) {
   std::vector<dataset::BlockPtr> blocks =
       FeatureComposer::makeNonTemporalFeatureBlocks(
-          *_config, _temporal_relationships, column_numbers, _vectors_map,
+          *_config, _temporal_relationships, _vectors_map,
           _text_pairgram_word_limit, _contextual_columns);
 
   if (_temporal_relationships.empty()) {
@@ -249,8 +231,8 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildInputBlocks(
   }
 
   auto temporal_feature_blocks = FeatureComposer::makeTemporalFeatureBlocks(
-      *_config, _temporal_relationships, column_numbers, _vectors_map,
-      *_context, should_update_history);
+      *_config, _temporal_relationships, _vectors_map, *_context,
+      should_update_history);
 
   blocks.insert(blocks.end(), temporal_feature_blocks.begin(),
                 temporal_feature_blocks.end());

@@ -8,7 +8,6 @@
 #include <cereal/types/vector.hpp>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/MinHash.h>
-#include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <dataset/src/DataLoader.h>
 #include <dataset/src/Datasets.h>
@@ -33,8 +32,8 @@
 
 namespace thirdai::automl::models {
 
-using data::ColumnNumberMap;
-using data::ColumnNumberMapPtr;
+using dataset::ColumnNumberMap;
+using dataset::ColumnNumberMapPtr;
 using search::Flash;
 
 class QueryCandidateGeneratorConfig {
