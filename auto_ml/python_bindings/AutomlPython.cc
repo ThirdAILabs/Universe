@@ -125,7 +125,8 @@ void createModelsSubmodule(py::module_& module) {
            py::overload_cast<const LineInputBatch&>(
                &data::UDTDatasetFactory::batchUpdateTemporalTrackers),
            py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH)
-      .def("can_distribute", &data::UDTDatasetFactory::canDistribute)
+      .def("verify_can_distribute",
+           &data::UDTDatasetFactory::verifyCanDistribute)
       .def(bolt::python::getPickleFunction<data::UDTDatasetFactory>());
 
   py::class_<data::UDTConfig, data::UDTConfigPtr>(models_submodule, "UDTConfig")

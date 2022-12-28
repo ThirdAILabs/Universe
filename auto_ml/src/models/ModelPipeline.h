@@ -176,7 +176,7 @@ class ModelPipeline {
     return _dataset_factory;
   }
 
-  void setModel(bolt::BoltGraphPtr& trained_model) { _model = trained_model; }
+  void setModel(bolt::BoltGraphPtr& trained_model);
 
   bolt::BoltGraphPtr getModel() { return _model; }
 

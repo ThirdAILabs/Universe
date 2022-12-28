@@ -171,7 +171,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     return deserialize_into;
   }
 
-  void canDistribute() {
+  void verifyCanDistribute() {
     auto target_type = _config->data_types.at(_config->target);
     if (asCategorical(target_type) && !_config->integer_target) {
       throw std::invalid_argument(
@@ -182,7 +182,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     }
     if (!_temporal_relationships.empty()) {
       throw std::invalid_argument(
-          "UDT with temporal relationships cannot be trained in distributed "
+          "UDT with temporal relationships cannot be trained in a distributed "
           "setting.");
     }
   }

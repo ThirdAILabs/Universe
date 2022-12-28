@@ -5,6 +5,7 @@
 #include <pybind11/stl.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <limits>
+#include <stdexcept>
 
 namespace py = pybind11;
 
@@ -341,6 +342,26 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
   }
 
   return best_threshold;
+}
+
+void ModelPipeline::setModel(bolt::BoltGraphPtr& new_model) {
+  std::vector<bolt::NodePtr> new_model_nodes = new_model->getNodes();
+  std::vector<bolt::NodePtr> old_model_nodes = _model->getNodes();
+
+  if (new_model_nodes.size() == old_model_nodes.size()) {
+    throw std::invalid_argument(
+        "Updated model have different number of layer than older model.");
+  }
+
+  for (uint32_t node_id = 0, node_id < new_model_nodes.size(), node_id++) {
+    if (new_model_nodes[node_id].outputDim() ==
+        old_model_nodes[node_id].outputDim()) {
+      throw std::invalid_argument(
+          "Updated model have different layer dimension "
+          "than older model.");
+    }
+  }
+  _model = new_model;
 }
 
 }  // namespace thirdai::automl::models
