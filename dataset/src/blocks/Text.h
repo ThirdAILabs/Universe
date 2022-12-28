@@ -47,12 +47,12 @@ class TextBlock : public Block {
  protected:
   std::exception_ptr buildSegment(const RowInput& input_row,
                                   SegmentedFeatureVector& vec) final {
-    return encodeText(input_row.at(_col), vec);
+    return encodeText(getColumn(input_row, _col), vec);
   }
 
   std::exception_ptr buildSegment(const MapInput& input_row,
                                   SegmentedFeatureVector& vec) final {
-    return encodeText(input_row.at(_col), vec);
+    return encodeText(getColumn(input_row, _col), vec);
   }
 
   virtual std::exception_ptr encodeText(std::string_view text,

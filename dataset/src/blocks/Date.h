@@ -109,7 +109,7 @@ class DateBlock final : public Block {
     TimeObject time;
 
     try {
-      time = TimeObject(input.at(_col));
+      time = TimeObject(getColumn(input, _col));
     } catch (const std::invalid_argument& e) {
       return std::make_exception_ptr(e);
     }

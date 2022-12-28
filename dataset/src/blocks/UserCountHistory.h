@@ -63,8 +63,8 @@ class UserCountHistoryBlock final : public Block {
 
   template <typename InputType>
   std::string getExplanationReason(uint32_t index_within_block,
-                                   const InputType& input_row) {
-    auto [user, time_seconds, val] = getUserTimeVal(input_row);
+                                   const InputType& input) {
+    auto [user, time_seconds, val] = getUserTimeVal(input);
 
     auto counts = indexAndGetCountsFromHistory(
         user, time_seconds, val,
@@ -132,15 +132,16 @@ class UserCountHistoryBlock final : public Block {
   template <typename InputType>
   std::tuple<std::string, int64_t, float> getUserTimeVal(
       const InputType& input) const {
-    auto user = std::string(input.at(_user_col));
+    auto user = std::string(getColumn(input, _user_col));
 
-    auto time = TimeObject(input.at(_timestamp_col));
+    auto time = TimeObject(getColumn(input, _timestamp_col));
     int64_t time_seconds = time.secondsSinceEpoch();
 
     float val;
     if (_include_current_row || _should_update_history) {
       char* end;
-      val = std::strtof(input.at(_count_col).data(), &end);
+
+      val = std::strtof(getColumn(input, _count_col).data(), &end);
       if (std::isnan(val) || std::isinf(val)) {
         val = 0.0;
       }

@@ -65,8 +65,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     _labeled_history_updating_processor = makeLabeledUpdatingProcessor();
     _unlabeled_non_updating_processor = makeUnlabeledNonUpdatingProcessor();
 
-    _labeled_history_updating_processor->getInputDim();
-    _labeled_history_updating_processor->getLabelDim();
+    _input_dim = _labeled_history_updating_processor->getInputDim();
+    _label_dim = _labeled_history_updating_processor->getLabelDim();
   }
 
   static std::shared_ptr<UDTDatasetFactory> make(

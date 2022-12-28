@@ -77,7 +77,7 @@ class CategoricalBlock : public Block {
   std::exception_ptr buildSegmentImpl(const InputType& input_map,
                                       SegmentedFeatureVector& vec) {
     if (!_delimiter) {
-      return encodeCategory(input_map.at(_col), vec);
+      return encodeCategory(getColumn(input_map, _col), vec);
     }
 
     auto csv_category_set = std::string(input_map.at(_col));

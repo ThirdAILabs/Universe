@@ -70,6 +70,16 @@ struct ColumnIdentifier {
   }
 };
 
+static std::string getColumn(const MapInput& input_map,
+                             const ColumnIdentifier& column) {
+  return input_map.count(column) ? input_map.at(column) : "";
+}
+
+static std::string_view getColumn(const RowInput& input_row,
+                                  const ColumnIdentifier& column) {
+  return input_row.size() > column.number() ? input_row.at(column) : "";
+}
+
 /**
  * Declare here so we can make it a friend of
  * SegmentedFeatureVector.

@@ -167,7 +167,7 @@ class UserItemHistoryBlock final : public Block {
       return "Metadata of previously seen item.";
     }
 
-    auto user = std::string(input.at(_user_col));
+    auto user = std::string(getColumn(input, _user_col));
     auto& user_history = _per_user_history->at(user);
 
     for (auto record = user_history.rbegin(); record != user_history.rend();
@@ -196,9 +196,9 @@ class UserItemHistoryBlock final : public Block {
   std::exception_ptr buildSegmentImpl(const InputType& input,
                                       SegmentedFeatureVector& vec) {
     try {
-      auto user_str = std::string(input.at(_user_col));
-      auto item_str = std::string(input.at(_item_col));
-      auto timestamp_str = std::string(input.at(_timestamp_col));
+      auto user_str = std::string(getColumn(input, _user_col));
+      auto item_str = std::string(getColumn(input, _item_col));
+      auto timestamp_str = std::string(getColumn(input, _timestamp_col));
 
       int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 

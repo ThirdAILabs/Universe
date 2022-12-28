@@ -132,10 +132,8 @@ class TabularHashFeatures final : public Block {
     for (uint32_t col = 0; col < _metadata->numColumns(); col++) {
       auto column_identifier = _metadata->columnIdentifier(col);
 
-      std::string str_val;
-      try {
-        str_val = input.at(column_identifier);
-      } catch (const std::out_of_range& e) {
+      std::string str_val(getColumn(input, column_identifier));
+      if (!str_val.empty()) {
         continue;
       }
 
