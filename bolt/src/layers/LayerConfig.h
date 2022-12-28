@@ -72,6 +72,10 @@ class ConvLayerConfig final {
 
   ActivationFunction getActFunc() const { return _activation_fn; }
 
+  const SamplingConfigPtr& getSamplingConfig() const {
+    return _sampling_config;
+  }
+
  private:
   // Private constructor for cereal
   ConvLayerConfig() {}

@@ -2,12 +2,9 @@
 
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
-#include "LayerUtils.h"
 #include <bolt/src/layers/Optimizer.h>
-#include <hashing/src/DWTA.h>
-#include <hashtable/src/SampledHashTable.h>
-#include <exceptions/src/Exceptions.h>
 #include <optional>
+#include <random>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -19,7 +16,24 @@ class ConvLayer final {
   ConvLayer& operator=(ConvLayer&&) = delete;
 
   ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
-            uint32_t prev_num_filters, uint32_t prev_num_sparse_filters);
+            uint32_t prev_num_filters, uint32_t prev_num_sparse_filters) {
+    // TODO(david) initialize helper variables (with better names?), active
+    // neuron trackers, etc
+
+    std::random_device rd;
+    std::default_random_engine eng(rd());
+    std::normal_distribution<float> dist(0.0, 0.01);
+
+    std::generate(_weights.begin(), _weights.end(),
+                  [&]() { return dist(eng); });
+    std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
+
+    if (_sparsity < 1.0) {
+      initSamplingDatastructures(config.getSamplingConfig(), rd);
+    }
+
+    initOptimizer();
+  }
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels) {
@@ -39,9 +53,46 @@ class ConvLayer final {
     }
   }
 
-  void backpropagate(BoltVector& input, BoltVector& output);
+  void backpropagate(BoltVector& input, BoltVector& output) {
+    // TODO (david): evaluate eigen
+    if (output.isDense()) {
+      if (input.isDense()) {
+        backpropagateImpl</*IS_INPUT=*/false, /*DENSE=*/true,
+                          /*PREV_DENSE=*/true>(input, output);
+      } else {
+        backpropagateImpl</*IS_INPUT=*/false, /*DENSE=*/true,
+                          /*PREV_DENSE=*/false>(input, output);
+      }
+    } else {
+      if (input.isDense()) {
+        backpropagateImpl</*IS_INPUT=*/false, /*DENSE=*/false,
+                          /*PREV_DENSE=*/true>(input, output);
+      } else {
+        backpropagateImpl</*IS_INPUT=*/false, /*DENSE=*/false,
+                          /*PREV_DENSE=*/false>(input, output);
+      }
+    }
+  }
 
-  void backpropagateInputLayer(BoltVector& input, BoltVector& output);
+  void backpropagateInputLayer(BoltVector& input, BoltVector& output) {
+    if (output.isDense()) {
+      if (input.isDense()) {
+        backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
+                          /*PREV_DENSE=*/true>(input, output);
+      } else {
+        backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
+                          /*PREV_DENSE=*/false>(input, output);
+      }
+    } else {
+      if (input.isDense()) {
+        backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/false,
+                          /*PREV_DENSE=*/true>(input, output);
+      } else {
+        backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/false,
+                          /*PREV_DENSE=*/false>(input, output);
+      }
+    }
+  }
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
@@ -57,9 +108,28 @@ class ConvLayer final {
 
   // TODO(david): add freeze hash tables feature later and test with it.
 
-  void buildHashTables();
+  void buildHashTables() {
+    if (_sparsity >= 1.0) {
+      return;
+    }
+    uint64_t num_tables = _hash_table->numTables();
+    std::vector<uint32_t> hashes(num_tables * _num_filters);
+#pragma omp parallel for default(none) shared(num_tables, hashes)
+    for (uint64_t n = 0; n < _num_filters; n++) {
+      _hasher->hashSingleDense(_weights.data() + n * _patch_dim, _patch_dim,
+                               hashes.data() + n * num_tables);
+    }
 
-  void reBuildHashFunction();
+    _hash_table->clearTables();
+    _hash_table->insertSequential(_num_filters, 0, hashes.data());
+  }
+
+  void reBuildHashFunction() {
+    if (_sparsity >= 1.0) {
+      return;
+    }
+    _hasher = _hasher->copyWithNewSeeds();
+  }
 
   uint32_t getDim() const { return _dim; }
 
@@ -75,13 +145,20 @@ class ConvLayer final {
 
   void buildLayerSummary(std::stringstream& summary, bool detailed) const;
 
-  void initOptimizer();
+  void initOptimizer() {
+    if (!_weight_optimizer || !_bias_optimizer) {
+      _weight_optimizer = AdamOptimizer(_dim * _prev_dim);
+      _bias_optimizer = AdamOptimizer(_dim);
+    }
+  }
 
   ~ConvLayer() = default;
 
  private:
   template <bool DENSE, bool PREV_DENSE>
-  void forwardImpl(const BoltVector& input, BoltVector& output);
+  void forwardImpl(const BoltVector& input, BoltVector& output) {
+    // TODO(david): add assert statements appropriate to conv here
+  }
 
   template <bool PREV_DENSE>
   void selectActiveFilters(const BoltVector& input, BoltVector& output,
@@ -97,6 +174,26 @@ class ConvLayer final {
 
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
   void backpropagateImpl(BoltVector& input, BoltVector& output);
+
+  void initSamplingDatastructures(const SamplingConfigPtr& sampling_config,
+                                  std::random_device& rd) {
+    if (sampling_config->isRandomSampling()) {
+      throw std::invalid_argument(
+          "Conv Layer does not currently support random sampling.");
+    }
+
+    // hashes input of size _patch_dim
+    _hasher = sampling_config->getHashFunction(_patch_dim);
+
+    _hash_table = sampling_config->getHashTable();
+
+    buildHashTables();
+
+    _rand_neurons = std::vector<uint32_t>(_num_filters);
+
+    std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
+    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
+  }
 
   void buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size);
 
