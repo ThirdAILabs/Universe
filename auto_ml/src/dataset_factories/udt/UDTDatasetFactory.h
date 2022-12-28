@@ -143,6 +143,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   uint32_t getLabelDim() final { return _label_dim; }
 
+  bool hasTemporalTracking() const { return !_temporal_relationships.empty(); }
+
  private:
   PreprocessedVectorsMap processAllMetadata();
 

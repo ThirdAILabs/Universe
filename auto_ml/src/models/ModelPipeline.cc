@@ -2,9 +2,11 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <pybind11/stl.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <limits>
+#include <memory>
 
 namespace py = pybind11;
 
@@ -24,7 +26,8 @@ void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
   updateRehashRebuildInTrainConfig(train_config);
 
   if (max_in_memory_batches) {
-    trainOnStream(dataset, train_config, max_in_memory_batches.value());
+    trainOnStream(dataset, train_config, max_in_memory_batches.value(),
+                  validation);
   } else {
     trainInMemory(dataset, train_config, validation);
   }
@@ -232,9 +235,24 @@ void ModelPipeline::trainInMemory(
 
 // We take in the TrainConfig by value to copy it so we can modify the number
 // epochs.
-void ModelPipeline::trainOnStream(data::DatasetLoaderPtr& dataset,
-                                  bolt::TrainConfig train_config,
-                                  uint32_t max_in_memory_batches) {
+void ModelPipeline::trainOnStream(
+    data::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+    uint32_t max_in_memory_batches,
+    const std::optional<ValidationOptions>& validation) {
+  if (validation && !hasTemporalTracking()) {
+    auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
+        dataset::SimpleFileDataLoader::make(validation->filename(),
+                                            DEFAULT_EVALUATE_BATCH_SIZE),
+        /* training= */ false);
+
+    auto [val_data, val_labels] =
+        validation_dataset->loadInMemory(ALL_BATCHES).value();
+
+    train_config.withValidation(val_data, val_labels,
+                                validation->validationConfig(),
+                                validation->interval());
+  }
+
   uint32_t epochs = train_config.epochs();
   // We want a single epoch in the train config in order to train for a single
   // epoch for each pass over the dataset.
@@ -341,6 +359,16 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
   }
 
   return best_threshold;
+}
+
+bool ModelPipeline::hasTemporalTracking() const {
+  auto udt_dataset_factory =
+      std::dynamic_pointer_cast<data::UDTDatasetFactory>(_dataset_factory);
+
+  if (udt_dataset_factory) {
+    return udt_dataset_factory->hasTemporalTracking();
+  }
+  return false;
 }
 
 }  // namespace thirdai::automl::models

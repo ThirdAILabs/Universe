@@ -198,7 +198,8 @@ class ModelPipeline {
    */
   void trainOnStream(data::DatasetLoaderPtr& dataset,
                      bolt::TrainConfig train_config,
-                     uint32_t max_in_memory_batches);
+                     uint32_t max_in_memory_batches,
+                     const std::optional<ValidationOptions>& validation);
 
   /**
    * Helper for processing a streaming dataset in chunks for a single epoch.
@@ -245,6 +246,8 @@ class ModelPipeline {
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
       const dataset::DataLoaderPtr& data_source,
       const std::string& metric_name);
+
+  bool hasTemporalTracking() const;
 
   friend class cereal::access;
   template <class Archive>
