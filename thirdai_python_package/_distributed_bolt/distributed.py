@@ -250,8 +250,8 @@ class DistributedDataParallel:
         model: bolt.nn.Model,
         train_config: bolt.TrainConfig,
         train_sources: Union[List[DatasetLoader], List[str]],
-        batch_size: int,
-        max_in_memory_batches: int,
+        batch_size: int = None,
+        max_in_memory_batches: int = None,
         gcp_credentials_path: Optional[str] = None,
         data_processor=None,
     ):

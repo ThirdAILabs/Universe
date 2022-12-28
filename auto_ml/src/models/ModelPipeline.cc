@@ -353,9 +353,9 @@ void ModelPipeline::setModel(bolt::BoltGraphPtr& new_model) {
         "Updated model have different number of layer than older model.");
   }
 
-  for (uint32_t node_id = 0, node_id < new_model_nodes.size(), node_id++) {
-    if (new_model_nodes[node_id].outputDim() ==
-        old_model_nodes[node_id].outputDim()) {
+  for (uint32_t node_id = 0; node_id < new_model_nodes.size(); node_id++) {
+    if (new_model_nodes[node_id]->outputDim() ==
+        old_model_nodes[node_id]->outputDim()) {
       throw std::invalid_argument(
           "Updated model have different layer dimension "
           "than older model.");
