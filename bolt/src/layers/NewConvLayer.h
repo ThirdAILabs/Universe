@@ -22,7 +22,22 @@ class ConvLayer final {
             uint32_t prev_num_filters, uint32_t prev_num_sparse_filters);
 
   void forward(const BoltVector& input, BoltVector& output,
-               const BoltVector* labels);
+               const BoltVector* labels) {
+    // TODO(david): eigen forward pass?
+    if (output.isDense()) {
+      if (input.isDense()) {
+        forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/true>(input, output);
+      } else {
+        forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/false>(input, output);
+      }
+    } else {
+      if (input.isDense()) {
+        forwardImpl</*DENSE=*/false, /*PREV_DENSE=*/true>(input, output);
+      } else {
+        forwardImpl</*DENSE=*/false, /*PREV_DENSE=*/false>(input, output);
+      }
+    }
+  }
 
   void backpropagate(BoltVector& input, BoltVector& output);
 
