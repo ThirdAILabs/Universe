@@ -51,11 +51,6 @@ FullyConnectedLayer::FullyConnectedLayer(
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
-  // TODO(Nicholas): This can be removed when we deprecate the old bolt api.
-  if (input.hasGradients()) {
-    const_cast<BoltVector&>(input).zeroOutGradients();
-  }
-
   if (output.isDense()) {
     if (input.isDense()) {
       eigenDenseDenseForward(input, output);
