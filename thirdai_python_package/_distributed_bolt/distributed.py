@@ -24,7 +24,7 @@ def add_distributed_to_udt():
         batch_size: Optional[int] = None,
         learning_rate: float = 0.001,
         epochs: int = 3,
-        max_in_memory_batches: Optional[int] = -1,
+        max_in_memory_batches: Optional[int] = None,
         gcp_credentials_path: Optional[str] = None,
         metrics: List[str] = [],
         verbose: bool = True,

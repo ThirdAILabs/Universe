@@ -176,8 +176,8 @@ class Worker:
 
         self.batch_id_within_dataset += 1
         if self.batch_id_within_dataset == self.model.num_batches():
-            x = self._try_load_new_datasets_into_model()
-            return x
+            return self._try_load_new_datasets_into_model()
+
         elif self.batch_id_within_dataset > self.model.num_batches():
             raise ValueError(
                 "Found a batch id higher than the number of batches which we should have caught during the last batch."
