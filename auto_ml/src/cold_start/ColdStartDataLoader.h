@@ -39,7 +39,11 @@ class ColdStartDataLoader final : public dataset::DataLoader {
   }
 
  private:
-  std::optional<std::string> getConcatenatedColumns();
+  // Helper method which concatenates the columns of the next row in the column
+  // map and returns it as a string.
+  std::optional<std::string> getNextRowAsString();
+
+  std::string getLabelsAsString();
 
   std::string getHeader() const {
     return _label_column_name + _column_delimiter + _text_column_name;

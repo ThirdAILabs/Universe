@@ -1,4 +1,5 @@
 #include "ColdStartDataLoader.h"
+#include <stdexcept>
 
 namespace thirdai::automl::cold_start {
 
@@ -21,7 +22,7 @@ ColdStartDataLoader::ColdStartDataLoader(const data::ColumnMap& column_map,
 std::optional<std::vector<std::string>> ColdStartDataLoader::nextBatch() {
   std::vector<std::string> rows;
 
-  while (auto row = getConcatenatedColumns()) {
+  while (auto row = nextLine()) {
     rows.push_back(std::move(*row));
 
     if (rows.size() == _target_batch_size) {
@@ -42,27 +43,15 @@ std::optional<std::string> ColdStartDataLoader::nextLine() {
     _header = std::nullopt;
     return header;
   }
-  return getConcatenatedColumns();
+  return getNextRowAsString();
 }
 
-std::optional<std::string> ColdStartDataLoader::getConcatenatedColumns() {
+std::optional<std::string> ColdStartDataLoader::getNextRowAsString() {
   if (_row_idx == _text_column->numRows()) {
     return std::nullopt;
   }
 
-  auto labels = (*_label_column)[_row_idx];
-
-  if (labels.size() > 1 && !_label_delimiter) {
-    throw std::invalid_argument(
-        "Expected label delimiter if the are multiple labels per sample.");
-  }
-
-  std::string row = std::to_string(labels[0]);
-
-  for (uint32_t label_idx = 1; label_idx < labels.size(); label_idx++) {
-    row.push_back(*_label_delimiter);
-    row.append(std::to_string(labels[label_idx]));
-  }
+  std::string row = getLabelsAsString();
 
   row.push_back(_column_delimiter);
 
@@ -71,6 +60,27 @@ std::optional<std::string> ColdStartDataLoader::getConcatenatedColumns() {
   _row_idx++;
 
   return row;
+}
+
+std::string ColdStartDataLoader::getLabelsAsString() {
+  auto labels = (*_label_column)[_row_idx];
+
+  if (labels.size() == 0) {
+    throw std::invalid_argument("Expected at least 1 label per row.");
+  }
+  if (labels.size() > 1 && !_label_delimiter) {
+    throw std::invalid_argument(
+        "Expected label delimiter if the are multiple labels per sample.");
+  }
+
+  std::string labels_str = std::to_string(labels[0]);
+
+  for (uint32_t label_idx = 1; label_idx < labels.size(); label_idx++) {
+    labels_str.push_back(*_label_delimiter);
+    labels_str.append(std::to_string(labels[label_idx]));
+  }
+
+  return labels_str;
 }
 
 }  // namespace thirdai::automl::cold_start

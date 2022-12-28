@@ -11,7 +11,13 @@ from thirdai import bolt
 
 @pytest.fixture(scope="module")
 def cold_start_dataset(download_clinc_dataset):
+    """
+    This constructs a dataset for cold start where the strong column is the original
+    query for each sample and the weak column is another query that maps to the
+    same label.
+    """
     COLD_START_TRAIN_FILE = "./clinc_cold_start.csv"
+    TEXT_COLUMN_NAME = "text"
     WEAK_COLUMN_NAME = "additional_text"
 
     train_filename, _, _ = download_clinc_dataset
@@ -20,7 +26,7 @@ def cold_start_dataset(download_clinc_dataset):
 
     classes = defaultdict(list)
     for _, row in df.iterrows():
-        classes[row["category"]].append(row["text"])
+        classes[row["category"]].append(row[TEXT_COLUMN_NAME])
 
     additional_text = []
 
@@ -31,12 +37,12 @@ def cold_start_dataset(download_clinc_dataset):
 
     df.to_csv(COLD_START_TRAIN_FILE, index=False)
 
-    return COLD_START_TRAIN_FILE, WEAK_COLUMN_NAME
+    return COLD_START_TRAIN_FILE, TEXT_COLUMN_NAME, WEAK_COLUMN_NAME
 
 
 def test_udt_cold_start(download_clinc_dataset, cold_start_dataset):
     _, test_filename, inference_samples = download_clinc_dataset
-    cold_start_filename, weak_column = cold_start_dataset
+    cold_start_filename, text_column_name, weak_column_name = cold_start_dataset
 
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -50,11 +56,14 @@ def test_udt_cold_start(download_clinc_dataset, cold_start_dataset):
 
     model.cold_start(
         filename=cold_start_filename,
-        strong_column_names=["text"],
-        weak_column_names=[weak_column],
+        strong_column_names=[text_column_name],
+        weak_column_names=[weak_column_name],
         learning_rate=0.01,
     )
 
+    # We need to train on a file so that UDT initializes the dataset loader.
+    # Initializing the dataset loaders requires knowing the order of the columns
+    # in the CSV file which UDT parses during the first call to train.
     empty_train_file = "./empty_clinc.csv"
     with open(empty_train_file, "w") as file:
         file.write("category,text\n")

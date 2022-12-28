@@ -141,6 +141,8 @@ def modify_udt_classifier():
             learning_rate,
         )
 
+    wrapped_cold_start.__doc__ = udt_cold_start_doc
+
     delattr(bolt.models.Pipeline, "train_with_loader")
     delattr(bolt.models.Pipeline, "evaluate_with_loader")
     delattr(bolt.models.UDTClassifier, "cold_start")

@@ -92,3 +92,58 @@ classifier_eval_doc = """
             the last few movies that a user has watched to better recommend the next movie.
         `   model.evaluate()` automatically updates UDT's temporal context.
     """
+
+udt_cold_start_doc = """
+    This method performs cold start pretraining for the model. This is a type of 
+    pretraining for text classification models that is especially useful for query 
+    to product recommendation models. It requires that the model takes in a single 
+    text input and has a categorical output. It can raw data like a product catalog
+    and pretrain the recommendation model. The dataset it takes in should be a csv
+    file that gives product/category ids and some number of text columns where 
+    for a given row the text is related to the product/category also specified by
+    that row.
+
+    Args:
+        filename (str): Path to the dataset used for pretraining.
+        strong_column_names (List[str]): The strong column names indicate which 
+            text columns are most closely related to the product/category. In this 
+            case closely related means that all of the words in the text are useful
+            in identifying the product/category in that row. For example in the 
+            case of a product catalog then a strong column could be the full title 
+            of the product.
+        weak_column_names (List[str]): The weak column names indicate which text 
+            columns are either more loosely related to the product/category. In 
+            this case loosely related means that parts of the texxt are useful in 
+            identifying the product/category, but there may also be parts of the 
+            text that contain more generic words or phrases that don't have as high 
+            of a correlation to the product of interest. For example in a product 
+            catalog the description of the product could be a weak column because 
+            while there is a correlation, parts of the description may be fairly 
+            similar between products or be too general to completly identify which
+            products the correspond to.
+        learning_rate (float): THe learning rate to use for the pretraining.
+
+    Returns:
+        None.
+
+    Examples:
+        >>> model = bolt.UniversalDeepTransformer(
+                data_types={
+                    "query": bolt.types.text(), 
+                    "product": bolt.types.categorical(),
+                }
+                target="product",
+                integer_target=True,
+            )
+        >>> model.cold_start(
+                filename="product_catalog.csv",
+                strong_column_names=["title"],
+                weak_column_names=["description", "bullet_points"],
+                learning_rate=0.0001,
+            )
+
+
+
+
+
+"""

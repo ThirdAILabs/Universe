@@ -203,31 +203,26 @@ void UniversalDeepTransformer::coldStartPretraining(
     const std::vector<std::string>& weak_column_names, float learning_rate) {
   auto dataset_config = udtDatasetFactory().config();
 
-  cold_start::verifyTaskIsColdStartCompatible(dataset_config);
+  auto metadata = cold_start::getColdStartMetadata(dataset_config);
 
-  std::string text_column_name = cold_start::verifyTextColumn(dataset_config);
-
-  std::optional<char> label_delimiter =
-      cold_start::verifyCategoricalTarget(dataset_config);
-
-  cold_start::verifyLabelColumnIsTokenArray(dataset, dataset_config->target,
-                                            label_delimiter);
+  cold_start::convertLabelColumnToTokenArray(dataset, dataset_config->target,
+                                             metadata.label_delimiter);
 
   thirdai::data::ColdStartTextAugmentation augmentation(
       /* strong_column_names= */ strong_column_names,
       /* weak_column_names= */ weak_column_names,
       /* label_column_name= */ dataset_config->target,
-      /* output_column_name= */ text_column_name);
+      /* output_column_name= */ metadata.text_column_name);
 
   auto augmented_data = augmentation.apply(dataset);
 
   auto data_loader = cold_start::ColdStartDataLoader::make(
       /* column_map= */ augmented_data,
-      /* text_column_name= */ text_column_name,
+      /* text_column_name= */ metadata.text_column_name,
       /* label_column_name= */ dataset_config->target,
       /* batch_size= */ _train_eval_config.defaultBatchSize(),
       /* column_delimiter= */ dataset_config->delimiter,
-      /* label_delimiter= */ label_delimiter);
+      /* label_delimiter= */ metadata.label_delimiter);
 
   auto train_config =
       bolt::TrainConfig::makeConfig(/* learning_rate= */ learning_rate,

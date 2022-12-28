@@ -5,22 +5,20 @@
 
 namespace thirdai::automl::cold_start {
 
-// Verifies that the model has the correct number of columns it expects in the
-// dataset and that the target column is an integer.
-void verifyTaskIsColdStartCompatible(const data::UDTConfigPtr& dataset_config);
+struct ColdStartMetadata {
+  std::string text_column_name;
+  std::optional<char> label_delimiter;
+};
 
-// Verifies that the model has a text input and returns the name of the text
-// column.
-std::string verifyTextColumn(const data::UDTConfigPtr& dataset_config);
-
-// Verifies that the target is categorical and returns the delimiter.
-std::optional<char> verifyCategoricalTarget(
+// Verifies that the model is cold start compatible and returns metadata needed
+// for the cold start pretraining.
+ColdStartMetadata getColdStartMetadata(
     const data::UDTConfigPtr& dataset_config);
 
 // Checks that the label column is a TokenArrayColumn. If it is not then it will
 // attempt to convert it to a TokenArrayColumn if possible.
-void verifyLabelColumnIsTokenArray(thirdai::data::ColumnMap& columns,
-                                   const std::string& label_column_name,
-                                   std::optional<char> label_delimiter);
+void convertLabelColumnToTokenArray(thirdai::data::ColumnMap& columns,
+                                    const std::string& label_column_name,
+                                    std::optional<char> label_delimiter);
 
 }  // namespace thirdai::automl::cold_start

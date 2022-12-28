@@ -108,6 +108,15 @@ class UniversalDeepTransformer final : public ModelPipeline {
     // "fc_1" is the name of the penultimate layer.
   }
 
+  /**
+   * This method will perform cold start pretraining on the model if the model
+   * is a text classification model with a single text column as input and a
+   * categorical column as the target. For this pretraining the strong and weak
+   * columns are combined to create synthetic queries and the model is
+   * pretrained using the resulting augmented dataset. For more information on
+   * the augmentation refer to the comments in:
+   * new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h
+   */
   void coldStartPretraining(thirdai::data::ColumnMap dataset,
                             const std::vector<std::string>& strong_column_names,
                             const std::vector<std::string>& weak_column_names,
