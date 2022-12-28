@@ -77,6 +77,8 @@ void ComputationGraph::forward(uint32_t index_in_batch) {
 }
 
 void ComputationGraph::backpropagate(uint32_t index_in_batch) {
+  _activations.resetOutputGradients(index_in_batch);
+
   for (auto& loss : _losses) {
     loss->computeGradients(index_in_batch);
   }

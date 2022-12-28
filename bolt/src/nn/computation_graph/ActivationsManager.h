@@ -7,27 +7,15 @@ namespace thirdai::bolt::nn::computation_graph {
 class ActivationsManager {
  public:
   explicit ActivationsManager(
-      std::vector<tensor::ActivationTensorPtr> activation_tensors)
-      : _activation_tensors(std::move(activation_tensors)),
-        _allocated_batch_size(0),
-        _using_sparsity(true) {}
+      std::vector<tensor::ActivationTensorPtr> activation_tensors);
 
-  void reallocateForBatch(uint32_t batch_size, bool use_sparsity) {
-    if (batch_size <= _allocated_batch_size &&
-        use_sparsity == _using_sparsity) {
-      return;
-    }
+  void reallocateForBatch(uint32_t batch_size, bool use_sparsity);
 
-    for (auto& tensor : _activation_tensors) {
-      tensor->allocate(batch_size, use_sparsity);
-    }
-  }
+  const std::vector<tensor::ActivationTensorPtr>& activationTensors() const;
 
-  const std::vector<tensor::ActivationTensorPtr>& activationTensors() const {
-    return _activation_tensors;
-  }
+  void resetOutputGradients(uint32_t index_in_batch);
 
-  uint32_t currentBatchSize() const { return _allocated_batch_size; }
+  uint32_t currentBatchSize() const;
 
  private:
   std::vector<tensor::ActivationTensorPtr> _activation_tensors;
