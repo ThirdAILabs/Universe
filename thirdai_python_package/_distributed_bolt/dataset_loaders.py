@@ -3,7 +3,7 @@ from typing import Callable, List, Optional, Tuple, Union
 
 from thirdai import data, dataset, deployment
 
-from .utils import _create_loader
+from thirdai.bolt.udt_modifications import _create_loader
 
 
 class DatasetLoader(ABC):

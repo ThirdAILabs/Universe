@@ -29,35 +29,6 @@ def get_num_cpus():
         return 1
 
 
-def _create_parquet_loader(path, batch_size):
-    return thirdai.dataset.ParquetLoader(parquet_path=path, batch_size=batch_size)
-
-
-def _create_loader(path, batch_size, **kwargs):
-    # This also handles parquet on s3, so it comes before the general s3 and gcs
-    # handling and file handling below which assume the target files are
-    # CSVs
-    if path.endswith(".parquet") or path.endswith(".pqt"):
-        return _create_parquet_loader(path, batch_size)
-
-    gcs_credentials_path = (
-        kwargs["gcs_credentials_path"] if "gcs_crentials_file" in kwargs else None
-    )
-    if path.startswith("s3://"):
-        return thirdai.dataset.CSVDataLoader(
-            storage_path=path,
-            batch_size=batch_size,
-        )
-    elif path.startswith("gcs://"):
-        return thirdai.dataset.CSVDataLoader(
-            storage_path=path,
-            batch_size=batch_size,
-            gcs_credentials_path=gcs_credentials_path,
-        )
-
-    return thirdai.dataset.FileDataLoader(path, batch_size)
-
-
 def _pandas_iterator(path, chunksize, node_index, num_nodes, sep):
     import pandas as pd
 
