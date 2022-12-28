@@ -45,10 +45,20 @@ class DateBlock final : public Block {
     return _col + 1;
   };
 
-  Explanation explainIndex(
-      uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) final {
-    (void)input_row;
+  Explanation explainIndex(uint32_t index_within_block,
+                           const RowInput& input_row) final {
+    return {_col.number(), getExplanationReason(index_within_block, input_row)};
+  }
+
+  Explanation explainIndex(uint32_t index_within_block,
+                           const MapInput& input_map) final {
+    return {_col.name(), getExplanationReason(index_within_block, input_map)};
+  }
+
+  template <typename InputType>
+  std::string getExplanationReason(uint32_t index_within_block,
+                                   const InputType& input) {
+    (void)input;
     std::string reason;
     if (index_within_block >= featureDim()) {
       throw std::invalid_argument("index is out of bounds for date block.");
@@ -70,7 +80,7 @@ class DateBlock final : public Block {
     } else {
       reason = "week_of_year";
     }
-    return {_col.number(), reason};
+    return reason;
   }
 
   static auto make(ColumnIdentifier col) {

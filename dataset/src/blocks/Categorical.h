@@ -41,11 +41,16 @@ class CategoricalBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
-  Explanation explainIndex(
-      uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) final {
+  Explanation explainIndex(uint32_t index_within_block,
+                           const RowInput& input_row) final {
     return {_col.number(),
             getResponsibleCategory(index_within_block, input_row[_col])};
+  }
+
+  Explanation explainIndex(uint32_t index_within_block,
+                           const MapInput& input_row) final {
+    return {_col.name(),
+            getResponsibleCategory(index_within_block, input_row.at(_col))};
   }
 
   /*

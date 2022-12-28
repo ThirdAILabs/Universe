@@ -49,9 +49,21 @@ class UserCountHistoryBlock final : public Block {
     _history->checkpoint(/* new_lowest_timestamp= */ time.secondsSinceEpoch());
   }
 
-  Explanation explainIndex(
-      uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) final {
+  Explanation explainIndex(uint32_t index_within_block,
+                           const RowInput& input_row) final {
+    return {_count_col.number(),
+            getExplanationReason(index_within_block, input_row)};
+  }
+
+  Explanation explainIndex(uint32_t index_within_block,
+                           const MapInput& input_map) final {
+    return {_count_col.name(),
+            getExplanationReason(index_within_block, input_map)};
+  }
+
+  template <typename InputType>
+  std::string getExplanationReason(uint32_t index_within_block,
+                                   const InputType& input_row) {
     auto [user, time_seconds, val] = getUserTimeVal(input_row);
 
     auto counts = indexAndGetCountsFromHistory(
@@ -77,7 +89,7 @@ class UserCountHistoryBlock final : public Block {
     auto keyword = "between " + start_time_str + " and " + end_time_str +
                    " value is " + movement;
 
-    return {_count_col.number(), keyword};
+    return keyword;
   }
 
   static auto make(ColumnIdentifier user_col, ColumnIdentifier count_col,

@@ -49,12 +49,19 @@ class DenseArrayBlock final : public Block {
 
   uint32_t expectedNumColumns() const final { return _start_col + _dim; };
 
-  Explanation explainIndex(
-      uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) final {
+  Explanation explainIndex(uint32_t index_within_block,
+                           const RowInput& input_row) final {
     char* end;
     float value = std::strtof(input_row.at(index_within_block).data(), &end);
     return {_start_col + index_within_block, std::to_string(value)};
+  }
+
+  Explanation explainIndex(uint32_t index_within_block,
+                           const MapInput& input_map) final {
+    (void)index_within_block;
+    (void)input_map;
+    throw std::invalid_argument(
+        "Cannot build DenseArray segment with map input.");
   }
 
  protected:

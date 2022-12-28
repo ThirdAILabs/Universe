@@ -147,29 +147,38 @@ class UserItemHistoryBlock final : public Block {
         time_lag, std::move(item_vectors));
   }
 
-  // TODO(YASH): See whether length of history makes sense in explanations.
-  Explanation explainIndex(
-      uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) final {
+  Explanation explainIndex(uint32_t index_within_block,
+                           const RowInput& input_row) final {
+    return {_item_col.number(),
+            getExplanationReason(index_within_block, input_row)};
+  }
+
+  Explanation explainIndex(uint32_t index_within_block,
+                           const MapInput& input_map) final {
+    return {_item_col.name(),
+            getExplanationReason(index_within_block, input_map)};
+  }
+
+  template <typename InputType>
+  std::string getExplanationReason(uint32_t index_within_block,
+                                   const InputType& input) {
     if (_item_vectors) {
       // TODO(Geordie): Make more descriptive.
-      return {_item_col.number(), "Metadata of previously seen item."};
+      return "Metadata of previously seen item.";
     }
 
-    auto user = std::string(input_row.at(_user_col));
+    auto user = std::string(input.at(_user_col));
     auto& user_history = _per_user_history->at(user);
 
     for (auto record = user_history.rbegin(); record != user_history.rend();
          record++) {
       if (getItemId(record->item) == index_within_block) {
-        return {_item_col.number(), "'" + record->item + "' is one of last " +
-                                        std::to_string(_track_last_n) +
-                                        " values"};
+        return "'" + record->item + "' is one of last " +
+               std::to_string(_track_last_n) + " values";
       }
     }
 
-    return {_item_col.number(),
-            "One of last " + std::to_string(_track_last_n) + " values"};
+    return "One of last " + std::to_string(_track_last_n) + " values";
   }
 
  protected:

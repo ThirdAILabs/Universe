@@ -276,9 +276,11 @@ class Block {
    * Returns:
    * column number and keyword responsible for the given index from that column.
    */
-  virtual Explanation explainIndex(
-      uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) = 0;
+  virtual Explanation explainIndex(uint32_t index_within_block,
+                                   const RowInput& input_row) = 0;
+
+  virtual Explanation explainIndex(uint32_t index_within_block,
+                                   const MapInput& input_map) = 0;
 
   virtual ~Block() = default;
 
