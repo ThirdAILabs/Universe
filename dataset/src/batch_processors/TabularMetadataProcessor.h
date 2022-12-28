@@ -6,11 +6,15 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
 #include "ProcessorUtils.h"
+#include <_types/_uint32_t.h>
 #include <dataset/src/BatchProcessor.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <algorithm>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -48,36 +52,54 @@ class TabularMetadata {
       std::vector<TabularDataType> column_dtypes,
       std::unordered_map<uint32_t, std::pair<double, double>> col_min_maxes,
       ThreadSafeVocabularyPtr class_name_to_id,
-      std::vector<std::string> column_names = {},
+      const std::vector<std::string>& column_names = {},
       std::optional<std::unordered_map<uint32_t, uint32_t>> col_to_num_bins =
           std::nullopt)
       : _column_dtypes(std::move(column_dtypes)),
         _col_min_maxes(std::move(col_min_maxes)),
         _class_name_to_id(std::move(class_name_to_id)),
-        _column_names(std::move(column_names)),
+        _expected_num_columns(0),
         _col_to_num_bins(std::move(col_to_num_bins)) {
-    // column names are for future RCA module but we aren't necessary for
-    // anything else. Here we check that if we provide column_names that they
-    // are the same length as column_dtypes
-    if (!_column_names.empty() &&
-        _column_names.size() != _column_dtypes.size()) {
+    if (column_names.empty()) {
+      _expected_num_columns = column_dtypes.size();
+      for (uint32_t col = 0; col < _column_dtypes.size(); col++) {
+        _column_identifiers.push_back(col);
+      }
+    } else {
+      for (const auto& name : column_names) {
+        _column_identifiers.push_back(name);
+      }
+    }
+
+    if (!_column_identifiers.empty() &&
+        _column_identifiers.size() != _column_dtypes.size()) {
       throw std::invalid_argument(
           "A non-empty column_names input should have the same number of "
           "elements as the column_dtypes input.");
     }
-    verifyInputs();
   }
 
-  uint32_t getLabelCol() const { return *_label_col; }
+  void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
+    _expected_num_columns = 0;
+    for (auto& column_identifier : _column_identifiers) {
+      column_identifier.updateColumnNumber(column_number_map);
+      _expected_num_columns =
+          std::max(*_expected_num_columns, column_identifier.number());
+    }
+  }
 
   ThreadSafeVocabularyPtr getClassToIdMap() { return _class_name_to_id; }
+
+  uint32_t expectedNumColumnsInRowInput() const {
+    return _expected_num_columns.value();
+  }
 
   uint32_t numColumns() const { return _column_dtypes.size(); }
 
   TabularDataType colType(uint32_t col) { return _column_dtypes[col]; }
 
   static uint32_t getStringHashValue(const std::string& str_val, uint32_t col) {
-    // to ensure hashes are unique across columns we add salt based on the col
+    // we salt the hash to ensure hashes are unique across columns
     const char* char_salt = reinterpret_cast<const char*>(&col);
     std::string str_salt(char_salt, 4);
     std::string unique_category = str_val + str_salt;
@@ -95,17 +117,8 @@ class TabularMetadata {
     return TextEncodingUtils::computeUnigram(val_to_hash, /* len = */ 8);
   }
 
-  std::string getColumnName(uint32_t col_number) {
-    if (_column_names.empty()) {
-      throw std::runtime_error(
-          "Column names not provided to tabular processor.");
-    }
-    if (col_number >= _column_names.size()) {
-      throw std::invalid_argument(
-          "Tabular processor: " + std::to_string(col_number) +
-          " is not a valid column number.");
-    }
-    return _column_names[col_number];
+  ColumnIdentifier columnIdentifier(uint32_t col) {
+    return _column_identifiers.at(col);
   }
 
  private:
@@ -212,8 +225,9 @@ class TabularMetadata {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_column_dtypes, _col_min_maxes, _column_names, _col_to_num_bins,
-            _class_name_to_id, _label_col);
+    archive(_column_dtypes, _col_min_maxes, _column_identifiers,
+            _expected_num_columns, _col_to_num_bins, _class_name_to_id,
+            _label_col);
   }
 
   std::vector<TabularDataType> _column_dtypes;
@@ -221,7 +235,9 @@ class TabularMetadata {
 
   ThreadSafeVocabularyPtr _class_name_to_id;
 
-  std::vector<std::string> _column_names;
+  std::vector<ColumnIdentifier> _column_identifiers;
+
+  std::optional<uint32_t> _expected_num_columns;
 
   // three additional bins are reserved: one for empty values, one for values
   // less than the min, and one for values greater than the max
@@ -231,120 +247,5 @@ class TabularMetadata {
 };
 
 using TabularMetadataPtr = std::shared_ptr<TabularMetadata>;
-
-class TabularMetadataProcessor : public ComputeBatchProcessor {
- public:
-  explicit TabularMetadataProcessor(std::vector<std::string> column_types,
-                                    uint32_t n_classes)
-      : _delimiter(','),
-        _label_col(std::nullopt),
-        _class_name_to_id(
-            ThreadSafeVocabulary::make(/* vocab_size = */ n_classes)) {
-    for (uint32_t col_idx = 0; col_idx < column_types.size(); col_idx++) {
-      std::string col_type = column_types[col_idx];
-      if (col_type == "label") {
-        if (_label_col) {
-          throw std::invalid_argument(
-              "Found multiple 'label' columns in dataset.");
-        }
-        _label_col = col_idx;
-        _column_dtypes.push_back(TabularDataType::Label);
-      } else if (col_type == "categorical") {
-        _column_dtypes.push_back(TabularDataType::Categorical);
-      } else if (col_type == "numeric") {
-        _column_dtypes.push_back(TabularDataType::Numeric);
-        _col_min_maxes[col_idx] =
-            std::make_pair(std::numeric_limits<double>::min(),
-                           std::numeric_limits<double>::max());
-      } else {
-        throw std::invalid_argument(
-            "Received datatype '" + col_type +
-            "' expected one of 'label', 'categorical', or 'numeric'.");
-      }
-    }
-    if (!_label_col) {
-      throw std::invalid_argument("Dataset does not contain a 'label' column.");
-    }
-  }
-
-  bool expectsHeader() const final { return true; }
-
-  void processHeader(const std::string& header) final {
-    std::vector<std::string_view> column_names =
-        ProcessorUtils::parseCsvRow(header, _delimiter);
-    verifyNumColumns(column_names);
-    for (auto col_name : column_names) {
-      _column_names.push_back(std::string(col_name));
-    }
-  }
-
-  void processRow(const std::string& row) final {
-    std::vector<std::string_view> values =
-        ProcessorUtils::parseCsvRow(row, _delimiter);
-    verifyNumColumns(values);
-    for (uint32_t col = 0; col < values.size(); col++) {
-      std::string str_value(values[col]);
-      switch (_column_dtypes[col]) {
-        case TabularDataType::Numeric: {
-          processNumeric(str_value, col);
-          break;
-        }
-        case TabularDataType::Categorical:
-        case TabularDataType::Ignore:
-          break;
-        case TabularDataType::Label: {
-          _class_name_to_id->getUid(str_value);
-          break;
-        }
-      }
-    }
-  }
-
-  TabularMetadataPtr getTabularMetadata() {
-    _class_name_to_id->fixVocab();
-    return std::make_shared<TabularMetadata>(_column_dtypes, _col_min_maxes,
-                                             _class_name_to_id, _column_names);
-  }
-
- private:
-  void processNumeric(const std::string& str_value, uint32_t col) {
-    // TODO(david) handle nan/inf/large number cases
-
-    // we want to process empty values and put them in their own bin later, thus
-    // we don't fail here
-    if (str_value.empty()) {
-      return;
-    }
-    try {
-      double val = std::stod(str_value);
-      if (val < _col_min_maxes[col].first) {
-        _col_min_maxes[col].first = val;
-      }
-      if (val > _col_min_maxes[col].second) {
-        _col_min_maxes[col].second = val;
-      }
-    } catch (std::invalid_argument& e) {
-      throw std::invalid_argument(
-          "Could not process column " + std::to_string(col) +
-          " as type 'numeric.' Received value: '" + str_value + ".'");
-    }
-  }
-
-  void verifyNumColumns(const std::vector<std::string_view>& values) {
-    if (values.size() != _column_dtypes.size()) {
-      throw std::invalid_argument("Csv format error. Expected " +
-                                  std::to_string(_column_dtypes.size()) +
-                                  " columns but received " +
-                                  std::to_string(values.size()) + " columns.");
-    }
-  }
-
-  char _delimiter;
-  std::optional<uint32_t> _label_col;
-  std::vector<TabularDataType> _column_dtypes;
-  std::unordered_map<uint32_t, std::pair<double, double>> _col_min_maxes;
-  std::vector<std::string> _column_names;
-  ThreadSafeVocabularyPtr _class_name_to_id;
-};
 
 }  // namespace thirdai::dataset

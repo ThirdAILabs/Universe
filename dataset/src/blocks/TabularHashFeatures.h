@@ -5,9 +5,11 @@
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <hashing/src/UniversalHash.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exception>
+#include <stdexcept>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -19,7 +21,7 @@ namespace thirdai::dataset {
  * to columns and compute either unigrams or pairgrams of the categories
  * depending on the "with_pairgrams" flag.
  */
-class TabularHashFeatures : public Block {
+class TabularHashFeatures final : public Block {
  public:
   TabularHashFeatures(TabularMetadataPtr metadata, uint32_t output_range,
                       bool with_pairgrams = true)
@@ -29,47 +31,81 @@ class TabularHashFeatures : public Block {
 
   struct Token {
     uint32_t token;
-    uint32_t first_column;
-    uint32_t second_column;
+    ColumnIdentifier first_column;
+    ColumnIdentifier second_column;
   };
+
+  void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
+    _metadata->updateColumnNumbers(column_number_map);
+  }
 
   uint32_t featureDim() const final { return _output_range; };
 
   bool isDense() const final { return false; };
 
-  uint32_t expectedNumColumns() const final { return _metadata->numColumns(); };
+  uint32_t expectedNumColumns() const final {
+    return _metadata->expectedNumColumnsInRowInput();
+  };
 
-  Explanation explainIndex(
-      uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) final {
-    auto [col_num_1, col_num_2] =
-        getColumnNumbersForIndex(input_row, index_within_block);
+  Explanation explainIndex(uint32_t index_within_block,
+                           const RowInput& input_row) final {
+    return explainIndexImpl(index_within_block, input_row);
+  }
 
-    if (col_num_1 == col_num_2) {
-      return {_metadata->getColumnName(col_num_1),
-              std::string(input_row[col_num_1])};
+  Explanation explainIndex(uint32_t index_within_block,
+                           const MapInput& input_map) final {
+    return explainIndexImpl(index_within_block, input_map);
+  }
+
+  template <typename InputType>
+  Explanation explainIndexImpl(uint32_t index_within_block,
+                               const InputType& input) {
+    ColumnIdentifier first_column;
+    ColumnIdentifier second_column;
+
+    if (auto e = forEachOutputToken(input, [&](Token& token) {
+          if (token.token == index_within_block) {
+            first_column = std::move(token.first_column);
+            second_column = std::move(token.second_column);
+          }
+        })) {
+      std::rethrow_exception(e);
     }
 
-    auto column_name = _metadata->getColumnName(col_num_1) + "," +
-                       _metadata->getColumnName(col_num_2);
-    auto keyword = std::string(input_row[col_num_1]) + "," +
-                   std::string(input_row[col_num_2]);
+    if (first_column == second_column) {
+      return {first_column.name(), std::string(input.at(first_column))};
+    }
+
+    auto column_name = first_column.name() + "," + second_column.name();
+    auto keyword = std::string(input.at(first_column)) + "," +
+                   std::string(input.at(second_column));
 
     return {column_name, keyword};
   }
 
  protected:
+  std::exception_ptr buildSegment(const RowInput& input_row,
+                                  SegmentedFeatureVector& vec) final {
+    return buildSegmentImpl(input_row, vec);
+  }
+
+  std::exception_ptr buildSegment(const MapInput& input_map,
+                                  SegmentedFeatureVector& vec) final {
+    return buildSegmentImpl(input_map, vec);
+  }
+
   // TODO(david) We should always include all unigrams but if the number of
   // columns is too large, this processing time becomes slow. One idea is to
   // cap the number of pairgrams at a certain threshold by selecting random
   // pairs of columns to pairgram together.
-  std::exception_ptr buildSegment(
-      const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
+  template <typename InputType>
+  std::exception_ptr buildSegmentImpl(const InputType& input,
+                                      SegmentedFeatureVector& vec) {
     std::unordered_map<uint32_t, uint32_t> unigram_to_col_num;
     std::vector<uint32_t> tokens;
-    if (auto e = forEachOutputToken(
-            input_row, [&](Token token) { tokens.push_back(token.token); })) {
+    if (auto e = forEachOutputToken(input, [&](const Token& token) {
+          tokens.push_back(token.token);
+        })) {
       return e;
     };
 
@@ -86,16 +122,23 @@ class TabularHashFeatures : public Block {
    * and applies a function. We do this to reduce code duplication between
    * buildSegment() and explainIndex()
    */
-  template <typename TOKEN_PROCESSOR_T>
-  std::exception_ptr forEachOutputToken(
-      const std::vector<std::string_view>& input_row,
-      TOKEN_PROCESSOR_T token_processor) {
+  template <typename InputType, typename TOKEN_PROCESSOR_T>
+  std::exception_ptr forEachOutputToken(const InputType& input,
+                                        TOKEN_PROCESSOR_T token_processor) {
     static_assert(std::is_convertible<TOKEN_PROCESSOR_T,
-                                      std::function<void(Token)>>::value);
-    std::unordered_map<uint32_t, uint32_t> unigram_to_col_num;
+                                      std::function<void(Token&)>>::value);
+    std::unordered_map<uint32_t, ColumnIdentifier> unigram_to_column_identifier;
     std::vector<uint32_t> unigram_hashes;
-    for (uint32_t col = 0; col < input_row.size(); col++) {
-      std::string str_val(input_row[col]);
+    for (uint32_t col = 0; col < _metadata->numColumns(); col++) {
+      auto column_identifier = _metadata->columnIdentifier(col);
+
+      std::string str_val;
+      try {
+        str_val = input.at(column_identifier);
+      } catch (const std::out_of_range& e) {
+        continue;
+      }
+
       switch (_metadata->colType(col)) {
         case TabularDataType::Numeric: {
           std::exception_ptr err;
@@ -103,13 +146,13 @@ class TabularHashFeatures : public Block {
           if (err) {
             return err;
           }
-          unigram_to_col_num[unigram] = col;
+          unigram_to_column_identifier[unigram] = std::move(column_identifier);
           unigram_hashes.push_back(unigram);
           break;
         }
         case TabularDataType::Categorical: {
           uint32_t unigram = _metadata->getStringHashValue(str_val, col);
-          unigram_to_col_num[unigram] = col;
+          unigram_to_column_identifier[unigram] = std::move(column_identifier);
           unigram_hashes.push_back(unigram);
           break;
         }
@@ -126,15 +169,17 @@ class TabularHashFeatures : public Block {
           [&](TextEncodingUtils::PairGram pairgram) {
             Token token;
             token.token = pairgram.pairgram;
-            token.first_column = unigram_to_col_num[pairgram.first_token];
-            token.second_column = unigram_to_col_num[pairgram.second_token];
+            token.first_column =
+                unigram_to_column_identifier[pairgram.first_token];
+            token.second_column =
+                unigram_to_column_identifier[pairgram.second_token];
             token_processor(token);
           });
     } else {
       for (auto unigram : unigram_hashes) {
         Token token;
         token.token = unigram % _output_range;
-        token.first_column = unigram_to_col_num[unigram];
+        token.first_column = unigram_to_column_identifier[unigram];
         token.second_column = token.first_column;
         token_processor(token);
       }
@@ -142,17 +187,18 @@ class TabularHashFeatures : public Block {
     return nullptr;
   }
 
-  std::pair<uint32_t, uint32_t> getColumnNumbersForIndex(
+  std::pair<ColumnIdentifier, ColumnIdentifier> getColumnIdentifiersForIndex(
       const std::vector<std::string_view>& input_row, uint32_t index) {
-    std::pair<uint32_t, uint32_t> col_nums;
-    if (auto e = forEachOutputToken(input_row, [&](Token token) {
+    std::pair<uint32_t, uint32_t> column_identifiers;
+    if (auto e = forEachOutputToken(input_row, [&](Token& token) {
           if (token.token == index) {
-            col_nums = {token.first_column, token.second_column};
+            column_identifiers = {std::move(token.first_column),
+                                  std::move(token.second_column)};
           }
         })) {
       std::rethrow_exception(e);
     }
-    return col_nums;
+    return column_identifiers;
   }
 
  private:
