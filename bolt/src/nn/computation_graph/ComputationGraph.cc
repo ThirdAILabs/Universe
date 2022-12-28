@@ -144,7 +144,7 @@ std::unordered_map<ops::OpPtr, uint32_t> ComputationGraph::getInDegrees()
     for (const auto& tensor : unexplored) {
       for (const auto& op : tensor->dependantOps()) {
         if (!in_degrees.count(op)) {
-          in_degrees[op] = op->outputs().size();
+          in_degrees[op] = op->inputs().size();
 
           next_unexplored.insert(next_unexplored.end(), op->outputs().begin(),
                                  op->outputs().end());

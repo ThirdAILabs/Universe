@@ -17,28 +17,74 @@ class ComputationGraph {
                    std::vector<tensor::ActivationTensorPtr> outputs,
                    std::vector<loss::LossPtr> losses);
 
+  /**
+   * Computes the forward pass through the computation graph for the given
+   * batch. Activations are not cleared until the next call to forward or
+   * trainOnBatch.
+   */
   void forward(const std::vector<BoltBatch>& inputs, bool use_sparsity);
 
+  /**
+   * Computes the backward pass through the computation graph with the given
+   * labels, using the actiations that are currently stored in the graph from
+   * the last call to forward. Assumes that forward(...) has been called
+   * already.
+   */
   void backpropagate(const std::vector<BoltBatch>& labels);
 
+  /**
+   * Performs the foward and backward pass through the computation graph for the
+   * given training batch. The benefit of calling this method over forward(...)
+   * followed by backpropagate(...) is that there is no intermediate thread
+   * synchronization.
+   */
   void trainOnBatch(const std::vector<BoltBatch>& inputs,
                     const std::vector<BoltBatch>& labels);
 
+  /**
+   * Updates the parameters of all ops.
+   */
   void updateParameters(float learning_rate);
 
  private:
+  /**
+   * Computes the forward pass through the computation graph for the given
+   * sample in the batch. Assumes that setInputs(...) has already been called.
+   */
   void forward(uint32_t index_in_batch);
 
+  /**
+   * Computes the backward pass through the computation graph for the given
+   * sample in the batch. Assumes that setInputs(...) and setLabels(...) have
+   * already been called.
+   */
   void backpropagate(uint32_t index_in_batch);
 
+  /**
+   * Sets the given batch as the inputs to the computation graph.
+   */
   uint32_t setInputs(const std::vector<BoltBatch>& inputs);
 
+  /**
+   * Sets the given labels as the current labels for the computation graph.
+   */
   uint32_t setLabels(const std::vector<BoltBatch>& labels);
 
+  /**
+   * Traverses the graph and determines the order in which the ops should be
+   * executed.
+   */
   void createOpSchedule();
 
+  /**
+   * Gets the in degrees for each op, which is the number of tensors they take
+   * as input.
+   */
   std::unordered_map<ops::OpPtr, uint32_t> getInDegrees() const;
 
+  /**
+   * These methods perform checks to make sure that computation graph is valid.
+   */
   void checkNoOutputsHaveDependentOps() const;
 
   void checkOnlyOutputsHaveNoDependentOps() const;

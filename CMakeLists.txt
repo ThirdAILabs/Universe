@@ -304,6 +304,11 @@ add_subdirectory(utils)
 
 set(THIRDAI_SOURCES
     bolt_vector/src/BoltVector.cc
+    bolt/src/nn/computation_graph/ActivationsManager.cc
+    bolt/src/nn/computation_graph/ComputationGraph.cc
+    bolt/src/nn/tensor/Tensor.cc
+    bolt/src/nn/tensor/ActivationTensor.cc
+    bolt/src/nn/tensor/InputTensor.cc
     bolt/src/graph/Graph.cc
     bolt/src/graph/ExecutionConfig.cc
     bolt/src/graph/nodes/FullyConnected.cc
