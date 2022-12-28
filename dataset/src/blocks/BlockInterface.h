@@ -258,9 +258,9 @@ class Block {
    */
   virtual uint32_t expectedNumColumns() const = 0;
 
-  virtual void prepareForBatch(const std::vector<std::string_view>& first_row) {
-    (void)first_row;
-  }
+  virtual void prepareForBatch(const RowInput& first_row) { (void)first_row; }
+
+  virtual void prepareForBatch(const MapInput& first_row) { (void)first_row; }
 
   /**
    * For a given index, get the keyword which falls in that index when building

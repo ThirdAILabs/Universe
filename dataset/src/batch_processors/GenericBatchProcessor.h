@@ -124,6 +124,47 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                            BoltBatch(std::move(batch_labels)));
   }
 
+  std::tuple<BoltBatch, BoltBatch> createBatch(
+      const MapInputBatch& input_batch) {
+    std::vector<BoltVector> batch_inputs(input_batch.size());
+    std::vector<BoltVector> batch_labels(input_batch.size());
+
+    prepareInputBlocksForBatch(input_batch.at(0));
+    for (auto& block : _label_blocks) {
+      block->prepareForBatch(input_batch.at(0));
+    }
+
+    /*
+      These variables keep track of the presence of an erroneous input line.
+      We do this instead of throwing an error directly because throwing
+      an error inside an OpenMP structured block has undefined behavior.
+    */
+    std::exception_ptr num_columns_error;
+    std::exception_ptr block_err;
+
+#pragma omp parallel for default(none)                                 \
+    shared(input_batch, batch_inputs, batch_labels, num_columns_error, \
+           block_err) if (_parallel)
+    for (size_t i = 0; i < input_batch.size(); ++i) {
+      if (auto err = makeInputVector(input_batch[i], batch_inputs[i])) {
+#pragma omp critical
+        block_err = err;
+      }
+      if (auto err = makeLabelVector(input_batch[i], batch_labels[i])) {
+#pragma omp critical
+        block_err = err;
+      }
+    }
+    if (block_err) {
+      std::rethrow_exception(block_err);
+    }
+    if (num_columns_error) {
+      std::rethrow_exception(num_columns_error);
+    }
+    return std::make_tuple(BoltBatch(std::move(batch_inputs)),
+                           BoltBatch(std::move(batch_labels)));
+  }
+
   bool expectsHeader() const final { return _expects_header; }
 
   void processHeader(const std::string& header) final { (void)header; }
@@ -136,39 +177,24 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
   void setParallelism(bool parallel) { _parallel = parallel; }
 
-  void prepareInputBlocksForBatch(std::vector<std::string_view>& sample) {
+  template <typename InputType>
+  void prepareInputBlocksForBatch(InputType& sample) {
     for (auto& block : _input_blocks) {
       block->prepareForBatch(sample);
     }
   }
 
-  std::exception_ptr makeInputVector(std::vector<std::string_view>& sample,
-                                     BoltVector& vector) {
+  template <typename InputType>
+  std::exception_ptr makeInputVector(InputType& sample, BoltVector& vector) {
     return makeVector(sample, vector, _input_blocks, _input_blocks_dense,
                       /* hash_range= */ _hash_range);
   }
 
-  std::exception_ptr makeLabelVector(std::vector<std::string_view>& sample,
-                                     BoltVector& vector) {
+  template <typename InputType>
+  std::exception_ptr makeLabelVector(InputType& sample, BoltVector& vector) {
     // Never hash labels.
     return makeVector(sample, vector, _label_blocks, _label_blocks_dense,
                       /* hash_range= */ std::nullopt);
-  }
-
-  static std::exception_ptr makeVector(std::vector<std::string_view>& sample,
-                                       BoltVector& vector,
-                                       std::vector<BlockPtr>& blocks,
-                                       bool blocks_dense,
-                                       std::optional<uint32_t> hash_range) {
-    auto segmented_vector =
-        makeSegmentedFeatureVector(blocks_dense, hash_range,
-                                   /* store_segment_feature_map= */ false);
-    if (auto err =
-            addFeaturesToSegmentedVector(sample, *segmented_vector, blocks)) {
-      return err;
-    }
-    vector = segmented_vector->toBoltVector();
-    return nullptr;
   }
 
   IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(
@@ -202,12 +228,28 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   }
 
  private:
+  template <typename InputType>
+  static std::exception_ptr makeVector(InputType& sample, BoltVector& vector,
+                                       std::vector<BlockPtr>& blocks,
+                                       bool blocks_dense,
+                                       std::optional<uint32_t> hash_range) {
+    auto segmented_vector =
+        makeSegmentedFeatureVector(blocks_dense, hash_range,
+                                   /* store_segment_feature_map= */ false);
+    if (auto err =
+            addFeaturesToSegmentedVector(sample, *segmented_vector, blocks)) {
+      return err;
+    }
+    vector = segmented_vector->toBoltVector();
+    return nullptr;
+  }
+
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
    */
+  template <typename InputType>
   static std::exception_ptr addFeaturesToSegmentedVector(
-      const std::vector<std::string_view>& sample,
-      SegmentedFeatureVector& segmented_vector,
+      const InputType& sample, SegmentedFeatureVector& segmented_vector,
       std::vector<std::shared_ptr<Block>>& blocks) {
     for (auto& block : blocks) {
       if (auto err = block->addVectorSegment(sample, segmented_vector)) {

@@ -269,16 +269,6 @@ std::vector<std::string_view> UDTDatasetFactory::toVectorOfStringViews(
   return string_view_input;
 }
 
-std::vector<std::string> UDTDatasetFactory::lineInputBatchFromMapInputBatch(
-    const MapInputBatch& input_maps) {
-  std::vector<std::string> string_batch(input_maps.size());
-  for (uint32_t i = 0; i < input_maps.size(); i++) {
-    auto vals = toVectorOfStringViews(input_maps[i]);
-    string_batch[i] = concatenateWithDelimiter(vals, _config->delimiter);
-  }
-  return string_batch;
-}
-
 std::string UDTDatasetFactory::concatenateWithDelimiter(
     const std::vector<std::string_view>& substrings, char delimiter) {
   if (substrings.empty()) {

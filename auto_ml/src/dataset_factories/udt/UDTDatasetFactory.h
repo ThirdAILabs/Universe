@@ -81,7 +81,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) final;
 
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
-    return featurizeInputImpl(input, /* should_update_history= */ false);
+    auto input_row = toVectorOfStringViews(input);
+    return featurizeInputImpl(input_row, /* should_update_history= */ false);
   }
 
   std::vector<BoltVector> featurizeInput(const MapInput& input) final {
@@ -89,6 +90,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   std::vector<BoltVector> updateTemporalTrackers(const LineInput& input) {
+    auto input_row = toVectorOfStringViews(input);
     return featurizeInputImpl(input, /* should_update_history= */ true);
   }
 
@@ -103,8 +105,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> featurizeInputBatch(
       const MapInputBatch& inputs) final {
-    return featurizeInputBatchImpl(lineInputBatchFromMapInputBatch(inputs),
-                                   /* should_update_history= */ false);
+    return featurizeInputBatchImpl(inputs, /* should_update_history= */ false);
   }
 
   uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final;
@@ -118,8 +119,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> batchUpdateTemporalTrackers(
       const MapInputBatch& inputs) {
-    return featurizeInputBatchImpl(lineInputBatchFromMapInputBatch(inputs),
-                                   /* should_update_history= */ true);
+    return featurizeInputBatchImpl(inputs, /* should_update_history= */ true);
   }
 
   void resetTemporalTrackers() { _context->reset(); }
@@ -166,15 +166,15 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     verifyProcessorsAreInitialized();
 
     BoltVector vector;
-    auto sample = toVectorOfStringViews(input);
     if (auto exception = getProcessor(should_update_history)
-                             .makeInputVector(sample, vector)) {
+                             .makeInputVector(input, vector)) {
       std::rethrow_exception(exception);
     }
     return {std::move(vector)};
   }
 
-  std::vector<BoltBatch> featurizeInputBatchImpl(const LineInputBatch& inputs,
+  template <typename InputBatchType>
+  std::vector<BoltBatch> featurizeInputBatchImpl(const InputBatchType& inputs,
                                                  bool should_update_history) {
     verifyProcessorsAreInitialized();
     auto [input_batch, _] =
@@ -264,9 +264,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   std::vector<std::string_view> toVectorOfStringViews(const MapInput& input);
-
-  std::vector<std::string> lineInputBatchFromMapInputBatch(
-      const MapInputBatch& input_maps);
 
   static std::string concatenateWithDelimiter(
       const std::vector<std::string_view>& substrings, char delimiter);

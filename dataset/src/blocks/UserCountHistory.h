@@ -39,8 +39,13 @@ class UserCountHistoryBlock final : public Block {
     return std::max(_user_col, std::max(_count_col, _timestamp_col)) + 1;
   }
 
-  void prepareForBatch(const std::vector<std::string_view>& first_row) final {
+  void prepareForBatch(const RowInput& first_row) final {
     auto time = TimeObject(first_row.at(_timestamp_col));
+    _history->checkpoint(/* new_lowest_timestamp= */ time.secondsSinceEpoch());
+  }
+
+  void prepareForBatch(const MapInput& first_element) final {
+    auto time = TimeObject(first_element.at(_timestamp_col));
     _history->checkpoint(/* new_lowest_timestamp= */ time.secondsSinceEpoch());
   }
 
