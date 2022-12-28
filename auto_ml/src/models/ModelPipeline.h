@@ -3,7 +3,6 @@
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
 #include "OutputProcessor.h"
-#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
