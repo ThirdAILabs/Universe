@@ -4,7 +4,14 @@
 namespace thirdai::bolt::nn::tensor {
 
 ActivationTensor::ActivationTensor(uint32_t dim, uint32_t num_nonzeros)
-    : Tensor(dim, num_nonzeros < dim, num_nonzeros), _using_sparsity(false) {}
+    : Tensor(dim), _num_nonzeros(num_nonzeros), _using_sparsity(true) {}
+
+std::optional<uint32_t> ActivationTensor::numNonzeros() const {
+  if (_using_sparsity) {
+    return _num_nonzeros;
+  }
+  return dim();
+}
 
 BoltVector& ActivationTensor::getVector(uint32_t index) {
   return _vectors[index];
@@ -15,11 +22,12 @@ void ActivationTensor::allocate(uint32_t batch_size, bool use_sparsity) {
   _vectors.reserve(batch_size);
   _using_sparsity = use_sparsity;
 
-  uint32_t num_nonzeros = _num_nonzeros.value();
+  uint32_t num_nonzeros = _using_sparsity ? _num_nonzeros : dim();
 
   _activations.assign(batch_size * num_nonzeros, 0.0);
   _gradients.assign(batch_size * num_nonzeros, 0.0);
-  if (use_sparsity && _sparse) {
+
+  if (use_sparsity && _num_nonzeros < dim()) {
     _active_neurons.assign(batch_size * num_nonzeros, 0);
 
     for (uint32_t i = 0; i < batch_size; i++) {
@@ -37,7 +45,6 @@ void ActivationTensor::allocate(uint32_t batch_size, bool use_sparsity) {
 
 void ActivationTensor::updateSparsity(uint32_t num_nonzeros) {
   _num_nonzeros = num_nonzeros;
-  _sparse = num_nonzeros < dim();
 
   allocate(_vectors.size(), _using_sparsity);
 

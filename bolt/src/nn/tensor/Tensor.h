@@ -14,15 +14,13 @@ namespace thirdai::bolt::nn::tensor {
 
 class Tensor {
  public:
-  Tensor(uint32_t dim, bool sparse, std::optional<uint32_t> num_nonzeros);
+  explicit Tensor(uint32_t dim);
 
   virtual BoltVector& getVector(uint32_t index) = 0;
 
   uint32_t dim() const;
 
-  std::optional<uint32_t> numNonzeros() const;
-
-  bool sparse() const;
+  virtual std::optional<uint32_t> numNonzeros() const = 0;
 
   void addDependantOp(ops::OpPtr op);
 
@@ -33,9 +31,6 @@ class Tensor {
   uint32_t _dim;
 
  protected:
-  bool _sparse;
-  std::optional<uint32_t> _num_nonzeros;
-
   std::vector<ops::OpPtr> _dependant_ops;
 };
 

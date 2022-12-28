@@ -8,6 +8,8 @@ class ActivationTensor final : public Tensor {
  public:
   ActivationTensor(uint32_t dim, uint32_t num_nonzeros);
 
+  std::optional<uint32_t> numNonzeros() const final;
+
   BoltVector& getVector(uint32_t index) final;
 
   void allocate(uint32_t batch_size, bool use_sparsity);
@@ -16,6 +18,7 @@ class ActivationTensor final : public Tensor {
 
  private:
   std::vector<BoltVector> _vectors;
+  uint32_t _num_nonzeros;
   bool _using_sparsity;
 
   // Storing the activations and active neurons as a continuous array and taking
