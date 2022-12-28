@@ -239,18 +239,6 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildInputBlocks(
   return blocks;
 }
 
-std::vector<std::string_view> UDTDatasetFactory::toVectorOfStringViews(
-    const MapInput& input) {
-  verifyColumnNumberMapIsInitialized();
-  std::vector<std::string_view> string_view_input(
-      _column_number_map->numCols());
-  for (const auto& [col_name, val] : input) {
-    string_view_input[_column_number_map->at(col_name)] =
-        std::string_view(val.data(), val.length());
-  }
-  return string_view_input;
-}
-
 std::string UDTDatasetFactory::concatenateWithDelimiter(
     const std::vector<std::string_view>& substrings, char delimiter) {
   if (substrings.empty()) {
