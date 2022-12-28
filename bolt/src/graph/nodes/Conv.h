@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/layers/NewConvLayer.h>
 
 namespace thirdai::bolt {
 
@@ -66,9 +67,15 @@ class ConvNode final : public Node,
 
   uint32_t outputDim() const final {
     NodeState node_state = getState();
-    if (node_state == NodeState::Constructed ||
-        node_state == NodeState::PredecessorsSet) {
-      return _config->getDim();
+    if (node_state == NodeState::Constructed) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot calculate output dimension of a ConvNode before setting the "
+          "predecessor.");
+    }
+    if (node_state == NodeState::PredecessorsSet) {
+      // TODO(david) Calculate the output dimension based on the predecessor
+      // x_output = ((x_input - kernel_size_x + 2 * padding) / stride) + 1;
+      // y_output = ((y_input - kernel_size_y + 2 * padding) / stride) + 1;
     }
     return _layer->getDim();
   }
