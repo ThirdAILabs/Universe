@@ -1,8 +1,11 @@
 #include "LayerConfig.h"
+#include <cereal/access.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/optional.hpp>
 
 namespace thirdai::bolt {
 
-static void checkSparsity(float sparsity) {
+void checkSparsity(float sparsity) {
   if (sparsity > 1 || sparsity <= 0) {
     throw std::invalid_argument(
         "sparsity must be between 0 exclusive and 1 inclusive.");
@@ -11,6 +14,17 @@ static void checkSparsity(float sparsity) {
     std::cout << "WARNING: Using large sparsity value " << sparsity
               << " in Layer, consider decreasing sparsity" << std::endl;
   }
+}
+
+template <class Archive>
+void FullyConnectedLayerConfig::serialize(Archive& archive) {
+  archive(_dim, _sparsity, _activation_fn, _sampling_config);
+}
+
+template <class Archive>
+void EmbeddingLayerConfig::serialize(Archive& archive) {
+  archive(_num_embedding_lookups, _lookup_size, _log_embedding_block_size,
+          _reduction, _num_tokens_per_input);
 }
 
 FullyConnectedLayerConfig::FullyConnectedLayerConfig(
@@ -73,5 +87,26 @@ EmbeddingReductionType EmbeddingLayerConfig::getReductionType(
       "Invalid embedding reduction time '" + reduction_name +
       "', supported options are 'sum' or 'concat'/'concatenation'");
 }
+
+template <class Archive>
+void NormalizationLayerConfig::serialize(Archive& archive) {
+  archive(_beta_regularizer, _gamma_regularizer, _epsilon);
+}
+
+template void EmbeddingLayerConfig::serialize<cereal::BinaryInputArchive>(
+    cereal::BinaryInputArchive&);
+template void EmbeddingLayerConfig::serialize<cereal::BinaryOutputArchive>(
+    cereal::BinaryOutputArchive&);
+
+template void FullyConnectedLayerConfig::serialize<cereal::BinaryInputArchive>(
+    cereal::BinaryInputArchive&);
+
+template void FullyConnectedLayerConfig::serialize<cereal::BinaryOutputArchive>(
+    cereal::BinaryOutputArchive&);
+
+template void NormalizationLayerConfig::serialize<cereal::BinaryInputArchive>(
+    cereal::BinaryInputArchive&);
+template void NormalizationLayerConfig::serialize<cereal::BinaryOutputArchive>(
+    cereal::BinaryOutputArchive&);
 
 }  // namespace thirdai::bolt

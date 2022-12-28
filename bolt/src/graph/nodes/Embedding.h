@@ -54,6 +54,8 @@ class EmbeddingNode final : public Node,
     return _embedding_layer->getRawEmbeddingBlockGradient();
   }
 
+  bool hasParameters() final { return true; }
+
  private:
   void compileImpl() final;
 

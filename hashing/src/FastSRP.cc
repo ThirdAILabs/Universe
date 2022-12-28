@@ -1,4 +1,8 @@
 #include "FastSRP.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include <algorithm>
 #include <limits>
 #include <random>
@@ -123,4 +127,18 @@ void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
   delete[] hashes;
 }
 
+template <class Archive>
+void FastSRP::serialize(Archive& archive) {
+  archive(cereal::base_class<HashFunction>(this), _hashes_per_table,
+          _num_hashes, _log_num_hashes, _dim, _binsize, _permute,
+          _rand_double_hash_seed, _bin_map, _positions, _rand_bits);
+}
+
+template void FastSRP::serialize(cereal::PortableBinaryInputArchive&);
+template void FastSRP::serialize(cereal::PortableBinaryOutputArchive&);
+template void FastSRP::serialize(cereal::BinaryInputArchive&);
+template void FastSRP::serialize(cereal::BinaryOutputArchive&);
+
 }  // namespace thirdai::hashing
+
+CEREAL_REGISTER_TYPE(thirdai::hashing::FastSRP)

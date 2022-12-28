@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt_vector/src/BoltVector.h>
@@ -55,6 +56,8 @@ class Input final : public Node {
     throw std::logic_error("Should not call initOptimizer() on Input node");
   }
 
+  bool hasParameters() final { return false; }
+
  private:
   void compileImpl() final;
 
@@ -105,9 +108,7 @@ class Input final : public Node {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<Node>(this), _compiled, _expected_input_dim);
-  }
+  void serialize(Archive& archive);
 
   bool _compiled;
   BoltBatch* _input_batch;

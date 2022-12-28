@@ -34,10 +34,12 @@ jobs:
             os: macos-12
             archs: x86_64
             deployment_target: "10.15"
+            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=OFF"
           - name: macos-arm64
             os: macos-12
             archs: arm64
             deployment_target: "11.0"
+            cmake_additional_args: "-DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON -DOPENSSL_CROSS_COMPILE_MACOSX_ARM=ON"
 
 
     name: Build wheels on ${{ matrix.os }}
@@ -72,6 +74,7 @@ jobs:
               KMP_DUPLICATE_LIB_OK=TRUE
 
           CIBW_ENVIRONMENT_MACOS:
+            CMAKE_ARGS='${{ matrix.cmake_additional_args }}'
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
@@ -106,7 +109,7 @@ jobs:
           # test our distributed pipeline.
           #
           # TODO(any): A more future proof solution when stuff starts working.
-          CIBW_SKIP: "cp36-macosx_arm64 cp37-macox_arm64 cp311-*"
+          CIBW_SKIP: "cp36-* cp37-macox_arm64 cp311-*"
 
 
       - name: Upload wheels

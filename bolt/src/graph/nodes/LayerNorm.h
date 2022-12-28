@@ -59,6 +59,8 @@ class LayerNormNode final : public Node,
 
   void initOptimizer() final {}
 
+  bool hasParameters() final { return false; }
+
  private:
   void compileImpl() final { _compiled = true; }
 

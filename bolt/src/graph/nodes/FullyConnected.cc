@@ -1,7 +1,42 @@
 #include "FullyConnected.h"
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <bolt/src/graph/Node.h>
 
 namespace thirdai::bolt {
+
+std::shared_ptr<FullyConnectedNode> FullyConnectedNode::makeDense(
+    uint32_t dim, const std::string& activation) {
+  return std::shared_ptr<FullyConnectedNode>(
+      new FullyConnectedNode(dim, activation));
+}
+
+std::shared_ptr<FullyConnectedNode> FullyConnectedNode::makeAutotuned(
+    uint32_t dim, float sparsity, const std::string& activation) {
+  return std::shared_ptr<FullyConnectedNode>(
+      new FullyConnectedNode(dim, sparsity, activation));
+}
+
+std::shared_ptr<FullyConnectedNode> FullyConnectedNode::make(
+    uint32_t dim, float sparsity, const std::string& activation,
+    SamplingConfigPtr sampling_config) {
+  return std::shared_ptr<FullyConnectedNode>(new FullyConnectedNode(
+      dim, sparsity, activation, std::move(sampling_config)));
+}
+
+std::shared_ptr<FullyConnectedNode>
+FullyConnectedNode::makeExplicitSamplingConfig(uint32_t dim, float sparsity,
+                                               const std::string& activation,
+                                               uint32_t num_tables,
+                                               uint32_t hashes_per_table,
+                                               uint32_t reservoir_size) {
+  auto sampling_config = std::make_shared<DWTASamplingConfig>(
+      num_tables, hashes_per_table, reservoir_size);
+  return make(dim, sparsity, activation, sampling_config);
+}
 
 FullyConnectedNode::FullyConnectedNode(uint64_t dim,
                                        const std::string& activation)
@@ -35,15 +70,6 @@ std::shared_ptr<FullyConnectedNode> FullyConnectedNode::addPredecessor(
   return shared_from_this();
 }
 
-ActivationFunction FullyConnectedNode::getActivationFunction() const {
-  NodeState node_state = getState();
-  if (node_state == NodeState::Constructed ||
-      node_state == NodeState::PredecessorsSet) {
-    return _config->getActFunc();
-  }
-  return _layer->getActivationFunction();
-}
-
 uint32_t FullyConnectedNode::outputDim() const {
   NodeState node_state = getState();
   if (node_state == NodeState::Constructed ||
@@ -51,6 +77,19 @@ uint32_t FullyConnectedNode::outputDim() const {
     return _config->getDim();
   }
   return _layer->getDim();
+}
+
+bool FullyConnectedNode::isInputNode() const { return false; }
+
+void FullyConnectedNode::initOptimizer() { _layer->initOptimizer(); }
+
+ActivationFunction FullyConnectedNode::getActivationFunction() const {
+  NodeState node_state = getState();
+  if (node_state == NodeState::Constructed ||
+      node_state == NodeState::PredecessorsSet) {
+    return _config->getActFunc();
+  }
+  return _layer->getActivationFunction();
 }
 
 void FullyConnectedNode::saveParameters(const std::string& filename) const {
@@ -178,11 +217,20 @@ void FullyConnectedNode::compileImpl() {
   _config = std::nullopt;
 }
 
+std::vector<std::shared_ptr<FullyConnectedLayer>>
+FullyConnectedNode::getInternalFullyConnectedLayersImpl() const {
+  return {_layer};
+}
+
 void FullyConnectedNode::prepareForBatchProcessingImpl(uint32_t batch_size,
                                                        bool use_sparsity) {
   // TODO(Nicholas): rename createBatchState
   _outputs =
       _layer->createBatchState(batch_size, /* use_sparsity=*/use_sparsity);
+}
+
+uint32_t FullyConnectedNode::numNonzerosInOutputImpl() const {
+  return (*_outputs)[0].len;
 }
 
 void FullyConnectedNode::forwardImpl(uint32_t vec_index,
@@ -210,6 +258,18 @@ void FullyConnectedNode::updateParametersImpl(float learning_rate,
   _layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2, EPS);
 }
 
+BoltVector& FullyConnectedNode::getOutputVectorImpl(uint32_t vec_index) {
+  return (*_outputs)[vec_index];
+}
+
+void FullyConnectedNode::cleanupAfterBatchProcessingImpl() {
+  _outputs = std::nullopt;
+}
+
+std::vector<NodePtr> FullyConnectedNode::getPredecessorsImpl() const {
+  return {_predecessor};
+}
+
 void FullyConnectedNode::summarizeImpl(std::stringstream& summary,
                                        bool detailed) const {
   summary << _predecessor->name() << " -> " << name() << " (FullyConnected): ";
@@ -232,6 +292,14 @@ Node::NodeState FullyConnectedNode::getState() const {
   throw exceptions::NodeStateMachineError(
       "FullyConnectedNode is in an invalid internal state");
 }
+
+template <class Archive>
+void FullyConnectedNode::serialize(Archive& archive) {
+  archive(cereal::base_class<Node>(this), _layer, _config, _predecessor);
+}
+
+template void FullyConnectedNode::serialize(
+    cereal::BinaryOutputArchive& archive);
 
 }  // namespace thirdai::bolt
 
