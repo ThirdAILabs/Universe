@@ -6,6 +6,7 @@
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
+#include <bolt/src/graph/nodes/Conv.h>
 #include <bolt/src/graph/nodes/DlrmAttention.h>
 #include <bolt/src/graph/nodes/DotProduct.h>
 #include <bolt/src/graph/nodes/Embedding.h>
@@ -213,6 +214,20 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
           },
           py::return_value_policy::reference,
           "Returns a ParameterReference object to the bias gradients vector.");
+
+  py::class_<ConvNode, std::shared_ptr<ConvNode>, Node>(nn_submodule, "Conv")
+      .def(py::init(&ConvNode::makeDense), py::arg("num_filters"),
+           py::arg("activation"), py::arg("kernel_size"))
+      .def(py::init(&ConvNode::makeAutotuned), py::arg("num_filters"),
+           py::arg("sparsity"), py::arg("activation"), py::arg("kernel_size"))
+#if THIRDAI_EXPOSE_ALL
+      .def(py::init(&ConvNode::make), py::arg("num_filters"),
+           py::arg("sparsity"), py::arg("activation"), py::arg("kernel_size"),
+           py::arg("sampling_config"))
+#endif
+      .def("__call__", &ConvNode::addPredecessor, py::arg("prev_layer"),
+           "Tells the graph which layer should act as input to this conv "
+           "layer.");
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       nn_submodule, "LayerNormalization")
