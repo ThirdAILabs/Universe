@@ -96,19 +96,23 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
 
   auto key_vocab = dataset::ThreadSafeVocabulary::make(
       /* vocab_size= */ 0, /* limit_vocab_size= */ false);
-  auto label_block = dataset::StringLookupCategoricalBlock::make(
-      column_numbers->at(metadata->key), key_vocab);
+  auto label_block =
+      dataset::StringLookupCategoricalBlock::make(metadata->key, key_vocab);
+
+  auto metadata_processor = dataset::GenericBatchProcessor::make(
+      /* input_blocks= */ std::move(input_blocks),
+      /* label_blocks= */ {std::move(label_block)},
+      /* has_header= */ false, /* delimiter= */ metadata->delimiter,
+      /* parallel= */ true, /* hash_range= */ _config->hash_range);
+
+  metadata_processor->updateColumnNumbers(*column_numbers);
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
   dataset::StreamingGenericDatasetLoader metadata_loader(
       /* loader= */ data_loader,
       /* processor= */
-      dataset::GenericBatchProcessor::make(
-          /* input_blocks= */ std::move(input_blocks),
-          /* label_blocks= */ {std::move(label_block)},
-          /* has_header= */ false, /* delimiter= */ metadata->delimiter,
-          /* parallel= */ true, /* hash_range= */ _config->hash_range));
+      metadata_processor);
 
   return preprocessedVectorsFromDataset(metadata_loader, *key_vocab);
 }

@@ -59,14 +59,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
          */
         _input_blocks(std::move(input_blocks)),
         _label_blocks(std::move(label_blocks)) {
-    for (const auto& block : _input_blocks) {
-      _expected_num_cols =
-          std::max(block->expectedNumColumns(), _expected_num_cols);
-    }
-    for (const auto& block : _label_blocks) {
-      _expected_num_cols =
-          std::max(block->expectedNumColumns(), _expected_num_cols);
-    }
+    _expected_num_cols = computeExpectedNumColumns();  // NOLINT
   }
 
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
@@ -76,6 +69,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     for (const auto& block : _label_blocks) {
       block->updateColumnNumbers(column_number_map);
     }
+
+    _expected_num_cols = computeExpectedNumColumns();
   };
 
   RowInput rowInputFromLineInput(const LineInput& input) const {
@@ -265,6 +260,28 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   }
 
  private:
+  uint32_t computeExpectedNumColumns() {
+    uint32_t expected_num_cols = maxNumColumnsExpectedByBlocks(_input_blocks);
+    expected_num_cols = std::max(expected_num_cols,
+                                 maxNumColumnsExpectedByBlocks(_label_blocks));
+    return expected_num_cols;
+  }
+
+  static uint32_t maxNumColumnsExpectedByBlocks(
+      const std::vector<BlockPtr>& blocks) {
+    uint32_t expected_num_cols = 0;
+    for (const auto& block : blocks) {
+      try {
+        expected_num_cols =
+            std::max(block->expectedNumColumns(), expected_num_cols);
+
+      } catch (const std::runtime_error& e) {
+        (void)e;
+      }
+    }
+    return expected_num_cols;
+  }
+
   template <typename InputType>
   static std::exception_ptr makeVector(InputType& sample, BoltVector& vector,
                                        std::vector<BlockPtr>& blocks,
