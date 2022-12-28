@@ -1,17 +1,74 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/types/optional.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
+#include <dataset/src/blocks/ColumnNumberMap.h>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
 
 namespace thirdai::dataset {
+
+using MapInput = std::unordered_map<std::string, std::string>;
+using MapInputBatch = std::vector<std::unordered_map<std::string, std::string>>;
+using RowInput = std::vector<std::string_view>;
+using LineInput = std::string;
+using LineInputBatch = std::vector<std::string>;
+
+struct ColumnIdentifier {
+  ColumnIdentifier() {}
+
+  // NOLINTNEXTLINE Ignore implicit conversion warning. That is intentional.
+  ColumnIdentifier(uint32_t column_number) : _column_number(column_number) {}
+
+  // NOLINTNEXTLINE Ignore implicit conversion warning. That is intentional.
+  ColumnIdentifier(const std::string& column_name)
+      : _column_name(column_name) {}
+
+  const std::string& name() const {
+    if (!_column_name) {
+      throw std::runtime_error(
+          "Tried to get missing column name from ColumnIdentifier.");
+    }
+    return _column_name.value();
+  }
+
+  // NOLINTNEXTLINE Ignore implicit conversion warning. That is intentional.
+  operator const std::string&() const { return name(); }
+
+  uint32_t number() const {
+    if (!_column_number) {
+      throw std::runtime_error(
+          "Tried to get missing column number from ColumnIdentifier.");
+    }
+    return _column_number.value();
+  }
+
+  // NOLINTNEXTLINE Ignore implicit conversion warning. That is intentional.
+  operator uint32_t() const { return number(); }
+
+  void updateColumnNumber(const ColumnNumberMap& column_number_map) {
+    _column_number = column_number_map.at(name());
+  }
+
+ private:
+  std::optional<uint32_t> _column_number;
+  std::optional<std::string> _column_name;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_column_number, _column_name);
+  }
+};
 
 /**
  * Declare here so we can make it a friend of
@@ -175,12 +232,15 @@ class Block {
    * any exception_ptr and proceed with program execution without failing. The
    * error should then be caught.
    */
-  std::exception_ptr addVectorSegment(
-      const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) {
+  template <typename InputType>
+  std::exception_ptr addVectorSegment(const InputType& input,
+                                      SegmentedFeatureVector& vec) {
     vec.addFeatureSegment(featureDim());
-    return buildSegment(input_row, vec);
+    return buildSegment(input, vec);
   }
+
+  virtual void updateColumnNumbers(
+      const ColumnNumberMap& column_number_map) = 0;
 
   /**
    * Returns the dimension of the vector encoding.
@@ -230,9 +290,11 @@ class Block {
    * WARNING: This function may be called in many threads simultaneously,
    * so it should be thread-safe or robust to data races.
    */
-  virtual std::exception_ptr buildSegment(
-      const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) = 0;
+  virtual std::exception_ptr buildSegment(const RowInput& input_row,
+                                          SegmentedFeatureVector& vec) = 0;
+
+  virtual std::exception_ptr buildSegment(const MapInput& input_map,
+                                          SegmentedFeatureVector& vec) = 0;
 
  private:
   friend class cereal::access;
