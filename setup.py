@@ -174,7 +174,6 @@ setup(
         "numpy<=1.23.5",
         "typing_extensions",
         "pandas>=1.2.0",
-        "ray[default]",
     ],
     extras_require={
         # The cryptography requirement is necessary to avoid ssl errors
