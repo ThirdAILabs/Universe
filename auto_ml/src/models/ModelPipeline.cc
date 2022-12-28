@@ -239,6 +239,19 @@ void ModelPipeline::trainOnStream(
     data::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
     uint32_t max_in_memory_batches,
     const std::optional<ValidationOptions>& validation) {
+  /**
+   * If there are temporal relationships then we cannot do validation because
+   * loading the validation data before all of the training data could lead to
+   * an invalid state in the temporal trackers. For in memory training we can
+   * simply load all of the training data and then the validation data. If there
+   * are no temporal trackers then we can load the validiation data here and
+   * then proceed to load the training data. To handle validation with streaming
+   * data and temporal trackers we would have to read the whole training
+   * dataset, then load the validation data, reset the temporal trackers, and
+   * then start reading the data for training. This case is currently not
+   * supported because it would be extremely inefficient if the dataset is
+   * sufficiently large.
+   */
   if (validation && !hasTemporalTracking()) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
         dataset::SimpleFileDataLoader::make(validation->filename(),
