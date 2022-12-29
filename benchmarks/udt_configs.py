@@ -1,5 +1,5 @@
 import numpy as np
-from thirdai import bolt
+from thirdai import bolt, deployment
 
 
 class UDTBenchmarkConfig:
@@ -8,6 +8,9 @@ class UDTBenchmarkConfig:
     target = "label"
     n_target_classes = 2
     delimiter = ","
+    metric_type = "categorical_accuracy"
+    model_config_path = None
+    callbacks = []
 
 
 class ClincUDTConfig(UDTBenchmarkConfig):
@@ -72,3 +75,57 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
 
     experiment_name = "CriteoUDT"
     dataset_name = "criteo_46m"
+
+
+class WayfairUDTConfig(UDTBenchmarkConfig):
+    train_file = "/share/data/wayfair/train_raw_queries.txt"
+    test_file = "/share/data/wayfair/dev_raw_queries.txt"
+    model_config_path = "udt_model_configs/wayfair.config"
+
+    data_types = {
+        "labels": bolt.types.categorical(delimiter=","),
+        "query": bolt.types.text(),
+    }
+    target = "labels"
+    n_target_classes = 931
+    
+    # TODO: mlflow does not support paranethetical characters in metric names.
+    # We may need to revise our metric naming patterns to use this metric
+    # metric_type = "f_measure(0.95)"
+
+    experiment_name = "WayfairUDT"
+    dataset_name = "wayfair"
+    learning_rate = 0.001
+    delimiter = '\t'
+
+    # Serialized model config used for testing
+    # model_config = deployment.ModelConfig(
+    #     input_names=["input"],
+    #     nodes=[
+    #         deployment.FullyConnectedNodeConfig(
+    #             name="hidden",
+    #             dim=deployment.ConstantParameter(1024),
+    #             sparsity=deployment.ConstantParameter(1.0),
+    #             activation=deployment.ConstantParameter("relu"),
+    #             predecessor="input",
+    #         ),
+    #         deployment.FullyConnectedNodeConfig(
+    #             name="output",
+    #             dim=deployment.DatasetLabelDimensionParameter(),
+    #             sparsity=deployment.ConstantParameter(0.1),
+    #             activation=deployment.ConstantParameter("sigmoid"),
+    #             sampling_config=deployment.ConstantParameter(
+    #                 bolt.nn.DWTASamplingConfig(
+    #                     num_tables=64, hashes_per_table=4, reservoir_size=64
+    #                 )
+    #             ),
+    #             predecessor="hidden",
+    #         ),
+    #     ],
+    #     loss=bolt.nn.losses.BinaryCrossEntropy(),
+    # )
+
+    # Learning rate scheduler that decreases the learning rate by a factor of 10
+    # after the third epoch. This scheduling is what has given up the optimal
+    # f-measure on the wayfair dataset.
+    callbacks = [bolt.callbacks.MultiStepLR(gamma=0.1, milestones=[3])]
