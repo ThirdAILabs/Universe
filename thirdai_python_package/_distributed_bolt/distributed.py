@@ -91,12 +91,12 @@ def add_distributed_to_udt():
         # calculating batch size per node
         batch_size = batch_size // cluster_config.num_workers
 
+        train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
+
         if not verbose:
             train_config.silence()
         if metrics:
             train_config.with_metrics(metrics)
-
-        train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
 
         model = self._get_model()
 
