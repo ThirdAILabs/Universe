@@ -133,7 +133,7 @@ class TabularHashFeatures final : public Block {
       auto column_identifier = _metadata->columnIdentifier(col);
 
       std::string str_val(getColumn(input, column_identifier));
-      if (!str_val.empty()) {
+      if (str_val.empty()) {
         continue;
       }
 

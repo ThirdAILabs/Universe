@@ -9,7 +9,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 METADATA_FILE = "metadata.csv"
 TRAIN_FILE = "train.csv"
-TEST_FILE = "train.csv"
+TEST_FILE = "test.csv"
 KEY_COLUMN_NAME = "id"
 USER_COLUMN_NAME = "user"
 ITEM_COLUMN_NAME = "item"
