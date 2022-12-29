@@ -50,6 +50,7 @@ func (tracker *MachineTracker) GetNumActiveMachines(currentTime int64) int {
 		if timeDifferenceMillis < ActiveTimeoutMillis {
 			numActiveMachines++
 		}
+		print("HERE", timeDifferenceMillis, " ", currentTime, " ", lastHeartbeat, " ", numActiveMachines, "\n")
 	}
 	return numActiveMachines
 }
@@ -89,7 +90,7 @@ func Heartbeat(wr http.ResponseWriter, req *http.Request) {
 
 	globalTracker.Mu.Lock()
 
-	currentTime := time.Now().Unix()
+	currentTime := time.Now().UnixMilli()
 	numActiveMachines := globalTracker.GetNumActiveMachines(currentTime)
 
 	numMachinesThatWillBeAdded := 0
