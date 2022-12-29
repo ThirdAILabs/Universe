@@ -28,9 +28,8 @@ HeartbeatThread::HeartbeatThread(const std::string& url)
 void HeartbeatThread::verify() {
   if (!_verified) {
     throw std::runtime_error(
-        "The heartbeat thread could not verify with the server, either "
-        "because the initial heartbeat failed or there has not been a "
-        "successful heartbeat in " +
+        "The heartbeat thread could not verify with the server because there "
+        "has not been a successful heartbeat in " +
         std::to_string(VALIDATION_FAIL_TIMEOUT_SECONDS) +
         " seconds. Check the logs or metrics for more information.");
   }
