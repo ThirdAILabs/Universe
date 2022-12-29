@@ -157,6 +157,9 @@ void createModelsSubmodule(py::module_& module) {
                &UniversalDeepTransformer::predictBatch),
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
+      .def("cold_start", &UniversalDeepTransformer::coldStartPretraining,
+           py::arg("dataset"), py::arg("strong_column_names"),
+           py::arg("weak_column_names"), py::arg("learning_rate"))
       .def(
           "embedding_representation",
           [](UniversalDeepTransformer& model, const MapInput& input) {
