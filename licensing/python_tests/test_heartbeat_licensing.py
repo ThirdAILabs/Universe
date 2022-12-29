@@ -1,15 +1,14 @@
+import os
+import subprocess
 import time
+from pathlib import Path
 
 import pytest
+import requests
+import thirdai
 from licensing_utils import this_should_require_a_license_bolt
 
 pytestmark = [pytest.mark.release]
-
-import os
-import subprocess
-from pathlib import Path
-
-import thirdai
 
 invalid_local_port = "97531"
 valid_local_port = "8080"
@@ -31,19 +30,46 @@ def setup_module():
     os.system(build_command)
 
 
+def wait_for_server_start():
+    max_wait_time_seconds = 10
+    retry_period_seconds = 0.25
+    start_time_seconds = time.time()
+    while True:
+        try:
+            requests.get(valid_heartbeat_location)
+            return
+        except requests.exceptions.ConnectionError:
+            if time.time() - start_time_seconds > max_wait_time_seconds:
+                raise RuntimeError("License server took too long to start")
+            time.sleep(retry_period_seconds)
+
+
+def wait_for_server_end():
+    max_wait_time_seconds = 10
+    retry_period_seconds = 0.25
+    start_time_seconds = time.time()
+    while True:
+        try:
+            requests.get(valid_heartbeat_location)
+            if time.time() - start_time_seconds > max_wait_time_seconds:
+                raise RuntimeError("License server took too long to start")
+            time.sleep(retry_period_seconds)
+        except requests.exceptions.ConnectionError:
+            return
+
+
 @pytest.fixture()
-def startup_license_server():
+def license_server():
     server_process = subprocess.Popen(
         str(go_run_script.resolve()), stdout=subprocess.PIPE, universal_newlines=True
     )
-    # The server prints a single line once it starts, so we wait for that line
-    server_process.stdout.readline()
+    wait_for_server_start()
     yield
     server_process.kill()
+    wait_for_server_end()
 
 
 def test_with_invalid_heartbeat_location():
-
     with pytest.raises(
         RuntimeError,
         match=f"Could not establish initial connection to licensing server.",
@@ -51,7 +77,7 @@ def test_with_invalid_heartbeat_location():
         thirdai.start_heartbeat(invalid_heartbeat_location)
 
 
-def test_valid_heartbeat(startup_license_server):
+def test_valid_heartbeat(license_server):
     thirdai.start_heartbeat(valid_heartbeat_location)
     this_should_require_a_license_bolt()
 

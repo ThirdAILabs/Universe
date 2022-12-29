@@ -1,3 +1,5 @@
+#pragma once
+
 #include <atomic>
 #include <stdexcept>
 #include <string>
