@@ -150,6 +150,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     _column_number_to_name = {};
   }
 
+  bool hasTemporalTracking() const final {
+    return !_temporal_relationships.empty();
+  }
+
   UDTConfigPtr config() { return _config; }
 
  private:
