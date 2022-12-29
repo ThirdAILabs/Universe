@@ -6,6 +6,7 @@
 #include <telemetry/src/PrometheusClient.h>
 #include <limits>
 #include <stdexcept>
+#include <string>
 
 namespace py = pybind11;
 
@@ -354,15 +355,20 @@ void ModelPipeline::setModel(bolt::BoltGraphPtr& new_model) {
 
   if (new_model_nodes.size() != old_model_nodes.size()) {
     throw std::invalid_argument(
-        "Updated model have different number of layer than older model.");
+        "The new model must have the same number of nodes as the old model "
+        "(the old model has " +
+        std::to_string(old_model_nodes.size()) +
+        " layers while the new model "
+        "has " +
+        std::to_string(new_model_modes.size()) + ". )");
   }
 
   for (uint32_t node_id = 0; node_id < new_model_nodes.size(); node_id++) {
     if (new_model_nodes[node_id]->outputDim() !=
         old_model_nodes[node_id]->outputDim()) {
       throw std::invalid_argument(
-          "Updated model have different layer dimension "
-          "than older model.");
+          "The new model must have the same layer dimensions as the old model, "
+          "but we found a layer with different dimension.");
     }
   }
   _model = new_model;
