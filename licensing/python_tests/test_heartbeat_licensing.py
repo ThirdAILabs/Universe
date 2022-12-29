@@ -31,10 +31,11 @@ def setup_module():
 
 @pytest.fixture()
 def startup_license_server():
-    server_process = subprocess.Popen(str(go_run_script.resolve()), shell=True)
-    time.sleep(2) # TODO: Replace this with listening for server started output
+    server_process = subprocess.Popen(str(go_run_script.resolve()), stdout=subprocess.PIPE, universal_newlines=True)
+    line = server_process.stdout.readline()
     yield
     server_process.kill()
+
 
 def test_with_invalid_heartbeat_location():
 
@@ -46,7 +47,11 @@ def test_with_invalid_heartbeat_location():
 
 
 def test_valid_heartbeat(startup_license_server):
+    print(time.time(), "starting heartbeat")
     thirdai.start_heartbeat(valid_heartbeat_location)
+    print(time.time(), "finished heartbeat")
+    this_should_require_a_license_bolt()
+    print(time.time(), "finished required")
 
 # def test_heartbeat_multiple_machines(startup_license_server):
 #     pass

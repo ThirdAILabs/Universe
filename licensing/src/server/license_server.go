@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -109,5 +111,8 @@ func Heartbeat(wr http.ResponseWriter, req *http.Request) {
 
 func main() {
 	http.HandleFunc("/heartbeat", Heartbeat)
+	f := bufio.NewWriter(os.Stdout)
+	fmt.Print("Starting server on port 8080\n", f)
+	f.Flush()
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
