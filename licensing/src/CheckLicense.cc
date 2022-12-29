@@ -69,10 +69,13 @@ void deactivate() {
   _entitlements.clear();
 }
 
-void startHeartbeat(const std::string& heartbeat_url) {
+void startHeartbeat(const std::string& heartbeat_url,
+                    const std::optional<uint32_t>& heartbeat_timeout) {
   (void)heartbeat_url;
+  (void)heartbeat_timeout;
 #if THIRDAI_CHECK_LICENSE
-  _heartbeat_thread = std::make_unique<HeartbeatThread>(heartbeat_url);
+  _heartbeat_thread =
+      std::make_unique<HeartbeatThread>(heartbeat_url, heartbeat_timeout);
 #endif
 }
 

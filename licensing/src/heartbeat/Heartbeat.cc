@@ -1,5 +1,6 @@
 #include "Heartbeat.h"
 #include <stdexcept>
+#include <string>
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include <cpp-httplib/httplib.h>
 #include <cryptopp/base64.h>  // Base64 decoder
@@ -15,10 +16,20 @@ using json = nlohmann::json;
 const std::string THIRDAI_PUBLIC_KEY_BASE64_DER =
     "MCowBQYDK2VwAyEAqA9j+Pk81yUz7FPZfg94bez6m1j8j1jiLctTjmB2s7w=";
 
-HeartbeatThread::HeartbeatThread(const std::string& url)
+HeartbeatThread::HeartbeatThread(const std::string& url, const std::optional<uint32_t>& heartbeat_timeout)
     : _machine_id(getRandomIdentifier(/* numBytesRandomness = */ 32)),
       _verified(true),
       _should_terminate(false) {
+
+  if (!heartbeat_timeout.has_value()) {
+    _no_heartbeat_time_limit = MAX_NO_HEARTBEAT_TIME_LIMIT;
+  } else {
+    if (MAX_NO_HEARTBEAT_TIME_LIMIT < *heartbeat_timeout) {
+      throw std::invalid_argument("Heartbeat timeout must be less than " + std::to_string(MAX_NO_HEARTBEAT_TIME_LIMIT) + " seconds.");
+    }
+    _no_heartbeat_time_limit = *heartbeat_timeout;
+  }
+
   if (!doSingleHeartbeat(url)) {
     throw std::runtime_error(
         "Could not establish initial connection to licensing server.");
@@ -31,7 +42,7 @@ void HeartbeatThread::verify() {
     throw std::runtime_error(
         "The heartbeat thread could not verify with the server because there "
         "has not been a successful heartbeat in " +
-        std::to_string(VALIDATION_FAIL_TIMEOUT_SECONDS) +
+        std::to_string(_no_heartbeat_time_limit) +
         " seconds. Check the logs or metrics for more information.");
   }
 }
@@ -52,13 +63,13 @@ void HeartbeatThread::heartbeatThread(const std::string& url) {
   while (!_should_terminate) {
     if (doSingleHeartbeat(url)) {
       last_validation = currentEpochSeconds();
+      _verified = true;
+    } else {
+      _verified = currentEpochSeconds() - last_validation < _no_heartbeat_time_limit;
     }
 
-    _verified = last_validation - currentEpochSeconds() <
-                VALIDATION_FAIL_TIMEOUT_SECONDS;
-
     std::this_thread::sleep_for(
-        std::chrono::seconds(THREAD_SLEEP_PERIOD_SECONDS));
+        std::chrono::seconds(HEARTBEAT_PERIOD_SECONDS));
   }
 }
 

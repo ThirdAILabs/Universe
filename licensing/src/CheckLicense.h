@@ -19,7 +19,8 @@ void activate(const std::string& api_key);
 void deactivate();
 
 // License verification method 2: heartbeat
-void startHeartbeat(const std::string& heartbeat_url);
+void startHeartbeat(const std::string& heartbeat_url,
+                    const std::optional<uint32_t>& heartbeat_timeout);
 void endHeartbeat();
 
 // License verification method 3: license file

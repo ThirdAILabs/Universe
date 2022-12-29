@@ -21,6 +21,7 @@
 
 // Licensing wrapper
 #include <licensing/src/CheckLicense.h>
+#include <optional>
 
 #ifndef __clang__
 #include <omp.h>
@@ -123,6 +124,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   m.def(
       "start_heartbeat", &thirdai::licensing::startHeartbeat,
       py::arg("license_server_url"),
+      py::arg("heartbeat_timeout") = std::nullopt,
       "Starts a ThirdAI heartbeat endpoint to remain authenticated for future "
       "calls to ThirdAI functions.");
 
