@@ -9,7 +9,7 @@ namespace thirdai::bolt::nn::ops {
 class FullyConnected final : public Op {
  public:
   static tensor::ActivationTensorPtr apply(
-      std::shared_ptr<FullyConnectedLayer> kernel, tensor::TensorPtr input,
+      std::shared_ptr<FullyConnectedLayer> kernel, tensor::Tensor* input,
       std::string name);
 
   void forward(uint32_t index_in_batch) final;
@@ -20,7 +20,7 @@ class FullyConnected final : public Op {
 
   void disableSparseParameterUpdates() final;
 
-  std::vector<tensor::TensorPtr> inputs() const final;
+  std::vector<tensor::Tensor*> inputs() const final;
 
   std::vector<tensor::ActivationTensorPtr> outputs() const final;
 
@@ -28,11 +28,11 @@ class FullyConnected final : public Op {
 
  private:
   FullyConnected(std::shared_ptr<FullyConnectedLayer> kernel,
-                 tensor::TensorPtr input, std::string name);
+                 tensor::Tensor* input, std::string name);
 
   std::shared_ptr<FullyConnectedLayer> _kernel;
 
-  tensor::TensorPtr _input;
+  tensor::Tensor* _input;
 
   tensor::ActivationTensorPtr _output;
 };
@@ -42,7 +42,7 @@ class FullyConnectedFactory {
   FullyConnectedFactory(uint32_t dim, float sparsity, std::string activation,
                         SamplingConfigPtr sampling);
 
-  tensor::ActivationTensorPtr apply(tensor::TensorPtr input);
+  tensor::ActivationTensorPtr apply(tensor::TensorPtr& input);
 
  private:
   uint32_t _dim;

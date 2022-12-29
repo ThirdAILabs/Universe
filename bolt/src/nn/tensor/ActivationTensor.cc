@@ -8,14 +8,16 @@ std::string nextActivationTensorName() {
   return "act_" + std::to_string(++constructed);
 }
 
-ActivationTensor::ActivationTensor(uint32_t dim, uint32_t sparse_nonzeros)
+ActivationTensor::ActivationTensor(uint32_t dim, uint32_t sparse_nonzeros,
+                                   ops::Op* source)
     : Tensor(dim, nextActivationTensorName()),
       _sparse_nonzeros(sparse_nonzeros),
-      _using_sparsity(true) {}
+      _using_sparsity(true),
+      _source(source) {}
 
 std::shared_ptr<ActivationTensor> ActivationTensor::make(
-    uint32_t dim, uint32_t sparse_nonzeros) {
-  return std::make_shared<ActivationTensor>(dim, sparse_nonzeros);
+    uint32_t dim, uint32_t sparse_nonzeros, ops::Op* source) {
+  return std::make_shared<ActivationTensor>(dim, sparse_nonzeros, source);
 }
 
 std::optional<uint32_t> ActivationTensor::numNonzeros() const {
@@ -64,5 +66,7 @@ void ActivationTensor::updateSparsity(uint32_t new_sparse_nonzeros) {
     dependant->notifyInputSparsityChange();
   }
 }
+
+ops::Op* ActivationTensor::source() const { return _source; }
 
 }  // namespace thirdai::bolt::nn::tensor

@@ -53,9 +53,13 @@ class Op {
   virtual void disableSparseParameterUpdates() = 0;
 
   /**
-   * Returns the input tensor(s) of the op.
+   * Returns the input tensor(s) of the op. The inputs here is stored as a raw
+   * pointers instead of smart pointers to avoid cycles since the input tensors
+   * will store smart pointers to the ops that use them in their dependent_ops
+   * field. The graph only stores smart pointers in the forward direction in the
+   * graph and raw pointers in the backward direction to avoid cycles.
    */
-  virtual std::vector<tensor::TensorPtr> inputs() const = 0;
+  virtual std::vector<tensor::Tensor*> inputs() const = 0;
 
   /**
    * Returns the output tensor(s) of the op.

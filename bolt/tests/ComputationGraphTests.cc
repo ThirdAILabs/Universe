@@ -10,11 +10,16 @@ namespace thirdai::bolt::nn::tests {
 
 class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
  private:
-  Noop(std::vector<tensor::TensorPtr> inputs, uint32_t n_outputs,
+  Noop(const std::vector<tensor::TensorPtr>& inputs, uint32_t n_outputs,
        std::string name)
-      : ops::Op(std::move(name)), _inputs(std::move(inputs)) {
+      : ops::Op(std::move(name)) {
+    for (const auto& input : inputs) {
+      _inputs.push_back(input.get());
+    }
+
     for (uint32_t i = 0; i < n_outputs; i++) {
-      _outputs.push_back(tensor::ActivationTensor::make(1, 1));
+      _outputs.push_back(tensor::ActivationTensor::make(
+          /* dim= */ 1, /* sparse_nonzeros= */ 1, this));
     }
   }
 
@@ -40,7 +45,7 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
     (void)t;
   }
 
-  std::vector<tensor::TensorPtr> inputs() const final { return _inputs; }
+  std::vector<tensor::Tensor*> inputs() const final { return _inputs; }
 
   std::vector<tensor::ActivationTensorPtr> outputs() const final {
     return _outputs;
@@ -51,7 +56,7 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
   void notifyInputSparsityChange() final {}
 
  private:
-  std::vector<tensor::TensorPtr> _inputs;
+  std::vector<tensor::Tensor*> _inputs;
   std::vector<tensor::ActivationTensorPtr> _outputs;
 };
 

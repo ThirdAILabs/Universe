@@ -9,10 +9,11 @@ namespace thirdai::bolt::nn::tensor {
  */
 class ActivationTensor final : public Tensor {
  public:
-  ActivationTensor(uint32_t dim, uint32_t sparse_nonzeros);
+  ActivationTensor(uint32_t dim, uint32_t sparse_nonzeros, ops::Op* source);
 
   static std::shared_ptr<ActivationTensor> make(uint32_t dim,
-                                                uint32_t sparse_nonzeros);
+                                                uint32_t sparse_nonzeros,
+                                                ops::Op* source);
 
   std::optional<uint32_t> numNonzeros() const final;
 
@@ -34,6 +35,11 @@ class ActivationTensor final : public Tensor {
    */
   void updateSparsity(uint32_t new_sparse_nonzeros);
 
+  /**
+   * Returns the op which whose activations are stored in the tensor.
+   */
+  ops::Op* source() const;
+
  private:
   std::vector<BoltVector> _vectors;
   uint32_t _sparse_nonzeros;
@@ -45,6 +51,14 @@ class ActivationTensor final : public Tensor {
   std::vector<uint32_t> _active_neurons;
   std::vector<float> _activations;
   std::vector<float> _gradients;
+
+  /**
+   * The source here is stored as a raw pointer instead of smart pointer to
+   * avoid cycles since the op already stores a smart pointer to its output
+   * tensor. The graph only stores smart pointers in the forward direction in
+   * the graph and raw pointers in the backward direction to avoid cycles.
+   */
+  ops::Op* _source;
 };
 
 using ActivationTensorPtr = std::shared_ptr<ActivationTensor>;

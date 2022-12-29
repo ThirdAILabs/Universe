@@ -8,10 +8,10 @@
 namespace thirdai::bolt::nn::ops {
 
 tensor::ActivationTensorPtr FullyConnected::apply(
-    std::shared_ptr<FullyConnectedLayer> kernel, tensor::TensorPtr input,
+    std::shared_ptr<FullyConnectedLayer> kernel, tensor::Tensor* input,
     std::string name) {
-  auto op = std::make_shared<FullyConnected>(std::move(kernel),
-                                             std::move(input), std::move(name));
+  auto op = std::make_shared<FullyConnected>(std::move(kernel), input,
+                                             std::move(name));
 
   input->addDependantOp(op);
 
@@ -19,12 +19,10 @@ tensor::ActivationTensorPtr FullyConnected::apply(
 }
 
 FullyConnected::FullyConnected(std::shared_ptr<FullyConnectedLayer> kernel,
-                               tensor::TensorPtr input, std::string name)
-    : Op(std::move(name)),
-      _kernel(std::move(kernel)),
-      _input(std::move(input)) {
+                               tensor::Tensor* input, std::string name)
+    : Op(std::move(name)), _kernel(std::move(kernel)), _input(input) {
   _output = tensor::ActivationTensor::make(_kernel->getDim(),
-                                           _kernel->getSparseDim());
+                                           _kernel->getSparseDim(), this);
 }
 
 void FullyConnected::forward(uint32_t index_in_batch) {
@@ -52,9 +50,7 @@ void FullyConnected::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
 
-std::vector<tensor::TensorPtr> FullyConnected::inputs() const {
-  return {_input};
-}
+std::vector<tensor::Tensor*> FullyConnected::inputs() const { return {_input}; }
 
 std::vector<tensor::ActivationTensorPtr> FullyConnected::outputs() const {
   return {_output};
@@ -79,7 +75,7 @@ FullyConnectedFactory::FullyConnectedFactory(uint32_t dim, float sparsity,
 }
 
 tensor::ActivationTensorPtr FullyConnectedFactory::apply(
-    tensor::TensorPtr input) {
+    tensor::TensorPtr& input) {
   if (!_kernel) {
     FullyConnectedLayerConfig config(_dim, _sparsity, _activation, _sampling);
 
@@ -91,7 +87,7 @@ tensor::ActivationTensorPtr FullyConnectedFactory::apply(
         std::to_string(input->dim()) + ".");
   }
 
-  return FullyConnected::apply(_kernel, std::move(input), _name);
+  return FullyConnected::apply(_kernel, input.get(), _name);
 }
 
 }  // namespace thirdai::bolt::nn::ops
