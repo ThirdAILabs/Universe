@@ -30,8 +30,8 @@ def get_two_col_hashed_string_dataset(col_length, output_range):
 
 
 def test_string():
-    col_length = 100
-    output_range = 100
+    col_length = 10000
+    output_range = 10000
     featurizer, columns = get_two_col_hashed_string_dataset(col_length, output_range)
     columns = featurizer.featurize(columns, True)
     string_dataset = columns.convert_to_dataset(
@@ -59,14 +59,17 @@ def test_string():
 
     explanations = featurizer.explain(columns, contribution_columns)
 
+    column_names = ["column1", "column2"]
+
     for i in range(col_length):
-        sw = explanations.getitem("column1").get_row(i)
+        for column_name in column_names:
+            sw = explanations.getitem(column_name).get_row(i)
 
-        sw1 = explanations.getitem("column1_hashes").get_row(i)
+            sw1 = explanations.getitem(column_name + "_hashes").get_row(i)
 
-        for j in range(len(sw)):
+            for j in range(len(sw)):
 
-            assert sw[j].gradient == sw1[j].gradient
+                assert sw[j].gradient == sw1[j].gradient
 
 
 # Tests that if we hash two columns and then turn them into a dataset, the sparse

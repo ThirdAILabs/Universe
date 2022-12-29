@@ -373,9 +373,13 @@ BoltGraph::getInputGradientsBatch(
   try {
     single_input_gradients_context.setInputs(/* batch_idx = */ 0, _inputs);
 
-    std::vector<std::vector<float>> input_dataset_grad;
-    std::vector<std::vector<uint32_t>> input_dataset_indices;
+    std::vector<std::vector<float>> input_dataset_grad(batch_size);
+    std::vector<std::vector<uint32_t>> input_dataset_indices(batch_size);
 
+#pragma omp parallel for default(none)                                         \
+    shared(batch_size, neuron_to_explain,                                      \
+           explain_prediction_using_highest_activation, input_dataset_indices, \
+           input_dataset_grad)
     for (uint32_t vec_index = 0; vec_index < batch_size; vec_index++) {
       BoltVector& input_vector = _inputs[0]->getOutputVector(vec_index);
 
@@ -394,7 +398,7 @@ BoltGraph::getInputGradientsBatch(
         std::vector<uint32_t> input_vector_indices(
             input_vector.active_neurons,
             input_vector.active_neurons + input_vector.len);
-        input_dataset_indices.push_back(input_vector_indices);
+        input_dataset_indices[vec_index] = (input_vector_indices);
       }
       resetOutputGradients(vec_index);
       _loss->lossGradients(_output->getOutputVector(vec_index), label_vector,
@@ -408,10 +412,10 @@ BoltGraph::getInputGradientsBatch(
         }
       }
 
-      input_dataset_grad.push_back(normalised_vec_grad);
+      input_dataset_grad[vec_index] = (normalised_vec_grad);
     }
     cleanupAfterBatchProcessing();
-    if (input_dataset_indices.empty()) {
+    if (input_dataset_indices[0].empty()) {
       return std::make_pair(std::nullopt, input_dataset_grad);
     }
     return std::make_pair(input_dataset_indices, input_dataset_grad);
