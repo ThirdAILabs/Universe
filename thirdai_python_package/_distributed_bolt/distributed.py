@@ -50,14 +50,14 @@ def add_distributed_to_udt():
                 Then, one way around is to save the individual file on all nodes, with same name.
             batch_size (Optional[int], optional): Batch Size for distributed training. It is the
                 batch size for overall training, per node batch size is batch_size//num_nodes.
-                Defaults to None.
+                Defaults to 2048.
             learning_rate (float, optional): Learning rate for distributed training. Defaults to 0.001.
             epochs (int, optional): Number of epochs to train. Defaults to 3.
             max_in_memory_batches (Optional[int], optional): The maximum number of batches to load in
                 memory at a given time. If this is specified then the dataset will be processed
-                in a streaming fashion. Defaults to -1.
+                in a streaming fashion. Defaults to Defaults to None, which causes the entire dataset to be loaded in memory.
             gcp_credentials_path (Optional[str], optional): Credentials for GCP, if using GCP for data
-                loading. Defaults to None.
+                loading.
             metrics (List[str], optional): Metrics to be logged during training. Defaults to [].
             verbose (bool, optional): Prints info about training. Defaults to True.
 
@@ -69,14 +69,12 @@ def add_distributed_to_udt():
             import thirdai
             cluster_config = thirdai.distributed_bolt.RayTrainingClusterConfig(
                 num_workers=2,
-                communication_type=communication_type,
-                cluster_address=mini_cluster.address,
-                runtime_env={"working_dir": working_dir},
-                ignore_reinit_error=True,
+                communication_type="circular",
+                cluster_address="auto",
             )
             udt_model.train_distributed(
-                cluster_config=rcluster_config,
-                filenames=filenames,
+                cluster_config=cluster_config,
+                filenames=["train_file_1", "train_file_2",....],
             )
         """
 

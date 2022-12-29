@@ -1,6 +1,5 @@
 import logging
 
-import thirdai
 from thirdai import data
 
 

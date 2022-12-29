@@ -226,7 +226,7 @@ class Worker:
             self.comm.receive_gradients(averaged_gradients_ref)
 
     @timed
-    def _try_load_new_datasets_into_model(self):
+    def _try_load_new_datasets_into_model(self) -> bool:
         """
         Returns whether the load was successful (if the generator stream is over
         then this will fail until we call restart on it).
