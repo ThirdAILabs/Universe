@@ -12,11 +12,13 @@ import (
 
 func init() {
 	ResetGlobalMachineHeartbeatTracker()
-	MaxActiveMachines = parseFromVar(MaxActiveMachinesString)
+	MaxActiveMachines = int(parseFromVar(MaxActiveMachinesString))
+	ActiveTimeoutMillis = parseFromVar(ActiveTimeoutMillisString)
 }
 
-func parseFromVar(varToParse string) int {
-	parsed, err := strconv.Atoi(varToParse)
+func parseFromVar(varToParse string) int64 {
+	// See https://stackoverflow.com/q/21532113/golang-string-to-int64
+	parsed, err := strconv.ParseInt(varToParse, 10, 64)
 	if err != nil {
 		panic(err)
 	}
@@ -27,9 +29,14 @@ func parseFromVar(varToParse string) int {
 // We have a string variable and an int variable because we can only set strings
 // during the go build phase.
 var MaxActiveMachinesString = "5"
-var MaxActiveMachines = 5
+var MaxActiveMachines int = 5
 
-const ActiveTimeoutMillis int64 = 1000000
+// Machines we have not heard from in this many milliseconds we consider no 
+// longer active and do not count them towards a groups' machine limit.
+// We have a string variable and an int variable because we can only set strings
+// during the go build phase.
+var ActiveTimeoutMillisString = "1000000"
+var ActiveTimeoutMillis int64 = 1000000
 
 type MachineTracker struct {
 	Mu                       sync.Mutex

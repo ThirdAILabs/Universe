@@ -15,23 +15,29 @@ valid_local_port = "8080"
 
 invalid_heartbeat_location = f"http://localhost:97531"
 
-max_num_workers = 3
+# Since the name of the license server executable is just augmented with the max
+# number of machines and not the machine timeout, we use a different number of
+# workers for the "normal" server and the "fast timeout" server.
+max_num_workers_normal = 3
+
+# The fast timeout info here describes a licensing server where the timeout for
+# when machines are considered no longer active is very low. This allows us to
+# test timeout behavior without waiting the usual amount of time necessary for
+# the server to consider machines no longer active.
+max_num_workers_fast_timeout = 1
+fast_timeout_ms = 10
 
 python_test_dir_path = Path(__file__).resolve().parent
 go_build_script = python_test_dir_path / ".." / "bin" / "build_license_server.py"
-go_run_script = (
-    python_test_dir_path
-    / ".."
-    / "src"
-    / "server"
-    / f"license-server-max-{max_num_workers}"
-)
 heartbeat_script = python_test_dir_path / "heartbeat_script.py"
 
 
 def setup_module():
-    build_command = f"{go_build_script.resolve()} {max_num_workers}"
-    os.system(build_command)
+    normal_build_command = f"{go_build_script.resolve()} {max_num_workers_normal}"
+    os.system(normal_build_command)
+
+    fast_timeout_server_build_command = f"{go_build_script.resolve()} {max_num_workers_fast_timeout} --machine_timeout_ms {fast_timeout_ms}"
+    os.system(fast_timeout_server_build_command)
 
 
 def wait_for_server_start():
@@ -62,8 +68,14 @@ def wait_for_server_end():
             return
 
 
-@pytest.fixture(scope="function")
-def license_server():
+def license_server_helper(max_workers):
+    go_run_script = (
+        python_test_dir_path
+        / ".."
+        / "src"
+        / "server"
+        / f"license-server-max-{max_workers}"
+    )
     server_process = subprocess.Popen(
         str(go_run_script.resolve()), stdout=subprocess.PIPE, universal_newlines=True
     )
@@ -71,6 +83,16 @@ def license_server():
     yield server_process
     server_process.kill()
     wait_for_server_end()
+
+
+@pytest.fixture(scope="function")
+def normal_license_server():
+    yield from license_server_helper(max_num_workers_normal)
+
+
+@pytest.fixture(scope="function")
+def fast_timeout_license_server():
+    yield from license_server_helper(max_num_workers_fast_timeout)
 
 
 def test_with_invalid_heartbeat_location():
@@ -89,15 +111,15 @@ def test_with_invalid_heartbeat_grace_period():
         thirdai.start_heartbeat(invalid_heartbeat_location, heartbeat_timeout=100000)
 
 
-def test_valid_heartbeat(license_server):
+def test_valid_heartbeat(normal_license_server):
     thirdai.start_heartbeat(LOCAL_HEARTBEAT_SERVER)
     this_should_require_a_license_bolt()
     thirdai.end_heartbeat()
 
 
-def test_heartbeat_multiple_machines(license_server):
+def test_heartbeat_multiple_machines(normal_license_server):
 
-    for _ in range(max_num_workers):
+    for _ in range(max_num_workers_normal):
         assert (
             subprocess.run(
                 f"python3 {heartbeat_script.resolve()}", shell=True
@@ -111,14 +133,21 @@ def test_heartbeat_multiple_machines(license_server):
     )
 
 
-# def test_more_machines_after_server_timeout(fast_timeout_license_server):
-#     pass
+def test_more_machines_after_server_timeout(fast_timeout_license_server):
+    for _ in range(max_num_workers_fast_timeout * 3):
+        assert (
+            subprocess.run(
+                f"python3 {heartbeat_script.resolve()}", shell=True
+            ).returncode
+            == 0
+        )
+        time.sleep(fast_timeout_ms / 1000)
 
 
-def test_client_side_timeout_after_heartbeat_fail(license_server):
+def test_client_side_timeout_after_heartbeat_fail(normal_license_server):
     thirdai.start_heartbeat(LOCAL_HEARTBEAT_SERVER, heartbeat_timeout=1)
     this_should_require_a_license_bolt()
-    license_server.kill()
+    normal_license_server.kill()
     wait_for_server_end()
     # Sleep for 3 seconds to ensure that the heartbeat (which is once a second)
     # runs at least once one second after the server goes down
