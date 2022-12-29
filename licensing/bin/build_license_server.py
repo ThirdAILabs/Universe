@@ -4,7 +4,7 @@ import argparse
 import pathlib
 import os
 
-parser = argparse.ArgumentParser(description="Built the executable file for an on-prem go license server.")
+parser = argparse.ArgumentParser(description="Build the executable file for an on-prem go license server.")
 parser.add_argument(
     "max_num_machines",
     type=int,

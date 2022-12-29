@@ -57,8 +57,6 @@ func TestMultipleMachineTracking(t *testing.T) {
 	ResetGlobalMachineHeartbeatTracker()
 	startTime := time.Now().Unix()
 
-	print(MaxActiveMachines, "\n")
-
 	for machineId := 0; machineId < MaxActiveMachines; machineId++ {
 		statusCode, _ := makeHeartbeatRequest(t, fmt.Sprintf("{\"machine_id\": \"%d\", \"metadata\": \"\"}", machineId))
 		assert.Equal(t, statusCode, 200)

@@ -65,7 +65,7 @@ func ResetGlobalMachineHeartbeatTracker() {
 func Heartbeat(wr http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		http.Error(wr, "Invalid request method.", 405)
-		print("Returning 405 bad method\n")
+		// print("Returning 405 bad method\n")
 		return
 	}
 
@@ -76,7 +76,7 @@ func Heartbeat(wr http.ResponseWriter, req *http.Request) {
 	err := decoder.Decode(&parsedReq)
 	if err != nil {
 		http.Error(wr, fmt.Sprintf("Error parsing body: %s", err), 400)
-		print("Returning 400 bad body\n")
+		// print("Returning 400 bad body\n")
 		return
 	}
 
@@ -93,7 +93,7 @@ func Heartbeat(wr http.ResponseWriter, req *http.Request) {
 
 	if numActiveMachines+numMachinesThatWillBeAdded > MaxActiveMachines {
 		http.Error(wr, "Every machine slot is currently taken", 400)
-		print("Returning all machine slots currently taken\n")
+		// print("Returning all machine slots currently taken\n")
 		globalTracker.Mu.Unlock()
 		return
 	}
@@ -104,11 +104,10 @@ func Heartbeat(wr http.ResponseWriter, req *http.Request) {
 	toSign := fmt.Sprintf("%s\n%s", parsedReq.MachineId, parsedReq.Metadata)
 	signatureBytes := []byte(Sign(toSign))
 	wr.Write(signatureBytes)
-	print("Returning success\n")
+	// print("Returning success\n")
 }
 
 func main() {
-	print(MaxActiveMachines)
 	http.HandleFunc("/heartbeat", Heartbeat)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
