@@ -2,9 +2,9 @@
 
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
-#include <memory>
 #include <cctype>
 #include <cstdlib>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string_view>
