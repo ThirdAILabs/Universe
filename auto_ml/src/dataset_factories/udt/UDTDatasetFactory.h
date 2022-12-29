@@ -143,7 +143,18 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   uint32_t getLabelDim() final { return _label_dim; }
 
-  bool hasTemporalTracking() const { return !_temporal_relationships.empty(); }
+  void resetDatasetFactory() {
+    _labeled_history_updating_processor = {};
+    _unlabeled_non_updating_processor = {};
+    _column_number_map = {};
+    _column_number_to_name = {};
+  }
+
+  bool hasTemporalTracking() const final {
+    return !_temporal_relationships.empty();
+  }
+
+  UDTConfigPtr config() { return _config; }
 
  private:
   PreprocessedVectorsMap processAllMetadata();

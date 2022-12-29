@@ -64,6 +64,8 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
     return _labeled_batch_processor->getLabelDim();
   }
 
+  bool hasTemporalTracking() const final { return false; }
+
  private:
   dataset::GenericBatchProcessorPtr _labeled_batch_processor;
   dataset::GenericBatchProcessorPtr _unlabeled_batch_processor;

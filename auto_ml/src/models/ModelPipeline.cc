@@ -5,8 +5,10 @@
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <pybind11/stl.h>
 #include <telemetry/src/PrometheusClient.h>
+#include <iostream>
 #include <limits>
 #include <memory>
+#include <stdexcept>
 
 namespace py = pybind11;
 
@@ -202,7 +204,11 @@ std::vector<dataset::Explanation> ModelPipeline::explain(
 void ModelPipeline::trainInMemory(
     data::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
     const std::optional<ValidationOptions>& validation) {
-  auto [train_data, train_labels] = dataset->loadInMemory(ALL_BATCHES).value();
+  auto loaded_data = dataset->loadInMemory(ALL_BATCHES);
+  if (!loaded_data) {
+    throw std::invalid_argument("No data passed to train.");
+  }
+  auto [train_data, train_labels] = std::move(loaded_data.value());
 
   if (validation) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
@@ -252,7 +258,7 @@ void ModelPipeline::trainOnStream(
    * supported because it would be extremely inefficient if the dataset is
    * sufficiently large.
    */
-  if (validation && !hasTemporalTracking()) {
+  if (validation && !_dataset_factory->hasTemporalTracking()) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
         dataset::SimpleFileDataLoader::make(validation->filename(),
                                             DEFAULT_EVALUATE_BATCH_SIZE),
@@ -264,6 +270,11 @@ void ModelPipeline::trainOnStream(
     train_config.withValidation(val_data, val_labels,
                                 validation->validationConfig(),
                                 validation->interval());
+  } else if (validation && !_dataset_factory->hasTemporalTracking()) {
+    std::cerr
+        << "Warning: Currently specifying validation along with "
+           "max_in_memory_batches is not supported with temporal tracking."
+        << std::endl;
   }
 
   uint32_t epochs = train_config.epochs();
@@ -372,16 +383,6 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
   }
 
   return best_threshold;
-}
-
-bool ModelPipeline::hasTemporalTracking() const {
-  auto udt_dataset_factory =
-      std::dynamic_pointer_cast<data::UDTDatasetFactory>(_dataset_factory);
-
-  if (udt_dataset_factory) {
-    return udt_dataset_factory->hasTemporalTracking();
-  }
-  return false;
 }
 
 }  // namespace thirdai::automl::models
