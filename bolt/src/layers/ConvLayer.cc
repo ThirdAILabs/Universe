@@ -2,19 +2,17 @@
 #include "FullyConnectedLayer.h"
 #include <exceptions/src/Exceptions.h>
 #include <numeric>
-#include <random>
 
 namespace thirdai::bolt {
 
 ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
                      uint32_t prev_num_filters,
-                     uint32_t prev_num_sparse_filters,
-                     std::pair<uint32_t, uint32_t> next_kernel_size)
+                     uint32_t prev_num_sparse_filters)
     : _dim(config.num_filters * config.num_patches),
       _prev_dim(prev_dim),
       _sparse_dim(config.sparsity * config.num_filters * config.num_patches),
       _sparsity(config.sparsity),
-      _act_func(config.act_func),
+      _act_func(config.activation_fn),
       _num_filters(config.num_filters),
       _num_sparse_filters(config.num_filters * config.sparsity),
       _num_patches(config.num_patches),
@@ -39,9 +37,7 @@ ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
 
   _is_active = std::vector<bool>(_num_filters * _num_patches, false);
 
-  initOptimizer();
-
-  buildPatchMaps(next_kernel_size);
+  buildPatchMaps(config.next_kernel_size);
 
   std::random_device rd;
   std::default_random_engine eng(rd());
@@ -51,34 +47,27 @@ ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    // hashes input of size _patch_dim
-    _hasher = config.sampling_config->getHashFunction(_patch_dim);
-
-    _hash_table = config.sampling_config->getHashTable();
-
-    buildHashTables();
-
-    _rand_neurons = std::vector<uint32_t>(_num_filters);
-
-    std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
-    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
+    initSamplingDatastructures(config.sampling_config, rd);
   }
+
+  initOptimizer();
 }
 
 void ConvLayer::forward(const BoltVector& input, BoltVector& output,
                         const BoltVector* labels) {
+  // TODO (david): evaluate eigen
   (void)labels;
   if (output.isDense()) {
     if (input.isDense()) {
-      forwardImpl<true, true>(input, output);
+      forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/true>(input, output);
     } else {
-      forwardImpl<true, false>(input, output);
+      forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/false>(input, output);
     }
   } else {
     if (input.isDense()) {
-      forwardImpl<false, true>(input, output);
+      forwardImpl</*DENSE=*/false, /*PREV_DENSE=*/true>(input, output);
     } else {
-      forwardImpl<false, false>(input, output);
+      forwardImpl</*DENSE=*/false, /*PREV_DENSE=*/false>(input, output);
     }
   }
 }
@@ -159,17 +148,22 @@ float ConvLayer::calculateFilterActivation(
 }
 
 void ConvLayer::backpropagate(BoltVector& input, BoltVector& output) {
+  // TODO (david): evaluate eigen
   if (output.isDense()) {
     if (input.isDense()) {
-      backpropagateImpl<false, true, true>(input, output);
+      backpropagateImpl</*IS_INPUT=*/false, /*DENSE=*/true,
+                        /*PREV_DENSE=*/true>(input, output);
     } else {
-      backpropagateImpl<false, true, false>(input, output);
+      backpropagateImpl</*IS_INPUT=*/false, /*DENSE=*/true,
+                        /*PREV_DENSE=*/false>(input, output);
     }
   } else {
     if (input.isDense()) {
-      backpropagateImpl<false, false, true>(input, output);
+      backpropagateImpl</*IS_INPUT=*/false, /*DENSE=*/false,
+                        /*PREV_DENSE=*/true>(input, output);
     } else {
-      backpropagateImpl<false, false, false>(input, output);
+      backpropagateImpl</*IS_INPUT=*/false, /*DENSE=*/false,
+                        /*PREV_DENSE=*/false>(input, output);
     }
   }
 }
@@ -177,15 +171,19 @@ void ConvLayer::backpropagate(BoltVector& input, BoltVector& output) {
 void ConvLayer::backpropagateInputLayer(BoltVector& input, BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
-      backpropagateImpl<true, true, true>(input, output);
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
+                        /*PREV_DENSE=*/true>(input, output);
     } else {
-      backpropagateImpl<true, true, false>(input, output);
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
+                        /*PREV_DENSE=*/false>(input, output);
     }
   } else {
     if (input.isDense()) {
-      backpropagateImpl<true, false, true>(input, output);
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/false,
+                        /*PREV_DENSE=*/true>(input, output);
     } else {
-      backpropagateImpl<true, false, false>(input, output);
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/false,
+                        /*PREV_DENSE=*/false>(input, output);
     }
   }
 }
@@ -332,6 +330,26 @@ void ConvLayer::initOptimizer() {
   }
 }
 
+void ConvLayer::initSamplingDatastructures(
+    const SamplingConfigPtr& sampling_config, std::random_device& rd) {
+  if (sampling_config->isRandomSampling()) {
+    throw std::invalid_argument(
+        "Conv Layer does not currently support random sampling.");
+  }
+
+  // hashes input of size _patch_dim
+  _hasher = sampling_config->getHashFunction(_patch_dim);
+
+  _hash_table = sampling_config->getHashTable();
+
+  buildHashTables();
+
+  _rand_neurons = std::vector<uint32_t>(_num_filters);
+
+  std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
+  std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
+}
+
 void ConvLayer::reBuildHashFunction() {
   if (_sparsity >= 1.0) {
     return;
@@ -353,6 +371,17 @@ void ConvLayer::buildHashTables() {
 
   _hash_table->clearTables();
   _hash_table->insertSequential(_num_filters, 0, hashes.data());
+}
+
+void ConvLayer::buildLayerSummary(std::stringstream& summary) const {
+  summary << "num_filters=" << _num_filters << ", sparsity=" << _sparsity
+          << ", act_func=";
+  summary << activationFunctionToStr(_act_func);
+
+  summary << ", kernel_size=" << _kernel_size;
+  summary << ", num_patches=" << _num_patches;
+
+  summary << "\n";
 }
 
 float* ConvLayer::getWeights() const {
@@ -397,8 +426,7 @@ float* ConvLayer::getWeightsGradient() {
 
 // this function is only called from constructor
 void ConvLayer::buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size) {
-  /** TODO(David): btw this will be factored out soon into an N-tower model and
-  a patch remapping
+  /** TODO(David): refactor this and optimize
 
   Suppose we have an image that can be broken into 16 patches (numbers 0-15)
   with kernel size K x K as follows:

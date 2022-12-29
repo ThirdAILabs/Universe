@@ -52,29 +52,37 @@ class FullyConnectedLayerConfig {
 
 class ConvLayerConfig final {
  public:
-  ConvLayerConfig(uint64_t num_filters, const std::string& activation,
-                  std::pair<uint32_t, uint32_t> kernel_size)
-      : ConvLayerConfig(num_filters, /* sparsity= */ 1.0, activation,
-                        kernel_size) {}
+  ConvLayerConfig(uint64_t _num_filters, const std::string& _activation,
+                  std::pair<uint32_t, uint32_t> _kernel_size,
+                  uint32_t _num_patches,
+                  std::pair<uint32_t, uint32_t> _next_kernel_size)
+      : ConvLayerConfig(_num_filters, /* sparsity= */ 1.0, _activation,
+                        _kernel_size, _num_patches, _next_kernel_size) {}
 
-  ConvLayerConfig(uint64_t num_filters, float sparsity,
-                  const std::string& activation,
-                  std::pair<uint32_t, uint32_t> kernel_size)
-      : ConvLayerConfig(num_filters, sparsity, activation, kernel_size,
-                        DWTASamplingConfig::autotune(num_filters, sparsity)) {}
-
-  ConvLayerConfig(uint64_t num_filters, float sparsity,
-                  const std::string& activation,
-                  std::pair<uint32_t, uint32_t> kernel_size,
-                  SamplingConfigPtr config);
-
-  float getSparsity() const { return _sparsity; }
-
-  ActivationFunction getActFunc() const { return _activation_fn; }
-
-  const SamplingConfigPtr& getSamplingConfig() const {
-    return _sampling_config;
+  ConvLayerConfig(uint64_t _num_filters, float _sparsity,
+                  const std::string& _activation,
+                  std::pair<uint32_t, uint32_t> _kernel_size,
+                  uint32_t _num_patches,
+                  std::pair<uint32_t, uint32_t> _next_kernel_size)
+      : ConvLayerConfig(_num_filters, _sparsity, _activation, _kernel_size,
+                        _num_patches, _next_kernel_size,
+                        DWTASamplingConfig::autotune(_num_filters, _sparsity)) {
   }
+
+  ConvLayerConfig(uint64_t _num_filters, float _sparsity,
+                  const std::string& _activation,
+                  std::pair<uint32_t, uint32_t> _kernel_size,
+                  uint32_t _num_patches,
+                  std::pair<uint32_t, uint32_t> _next_kernel_size,
+                  SamplingConfigPtr _config);
+
+  uint64_t num_filters;
+  float sparsity;
+  ActivationFunction activation_fn;
+  std::pair<uint32_t, uint32_t> kernel_size;
+  uint32_t num_patches;
+  std::pair<uint32_t, uint32_t> next_kernel_size;
+  SamplingConfigPtr sampling_config;
 
  private:
   // Private constructor for cereal
@@ -83,15 +91,9 @@ class ConvLayerConfig final {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_num_filters, _sparsity, _activation_fn, _sampling_config,
-            _kernel_size);
+    archive(num_filters, sparsity, activation_fn, sampling_config, num_patches,
+            kernel_size);
   }
-
-  uint64_t _num_filters;
-  float _sparsity;
-  ActivationFunction _activation_fn;
-  std::pair<uint32_t, uint32_t> _kernel_size;
-  SamplingConfigPtr _sampling_config;
 };
 
 enum class EmbeddingReductionType {

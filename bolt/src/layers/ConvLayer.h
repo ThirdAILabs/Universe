@@ -8,14 +8,14 @@
 #include <hashtable/src/SampledHashTable.h>
 #include <exceptions/src/Exceptions.h>
 #include <optional>
+#include <random>
 #include <stdexcept>
 
 namespace thirdai::bolt {
 class ConvLayer final {
  public:
   ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
-            uint32_t prev_num_filters, uint32_t prev_num_sparse_filters,
-            std::pair<uint32_t, uint32_t> next_kernel_size);
+            uint32_t prev_num_filters, uint32_t prev_num_sparse_filters);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels);
@@ -46,6 +46,10 @@ class ConvLayer final {
 
   uint32_t getSparseDim() const { return _sparse_dim; }
 
+  uint32_t getNumFilters() const { return _num_filters; }
+
+  uint32_t getNumSparseFilters() const { return _num_sparse_filters; }
+
   float* getWeights() const;
 
   float* getBiases() const;
@@ -70,6 +74,10 @@ class ConvLayer final {
 
   void initOptimizer();
 
+  void buildLayerSummary(std::stringstream& summary) const;
+
+  ~ConvLayer() = default;
+
  private:
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output);
@@ -88,6 +96,9 @@ class ConvLayer final {
 
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
   void backpropagateImpl(BoltVector& input, BoltVector& output);
+
+  void initSamplingDatastructures(const SamplingConfigPtr& sampling_config,
+                                  std::random_device& rd);
 
   void buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size);
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/layers/NewConvLayer.h>
+#include <bolt/src/layers/ConvLayer.h>
 
 namespace thirdai::bolt {
 
@@ -9,49 +9,58 @@ class ConvNode final : public Node,
                        public std::enable_shared_from_this<ConvNode> {
  private:
   ConvNode(uint64_t num_filters, const std::string& activation,
-           std::pair<uint32_t, uint32_t> kernel_size)
+           std::pair<uint32_t, uint32_t> kernel_size, uint32_t num_patches,
+           std::pair<uint32_t, uint32_t> next_kernel_size)
       : _layer(nullptr),
-        _config(
-            ConvLayerConfig(num_filters, activation, std::move(kernel_size))),
+        _config(ConvLayerConfig(num_filters, activation, std::move(kernel_size),
+                                num_patches, next_kernel_size)),
         _predecessor(nullptr) {}
 
   ConvNode(uint64_t num_filters, float sparsity, const std::string& activation,
-           std::pair<uint32_t, uint32_t> kernel_size)
+           std::pair<uint32_t, uint32_t> kernel_size, uint32_t num_patches,
+           std::pair<uint32_t, uint32_t> next_kernel_size)
       : _layer(nullptr),
         _config(ConvLayerConfig(num_filters, sparsity, activation,
-                                std::move(kernel_size))),
+                                std::move(kernel_size), num_patches,
+                                next_kernel_size)),
         _predecessor(nullptr) {}
 
   ConvNode(uint64_t num_filters, float sparsity, const std::string& activation,
-           std::pair<uint32_t, uint32_t> kernel_size,
+           std::pair<uint32_t, uint32_t> kernel_size, uint32_t num_patches,
+           std::pair<uint32_t, uint32_t> next_kernel_size,
            SamplingConfigPtr sampling_config)
       : _layer(nullptr),
         _config(ConvLayerConfig(num_filters, sparsity, activation,
-                                std::move(kernel_size),
-                                std::move(sampling_config))),
+                                std::move(kernel_size), num_patches,
+                                next_kernel_size, std::move(sampling_config))),
         _predecessor(nullptr) {}
 
  public:
   static std::shared_ptr<ConvNode> makeDense(
-      uint32_t dim, const std::string& activation,
-      std::pair<uint32_t, uint32_t> kernel_size) {
-    return std::shared_ptr<ConvNode>(
-        new ConvNode(dim, activation, kernel_size));
+      uint32_t num_filters, const std::string& activation,
+      std::pair<uint32_t, uint32_t> kernel_size, uint32_t num_patches,
+      std::pair<uint32_t, uint32_t> next_kernel_size) {
+    return std::shared_ptr<ConvNode>(new ConvNode(
+        num_filters, activation, kernel_size, num_patches, next_kernel_size));
   }
 
   static std::shared_ptr<ConvNode> makeAutotuned(
-      uint32_t dim, float sparsity, const std::string& activation,
-      std::pair<uint32_t, uint32_t> kernel_size) {
+      uint32_t num_filters, float sparsity, const std::string& activation,
+      std::pair<uint32_t, uint32_t> kernel_size, uint32_t num_patches,
+      std::pair<uint32_t, uint32_t> next_kernel_size) {
     return std::shared_ptr<ConvNode>(
-        new ConvNode(dim, sparsity, activation, kernel_size));
+        new ConvNode(num_filters, sparsity, activation, kernel_size,
+                     num_patches, next_kernel_size));
   }
 
   static std::shared_ptr<ConvNode> make(
-      uint32_t dim, float sparsity, const std::string& activation,
-      std::pair<uint32_t, uint32_t> kernel_size,
+      uint32_t num_filters, float sparsity, const std::string& activation,
+      std::pair<uint32_t, uint32_t> kernel_size, uint32_t num_patches,
+      std::pair<uint32_t, uint32_t> next_kernel_size,
       SamplingConfigPtr sampling_config) {
     return std::shared_ptr<ConvNode>(new ConvNode(
-        dim, sparsity, activation, kernel_size, std::move(sampling_config)));
+        num_filters, sparsity, activation, kernel_size, num_patches,
+        next_kernel_size, std::move(sampling_config)));
   }
 
   std::shared_ptr<ConvNode> addPredecessor(NodePtr node) {
@@ -60,7 +69,12 @@ class ConvNode final : public Node,
           "ConvNode expected to have exactly one predecessor, and "
           "addPredecessor cannot be called twice.");
     }
-    _predecessor = std::move(node);
+    auto conv_node = std::dynamic_pointer_cast<ConvNode>(node);
+    if (!conv_node) {
+      throw std::invalid_argument("Previous node must be ConvNode.");
+    }
+
+    _predecessor = std::move(conv_node);
 
     return shared_from_this();
   }
@@ -84,11 +98,15 @@ class ConvNode final : public Node,
 
   void initOptimizer() final { _layer->initOptimizer(); }
 
+  bool hasParameters() final { return false; }
+
  private:
   void compileImpl() final {
     assert(_config.has_value());
-    _layer =
-        std::make_shared<ConvLayer>(_config.value(), _predecessor->outputDim());
+    _layer = std::make_shared<ConvLayer>(
+        _config.value(), /* prev_dim= */ _predecessor->outputDim(),
+        /* prev_num_filters= */ _predecessor->getNumFilters(),
+        /* prev_num_sparse_filters= */ _predecessor->getNumSparseFilters());
     _config = std::nullopt;
   }
 
@@ -135,8 +153,9 @@ class ConvNode final : public Node,
   }
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {
+    (void)detailed;
     summary << _predecessor->name() << " -> " << name() << " (Conv): ";
-    _layer->buildLayerSummary(summary, detailed);
+    _layer->buildLayerSummary(summary);
   }
 
   std::string type() const final { return "conv"; }
@@ -158,6 +177,21 @@ class ConvNode final : public Node,
         "ConvNode is in an invalid internal state");
   }
 
+  uint32_t getNumFilters() const {
+    if (_layer == nullptr) {
+      throw std::invalid_argument("Not compiled. Cannot access num filters.");
+    }
+    return _layer->getNumFilters();
+  }
+
+  uint32_t getNumSparseFilters() const {
+    if (_layer == nullptr) {
+      throw std::invalid_argument(
+          "Not compiled. Cannot access num sparse filters.");
+    }
+    return _layer->getNumSparseFilters();
+  }
+
   // Private constructor for cereal. Must create dummy config since no default
   // constructor exists for layer config.
   ConvNode() : _config(std::nullopt) {}
@@ -174,7 +208,7 @@ class ConvNode final : public Node,
   std::optional<ConvLayerConfig> _config;
   std::optional<BoltBatch> _outputs;
 
-  NodePtr _predecessor;
+  std::shared_ptr<ConvNode> _predecessor;
 };
 
 using ConvNodePtr = std::shared_ptr<ConvNode>;

@@ -2,6 +2,7 @@
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -45,15 +46,17 @@ FullyConnectedLayerConfig::FullyConnectedLayerConfig(
   }
 }
 
-ConvLayerConfig::ConvLayerConfig(uint64_t num_filters, float sparsity,
-                                 const std::string& activation,
-                                 std::pair<uint32_t, uint32_t> kernel_size,
-                                 SamplingConfigPtr config)
-    : _num_filters(num_filters),
-      _sparsity(sparsity),
-      _activation_fn(getActivationFunction(activation)),
-      _kernel_size(std::move(kernel_size)),
-      _sampling_config(std::move(config)) {
+ConvLayerConfig::ConvLayerConfig(
+    uint64_t _num_filters, float _sparsity, const std::string& _activation,
+    std::pair<uint32_t, uint32_t> _kernel_size, uint32_t _num_patches,
+    std::pair<uint32_t, uint32_t> _next_kernel_size, SamplingConfigPtr _config)
+    : num_filters(_num_filters),
+      sparsity(_sparsity),
+      activation_fn(getActivationFunction(_activation)),
+      kernel_size(std::move(_kernel_size)),
+      num_patches(_num_patches),
+      next_kernel_size(std::move(_next_kernel_size)),
+      sampling_config(std::move(_config)) {
   checkSparsity(sparsity);
 }
 

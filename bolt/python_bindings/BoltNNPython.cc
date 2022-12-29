@@ -217,12 +217,15 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
 
   py::class_<ConvNode, std::shared_ptr<ConvNode>, Node>(nn_submodule, "Conv")
       .def(py::init(&ConvNode::makeDense), py::arg("num_filters"),
-           py::arg("activation"), py::arg("kernel_size"))
+           py::arg("activation"), py::arg("kernel_size"),
+           py::arg("num_patches"), py::arg("next_kernel_size"))
       .def(py::init(&ConvNode::makeAutotuned), py::arg("num_filters"),
-           py::arg("sparsity"), py::arg("activation"), py::arg("kernel_size"))
+           py::arg("sparsity"), py::arg("activation"), py::arg("kernel_size"),
+           py::arg("num_patches"), py::arg("next_kernel_size"))
 #if THIRDAI_EXPOSE_ALL
       .def(py::init(&ConvNode::make), py::arg("num_filters"),
            py::arg("sparsity"), py::arg("activation"), py::arg("kernel_size"),
+           py::arg("num_patches"), py::arg("next_kernel_size"),
            py::arg("sampling_config"))
 #endif
       .def("__call__", &ConvNode::addPredecessor, py::arg("prev_layer"),
