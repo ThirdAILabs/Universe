@@ -16,7 +16,7 @@ constexpr uint32_t HEARTBEAT_PERIOD_SECONDS = 1;
 // set the time limit to be lower than this, e.g. for testing or if they want
 // their system to fail fast if the licensing server goes down, but they cannot
 // set it to be more than this.
-constexpr uint32_t MAX_NO_HEARTBEAT_TIME_LIMIT = 10000;
+constexpr uint32_t MAX_no_heartbeat_grace_period_seconds = 10000;
 
 class HeartbeatThread {
  public:
@@ -38,7 +38,7 @@ class HeartbeatThread {
   std::atomic_bool _verified;
   std::atomic_bool _should_terminate;
   std::thread _heartbeat_thread;
-  int32_t _no_heartbeat_time_limit;
+  int64_t _no_heartbeat_grace_period_seconds;
 };
 
 }  // namespace thirdai::licensing

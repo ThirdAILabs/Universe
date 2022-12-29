@@ -22,14 +22,14 @@ HeartbeatThread::HeartbeatThread(
       _verified(true),
       _should_terminate(false) {
   if (!heartbeat_timeout.has_value()) {
-    _no_heartbeat_time_limit = MAX_NO_HEARTBEAT_TIME_LIMIT;
+    _no_heartbeat_grace_period_seconds = MAX_no_heartbeat_grace_period_seconds;
   } else {
-    if (MAX_NO_HEARTBEAT_TIME_LIMIT < *heartbeat_timeout) {
-      throw std::invalid_argument("Heartbeat timeout must be less than " +
-                                  std::to_string(MAX_NO_HEARTBEAT_TIME_LIMIT) +
-                                  " seconds.");
+    if (MAX_no_heartbeat_grace_period_seconds < *heartbeat_timeout) {
+      throw std::invalid_argument(
+          "Heartbeat timeout must be less than " +
+          std::to_string(MAX_no_heartbeat_grace_period_seconds) + " seconds.");
     }
-    _no_heartbeat_time_limit = *heartbeat_timeout;
+    _no_heartbeat_grace_period_seconds = *heartbeat_timeout;
   }
 
   if (!doSingleHeartbeat(url)) {
@@ -44,7 +44,7 @@ void HeartbeatThread::verify() {
     throw std::runtime_error(
         "The heartbeat thread could not verify with the server because there "
         "has not been a successful heartbeat in " +
-        std::to_string(_no_heartbeat_time_limit) +
+        std::to_string(_no_heartbeat_grace_period_seconds) +
         " seconds. Check the logs or metrics for more information.");
   }
 }
@@ -67,8 +67,8 @@ void HeartbeatThread::heartbeatThread(const std::string& url) {
       last_validation = currentEpochSeconds();
       _verified = true;
     } else {
-      _verified =
-          currentEpochSeconds() - last_validation < _no_heartbeat_time_limit;
+      _verified = currentEpochSeconds() - last_validation <
+                  _no_heartbeat_grace_period_seconds;
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(HEARTBEAT_PERIOD_SECONDS));
@@ -110,13 +110,9 @@ bool HeartbeatThread::doSingleHeartbeat(const std::string& url) {
     return false;
   }
 
-  if (!verifyResponse(/* submitted_machine_id = */ body["machine_id"],
-                      /* submitted_metadata = */ body["metadata"],
-                      /* base64_signature = */ response->body)) {
-    return false;
-  }
-
-  return true;
+  return verifyResponse(/* submitted_machine_id = */ body["machine_id"],
+                        /* submitted_metadata = */ body["metadata"],
+                        /* base64_signature = */ response->body);
 }
 
 }  // namespace thirdai::licensing

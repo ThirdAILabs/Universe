@@ -59,7 +59,7 @@ def wait_for_server_end():
         try:
             requests.get(LOCAL_HEARTBEAT_SERVER)
             if time.time() - start_time_seconds > max_wait_time_seconds:
-                raise RuntimeError("License server took too long to start")
+                raise RuntimeError("License server took too long to end")
             time.sleep(retry_period_seconds)
         except requests.exceptions.ConnectionError:
             return
