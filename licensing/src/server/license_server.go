@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -26,7 +24,7 @@ func parseFromVar(varToParse string) int {
 }
 
 // We do not allow more than this many machines active at one time
-// We have a string variable and an int variable because we can only set strings 
+// We have a string variable and an int variable because we can only set strings
 // during the go build phase.
 var MaxActiveMachinesString = "5"
 var MaxActiveMachines = 5
