@@ -20,7 +20,8 @@ HeartbeatThread::HeartbeatThread(const std::string& url)
       _verified(true),
       _should_terminate(false) {
   if (!doSingleHeartbeat(url)) {
-    throw std::runtime_error("Could not establish initial connection to licensing server.");
+    throw std::runtime_error(
+        "Could not establish initial connection to licensing server.");
   }
   _heartbeat_thread = std::thread(&HeartbeatThread::heartbeatThread, this, url);
 }
@@ -42,8 +43,8 @@ HeartbeatThread::~HeartbeatThread() {
 
 int64_t currentEpochSeconds() {
   return std::chrono::duration_cast<std::chrono::milliseconds>(
-                         std::chrono::system_clock::now().time_since_epoch())
-                         .count();
+             std::chrono::system_clock::now().time_since_epoch())
+      .count();
 }
 
 void HeartbeatThread::heartbeatThread(const std::string& url) {
@@ -53,10 +54,11 @@ void HeartbeatThread::heartbeatThread(const std::string& url) {
       last_validation = currentEpochSeconds();
     }
 
-    _verified = last_validation - currentEpochSeconds() < VALIDATION_FAIL_TIMEOUT_SECONDS;
+    _verified = last_validation - currentEpochSeconds() <
+                VALIDATION_FAIL_TIMEOUT_SECONDS;
 
     std::this_thread::sleep_for(
-      std::chrono::seconds(THREAD_SLEEP_PERIOD_SECONDS));
+        std::chrono::seconds(THREAD_SLEEP_PERIOD_SECONDS));
   }
 }
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
-import pathlib
 import os
+import pathlib
 
 parser = argparse.ArgumentParser(description="Build the executable file for an on-prem go license server.")
 parser.add_argument(
