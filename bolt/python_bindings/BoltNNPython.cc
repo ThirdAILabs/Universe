@@ -522,6 +522,11 @@ That's all for now, folks! More docs coming soon :)
           bolt::python::OutputRedirect())
       .def("save", &BoltGraph::save, py::arg("filename"))
       .def_static("load", &BoltGraph::load, py::arg("filename"))
+      .def("__str__",
+           [](const BoltGraph& model) {
+             return model.summarize(/* print = */ false,
+                                    /* detailed = */ false);
+           })
       .def("freeze_hash_tables", &BoltGraph::freezeHashTables,
            py::arg("insert_labels_if_not_found") = true,
            "Prevents updates to hash tables in the model. If you plan to use "
@@ -531,12 +536,6 @@ That's all for now, folks! More docs coming soon :)
            "insert_labels_if_not_found is true then if the output layer is "
            "sparse it will insert the training labels into the hash hash "
            "tables if they are not found for a given input.")
-#if THIRDAI_EXPOSE_ALL
-      .def("__str__",
-           [](const BoltGraph& model) {
-             return model.summarize(/* print = */ false,
-                                    /* detailed = */ false);
-           })
       .def(
           "summary", &BoltGraph::summarize, py::arg("print") = true,
           py::arg("detailed") = false,
@@ -560,7 +559,6 @@ That's all for now, folks! More docs coming soon :)
            "Returns a list of all Nodes that make up the graph in traversal "
            "order. This list is guaranetted to be static after a model is "
            "compiled.")
-#endif
       .def(getPickleFunction<BoltGraph>());
 
   py::class_<DistributedTrainingWrapper>(bolt_submodule,
