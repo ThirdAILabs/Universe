@@ -97,7 +97,7 @@ def test_with_invalid_heartbeat_location():
         RuntimeError,
         match=f"Could not establish initial connection to licensing server.",
     ):
-        thirdai.start_heartbeat(invalid_heartbeat_location)
+        thirdai.licensing.start_heartbeat(invalid_heartbeat_location)
 
 
 def test_with_invalid_heartbeat_grace_period():
@@ -105,13 +105,15 @@ def test_with_invalid_heartbeat_grace_period():
         ValueError,
         match=f"Heartbeat timeout must be less than 10000 seconds.",
     ):
-        thirdai.start_heartbeat(invalid_heartbeat_location, heartbeat_timeout=100000)
+        thirdai.licensing.start_heartbeat(
+            invalid_heartbeat_location, heartbeat_timeout=100000
+        )
 
 
 def test_valid_heartbeat(normal_license_server):
-    thirdai.start_heartbeat(LOCAL_HEARTBEAT_SERVER)
+    thirdai.licensing.start_heartbeat(LOCAL_HEARTBEAT_SERVER)
     this_should_require_a_license_bolt()
-    thirdai.end_heartbeat()
+    thirdai.licensing.end_heartbeat()
 
 
 def test_heartbeat_multiple_machines(normal_license_server):
@@ -142,7 +144,7 @@ def test_more_machines_after_server_timeout(fast_timeout_license_server):
 
 
 def test_client_side_timeout_after_heartbeat_fail(normal_license_server):
-    thirdai.start_heartbeat(LOCAL_HEARTBEAT_SERVER, heartbeat_timeout=1)
+    thirdai.licensing.start_heartbeat(LOCAL_HEARTBEAT_SERVER, heartbeat_timeout=1)
     this_should_require_a_license_bolt()
     normal_license_server.kill()
     wait_for_server_end()
@@ -156,3 +158,16 @@ def test_client_side_timeout_after_heartbeat_fail(normal_license_server):
         this_should_require_a_license_bolt()
 
     # TODO(Josh): Add metrics check to this
+
+
+def test_maintenance_of_valid_heartbeat(normal_license_server):
+    """
+    This test tests standard heartbeats (as opposed to just the original
+    heartbeat) by using a heartbeat_timeout of 0 seconds, which means that
+    verification will only work if the last heartbeat worked. We sleep
+    for a second to ensure that the heartbeat has started and that the most
+    recent heartbeat call was not the original one.
+    """
+    thirdai.licensing.start_heartbeat(LOCAL_HEARTBEAT_SERVER, heartbeat_timeout=0)
+    time.sleep(1)
+    this_should_require_a_license_bolt()

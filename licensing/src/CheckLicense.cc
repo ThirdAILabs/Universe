@@ -76,7 +76,9 @@ void setLicensePath(const std::string& license_path) {
 
 void checkLicense() {}
 
-void verifyAllowedDataset() {}
+void verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader) {
+  (void)data_loader;
+}
 
 void activate(const std::string& api_key) { (void)api_key; }
 

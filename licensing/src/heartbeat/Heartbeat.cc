@@ -22,12 +22,12 @@ HeartbeatThread::HeartbeatThread(
       _verified(true),
       _should_terminate(false) {
   if (!heartbeat_timeout.has_value()) {
-    _no_heartbeat_grace_period_seconds = MAX_no_heartbeat_grace_period_seconds;
+    _no_heartbeat_grace_period_seconds = MAX_NO_HEARTBEAT_GRACE_PERIOD_SECONDS;
   } else {
-    if (MAX_no_heartbeat_grace_period_seconds < *heartbeat_timeout) {
+    if (MAX_NO_HEARTBEAT_GRACE_PERIOD_SECONDS < *heartbeat_timeout) {
       throw std::invalid_argument(
           "Heartbeat timeout must be less than " +
-          std::to_string(MAX_no_heartbeat_grace_period_seconds) + " seconds.");
+          std::to_string(MAX_NO_HEARTBEAT_GRACE_PERIOD_SECONDS) + " seconds.");
     }
     _no_heartbeat_grace_period_seconds = *heartbeat_timeout;
   }
