@@ -19,7 +19,7 @@ func makeHeartbeatRequest(t *testing.T, body string) (int, string) {
 	bodyBuffer := bytes.NewBuffer(bodyJsonBytes)
 	req := httptest.NewRequest(http.MethodPost, "/heartbeat", bodyBuffer)
 	wr := httptest.NewRecorder()
-	Heartbeat(wr, req)
+	heartbeat(wr, req)
 	res := wr.Result()
 	defer res.Body.Close()
 
@@ -42,32 +42,32 @@ func TestExtraFieldsInBody(t *testing.T) {
 }
 
 func TestGoodRequest(t *testing.T) {
-	ResetGlobalMachineHeartbeatTracker()
-	startTime := time.Now().Unix()
+	globalTracker.resetHeartbeatTracker()
+	startTime := time.Now().UnixMilli()
 
 	statusCode, _ := makeHeartbeatRequest(t, "{\"machine_id\": \"123\", \"metadata\": \"\"}")
 	assert.Equal(t, statusCode, 200)
 
-	assert.Equal(t, globalTracker.GetNumActiveMachines(startTime), 1)
-	currentTime := time.Now().Unix()
-	assert.Equal(t, globalTracker.GetNumActiveMachines(currentTime+ActiveTimeoutMillis), 0)
+	assert.Equal(t, globalTracker.getNumActiveMachines(startTime), 1)
+	currentTime := time.Now().UnixMilli()
+	assert.Equal(t, globalTracker.getNumActiveMachines(currentTime+ActiveTimeoutMillis), 0)
 }
 
 func TestMultipleMachineTracking(t *testing.T) {
-	ResetGlobalMachineHeartbeatTracker()
-	startTime := time.Now().Unix()
+	globalTracker.resetHeartbeatTracker()
+	startTime := time.Now().UnixMilli()
 
 	for machineId := 0; machineId < MaxActiveMachines; machineId++ {
 		statusCode, _ := makeHeartbeatRequest(t, fmt.Sprintf("{\"machine_id\": \"%d\", \"metadata\": \"\"}", machineId))
 		assert.Equal(t, statusCode, 200)
 	}
 
-	assert.Equal(t, globalTracker.GetNumActiveMachines(startTime), 5)
+	assert.Equal(t, globalTracker.getNumActiveMachines(startTime), 5)
 }
 
 func TestTooManyMachines(t *testing.T) {
-	ResetGlobalMachineHeartbeatTracker()
-	startTime := time.Now().Unix()
+	globalTracker.resetHeartbeatTracker()
+	startTime := time.Now().UnixMilli()
 
 	for machineId := 0; machineId < MaxActiveMachines+10; machineId++ {
 		statusCode, body := makeHeartbeatRequest(t, fmt.Sprintf("{\"machine_id\": \"%d\", \"metadata\": \"\"}", machineId))
@@ -79,11 +79,11 @@ func TestTooManyMachines(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, globalTracker.GetNumActiveMachines(startTime), 5)
+	assert.Equal(t, globalTracker.getNumActiveMachines(startTime), 5)
 }
 
 func TestSignature(t *testing.T) {
-	ResetGlobalMachineHeartbeatTracker()
+	globalTracker.resetHeartbeatTracker()
 	messageBytes := []byte("123\nabc")
 	_, body := makeHeartbeatRequest(t, "{\"machine_id\": \"123\", \"metadata\": \"abc\"}")
 	signatureBytes, err := base64.StdEncoding.DecodeString(body)
