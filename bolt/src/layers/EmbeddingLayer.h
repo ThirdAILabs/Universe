@@ -130,7 +130,8 @@ class EmbeddingLayer {
   void serialize(Archive& archive) {
     archive(_num_lookups_per_token, _lookup_size, _total_embedding_dim,
             _log_embedding_block_size, _reduction, _num_tokens_per_input,
-            _embedding_block_size, _hash_fn, _embedding_block);
+            _embedding_block_size, _hash_fn, _embedding_block,
+            _disable_sparse_parameter_updates);
   }
 
   uint32_t _num_lookups_per_token, _lookup_size, _total_embedding_dim,

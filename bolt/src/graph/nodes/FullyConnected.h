@@ -1,9 +1,5 @@
 #pragma once
 
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/base_class.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/optional.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
@@ -38,39 +34,26 @@ class FullyConnectedNode final
 
  public:
   static std::shared_ptr<FullyConnectedNode> makeDense(
-      uint32_t dim, const std::string& activation) {
-    return std::shared_ptr<FullyConnectedNode>(
-        new FullyConnectedNode(dim, activation));
-  }
+      uint32_t dim, const std::string& activation);
 
   static std::shared_ptr<FullyConnectedNode> makeAutotuned(
-      uint32_t dim, float sparsity, const std::string& activation) {
-    return std::shared_ptr<FullyConnectedNode>(
-        new FullyConnectedNode(dim, sparsity, activation));
-  }
+      uint32_t dim, float sparsity, const std::string& activation);
 
   static std::shared_ptr<FullyConnectedNode> make(
       uint32_t dim, float sparsity, const std::string& activation,
-      SamplingConfigPtr sampling_config) {
-    return std::shared_ptr<FullyConnectedNode>(new FullyConnectedNode(
-        dim, sparsity, activation, std::move(sampling_config)));
-  }
+      SamplingConfigPtr sampling_config);
 
   static std::shared_ptr<FullyConnectedNode> makeExplicitSamplingConfig(
       uint32_t dim, float sparsity, const std::string& activation,
-      uint32_t num_tables, uint32_t hashes_per_table, uint32_t reservoir_size) {
-    auto sampling_config = std::make_shared<DWTASamplingConfig>(
-        num_tables, hashes_per_table, reservoir_size);
-    return make(dim, sparsity, activation, sampling_config);
-  }
+      uint32_t num_tables, uint32_t hashes_per_table, uint32_t reservoir_size);
 
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node);
 
   uint32_t outputDim() const final;
 
-  bool isInputNode() const final { return false; }
+  bool isInputNode() const final;
 
-  void initOptimizer() final { _layer->initOptimizer(); }
+  void initOptimizer() final;
 
   ActivationFunction getActivationFunction() const;
 
@@ -89,7 +72,6 @@ class FullyConnectedNode final
   float* getWeightGradientsPtr();
 
   float* getBiasGradientsPtr();
-
   void disableSparseParameterUpdates() final;
 
   bool hasParameters() final { return true; }
@@ -100,14 +82,12 @@ class FullyConnectedNode final
   void compileImpl() final;
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayersImpl() const final {
-    return {_layer};
-  }
+  getInternalFullyConnectedLayersImpl() const final;
 
   void prepareForBatchProcessingImpl(uint32_t batch_size,
                                      bool use_sparsity) final;
 
-  uint32_t numNonzerosInOutputImpl() const final { return (*_outputs)[0].len; }
+  uint32_t numNonzerosInOutputImpl() const final;
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final;
 
@@ -115,15 +95,11 @@ class FullyConnectedNode final
 
   void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final;
 
-  BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
-    return (*_outputs)[vec_index];
-  }
+  BoltVector& getOutputVectorImpl(uint32_t vec_index) final;
 
-  void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
+  void cleanupAfterBatchProcessingImpl() final;
 
-  std::vector<NodePtr> getPredecessorsImpl() const final {
-    return {_predecessor};
-  }
+  std::vector<NodePtr> getPredecessorsImpl() const final;
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final;
 
@@ -135,9 +111,7 @@ class FullyConnectedNode final
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<Node>(this), _layer, _config, _predecessor);
-  }
+  void serialize(Archive& archive);
   // One of _layer and _config will always be nullptr/nullopt while the
   // other will contain data
   std::shared_ptr<FullyConnectedLayer> _layer;

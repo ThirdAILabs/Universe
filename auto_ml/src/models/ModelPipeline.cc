@@ -200,7 +200,11 @@ std::vector<dataset::Explanation> ModelPipeline::explain(
 void ModelPipeline::trainInMemory(
     data::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
     const std::optional<ValidationOptions>& validation) {
-  auto [train_data, train_labels] = dataset->loadInMemory(ALL_BATCHES).value();
+  auto loaded_data = dataset->loadInMemory(ALL_BATCHES);
+  if (!loaded_data) {
+    throw std::invalid_argument("No data passed to train.");
+  }
+  auto [train_data, train_labels] = std::move(loaded_data.value());
 
   if (validation) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(

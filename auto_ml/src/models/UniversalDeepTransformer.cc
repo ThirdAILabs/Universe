@@ -1,14 +1,21 @@
 #include "UniversalDeepTransformer.h"
+#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/cold_start/ColdStartDataLoader.h>
+#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/OutputProcessor.h>
+#include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
+#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
+#include <new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/StringManipulation.h>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -188,6 +195,45 @@ py::object UniversalDeepTransformer::predictBatch(
   }
 
   return py::object(std::move(output_predictions));
+}
+
+void UniversalDeepTransformer::coldStartPretraining(
+    thirdai::data::ColumnMap dataset,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names, float learning_rate) {
+  auto dataset_config = udtDatasetFactory().config();
+
+  auto metadata = cold_start::getColdStartMetadata(dataset_config);
+
+  cold_start::convertLabelColumnToTokenArray(dataset, dataset_config->target,
+                                             metadata.label_delimiter);
+
+  thirdai::data::ColdStartTextAugmentation augmentation(
+      /* strong_column_names= */ strong_column_names,
+      /* weak_column_names= */ weak_column_names,
+      /* label_column_name= */ dataset_config->target,
+      /* output_column_name= */ metadata.text_column_name);
+
+  auto augmented_data = augmentation.apply(dataset);
+
+  auto data_loader = cold_start::ColdStartDataLoader::make(
+      /* column_map= */ augmented_data,
+      /* text_column_name= */ metadata.text_column_name,
+      /* label_column_name= */ dataset_config->target,
+      /* batch_size= */ _train_eval_config.defaultBatchSize(),
+      /* column_delimiter= */ dataset_config->delimiter,
+      /* label_delimiter= */ metadata.label_delimiter);
+
+  auto train_config =
+      bolt::TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
+                                    /* epochs= */ 1);
+
+  train(data_loader, train_config, /* validation= */ std::nullopt,
+        /* max_in_memory_batches= */ std::nullopt);
+
+  // We reset the dataset factory in case the ordering of the label and text
+  // columns we assume here does not match the user's dataset.
+  udtDatasetFactory().resetDatasetFactory();
 }
 
 std::pair<OutputProcessorPtr, std::optional<dataset::RegressionBinningStrategy>>
