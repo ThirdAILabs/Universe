@@ -14,6 +14,12 @@ InputTensor::InputTensor(uint32_t dim, SparsityType sparsity_type,
       _num_nonzeros(num_nonzeros),
       _sparsity_type(sparsity_type) {}
 
+std::shared_ptr<InputTensor> InputTensor::make(
+    uint32_t dim, SparsityType sparsity_type,
+    std::optional<uint32_t> num_nonzeros) {
+  return std::make_shared<InputTensor>(dim, sparsity_type, num_nonzeros);
+}
+
 std::optional<uint32_t> InputTensor::numNonzeros() const {
   return _num_nonzeros;
 }
@@ -22,7 +28,9 @@ BoltVector& InputTensor::getVector(uint32_t index) {
   return (*_input_batch)[index];
 }
 
-void InputTensor::setInputs(BoltBatch& batch) { _input_batch = &batch; }
+void InputTensor::setInputs(const BoltBatch& batch) {
+  _input_batch = const_cast<BoltBatch*>(&batch);
+}
 
 SparsityType InputTensor::sparsityType() const { return _sparsity_type; }
 

@@ -18,6 +18,10 @@ class InputTensor final : public Tensor {
   InputTensor(uint32_t dim, SparsityType sparsity_type,
               std::optional<uint32_t> num_nonzeros);
 
+  static std::shared_ptr<InputTensor> make(
+      uint32_t dim, SparsityType sparsity_type,
+      std::optional<uint32_t> num_nonzeros);
+
   std::optional<uint32_t> numNonzeros() const final;
 
   BoltVector& getVector(uint32_t index) final;
@@ -26,7 +30,7 @@ class InputTensor final : public Tensor {
    * Sets the batch which whose vectors will be returned by subsequent calls to
    * getVector.
    */
-  void setInputs(BoltBatch& batch);
+  void setInputs(const BoltBatch& batch);
 
   /**
    * Returns if the input contains vectors that are sparse, dense, or unknown

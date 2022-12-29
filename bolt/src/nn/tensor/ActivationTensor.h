@@ -11,6 +11,9 @@ class ActivationTensor final : public Tensor {
  public:
   ActivationTensor(uint32_t dim, uint32_t sparse_nonzeros);
 
+  static std::shared_ptr<ActivationTensor> make(uint32_t dim,
+                                                uint32_t sparse_nonzeros);
+
   std::optional<uint32_t> numNonzeros() const final;
 
   BoltVector& getVector(uint32_t index) final;

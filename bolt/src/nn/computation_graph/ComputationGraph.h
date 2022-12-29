@@ -46,6 +46,8 @@ class ComputationGraph {
    */
   void updateParameters(float learning_rate);
 
+  const std::vector<ops::OpPtr>& ops() const;
+
  private:
   /**
    * Computes the forward pass through the computation graph for the given
@@ -63,12 +65,12 @@ class ComputationGraph {
   /**
    * Sets the given batch as the inputs to the computation graph.
    */
-  uint32_t setInputs(const std::vector<BoltBatch>& inputs);
+  uint32_t setInputs(const std::vector<BoltBatch>& input_batches);
 
   /**
    * Sets the given labels as the current labels for the computation graph.
    */
-  uint32_t setLabels(const std::vector<BoltBatch>& labels);
+  uint32_t setLabels(const std::vector<BoltBatch>& label_batches);
 
   /**
    * Traverses the graph and determines the order in which the ops should be

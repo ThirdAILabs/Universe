@@ -13,6 +13,11 @@ ActivationTensor::ActivationTensor(uint32_t dim, uint32_t sparse_nonzeros)
       _sparse_nonzeros(sparse_nonzeros),
       _using_sparsity(true) {}
 
+std::shared_ptr<ActivationTensor> ActivationTensor::make(
+    uint32_t dim, uint32_t sparse_nonzeros) {
+  return std::make_shared<ActivationTensor>(dim, sparse_nonzeros);
+}
+
 std::optional<uint32_t> ActivationTensor::numNonzeros() const {
   if (_using_sparsity) {
     return _sparse_nonzeros;

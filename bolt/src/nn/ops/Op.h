@@ -2,6 +2,7 @@
 
 #include <bolt/src/nn/tensor/ActivationTensor.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <memory>
 
 namespace thirdai::bolt::nn::ops {
 
@@ -52,14 +53,14 @@ class Op {
   virtual void disableSparseParameterUpdates() = 0;
 
   /**
+   * Returns the input tensor(s) of the op.
+   */
+  virtual const std::vector<tensor::TensorPtr>& inputs() const = 0;
+
+  /**
    * Returns the output tensor(s) of the op.
    */
   virtual const std::vector<tensor::ActivationTensorPtr>& outputs() const = 0;
-
-  /**
-   * Returns the input tensor(s) of the op.
-   */
-  virtual const std::vector<tensor::ActivationTensorPtr>& inputs() const = 0;
 
   /**
    * Indicates to the op that the sparsity of one of its inputs has changed.
@@ -82,5 +83,7 @@ class Op {
  private:
   std::string _name;
 };
+
+using OpPtr = std::shared_ptr<Op>;
 
 }  // namespace thirdai::bolt::nn::ops

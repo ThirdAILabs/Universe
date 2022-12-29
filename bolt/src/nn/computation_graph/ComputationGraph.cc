@@ -1,5 +1,7 @@
 #include "ComputationGraph.h"
+#include <bolt/src/nn/tensor/InputTensor.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
@@ -77,6 +79,10 @@ void ComputationGraph::updateParameters(float learning_rate) {
   }
 }
 
+const std::vector<ops::OpPtr>& ComputationGraph::ops() const {
+  return _op_schedule;
+}
+
 void ComputationGraph::forward(uint32_t index_in_batch) {
   for (auto& op : _op_schedule) {
     op->forward(index_in_batch);
@@ -93,6 +99,43 @@ void ComputationGraph::backpropagate(uint32_t index_in_batch) {
   for (auto op = _op_schedule.rbegin(); op != _op_schedule.rend(); ++op) {
     (*op)->backpropagate(index_in_batch);
   }
+}
+
+inline uint32_t setBatchHelper(
+    std::vector<tensor::InputTensorPtr>& input_tensors,
+    const std::vector<BoltBatch>& batches, const std::string& type) {
+  if (batches.size() != input_tensors.size()) {
+    std::stringstream error;
+    error << "Expected " << input_tensors.size() << " " << type
+          << " but received " << batches.size() << ".";
+    throw std::invalid_argument(error.str());
+  }
+
+  std::optional<uint32_t> batch_size = std::nullopt;
+  for (uint32_t i = 0; i < input_tensors.size(); i++) {
+    if (batch_size && batches[i].getBatchSize() != *batch_size) {
+      std::stringstream error;
+      error << "Expected all " << type
+            << " to have same batch size but received inputs with batch "
+               "size "
+            << *batch_size << " and " << batches[i].getBatchSize() << ".";
+      throw std::invalid_argument(error.str());
+    }
+    if (!batch_size) {
+      batch_size = batches[i].getBatchSize();
+    }
+    input_tensors[i]->setInputs(batches[i]);
+  }
+
+  return batch_size.value();
+}
+
+uint32_t ComputationGraph::setInputs(const std::vector<BoltBatch>& input_batches) {
+  return setBatchHelper(_inputs, input_batches, "inputs");
+}
+
+uint32_t ComputationGraph::setLabels(const std::vector<BoltBatch>& label_batches) {
+  return setBatchHelper(_label_inputs, label_batches, "labels");
 }
 
 void ComputationGraph::createOpSchedule() {
