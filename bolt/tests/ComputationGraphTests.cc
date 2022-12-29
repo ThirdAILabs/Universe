@@ -40,9 +40,9 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
     (void)t;
   }
 
-  const std::vector<tensor::TensorPtr>& inputs() const final { return _inputs; }
+  std::vector<tensor::TensorPtr> inputs() const final { return _inputs; }
 
-  const std::vector<tensor::ActivationTensorPtr>& outputs() const final {
+  std::vector<tensor::ActivationTensorPtr> outputs() const final {
     return _outputs;
   }
 

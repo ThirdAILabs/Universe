@@ -189,8 +189,10 @@ std::unordered_map<ops::OpPtr, uint32_t> ComputationGraph::getInDegrees()
         if (!in_degrees.count(op)) {
           in_degrees[op] = op->inputs().size();
 
-          next_unexplored.insert(next_unexplored.end(), op->outputs().begin(),
-                                 op->outputs().end());
+          auto op_outputs = op->outputs();
+
+          next_unexplored.insert(next_unexplored.end(), op_outputs.begin(),
+                                 op_outputs.end());
         }
       }
     }

@@ -55,12 +55,12 @@ class Op {
   /**
    * Returns the input tensor(s) of the op.
    */
-  virtual const std::vector<tensor::TensorPtr>& inputs() const = 0;
+  virtual std::vector<tensor::TensorPtr> inputs() const = 0;
 
   /**
    * Returns the output tensor(s) of the op.
    */
-  virtual const std::vector<tensor::ActivationTensorPtr>& outputs() const = 0;
+  virtual std::vector<tensor::ActivationTensorPtr> outputs() const = 0;
 
   /**
    * Indicates to the op that the sparsity of one of its inputs has changed.
