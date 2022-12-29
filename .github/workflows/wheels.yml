@@ -98,8 +98,7 @@ jobs:
           # On linux we copy a valid license to the home directory within the docker
           CIBW_BEFORE_TEST_LINUX: >
             cp docker/product/slim/license.serialized ~/license.serialized &&
-            yum install golang
-          CIBW_BEFORE_TEST_MACOS: brew install go
+            yum install golang -y
           CIBW_TEST_EXTRAS: "test"
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 

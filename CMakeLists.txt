@@ -368,8 +368,9 @@ set(THIRDAI_SOURCES
 # corresponding flag is set
 if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
-  set(THIRDAI_SOURCES ${THIRDAI_SOURCES}
-                      licensing/src/keygen/KeygenCommunication.cc licensing/src/heartbeat/Heartbeat.cc)
+  set(THIRDAI_SOURCES
+      ${THIRDAI_SOURCES} licensing/src/keygen/KeygenCommunication.cc
+      licensing/src/heartbeat/Heartbeat.cc)
 endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
