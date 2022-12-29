@@ -70,10 +70,19 @@ void deactivate() {
 }
 
 void startHeartbeat(const std::string& heartbeat_url) {
+  (void)heartbeat_url;
+#if THIRDAI_CHECK_LICENSE
   _heartbeat_thread = std::make_unique<HeartbeatThread>(heartbeat_url);
+#endif
 }
 
-void endHeartbeat() { _heartbeat_thread = nullptr; }
+// TODO(Josh): clean up all of these ifdefs into a single ifdef somewhere
+
+void endHeartbeat() {
+#if THIRDAI_CHECK_LICENSE
+  _heartbeat_thread = nullptr;
+#endif
+}
 
 void setLicensePath(const std::string& license_path) {
   _license_path = license_path;
