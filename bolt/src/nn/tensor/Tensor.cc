@@ -2,7 +2,8 @@
 
 namespace thirdai::bolt::nn::tensor {
 
-Tensor::Tensor(uint32_t dim) : _dim(dim) {}
+Tensor::Tensor(uint32_t dim, std::string name)
+    : _dim(dim), _name(std::move(name)) {}
 
 uint32_t Tensor::dim() const { return _dim; }
 
@@ -13,5 +14,7 @@ void Tensor::addDependantOp(ops::OpPtr op) {
 const std::vector<ops::OpPtr>& Tensor::dependantOps() const {
   return _dependant_ops;
 }
+
+const std::string& Tensor::name() const { return _name; }
 
 }  // namespace thirdai::bolt::nn::tensor

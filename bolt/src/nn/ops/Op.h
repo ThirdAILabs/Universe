@@ -13,6 +13,8 @@ namespace thirdai::bolt::nn::ops {
  */
 class Op {
  public:
+  explicit Op(std::string name) : _name(std::move(name)) {}
+
   /**
    * Computes the forward computation of the op. This should use the vectors in
    * the op's input tensors as input and store the resulting activations in the
@@ -70,6 +72,15 @@ class Op {
    * be a no-op.
    */
   virtual void notifyInputSparsityChange() = 0;
+
+  /**
+   * Returns the name of the op. All of the ops in a computation graph must have
+   * a unique name.
+   */
+  const std::string& name() const { return _name; }
+
+ private:
+  std::string _name;
 };
 
 }  // namespace thirdai::bolt::nn::ops

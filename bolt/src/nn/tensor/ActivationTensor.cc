@@ -3,8 +3,15 @@
 
 namespace thirdai::bolt::nn::tensor {
 
+std::string nextActivationTensorName() {
+  static uint32_t constructed = 0;
+  return "act_" + std::to_string(++constructed);
+}
+
 ActivationTensor::ActivationTensor(uint32_t dim, uint32_t sparse_nonzeros)
-    : Tensor(dim), _sparse_nonzeros(sparse_nonzeros), _using_sparsity(true) {}
+    : Tensor(dim, nextActivationTensorName()),
+      _sparse_nonzeros(sparse_nonzeros),
+      _using_sparsity(true) {}
 
 std::optional<uint32_t> ActivationTensor::numNonzeros() const {
   if (_using_sparsity) {

@@ -1,10 +1,18 @@
 #include "InputTensor.h"
+#include <string>
 
 namespace thirdai::bolt::nn::tensor {
 
+std::string nextInputTensorName() {
+  static uint32_t constructed = 0;
+  return "input_" + std::to_string(++constructed);
+}
+
 InputTensor::InputTensor(uint32_t dim, SparsityType sparsity_type,
                          std::optional<uint32_t> num_nonzeros)
-    : Tensor(dim), _num_nonzeros(num_nonzeros), _sparsity_type(sparsity_type) {}
+    : Tensor(dim, nextInputTensorName()),
+      _num_nonzeros(num_nonzeros),
+      _sparsity_type(sparsity_type) {}
 
 std::optional<uint32_t> InputTensor::numNonzeros() const {
   return _num_nonzeros;

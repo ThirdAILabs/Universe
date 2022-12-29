@@ -18,7 +18,7 @@ namespace thirdai::bolt::nn::tensor {
  */
 class Tensor {
  public:
-  explicit Tensor(uint32_t dim);
+  explicit Tensor(uint32_t dim, std::string name);
 
   /**
    * Returns the ith vector in the tensor.
@@ -50,9 +50,16 @@ class Tensor {
    */
   const std::vector<ops::OpPtr>& dependantOps() const;
 
+  /**
+   * Returns the name of the tensor. All tensors in a computation graph must
+   * have a unique name.
+   */
+  const std::string& name() const;
+
  private:
   // TODO(Nicholas): Update this to support N dimensions (not required for V0).
   uint32_t _dim;
+  std::string _name;
 
  protected:
   std::vector<ops::OpPtr> _dependant_ops;
