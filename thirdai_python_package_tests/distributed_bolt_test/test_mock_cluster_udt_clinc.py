@@ -5,6 +5,7 @@ from distributed_utils import ray_two_node_cluster_config, remove_files
 from thirdai import bolt, data
 from thirdai.demos import download_clinc_dataset
 
+
 pytestmark = [pytest.mark.distributed]
 
 TRAIN_FILE_1 = "./clinc_train_0.csv"
@@ -17,10 +18,7 @@ def setup_module():
     download_clinc_dataset(num_training_files=2, clinc_small=True)
 
 
-def test_distributed_udt_clinc(ray_two_node_cluster_config):
-    # Import here so we don't get import errors collecting tests if ray isn't installed
-    import thirdai.distributed_bolt as dist_bolt
-
+def get_clinc_udt_model(integer_target=False):
     udt_model = bolt.UniversalDeepTransformer(
         data_types={
             "category": bolt.types.categorical(),
@@ -28,8 +26,15 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
         },
         target="category",
         n_target_classes=151,
-        integer_target=True,
+        integer_target=integer_target,
     )
+    return udt_model
+
+
+# `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
+def test_distributed_udt_clinc(ray_two_node_cluster_config):
+
+    udt_model = get_clinc_udt_model(integer_target=True)
 
     udt_model.train_distributed(
         cluster_config=ray_two_node_cluster_config("linear"),
@@ -47,3 +52,46 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
         )["categorical_accuracy"]
         > 0.7
     )
+
+
+# `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
+def test_non_integer_target_throws(ray_two_node_cluster_config):
+
+    udt_model = get_clinc_udt_model(integer_target=False)
+
+    with pytest.raises(
+        ValueError,
+        match="UDT with categorical target without integer_target=True cannot be "
+        "trained in distributed "
+        "setting. Please convert the categorical target column into "
+        "integer target to train UDT in distributed setting.",
+    ):
+        # should fail, hence cluster_config and filenames are None
+        udt_model.train_distributed(
+            cluster_config=None,
+            filenames=None,
+        )
+
+
+def test_temporal_relationships_throws(ray_two_node_cluster_config):
+    udt_model = bolt.UniversalDeepTransformer(
+        data_types={
+            "userId": bolt.types.categorical(),
+            "movieId": bolt.types.categorical(),
+            "timestamp": bolt.types.date(),
+        },
+        temporal_tracking_relationships={"userId": ["movieId"]},
+        target="movieId",
+        n_target_classes=3,
+        integer_target=True,
+    )
+    with pytest.raises(
+        ValueError,
+        match="UDT with temporal relationships cannot be trained in a distributed "
+        "setting.",
+    ):
+        # should fail, hence cluster_config and filenames are None
+        udt_model.train_distributed(
+            cluster_config=None,
+            filenames=None,
+        )
