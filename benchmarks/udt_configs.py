@@ -8,6 +8,8 @@ class UDTBenchmarkConfig:
     target = "label"
     n_target_classes = 2
     delimiter = ","
+    metric_type = "categorical_accuracy"
+    model_config_path = None
 
 
 class ClincUDTConfig(UDTBenchmarkConfig):
@@ -72,3 +74,21 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
 
     experiment_name = "CriteoUDT"
     dataset_name = "criteo_46m"
+
+
+class WayfairUDTConfig(UDTBenchmarkConfig):
+    train_file = "/share/data/wayfair/train.txt"
+    test_file = "/share/data/wayfair/test.txt"
+    model_config_path = "/share/data/wayfair/wayfair_model_config"
+
+    data_types = {
+        "labels": bolt.types.categorical(delimiter=","),
+        "query": bolt.types.text(),
+    }
+    target = "labels"
+    n_target_classes = 931
+    metric_type = "f_measure(0.95)"
+
+    experiment_name = "WayfairUDT"
+    dataset_name = "wayfair"
+    num_epochs = 1

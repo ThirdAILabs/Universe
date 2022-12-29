@@ -38,6 +38,7 @@ def run_benchmark(config, run_name):
         target=config.target,
         n_target_classes=config.n_target_classes,
         delimiter=config.delimiter,
+        model_config=config.model_config_path,
     )
 
     mlflow_uri = get_mlflow_uri()
@@ -54,11 +55,11 @@ def run_benchmark(config, run_name):
         config.train_file,
         epochs=config.num_epochs,
         learning_rate=config.learning_rate,
-        metrics=["categorical_accuracy"],
+        metrics=[config.metric_type],
         callbacks=[mlflowcallback],
     )
 
-    model.evaluate(config.test_file, metrics=["categorical_accuracy"])
+    model.evaluate(config.test_file, metrics=[config.metric_type])
 
 
 def main():
