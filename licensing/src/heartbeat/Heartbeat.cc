@@ -16,16 +16,18 @@ using json = nlohmann::json;
 const std::string THIRDAI_PUBLIC_KEY_BASE64_DER =
     "MCowBQYDK2VwAyEAqA9j+Pk81yUz7FPZfg94bez6m1j8j1jiLctTjmB2s7w=";
 
-HeartbeatThread::HeartbeatThread(const std::string& url, const std::optional<uint32_t>& heartbeat_timeout)
+HeartbeatThread::HeartbeatThread(
+    const std::string& url, const std::optional<uint32_t>& heartbeat_timeout)
     : _machine_id(getRandomIdentifier(/* numBytesRandomness = */ 32)),
       _verified(true),
       _should_terminate(false) {
-
   if (!heartbeat_timeout.has_value()) {
     _no_heartbeat_time_limit = MAX_NO_HEARTBEAT_TIME_LIMIT;
   } else {
     if (MAX_NO_HEARTBEAT_TIME_LIMIT < *heartbeat_timeout) {
-      throw std::invalid_argument("Heartbeat timeout must be less than " + std::to_string(MAX_NO_HEARTBEAT_TIME_LIMIT) + " seconds.");
+      throw std::invalid_argument("Heartbeat timeout must be less than " +
+                                  std::to_string(MAX_NO_HEARTBEAT_TIME_LIMIT) +
+                                  " seconds.");
     }
     _no_heartbeat_time_limit = *heartbeat_timeout;
   }
@@ -65,11 +67,11 @@ void HeartbeatThread::heartbeatThread(const std::string& url) {
       last_validation = currentEpochSeconds();
       _verified = true;
     } else {
-      _verified = currentEpochSeconds() - last_validation < _no_heartbeat_time_limit;
+      _verified =
+          currentEpochSeconds() - last_validation < _no_heartbeat_time_limit;
     }
 
-    std::this_thread::sleep_for(
-        std::chrono::seconds(HEARTBEAT_PERIOD_SECONDS));
+    std::this_thread::sleep_for(std::chrono::seconds(HEARTBEAT_PERIOD_SECONDS));
   }
 }
 

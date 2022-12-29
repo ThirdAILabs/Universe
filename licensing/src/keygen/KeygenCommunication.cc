@@ -8,7 +8,6 @@
 #include <cpp-httplib/httplib.h>
 #include <cryptopp/base64.h>  // Base64 decoder
 #include <cryptopp/files.h>
-#include <cryptopp/hex.h>
 #include <cryptopp/integer.h>
 #include <cryptopp/sha.h>       // SHA256
 #include <cryptopp/xed25519.h>  // Ed25519

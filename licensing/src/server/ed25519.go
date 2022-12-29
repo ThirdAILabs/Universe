@@ -61,7 +61,7 @@ func GetPublicKey() ed25519.PublicKey {
 	return ed25519.PublicKey(edKey)
 }
 
-// Takes in a string, turns it into bytes, signs it, and returns a hex encoding
+// Takes in a string, turns it into bytes, signs it, and returns a base64 encoding
 // of the signature
 func Sign(toSign string) string {
 	bytesIn := []byte(toSign)

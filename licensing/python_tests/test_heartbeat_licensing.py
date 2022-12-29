@@ -10,9 +10,6 @@ from licensing_utils import LOCAL_HEARTBEAT_SERVER, this_should_require_a_licens
 
 pytestmark = [pytest.mark.release]
 
-invalid_local_port = "97531"
-valid_local_port = "8080"
-
 invalid_heartbeat_location = f"http://localhost:97531"
 
 # Since the name of the license server executable is just augmented with the max

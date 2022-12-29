@@ -7,8 +7,9 @@
 #include <thread>
 namespace thirdai::licensing {
 
-// Every 1 second we do a heartbeat with the server and check to see if we
-// should stop
+// Every 1 second we do a heartbeat with the server. We also check to see if
+// _should_terminate is set to true, in which case we stop the heartbeat loop
+// and thus end the thread.
 constexpr uint32_t HEARTBEAT_PERIOD_SECONDS = 1;
 
 // This is the maximum allowable value for _heartbeat_lag_timeout. The user can
