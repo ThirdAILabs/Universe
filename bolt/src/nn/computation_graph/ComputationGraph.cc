@@ -60,17 +60,25 @@ void ComputationGraph::trainOnBatch(const std::vector<BoltBatch>& inputs,
   uint32_t input_batch_size = setInputs(inputs);
   uint32_t label_batch_size = setLabels(labels);
 
-  if (input_batch_size != label_batch_size) {
-    throw std::invalid_argument(
-        "Input batch size and label batch size do not match.");
-  }
-  _activations.reallocateForBatch(input_batch_size, /* use_sparsity= */ true);
+  trainOnBatchImpl(input_batch_size, label_batch_size);
+}
 
-  for (uint32_t index_in_batch = 0;
-       index_in_batch < inputs.at(0).getBatchSize(); index_in_batch++) {
-    forward(index_in_batch);
-    backpropagate(index_in_batch);
+void ComputationGraph::trainOnBatch(const BoltBatch& inputs,
+                                    const BoltBatch& labels) {
+  if (_inputs.size() != 1) {
+    throw std::invalid_argument("Expected " + std::to_string(_inputs.size()) +
+                                " input batches but received 1.");
   }
+  _inputs[0]->setInputs(inputs);
+
+  if (_label_inputs.size() != 1) {
+    throw std::invalid_argument("Expected " +
+                                std::to_string(_label_inputs.size()) +
+                                " label batches but received 1.");
+  }
+  _label_inputs[0]->setInputs(labels);
+
+  trainOnBatchImpl(inputs.getBatchSize(), labels.getBatchSize());
 }
 
 void ComputationGraph::updateParameters(float learning_rate) {
@@ -81,6 +89,21 @@ void ComputationGraph::updateParameters(float learning_rate) {
 
 const std::vector<ops::OpPtr>& ComputationGraph::ops() const {
   return _op_schedule;
+}
+
+void ComputationGraph::trainOnBatchImpl(uint32_t input_batch_size,
+                                        uint32_t label_batch_size) {
+  if (input_batch_size != label_batch_size) {
+    throw std::invalid_argument(
+        "Input batch size and label batch size do not match.");
+  }
+  _activations.reallocateForBatch(input_batch_size, /* use_sparsity= */ true);
+
+  for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
+       index_in_batch++) {
+    forward(index_in_batch);
+    backpropagate(index_in_batch);
+  }
 }
 
 void ComputationGraph::forward(uint32_t index_in_batch) {
@@ -130,11 +153,13 @@ inline uint32_t setBatchHelper(
   return batch_size.value();
 }
 
-uint32_t ComputationGraph::setInputs(const std::vector<BoltBatch>& input_batches) {
+uint32_t ComputationGraph::setInputs(
+    const std::vector<BoltBatch>& input_batches) {
   return setBatchHelper(_inputs, input_batches, "inputs");
 }
 
-uint32_t ComputationGraph::setLabels(const std::vector<BoltBatch>& label_batches) {
+uint32_t ComputationGraph::setLabels(
+    const std::vector<BoltBatch>& label_batches) {
   return setBatchHelper(_label_inputs, label_batches, "labels");
 }
 

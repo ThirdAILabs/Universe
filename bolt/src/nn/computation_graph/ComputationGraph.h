@@ -41,6 +41,8 @@ class ComputationGraph {
   void trainOnBatch(const std::vector<BoltBatch>& inputs,
                     const std::vector<BoltBatch>& labels);
 
+  void trainOnBatch(const BoltBatch& inputs, const BoltBatch& labels);
+
   /**
    * Updates the parameters of all ops.
    */
@@ -49,6 +51,11 @@ class ComputationGraph {
   const std::vector<ops::OpPtr>& ops() const;
 
  private:
+  /**
+   * Helper method for trainOnBatch.
+   */
+  void trainOnBatchImpl(uint32_t input_batch_size, uint32_t label_batch_size);
+
   /**
    * Computes the forward pass through the computation graph for the given
    * sample in the batch. Assumes that setInputs(...) has already been called.
