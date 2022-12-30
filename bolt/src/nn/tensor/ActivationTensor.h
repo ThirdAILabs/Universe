@@ -21,11 +21,11 @@ class ActivationTensor final : public Tensor {
 
   /**
    * Reallocates the number of vectors stored in the Tensor to reflect either a
-   * change in the batch size the computation graph is processing or a change in
-   * wether sparsity is being used for the forward pass or not. If use_sparsity
-   * is false then it will allocate dense vectors if the dimension of the
-   * tensor. Otherwise it will allocate sparse vectors with _sparse_nonzeros
-   * number of nonzero elements.
+   * change in the batch size the model is processing or a change in whether
+   * sparsity is being used for the forward pass or not. If use_sparsity is
+   * false then it will allocate dense vectors if the dimension of the tensor.
+   * Otherwise it will allocate sparse vectors with _sparse_nonzeros number of
+   * nonzero elements.
    */
   void allocate(uint32_t batch_size, bool use_sparsity);
 

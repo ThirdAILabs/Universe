@@ -1,6 +1,6 @@
 #include "ActivationsManager.h"
 
-namespace thirdai::bolt::nn::computation_graph {
+namespace thirdai::bolt::nn::model {
 
 ActivationsManager::ActivationsManager(
     std::vector<tensor::ActivationTensorPtr> activation_tensors)
@@ -34,4 +34,4 @@ uint32_t ActivationsManager::currentBatchSize() const {
   return _allocated_batch_size;
 }
 
-}  // namespace thirdai::bolt::nn::computation_graph
+}  // namespace thirdai::bolt::nn::model

@@ -2,10 +2,10 @@
 
 #include <bolt/src/nn/tensor/ActivationTensor.h>
 
-namespace thirdai::bolt::nn::computation_graph {
+namespace thirdai::bolt::nn::model {
 
 /**
- * This class manages the ActivationTensors in the computation graph.
+ * This class manages the ActivationTensors in the model.
  */
 class ActivationsManager {
  public:
@@ -20,14 +20,13 @@ class ActivationsManager {
   void reallocateForBatch(uint32_t batch_size, bool use_sparsity);
 
   /**
-   * Returns all of the ActivationTensors in the computation graph.
+   * Returns all of the ActivationTensors in the model.
    */
   const std::vector<tensor::ActivationTensorPtr>& activationTensors() const;
 
   /**
    * Sets all of the gradients to 0 for the ith vector of the ActivationTensors.
-   * This is called before executing the logic in backpropagate in the
-   * computation graph.
+   * This is called before executing the logic in backpropagate in the model.
    */
   void resetOutputGradients(uint32_t index_in_batch);
 
@@ -43,4 +42,4 @@ class ActivationsManager {
   bool _using_sparsity;
 };
 
-}  // namespace thirdai::bolt::nn::computation_graph
+}  // namespace thirdai::bolt::nn::model

@@ -1,4 +1,4 @@
-#include "ComputationGraph.h"
+#include "Model.h"
 #include <bolt/src/nn/tensor/InputTensor.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <optional>
@@ -6,12 +6,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace thirdai::bolt::nn::computation_graph {
+namespace thirdai::bolt::nn::model {
 
-ComputationGraph::ComputationGraph(
-    std::vector<tensor::InputTensorPtr> inputs,
-    std::vector<tensor::ActivationTensorPtr> outputs,
-    std::vector<loss::LossPtr> losses)
+Model::Model(std::vector<tensor::InputTensorPtr> inputs,
+             std::vector<tensor::ActivationTensorPtr> outputs,
+             std::vector<loss::LossPtr> losses)
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
@@ -28,68 +27,63 @@ ComputationGraph::ComputationGraph(
   checkAllOutputsAreUsedInLosses();
 }
 
-std::shared_ptr<ComputationGraph> ComputationGraph::make(
+std::shared_ptr<Model> Model::make(
     std::vector<tensor::InputTensorPtr> inputs,
     std::vector<tensor::ActivationTensorPtr> outputs,
     std::vector<loss::LossPtr> losses) {
-  return std::make_shared<ComputationGraph>(
-      std::move(inputs), std::move(outputs), std::move(losses));
+  return std::make_shared<Model>(std::move(inputs), std::move(outputs),
+                                 std::move(losses));
 }
 
-void ComputationGraph::forward(const std::vector<BoltBatch>& inputs,
-                               bool use_sparsity) {
+void Model::forward(const std::vector<BoltBatch>& inputs, bool use_sparsity) {
   uint32_t input_batch_size = setInputs(inputs);
 
   forwardImpl(input_batch_size, use_sparsity);
 }
 
-void ComputationGraph::forwardSingleInput(const BoltBatch& inputs,
-                                          bool use_sparsity) {
+void Model::forwardSingleInput(const BoltBatch& inputs, bool use_sparsity) {
   setSingleInput(inputs);
 
   forwardImpl(inputs.getBatchSize(), use_sparsity);
 }
 
-void ComputationGraph::backpropagate(const std::vector<BoltBatch>& labels) {
+void Model::backpropagate(const std::vector<BoltBatch>& labels) {
   uint32_t label_batch_size = setLabels(labels);
 
   backpropagateImpl(label_batch_size);
 }
 
-void ComputationGraph::backpropagateSingleInput(const BoltBatch& labels) {
+void Model::backpropagateSingleInput(const BoltBatch& labels) {
   setSingleLabel(labels);
 
   backpropagateImpl(labels.getBatchSize());
 }
 
-void ComputationGraph::trainOnBatch(const std::vector<BoltBatch>& inputs,
-                                    const std::vector<BoltBatch>& labels) {
+void Model::trainOnBatch(const std::vector<BoltBatch>& inputs,
+                         const std::vector<BoltBatch>& labels) {
   uint32_t input_batch_size = setInputs(inputs);
   uint32_t label_batch_size = setLabels(labels);
 
   trainOnBatchImpl(input_batch_size, label_batch_size);
 }
 
-void ComputationGraph::trainOnBatchSingleInput(const BoltBatch& inputs,
-                                               const BoltBatch& labels) {
+void Model::trainOnBatchSingleInput(const BoltBatch& inputs,
+                                    const BoltBatch& labels) {
   setSingleInput(inputs);
   setSingleLabel(labels);
 
   trainOnBatchImpl(inputs.getBatchSize(), labels.getBatchSize());
 }
 
-void ComputationGraph::updateParameters(float learning_rate) {
+void Model::updateParameters(float learning_rate) {
   for (auto& op : _op_schedule) {
     op->updateParameters(learning_rate, ++_train_steps);
   }
 }
 
-const std::vector<ops::OpPtr>& ComputationGraph::ops() const {
-  return _op_schedule;
-}
+const std::vector<ops::OpPtr>& Model::ops() const { return _op_schedule; }
 
-void ComputationGraph::forwardImpl(uint32_t input_batch_size,
-                                   bool use_sparsity) {
+void Model::forwardImpl(uint32_t input_batch_size, bool use_sparsity) {
   _activations.reallocateForBatch(input_batch_size, use_sparsity);
 
   for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
@@ -98,7 +92,7 @@ void ComputationGraph::forwardImpl(uint32_t input_batch_size,
   }
 }
 
-void ComputationGraph::backpropagateImpl(uint32_t label_batch_size) {
+void Model::backpropagateImpl(uint32_t label_batch_size) {
   if (label_batch_size != _activations.currentBatchSize()) {
     throw std::invalid_argument(
         "Label batch size does not match input batch size.");
@@ -110,8 +104,8 @@ void ComputationGraph::backpropagateImpl(uint32_t label_batch_size) {
   }
 }
 
-void ComputationGraph::trainOnBatchImpl(uint32_t input_batch_size,
-                                        uint32_t label_batch_size) {
+void Model::trainOnBatchImpl(uint32_t input_batch_size,
+                             uint32_t label_batch_size) {
   if (input_batch_size != label_batch_size) {
     throw std::invalid_argument(
         "Input batch size and label batch size do not match.");
@@ -125,13 +119,13 @@ void ComputationGraph::trainOnBatchImpl(uint32_t input_batch_size,
   }
 }
 
-void ComputationGraph::forwardVector(uint32_t index_in_batch) {
+void Model::forwardVector(uint32_t index_in_batch) {
   for (auto& op : _op_schedule) {
     op->forward(index_in_batch);
   }
 }
 
-void ComputationGraph::backpropagateVector(uint32_t index_in_batch) {
+void Model::backpropagateVector(uint32_t index_in_batch) {
   _activations.resetOutputGradients(index_in_batch);
 
   for (auto& loss : _losses) {
@@ -172,12 +166,11 @@ inline uint32_t setBatchHelper(
   return batch_size.value();
 }
 
-uint32_t ComputationGraph::setInputs(
-    const std::vector<BoltBatch>& input_batches) {
+uint32_t Model::setInputs(const std::vector<BoltBatch>& input_batches) {
   return setBatchHelper(_inputs, input_batches, "inputs");
 }
 
-void ComputationGraph::setSingleInput(const BoltBatch& inputs) {
+void Model::setSingleInput(const BoltBatch& inputs) {
   if (_inputs.size() != 1) {
     throw std::invalid_argument("Expected " + std::to_string(_inputs.size()) +
                                 " input batches but received 1.");
@@ -185,12 +178,11 @@ void ComputationGraph::setSingleInput(const BoltBatch& inputs) {
   _inputs[0]->setInputs(inputs);
 }
 
-uint32_t ComputationGraph::setLabels(
-    const std::vector<BoltBatch>& label_batches) {
+uint32_t Model::setLabels(const std::vector<BoltBatch>& label_batches) {
   return setBatchHelper(_label_inputs, label_batches, "labels");
 }
 
-void ComputationGraph::setSingleLabel(const BoltBatch& labels) {
+void Model::setSingleLabel(const BoltBatch& labels) {
   if (_label_inputs.size() != 1) {
     throw std::invalid_argument("Expected " +
                                 std::to_string(_label_inputs.size()) +
@@ -199,7 +191,7 @@ void ComputationGraph::setSingleLabel(const BoltBatch& labels) {
   _label_inputs[0]->setInputs(labels);
 }
 
-void ComputationGraph::createOpSchedule() {
+void Model::createOpSchedule() {
   std::unordered_map<ops::OpPtr, uint32_t> in_degrees = getInDegrees();
 
   std::queue<ops::OpPtr> queue;
@@ -236,8 +228,7 @@ void ComputationGraph::createOpSchedule() {
   _activations = ActivationsManager(activations);
 }
 
-std::unordered_map<ops::OpPtr, uint32_t> ComputationGraph::getInDegrees()
-    const {
+std::unordered_map<ops::OpPtr, uint32_t> Model::getInDegrees() const {
   std::unordered_map<ops::OpPtr, uint32_t> in_degrees;
 
   std::vector<tensor::TensorPtr> unexplored(_inputs.begin(), _inputs.end());
@@ -264,7 +255,7 @@ std::unordered_map<ops::OpPtr, uint32_t> ComputationGraph::getInDegrees()
   return in_degrees;
 }
 
-void ComputationGraph::checkNoOutputsHaveDependentOps() const {
+void Model::checkNoOutputsHaveDependentOps() const {
   for (const auto& output : _outputs) {
     if (!output->dependantOps().empty()) {
       throw std::invalid_argument("Outputs must not be inputs to any ops.");
@@ -272,7 +263,7 @@ void ComputationGraph::checkNoOutputsHaveDependentOps() const {
   }
 }
 
-void ComputationGraph::checkOnlyOutputsHaveNoDependentOps() const {
+void Model::checkOnlyOutputsHaveNoDependentOps() const {
   std::unordered_set<tensor::ActivationTensorPtr> outputs_set(_outputs.begin(),
                                                               _outputs.end());
 
@@ -284,7 +275,7 @@ void ComputationGraph::checkOnlyOutputsHaveNoDependentOps() const {
   }
 }
 
-void ComputationGraph::checkAllOutputsAreUsedInLosses() const {
+void Model::checkAllOutputsAreUsedInLosses() const {
   std::unordered_set<tensor::ActivationTensorPtr> outputs_set(_outputs.begin(),
                                                               _outputs.end());
 
@@ -303,4 +294,4 @@ void ComputationGraph::checkAllOutputsAreUsedInLosses() const {
   }
 }
 
-}  // namespace thirdai::bolt::nn::computation_graph
+}  // namespace thirdai::bolt::nn::model

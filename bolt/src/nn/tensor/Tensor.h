@@ -14,7 +14,7 @@ namespace thirdai::bolt::nn::tensor {
 
 /**
  * A tensor represents a collection of vectors that are either the inputs to a
- * computation graph or produced by one of its ops.
+ * model or produced by one of its ops.
  */
 class Tensor {
  public:
@@ -39,8 +39,8 @@ class Tensor {
 
   /**
    * Indicates that the provided op is dependent on this tensor, meaning that it
-   * uses it as an input. This is used to construct the computation graph and
-   * ensure correct ordering of ops.
+   * uses it as an input. This is used to construct the model and ensure correct
+   * ordering of ops.
    */
   void addDependantOp(ops::OpPtr op);
 
@@ -51,8 +51,8 @@ class Tensor {
   const std::vector<ops::OpPtr>& dependantOps() const;
 
   /**
-   * Returns the name of the tensor. All tensors in a computation graph must
-   * have a unique name.
+   * Returns the name of the tensor. All tensors in a model must have a unique
+   * name.
    */
   const std::string& name() const;
 

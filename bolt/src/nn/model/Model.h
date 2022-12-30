@@ -9,41 +9,39 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <vector>
 
-namespace thirdai::bolt::nn::computation_graph {
+namespace thirdai::bolt::nn::model {
 
-class ComputationGraph {
+class Model {
  public:
-  ComputationGraph(std::vector<tensor::InputTensorPtr> inputs,
-                   std::vector<tensor::ActivationTensorPtr> outputs,
-                   std::vector<loss::LossPtr> losses);
+  Model(std::vector<tensor::InputTensorPtr> inputs,
+        std::vector<tensor::ActivationTensorPtr> outputs,
+        std::vector<loss::LossPtr> losses);
 
-  static std::shared_ptr<ComputationGraph> make(
+  static std::shared_ptr<Model> make(
       std::vector<tensor::InputTensorPtr> inputs,
       std::vector<tensor::ActivationTensorPtr> outputs,
       std::vector<loss::LossPtr> losses);
 
   /**
-   * Computes the forward pass through the computation graph for the given
-   * batch. Activations are not cleared until the next call to forward or
-   * trainOnBatch.
+   * Computes the forward pass through the model for the given batch.
+   * Activations are not cleared until the next call to forward or trainOnBatch.
    */
   void forward(const std::vector<BoltBatch>& inputs, bool use_sparsity);
 
   void forwardSingleInput(const BoltBatch& inputs, bool use_sparsity);
 
   /**
-   * Computes the backward pass through the computation graph with the given
-   * labels, using the actiations that are currently stored in the graph from
-   * the last call to forward. Assumes that forward(...) has been called
-   * already.
+   * Computes the backward pass through the model with the given labels, using
+   * the actiations that are currently stored in the graph from the last call to
+   * forward. Assumes that forward(...) has been called already.
    */
   void backpropagate(const std::vector<BoltBatch>& labels);
 
   void backpropagateSingleInput(const BoltBatch& labels);
 
   /**
-   * Performs the foward and backward pass through the computation graph for the
-   * given training batch. The benefit of calling this method over forward(...)
+   * Performs the foward and backward pass through the model for the given
+   * training batch. The benefit of calling this method over forward(...)
    * followed by backpropagate(...) is that there is no intermediate thread
    * synchronization.
    */
@@ -80,27 +78,27 @@ class ComputationGraph {
   void trainOnBatchImpl(uint32_t input_batch_size, uint32_t label_batch_size);
 
   /**
-   * Computes the forward pass through the computation graph for the given
-   * sample in the batch. Assumes that setInputs(...) has already been called.
+   * Computes the forward pass through the model for the given sample in the
+   * batch. Assumes that setInputs(...) has already been called.
    */
   void forwardVector(uint32_t index_in_batch);
 
   /**
-   * Computes the backward pass through the computation graph for the given
-   * sample in the batch. Assumes that setInputs(...) and setLabels(...) have
-   * already been called.
+   * Computes the backward pass through the model for the given sample in the
+   * batch. Assumes that setInputs(...) and setLabels(...) have already been
+   * called.
    */
   void backpropagateVector(uint32_t index_in_batch);
 
   /**
-   * Sets the given batch as the inputs to the computation graph.
+   * Sets the given batch as the inputs to the model.
    */
   uint32_t setInputs(const std::vector<BoltBatch>& input_batches);
 
   void setSingleInput(const BoltBatch& inputs);
 
   /**
-   * Sets the given labels as the current labels for the computation graph.
+   * Sets the given labels as the current labels for the model.
    */
   uint32_t setLabels(const std::vector<BoltBatch>& label_batches);
 
@@ -119,7 +117,7 @@ class ComputationGraph {
   std::unordered_map<ops::OpPtr, uint32_t> getInDegrees() const;
 
   /**
-   * These methods perform checks to make sure that computation graph is valid.
+   * These methods perform checks to make sure that model is valid.
    */
   void checkNoOutputsHaveDependentOps() const;
 
@@ -139,6 +137,6 @@ class ComputationGraph {
   uint32_t _train_steps;
 };
 
-using ComputationGraphPtr = std::shared_ptr<ComputationGraph>;
+using ModelPtr = std::shared_ptr<Model>;
 
-}  // namespace thirdai::bolt::nn::computation_graph
+}  // namespace thirdai::bolt::nn::model

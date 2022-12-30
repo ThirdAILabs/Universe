@@ -1,5 +1,5 @@
 #include "BoltV2Python.h"
-#include <bolt/src/nn/computation_graph/ComputationGraph.h>
+#include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/ActivationTensor.h>
@@ -68,15 +68,13 @@ void createBoltV2NNSubmodule(py::module_& module) {
            py::arg("activation") = "relu", py::arg("sampling_config") = nullptr)
       .def("__call__", &ops::FullyConnectedFactory::apply, py::arg("input"));
 
-  py::class_<computation_graph::ComputationGraph,
-             computation_graph::ComputationGraphPtr>(nn, "Model")
-      .def(py::init(&computation_graph::ComputationGraph::make),
-           py::arg("inputs"), py::arg("outputs"), py::arg("losses"))
-      .def("train_on_batch",
-           &computation_graph::ComputationGraph::trainOnBatchSingleInput,
+  py::class_<model::Model, model::ModelPtr>(nn, "Model")
+      .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
+           py::arg("losses"))
+      .def("train_on_batch", &model::Model::trainOnBatchSingleInput,
            py::arg("inputs"), py::arg("labels"))
-      .def("forward", &computation_graph::ComputationGraph::forwardSingleInput,
-           py::arg("inputs"), py::arg("use_sparsity"));
+      .def("forward", &model::Model::forwardSingleInput, py::arg("inputs"),
+           py::arg("use_sparsity"));
 }
 
 }  // namespace thirdai::bolt::nn::python

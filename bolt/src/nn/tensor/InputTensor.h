@@ -11,7 +11,7 @@ enum class SparsityType {
 };
 
 /**
- * Subclass of Tensor which represents inputs to the computation graph.
+ * Subclass of Tensor which represents inputs to the model.
  */
 class InputTensor final : public Tensor {
  public:

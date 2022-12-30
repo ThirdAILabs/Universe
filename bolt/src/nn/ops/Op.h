@@ -7,10 +7,9 @@
 namespace thirdai::bolt::nn::ops {
 
 /**
- * Represents a operation in a computation graph which takes in one or more
- * inputs and produces one or more outputs. The op is responsible for managing
- * its own parameters, for example the weight matrix in an fully connected
- * layer.
+ * Represents a operation in a model which takes in one or more inputs and
+ * produces one or more outputs. The op is responsible for managing its own
+ * parameters, for example the weight matrix in an fully connected layer.
  */
 class Op {
  public:
@@ -20,9 +19,8 @@ class Op {
    * Computes the forward computation of the op. This should use the vectors in
    * the op's input tensors as input and store the resulting activations in the
    * op's output tensor(s). The parameter index_in_batch indicates which sample
-   * of the batch the computation is for. This allows the computation graph to
-   * parallelize the entire forward and backward pass through the graph across
-   * the batch.
+   * of the batch the computation is for. This allows the model to parallelize
+   * the entire forward and backward pass through the graph across the batch.
    */
   virtual void forward(uint32_t index_in_batch) = 0;
 
@@ -31,17 +29,16 @@ class Op {
    * respect to the gradient of the op's output tensor(s). The op should
    * increment the gradients of its inputs in case other ops compute gradients
    * for the same tensors. The parameter index_in_batch indicates which sample
-   * of the batch the computation is for. This allows the computation graph to
-   * parallelize the entire forward and backward pass through the graph across
-   * the batch.
+   * of the batch the computation is for. This allows the model to parallelize
+   * the entire forward and backward pass through the graph across the batch.
    */
   virtual void backpropagate(uint32_t index_in_batch) = 0;
 
   /**
    * Performs a parameter update on any parameters in the op. The parameter
    * train steps represents how many train steps have been completed so far in
-   * the computation graph. This is for logging and also optimizers like Adam
-   * which requires this for bias correction.
+   * the model. This is for logging and also optimizers like Adam which requires
+   * this for bias correction.
    */
   virtual void updateParameters(float learning_rate, uint32_t train_steps) = 0;
 
@@ -79,8 +76,8 @@ class Op {
   virtual void notifyInputSparsityChange() = 0;
 
   /**
-   * Returns the name of the op. All of the ops in a computation graph must have
-   * a unique name.
+   * Returns the name of the op. All of the ops in a model must have a unique
+   * name.
    */
   const std::string& name() const { return _name; }
 

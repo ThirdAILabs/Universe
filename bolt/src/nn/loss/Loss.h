@@ -15,17 +15,17 @@ class Loss {
   virtual void computeGradients(uint32_t index_in_batch) = 0;
 
   /**
-   * Returns which outputs in the computation graph have gradients computed by
-   * this loss function. This is used to ensure that all of the outputs in the
-   * computation graph have gradients computed for them.
+   * Returns which outputs in the model have gradients computed by this loss
+   * function. This is used to ensure that all of the outputs in the model have
+   * gradients computed for them.
    */
   virtual std::vector<tensor::ActivationTensorPtr> outputsUsed() const = 0;
 
   /**
    * Returns the input tensor for the labels that the loss function is
-   * expecting. The labels passed into the computation graph are assigned to the
-   * inputs returned by the loss functions in the order that the loss functions
-   * are supplied to the computation graph.
+   * expecting. The labels passed into the model are assigned to the inputs
+   * returned by the loss functions in the order that the loss functions are
+   * supplied to the model.
    */
   tensor::InputTensorPtr labels() const { return _labels; }
 

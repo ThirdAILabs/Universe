@@ -3,7 +3,7 @@ enable_testing()
 include(GoogleTest)
 
 set(BOLT_NN_TESTS
-    ComputationGraphTests)
+    ModelOpScheduleTests)
 
 foreach(BOLT_NN_TEST IN LISTS BOLT_NN_TESTS)
   add_executable(${BOLT_NN_TEST} ${BOLT_NN_TEST}.cc)

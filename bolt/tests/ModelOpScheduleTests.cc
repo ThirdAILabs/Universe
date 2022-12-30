@@ -1,4 +1,4 @@
-#include <bolt/src/nn/computation_graph/ComputationGraph.h>
+#include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <gtest/gtest.h>
@@ -92,14 +92,14 @@ TEST(OpSchedule, SingleOutput) {
 
   auto loss = MockLoss::make({act_5});
 
-  computation_graph::ComputationGraph graph(/* inputs= */ {input},
-                                            /* outputs= */ {act_5},
-                                            /* losses= */ {loss});
+  model::Model model(/* inputs= */ {input},
+                     /* outputs= */ {act_5},
+                     /* losses= */ {loss});
 
-  ASSERT_EQ(graph.ops().size(), 5);
+  ASSERT_EQ(model.ops().size(), 5);
 
   uint32_t cnt = 0;
-  for (const auto& op : graph.ops()) {
+  for (const auto& op : model.ops()) {
     ASSERT_EQ(op->name(), "op_" + std::to_string(++cnt));
   }
 }
@@ -127,15 +127,15 @@ TEST(OpSchedule, MultipleOutputs) {
 
   auto loss = MockLoss::make({act_4[0], act_7});
 
-  computation_graph::ComputationGraph graph(
+  model::Model model(
       /* inputs= */ {input_1, input_2, input_3},
       /* outputs= */ {act_4[0], act_7},
       /* losses= */ {loss});
 
-  ASSERT_EQ(graph.ops().size(), 7);
+  ASSERT_EQ(model.ops().size(), 7);
 
   uint32_t cnt = 0;
-  for (const auto& op : graph.ops()) {
+  for (const auto& op : model.ops()) {
     ASSERT_EQ(op->name(), "op_" + std::to_string(++cnt));
   }
 }
