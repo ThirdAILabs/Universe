@@ -12,6 +12,8 @@ from pathlib import Path
 import requests
 from mlflow_extraction import extract_mlflow_data
 
+# This webhook is associated with the `MLFLOW Benchmarks` slack app. Currently, it posts
+# messages to the #weekly_udt_benchmarks channel.
 SLACK_WEBHOOK = (
     "https://hooks.slack.com/services/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"
 )
@@ -59,8 +61,7 @@ def main():
     prefix = "test_run" if args.test_run else "benchmark"
     # Exit code is the number of benchmarking tasks that failed
     exit_code = 0
-    # configs = get_udt_configs(universe_dir)
-    configs = []
+    configs = get_udt_configs(universe_dir)
     for config in configs:
         config = config.__name__
         run_name = f"{prefix}_{cur_date}"
@@ -77,7 +78,6 @@ def main():
     if exit_code:
         exit(exit_code)
     else:
-        configs = get_udt_configs(universe_dir)
         for config in configs:
             send_slack_message(config.experiment_name)
 
