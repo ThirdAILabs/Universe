@@ -62,7 +62,7 @@ def main():
     # Exit code is the number of benchmarking tasks that failed
     exit_code = 0
     configs = get_udt_configs(universe_dir)
-    for config in []:
+    for config in configs:
         config = config.__name__
         run_name = f"{prefix}_{cur_date}"
         if (
