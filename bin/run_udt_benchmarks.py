@@ -5,14 +5,17 @@ import importlib.util
 import inspect
 import json
 import os
-import requests
 import subprocess
 from datetime import date
 from pathlib import Path
 
-from mlflow_extraction import extract_mlflow_data 
+import requests
+from mlflow_extraction import extract_mlflow_data
 
-SLACK_WEBHOOK = "https://hooks.slack.com/services/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"
+SLACK_WEBHOOK = (
+    "https://hooks.slack.com/services/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"
+)
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Launch a benchmarking run")
@@ -70,7 +73,7 @@ def main():
             != 0
         ):
             exit_code += 1
-    
+
     if exit_code:
         exit(exit_code)
     else:
