@@ -306,6 +306,7 @@ set(THIRDAI_SOURCES
     bolt_vector/src/BoltVector.cc
     bolt/src/nn/model/ActivationsManager.cc
     bolt/src/nn/model/Model.cc
+    bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/tensor/ActivationTensor.cc
     bolt/src/nn/tensor/InputTensor.cc
@@ -399,6 +400,7 @@ pybind11_add_module(
   bolt/python_bindings/BoltPython.cc
   bolt/python_bindings/BoltNNPython.cc
   bolt/python_bindings/CallbacksPython.cc
+  bolt/python_bindings/BoltV2Python.cc
   dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/FeaturizationPython.cc

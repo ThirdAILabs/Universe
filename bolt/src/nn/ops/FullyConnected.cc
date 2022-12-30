@@ -10,8 +10,8 @@ namespace thirdai::bolt::nn::ops {
 tensor::ActivationTensorPtr FullyConnected::apply(
     std::shared_ptr<FullyConnectedLayer> kernel, tensor::Tensor* input,
     std::string name) {
-  auto op = std::make_shared<FullyConnected>(std::move(kernel), input,
-                                             std::move(name));
+  auto op = std::shared_ptr<FullyConnected>(
+      new FullyConnected(std::move(kernel), input, std::move(name)));
 
   input->addDependantOp(op);
 
@@ -62,8 +62,23 @@ void FullyConnected::summary(std::ostream& summary) const {
   std::stringstream str_summary;
   _kernel->buildLayerSummary(str_summary, /* detailed= */ true);
 
-  summary << _input->name() << " -> " << _output->name() << " ("
-          << str_summary.str() << ")";
+  std::string layer_summary = str_summary.str();
+  layer_summary.pop_back();  // Get rid of newline
+
+  summary << "FullyConnected(" << name() << "): " << _input->name() << " -> "
+          << _output->name() << " (" << layer_summary << ")";
+}
+
+std::vector<uint32_t> FullyConnected::dimensions() const {
+  return {_kernel->getDim(), _kernel->getInputDim()};
+}
+
+const float* FullyConnected::weightsPtr() const {
+  return _kernel->getWeightsPtr();
+}
+
+const float* FullyConnected::biasesPtr() const {
+  return _kernel->getBiasesPtr();
 }
 
 std::string nextFullyConnectedOpName() {

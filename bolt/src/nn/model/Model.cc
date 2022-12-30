@@ -76,16 +76,42 @@ void Model::trainOnBatchSingleInput(const BoltBatch& inputs,
 }
 
 void Model::updateParameters(float learning_rate) {
+  ++_train_steps;
   for (auto& op : _op_schedule) {
-    op->updateParameters(learning_rate, ++_train_steps);
+    op->updateParameters(learning_rate, _train_steps);
   }
 }
 
 const std::vector<ops::OpPtr>& Model::ops() const { return _op_schedule; }
 
+ops::OpPtr Model::getOp(const std::string& name) const {
+  for (const auto& op : _op_schedule) {
+    if (op->name() == name) {
+      return op;
+    }
+  }
+  throw std::invalid_argument("Could not find op with name '" + name + "'.");
+}
+
+std::string Model::summary(bool print) const {
+  std::stringstream summary;
+
+  for (const auto& op : _op_schedule) {
+    op->summary(summary);
+    summary << '\n';
+  }
+
+  if (print) {
+    std::cout << summary.str() << std::endl;
+  }
+
+  return summary.str();
+}
+
 void Model::forwardImpl(uint32_t input_batch_size, bool use_sparsity) {
   _activations.reallocateForBatch(input_batch_size, use_sparsity);
 
+#pragma omp parallel for default(none) shared(input_batch_size)
   for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
        index_in_batch++) {
     forwardVector(index_in_batch);
@@ -98,6 +124,7 @@ void Model::backpropagateImpl(uint32_t label_batch_size) {
         "Label batch size does not match input batch size.");
   }
 
+#pragma omp parallel for default(none) shared(label_batch_size)
   for (uint32_t index_in_batch = 0; index_in_batch < label_batch_size;
        index_in_batch++) {
     backpropagateVector(index_in_batch);
@@ -112,6 +139,7 @@ void Model::trainOnBatchImpl(uint32_t input_batch_size,
   }
   _activations.reallocateForBatch(input_batch_size, /* use_sparsity= */ true);
 
+#pragma omp parallel for default(none) shared(input_batch_size)
   for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
        index_in_batch++) {
     forwardVector(index_in_batch);
@@ -292,21 +320,6 @@ void Model::checkAllOutputsAreUsedInLosses() const {
   if (!outputs_set.empty()) {
     throw std::invalid_argument("All outputs must be used by a loss.");
   }
-}
-
-std::string Model::summary(bool print) const {
-  std::stringstream summary;
-
-  for (const auto& op : _op_schedule) {
-    op->summary(summary);
-    summary << '\n';
-  }
-
-  if (print) {
-    std::cout << summary.str() << std::endl;
-  }
-
-  return summary.str();
 }
 
 }  // namespace thirdai::bolt::nn::model

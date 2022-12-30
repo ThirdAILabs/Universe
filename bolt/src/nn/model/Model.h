@@ -43,7 +43,7 @@ class Model {
    * Performs the foward and backward pass through the model for the given
    * training batch. The benefit of calling this method over forward(...)
    * followed by backpropagate(...) is that there is no intermediate thread
-   * synchronization.
+   * synchronization. Does not perform parameter updates.
    */
   void trainOnBatch(const std::vector<BoltBatch>& inputs,
                     const std::vector<BoltBatch>& labels);
@@ -63,7 +63,12 @@ class Model {
   const std::vector<ops::OpPtr>& ops() const;
 
   /**
-   * Prints/returns a summary of the model.
+   * Retrieves on op by name.
+   */
+  ops::OpPtr getOp(const std::string& name) const;
+
+  /**
+   * Prints/returns a summary of the model. Throws if no op is found.
    */
 
   std::string summary(bool print = true) const;

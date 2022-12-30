@@ -1,6 +1,7 @@
 // Code to create thirdai modules
 #include <bolt/python_bindings/BoltNNPython.h>
 #include <bolt/python_bindings/BoltPython.h>
+#include <bolt/python_bindings/BoltV2Python.h>
 #include <bolt/python_bindings/CallbacksPython.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <auto_ml/python_bindings/AutomlPython.h>
@@ -160,4 +161,8 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Deployment submodule
   thirdai::automl::deployment::python::createDeploymentSubmodule(m);
+
+  // Bolt V2
+  auto bolt_v2_submodule = m.def_submodule("bolt_v2");
+  thirdai::bolt::nn::python::createBoltV2NNSubmodule(bolt_v2_submodule);
 }

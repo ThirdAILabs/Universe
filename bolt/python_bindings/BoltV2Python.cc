@@ -12,6 +12,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
+#include <pybind11/stl.h>
 #include <optional>
 
 namespace py = pybind11;
@@ -64,6 +65,20 @@ void createBoltV2NNSubmodule(py::module_& module) {
           },
           py::return_value_policy::reference_internal);
 
+  auto ops = nn.def_submodule("ops");
+
+  py::class_<ops::Op, ops::OpPtr>(ops, "Op");  // NOLINT
+
+  py::class_<ops::FullyConnected, ops::FullyConnectedPtr, ops::Op>(
+      ops, "FullyConnected")
+      .def_property_readonly("weights",
+                             [](const ops::FullyConnected& op) {
+                               return toNumpy(op.weightsPtr(), op.dimensions());
+                             })
+      .def_property_readonly("biases", [](const ops::FullyConnected& op) {
+        return toNumpy(op.biasesPtr(), {op.dimensions()[0]});
+      });
+
   py::class_<ops::FullyConnectedFactory>(nn, "FullyConnected")
       .def(py::init<uint32_t, float, std::string, SamplingConfigPtr>(),
            py::arg("dim"), py::arg("sparsity") = 1.0,
@@ -75,8 +90,15 @@ void createBoltV2NNSubmodule(py::module_& module) {
            py::arg("losses"))
       .def("train_on_batch", &model::Model::trainOnBatchSingleInput,
            py::arg("inputs"), py::arg("labels"))
+      .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
+           py::arg("labels"))
       .def("forward", &model::Model::forwardSingleInput, py::arg("inputs"),
            py::arg("use_sparsity"))
+      .def("forward", &model::Model::forward, py::arg("inputs"),
+           py::arg("use_sparsity"))
+      .def("update_parameters", &model::Model::updateParameters,
+           py::arg("learning_rate"))
+      .def("__getitem__", &model::Model::getOp, py::arg("name"))
       .def("summary", &model::Model::summary, py::arg("print") = true);
 
   auto loss = nn.def_submodule("losses");

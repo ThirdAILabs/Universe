@@ -71,7 +71,10 @@ class MockLoss : public loss::Loss {
     return std::make_shared<MockLoss>(std::move(outputs_used));
   }
 
-  void computeGradients(uint32_t i) final { (void)i; }
+  void gradients(uint32_t i, uint32_t batch_size) final {
+    (void)i;
+    (void)batch_size;
+  }
 
   std::vector<tensor::ActivationTensorPtr> outputsUsed() const final {
     return _outputs_used;

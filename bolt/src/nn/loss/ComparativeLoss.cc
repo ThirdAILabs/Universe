@@ -59,7 +59,7 @@ void ComparativeLoss::gradients(BoltVector& activations,
     float label_val =
         labels.findActiveNeuron<LABEL_DENSE>(active_neuron).activation;
     activations.gradients[i] =
-        gradient(label_val, activations.activations[i], batch_size);
+        gradient(activations.activations[i], label_val, batch_size);
   }
 }
 

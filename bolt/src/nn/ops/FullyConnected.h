@@ -28,6 +28,21 @@ class FullyConnected final : public Op {
 
   void summary(std::ostream& summary) const final;
 
+  /**
+   * Returns the dimensions of the layer as {dim, input_dim}.
+   */
+  std::vector<uint32_t> dimensions() const;
+
+  /**
+   * Returns a non-owning pointer to the weights.
+   */
+  const float* weightsPtr() const;
+
+  /**
+   * Returns a non-owning pointer to the biases.
+   */
+  const float* biasesPtr() const;
+
  private:
   FullyConnected(std::shared_ptr<FullyConnectedLayer> kernel,
                  tensor::Tensor* input, std::string name);
@@ -38,6 +53,8 @@ class FullyConnected final : public Op {
 
   tensor::ActivationTensorPtr _output;
 };
+
+using FullyConnectedPtr = std::shared_ptr<FullyConnected>;
 
 class FullyConnectedFactory {
  public:
