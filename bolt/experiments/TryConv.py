@@ -8,9 +8,7 @@ from thirdai import bolt, dataset
 
 from benchmarks.mlflow_logger import ExperimentLogger
 
-# TODO: figure out why numpy is slow
 # TODO: calculate num patches in conv layer
-# TODO: default sampling config when its not passed in
 
 # ============================> Instructions <===============================
 
@@ -42,8 +40,37 @@ IMAGE_WIDTH = 224
 IMAGE_HEIGHT = 224
 NUM_CHANNELS = 3
 
+N_CLASSES = 325
 
-def _define_network():
+
+def define_model():
+    input_layer = bolt.nn.Input(dim=IMAGE_WIDTH * IMAGE_HEIGHT * NUM_CHANNELS)
+
+    first_conv = bolt.nn.Conv(
+        num_filters=200,
+        sparsity=1,
+        activation_function="relu",
+        kernel_size=(4, 4),
+        num_patches=3136,
+        next_kernel_size=(1, 1),
+    )(input_layer)
+
+    hidden_layer = bolt.nn.FullyConnected(dim=100, sparsity=1, activation="relu")(
+        first_conv
+    )
+
+    output_layer = bolt.nn.FullyConnected(dim=N_CLASSES, activation="softmax")(
+        hidden_layer
+    )
+
+    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
+
+    model.compile(bolt.nn.losses.CategoricalCrossEntropy())
+
+    return model
+
+
+def _define_network_OLD_VERSION():
     layers = [
         bolt.Conv(
             num_filters=200,
@@ -131,15 +158,13 @@ def transform_to_flat_patches(data, patch_size):
     return np.array(new_data)
 
 
-def train_conv_birds_325(args, mlflow_logger):
-    network = _define_network()
+def train_conv_birds_325(args):
+    model = define_model()
 
     train_generator, test_generator = get_data_generators()
 
     # patch size should be same as the patch size of the first conv layer
     patch_size = (4, 4)  # width x height
-
-    mlflow_logger.log_start_training()
 
     for e in range(args.epochs):
         print(f"Starting epoch {e}")
@@ -152,33 +177,20 @@ def train_conv_birds_325(args, mlflow_logger):
         end = time.time()
         print(f"\nElapsed {end - start} seconds to reshape data\n")
 
-        network.train(
-            train_data_flat_patches,
-            train_labels,
-            batch_size=args.batch_size,
-            loss_fn=bolt.CategoricalCrossEntropyLoss(),
-            learning_rate=args.lr,
-            epochs=1,
-            rehash=6400,
-            rebuild=128000,
-        )
-        acc, __ = network.predict(
-            test_data_flat_patches,
-            test_labels,
-            batch_size=args.batch_size,
-            metrics=["categorical_accuracy"],
-            verbose=True,
-        )
-        mlflow_logger.log_epoch(acc["categorical_accuracy"][0])
+        bolt_train_data = dataset.from_numpy(train_data_flat_patches, batch_size=args.batch_size)
+        bolt_train_labels = dataset.from_numpy(train_labels, batch_size=args.batch_size)
+        bolt_test_data = dataset.from_numpy(test_data_flat_patches, batch_size=args.batch_size)
+        bolt_test_labels = dataset.from_numpy(test_labels, batch_size=args.batch_size)
 
-    final_accuracy, __ = network.predict(
-        test_data_flat_patches,
-        test_labels,
-        batch_size=args.batch_size,
-        metrics=["categorical_accuracy"],
-        verbose=True,
-    )
-    mlflow_logger.log_epoch(acc["categorical_accuracy"][0])
+        train_cfg = bolt.TrainConfig(epochs=1, learning_rate=0.001).silence()
+
+        model.train(
+            bolt_train_data,
+            bolt_train_labels,
+            train_cfg,
+        )
+        eval_cfg = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
+        metrics = model.evaluate(bolt_test_data, bolt_test_labels, eval_cfg)
 
 
 def main():
@@ -195,14 +207,7 @@ def main():
 
     args = parser.parse_args()
 
-    with ExperimentLogger(
-        experiment_name="ConvLayer Test",
-        dataset="birds325",
-        algorithm="convolution",
-        framework="bolt",
-        experiment_args=args,
-    ) as mlflow_logger:
-        train_conv_birds_325(args, mlflow_logger)
+    train_conv_birds_325(args)
 
 
 if __name__ == "__main__":
