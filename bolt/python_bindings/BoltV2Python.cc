@@ -74,7 +74,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("train_on_batch", &model::Model::trainOnBatchSingleInput,
            py::arg("inputs"), py::arg("labels"))
       .def("forward", &model::Model::forwardSingleInput, py::arg("inputs"),
-           py::arg("use_sparsity"));
+           py::arg("use_sparsity"))
+      .def("summary", &model::Model::summary, py::arg("print") = true);
 }
 
 }  // namespace thirdai::bolt::nn::python

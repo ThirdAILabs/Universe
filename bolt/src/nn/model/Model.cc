@@ -294,4 +294,19 @@ void Model::checkAllOutputsAreUsedInLosses() const {
   }
 }
 
+std::string Model::summary(bool print) const {
+  std::stringstream summary;
+
+  for (const auto& op : _op_schedule) {
+    op->summary(summary);
+    summary << '\n';
+  }
+
+  if (print) {
+    std::cout << summary.str() << std::endl;
+  }
+
+  return summary.str();
+}
+
 }  // namespace thirdai::bolt::nn::model
