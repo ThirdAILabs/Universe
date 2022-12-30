@@ -56,6 +56,16 @@ std::vector<tensor::ActivationTensorPtr> FullyConnected::outputs() const {
   return {_output};
 }
 
+void FullyConnected::summary(std::ostream& summary) const {
+  // TODO(Nicholas) fix this method on the FullyConnectedLayer to take in a
+  // std::ostream instead of std::stringstream.
+  std::stringstream str_summary;
+  _kernel->buildLayerSummary(str_summary, /* detailed= */ true);
+
+  summary << _input->name() << " -> " << _output->name() << " ("
+          << str_summary.str() << ")";
+}
+
 std::string nextFullyConnectedOpName() {
   static uint32_t constructed = 0;
   return "fc_" + std::to_string(++constructed);

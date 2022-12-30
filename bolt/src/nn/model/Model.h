@@ -56,7 +56,17 @@ class Model {
    */
   void updateParameters(float learning_rate);
 
+  /**
+   * Returns the list of ops in the model in the order they will be executed
+   * during the forward pass.
+   */
   const std::vector<ops::OpPtr>& ops() const;
+
+  /**
+   * Prints/returns a summary of the model.
+   */
+
+  std::string summary(bool print = true) const;
 
  private:
   /**

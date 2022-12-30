@@ -76,6 +76,11 @@ class Op {
   virtual void notifyInputSparsityChange() = 0;
 
   /**
+   * Returns a summary of the op.
+   */
+  virtual void summary(std::ostream& summary) const = 0;
+
+  /**
    * Returns the name of the op. All of the ops in a model must have a unique
    * name.
    */

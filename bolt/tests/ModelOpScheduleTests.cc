@@ -55,6 +55,8 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
 
   void notifyInputSparsityChange() final {}
 
+  void summary(std::ostream& summary) const final { summary << "Noop"; }
+
  private:
   std::vector<tensor::Tensor*> _inputs;
   std::vector<tensor::ActivationTensorPtr> _outputs;

@@ -26,6 +26,8 @@ class FullyConnected final : public Op {
 
   void notifyInputSparsityChange() final {}
 
+  void summary(std::ostream& summary) const final;
+
  private:
   FullyConnected(std::shared_ptr<FullyConnectedLayer> kernel,
                  tensor::Tensor* input, std::string name);
