@@ -1,0 +1,82 @@
+#include "BoltV2Python.h"
+#include <bolt/src/nn/computation_graph/ComputationGraph.h>
+#include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/tensor/ActivationTensor.h>
+#include <bolt/src/nn/tensor/InputTensor.h>
+#include <bolt/src/nn/tensor/Tensor.h>
+#include <pybind11/cast.h>
+#include <pybind11/detail/common.h>
+#include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/pytypes.h>
+#include <optional>
+
+namespace py = pybind11;
+
+namespace thirdai::bolt::nn::python {
+
+template <typename T>
+py::object toNumpy(const T* data, std::vector<uint32_t> shape) {
+  if (data) {
+    py::array_t<T, py::array::c_style | py::array::forcecast> arr(shape, data);
+    return py::object(std::move(arr));
+  }
+  return py::none();
+}
+
+void createBoltV2NNSubmodule(py::module_& module) {
+  auto nn = module.def_submodule("nn");
+
+  py::class_<tensor::Tensor, tensor::TensorPtr>(nn, "Tensor");  // NOLINT
+
+  py::enum_<tensor::SparsityType>(nn, "SparsityType")
+      .value("Sparse", tensor::SparsityType::Sparse)
+      .value("Dense", tensor::SparsityType::Dense)
+      .value("Unknown", tensor::SparsityType::Unknown);
+
+  py::class_<tensor::InputTensor, tensor::InputTensorPtr, tensor::Tensor>(
+      nn, "Input")
+      .def(py::init(&tensor::InputTensor::make), py::arg("dim"),
+           py::arg("sparsity_type") = tensor::SparsityType::Unknown,
+           py::arg("sparse_nonzeros") = std::nullopt);
+
+  py::class_<tensor::ActivationTensor, tensor::ActivationTensorPtr,
+             tensor::Tensor>(nn, "ActivationTensor")
+      .def_property_readonly(
+          "active_neurons",
+          [](const tensor::ActivationTensor& tensor) {
+            return toNumpy(tensor.activeNeuronsPtr(), tensor.shape());
+          },
+          py::return_value_policy::reference_internal)
+      .def_property_readonly(
+          "activations",
+          [](const tensor::ActivationTensor& tensor) {
+            return toNumpy(tensor.activationsPtr(), tensor.shape());
+          },
+          py::return_value_policy::reference_internal)
+      .def_property_readonly(
+          "gradients",
+          [](const tensor::ActivationTensor& tensor) {
+            return toNumpy(tensor.gradientsPtr(), tensor.shape());
+          },
+          py::return_value_policy::reference_internal);
+
+  py::class_<ops::FullyConnectedFactory>(nn, "FullyConnected")
+      .def(py::init<uint32_t, float, std::string, SamplingConfigPtr>(),
+           py::arg("dim"), py::arg("sparsity") = 1.0,
+           py::arg("activation") = "relu", py::arg("sampling_config") = nullptr)
+      .def("__call__", &ops::FullyConnectedFactory::apply, py::arg("input"));
+
+  py::class_<computation_graph::ComputationGraph,
+             computation_graph::ComputationGraphPtr>(nn, "Model")
+      .def(py::init(&computation_graph::ComputationGraph::make),
+           py::arg("inputs"), py::arg("outputs"), py::arg("losses"))
+      .def("train_on_batch",
+           &computation_graph::ComputationGraph::trainOnBatchSingleInput,
+           py::arg("inputs"), py::arg("labels"))
+      .def("forward", &computation_graph::ComputationGraph::forwardSingleInput,
+           py::arg("inputs"), py::arg("use_sparsity"));
+}
+
+}  // namespace thirdai::bolt::nn::python

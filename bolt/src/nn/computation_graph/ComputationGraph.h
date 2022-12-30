@@ -17,12 +17,19 @@ class ComputationGraph {
                    std::vector<tensor::ActivationTensorPtr> outputs,
                    std::vector<loss::LossPtr> losses);
 
+  static std::shared_ptr<ComputationGraph> make(
+      std::vector<tensor::InputTensorPtr> inputs,
+      std::vector<tensor::ActivationTensorPtr> outputs,
+      std::vector<loss::LossPtr> losses);
+
   /**
    * Computes the forward pass through the computation graph for the given
    * batch. Activations are not cleared until the next call to forward or
    * trainOnBatch.
    */
   void forward(const std::vector<BoltBatch>& inputs, bool use_sparsity);
+
+  void forwardSingleInput(const BoltBatch& inputs, bool use_sparsity);
 
   /**
    * Computes the backward pass through the computation graph with the given
@@ -31,6 +38,8 @@ class ComputationGraph {
    * already.
    */
   void backpropagate(const std::vector<BoltBatch>& labels);
+
+  void backpropagateSingleInput(const BoltBatch& labels);
 
   /**
    * Performs the foward and backward pass through the computation graph for the
@@ -41,7 +50,8 @@ class ComputationGraph {
   void trainOnBatch(const std::vector<BoltBatch>& inputs,
                     const std::vector<BoltBatch>& labels);
 
-  void trainOnBatch(const BoltBatch& inputs, const BoltBatch& labels);
+  void trainOnBatchSingleInput(const BoltBatch& inputs,
+                               const BoltBatch& labels);
 
   /**
    * Updates the parameters of all ops.
@@ -52,7 +62,20 @@ class ComputationGraph {
 
  private:
   /**
-   * Helper method for trainOnBatch.
+   * Helper function for forward and forwardSingleInput. Handles all of
+   * the logic after setting the inputs and labels.
+   */
+  void forwardImpl(uint32_t input_batch_size, bool use_sparsity);
+
+  /**
+   * Helper function for backpropagate and backpropagateSingleInput. Handles all
+   * of the logic after setting the inputs and labels.
+   */
+  void backpropagateImpl(uint32_t label_batch_size);
+
+  /**
+   * Helper method for trainOnBatch and trainOnSingleInputBatch. Handles all of
+   * the logic after setting the inputs and labels.
    */
   void trainOnBatchImpl(uint32_t input_batch_size, uint32_t label_batch_size);
 
@@ -60,24 +83,28 @@ class ComputationGraph {
    * Computes the forward pass through the computation graph for the given
    * sample in the batch. Assumes that setInputs(...) has already been called.
    */
-  void forward(uint32_t index_in_batch);
+  void forwardVector(uint32_t index_in_batch);
 
   /**
    * Computes the backward pass through the computation graph for the given
    * sample in the batch. Assumes that setInputs(...) and setLabels(...) have
    * already been called.
    */
-  void backpropagate(uint32_t index_in_batch);
+  void backpropagateVector(uint32_t index_in_batch);
 
   /**
    * Sets the given batch as the inputs to the computation graph.
    */
   uint32_t setInputs(const std::vector<BoltBatch>& input_batches);
 
+  void setSingleInput(const BoltBatch& inputs);
+
   /**
    * Sets the given labels as the current labels for the computation graph.
    */
   uint32_t setLabels(const std::vector<BoltBatch>& label_batches);
+
+  void setSingleLabel(const BoltBatch& labels);
 
   /**
    * Traverses the graph and determines the order in which the ops should be
@@ -111,5 +138,7 @@ class ComputationGraph {
 
   uint32_t _train_steps;
 };
+
+using ComputationGraphPtr = std::shared_ptr<ComputationGraph>;
 
 }  // namespace thirdai::bolt::nn::computation_graph

@@ -69,4 +69,21 @@ void ActivationTensor::updateSparsity(uint32_t new_sparse_nonzeros) {
 
 ops::Op* ActivationTensor::source() const { return _source; }
 
+std::vector<uint32_t> ActivationTensor::shape() const {
+  uint32_t batch_size = _vectors.size();
+  return {batch_size, dim()};
+}
+
+const uint32_t* ActivationTensor::activeNeuronsPtr() const {
+  return _active_neurons.data();
+}
+
+const float* ActivationTensor::activationsPtr() const {
+  return _activations.data();
+}
+
+const float* ActivationTensor::gradientsPtr() const {
+  return _gradients.data();
+}
+
 }  // namespace thirdai::bolt::nn::tensor

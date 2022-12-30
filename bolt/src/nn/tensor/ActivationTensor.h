@@ -40,6 +40,26 @@ class ActivationTensor final : public Tensor {
    */
   ops::Op* source() const;
 
+  /**
+   * Returns the shape of the active neurons, activations, and gradients.
+   */
+  std::vector<uint32_t> shape() const;
+
+  /**
+   * Returns a non-owning ptr to the active neurons.
+   */
+  const uint32_t* activeNeuronsPtr() const;
+
+  /**
+   * Returns a non-owning ptr to the activations.
+   */
+  const float* activationsPtr() const;
+
+  /**
+   * Returns a non-owning ptr to the gradients.
+   */
+  const float* gradientsPtr() const;
+
  private:
   std::vector<BoltVector> _vectors;
   uint32_t _sparse_nonzeros;
