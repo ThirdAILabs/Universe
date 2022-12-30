@@ -33,12 +33,14 @@ class ActivationsManager {
   /**
    * Returns the currently allocated batch size.
    */
-  uint32_t currentBatchSize() const;
+  constexpr uint32_t currentBatchSize() const { return _current_batch_size; }
 
  private:
   std::vector<tensor::ActivationTensorPtr> _activation_tensors;
 
   uint32_t _allocated_batch_size;
+  uint32_t _current_batch_size;
+
   bool _using_sparsity;
 };
 

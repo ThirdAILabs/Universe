@@ -129,7 +129,7 @@ void Model::backpropagateVector(uint32_t index_in_batch) {
   _activations.resetOutputGradients(index_in_batch);
 
   for (auto& loss : _losses) {
-    loss->computeGradients(index_in_batch);
+    loss->gradients(index_in_batch, _activations.currentBatchSize());
   }
 
   for (auto op = _op_schedule.rbegin(); op != _op_schedule.rend(); ++op) {

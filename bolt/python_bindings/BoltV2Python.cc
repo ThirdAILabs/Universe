@@ -1,4 +1,6 @@
 #include "BoltV2Python.h"
+#include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -76,6 +78,15 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("forward", &model::Model::forwardSingleInput, py::arg("inputs"),
            py::arg("use_sparsity"))
       .def("summary", &model::Model::summary, py::arg("print") = true);
+
+  auto loss = nn.def_submodule("losses");
+
+  py::class_<loss::Loss, loss::LossPtr>(loss, "Loss");  // NOLINT
+
+  py::class_<loss::CategoricalCrossEntropy, loss::CategoricalCrossEntropyPtr,
+             loss::Loss>(loss, "CategoricalCrossEntropy")
+      .def(py::init(&loss::CategoricalCrossEntropy::make),
+           py::arg("activations"));
 }
 
 }  // namespace thirdai::bolt::nn::python

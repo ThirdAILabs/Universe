@@ -12,7 +12,7 @@ class Loss {
    * Computes the loss for the outputs used by this loss function for the given
    * sample in the batch.
    */
-  virtual void computeGradients(uint32_t index_in_batch) = 0;
+  virtual void gradients(uint32_t index_in_batch, uint32_t batch_size) = 0;
 
   /**
    * Returns which outputs in the model have gradients computed by this loss
