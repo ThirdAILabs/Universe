@@ -50,7 +50,7 @@ def get_udt_configs(universe_dir):
 
 def send_slack_message(experiment_name):
     df_md = extract_mlflow_data(experiment_name, markdown=True)
-    payload = {"text": f"```{df_md}```"}
+    payload = {"text": f"*{experiment_name}* \n ```{df_md}```"}
     return requests.post(SLACK_WEBHOOK, json.dumps(payload))
 
 
