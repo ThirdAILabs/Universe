@@ -1,4 +1,5 @@
 #include "InputTensor.h"
+#include <optional>
 #include <string>
 
 namespace thirdai::bolt::nn::tensor {
@@ -29,6 +30,13 @@ BoltVector& InputTensor::getVector(uint32_t index) {
 }
 
 void InputTensor::setInputs(const BoltBatch& batch) {
+  std::optional<std::pair<uint32_t, uint32_t>> num_nonzeros_range =
+      std::nullopt;
+  if (_num_nonzeros) {
+    num_nonzeros_range = {*_num_nonzeros, *_num_nonzeros};
+  }
+  batch.verifyExpectedDimension(dim(), num_nonzeros_range, "Input");
+
   _input_batch = const_cast<BoltBatch*>(&batch);
 }
 
