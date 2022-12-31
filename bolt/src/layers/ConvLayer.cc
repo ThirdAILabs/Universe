@@ -8,14 +8,11 @@ namespace thirdai::bolt {
 ConvLayer::ConvLayer(const ConvLayerConfig& config, uint32_t prev_height,
                      uint32_t prev_width, uint32_t prev_depth,
                      float prev_sparsity)
-    : _dim(config.num_filters * config.num_patches),
-      _prev_dim(prev_height * prev_width * prev_depth),
-      _sparse_dim(config.sparsity * config.num_filters * config.num_patches),
+    : _prev_dim(prev_height * prev_width * prev_depth),
       _sparsity(config.sparsity),
       _act_func(config.activation_fn),
       _num_filters(config.num_filters),
       _num_sparse_filters(config.num_filters * config.sparsity),
-      _num_patches(config.num_patches),
       _prev_num_filters(prev_depth),
       _prev_num_sparse_filters(prev_depth * prev_sparsity),
       _kernel_size(config.kernel_size.first * config.kernel_size.second) {
@@ -28,6 +25,14 @@ ConvLayer::ConvLayer(const ConvLayerConfig& config, uint32_t prev_height,
     throw std::invalid_argument(
         "Conv layers currently support only square kernels.");
   }
+
+  // TODO(david): update formula when adding in stride/padding
+  _height = prev_height / config.kernel_size.first;
+  _width = prev_width / config.kernel_size.second;
+  _dim = _height * _width * config.num_filters;
+  _sparse_dim = _dim * config.sparsity;
+
+  _num_patches = _height * _width;
 
   _patch_dim = _kernel_size * _prev_num_filters;
   _sparse_patch_dim = _kernel_size * _prev_num_sparse_filters;

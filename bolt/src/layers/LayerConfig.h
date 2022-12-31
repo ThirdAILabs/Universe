@@ -54,25 +54,22 @@ class ConvLayerConfig final {
  public:
   ConvLayerConfig(uint64_t _num_filters, const std::string& _activation,
                   std::pair<uint32_t, uint32_t> _kernel_size,
-                  uint32_t _num_patches,
                   std::pair<uint32_t, uint32_t> _next_kernel_size)
       : ConvLayerConfig(_num_filters, /* sparsity= */ 1.0, _activation,
-                        _kernel_size, _num_patches, _next_kernel_size) {}
+                        _kernel_size, _next_kernel_size) {}
 
   ConvLayerConfig(uint64_t _num_filters, float _sparsity,
                   const std::string& _activation,
                   std::pair<uint32_t, uint32_t> _kernel_size,
-                  uint32_t _num_patches,
                   std::pair<uint32_t, uint32_t> _next_kernel_size)
       : ConvLayerConfig(_num_filters, _sparsity, _activation, _kernel_size,
-                        _num_patches, _next_kernel_size,
+                        _next_kernel_size,
                         DWTASamplingConfig::autotune(_num_filters, _sparsity)) {
   }
 
   ConvLayerConfig(uint64_t _num_filters, float _sparsity,
                   const std::string& _activation,
                   std::pair<uint32_t, uint32_t> _kernel_size,
-                  uint32_t _num_patches,
                   std::pair<uint32_t, uint32_t> _next_kernel_size,
                   SamplingConfigPtr _config);
 
@@ -80,7 +77,6 @@ class ConvLayerConfig final {
   float sparsity;
   ActivationFunction activation_fn;
   std::pair<uint32_t, uint32_t> kernel_size;
-  uint32_t num_patches;
   std::pair<uint32_t, uint32_t> next_kernel_size;
   SamplingConfigPtr sampling_config;
 
@@ -91,8 +87,7 @@ class ConvLayerConfig final {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(num_filters, sparsity, activation_fn, sampling_config, num_patches,
-            kernel_size);
+    archive(num_filters, sparsity, activation_fn, sampling_config, kernel_size);
   }
 };
 

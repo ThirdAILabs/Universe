@@ -11,58 +11,56 @@ class ConvNode final : public Node,
                        public std::enable_shared_from_this<ConvNode> {
  private:
   ConvNode(uint64_t num_filters, const std::string& activation,
-           std::pair<uint32_t, uint32_t> kernel_size, uint32_t num_patches,
+           std::pair<uint32_t, uint32_t> kernel_size,
            std::pair<uint32_t, uint32_t> next_kernel_size)
       : _layer(nullptr),
         _config(ConvLayerConfig(num_filters, activation, std::move(kernel_size),
-                                num_patches, next_kernel_size)),
-        _predecessor(nullptr) {}
-
-  ConvNode(uint64_t num_filters, float sparsity, const std::string& activation,
-           std::pair<uint32_t, uint32_t> kernel_size, uint32_t num_patches,
-           std::pair<uint32_t, uint32_t> next_kernel_size)
-      : _layer(nullptr),
-        _config(ConvLayerConfig(num_filters, sparsity, activation,
-                                std::move(kernel_size), num_patches,
                                 next_kernel_size)),
         _predecessor(nullptr) {}
 
   ConvNode(uint64_t num_filters, float sparsity, const std::string& activation,
-           std::pair<uint32_t, uint32_t> kernel_size, uint32_t num_patches,
+           std::pair<uint32_t, uint32_t> kernel_size,
+           std::pair<uint32_t, uint32_t> next_kernel_size)
+      : _layer(nullptr),
+        _config(ConvLayerConfig(num_filters, sparsity, activation,
+                                std::move(kernel_size), next_kernel_size)),
+        _predecessor(nullptr) {}
+
+  ConvNode(uint64_t num_filters, float sparsity, const std::string& activation,
+           std::pair<uint32_t, uint32_t> kernel_size,
            std::pair<uint32_t, uint32_t> next_kernel_size,
            SamplingConfigPtr sampling_config)
       : _layer(nullptr),
         _config(ConvLayerConfig(num_filters, sparsity, activation,
-                                std::move(kernel_size), num_patches,
-                                next_kernel_size, std::move(sampling_config))),
+                                std::move(kernel_size), next_kernel_size,
+                                std::move(sampling_config))),
         _predecessor(nullptr) {}
 
  public:
   static std::shared_ptr<ConvNode> makeDense(
       uint32_t num_filters, const std::string& activation,
-      std::pair<uint32_t, uint32_t> kernel_size, uint32_t num_patches,
+      std::pair<uint32_t, uint32_t> kernel_size,
       std::pair<uint32_t, uint32_t> next_kernel_size) {
-    return std::shared_ptr<ConvNode>(new ConvNode(
-        num_filters, activation, kernel_size, num_patches, next_kernel_size));
+    return std::shared_ptr<ConvNode>(
+        new ConvNode(num_filters, activation, kernel_size, next_kernel_size));
   }
 
   static std::shared_ptr<ConvNode> makeAutotuned(
       uint32_t num_filters, float sparsity, const std::string& activation,
-      std::pair<uint32_t, uint32_t> kernel_size, uint32_t num_patches,
+      std::pair<uint32_t, uint32_t> kernel_size,
       std::pair<uint32_t, uint32_t> next_kernel_size) {
-    return std::shared_ptr<ConvNode>(
-        new ConvNode(num_filters, sparsity, activation, kernel_size,
-                     num_patches, next_kernel_size));
+    return std::shared_ptr<ConvNode>(new ConvNode(
+        num_filters, sparsity, activation, kernel_size, next_kernel_size));
   }
 
   static std::shared_ptr<ConvNode> make(
       uint32_t num_filters, float sparsity, const std::string& activation,
-      std::pair<uint32_t, uint32_t> kernel_size, uint32_t num_patches,
+      std::pair<uint32_t, uint32_t> kernel_size,
       std::pair<uint32_t, uint32_t> next_kernel_size,
       SamplingConfigPtr sampling_config) {
-    return std::shared_ptr<ConvNode>(new ConvNode(
-        num_filters, sparsity, activation, kernel_size, num_patches,
-        next_kernel_size, std::move(sampling_config)));
+    return std::shared_ptr<ConvNode>(
+        new ConvNode(num_filters, sparsity, activation, kernel_size,
+                     next_kernel_size, std::move(sampling_config)));
   }
 
   std::shared_ptr<ConvNode> addPredecessor(NodePtr node) {
@@ -72,13 +70,14 @@ class ConvNode final : public Node,
           "addPredecessor cannot be called twice.");
     }
 
-    if (std::dynamic_pointer_cast<ConvNode>(node) ||
-        std::dynamic_pointer_cast<Input3D>(node)) {
-      _predecessor = std::move(node);
-    } else {
+    if (!std::dynamic_pointer_cast<ConvNode>(node) &&
+        !std::dynamic_pointer_cast<Input3D>(node)) {
       throw std::invalid_argument(
-          "Previous node must be ConvNode or Input3D node.");
+          "Previous node must have a 3D output (currently must be Conv or "
+          "Input3D).");
     }
+
+    _predecessor = std::move(node);
 
     return shared_from_this();
   }
@@ -91,9 +90,8 @@ class ConvNode final : public Node,
           "predecessor.");
     }
     if (node_state == NodeState::PredecessorsSet) {
-      // TODO(david) Calculate the output dimension based on the predecessor
-      // x_output = ((x_input - kernel_size_x + 2 * padding) / stride) + 1;
-      // y_output = ((y_input - kernel_size_y + 2 * padding) / stride) + 1;
+      auto [height, width, depth] = getPredecessorOutputDim();
+      return height * width * depth;
     }
     return _layer->getDim();
   }
@@ -108,17 +106,11 @@ class ConvNode final : public Node,
   void compileImpl() final {
     assert(_config.has_value());
 
-    if (auto conv_node = std::dynamic_pointer_cast<ConvNode>(_predecessor)) {
-      _layer = std::make_shared<ConvLayer>(_config.value(),
-                                           conv_node->getOutputDim3D(),
-                                           conv_node->getSparsity());
-    } else if (auto input_node_3d =
-                   std::dynamic_pointer_cast<Input3D>(_predecessor)) {
-      _layer = std::make_shared<ConvLayer>(
-          _config.value(), input_node_3d->getOutputHeight(),
-          input_node_3d->getOutputWidth(), input_node_3d->getOutputDepth(),
-          /* prev_sparsity= */ 1);
-    }
+    auto [height, width, depth] = getPredecessorOutputDim();
+
+    _layer = std::make_shared<ConvLayer>(_config.value(), /* height= */ height,
+                                         /* width= */ width, /* depth= */ depth,
+                                         /* prev_sparsity= */ 1);
 
     _config = std::nullopt;
   }
@@ -190,6 +182,24 @@ class ConvNode final : public Node,
         "ConvNode is in an invalid internal state");
   }
 
+  std::tuple<uint32_t, uint32_t, uint32_t> getPredecessorOutputDim() const {
+    if (_predecessor == nullptr) {
+      throw std::invalid_argument(
+          "Cannot get the output dim of predecessor since it is not set yet.");
+    }
+
+    if (auto conv_node = std::dynamic_pointer_cast<ConvNode>(_predecessor)) {
+      return conv_node->getOutputDim3D();
+    }
+
+    if (auto input_3d_node = std::dynamic_pointer_cast<Input3D>(_predecessor)) {
+      return input_3d_node->getOutputDim3D();
+    }
+
+    throw std::invalid_argument(
+        "Predecessor of ConvNode is not ConvNode or Input3D.");
+  }
+
   uint32_t getSparsity() const {
     if (_layer == nullptr) {
       return _config->sparsity;
@@ -197,7 +207,7 @@ class ConvNode final : public Node,
     return _layer->getSparsity();
   }
 
-  uint32_t getOutputDim3D() const {
+  std::tuple<uint32_t, uint32_t, uint32_t> getOutputDim3D() const {
     if (_layer == nullptr) {
       throw std::invalid_argument(
           "Not compiled. Cannot access output dim without compiling.");

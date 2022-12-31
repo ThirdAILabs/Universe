@@ -18,11 +18,9 @@ class Input3D final : public Input {
     return std::shared_ptr<Input3D>(new Input3D(input_size_3d));
   }
 
-  uint32_t getOutputHeight() const { return std::get<0>(_input_size_3d); }
-
-  uint32_t getOutputWidth() const { return std::get<1>(_input_size_3d); }
-
-  uint32_t getOutputDepth() const { return std::get<2>(_input_size_3d); }
+  std::tuple<uint32_t, uint32_t, uint32_t> getOutputDim3D() const {
+    return _input_size_3d;
+  }
 
  private:
   template <class Archive>

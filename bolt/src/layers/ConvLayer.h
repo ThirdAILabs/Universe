@@ -46,7 +46,9 @@ class ConvLayer final {
 
   uint32_t getSparseDim() const { return _sparse_dim; }
 
-  uint32_t getOutputDim3D() const { return std::make_tuple<uint32_t, uint32_t, uint32_t>(_height, _width, _n); }
+  std::tuple<uint32_t, uint32_t, uint32_t> getOutputDim3D() const {
+    return std::make_tuple(_height, _width, _num_filters);
+  }
 
   float* getWeights() const;
 
@@ -124,6 +126,7 @@ class ConvLayer final {
   uint32_t _prev_num_filters;
   uint32_t _prev_num_sparse_filters;
   uint32_t _kernel_size;
+  uint32_t _height, _width;
   std::vector<uint32_t> _in_to_out, _out_to_in;  // patch mappings
 
   /**
@@ -146,8 +149,8 @@ class ConvLayer final {
   void serialize(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
             _biases, _is_active, _hasher, _hash_table, _rand_neurons,
-            _patch_dim, _sparse_patch_dim, _num_patches, _num_filters,
-            _num_sparse_filters, _prev_num_filters, _prev_num_sparse_filters,
+            _num_filters, _num_sparse_filters, _patch_dim, _sparse_patch_dim,
+            _num_patches, _prev_num_filters, _prev_num_sparse_filters,
             _kernel_size, _in_to_out, _out_to_in);
   }
 
@@ -155,4 +158,5 @@ class ConvLayer final {
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   ConvLayer() {}
 };
+
 }  // namespace thirdai::bolt
