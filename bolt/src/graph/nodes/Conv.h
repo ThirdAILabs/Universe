@@ -1,7 +1,9 @@
 #pragma once
 
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/nodes/Input3D.h>
 #include <bolt/src/layers/ConvLayer.h>
+#include <tuple>
 
 namespace thirdai::bolt {
 
@@ -69,12 +71,14 @@ class ConvNode final : public Node,
           "ConvNode expected to have exactly one predecessor, and "
           "addPredecessor cannot be called twice.");
     }
-    auto conv_node = std::dynamic_pointer_cast<ConvNode>(node);
-    if (!conv_node) {
-      throw std::invalid_argument("Previous node must be ConvNode.");
-    }
 
-    _predecessor = std::move(conv_node);
+    if (std::dynamic_pointer_cast<ConvNode>(node) ||
+        std::dynamic_pointer_cast<Input3D>(node)) {
+      _predecessor = std::move(node);
+    } else {
+      throw std::invalid_argument(
+          "Previous node must be ConvNode or Input3D node.");
+    }
 
     return shared_from_this();
   }
@@ -103,10 +107,19 @@ class ConvNode final : public Node,
  private:
   void compileImpl() final {
     assert(_config.has_value());
-    _layer = std::make_shared<ConvLayer>(
-        _config.value(), /* prev_dim= */ _predecessor->outputDim(),
-        /* prev_num_filters= */ _predecessor->getNumFilters(),
-        /* prev_num_sparse_filters= */ _predecessor->getNumSparseFilters());
+
+    if (auto conv_node = std::dynamic_pointer_cast<ConvNode>(_predecessor)) {
+      _layer = std::make_shared<ConvLayer>(_config.value(),
+                                           conv_node->getOutputDim3D(),
+                                           conv_node->getSparsity());
+    } else if (auto input_node_3d =
+                   std::dynamic_pointer_cast<Input3D>(_predecessor)) {
+      _layer = std::make_shared<ConvLayer>(
+          _config.value(), input_node_3d->getOutputHeight(),
+          input_node_3d->getOutputWidth(), input_node_3d->getOutputDepth(),
+          /* prev_sparsity= */ 1);
+    }
+
     _config = std::nullopt;
   }
 
@@ -177,19 +190,19 @@ class ConvNode final : public Node,
         "ConvNode is in an invalid internal state");
   }
 
-  uint32_t getNumFilters() const {
+  uint32_t getSparsity() const {
     if (_layer == nullptr) {
-      throw std::invalid_argument("Not compiled. Cannot access num filters.");
+      return _config->sparsity;
     }
-    return _layer->getNumFilters();
+    return _layer->getSparsity();
   }
 
-  uint32_t getNumSparseFilters() const {
+  uint32_t getOutputDim3D() const {
     if (_layer == nullptr) {
       throw std::invalid_argument(
-          "Not compiled. Cannot access num sparse filters.");
+          "Not compiled. Cannot access output dim without compiling.");
     }
-    return _layer->getNumSparseFilters();
+    return _layer->getOutputDim3D();
   }
 
   // Private constructor for cereal. Must create dummy config since no default
@@ -208,7 +221,7 @@ class ConvNode final : public Node,
   std::optional<ConvLayerConfig> _config;
   std::optional<BoltBatch> _outputs;
 
-  std::shared_ptr<ConvNode> _predecessor;
+  std::shared_ptr<Node> _predecessor;
 };
 
 using ConvNodePtr = std::shared_ptr<ConvNode>;

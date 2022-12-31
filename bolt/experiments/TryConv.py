@@ -44,12 +44,12 @@ N_CLASSES = 325
 
 
 def define_model():
-    input_layer = bolt.nn.Input(dim=IMAGE_WIDTH * IMAGE_HEIGHT * NUM_CHANNELS)
+    input_layer = bolt.nn.Input3D(dim=(IMAGE_HEIGHT, IMAGE_WIDTH, NUM_CHANNELS))
 
     first_conv = bolt.nn.Conv(
         num_filters=200,
         sparsity=1,
-        activation_function="relu",
+        activation="relu",
         kernel_size=(4, 4),
         num_patches=3136,
         next_kernel_size=(1, 1),

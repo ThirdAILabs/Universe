@@ -14,8 +14,8 @@
 namespace thirdai::bolt {
 class ConvLayer final {
  public:
-  ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
-            uint32_t prev_num_filters, uint32_t prev_num_sparse_filters);
+  ConvLayer(const ConvLayerConfig& config, uint32_t prev_height,
+            uint32_t prev_width, uint32_t prev_depth, float prev_sparsity);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels);
@@ -46,9 +46,7 @@ class ConvLayer final {
 
   uint32_t getSparseDim() const { return _sparse_dim; }
 
-  uint32_t getNumFilters() const { return _num_filters; }
-
-  uint32_t getNumSparseFilters() const { return _num_sparse_filters; }
+  uint32_t getOutputDim3D() const { return std::make_tuple<uint32_t, uint32_t, uint32_t>(_height, _width, _n); }
 
   float* getWeights() const;
 

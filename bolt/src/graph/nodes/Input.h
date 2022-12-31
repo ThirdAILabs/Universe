@@ -21,8 +21,8 @@ namespace thirdai::bolt {
 // that other layers always just access the outputs of the previous layer rather
 // than have to worry if they they need to access an input directly or access
 // the outputs of a previous layer.
-class Input final : public Node {
- private:
+class Input : public Node {
+ protected:
   explicit Input(uint32_t expected_input_dim,
                  std::optional<std::pair<uint32_t, uint32_t>>
                      num_nonzeros_range = std::nullopt);

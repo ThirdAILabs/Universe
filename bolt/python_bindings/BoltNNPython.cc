@@ -12,6 +12,7 @@
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/Input3D.h>
 #include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/graph/nodes/Switch.h>
 #include <dataset/src/Datasets.h>
@@ -318,6 +319,10 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
   py::class_<Input, InputPtr, Node>(nn_submodule, "Input")
       .def(py::init(&Input::make), py::arg("dim"),
            "Constructs an input layer node for the graph.");
+
+  py::class_<Input3D, std::shared_ptr<Input3D>, Input>(nn_submodule, "Input3D")
+      .def(py::init(&Input3D::make), py::arg("dim"),
+           "Constructs a 3D input layer node for the graph.");
 
   py::class_<NormalizationLayerConfig>(nn_submodule, "LayerNormConfig")
       .def_static("make", &NormalizationLayerConfig::makeConfig)
