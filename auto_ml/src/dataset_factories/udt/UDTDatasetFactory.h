@@ -108,6 +108,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> featurizeInputBatch(
       const MapInputBatch& inputs) final {
+    verifyColumnNumberMapIsInitialized();
     return featurizeInputBatchImpl(
         lineInputBatchFromMapInputBatch(*_column_number_map, _config->delimiter,
                                         inputs),
@@ -125,6 +126,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> batchUpdateTemporalTrackers(
       const MapInputBatch& inputs) {
+    verifyColumnNumberMapIsInitialized();
     return featurizeInputBatchImpl(
         lineInputBatchFromMapInputBatch(*_column_number_map, _config->delimiter,
                                         inputs),
@@ -173,16 +175,18 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   std::vector<BoltVector> featurizeInputImpl(const InputType& input,
                                              bool should_update_history) {
     verifyProcessorsAreInitialized();
+    verifyColumnNumberMapIsInitialized();
     auto& processor = getProcessor(should_update_history);
-    return {boltVectorFromInput(processor, *_column_number_map, input)};
+    return {boltVectorFromInput(processor, *_column_number_map,
+                                _config->delimiter, input)};
   }
 
   template <typename InputType>
   BoltVector boltVectorFromInput(dataset::GenericBatchProcessor& processor,
                                  const ColumnNumberMap& column_number_map,
-                                 const InputType& input) {
+                                 char delimiter, const InputType& input) {
     BoltVector vector;
-    auto sample = toVectorOfStringViews(column_number_map, input);
+    auto sample = toVectorOfStringViews(column_number_map, delimiter, input);
     if (auto exception = processor.makeInputVector(sample, vector)) {
       std::rethrow_exception(exception);
     }
@@ -207,8 +211,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio, const InputType& sample) {
     verifyProcessorsAreInitialized();
+    verifyColumnNumberMapIsInitialized();
 
-    auto input_row = toVectorOfStringViews(*_column_number_map, sample);
+    auto input_row =
+        toVectorOfStringViews(*_column_number_map, _config->delimiter, sample);
     auto result = bolt::getSignificanceSortedExplanations(
         gradients_indices, gradients_ratio, input_row,
         _unlabeled_non_updating_processor);
@@ -268,11 +274,17 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   void verifyColumnMetadataExists(const std::string& col_name) {
     if (!_config->data_types.count(col_name) ||
+        !asCategorical(_config->data_types.at(col_name)) ||
+        !asCategorical(_config->data_types.at(col_name))->metadata_config ||
         !_metadata_processors.count(col_name) ||
         !_metadata_column_number_maps.count(col_name) ||
         !_vectors_map.count(col_name)) {
       throw std::invalid_argument("'" + col_name + "' is an invalid column.");
     }
+  }
+
+  auto getColumnMetadataConfig(const std::string& col_name) {
+    return asCategorical(_config->data_types.at(col_name))->metadata_config;
   }
 
   std::vector<dataset::BlockPtr> buildInputBlocks(
@@ -283,16 +295,18 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
                                  : *_unlabeled_non_updating_processor;
   }
 
-  std::vector<std::string_view> toVectorOfStringViews(
-      const ColumnNumberMap& column_number_map, const LineInput& input) {
+  static std::vector<std::string_view> toVectorOfStringViews(
+      const ColumnNumberMap& column_number_map, char delimiter,
+      const LineInput& input) {
     (void)column_number_map;
-    return dataset::ProcessorUtils::parseCsvRow(input, _config->delimiter);
+    return dataset::ProcessorUtils::parseCsvRow(input, delimiter);
   }
 
-  std::vector<std::string_view> toVectorOfStringViews(
-      const ColumnNumberMap& column_number_map, const MapInput& input);
+  static std::vector<std::string_view> toVectorOfStringViews(
+      const ColumnNumberMap& column_number_map, char delimiter,
+      const MapInput& input);
 
-  std::vector<std::string> lineInputBatchFromMapInputBatch(
+  static std::vector<std::string> lineInputBatchFromMapInputBatch(
       const ColumnNumberMap& column_number_map, char delimiter,
       const MapInputBatch& input_maps);
 
