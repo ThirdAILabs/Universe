@@ -909,7 +909,7 @@ Example:
             target="movie_title",
             n_target_classes=500,
         )
-    >>> model.index_metadata(
+    >>> model.index_metadata_batch(
             column_name="user_id", 
             updates=[
                 {
