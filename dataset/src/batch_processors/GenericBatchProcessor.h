@@ -107,7 +107,12 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
   template <typename InputType>
   BoltVector makeInputVector(const InputType& sample) {
-    auto columnar_sample = parseToColumnarFormat(sample);
+    std::exception_ptr parsing_error;
+    auto columnar_sample = parseToColumnarFormat(sample, parsing_error);
+    if (parsing_error) {
+      std::rethrow_exception(parsing_error);
+    }
+
     BoltVector vector;
     if (auto err = makeInputVectorInPlace(columnar_sample, vector)) {
       std::rethrow_exception(err);
@@ -122,7 +127,12 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
         makeSegmentedFeatureVector(_input_blocks_dense, _hash_range,
                                    /* store_segment_feature_map= */ true);
 
-    auto columnar_input = parseToColumnarFormat(input);
+    std::exception_ptr parsing_error;
+    auto columnar_input = parseToColumnarFormat(input, parsing_error);
+    if (parsing_error) {
+      std::rethrow_exception(parsing_error);
+    }
+
     if (auto err = addFeaturesToSegmentedVector(
             columnar_input, *segmented_vector, _input_blocks)) {
       std::rethrow_exception(err);
@@ -135,7 +145,13 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                              const SegmentFeature& segment_feature) {
     std::shared_ptr<Block> relevant_block =
         _input_blocks[segment_feature.segment_idx];
-    auto columnar_input = parseToColumnarFormat(input);
+
+    std::exception_ptr parsing_error;
+    auto columnar_input = parseToColumnarFormat(input, parsing_error);
+    if (parsing_error) {
+      std::rethrow_exception(parsing_error);
+    }
+
     return relevant_block->explainIndex(segment_feature.feature_idx,
                                         columnar_input);
   }
