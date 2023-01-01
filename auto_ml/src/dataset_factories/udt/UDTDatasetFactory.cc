@@ -10,6 +10,7 @@ DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     std::shared_ptr<dataset::DataLoader> data_loader, bool training) {
   auto column_number_map =
       makeColumnNumberMapFromHeader(*data_loader, _config->delimiter);
+  _column_number_to_name = column_number_map->getColumnNumToColNameMap();
 
   // The batch processor will treat the next line as a header
   // Restart so batch processor does not skip a sample.
