@@ -131,11 +131,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     std::vector<BoltVector> batch_inputs(input_batch.size());
     std::vector<BoltVector> batch_labels(input_batch.size());
 
-    prepareInputBlocksForBatch(input_batch.at(0));
-    for (auto& block : _label_blocks) {
-      block->prepareForBatch(input_batch.at(0));
-    }
-
     /*
       These variables keep track of the presence of an erroneous input line.
       We do this instead of throwing an error directly because throwing
@@ -143,6 +138,11 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     */
     std::exception_ptr num_columns_error;
     std::exception_ptr block_err;
+
+    prepareInputBlocksForBatch(input_batch.at(0));
+    for (auto& block : _label_blocks) {
+      block->prepareForBatch(input_batch.at(0));
+    }
 
 #pragma omp parallel for default(none)                                 \
     shared(input_batch, batch_inputs, batch_labels, num_columns_error, \
