@@ -73,21 +73,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     _expected_num_cols = computeExpectedNumColumns();
   };
 
-  std::exception_ptr makeRowInputFromLineInputInPlace(
-      const LineInput& input, RowInput& input_row) const {
-    input_row = ProcessorUtils::parseCsvRow(input, _delimiter);
-    if (input_row.size() < _expected_num_cols) {
-      std::stringstream error_ss;
-      error_ss << "[ProcessorUtils::parseCsvRow] Expected "
-               << _expected_num_cols << " columns delimited by '" << _delimiter
-               << "' in each row of the dataset. Found row '" << input
-               << "' with number of columns = " << input_row.size() << ".";
-#pragma omp critical
-      return std::make_exception_ptr(std::invalid_argument(error_ss.str()));
-    }
-    return nullptr;
-  }
-
   std::tuple<BoltBatch, BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> batch_inputs(rows.size());
@@ -202,21 +187,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   }
 
   template <typename InputType>
-  std::exception_ptr makeInputVectorInPlace(const InputType& sample,
-                                            BoltVector& vector) {
-    return makeVector(sample, vector, _input_blocks, _input_blocks_dense,
-                      /* hash_range= */ _hash_range);
-  }
-
-  template <>
-  std::exception_ptr makeInputVectorInPlace(const LineInput& sample,
-                                            BoltVector& vector) {
-    auto input_row = rowInputFromLineInput(sample);
-    return makeVector(input_row, vector, _input_blocks, _input_blocks_dense,
-                      /* hash_range= */ _hash_range);
-  }
-
-  template <typename InputType>
   BoltVector makeInputVector(const InputType& sample) {
     BoltVector vector;
     if (auto exception = makeInputVectorInPlace(sample, vector)) {
@@ -248,7 +218,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
   template <>
   IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(const LineInput& input) {
-    auto input_row = rowInputFromLineInput(input);
+    auto input_row = makeRowInputFromLineInput(input);
     return getIndexToSegmentFeatureMap(input_row);
   }
 
@@ -263,7 +233,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   template <>
   Explanation explainFeature(const LineInput& input,
                              const SegmentFeature& segment_feature) {
-    auto input_row = rowInputFromLineInput(input);
+    auto input_row = makeRowInputFromLineInput(input);
     return explainFeature(input_row, segment_feature);
   }
 
@@ -346,6 +316,43 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     }
     return std::make_shared<SegmentedSparseFeatureVector>(
         store_segment_feature_map);
+  }
+
+  template <typename InputType>
+  std::exception_ptr makeInputVectorInPlace(const InputType& sample,
+                                            BoltVector& vector) {
+    return makeVector(sample, vector, _input_blocks, _input_blocks_dense,
+                      /* hash_range= */ _hash_range);
+  }
+
+  template <>
+  std::exception_ptr makeInputVectorInPlace(const LineInput& sample,
+                                            BoltVector& vector) {
+    auto input_row = makeRowInputFromLineInput(sample);
+    return makeVector(input_row, vector, _input_blocks, _input_blocks_dense,
+                      /* hash_range= */ _hash_range);
+  }
+
+  std::exception_ptr makeRowInputFromLineInputInPlace(
+      const LineInput& input, RowInput& input_row) const {
+    input_row = ProcessorUtils::parseCsvRow(input, _delimiter);
+    if (input_row.size() < _expected_num_cols) {
+      std::stringstream error_ss;
+      error_ss << "[ProcessorUtils::parseCsvRow] Expected "
+               << _expected_num_cols << " columns delimited by '" << _delimiter
+               << "' in each row of the dataset. Found row '" << input
+               << "' with number of columns = " << input_row.size() << ".";
+      return std::make_exception_ptr(std::invalid_argument(error_ss.str()));
+    }
+    return nullptr;
+  }
+
+  RowInput makeRowInputFromLineInput(const LineInput& input) {
+    RowInput input_row;
+    if (auto err = makeRowInputFromLineInputInPlace(input, input_row)) {
+      std::rethrow_exception(err);
+    }
+    return input_row;
   }
 
   static uint32_t sumBlockDims(
