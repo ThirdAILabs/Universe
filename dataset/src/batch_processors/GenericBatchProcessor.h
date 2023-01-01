@@ -86,17 +86,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     std::exception_ptr num_columns_error;
     std::exception_ptr block_err;
 
-    RowInput first_row;
-    num_columns_error =
-        makeRowInputFromLineInputInPlace(input_batch.at(0), first_row);
-    if (num_columns_error) {
-      std::rethrow_exception(num_columns_error);
-    }
-
-    prepareInputBlocksForBatch(first_row);
-    for (auto& block : _label_blocks) {
-      block->prepareForBatch(first_row);
-    }
+    prepareBlocksForNewBatch(input_batch.at(0));
 
 #pragma omp parallel for default(none)                                 \
     shared(input_batch, batch_inputs, batch_labels, num_columns_error, \
@@ -141,10 +131,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     std::exception_ptr num_columns_error;
     std::exception_ptr block_err;
 
-    prepareInputBlocksForBatch(input_batch.at(0));
-    for (auto& block : _label_blocks) {
-      block->prepareForBatch(input_batch.at(0));
-    }
+    prepareBlocksForNewBatch(input_batch.at(0));
 
 #pragma omp parallel for default(none)                                 \
     shared(input_batch, batch_inputs, batch_labels, num_columns_error, \
@@ -182,10 +169,19 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   void setParallelism(bool parallel) { _parallel = parallel; }
 
   template <typename InputType>
-  void prepareInputBlocksForBatch(InputType& sample) {
+  void prepareBlocksForNewBatch(const InputType& sample) {
     for (auto& block : _input_blocks) {
       block->prepareForBatch(sample);
     }
+    for (auto& block : _label_blocks) {
+      block->prepareForBatch(sample);
+    }
+  }
+
+  template <>
+  void prepareBlocksForNewBatch(const LineInput& sample) {
+    auto input_row = makeRowInputFromLineInput(sample);
+    prepareBlocksForNewBatch(input_row);
   }
 
   template <typename InputType>
