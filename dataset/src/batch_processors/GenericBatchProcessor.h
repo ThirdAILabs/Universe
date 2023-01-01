@@ -92,18 +92,17 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     shared(input_batch, batch_inputs, batch_labels, num_columns_error, \
            block_err) if (_parallel)
     for (size_t i = 0; i < input_batch.size(); ++i) {
-      RowInput columns;
-      if (auto err =
-              makeRowInputFromLineInputInPlace(input_batch[i], columns)) {
+      RowInput sample;
+      if (auto err = makeRowInputFromLineInputInPlace(input_batch[i], sample)) {
 #pragma omp critical
         num_columns_error = err;
         continue;
       }
-      if (auto err = makeInputVectorInPlace(columns, batch_inputs[i])) {
+      if (auto err = makeInputVectorInPlace(sample, batch_inputs[i])) {
 #pragma omp critical
         block_err = err;
       }
-      if (auto err = makeLabelVector(columns, batch_labels[i])) {
+      if (auto err = makeLabelVector(sample, batch_labels[i])) {
 #pragma omp critical
         block_err = err;
       }
@@ -137,11 +136,12 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     shared(input_batch, batch_inputs, batch_labels, num_columns_error, \
            block_err) if (_parallel)
     for (size_t i = 0; i < input_batch.size(); ++i) {
-      if (auto err = makeInputVectorInPlace(input_batch[i], batch_inputs[i])) {
+      auto sample = input_batch.at(i);
+      if (auto err = makeInputVectorInPlace(sample, batch_inputs[i])) {
 #pragma omp critical
         block_err = err;
       }
-      if (auto err = makeLabelVector(input_batch[i], batch_labels[i])) {
+      if (auto err = makeLabelVector(sample, batch_labels[i])) {
 #pragma omp critical
         block_err = err;
       }
