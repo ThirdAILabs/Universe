@@ -73,20 +73,25 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     _expected_num_cols = computeExpectedNumColumns();
   };
 
-  RowInput rowInputFromLineInput(const LineInput& input) const {
-    return ProcessorUtils::parseCsvRow(input, _delimiter);
+  std::exception_ptr makeRowInputFromLineInputInPlace(
+      const LineInput& input, RowInput& input_row) const {
+    input_row = ProcessorUtils::parseCsvRow(input, _delimiter);
+    if (input_row.size() < _expected_num_cols) {
+      std::stringstream error_ss;
+      error_ss << "[ProcessorUtils::parseCsvRow] Expected "
+               << _expected_num_cols << " columns delimited by '" << _delimiter
+               << "' in each row of the dataset. Found row '" << input
+               << "' with number of columns = " << input_row.size() << ".";
+#pragma omp critical
+      return std::make_exception_ptr(std::invalid_argument(error_ss.str()));
+    }
+    return nullptr;
   }
 
   std::tuple<BoltBatch, BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> batch_inputs(rows.size());
     std::vector<BoltVector> batch_labels(rows.size());
-
-    auto first_row = rowInputFromLineInput(rows.at(0));
-    prepareInputBlocksForBatch(first_row);
-    for (auto& block : _label_blocks) {
-      block->prepareForBatch(first_row);
-    }
 
     /*
       These variables keep track of the presence of an erroneous input line.
@@ -96,21 +101,25 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     std::exception_ptr num_columns_error;
     std::exception_ptr block_err;
 
+    RowInput first_row;
+    num_columns_error = makeRowInputFromLineInputInPlace(rows.at(0), first_row);
+    if (num_columns_error) {
+      std::rethrow_exception(num_columns_error);
+    }
+
+    prepareInputBlocksForBatch(first_row);
+    for (auto& block : _label_blocks) {
+      block->prepareForBatch(first_row);
+    }
+
 #pragma omp parallel for default(none)                          \
     shared(rows, batch_inputs, batch_labels, num_columns_error, \
            block_err) if (_parallel)
     for (size_t i = 0; i < rows.size(); ++i) {
-      auto columns = rowInputFromLineInput(rows[i]);
-      if (columns.size() < _expected_num_cols) {
-        std::stringstream error_ss;
-        error_ss << "[ProcessorUtils::parseCsvRow] Expected "
-                 << _expected_num_cols << " columns delimited by '"
-                 << _delimiter << "' in each row of the dataset. Found row '"
-                 << rows[i] << "' with number of columns = " << columns.size()
-                 << ".";
+      RowInput columns;
+      if (auto err = makeRowInputFromLineInputInPlace(rows[i], columns)) {
 #pragma omp critical
-        num_columns_error =
-            std::make_exception_ptr(std::invalid_argument(error_ss.str()));
+        num_columns_error = err;
         continue;
       }
       if (auto err = makeInputVectorInPlace(columns, batch_inputs[i])) {
