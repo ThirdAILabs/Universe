@@ -164,6 +164,37 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     return vector;
   }
 
+  template <typename ColumnarInputType>
+  std::exception_ptr makeInputVectorInPlace(const ColumnarInputType& sample,
+                                            BoltVector& vector) {
+    return makeVectorInPlace(sample, vector, _input_blocks, _input_blocks_dense,
+                             _hash_range);
+  }
+
+  template <typename ColumnarInputType>
+  std::exception_ptr makeLabelVectorInPlace(const ColumnarInputType& sample,
+                                            BoltVector& vector) {
+    // Never hash labels.
+    return makeVectorInPlace(sample, vector, _label_blocks, _label_blocks_dense,
+                             /* hash_range= */ std::nullopt);
+  }
+
+  template <typename ColumnarInputType>
+  static std::exception_ptr makeVectorInPlace(
+      ColumnarInputType& sample, BoltVector& vector,
+      std::vector<BlockPtr>& blocks, bool blocks_dense,
+      std::optional<uint32_t> hash_range) noexcept {
+    auto segmented_vector =
+        makeSegmentedFeatureVector(blocks_dense, hash_range,
+                                   /* store_segment_feature_map= */ false);
+    if (auto err =
+            addFeaturesToSegmentedVector(sample, *segmented_vector, blocks)) {
+      return err;
+    }
+    vector = segmented_vector->toBoltVector();
+    return nullptr;
+  }
+
   template <typename InputType>
   IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(const InputType& input) {
     BoltVector vector;
@@ -220,37 +251,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       }
     }
     return expected_num_cols;
-  }
-
-  template <typename ColumnarInputType>
-  std::exception_ptr makeInputVectorInPlace(const ColumnarInputType& sample,
-                                            BoltVector& vector) {
-    return makeVectorInPlace(sample, vector, _input_blocks, _input_blocks_dense,
-                             _hash_range);
-  }
-
-  template <typename ColumnarInputType>
-  std::exception_ptr makeLabelVectorInPlace(const ColumnarInputType& sample,
-                                            BoltVector& vector) {
-    // Never hash labels.
-    return makeVectorInPlace(sample, vector, _label_blocks, _label_blocks_dense,
-                             /* hash_range= */ std::nullopt);
-  }
-
-  template <typename ColumnarInputType>
-  static std::exception_ptr makeVectorInPlace(
-      ColumnarInputType& sample, BoltVector& vector,
-      std::vector<BlockPtr>& blocks, bool blocks_dense,
-      std::optional<uint32_t> hash_range) noexcept {
-    auto segmented_vector =
-        makeSegmentedFeatureVector(blocks_dense, hash_range,
-                                   /* store_segment_feature_map= */ false);
-    if (auto err =
-            addFeaturesToSegmentedVector(sample, *segmented_vector, blocks)) {
-      return err;
-    }
-    vector = segmented_vector->toBoltVector();
-    return nullptr;
   }
 
   /**
