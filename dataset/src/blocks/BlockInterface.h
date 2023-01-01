@@ -17,11 +17,19 @@
 
 namespace thirdai::dataset {
 
+// Single input types
 using MapInput = std::unordered_map<std::string, std::string>;
-using MapInputBatch = std::vector<std::unordered_map<std::string, std::string>>;
 using RowInput = std::vector<std::string_view>;
 using LineInput = std::string;
+
+// Batch input types
+using MapInputBatch = std::vector<std::unordered_map<std::string, std::string>>;
 using LineInputBatch = std::vector<std::string>;
+
+// INPUT TYPE TEMPLATE CONVENTION
+// MapInput or RowInput only: `template <typename ColumnarInputType>`
+// MapInput, RowInput, or LineInput only: `template <typename InputType>`
+// MapInputBatch or LineInputBatch only: `template <typename InputBatchType>`
 
 struct ColumnIdentifier {
   ColumnIdentifier() {}
@@ -242,8 +250,8 @@ class Block {
    * any exception_ptr and proceed with program execution without failing. The
    * error should then be caught.
    */
-  template <typename InputType>
-  std::exception_ptr addVectorSegment(const InputType& input,
+  template <typename ColumnarInputType>
+  std::exception_ptr addVectorSegment(const ColumnarInputType& input,
                                       SegmentedFeatureVector& vec) {
     vec.addFeatureSegment(featureDim());
     return buildSegment(input, vec);

@@ -61,9 +61,9 @@ class UserCountHistoryBlock final : public Block {
             getExplanationReason(index_within_block, input_map)};
   }
 
-  template <typename InputType>
+  template <typename ColumnarInputType>
   std::string getExplanationReason(uint32_t index_within_block,
-                                   const InputType& input) {
+                                   const ColumnarInputType& input) {
     auto [user, time_seconds, val] = getUserTimeVal(input);
 
     auto counts = indexAndGetCountsFromHistory(
@@ -113,8 +113,8 @@ class UserCountHistoryBlock final : public Block {
     return buildSegmentImpl(input_map, vec);
   }
 
-  template <typename InputType>
-  std::exception_ptr buildSegmentImpl(const InputType& input,
+  template <typename ColumnarInputType>
+  std::exception_ptr buildSegmentImpl(const ColumnarInputType& input,
                                       SegmentedFeatureVector& vec) {
     auto [user, time_seconds, val] = getUserTimeVal(input);
 
@@ -129,9 +129,9 @@ class UserCountHistoryBlock final : public Block {
   }
 
  private:
-  template <typename InputType>
+  template <typename ColumnarInputType>
   std::tuple<std::string, int64_t, float> getUserTimeVal(
-      const InputType& input) const {
+      const ColumnarInputType& input) const {
     auto user = std::string(getColumn(input, _user_col));
 
     auto time = TimeObject(getColumn(input, _timestamp_col));

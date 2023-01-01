@@ -73,8 +73,8 @@ class CategoricalBlock : public Block {
     return buildSegmentImpl(input_map, vec);
   }
 
-  template <typename InputType>
-  std::exception_ptr buildSegmentImpl(const InputType& input_map,
+  template <typename ColumnarInputType>
+  std::exception_ptr buildSegmentImpl(const ColumnarInputType& input_map,
                                       SegmentedFeatureVector& vec) {
     if (!_delimiter) {
       return encodeCategory(getColumn(input_map, _col), vec);

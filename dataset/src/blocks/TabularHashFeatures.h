@@ -57,9 +57,9 @@ class TabularHashFeatures final : public Block {
     return explainIndexImpl(index_within_block, input_map);
   }
 
-  template <typename InputType>
+  template <typename ColumnarInputType>
   Explanation explainIndexImpl(uint32_t index_within_block,
-                               const InputType& input) {
+                               const ColumnarInputType& input) {
     ColumnIdentifier first_column;
     ColumnIdentifier second_column;
 
@@ -98,8 +98,8 @@ class TabularHashFeatures final : public Block {
   // columns is too large, this processing time becomes slow. One idea is to
   // cap the number of pairgrams at a certain threshold by selecting random
   // pairs of columns to pairgram together.
-  template <typename InputType>
-  std::exception_ptr buildSegmentImpl(const InputType& input,
+  template <typename ColumnarInputType>
+  std::exception_ptr buildSegmentImpl(const ColumnarInputType& input,
                                       SegmentedFeatureVector& vec) {
     std::unordered_map<uint32_t, uint32_t> unigram_to_col_num;
     std::vector<uint32_t> tokens;
@@ -122,8 +122,8 @@ class TabularHashFeatures final : public Block {
    * and applies a function. We do this to reduce code duplication between
    * buildSegment() and explainIndex()
    */
-  template <typename InputType, typename TOKEN_PROCESSOR_T>
-  std::exception_ptr forEachOutputToken(const InputType& input,
+  template <typename ColumnarInputType, typename TOKEN_PROCESSOR_T>
+  std::exception_ptr forEachOutputToken(const ColumnarInputType& input,
                                         TOKEN_PROCESSOR_T token_processor) {
     static_assert(std::is_convertible<TOKEN_PROCESSOR_T,
                                       std::function<void(Token&)>>::value);

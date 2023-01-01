@@ -52,8 +52,8 @@ class MockBlock final : public Block {
     return buildSegmentImpl(input_map, vec);
   }
 
-  template <typename InputType>
-  std::exception_ptr buildSegmentImpl(const InputType& input,
+  template <typename ColumnarInputType>
+  std::exception_ptr buildSegmentImpl(const ColumnarInputType& input,
                                       SegmentedFeatureVector& vec) {
     auto val_str = input.at(_column);
     char* end;

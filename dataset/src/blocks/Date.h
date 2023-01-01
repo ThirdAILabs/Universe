@@ -55,9 +55,9 @@ class DateBlock final : public Block {
     return {_col.name(), getExplanationReason(index_within_block, input_map)};
   }
 
-  template <typename InputType>
+  template <typename ColumnarInputType>
   std::string getExplanationReason(uint32_t index_within_block,
-                                   const InputType& input) {
+                                   const ColumnarInputType& input) {
     (void)input;
     std::string reason;
     if (index_within_block >= featureDim()) {
@@ -103,8 +103,8 @@ class DateBlock final : public Block {
     return buildSegmentImpl(input_map, vec);
   }
 
-  template <typename InputType>
-  std::exception_ptr buildSegmentImpl(const InputType& input,
+  template <typename ColumnarInputType>
+  std::exception_ptr buildSegmentImpl(const ColumnarInputType& input,
                                       SegmentedFeatureVector& vec) {
     TimeObject time;
 

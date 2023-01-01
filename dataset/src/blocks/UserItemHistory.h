@@ -159,9 +159,9 @@ class UserItemHistoryBlock final : public Block {
             getExplanationReason(index_within_block, input_map)};
   }
 
-  template <typename InputType>
+  template <typename ColumnarInputType>
   std::string getExplanationReason(uint32_t index_within_block,
-                                   const InputType& input) {
+                                   const ColumnarInputType& input) {
     if (_item_vectors) {
       // TODO(Geordie): Make more descriptive.
       return "Metadata of previously seen item.";
@@ -192,8 +192,8 @@ class UserItemHistoryBlock final : public Block {
     return buildSegmentImpl(input_map, vec);
   }
 
-  template <typename InputType>
-  std::exception_ptr buildSegmentImpl(const InputType& input,
+  template <typename ColumnarInputType>
+  std::exception_ptr buildSegmentImpl(const ColumnarInputType& input,
                                       SegmentedFeatureVector& vec) {
     try {
       auto user_str = std::string(getColumn(input, _user_col));

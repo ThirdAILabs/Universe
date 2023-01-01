@@ -272,9 +272,9 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
    */
-  template <typename InputType>
+  template <typename ColumnarInputType>
   static std::exception_ptr addFeaturesToSegmentedVector(
-      const InputType& sample, SegmentedFeatureVector& segmented_vector,
+      const ColumnarInputType& sample, SegmentedFeatureVector& segmented_vector,
       std::vector<std::shared_ptr<Block>>& blocks) {
     for (auto& block : blocks) {
       if (auto err = block->addVectorSegment(sample, segmented_vector)) {
