@@ -75,85 +75,12 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
   std::tuple<BoltBatch, BoltBatch> createBatch(
       const LineInputBatch& input_batch) final {
-    std::vector<BoltVector> batch_inputs(input_batch.size());
-    std::vector<BoltVector> batch_labels(input_batch.size());
-
-    /*
-      These variables keep track of the presence of an erroneous input line.
-      We do this instead of throwing an error directly because throwing
-      an error inside an OpenMP structured block has undefined behavior.
-    */
-    std::exception_ptr num_columns_error;
-    std::exception_ptr block_err;
-
-    prepareBlocksForNewBatch(input_batch.at(0));
-
-#pragma omp parallel for default(none)                                 \
-    shared(input_batch, batch_inputs, batch_labels, num_columns_error, \
-           block_err) if (_parallel)
-    for (size_t i = 0; i < input_batch.size(); ++i) {
-      RowInput sample;
-      if (auto err = makeRowInputFromLineInputInPlace(input_batch[i], sample)) {
-#pragma omp critical
-        num_columns_error = err;
-        continue;
-      }
-      if (auto err = makeInputVectorInPlace(sample, batch_inputs[i])) {
-#pragma omp critical
-        block_err = err;
-      }
-      if (auto err = makeLabelVector(sample, batch_labels[i])) {
-#pragma omp critical
-        block_err = err;
-      }
-    }
-    if (block_err) {
-      std::rethrow_exception(block_err);
-    }
-    if (num_columns_error) {
-      std::rethrow_exception(num_columns_error);
-    }
-    return std::make_tuple(BoltBatch(std::move(batch_inputs)),
-                           BoltBatch(std::move(batch_labels)));
+    return createBatchImpl(input_batch);
   }
 
   std::tuple<BoltBatch, BoltBatch> createBatch(
       const MapInputBatch& input_batch) {
-    std::vector<BoltVector> batch_inputs(input_batch.size());
-    std::vector<BoltVector> batch_labels(input_batch.size());
-
-    /*
-      These variables keep track of the presence of an erroneous input line.
-      We do this instead of throwing an error directly because throwing
-      an error inside an OpenMP structured block has undefined behavior.
-    */
-    std::exception_ptr num_columns_error;
-    std::exception_ptr block_err;
-
-    prepareBlocksForNewBatch(input_batch.at(0));
-
-#pragma omp parallel for default(none)                                 \
-    shared(input_batch, batch_inputs, batch_labels, num_columns_error, \
-           block_err) if (_parallel)
-    for (size_t i = 0; i < input_batch.size(); ++i) {
-      auto sample = input_batch.at(i);
-      if (auto err = makeInputVectorInPlace(sample, batch_inputs[i])) {
-#pragma omp critical
-        block_err = err;
-      }
-      if (auto err = makeLabelVector(sample, batch_labels[i])) {
-#pragma omp critical
-        block_err = err;
-      }
-    }
-    if (block_err) {
-      std::rethrow_exception(block_err);
-    }
-    if (num_columns_error) {
-      std::rethrow_exception(num_columns_error);
-    }
-    return std::make_tuple(BoltBatch(std::move(batch_inputs)),
-                           BoltBatch(std::move(batch_labels)));
+    return createBatchImpl(input_batch);
   }
 
   bool expectsHeader() const final { return _expects_header; }
@@ -170,34 +97,24 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
   template <typename InputType>
   void prepareBlocksForNewBatch(const InputType& sample) {
+    auto columnar_sample = parseToColumnarFormat(sample);
     for (auto& block : _input_blocks) {
-      block->prepareForBatch(sample);
+      block->prepareForBatch(columnar_sample);
     }
     for (auto& block : _label_blocks) {
-      block->prepareForBatch(sample);
+      block->prepareForBatch(columnar_sample);
     }
-  }
-
-  template <>
-  void prepareBlocksForNewBatch(const LineInput& sample) {
-    auto input_row = makeRowInputFromLineInput(sample);
-    prepareBlocksForNewBatch(input_row);
   }
 
   template <typename InputType>
   BoltVector makeInputVector(const InputType& sample) {
-    BoltVector vector;
-    if (auto exception = makeInputVectorInPlace(sample, vector)) {
-      std::rethrow_exception(exception);
-    }
-    return vector;
+    return makeVector(sample, _input_blocks, _input_blocks_dense, _hash_range);
   }
 
   template <typename InputType>
-  std::exception_ptr makeLabelVector(const InputType& sample,
-                                     BoltVector& vector) {
+  BoltVector makeLabelVector(const InputType& sample) {
     // Never hash labels.
-    return makeVector(sample, vector, _label_blocks, _label_blocks_dense,
+    return makeVector(sample, _label_blocks, _label_blocks_dense,
                       /* hash_range= */ std::nullopt);
   }
 
@@ -207,17 +124,13 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     auto segmented_vector =
         makeSegmentedFeatureVector(_input_blocks_dense, _hash_range,
                                    /* store_segment_feature_map= */ true);
-    if (auto err = addFeaturesToSegmentedVector(input, *segmented_vector,
-                                                _input_blocks)) {
+
+    auto columnar_input = parseToColumnarFormat(input);
+    if (auto err = addFeaturesToSegmentedVector(
+            columnar_input, *segmented_vector, _input_blocks)) {
       std::rethrow_exception(err);
     }
     return segmented_vector->getIndexToSegmentFeatureMap();
-  }
-
-  template <>
-  IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(const LineInput& input) {
-    auto input_row = makeRowInputFromLineInput(input);
-    return getIndexToSegmentFeatureMap(input_row);
   }
 
   template <typename InputType>
@@ -225,14 +138,9 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                              const SegmentFeature& segment_feature) {
     std::shared_ptr<Block> relevant_block =
         _input_blocks[segment_feature.segment_idx];
-    return relevant_block->explainIndex(segment_feature.feature_idx, input);
-  }
-
-  template <>
-  Explanation explainFeature(const LineInput& input,
-                             const SegmentFeature& segment_feature) {
-    auto input_row = makeRowInputFromLineInput(input);
-    return explainFeature(input_row, segment_feature);
+    auto columnar_input = parseToColumnarFormat(input);
+    return relevant_block->explainIndex(segment_feature.feature_idx,
+                                        columnar_input);
   }
 
   static std::shared_ptr<GenericBatchProcessor> make(
@@ -268,20 +176,59 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     return expected_num_cols;
   }
 
+  template <typename InputBatchType>
+  std::tuple<BoltBatch, BoltBatch> createBatchImpl(
+      const InputBatchType& input_batch) {
+    std::vector<BoltVector> batch_inputs(input_batch.size());
+    std::vector<BoltVector> batch_labels(input_batch.size());
+
+    /*
+      These variables keep track of the presence of an erroneous input line.
+      We do this instead of throwing an error directly because throwing
+      an error inside an OpenMP structured block has undefined behavior.
+    */
+    std::exception_ptr parsing_error;
+    std::exception_ptr block_err;
+
+    prepareBlocksForNewBatch(input_batch.at(0));
+
+#pragma omp parallel for default(none)                             \
+    shared(input_batch, batch_inputs, batch_labels, parsing_error, \
+           block_err) if (_parallel)
+    for (size_t i = 0; i < input_batch.size(); ++i) {
+      try {
+        auto columnar_sample = parseToColumnarFormat(input_batch.at(i));
+        batch_inputs[i] = makeInputVector(columnar_sample);
+        batch_labels[i] = makeLabelVector(columnar_sample);
+      } catch (std::exception_ptr& e) {
+#pragma omp critical
+        parsing_error = e;
+      }
+    }
+    if (block_err) {
+      std::rethrow_exception(block_err);
+    }
+    if (parsing_error) {
+      std::rethrow_exception(parsing_error);
+    }
+    return std::make_tuple(BoltBatch(std::move(batch_inputs)),
+                           BoltBatch(std::move(batch_labels)));
+  }
+
   template <typename InputType>
-  static std::exception_ptr makeVector(InputType& sample, BoltVector& vector,
-                                       std::vector<BlockPtr>& blocks,
-                                       bool blocks_dense,
-                                       std::optional<uint32_t> hash_range) {
+  static BoltVector makeVector(InputType& sample, std::vector<BlockPtr>& blocks,
+                               bool blocks_dense,
+                               std::optional<uint32_t> hash_range) {
+    auto columnar_sample = parseToColumnarFormat(sample);
+
     auto segmented_vector =
         makeSegmentedFeatureVector(blocks_dense, hash_range,
                                    /* store_segment_feature_map= */ false);
-    if (auto err =
-            addFeaturesToSegmentedVector(sample, *segmented_vector, blocks)) {
-      return err;
+    if (auto err = addFeaturesToSegmentedVector(columnar_sample,
+                                                *segmented_vector, blocks)) {
+      std::rethrow_exception(err);
     }
-    vector = segmented_vector->toBoltVector();
-    return nullptr;
+    return segmented_vector->toBoltVector();
   }
 
   /**
@@ -316,41 +263,25 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
         store_segment_feature_map);
   }
 
-  template <typename InputType>
-  std::exception_ptr makeInputVectorInPlace(const InputType& sample,
-                                            BoltVector& vector) {
-    return makeVector(sample, vector, _input_blocks, _input_blocks_dense,
-                      /* hash_range= */ _hash_range);
-  }
-
-  template <>
-  std::exception_ptr makeInputVectorInPlace(const LineInput& sample,
-                                            BoltVector& vector) {
-    auto input_row = makeRowInputFromLineInput(sample);
-    return makeVector(input_row, vector, _input_blocks, _input_blocks_dense,
-                      /* hash_range= */ _hash_range);
-  }
-
-  std::exception_ptr makeRowInputFromLineInputInPlace(
-      const LineInput& input, RowInput& input_row) const {
-    input_row = ProcessorUtils::parseCsvRow(input, _delimiter);
+  RowInput parseToColumnarFormat(const LineInput& input) const {
+    auto input_row = ProcessorUtils::parseCsvRow(input, _delimiter);
     if (input_row.size() < _expected_num_cols) {
       std::stringstream error_ss;
       error_ss << "[ProcessorUtils::parseCsvRow] Expected "
                << _expected_num_cols << " columns delimited by '" << _delimiter
                << "' in each row of the dataset. Found row '" << input
                << "' with number of columns = " << input_row.size() << ".";
-      return std::make_exception_ptr(std::invalid_argument(error_ss.str()));
-    }
-    return nullptr;
-  }
-
-  RowInput makeRowInputFromLineInput(const LineInput& input) {
-    RowInput input_row;
-    if (auto err = makeRowInputFromLineInputInPlace(input, input_row)) {
-      std::rethrow_exception(err);
+      throw std::invalid_argument(error_ss.str());
     }
     return input_row;
+  }
+
+  static const RowInput& parseToColumnarFormat(const RowInput& input) {
+    return input;
+  }
+
+  static const MapInput& parseToColumnarFormat(const MapInput& input) {
+    return input;
   }
 
   static uint32_t sumBlockDims(
