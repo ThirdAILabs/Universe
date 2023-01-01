@@ -188,7 +188,9 @@ void UDTDatasetFactory::updateMetadata(const std::string& col_name,
   auto vec = boltVectorFromInput(*_metadata_processors.at(col_name),
                                  *_metadata_column_number_maps.at(col_name),
                                  metadata_config->delimiter, update);
-  _vectors_map.at(col_name)->vectors[metadata_config->key] = vec;
+
+  const auto& key = update.at(metadata_config->key);
+  _vectors_map.at(col_name)->vectors[key] = vec;
 }
 
 void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
