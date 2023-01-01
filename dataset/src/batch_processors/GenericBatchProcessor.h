@@ -63,13 +63,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   }
 
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
-    for (const auto& block : _input_blocks) {
-      block->updateColumnNumbers(column_number_map);
-    }
-    for (const auto& block : _label_blocks) {
-      block->updateColumnNumbers(column_number_map);
-    }
-
+    _input_blocks.updateColumnNumbers(column_number_map);
+    _label_blocks.updateColumnNumbers(column_number_map);
     _expected_num_cols = computeExpectedNumColumns();
   };
 
@@ -168,24 +163,9 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
  private:
   uint32_t computeExpectedNumColumns() {
-    uint32_t expected_num_cols = maxNumColumnsExpectedByBlocks(_input_blocks);
-    expected_num_cols = std::max(expected_num_cols,
-                                 maxNumColumnsExpectedByBlocks(_label_blocks));
-    return expected_num_cols;
-  }
-
-  static uint32_t maxNumColumnsExpectedByBlocks(
-      const std::vector<BlockPtr>& blocks) {
-    uint32_t expected_num_cols = 0;
-    for (const auto& block : blocks) {
-      try {
-        expected_num_cols =
-            std::max(block->expectedNumColumns(), expected_num_cols);
-
-      } catch (const std::runtime_error& e) {
-        (void)e;
-      }
-    }
+    uint32_t expected_num_cols = _input_blocks.expectedNumColumns();
+    expected_num_cols =
+        std::max(expected_num_cols, _label_blocks.expectedNumColumns());
     return expected_num_cols;
   }
 
@@ -255,9 +235,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
   template <typename ColumnarInputType>
   static std::exception_ptr makeVectorInPlace(
-      ColumnarInputType& sample, BoltVector& vector,
-      std::vector<BlockPtr>& blocks, bool blocks_dense,
-      std::optional<uint32_t> hash_range) noexcept {
+      ColumnarInputType& sample, BoltVector& vector, BlockList& blocks,
+      bool blocks_dense, std::optional<uint32_t> hash_range) noexcept {
     auto segmented_vector =
         makeSegmentedFeatureVector(blocks_dense, hash_range,
                                    /* store_segment_feature_map= */ false);
@@ -275,7 +254,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   template <typename ColumnarInputType>
   static std::exception_ptr addFeaturesToSegmentedVector(
       const ColumnarInputType& sample, SegmentedFeatureVector& segmented_vector,
-      std::vector<std::shared_ptr<Block>>& blocks) {
+      BlockList& blocks) {
     for (auto& block : blocks) {
       if (auto err = block->addVectorSegment(sample, segmented_vector)) {
         return err;
@@ -328,8 +307,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     return input;
   }
 
-  static uint32_t sumBlockDims(
-      const std::vector<std::shared_ptr<Block>>& blocks) {
+  static uint32_t sumBlockDims(const BlockList& blocks) {
     uint32_t dim = 0;
     for (const auto& block : blocks) {
       dim += block->featureDim();
@@ -368,8 +346,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
    * Furthermore, these vectors are cheap to copy since they contain a
    * small number of elements and each element is a pointer.
    */
-  std::vector<std::shared_ptr<Block>> _input_blocks;
-  std::vector<std::shared_ptr<Block>> _label_blocks;
+  BlockList _input_blocks;
+  BlockList _label_blocks;
 };
 
 using GenericBatchProcessorPtr = std::shared_ptr<GenericBatchProcessor>;

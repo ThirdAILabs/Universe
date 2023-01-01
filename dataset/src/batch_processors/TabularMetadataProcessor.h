@@ -88,6 +88,12 @@ class TabularMetadata {
     }
   }
 
+  bool hasColumnNames() const { return _column_identifiers.front().hasName(); }
+
+  bool hasColumnNumbers() const {
+    return _column_identifiers.front().hasNumber();
+  }
+
   ThreadSafeVocabularyPtr getClassToIdMap() { return _class_name_to_id; }
 
   uint32_t expectedNumColumnsInRowInput() const {

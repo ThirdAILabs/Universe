@@ -41,6 +41,8 @@ struct ColumnIdentifier {
   ColumnIdentifier(const std::string& column_name)
       : _column_name(column_name) {}
 
+  bool hasName() const { return !!_column_name; }
+
   const std::string& name() const {
     if (!_column_name) {
       throw std::runtime_error(
@@ -51,6 +53,8 @@ struct ColumnIdentifier {
 
   // NOLINTNEXTLINE Ignore implicit conversion warning. That is intentional.
   operator const std::string&() const { return name(); }
+
+  bool hasNumber() const { return !!_column_number; }
 
   uint32_t number() const {
     if (!_column_number) {
@@ -260,6 +264,10 @@ class Block {
   virtual void updateColumnNumbers(
       const ColumnNumberMap& column_number_map) = 0;
 
+  virtual bool hasColumnNames() const = 0;
+
+  virtual bool hasColumnNumbers() const = 0;
+
   /**
    * Returns the dimension of the vector encoding.
    */
@@ -321,6 +329,83 @@ class Block {
   template <class Archive>
   void serialize(Archive& archive) {
     (void)archive;
+  }
+};
+
+struct BlockList {
+  explicit BlockList(std::vector<BlockPtr>&& blocks) : _blocks(blocks) {
+    if (_blocks.empty()) {
+      return;
+    }
+
+    auto first_block_has_column_names = _blocks.front()->hasColumnNames();
+    for (const auto& block : _blocks) {
+      if (block->hasColumnNames() != first_block_has_column_names) {
+        throw std::invalid_argument(
+            "Blocks must either all have column names or all do not have "
+            "column names.");
+      }
+    }
+  }
+
+  BlockList() {}
+
+  auto operator[](uint32_t index) { return _blocks[index]; }
+
+  auto at(uint32_t index) { return _blocks.at(index); }
+
+  auto begin() { return _blocks.begin(); }
+
+  auto begin() const { return _blocks.begin(); }
+
+  auto end() { return _blocks.end(); }
+
+  auto end() const { return _blocks.end(); }
+
+  auto size() { _blocks.size(); }
+
+  void hasColumnNames() {}
+
+  void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
+    for (const auto& block : _blocks) {
+      block->updateColumnNumbers(column_number_map);
+    }
+  }
+
+  bool hasColumnNames() const {
+    if (_blocks.empty()) {
+      return false;
+    }
+    return _blocks.front()->hasColumnNames();
+  }
+
+  bool hasColumnNumbers() const {
+    if (_blocks.empty()) {
+      return false;
+    }
+    return _blocks.front()->hasColumnNumbers();
+  }
+
+  uint32_t expectedNumColumns() const {
+    if (!hasColumnNumbers()) {
+      return 0;
+    }
+    uint32_t max_expected_columns = 0;
+    for (const auto& block : _blocks) {
+      max_expected_columns =
+          std::max(max_expected_columns, block->expectedNumColumns());
+    }
+    return max_expected_columns;
+  }
+
+ private:
+  std::vector<BlockPtr> _blocks;
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_blocks);
   }
 };
 

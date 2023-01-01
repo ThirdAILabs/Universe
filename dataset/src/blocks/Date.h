@@ -32,6 +32,10 @@ class DateBlock final : public Block {
     _col.updateColumnNumber(column_number_map);
   }
 
+  bool hasColumnNames() const final { return _col.hasName(); }
+
+  bool hasColumnNumbers() const final { return _col.hasNumber(); }
+
   uint32_t featureDim() const final {
     return day_of_week_dim + month_of_year_dim + week_of_month_dim +
            week_of_year_dim;

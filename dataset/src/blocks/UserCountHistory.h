@@ -9,6 +9,7 @@
 #include <dataset/src/utils/TimeUtils.h>
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
@@ -24,13 +25,24 @@ class UserCountHistoryBlock final : public Block {
         _timestamp_col(std::move(timestamp_col)),
         _history(std::move(history)),
         _should_update_history(should_update_history),
-        _include_current_row(include_current_row) {}
+        _include_current_row(include_current_row) {
+    if (_user_col.hasName() != _count_col.hasName() ||
+        _user_col.hasName() != _timestamp_col.hasName()) {
+      throw std::invalid_argument(
+          "UserCountHistory: Columns must either all have names or all do not "
+          "have names.");
+    }
+  }
 
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
     _user_col.updateColumnNumber(column_number_map);
     _count_col.updateColumnNumber(column_number_map);
     _timestamp_col.updateColumnNumber(column_number_map);
   }
+
+  bool hasColumnNames() const final { return _user_col.hasName(); }
+
+  bool hasColumnNumbers() const final { return _user_col.hasNumber(); }
 
   uint32_t featureDim() const final { return _history->historyLength(); }
   bool isDense() const final { return true; }

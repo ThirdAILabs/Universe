@@ -39,6 +39,10 @@ class TabularHashFeatures final : public Block {
     _metadata->updateColumnNumbers(column_number_map);
   }
 
+  bool hasColumnNames() const final { return _metadata->hasColumnNames(); }
+
+  bool hasColumnNumbers() const final { return _metadata->hasColumnNumbers(); }
+
   uint32_t featureDim() const final { return _output_range; };
 
   bool isDense() const final { return false; };

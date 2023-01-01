@@ -43,6 +43,10 @@ class DenseArrayBlock final : public Block {
     _start_col.updateColumnNumber(column_number_map);
   }
 
+  bool hasColumnNames() const final { return _start_col.hasName(); }
+
+  bool hasColumnNumbers() const final { return _start_col.hasNumber(); }
+
   uint32_t featureDim() const final { return _dim; };
 
   bool isDense() const final { return true; };

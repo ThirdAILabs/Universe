@@ -33,7 +33,11 @@ class CategoricalBlock : public Block {
 
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
     _col.updateColumnNumber(column_number_map);
-  };
+  }
+
+  bool hasColumnNames() const final { return _col.hasName(); }
+
+  bool hasColumnNumbers() const final { return _col.hasNumber(); }
 
   uint32_t featureDim() const final { return _dim; };
 
