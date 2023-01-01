@@ -83,22 +83,12 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   void processHeader(const std::string& header) final { (void)header; }
 
   uint32_t getInputDim() const {
-    return _hash_range.value_or(sumBlockDims(_input_blocks));
+    return _hash_range.value_or(_input_blocks.featureDim());
   }
 
-  uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
+  uint32_t getLabelDim() const { return _label_blocks.featureDim(); }
 
   void setParallelism(bool parallel) { _parallel = parallel; }
-
-  template <typename ColumnarInputType>
-  void prepareBlocksForNewBatch(const ColumnarInputType& sample) {
-    for (auto& block : _input_blocks) {
-      block->prepareForBatch(sample);
-    }
-    for (auto& block : _label_blocks) {
-      block->prepareForBatch(sample);
-    }
-  }
 
   template <typename InputType>
   BoltVector makeInputVector(const InputType& sample) {
@@ -128,8 +118,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       std::rethrow_exception(parsing_error);
     }
 
-    if (auto err = addFeaturesToSegmentedVector(
-            columnar_input, *segmented_vector, _input_blocks)) {
+    if (auto err =
+            _input_blocks.addVectorSegment(columnar_input, *segmented_vector)) {
       std::rethrow_exception(err);
     }
     return segmented_vector->getIndexToSegmentFeatureMap();
@@ -188,7 +178,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     if (featurization_err) {
       std::rethrow_exception(featurization_err);
     }
-    prepareBlocksForNewBatch(columnar_first_sample);
+    _input_blocks.prepareForBatch(columnar_first_sample);
+    _label_blocks.prepareForBatch(columnar_first_sample);
 
 #pragma omp parallel for default(none) shared( \
     input_batch, batch_inputs, batch_labels, featurization_err) if (_parallel)
@@ -240,26 +231,10 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     auto segmented_vector =
         makeSegmentedFeatureVector(blocks_dense, hash_range,
                                    /* store_segment_feature_map= */ false);
-    if (auto err =
-            addFeaturesToSegmentedVector(sample, *segmented_vector, blocks)) {
+    if (auto err = blocks.addVectorSegment(sample, *segmented_vector)) {
       return err;
     }
     vector = segmented_vector->toBoltVector();
-    return nullptr;
-  }
-
-  /**
-   * Encodes a sample as a BoltVector according to the given blocks.
-   */
-  template <typename ColumnarInputType>
-  static std::exception_ptr addFeaturesToSegmentedVector(
-      const ColumnarInputType& sample, SegmentedFeatureVector& segmented_vector,
-      BlockList& blocks) {
-    for (auto& block : blocks) {
-      if (auto err = block->addVectorSegment(sample, segmented_vector)) {
-        return err;
-      }
-    }
     return nullptr;
   }
 
@@ -305,14 +280,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       const MapInput& input, std::exception_ptr& parsing_error) {
     (void)parsing_error;
     return input;
-  }
-
-  static uint32_t sumBlockDims(const BlockList& blocks) {
-    uint32_t dim = 0;
-    for (const auto& block : blocks) {
-      dim += block->featureDim();
-    }
-    return dim;
   }
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/

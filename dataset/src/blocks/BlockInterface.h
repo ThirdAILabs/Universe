@@ -352,18 +352,6 @@ struct BlockList {
 
   auto operator[](uint32_t index) { return _blocks[index]; }
 
-  auto at(uint32_t index) { return _blocks.at(index); }
-
-  auto begin() { return _blocks.begin(); }
-
-  auto begin() const { return _blocks.begin(); }
-
-  auto end() { return _blocks.end(); }
-
-  auto end() const { return _blocks.end(); }
-
-  auto size() { _blocks.size(); }
-
   void hasColumnNames() {}
 
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
@@ -396,6 +384,33 @@ struct BlockList {
           std::max(max_expected_columns, block->expectedNumColumns());
     }
     return max_expected_columns;
+  }
+
+  template <typename ColumnarInputType>
+  std::exception_ptr addVectorSegment(
+      const ColumnarInputType& sample,
+      SegmentedFeatureVector& segmented_vector) {
+    for (auto& block : _blocks) {
+      if (auto err = block->addVectorSegment(sample, segmented_vector)) {
+        return err;
+      }
+    }
+    return nullptr;
+  }
+
+  uint32_t featureDim() const {
+    uint32_t dim = 0;
+    for (const auto& block : _blocks) {
+      dim += block->featureDim();
+    }
+    return dim;
+  }
+
+  template <typename ColumnarInputType>
+  void prepareForBatch(const ColumnarInputType& first_sample) {
+    for (const auto& block : _blocks) {
+      block->prepareForBatch(first_sample);
+    }
   }
 
  private:
