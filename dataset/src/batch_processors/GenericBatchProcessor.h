@@ -74,9 +74,9 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   };
 
   std::tuple<BoltBatch, BoltBatch> createBatch(
-      const std::vector<std::string>& rows) final {
-    std::vector<BoltVector> batch_inputs(rows.size());
-    std::vector<BoltVector> batch_labels(rows.size());
+      const LineInputBatch& input_batch) final {
+    std::vector<BoltVector> batch_inputs(input_batch.size());
+    std::vector<BoltVector> batch_labels(input_batch.size());
 
     /*
       These variables keep track of the presence of an erroneous input line.
@@ -87,7 +87,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     std::exception_ptr block_err;
 
     RowInput first_row;
-    num_columns_error = makeRowInputFromLineInputInPlace(rows.at(0), first_row);
+    num_columns_error =
+        makeRowInputFromLineInputInPlace(input_batch.at(0), first_row);
     if (num_columns_error) {
       std::rethrow_exception(num_columns_error);
     }
@@ -97,12 +98,13 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       block->prepareForBatch(first_row);
     }
 
-#pragma omp parallel for default(none)                          \
-    shared(rows, batch_inputs, batch_labels, num_columns_error, \
+#pragma omp parallel for default(none)                                 \
+    shared(input_batch, batch_inputs, batch_labels, num_columns_error, \
            block_err) if (_parallel)
-    for (size_t i = 0; i < rows.size(); ++i) {
+    for (size_t i = 0; i < input_batch.size(); ++i) {
       RowInput columns;
-      if (auto err = makeRowInputFromLineInputInPlace(rows[i], columns)) {
+      if (auto err =
+              makeRowInputFromLineInputInPlace(input_batch[i], columns)) {
 #pragma omp critical
         num_columns_error = err;
         continue;
