@@ -83,55 +83,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     return createBatchImpl(input_batch);
   }
 
-  template <typename InputBatchType>
-  std::tuple<BoltBatch, BoltBatch> createBatchImpl(
-      const InputBatchType& input_batch) {
-    std::vector<BoltVector> batch_inputs(input_batch.size());
-    std::vector<BoltVector> batch_labels(input_batch.size());
-
-    /*
-      These variables keep track of the presence of an erroneous input line.
-      We do this instead of throwing an error directly because throwing
-      an error inside an OpenMP structured block has undefined behavior.
-    */
-
-    std::exception_ptr featurization_err;
-
-    auto columnar_first_sample =
-        parseToColumnarFormat(input_batch.at(0), featurization_err);
-    if (featurization_err) {
-      std::rethrow_exception(featurization_err);
-    }
-    prepareBlocksForNewBatch(columnar_first_sample);
-
-#pragma omp parallel for default(none) shared( \
-    input_batch, batch_inputs, batch_labels, featurization_err) if (_parallel)
-    for (size_t i = 0; i < input_batch.size(); ++i) {
-      std::exception_ptr single_sample_error;
-      auto columnar_sample =
-          parseToColumnarFormat(input_batch.at(i), single_sample_error);
-      if (single_sample_error) {
-#pragma omp critical
-        featurization_err = single_sample_error;
-        continue;
-      }
-
-      if (auto err = makeInputVectorInPlace(columnar_sample, batch_inputs[i])) {
-#pragma omp critical
-        featurization_err = err;
-      }
-
-      if (auto err = makeLabelVectorInPlace(columnar_sample, batch_labels[i])) {
-        featurization_err = err;
-      }
-    }
-    if (featurization_err) {
-      std::rethrow_exception(featurization_err);
-    }
-    return std::make_tuple(BoltBatch(std::move(batch_inputs)),
-                           BoltBatch(std::move(batch_labels)));
-  }
-
   bool expectsHeader() const final { return _expects_header; }
 
   void processHeader(const std::string& header) final { (void)header; }
@@ -162,37 +113,6 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       std::rethrow_exception(err);
     }
     return vector;
-  }
-
-  template <typename ColumnarInputType>
-  std::exception_ptr makeInputVectorInPlace(const ColumnarInputType& sample,
-                                            BoltVector& vector) {
-    return makeVectorInPlace(sample, vector, _input_blocks, _input_blocks_dense,
-                             _hash_range);
-  }
-
-  template <typename ColumnarInputType>
-  std::exception_ptr makeLabelVectorInPlace(const ColumnarInputType& sample,
-                                            BoltVector& vector) {
-    // Never hash labels.
-    return makeVectorInPlace(sample, vector, _label_blocks, _label_blocks_dense,
-                             /* hash_range= */ std::nullopt);
-  }
-
-  template <typename ColumnarInputType>
-  static std::exception_ptr makeVectorInPlace(
-      ColumnarInputType& sample, BoltVector& vector,
-      std::vector<BlockPtr>& blocks, bool blocks_dense,
-      std::optional<uint32_t> hash_range) noexcept {
-    auto segmented_vector =
-        makeSegmentedFeatureVector(blocks_dense, hash_range,
-                                   /* store_segment_feature_map= */ false);
-    if (auto err =
-            addFeaturesToSegmentedVector(sample, *segmented_vector, blocks)) {
-      return err;
-    }
-    vector = segmented_vector->toBoltVector();
-    return nullptr;
   }
 
   template <typename InputType>
@@ -251,6 +171,86 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       }
     }
     return expected_num_cols;
+  }
+
+  template <typename InputBatchType>
+  std::tuple<BoltBatch, BoltBatch> createBatchImpl(
+      const InputBatchType& input_batch) {
+    std::vector<BoltVector> batch_inputs(input_batch.size());
+    std::vector<BoltVector> batch_labels(input_batch.size());
+
+    /*
+      These variables keep track of the presence of an erroneous input line.
+      We do this instead of throwing an error directly because throwing
+      an error inside an OpenMP structured block has undefined behavior.
+    */
+
+    std::exception_ptr featurization_err;
+
+    auto columnar_first_sample =
+        parseToColumnarFormat(input_batch.at(0), featurization_err);
+    if (featurization_err) {
+      std::rethrow_exception(featurization_err);
+    }
+    prepareBlocksForNewBatch(columnar_first_sample);
+
+#pragma omp parallel for default(none) shared( \
+    input_batch, batch_inputs, batch_labels, featurization_err) if (_parallel)
+    for (size_t i = 0; i < input_batch.size(); ++i) {
+      std::exception_ptr single_sample_error;
+      auto columnar_sample =
+          parseToColumnarFormat(input_batch.at(i), single_sample_error);
+      if (single_sample_error) {
+#pragma omp critical
+        featurization_err = single_sample_error;
+        continue;
+      }
+
+      if (auto err = makeInputVectorInPlace(columnar_sample, batch_inputs[i])) {
+#pragma omp critical
+        featurization_err = err;
+      }
+
+      if (auto err = makeLabelVectorInPlace(columnar_sample, batch_labels[i])) {
+        featurization_err = err;
+      }
+    }
+    if (featurization_err) {
+      std::rethrow_exception(featurization_err);
+    }
+    return std::make_tuple(BoltBatch(std::move(batch_inputs)),
+                           BoltBatch(std::move(batch_labels)));
+  }
+
+  template <typename ColumnarInputType>
+  std::exception_ptr makeInputVectorInPlace(const ColumnarInputType& sample,
+                                            BoltVector& vector) {
+    return makeVectorInPlace(sample, vector, _input_blocks, _input_blocks_dense,
+                             _hash_range);
+  }
+
+  template <typename ColumnarInputType>
+  std::exception_ptr makeLabelVectorInPlace(const ColumnarInputType& sample,
+                                            BoltVector& vector) {
+    // Never hash labels.
+    return makeVectorInPlace(sample, vector, _label_blocks, _label_blocks_dense,
+                             /* hash_range= */ std::nullopt);
+  }
+
+  template <typename ColumnarInputType>
+  static std::exception_ptr makeVectorInPlace(
+      ColumnarInputType& sample, BoltVector& vector,
+      std::vector<BlockPtr>& blocks, bool blocks_dense,
+      std::optional<uint32_t> hash_range) noexcept {
+    auto segmented_vector =
+        makeSegmentedFeatureVector(blocks_dense, hash_range,
+                                   /* store_segment_feature_map= */ false);
+    if (auto err =
+            addFeaturesToSegmentedVector(sample, *segmented_vector, blocks)) {
+      return err;
+    }
+    vector = segmented_vector->toBoltVector();
+    return nullptr;
   }
 
   /**
