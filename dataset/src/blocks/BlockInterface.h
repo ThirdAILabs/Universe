@@ -3,7 +3,6 @@
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <cstdint>
 #include <memory>
