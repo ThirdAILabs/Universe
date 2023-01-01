@@ -252,15 +252,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   void verifyColumnMetadataExists(const std::string& col_name) {
     if (!_config->data_types.count(col_name) ||
         !asCategorical(_config->data_types.at(col_name)) ||
-        !asCategorical(_config->data_types.at(col_name))->metadata_config) {
-      throw std::invalid_argument("'" + col_name + "' is an invalid column.");
-    }
-  }
-
-  void initializeColumnMetadataProcessorIfNecessary(
-      const std::string& col_name) {
-    if (!_metadata_processors.count(col_name) ||
+        !asCategorical(_config->data_types.at(col_name))->metadata_config ||
+        !_metadata_processors.count(col_name) ||
         !_vectors_map.count(col_name)) {
+      throw std::invalid_argument("'" + col_name + "' is an invalid column.");
     }
   }
 
