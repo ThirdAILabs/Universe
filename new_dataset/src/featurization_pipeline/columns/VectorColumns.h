@@ -1,8 +1,12 @@
 #pragma once
 
+#include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
+#include <cctype>
+#include <cstdlib>
 #include <optional>
 #include <stdexcept>
+#include <string_view>
 
 namespace thirdai::data::columns {
 
@@ -93,6 +97,50 @@ class CppTokenArrayColumn final : public TokenArrayColumn {
     check2DArrayNonEmpty<uint32_t>(_data);
 
     checkSparseIndices();
+  }
+
+  static auto fromTokenColumn(const std::shared_ptr<TokenColumn>& column,
+                              std::optional<uint32_t> dim = std::nullopt) {
+    std::vector<std::vector<uint32_t>> data(column->numRows(),
+                                            std::vector<uint32_t>(1));
+
+    for (uint32_t i = 0; i < column->numRows(); i++) {
+      data[i][0] = (*column)[i];
+    }
+
+    return std::make_shared<CppTokenArrayColumn>(std::move(data), dim);
+  }
+
+  static auto fromStringColumn(const std::shared_ptr<StringColumn>& column,
+                               std::optional<char> delimiter,
+                               std::optional<uint32_t> dim = std::nullopt) {
+    std::vector<std::vector<uint32_t>> tokens;
+    tokens.reserve(column->numRows());
+
+    for (uint32_t i = 0; i < column->numRows(); i++) {
+      const std::string& item = (*column)[i];
+
+      tokens.push_back({});
+
+      std::vector<std::string_view> token_strs;
+      if (delimiter) {
+        token_strs = dataset::ProcessorUtils::parseCsvRow(item, *delimiter);
+      } else {
+        token_strs = {item};
+      }
+
+      for (const auto& token_str : token_strs) {
+        char* end;
+        uint32_t token = std::strtoul(token_str.data(), &end, /* base= */ 10);
+        if (end == token_str.data()) {
+          throw std::invalid_argument("Cannot parse '" +
+                                      std::string(token_str) + "' as integer.");
+        }
+        tokens.back().push_back(token);
+      }
+    }
+
+    return std::make_shared<CppTokenArrayColumn>(std::move(tokens), dim);
   }
 
   std::optional<DimensionInfo> dimension() const final {

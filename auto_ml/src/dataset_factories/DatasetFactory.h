@@ -131,6 +131,8 @@ class DatasetLoaderFactory {
         "labels; the ids and labels are equivalent.");
   }
 
+  virtual bool hasTemporalTracking() const = 0;
+
   virtual ~DatasetLoaderFactory() = default;
 
  private:

@@ -2,9 +2,13 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <pybind11/stl.h>
 #include <telemetry/src/PrometheusClient.h>
+#include <iostream>
 #include <limits>
+#include <memory>
+#include <stdexcept>
 
 namespace py = pybind11;
 
@@ -24,7 +28,8 @@ void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
   updateRehashRebuildInTrainConfig(train_config);
 
   if (max_in_memory_batches) {
-    trainOnStream(dataset, train_config, max_in_memory_batches.value());
+    trainOnStream(dataset, train_config, max_in_memory_batches.value(),
+                  validation);
   } else {
     trainInMemory(dataset, train_config, validation);
   }
@@ -199,7 +204,11 @@ std::vector<dataset::Explanation> ModelPipeline::explain(
 void ModelPipeline::trainInMemory(
     data::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
     const std::optional<ValidationOptions>& validation) {
-  auto [train_data, train_labels] = dataset->loadInMemory(ALL_BATCHES).value();
+  auto loaded_data = dataset->loadInMemory(ALL_BATCHES);
+  if (!loaded_data) {
+    throw std::invalid_argument("No data passed to train.");
+  }
+  auto [train_data, train_labels] = std::move(loaded_data.value());
 
   if (validation) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
@@ -232,9 +241,42 @@ void ModelPipeline::trainInMemory(
 
 // We take in the TrainConfig by value to copy it so we can modify the number
 // epochs.
-void ModelPipeline::trainOnStream(data::DatasetLoaderPtr& dataset,
-                                  bolt::TrainConfig train_config,
-                                  uint32_t max_in_memory_batches) {
+void ModelPipeline::trainOnStream(
+    data::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+    uint32_t max_in_memory_batches,
+    const std::optional<ValidationOptions>& validation) {
+  /**
+   * If there are temporal relationships then we cannot do validation because
+   * loading the validation data before all of the training data could lead to
+   * an invalid state in the temporal trackers. For in memory training we can
+   * simply load all of the training data and then the validation data. If there
+   * are no temporal trackers then we can load the validiation data here and
+   * then proceed to load the training data. To handle validation with streaming
+   * data and temporal trackers we would have to read the whole training
+   * dataset, then load the validation data, reset the temporal trackers, and
+   * then start reading the data for training. This case is currently not
+   * supported because it would be extremely inefficient if the dataset is
+   * sufficiently large.
+   */
+  if (validation && !_dataset_factory->hasTemporalTracking()) {
+    auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
+        dataset::SimpleFileDataLoader::make(validation->filename(),
+                                            DEFAULT_EVALUATE_BATCH_SIZE),
+        /* training= */ false);
+
+    auto [val_data, val_labels] =
+        validation_dataset->loadInMemory(ALL_BATCHES).value();
+
+    train_config.withValidation(val_data, val_labels,
+                                validation->validationConfig(),
+                                validation->interval());
+  } else if (validation && !_dataset_factory->hasTemporalTracking()) {
+    std::cerr
+        << "Warning: Currently specifying validation along with "
+           "max_in_memory_batches is not supported with temporal tracking."
+        << std::endl;
+  }
+
   uint32_t epochs = train_config.epochs();
   // We want a single epoch in the train config in order to train for a single
   // epoch for each pass over the dataset.

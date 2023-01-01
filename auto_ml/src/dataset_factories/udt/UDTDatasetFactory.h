@@ -65,7 +65,9 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     _labeled_history_updating_processor = makeLabeledUpdatingProcessor();
     _unlabeled_non_updating_processor = makeUnlabeledNonUpdatingProcessor();
 
+    // NOLINTNEXTLINE Not initialized in initializer list for clarity
     _input_dim = _labeled_history_updating_processor->getInputDim();
+    // NOLINTNEXTLINE Not initialized in initializer list for clarity
     _label_dim = _labeled_history_updating_processor->getLabelDim();
   }
 
@@ -97,6 +99,11 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   std::vector<BoltVector> updateTemporalTrackers(const MapInput& input) {
     return featurizeInputImpl(input, /* should_update_history= */ true);
   }
+
+  void updateMetadata(const std::string& col_name, const MapInput& update);
+
+  void updateMetadataBatch(const std::string& col_name,
+                           const MapInputBatch& updates);
 
   std::vector<BoltBatch> featurizeInputBatch(
       const LineInputBatch& inputs) final {
@@ -143,6 +150,12 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   uint32_t getLabelDim() final { return _label_dim; }
 
+  bool hasTemporalTracking() const final {
+    return !_temporal_relationships.empty();
+  }
+
+  UDTConfigPtr config() { return _config; }
+
  private:
   PreprocessedVectorsMap processAllMetadata();
 
@@ -163,13 +176,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   std::vector<BoltVector> featurizeInputImpl(const InputType& input,
                                              bool should_update_history) {
     verifyProcessorsAreInitialized();
-
-    BoltVector vector;
-    if (auto exception = getProcessor(should_update_history)
-                             .makeInputVector(input, vector)) {
-      std::rethrow_exception(exception);
-    }
-    return {std::move(vector)};
+    auto& processor = getProcessor(should_update_history);
+    return {processor.makeInputVector(input)};
   }
 
   template <typename InputBatchType>
@@ -241,10 +249,23 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     }
   }
 
-  void verifyColumnNumberMapIsInitialized() {
-    if (!_column_number_map) {
-      throw std::invalid_argument("Attempted inference before training.");
+  void verifyColumnMetadataExists(const std::string& col_name) {
+    if (!_config->data_types.count(col_name) ||
+        !asCategorical(_config->data_types.at(col_name)) ||
+        !asCategorical(_config->data_types.at(col_name))->metadata_config) {
+      throw std::invalid_argument("'" + col_name + "' is an invalid column.");
     }
+  }
+
+  void initializeColumnMetadataProcessorIfNecessary(
+      const std::string& col_name) {
+    if (!_metadata_processors.count(col_name) ||
+        !_vectors_map.count(col_name)) {
+    }
+  }
+
+  auto getColumnMetadataConfig(const std::string& col_name) {
+    return asCategorical(_config->data_types.at(col_name))->metadata_config;
   }
 
   std::vector<dataset::BlockPtr> buildInputBlocks(bool should_update_history);
@@ -264,7 +285,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> _vocabs;
   PreprocessedVectorsMap _vectors_map;
 
-  ColumnNumberMapPtr _column_number_map;
   std::vector<std::string> _column_number_to_name;
 
   /*
@@ -281,6 +301,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   */
   dataset::GenericBatchProcessorPtr _labeled_history_updating_processor;
   dataset::GenericBatchProcessorPtr _unlabeled_non_updating_processor;
+  std::unordered_map<std::string, dataset::GenericBatchProcessorPtr>
+      _metadata_processors;
 
   uint32_t _input_dim;
   uint32_t _label_dim;
@@ -298,11 +320,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _config,
             _temporal_relationships, _context, _vocabs, _vectors_map,
-            _column_number_map, _column_number_to_name,
-            _labeled_history_updating_processor,
-            _unlabeled_non_updating_processor, _input_dim, _label_dim,
-            _parallel, _text_pairgram_word_limit, _contextual_columns,
-            _regression_binning);
+            _column_number_to_name, _labeled_history_updating_processor,
+            _unlabeled_non_updating_processor, _metadata_processors, _input_dim,
+            _label_dim, _parallel, _text_pairgram_word_limit,
+            _contextual_columns, _regression_binning);
   }
 };
 

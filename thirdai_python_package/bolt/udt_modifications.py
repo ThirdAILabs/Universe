@@ -1,6 +1,7 @@
 from typing import List, Optional
 from urllib.parse import urlparse
 
+import pandas as pd
 import thirdai
 import thirdai._thirdai.bolt as bolt
 
@@ -45,6 +46,7 @@ def modify_udt_classifier():
 
     original_train_method = bolt.models.Pipeline.train_with_loader
     original_eval_method = bolt.models.Pipeline.evaluate_with_loader
+    original_cold_start_method = bolt.models.UDTClassifier.cold_start
 
     def wrapped_train(
         self,
@@ -124,8 +126,27 @@ def modify_udt_classifier():
 
     wrapped_evaluate.__doc__ = classifier_eval_doc
 
+    def wrapped_cold_start(
+        self,
+        filename: str,
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+        learning_rate: float,
+    ):
+        original_cold_start_method(
+            self,
+            thirdai.data.pandas_to_columnmap(pd.read_csv(filename)),
+            strong_column_names,
+            weak_column_names,
+            learning_rate,
+        )
+
+    wrapped_cold_start.__doc__ = udt_cold_start_doc
+
     delattr(bolt.models.Pipeline, "train_with_loader")
     delattr(bolt.models.Pipeline, "evaluate_with_loader")
+    delattr(bolt.models.UDTClassifier, "cold_start")
 
     bolt.models.Pipeline.train = wrapped_train
     bolt.models.Pipeline.evaluate = wrapped_evaluate
+    bolt.models.UDTClassifier.cold_start = wrapped_cold_start

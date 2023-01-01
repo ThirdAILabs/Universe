@@ -511,14 +511,9 @@ class QueryCandidateGenerator {
   }
 
   BoltVector featurizeSingleQuery(const std::string& query) const {
-    BoltVector output_vector;
     std::vector<std::string_view> input_vector{
         std::string_view(query.data(), query.length())};
-    if (auto exception = _inference_batch_processor->makeInputVector(
-            input_vector, output_vector)) {
-      std::rethrow_exception(exception);
-    }
-    return output_vector;
+    return _inference_batch_processor->makeInputVector(input_vector);
   }
 
   std::shared_ptr<dataset::BoltDataset> loadDatasetInMemory(

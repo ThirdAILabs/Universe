@@ -6,15 +6,9 @@ namespace thirdai::automl::data {
 
 std::vector<BoltVector> SingleBlockDatasetFactory::featurizeInput(
     const std::string& input) {
-  BoltVector output;
-
   std::vector<std::string_view> input_vector = {
       std::string_view(input.data(), input.length())};
-  if (auto exception =
-          _unlabeled_batch_processor->makeInputVector(input_vector, output)) {
-    std::rethrow_exception(exception);
-  }
-  return {std::move(output)};
+  return {_unlabeled_batch_processor->makeInputVector(input_vector)};
 }
 
 std::vector<BoltBatch> SingleBlockDatasetFactory::featurizeInputBatch(

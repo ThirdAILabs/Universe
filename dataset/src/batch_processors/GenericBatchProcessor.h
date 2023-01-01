@@ -113,7 +113,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
             std::make_exception_ptr(std::invalid_argument(error_ss.str()));
         continue;
       }
-      if (auto err = makeInputVector(columns, batch_inputs[i])) {
+      if (auto err = makeInputVectorInPlace(columns, batch_inputs[i])) {
 #pragma omp critical
         block_err = err;
       }
@@ -154,7 +154,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     shared(input_batch, batch_inputs, batch_labels, num_columns_error, \
            block_err) if (_parallel)
     for (size_t i = 0; i < input_batch.size(); ++i) {
-      if (auto err = makeInputVector(input_batch[i], batch_inputs[i])) {
+      if (auto err = makeInputVectorInPlace(input_batch[i], batch_inputs[i])) {
 #pragma omp critical
         block_err = err;
       }
@@ -193,18 +193,27 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   }
 
   template <typename InputType>
-  std::exception_ptr makeInputVector(const InputType& sample,
-                                     BoltVector& vector) {
+  std::exception_ptr makeInputVectorInPlace(const InputType& sample,
+                                            BoltVector& vector) {
     return makeVector(sample, vector, _input_blocks, _input_blocks_dense,
                       /* hash_range= */ _hash_range);
   }
 
   template <>
-  std::exception_ptr makeInputVector(const LineInput& sample,
-                                     BoltVector& vector) {
+  std::exception_ptr makeInputVectorInPlace(const LineInput& sample,
+                                            BoltVector& vector) {
     auto input_row = rowInputFromLineInput(sample);
     return makeVector(input_row, vector, _input_blocks, _input_blocks_dense,
                       /* hash_range= */ _hash_range);
+  }
+
+  template <typename InputType>
+  BoltVector makeInputVector(const InputType& sample) {
+    BoltVector vector;
+    if (auto exception = makeInputVectorInPlace(sample, vector)) {
+      std::rethrow_exception(exception);
+    }
+    return vector;
   }
 
   template <typename InputType>

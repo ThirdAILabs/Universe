@@ -1,8 +1,11 @@
+import platform
+
 import numpy as np
 import pandas as pd
 import pytest
 from download_dataset_fixtures import download_census_income
 from thirdai import bolt
+from thirdai.demos import to_udt_input_batch
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -23,11 +26,14 @@ def write_metadata_file(orig_train_df, orig_test_df):
     metadata_columns = all_df.columns[:-1]  # Exclude label column
     metadata_df = all_df[metadata_columns]
     metadata_df[KEY_COLUMN_NAME] = pd.Series(np.arange(len(all_df)))
-    metadata_df.to_csv(METADATA_FILE, index=False, sep=DELIMITER)
+    metadata_df.head(len(orig_train_df)).to_csv(
+        METADATA_FILE, index=False, sep=DELIMITER
+    )
+    return metadata_df.tail(len(orig_test_df))
 
 
 def curate_from_census_income_dataset(orig_train_df, orig_test_df, curate_metadata_for):
-    write_metadata_file(orig_train_df, orig_test_df)
+    test_metadata = write_metadata_file(orig_train_df, orig_test_df)
 
     train_id_series = pd.Series(np.arange(len(orig_train_df)))
     test_id_series = pd.Series(
@@ -78,6 +84,8 @@ def curate_from_census_income_dataset(orig_train_df, orig_test_df, curate_metada
         )
     train_df.to_csv(TRAIN_FILE, index=False)
     test_df.to_csv(TEST_FILE, index=False)
+
+    return test_metadata
 
 
 def make_trained_model_with_metadata(n_samples, metadata_src):
@@ -136,7 +144,7 @@ def make_trained_model_with_metadata(n_samples, metadata_src):
         n_target_classes=2,
     )
 
-    model.train(TRAIN_FILE, epochs=3, learning_rate=0.01)
+    model.train(TRAIN_FILE, epochs=3, learning_rate=0.01, verbose=False)
 
     return model
 
@@ -151,15 +159,28 @@ def get_ground_truths(trained_model, original_test_df):
 
 
 def get_accuracy_on_test_data(trained_model, original_test_df):
-
-    results = trained_model.evaluate(TEST_FILE)
+    results = trained_model.evaluate(TEST_FILE, verbose=False)
     result_ids = np.argmax(results, axis=1)
     ground_truth = get_ground_truths(trained_model, original_test_df)
 
     return sum(result_ids == ground_truth) / len(result_ids)
 
 
-def test_metadata(download_census_income):
+def index_test_metadata(
+    model, index_metadata_option, metadata_column_name, test_metadata
+):
+    if index_metadata_option is None:
+        return
+
+    update_batch = to_udt_input_batch(test_metadata)
+    if index_metadata_option == "single":
+        for update in update_batch:
+            model.index_metadata(metadata_column_name, update)
+    elif index_metadata_option == "batch":
+        model.index_metadata_batch(metadata_column_name, update_batch)
+
+
+def run_metadata_test(metadata_src, index_metadata_option, download_census_income):
     """Metadata support allows us to preprocess vectors from a metadata file
     that corresponds with a categorical column in the main dataset. When we load
     the main dataset, by appending the corresponding preprocessed vector.
@@ -183,15 +204,63 @@ def test_metadata(download_census_income):
     train_df = pd.read_csv(orig_train_file)
     test_df = pd.read_csv(orig_test_file)
 
-    for metadata_src in ["user", "item"]:
-        curate_from_census_income_dataset(
-            train_df, test_df, curate_metadata_for=metadata_src
-        )
+    test_metadata = curate_from_census_income_dataset(
+        train_df,
+        test_df,
+        curate_metadata_for=metadata_src,
+    )
 
-        model = make_trained_model_with_metadata(
-            n_samples=len(pd.concat([train_df, test_df])), metadata_src=metadata_src
-        )
+    model = make_trained_model_with_metadata(
+        n_samples=len(pd.concat([train_df, test_df])), metadata_src=metadata_src
+    )
 
-        acc = get_accuracy_on_test_data(model, test_df)
+    # Accuracy should be low without indexing test metadata
+    acc = get_accuracy_on_test_data(model, test_df)
+    assert acc < 0.8
 
-        assert acc > 0.85
+    # Index test metadata
+    metadata_column_name = (
+        USER_COLUMN_NAME if metadata_src == "user" else ITEM_COLUMN_NAME
+    )
+    update_batch = to_udt_input_batch(test_metadata)
+    if index_metadata_option == "single":
+        for update in update_batch:
+            model.index_metadata(metadata_column_name, update)
+    elif index_metadata_option == "batch":
+        model.index_metadata_batch(metadata_column_name, update_batch)
+
+    # Accuracy should increase after indexing test metadata
+    acc = get_accuracy_on_test_data(model, test_df)
+    assert acc > 0.85
+
+
+def test_item_metadata_single_indexing(download_census_income):
+    run_metadata_test(
+        metadata_src="item",
+        index_metadata_option="single",
+        download_census_income=download_census_income,
+    )
+
+
+def test_user_metadata_batch_indexing(download_census_income):
+    run_metadata_test(
+        metadata_src="user",
+        index_metadata_option="batch",
+        download_census_income=download_census_income,
+    )
+
+
+def test_item_metadata_batch_indexing(download_census_income):
+    run_metadata_test(
+        metadata_src="item",
+        index_metadata_option="batch",
+        download_census_income=download_census_income,
+    )
+
+
+def test_user_metadata_single_indexing(download_census_income):
+    run_metadata_test(
+        metadata_src="user",
+        index_metadata_option="single",
+        download_census_income=download_census_income,
+    )

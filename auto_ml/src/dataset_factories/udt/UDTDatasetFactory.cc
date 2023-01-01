@@ -99,20 +99,19 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   auto label_block =
       dataset::StringLookupCategoricalBlock::make(metadata->key, key_vocab);
 
-  auto metadata_processor = dataset::GenericBatchProcessor::make(
+  _metadata_processors[col_name] = dataset::GenericBatchProcessor::make(
       /* input_blocks= */ std::move(input_blocks),
       /* label_blocks= */ {std::move(label_block)},
       /* has_header= */ false, /* delimiter= */ metadata->delimiter,
       /* parallel= */ true, /* hash_range= */ _config->hash_range);
 
-  metadata_processor->updateColumnNumbers(*column_numbers);
+  _metadata_processors[col_name]->updateColumnNumbers(*column_numbers);
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
   dataset::StreamingGenericDatasetLoader metadata_loader(
       /* loader= */ data_loader,
-      /* processor= */
-      metadata_processor);
+      /* processor= */ _metadata_processors[col_name]);
 
   return preprocessedVectorsFromDataset(metadata_loader, *key_vocab);
 }
@@ -163,6 +162,31 @@ UDTDatasetFactory::preprocessedVectorsFromDataset(
 
   return std::make_shared<dataset::PreprocessedVectors>(
       std::move(preprocessed_vectors), dataset.getInputDim());
+}
+
+void UDTDatasetFactory::updateMetadata(const std::string& col_name,
+                                       const MapInput& update) {
+  verifyColumnMetadataExists(col_name);
+
+  auto metadata_config = getColumnMetadataConfig(col_name);
+
+  auto vec = _metadata_processors.at(col_name)->makeInputVector(update);
+
+  const auto& key = update.at(metadata_config->key);
+  _vectors_map.at(col_name)->vectors[key] = vec;
+}
+
+void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
+                                            const MapInputBatch& updates) {
+  verifyColumnMetadataExists(col_name);
+  auto metadata_config = getColumnMetadataConfig(col_name);
+
+  auto [batch, _] = _metadata_processors.at(col_name)->createBatch(updates);
+
+  for (uint32_t update_idx = 0; update_idx < updates.size(); update_idx++) {
+    const auto& key = updates.at(update_idx).at(metadata_config->key);
+    _vectors_map.at(col_name)->vectors[key] = batch[update_idx];
+  }
 }
 
 dataset::GenericBatchProcessorPtr
