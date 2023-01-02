@@ -10,10 +10,8 @@ from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
-from thirdai._distributed_bolt.dataset_loaders import DatasetLoader
+from thirdai._distributed_bolt.dataset_loaders import DatasetLoader, UDTDatasetLoader
 from thirdai._thirdai import bolt
-
-from thirdai._distributed_bolt.dataset_loaders import UDTDatasetLoader
 
 from .utils import get_num_cpus, init_logging
 
