@@ -12,8 +12,8 @@ output = bolt.nn.FullyConnected(
     dim=670091,
     sparsity=0.005,
     activation="softmax",
-    rebuild_hash_tables=12,
-    reconstruct_hash_functions=40,
+    rebuild_hash_tables=25,
+    reconstruct_hash_functions=500,
 )(hidden)
 
 loss = bolt.nn.losses.CategoricalCrossEntropy(output)
@@ -37,15 +37,15 @@ for _ in range(5):
     #############
     ### Train ###
     #############
-    for (x, y) in tqdm(list(zip(train_x, train_y))):
-        model.train_on_batch([x], [y, y])
+    for i in tqdm(range(len(train_x))):
+        model.train_on_batch(train_x[i], train_y[i])
         model.update_parameters(0.0001)
 
     ################
     ### Evaluate ###
     ################
     labels = [
-        [int(y for y in x.split(" ")[0].split(","))] for x in open(TEST).readlines()
+        [int(y) for y in x.split(" ")[0].split(",")] for x in open(TEST).readlines()
     ]
 
     predictions = []

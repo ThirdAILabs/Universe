@@ -27,6 +27,8 @@ Model::Model(std::vector<tensor::InputTensorPtr> inputs,
   checkNoOutputsHaveDependentOps();
   checkOnlyOutputsHaveNoDependentOps();
   checkAllOutputsAreUsedInLosses();
+
+  matchOutputFullyConnectedLayersWithLabels();
 }
 
 std::shared_ptr<Model> Model::make(
