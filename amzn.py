@@ -14,7 +14,7 @@ output = bolt.nn.FullyConnected(
     activation="softmax",
     rebuild_hash_tables=12,
     reconstruct_hash_functions=40,
-)(input_layer)
+)(hidden)
 
 loss = bolt.nn.losses.CategoricalCrossEntropy(output)
 
