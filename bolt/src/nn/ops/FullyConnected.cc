@@ -9,9 +9,11 @@ namespace thirdai::bolt::nn::ops {
 
 tensor::ActivationTensorPtr FullyConnected::apply(
     std::shared_ptr<FullyConnectedLayer> kernel, tensor::Tensor* input,
-    std::string name) {
+    std::string name, uint32_t rebuild_hash_tables,
+    uint32_t reconstruct_hash_functions) {
   auto op = std::shared_ptr<FullyConnected>(
-      new FullyConnected(std::move(kernel), input, std::move(name)));
+      new FullyConnected(std::move(kernel), input, std::move(name),
+                         rebuild_hash_tables, reconstruct_hash_functions));
 
   input->addDependantOp(op);
 
@@ -19,8 +21,16 @@ tensor::ActivationTensorPtr FullyConnected::apply(
 }
 
 FullyConnected::FullyConnected(std::shared_ptr<FullyConnectedLayer> kernel,
-                               tensor::Tensor* input, std::string name)
-    : Op(std::move(name)), _kernel(std::move(kernel)), _input(input) {
+                               tensor::Tensor* input, std::string name,
+                               uint32_t rebuild_hash_tables,
+                               uint32_t reconstruct_hash_functions)
+    : Op(std::move(name)),
+      _kernel(std::move(kernel)),
+      _rebuild_hash_tables(rebuild_hash_tables),
+      _reconstruct_hash_functions(reconstruct_hash_functions),
+      _updates_since_rebuild_hash_tables(0),
+      _updates_since_reconstruct_hash_functions(0),
+      _input(input) {
   _output = tensor::ActivationTensor::make(_kernel->getDim(),
                                            _kernel->getSparseDim(), this);
 }
@@ -44,6 +54,18 @@ void FullyConnected::backpropagate(uint32_t index_in_batch) {
 void FullyConnected::updateParameters(float learning_rate,
                                       uint32_t train_steps) {
   _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
+
+  if (++_updates_since_reconstruct_hash_functions ==
+      _reconstruct_hash_functions) {
+    _kernel->reBuildHashFunction();
+    _kernel->buildHashTables();
+
+    _updates_since_rebuild_hash_tables = 0;
+    _updates_since_reconstruct_hash_functions = 0;
+  } else if (++_updates_since_rebuild_hash_tables == _rebuild_hash_tables) {
+    _kernel->buildHashTables();
+    _updates_since_rebuild_hash_tables = 0;
+  }
 }
 
 void FullyConnected::disableSparseParameterUpdates() {
@@ -86,13 +108,16 @@ std::string nextFullyConnectedOpName() {
   return "fc_" + std::to_string(++constructed);
 }
 
-FullyConnectedFactory::FullyConnectedFactory(uint32_t dim, float sparsity,
-                                             std::string activation,
-                                             SamplingConfigPtr sampling)
+FullyConnectedFactory::FullyConnectedFactory(
+    uint32_t dim, float sparsity, std::string activation,
+    SamplingConfigPtr sampling, uint32_t rebuild_hash_tables,
+    uint32_t reconstruct_hash_functions)
     : _dim(dim),
       _sparsity(sparsity),
       _activation(std::move(activation)),
       _sampling(std::move(sampling)),
+      _rebuild_hash_tables(rebuild_hash_tables),
+      _reconstruct_hash_functions(reconstruct_hash_functions),
       _name(nextFullyConnectedOpName()) {
   if (!_sampling) {
     _sampling = DWTASamplingConfig::autotune(_dim, _sparsity);
@@ -112,7 +137,9 @@ tensor::ActivationTensorPtr FullyConnectedFactory::apply(
         std::to_string(input->dim()) + ".");
   }
 
-  return FullyConnected::apply(_kernel, input.get(), _name);
+  return FullyConnected::apply(_kernel, input.get(), _name,
+                               _rebuild_hash_tables,
+                               _reconstruct_hash_functions);
 }
 
 }  // namespace thirdai::bolt::nn::ops

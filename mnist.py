@@ -9,10 +9,14 @@ from tqdm import tqdm
 ####################
 input_layer = bolt.nn.Input(dim=784)
 hidden = bolt.nn.FullyConnected(
-    dim=1000,
-    sparsity=0.2,
+    dim=20_000,
+    sparsity=0.01,
     activation="relu",
-    sampling_config=old_bolt.nn.RandomSamplingConfig(),
+    sampling_config=old_bolt.nn.DWTASamplingConfig(
+        num_tables=64, hashes_per_table=3, reservoir_size=32
+    ),
+    rebuild_hash_tables=12,
+    reconstruct_hash_functions=40,
 )(input_layer)
 output_1 = bolt.nn.FullyConnected(dim=10, activation="softmax")(hidden)
 output_2 = bolt.nn.FullyConnected(dim=10, activation="softmax")(hidden)

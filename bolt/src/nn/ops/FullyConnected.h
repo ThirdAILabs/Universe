@@ -10,7 +10,8 @@ class FullyConnected final : public Op {
  public:
   static tensor::ActivationTensorPtr apply(
       std::shared_ptr<FullyConnectedLayer> kernel, tensor::Tensor* input,
-      std::string name);
+      std::string name, uint32_t rebuild_hash_tables,
+      uint32_t reconstruct_hash_functions);
 
   void forward(uint32_t index_in_batch) final;
 
@@ -45,9 +46,15 @@ class FullyConnected final : public Op {
 
  private:
   FullyConnected(std::shared_ptr<FullyConnectedLayer> kernel,
-                 tensor::Tensor* input, std::string name);
+                 tensor::Tensor* input, std::string name,
+                 uint32_t rebuild_hash_tables,
+                 uint32_t reconstruct_hash_functions);
 
   std::shared_ptr<FullyConnectedLayer> _kernel;
+  uint32_t _rebuild_hash_tables;
+  uint32_t _reconstruct_hash_functions;
+  uint32_t _updates_since_rebuild_hash_tables;
+  uint32_t _updates_since_reconstruct_hash_functions;
 
   tensor::Tensor* _input;
 
@@ -59,7 +66,9 @@ using FullyConnectedPtr = std::shared_ptr<FullyConnected>;
 class FullyConnectedFactory {
  public:
   FullyConnectedFactory(uint32_t dim, float sparsity, std::string activation,
-                        SamplingConfigPtr sampling);
+                        SamplingConfigPtr sampling,
+                        uint32_t rebuild_hash_tables,
+                        uint32_t reconstruct_hash_functions);
 
   tensor::ActivationTensorPtr apply(tensor::TensorPtr& input);
 
@@ -68,6 +77,8 @@ class FullyConnectedFactory {
   float _sparsity;
   std::string _activation;
   SamplingConfigPtr _sampling;
+  uint32_t _rebuild_hash_tables;
+  uint32_t _reconstruct_hash_functions;
 
   std::shared_ptr<FullyConnectedLayer> _kernel;
 

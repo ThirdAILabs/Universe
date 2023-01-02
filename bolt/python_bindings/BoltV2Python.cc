@@ -80,9 +80,12 @@ void createBoltV2NNSubmodule(py::module_& module) {
       });
 
   py::class_<ops::FullyConnectedFactory>(nn, "FullyConnected")
-      .def(py::init<uint32_t, float, std::string, SamplingConfigPtr>(),
+      .def(py::init<uint32_t, float, std::string, SamplingConfigPtr, uint32_t,
+                    uint32_t>(),
            py::arg("dim"), py::arg("sparsity") = 1.0,
-           py::arg("activation") = "relu", py::arg("sampling_config") = nullptr)
+           py::arg("activation") = "relu", py::arg("sampling_config") = nullptr,
+           py::arg("rebuild_hash_tables") = 10,
+           py::arg("reconstruct_hash_functions") = 100)
       .def("__call__", &ops::FullyConnectedFactory::apply, py::arg("input"));
 
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
