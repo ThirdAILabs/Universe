@@ -41,6 +41,8 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
         batch_size=256,
         epochs=6,
         learning_rate=0.01,
+        metrics=["mean_squared_error"],
+        verbose=True,
     )
 
     assert (
