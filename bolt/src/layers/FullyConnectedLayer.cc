@@ -797,16 +797,23 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
   summary << activationFunctionToStr(_act_func);
 
   if (detailed && _sparsity < 1.0) {
-    if (useRandomSampling()) {
-      summary << " (using random sampling)";
-    } else {
-      summary << " (hash_function=" << _hasher->getName() << ", ";
-      _hash_table->summarize(summary);
-      summary << ")";
-    }
+    summary << ", sampling=(";
+    buildSamplingSummary(summary);
+    summary << ")";
   }
 
   summary << "\n";
+}
+
+void FullyConnectedLayer::buildSamplingSummary(std::ostream& summary) const {
+  if (_sparsity < 1.0) {
+    if (useRandomSampling()) {
+      summary << "random";
+    } else {
+      summary << "hash_function=" << _hasher->getName() << ", ";
+      _hash_table->summarize(summary);
+    }
+  }
 }
 
 }  // namespace thirdai::bolt

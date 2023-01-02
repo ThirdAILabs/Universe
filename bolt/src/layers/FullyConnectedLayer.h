@@ -126,6 +126,8 @@ class FullyConnectedLayer final {
 
   void buildLayerSummary(std::stringstream& summary, bool detailed) const;
 
+  void buildSamplingSummary(std::ostream& summary) const;
+
   void initOptimizer();
 
   ~FullyConnectedLayer() = default;

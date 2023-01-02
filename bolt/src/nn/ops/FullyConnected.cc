@@ -79,16 +79,18 @@ std::vector<tensor::ActivationTensorPtr> FullyConnected::outputs() const {
 }
 
 void FullyConnected::summary(std::ostream& summary) const {
-  // TODO(Nicholas) fix this method on the FullyConnectedLayer to take in a
-  // std::ostream instead of std::stringstream.
-  std::stringstream str_summary;
-  _kernel->buildLayerSummary(str_summary, /* detailed= */ true);
-
-  std::string layer_summary = str_summary.str();
-  layer_summary.pop_back();  // Get rid of newline
-
   summary << "FullyConnected(" << name() << "): " << _input->name() << " -> "
-          << _output->name() << " (" << layer_summary << ")";
+          << _output->name();
+  summary << " :: dim=" << _kernel->getDim()
+          << ", sparsity=" << _kernel->getSparsity() << ", activation="
+          << activationFunctionToStr(_kernel->getActivationFunction());
+  if (_kernel->getSparsity() < 1.0) {
+    summary << ", sampling=(";
+    _kernel->buildSamplingSummary(summary);
+    summary << ", rebuild_hash_tables=" << _rebuild_hash_tables;
+    summary << ", reconstruct_hash_functions=" << _reconstruct_hash_functions;
+    summary << ")";
+  }
 }
 
 std::vector<uint32_t> FullyConnected::dimensions() const {
