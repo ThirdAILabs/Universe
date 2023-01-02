@@ -19,6 +19,10 @@ class DatasetLoader(ABC):
     def restart() -> None:
         pass
 
+    @abstractmethod
+    def load() -> None:
+        pass
+
 
 class UDTDatasetLoader(DatasetLoader):
     def __init__(
@@ -29,15 +33,22 @@ class UDTDatasetLoader(DatasetLoader):
         max_in_memory_batches: int,
         data_processor,
     ):
-        self.generator = data_processor.get_dataset_loader(
+        self.generatore = None
+        self.data_processor = data_processor
+        self.train_file = train_file
+        self.batch_size = batch_size
+        self.gcp_credentials_path = gcp_credentials_path
+        self.max_in_memory_batches = max_in_memory_batches
+
+    def load(self):
+        self.generator = self.data_processor.get_dataset_loader(
             _create_loader(
-                train_file,
-                batch_size=batch_size,
-                gcp_credentials_path=gcp_credentials_path,
+                self.train_file,
+                batch_size=self.batch_size,
+                gcp_credentials_path=self.gcp_credentials_path,
             ),
             training=True,
         )
-        self.max_in_memory_batches = max_in_memory_batches
 
     def next(self):
         if self.max_in_memory_batches == None:
@@ -72,6 +83,9 @@ class GenericInMemoryDatasetLoader(DatasetLoader):
         self.current_dataset = None
         self.current_labels = None
         self.generated_for_this_epoch = False
+
+    def load(self):
+        pass
 
     def next(self):
         if self.generated_for_this_epoch:
@@ -123,6 +137,9 @@ class TabularDatasetLoader(DatasetLoader):
         self.x_cols = x_cols
         self.y_col = y_col
         self.batch_size = batch_size
+
+    def load(self):
+        pass
 
     def next(self):
         load = self.column_map_generator.next()

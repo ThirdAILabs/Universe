@@ -42,32 +42,13 @@ class Worker:
         train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
-        max_in_memory_batches: int,
-        gcp_credentials_path: str,
-        batch_size: int,
-        data_processor=None,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
         DistributedWrapper with the dataset read in.
         """
-        # Currently data_processor != None, only in case of UDT. Using that as
-        # a check to initialize UDTDatasetLoader
-        if data_processor != None:
-            # We need to initialize UDTDatsetLoader inside Worker as UDT uses
-            # thirdai.data.GenericDataLoader which cant be pickled(as it contains
-            # ifstream).
-            self.train_source = UDTDatasetLoader(
-                train_file=train_source,
-                batch_size=batch_size,
-                gcp_credentials_path=gcp_credentials_path,
-                max_in_memory_batches=max_in_memory_batches,
-                data_processor=data_processor,
-            )
-        else:
-            # Else we are already assuming that the train source is already of
-            # type thirdai.distributed_bolt.dataset_loaders.DatasetLoader.
-            self.train_source = train_source
+        self.train_source = train_source
+        self.train_source.load()
 
         logging.setup(
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")

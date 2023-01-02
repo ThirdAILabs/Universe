@@ -13,6 +13,8 @@ from thirdai._distributed_bolt.backend.train_state_manager import TrainStateMana
 from thirdai._distributed_bolt.dataset_loaders import DatasetLoader
 from thirdai._thirdai import bolt
 
+from thirdai._distributed_bolt.dataset_loaders import UDTDatasetLoader
+
 from .utils import get_num_cpus, init_logging
 
 
@@ -102,11 +104,16 @@ def add_distributed_to_udt():
             cluster_config=cluster_config,
             model=model,
             train_config=train_config,
-            train_sources=filenames,
-            data_processor=data_processor,
-            max_in_memory_batches=max_in_memory_batches,
-            gcp_credentials_path=gcp_credentials_path,
-            batch_size=batch_size,
+            train_sources=[
+                UDTDatasetLoader(
+                    train_file=file,
+                    batch_size=batch_size,
+                    gcp_credentials_path=gcp_credentials_path,
+                    max_in_memory_batches=max_in_memory_batches,
+                    data_processor=data_processor,
+                )
+                for file in filenames
+            ],
         )
 
         # We are freezing hashtables by default for distributed training after one epoch,
@@ -291,10 +298,6 @@ class DistributedDataParallel:
             train_config=train_config,
             communication_type=cluster_config.communication_type,
             log_dir=cluster_config.log_dir,
-            data_processor=data_processor,
-            max_in_memory_batches=max_in_memory_batches,
-            gcp_credentials_path=gcp_credentials_path,
-            batch_size=batch_size,
         )
 
         self.replica_workers = []
@@ -311,10 +314,6 @@ class DistributedDataParallel:
                     primary_worker=self.primary_worker,
                     communication_type=cluster_config.communication_type,
                     log_dir=cluster_config.log_dir,
-                    data_processor=data_processor,
-                    max_in_memory_batches=max_in_memory_batches,
-                    gcp_credentials_path=gcp_credentials_path,
-                    batch_size=batch_size,
                 )
             )
 

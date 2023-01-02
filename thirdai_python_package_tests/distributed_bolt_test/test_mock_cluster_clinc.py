@@ -83,7 +83,7 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
         for column_map_generator in columnmap_generators
     ]
 
-    train_config = bolt.TrainConfig(learning_rate=0.01, epochs=5)
+    train_config = bolt.TrainConfig(learning_rate=0.01, epochs=6)
     distributed_model = db.DistributedDataParallel(
         cluster_config=ray_two_node_cluster_config("linear"),
         model=clinc_model,

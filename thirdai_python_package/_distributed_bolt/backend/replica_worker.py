@@ -32,10 +32,6 @@ class ReplicaWorker(Worker):
         primary_worker,
         communication_type,
         log_dir: str,
-        data_processor,
-        max_in_memory_batches,
-        gcp_credentials_path,
-        batch_size,
     ):
         """
         Calls the constructor for Worker
@@ -62,8 +58,4 @@ class ReplicaWorker(Worker):
             train_config=train_config,
             communication_type=communication_type,
             log_dir=log_dir,
-            data_processor=data_processor,
-            max_in_memory_batches=max_in_memory_batches,
-            gcp_credentials_path=gcp_credentials_path,
-            batch_size=batch_size,
         )
