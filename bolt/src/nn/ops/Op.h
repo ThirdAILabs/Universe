@@ -22,7 +22,7 @@ class Op {
    * of the batch the computation is for. This allows the model to parallelize
    * the entire forward and backward pass through the graph across the batch.
    */
-  virtual void forward(uint32_t index_in_batch) = 0;
+  virtual void forward(uint32_t index_in_batch, bool training) = 0;
 
   /**
    * Computes the gradients of the parameters in the op and the op's input with

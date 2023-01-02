@@ -1,6 +1,8 @@
 #include "Model.h"
+#include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/tensor/InputTensor.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
@@ -114,7 +116,7 @@ void Model::forwardImpl(uint32_t input_batch_size, bool use_sparsity) {
 #pragma omp parallel for default(none) shared(input_batch_size)
   for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
        index_in_batch++) {
-    forwardVector(index_in_batch);
+    forwardVector(index_in_batch, /* training= */ false);
   }
 }
 
@@ -142,14 +144,14 @@ void Model::trainOnBatchImpl(uint32_t input_batch_size,
 #pragma omp parallel for default(none) shared(input_batch_size)
   for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
        index_in_batch++) {
-    forwardVector(index_in_batch);
+    forwardVector(index_in_batch, /* training= */ true);
     backpropagateVector(index_in_batch);
   }
 }
 
-void Model::forwardVector(uint32_t index_in_batch) {
+void Model::forwardVector(uint32_t index_in_batch, bool training) {
   for (auto& op : _op_schedule) {
-    op->forward(index_in_batch);
+    op->forward(index_in_batch, training);
   }
 }
 
@@ -319,6 +321,20 @@ void Model::checkAllOutputsAreUsedInLosses() const {
 
   if (!outputs_set.empty()) {
     throw std::invalid_argument("All outputs must be used by a loss.");
+  }
+}
+
+void Model::matchOutputFullyConnectedLayersWithLabels() {
+  for (const auto& loss : _losses) {
+    auto outputs_used = loss->outputsUsed();
+    if (outputs_used.size() == 1) {
+      auto* fully_connected =
+          dynamic_cast<ops::FullyConnected*>(outputs_used.at(0)->source());
+
+      if (fully_connected) {
+        fully_connected->setLabels(loss->labels());
+      }
+    }
   }
 }
 

@@ -36,7 +36,10 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
     return op->outputs();
   }
 
-  void forward(uint32_t i) final { (void)i; }
+  void forward(uint32_t i, bool training) final {
+    (void)i;
+    (void)training;
+  }
 
   void backpropagate(uint32_t i) final { (void)i; }
 

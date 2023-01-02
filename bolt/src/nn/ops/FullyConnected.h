@@ -2,6 +2,7 @@
 
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/tensor/InputTensor.h>
 #include <memory>
 
 namespace thirdai::bolt::nn::ops {
@@ -13,7 +14,7 @@ class FullyConnected final : public Op {
       std::string name, uint32_t rebuild_hash_tables,
       uint32_t reconstruct_hash_functions);
 
-  void forward(uint32_t index_in_batch) final;
+  void forward(uint32_t index_in_batch, bool training) final;
 
   void backpropagate(uint32_t index_in_batch) final;
 
@@ -28,6 +29,15 @@ class FullyConnected final : public Op {
   void notifyInputSparsityChange() final {}
 
   void summary(std::ostream& summary) const final;
+
+  /**
+   * This is so that during training if a fully connected layer is sparse and
+   * yields an output that the labels can be selected as part of the active
+   * neurons. The method sets the InputTensor that will be used to access the
+   * labels. This should only be called if the FullyConnected op yields an
+   * output.
+   */
+  void setLabels(tensor::InputTensorPtr labels);
 
   /**
    * Returns the dimensions of the layer as {dim, input_dim}.
@@ -59,6 +69,9 @@ class FullyConnected final : public Op {
   tensor::Tensor* _input;
 
   tensor::ActivationTensorPtr _output;
+
+  // See comment for setLabels for what this is used for.
+  tensor::InputTensorPtr _labels;
 };
 
 using FullyConnectedPtr = std::shared_ptr<FullyConnected>;

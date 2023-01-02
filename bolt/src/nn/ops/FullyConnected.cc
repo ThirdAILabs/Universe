@@ -35,10 +35,15 @@ FullyConnected::FullyConnected(std::shared_ptr<FullyConnectedLayer> kernel,
                                            _kernel->getSparseDim(), this);
 }
 
-void FullyConnected::forward(uint32_t index_in_batch) {
-  // TODO(Nicholas): Add ability to pass in labels if output layer.
+void FullyConnected::forward(uint32_t index_in_batch, bool training) {
+  // If the op is an output pass in labels during training to ensure labels are
+  // in active neuron set.
+  const BoltVector* labels = nullptr;
+  if (training && _labels) {
+    labels = &_labels->getVector(index_in_batch);
+  }
   _kernel->forward(_input->getVector(index_in_batch),
-                   _output->getVector(index_in_batch), /* labels= */ nullptr);
+                   _output->getVector(index_in_batch), labels);
 }
 
 void FullyConnected::backpropagate(uint32_t index_in_batch) {
@@ -91,6 +96,10 @@ void FullyConnected::summary(std::ostream& summary) const {
     summary << ", reconstruct_hash_functions=" << _reconstruct_hash_functions;
     summary << ")";
   }
+}
+
+void FullyConnected::setLabels(tensor::InputTensorPtr labels) {
+  _labels = std::move(labels);
 }
 
 std::vector<uint32_t> FullyConnected::dimensions() const {

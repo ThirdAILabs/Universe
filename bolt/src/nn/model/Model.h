@@ -25,6 +25,8 @@ class Model {
   /**
    * Computes the forward pass through the model for the given batch.
    * Activations are not cleared until the next call to forward or trainOnBatch.
+   * Labels will not be selected by sparse fully connected layers which yield
+   * outputs since labels are not provided.
    */
   void forward(const std::vector<BoltBatch>& inputs, bool use_sparsity);
 
@@ -43,7 +45,8 @@ class Model {
    * Performs the foward and backward pass through the model for the given
    * training batch. The benefit of calling this method over forward(...)
    * followed by backpropagate(...) is that there is no intermediate thread
-   * synchronization. Does not perform parameter updates.
+   * synchronization. Does not perform parameter updates. Labels will be
+   * selected by sparse fully connected layers which yield outputs.
    */
   void trainOnBatch(const std::vector<BoltBatch>& inputs,
                     const std::vector<BoltBatch>& labels);
@@ -96,7 +99,7 @@ class Model {
    * Computes the forward pass through the model for the given sample in the
    * batch. Assumes that setInputs(...) has already been called.
    */
-  void forwardVector(uint32_t index_in_batch);
+  void forwardVector(uint32_t index_in_batch, bool training);
 
   /**
    * Computes the backward pass through the model for the given sample in the
@@ -139,6 +142,14 @@ class Model {
   void checkOnlyOutputsHaveNoDependentOps() const;
 
   void checkAllOutputsAreUsedInLosses() const;
+
+  /**
+   * When a loss is applied to a single ActivationTensor coming from a fully
+   * connected op this method connects that op with the corresponding labels in
+   * the loss function so that the labels can be selected as active neurons when
+   * the layer is sparse.
+   */
+  void matchOutputFullyConnectedLayersWithLabels();
 
   std::vector<tensor::InputTensorPtr> _inputs;
   std::vector<tensor::InputTensorPtr> _label_inputs;
