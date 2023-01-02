@@ -327,6 +327,13 @@ class DistributedDataParallel:
         self.logging.info(
             f"Data loaded on all nodes, minimmum num batches is {self.num_of_batches}."
         )
+        self.total_batches_trained = 0
+
+    def train_on_epoch(self, train_state_manager, epoch):
+        while train_state_manager.train_batch(epoch=epoch):
+            self.total_batches_trained += 1
+        self.total_batches_trained += 1
+        train_state_manager.move_to_next_epoch()
 
     def train(self, freeze_hash_tables=False) -> Dict[str, Union[int, str]]:
         """
@@ -350,31 +357,23 @@ class DistributedDataParallel:
             self.communication_type,
         )
 
-        total_batches_trained = 0
+        epoch_to_train = 0
         if freeze_hash_tables:
-            while train_state_manager.train_batch(0):
-                total_batches_trained += 1
-            total_batches_trained += 1
-            train_state_manager.move_to_next_epoch()
+            self.train_on_epoch(
+                train_state_manager=train_state_manager,
+                epoch=epoch_to_train,
+            )
 
             train_state_manager.freeze_hash_tables()
 
-            for epoch in range(self.train_config.num_epochs - 1):
-                while train_state_manager.train_batch(epoch + 1):
-                    total_batches_trained += 1
-                total_batches_trained += 1
-                train_state_manager.move_to_next_epoch()
+            epoch_to_train += 1
 
-        else:
-            for epoch in range(self.train_config.num_epochs):
-                while train_state_manager.train_batch(epoch):
-                    total_batches_trained += 1
-                total_batches_trained += 1
-                train_state_manager.move_to_next_epoch()
+        for epoch in range(epoch_to_train, self.train_config.num_epochs):
+            self.train_on_epoch(train_state_manager=train_state_manager, epoch=epoch)
 
         return {
             "time": time.time() - train_start,
-            "total_batches_trained": total_batches_trained,
+            "total_batches_trained": self.total_batches_trained,
         }
 
     def get_model(self, worker_id=0):
