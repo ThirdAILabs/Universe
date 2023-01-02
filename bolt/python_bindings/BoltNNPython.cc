@@ -317,6 +317,14 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            py::arg("embedding_layer"));
 
   py::class_<BoltGraph, BoltGraphPtr>(nn_submodule, "Model")
+/*
+ * ToDo(Pratik): We are exposing our bolt model from the model pipeline while
+ * distributing UDT, which also exposes these BoltGraph APIs. Ideally, we should
+ * pass the whole Model Pipeline to our DistributedTrainingWrapper and move
+ * the whole distributed wrapper to a different folder. So, our
+ * model pipeline symbol doesn't pass into the bolt folder.
+ */
+#if THIRDAI_EXPOSE_ALL
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
            py::arg("output"),
            "Constructs a bolt model from a layer graph.\n"
@@ -404,7 +412,6 @@ That's all for now, folks! More docs coming soon :)
 
 )pbdoc",
            bolt::python::OutputRedirect())
-#if THIRDAI_EXPOSE_ALL
       .def(
           "get_input_gradients_single",
           [](BoltGraph& model, std::vector<BoltVector>&& input_data,
@@ -434,7 +441,6 @@ That's all for now, folks! More docs coming soon :)
           "corresponding indices for sparse inputs."
           " and (1) list of gradients "
           "corresponds to the input vector.")
-#endif
       .def(
           "explain_prediction",
           [](BoltGraph& model, std::vector<BoltVector>&& input_data) {
@@ -559,6 +565,7 @@ That's all for now, folks! More docs coming soon :)
            "Returns a list of all Nodes that make up the graph in traversal "
            "order. This list is guaranetted to be static after a model is "
            "compiled.")
+#endif
       .def(getPickleFunction<BoltGraph>());
 
   py::class_<DistributedTrainingWrapper>(bolt_submodule,

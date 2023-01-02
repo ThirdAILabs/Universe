@@ -360,7 +360,7 @@ void ModelPipeline::setModel(bolt::BoltGraphPtr& new_model) {
         std::to_string(old_model_nodes.size()) +
         " layers while the new model "
         "has " +
-        std::to_string(new_model_modes.size()) + ". )");
+        std::to_string(new_model_nodes.size()) + ". )");
   }
 
   for (uint32_t node_id = 0; node_id < new_model_nodes.size(); node_id++) {
