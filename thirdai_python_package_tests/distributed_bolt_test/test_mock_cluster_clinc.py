@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 import pytest
-from distributed_utils import remove_files, ray_two_node_cluster_config
+from distributed_utils import ray_two_node_cluster_config, remove_files
 from thirdai import bolt, data
 from thirdai.demos import download_clinc_dataset
 
