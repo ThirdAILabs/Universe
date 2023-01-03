@@ -195,6 +195,8 @@ void ConvLayer::backpropagateInputLayer(BoltVector& input, BoltVector& output) {
 
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
 void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
+  assert(_weight_optimizer.has_value() && _bias_optimizer.has_value());
+
   uint32_t len_out = DENSE ? _dim : _sparse_dim;
   uint32_t num_active_filters = DENSE ? _num_filters : _num_sparse_filters;
   uint32_t effective_patch_dim = PREV_DENSE ? _patch_dim : _sparse_patch_dim;
@@ -276,6 +278,8 @@ void ConvLayer::selectActiveFilters(
 
 void ConvLayer::updateParameters(float lr, uint32_t iter, float B1, float B2,
                                  float eps) {
+  assert(_weight_optimizer.has_value() && _bias_optimizer.has_value());
+
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 

@@ -82,10 +82,6 @@ class ConvLayer final {
 
   float* getBiases() const;
 
-  void setTrainable(bool trainable);
-
-  bool getTrainable() const;
-
   void setWeights(const float* new_weights);
 
   void setBiases(const float* new_biases);
