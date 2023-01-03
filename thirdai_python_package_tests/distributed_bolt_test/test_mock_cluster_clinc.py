@@ -2,11 +2,7 @@ import os
 
 import pandas as pd
 import pytest
-from distributed_utils import (
-    check_models_are_same_on_first_two_nodes,
-    ray_two_node_cluster_config,
-    remove_files,
-)
+from distributed_utils import remove_files
 from thirdai import bolt, data
 from thirdai.demos import download_clinc_dataset
 

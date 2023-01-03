@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable, List, Optional, Tuple, Union
 
-from thirdai import data, dataset, deployment
+from thirdai import data, dataset
 from thirdai.bolt.udt_modifications import _create_loader
 
 

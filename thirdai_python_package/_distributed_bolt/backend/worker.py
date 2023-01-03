@@ -6,8 +6,6 @@ from time import time
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, logging
 
-from ..dataset_loaders import UDTDatasetLoader
-
 
 def timed(f):
     @wraps(f)
