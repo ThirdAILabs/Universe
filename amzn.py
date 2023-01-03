@@ -50,7 +50,7 @@ for _ in range(5):
 
     predictions = []
     for x in tqdm(test_x):
-        model.forward(x, False)
+        model.forward(x, use_sparsity=False)
         predictions.append(np.argmax(output.activations, axis=1))
 
     predictions = np.concatenate(predictions)
