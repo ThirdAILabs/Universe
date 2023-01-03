@@ -15,19 +15,9 @@ class MockBlock final : public Block {
   explicit MockBlock(ColumnIdentifier column, bool dense)
       : _column(std::move(column)), _dense(dense) {}
 
-  void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
-    _column.updateColumnNumber(column_number_map);
-  }
-
-  bool hasColumnNames() const final { return _column.hasName(); }
-
-  bool hasColumnNumbers() const final { return _column.hasNumber(); }
-
   uint32_t featureDim() const override { return 1; };
 
   bool isDense() const override { return _dense; };
-
-  uint32_t expectedNumColumns() const final { return _column.number() + 1; };
 
   Explanation explainIndex(uint32_t index_within_block,
                            SingleInputRef& columnar_sample) final {
@@ -35,6 +25,10 @@ class MockBlock final : public Block {
     (void)index_within_block;
     throw std::invalid_argument(
         "Explain feature is not yet implemented in mock block!");
+  }
+
+  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+    return {&_column};
   }
 
  protected:
