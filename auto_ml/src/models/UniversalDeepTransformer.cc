@@ -28,11 +28,14 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
     std::string target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
+    std::optional<std::unordered_map<std::string, uint32_t>>
+        categorical_labels_map,
     const deployment::UserInputMap& options) {
   auto dataset_config = std::make_shared<data::UDTConfig>(
       std::move(data_types), std::move(temporal_tracking_relationships),
       std::move(target_col), n_target_classes, integer_target,
-      std::move(time_granularity), lookahead, delimiter);
+      std::move(time_granularity), lookahead, delimiter,
+      std::move(categorical_labels_map));
 
   auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
         embedding_dimension, prediction_depth] = processUDTOptions(options);

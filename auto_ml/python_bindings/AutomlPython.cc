@@ -150,6 +150,7 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("categorical_labels_map") = std::nullopt,
            py::arg("options") = deployment::UserInputMap{}, docs::UDT_INIT,
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,

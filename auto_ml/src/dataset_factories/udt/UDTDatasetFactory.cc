@@ -212,6 +212,12 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
           /* n_classes= */ _config->n_target_classes.value(),
           /* delimiter= */ target_config->delimiter);
     }
+
+    if (_config->categorical_labels_map.has_value()) {
+      _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
+          _config->categorical_labels_map.value(), true);
+    }
+
     if (!_vocabs.count(_config->target)) {
       _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
           /* vocab_size= */ _config->n_target_classes.value());
