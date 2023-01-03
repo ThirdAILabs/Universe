@@ -2,7 +2,6 @@
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
-#include <utility>
 
 namespace thirdai::bolt {
 

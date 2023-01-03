@@ -12,6 +12,34 @@
 #include <stdexcept>
 
 namespace thirdai::bolt {
+
+/**
+ * This layer implements a typical convolution but with one notable exception:
+ * adding sparsity in the channels. More specifically, each patch in the input
+ * is hashed to a set of convolutional filters where we select the "sparsity"
+ * percent of these filters that are most similar to the input patch as defined
+ * by LSH.
+ *
+ * Currently, inputs are assumed to be BoltVectors where patches are first
+ * flattened then appended to the BoltVector going first horizontally (by patch)
+ * then vertically. As an exmaple, if an image has 4 patches numbered 1, 2, 3, 4
+ * in this configuration:
+ *                        | 1 2 |
+ *                        | 3 4 |
+ * The patches would be layed out in numerical order. For further clarification,
+ * suppose that same image had a dimension of 8 x 8 x 3. Each patch would be of
+ * size 4 x 4 x 3, would be flattened beforehand, and added (in numerical order)
+ * to the input BoltVector. In the event of a future conv layer, we remap the
+ * output patches to suitable locations (more info can be found in the
+ * buildPatchMaps function). This input format is cumbersome and likely
+ * ineffecient and will be refactored later.
+ *
+ * Finally, the output of this layer can be either sparse or dense. In the event
+ * of a sparse output, the order or patch information is the same but the output
+ * channels now are represented in a sparse manner by index, value pairs. These
+ * index value pairs are offset by their patch * num_filters so they can be used
+ * by future bolt layers normally.
+ */
 class ConvLayer final {
  public:
   ConvLayer(const ConvLayerConfig& config, uint32_t prev_height,
@@ -151,7 +179,7 @@ class ConvLayer final {
             _biases, _is_active, _hasher, _hash_table, _rand_neurons,
             _num_filters, _num_sparse_filters, _patch_dim, _sparse_patch_dim,
             _num_patches, _prev_num_filters, _prev_num_sparse_filters,
-            _kernel_size, _in_to_out, _out_to_in);
+            _kernel_size, _height, _width, _in_to_out, _out_to_in);
   }
 
  protected:

@@ -5,6 +5,22 @@
 
 namespace thirdai::bolt {
 
+/**
+ * The Input3D node functions exactly the same as the normal Input node except
+ * the input dimension is specified with three values: width, height, and depth.
+ * Input3D will then note these values and assume input BoltVectors of total
+ * dimension = width * height * depth. This is useful to provide additional
+ * information for treating input vectors as 3D (e.g. for image processing)
+ * while still passing in typical 1D BoltVectors as input.
+ *
+ * The notion of sparsity is loosely defined in this format. You may use this
+ * node however you wish, it is only a means to provide more information to
+ * future nodes. Whether we should refactor Bolt to support a more natively
+ * supported multi-dimensional representations is a different question and a
+ * much harder sell overall.
+ *
+ * @param input_size_3d A tuple of (width, height, depth).
+ */
 class Input3D final : public Input {
  private:
   explicit Input3D(std::tuple<uint32_t, uint32_t, uint32_t> input_size_3d)

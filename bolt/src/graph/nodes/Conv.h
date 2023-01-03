@@ -7,6 +7,11 @@
 
 namespace thirdai::bolt {
 
+/**
+ * Creates a ConvLayer from inputs. Expects predecessor to have information
+ * about the output if interpreted as 3D (currently only Input3D or another
+ * ConvNode have this logic).
+ */
 class ConvNode final : public Node,
                        public std::enable_shared_from_this<ConvNode> {
  private:
@@ -91,7 +96,8 @@ class ConvNode final : public Node,
     }
     if (node_state == NodeState::PredecessorsSet) {
       auto [height, width, depth] = getPredecessorOutputDim();
-      return height * width * depth;
+      return (height / (*_config).kernel_size.first) *
+             (width / (*_config).kernel_size.second) * (*_config).num_filters;
     }
     return _layer->getDim();
   }

@@ -330,8 +330,8 @@ void ConvLayer::updateParameters(float lr, uint32_t iter, float B1, float B2,
 
 void ConvLayer::initOptimizer() {
   if (!_weight_optimizer || !_bias_optimizer) {
-    _weight_optimizer = AdamOptimizer(_dim * _prev_dim);
-    _bias_optimizer = AdamOptimizer(_dim);
+    _weight_optimizer = AdamOptimizer(_num_filters * _patch_dim);
+    _bias_optimizer = AdamOptimizer(_num_filters);
   }
 }
 

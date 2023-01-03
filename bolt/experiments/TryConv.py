@@ -47,11 +47,10 @@ def define_model():
     input_layer = bolt.nn.Input3D(dim=(IMAGE_HEIGHT, IMAGE_WIDTH, NUM_CHANNELS))
 
     first_conv = bolt.nn.Conv(
-        num_filters=200,
+        num_filters=10,
         sparsity=1,
         activation="relu",
         kernel_size=(4, 4),
-        num_patches=3136,
         next_kernel_size=(1, 1),
     )(input_layer)
 
@@ -70,55 +69,6 @@ def define_model():
     return model
 
 
-def _define_network_OLD_VERSION():
-    layers = [
-        bolt.Conv(
-            num_filters=200,
-            sparsity=1,
-            activation_function=bolt.ActivationFunctions.ReLU,
-            sampling_config=bolt.SamplingConfig(),
-            kernel_size=(4, 4),
-            num_patches=3136,
-        ),
-        # bolt.Conv(
-        #     num_filters=400,
-        #     sparsity=0.1,
-        #     activation_function=bolt.ActivationFunctions.ReLU,
-        #     sampling_config=bolt.SamplingConfig(
-        #         hashes_per_table=3, num_tables=64, range_pow=9, reservoir_size=5
-        #     ),
-        #     kernel_size=(4, 4),
-        #     num_patches=196,
-        # ),
-        # bolt.Conv(
-        #     num_filters=800,
-        #     sparsity=0.05,
-        #     activation_function=bolt.ActivationFunctions.ReLU,
-        #     sampling_config=bolt.SamplingConfig(
-        #         hashes_per_table=3, num_tables=64, range_pow=9, reservoir_size=5
-        #     ),
-        #     kernel_size=(2, 2),
-        #     num_patches=49,
-        # ),
-        # bolt.FullyConnected(
-        #     dim=20000,
-        #     sparsity=0.05,
-        #     activation_function=bolt.ActivationFunctions.ReLU,
-        #     sampling_config=bolt.SamplingConfig(
-        #         hashes_per_table=3, num_tables=64, range_pow=9, reservoir_size=5
-        #     ),
-        # ),
-        bolt.FullyConnected(
-            dim=325, activation_function=bolt.ActivationFunctions.Softmax
-        ),
-    ]
-
-    network = bolt.Network(
-        layers=layers, input_dim=IMAGE_WIDTH * IMAGE_HEIGHT * NUM_CHANNELS
-    )
-    return network
-
-
 def get_data_generators():
     train_datagen = ImageDataGenerator(
         rescale=1.0 / 255, shear_range=0.2, zoom_range=0.2, horizontal_flip=True
@@ -129,14 +79,14 @@ def get_data_generators():
     train_generator = train_datagen.flow_from_directory(
         "/Users/david/Documents/data/birdsTrain",
         target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
-        batch_size=47332,  # number of train samples
+        batch_size=100,  # number of train samples
         class_mode="sparse",
     )
 
     test_generator = test_datagen.flow_from_directory(
         "/Users/david/Documents/data/birdsTest",
         target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
-        batch_size=1625,  # number of test samples
+        batch_size=100,  # number of test samples
         class_mode="sparse",
     )
 
@@ -177,19 +127,21 @@ def train_conv_birds_325(args):
         end = time.time()
         print(f"\nElapsed {end - start} seconds to reshape data\n")
 
-        bolt_train_data = dataset.from_numpy(train_data_flat_patches, batch_size=args.batch_size)
-        bolt_train_labels = dataset.from_numpy(train_labels, batch_size=args.batch_size)
-        bolt_test_data = dataset.from_numpy(test_data_flat_patches, batch_size=args.batch_size)
-        bolt_test_labels = dataset.from_numpy(test_labels, batch_size=args.batch_size)
 
-        train_cfg = bolt.TrainConfig(epochs=1, learning_rate=0.001).silence()
+
+        bolt_train_data = dataset.from_numpy(train_data_flat_patches, batch_size=args.batch_size)
+        bolt_train_labels = dataset.from_numpy(train_labels.astype("uint32"), batch_size=args.batch_size)
+        bolt_test_data = dataset.from_numpy(test_data_flat_patches, batch_size=args.batch_size)
+        bolt_test_labels = dataset.from_numpy(test_labels.astype("uint32"), batch_size=args.batch_size)
+
+        train_cfg = bolt.TrainConfig(epochs=1, learning_rate=0.001)
 
         model.train(
             bolt_train_data,
             bolt_train_labels,
             train_cfg,
         )
-        eval_cfg = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
+        eval_cfg = bolt.EvalConfig().with_metrics(["categorical_accuracy"])
         metrics = model.evaluate(bolt_test_data, bolt_test_labels, eval_cfg)
 
 
@@ -202,7 +154,7 @@ def main():
         "--epochs", default=10, type=int, required=False, help="number of epochs"
     )
     parser.add_argument(
-        "--batch_size", default=0.001, type=float, required=False, help="batch size"
+        "--batch_size", default=100, type=float, required=False, help="batch size"
     )
 
     args = parser.parse_args()
