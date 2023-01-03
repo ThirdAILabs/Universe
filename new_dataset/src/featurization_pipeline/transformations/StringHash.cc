@@ -39,6 +39,10 @@ void StringHash::backpropagate(ColumnMap& columns,
                                ContributionColumnMap& contribuition_columns) {
   auto column = columns.getStringColumn(_input_column_name);
 
+  if (!contribuition_columns.checkColumnExists(_output_column_name)) {
+    return;
+  }
+
   auto contribuition_column =
       contribuition_columns.getTokenContributionColumn(_output_column_name);
 

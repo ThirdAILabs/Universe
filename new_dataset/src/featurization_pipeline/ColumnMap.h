@@ -27,6 +27,8 @@ class ContributionColumnMap {
 
   columns::ContibutionColumnBasePtr getColumn(const std::string& name) const;
 
+  bool checkColumnExists(const std::string& name) const;
+
  private:
   std::unordered_map<std::string, columns::ContibutionColumnBasePtr>
       _contribuition_columns;

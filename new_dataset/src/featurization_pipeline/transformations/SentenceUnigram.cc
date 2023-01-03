@@ -36,6 +36,9 @@ void SentenceUnigram::apply(ColumnMap& column_map,
 void SentenceUnigram::backpropagate(
     ColumnMap& columns, ContributionColumnMap& contribuition_columns) {
   auto input_column = columns.getStringColumn(_input_column_name);
+  if (!contribuition_columns.checkColumnExists(_output_column_name)) {
+    return;
+  }
   auto contribuition_column =
       contribuition_columns.getTokenContributionColumn(_output_column_name);
   uint32_t num_rows = columns.numRows();

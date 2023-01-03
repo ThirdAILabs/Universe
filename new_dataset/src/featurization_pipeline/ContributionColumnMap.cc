@@ -61,4 +61,8 @@ void ContributionColumnMap::setColumn(
   _contribuition_columns[name] = std::move(column);
 }
 
+bool ContributionColumnMap::checkColumnExists(const std::string& name) const {
+  return _contribuition_columns.find(name) != _contribuition_columns.end();
+}
+
 }  // namespace thirdai::data
