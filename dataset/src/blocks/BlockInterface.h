@@ -51,7 +51,7 @@ struct ColumnIdentifier {
   }
 
   // NOLINTNEXTLINE Ignore implicit conversion warning. That is intentional.
-  operator const std::string&() const { return name(); }
+  operator const std::string &() const { return name(); }
 
   bool hasNumber() const { return !!_column_number; }
 
