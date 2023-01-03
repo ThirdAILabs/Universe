@@ -5,6 +5,7 @@
 #include <cereal/types/string.hpp>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
+#include <optional>
 
 namespace thirdai::data {
 
@@ -31,7 +32,8 @@ class StringHash final : public Transformation {
       : _input_column_name(),
         _output_column_name(),
         _output_range(0),
-        _seed(0) {}
+        _seed(0),
+        _hash_values(std::nullopt) {}
 
   friend class cereal::access;
   template <class Archive>

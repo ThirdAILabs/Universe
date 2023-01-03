@@ -55,13 +55,9 @@ void StringHash::backpropagate(ColumnMap& columns,
     std::vector<columns::Contribution<uint32_t>> row_token_contributions =
         contribuition_column->getRow(i);
 
-    std::vector<columns::Contribution<std::string>> row_string_contributions(
-        row_token_contributions.size());
-
-    for (uint32_t j = 0; j < row_token_contributions.size(); j++) {
-      row_string_contributions[j] = columns::Contribution<std::string>(
-          (*column)[i], row_token_contributions[j].gradient);
-    }
+    std::vector<columns::Contribution<std::string>> row_string_contributions = {
+        columns::Contribution<std::string>(
+            (*column)[i], row_token_contributions[0].gradient)};
 
     contributions[i] = row_string_contributions;
   }

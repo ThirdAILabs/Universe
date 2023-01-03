@@ -10,6 +10,7 @@
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace thirdai::data {
@@ -33,19 +34,24 @@ class SentenceUnigram : public Transformation {
                   bool deduplicate,
                   std::optional<uint32_t> output_range = std::nullopt);
 
-  void apply(ColumnMap& column_map, bool /*prepare_for_backpropagate*/) final;
+  void apply(ColumnMap& column_map, bool prepare_for_backpropagate) final;
 
-  void backpropagate(ColumnMap& /*columns*/,
-                     ContributionColumnMap& /*contribuition_columns*/) final {}
+  void backpropagate(ColumnMap& columns,
+                     ContributionColumnMap& contribuition_columns) final;
 
  private:
   columns::SparseArrayColumnPtr deduplicatedUnigramColumn(
-      const columns::StringColumnPtr& input_column, uint32_t num_rows);
+      const columns::StringColumnPtr& input_column, uint32_t num_rows,
+      bool prepare_for_backpropagate);
 
   columns::TokenArrayColumnPtr rawUnigramColumn(
-      const columns::StringColumnPtr& input_column, uint32_t num_rows);
+      const columns::StringColumnPtr& input_column, uint32_t num_rows,
+      bool prepare_for_backpropagate);
 
   std::vector<uint32_t> computeUnigrams(const std::string& text);
+
+  std::unordered_map<uint32_t, std::string> computeUnigramsMap(
+      const std::string& text);
 
   // Private constructor for cereal.
   SentenceUnigram();
@@ -58,6 +64,8 @@ class SentenceUnigram : public Transformation {
   std::string _output_column_name;
   bool _deduplicate;
   std::optional<uint32_t> _output_range;
+  std::optional<std::vector<std::unordered_map<uint32_t, std::string>>>
+      _hash_values;
 };
 
 }  // namespace thirdai::data

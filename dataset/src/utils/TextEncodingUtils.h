@@ -6,6 +6,7 @@
 #include <functional>
 #include <string_view>
 #include <type_traits>
+#include <unordered_map>
 
 // TODO(Geordie): This file is due for major refactoring
 
@@ -38,6 +39,17 @@ class TextEncodingUtils {
     return unigrams;
   }
 
+  static std::unordered_map<uint32_t, std::string> buildRawUnigramHashToWordMap(
+      const std::string_view sentence) {
+    std::unordered_map<uint32_t, std::string> index_to_word;
+    forEachWordHash(sentence,
+                    [&](uint32_t word_hash, const std::string_view& word) {
+                      index_to_word[word_hash] = word;
+                    });
+
+    return index_to_word;
+  }
+
   /**
    * Unigrams in a vector with possible repeated indices (modded to a range)
    */
@@ -66,7 +78,6 @@ class TextEncodingUtils {
     forEachWordHash(
         sentence,
         [&](uint32_t word_hash, const std::string_view& word) {
-          (void)word_hash;
           index_to_word[word_hash % output_range] = word;
         },
         delimiter);

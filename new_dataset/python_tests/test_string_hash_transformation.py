@@ -2,6 +2,8 @@ import pytest
 from dataset_utils import sparse_bolt_dataset_to_numpy
 from thirdai import bolt, data
 
+from bolt.python_tests.utils import get_simple_dag_model
+
 pytestmark = [pytest.mark.unit]
 
 
@@ -29,7 +31,7 @@ def get_two_col_hashed_string_dataset(col_length, output_range):
     return featurizer, columns
 
 
-def test_string():
+def test_string_explanations():
     col_length = 10000
     output_range = 10000
     featurizer, columns = get_two_col_hashed_string_dataset(col_length, output_range)
@@ -37,16 +39,9 @@ def test_string():
     string_dataset = columns.convert_to_dataset(
         ["column1_hashes", "column2_hashes"], batch_size=col_length
     )
-    input_layer = bolt.nn.Input(dim=100000)
-    hidden_layer = bolt.nn.FullyConnected(dim=100, activation="relu", sparsity=1)(
-        input_layer
+    model = get_simple_dag_model(
+        input_dim=100000, hidden_layer_dim=100, hidden_layer_sparsity=1, output_dim=151
     )
-    output_layer = bolt.nn.FullyConnected(dim=151, sparsity=1, activation="softmax")(
-        hidden_layer
-    )
-
-    model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
-    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     indices, gradients = model.get_input_gradients_batch([string_dataset[0]])
 
