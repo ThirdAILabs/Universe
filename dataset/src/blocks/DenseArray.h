@@ -4,7 +4,6 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
-#include <_types/_uint32_t.h>
 #include <cmath>
 #include <exception>
 #include <memory>
