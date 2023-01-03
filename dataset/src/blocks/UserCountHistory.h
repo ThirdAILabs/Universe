@@ -51,31 +51,13 @@ class UserCountHistoryBlock final : public Block {
     return std::max(_user_col, std::max(_count_col, _timestamp_col)) + 1;
   }
 
-  void prepareForBatch(const RowInput& first_row) final {
-    auto time = TimeObject(first_row.at(_timestamp_col));
-    _history->checkpoint(/* new_lowest_timestamp= */ time.secondsSinceEpoch());
-  }
-
-  void prepareForBatch(const MapInput& first_element) final {
-    auto time = TimeObject(first_element.at(_timestamp_col));
+  void prepareForBatch(SingleInputRef& first_row) final {
+    auto time = TimeObject(first_row.column(_timestamp_col));
     _history->checkpoint(/* new_lowest_timestamp= */ time.secondsSinceEpoch());
   }
 
   Explanation explainIndex(uint32_t index_within_block,
-                           const RowInput& input_row) final {
-    return {_count_col.number(),
-            getExplanationReason(index_within_block, input_row)};
-  }
-
-  Explanation explainIndex(uint32_t index_within_block,
-                           const MapInput& input_map) final {
-    return {_count_col.name(),
-            getExplanationReason(index_within_block, input_map)};
-  }
-
-  template <typename ColumnarInputType>
-  std::string getExplanationReason(uint32_t index_within_block,
-                                   const ColumnarInputType& input) {
+                           SingleInputRef& input) final {
     auto [user, time_seconds, val] = getUserTimeVal(input);
 
     auto counts = indexAndGetCountsFromHistory(
@@ -101,7 +83,7 @@ class UserCountHistoryBlock final : public Block {
     auto keyword = "between " + start_time_str + " and " + end_time_str +
                    " value is " + movement;
 
-    return keyword;
+    return {_count_col, keyword};
   }
 
   static auto make(ColumnIdentifier user_col, ColumnIdentifier count_col,
@@ -115,19 +97,8 @@ class UserCountHistoryBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(const RowInput& input_row,
+  std::exception_ptr buildSegment(SingleInputRef& input,
                                   SegmentedFeatureVector& vec) final {
-    return buildSegmentImpl(input_row, vec);
-  }
-
-  std::exception_ptr buildSegment(const MapInput& input_map,
-                                  SegmentedFeatureVector& vec) final {
-    return buildSegmentImpl(input_map, vec);
-  }
-
-  template <typename ColumnarInputType>
-  std::exception_ptr buildSegmentImpl(const ColumnarInputType& input,
-                                      SegmentedFeatureVector& vec) {
     auto [user, time_seconds, val] = getUserTimeVal(input);
 
     auto counts = indexAndGetCountsFromHistory(
@@ -141,19 +112,18 @@ class UserCountHistoryBlock final : public Block {
   }
 
  private:
-  template <typename ColumnarInputType>
   std::tuple<std::string, int64_t, float> getUserTimeVal(
-      const ColumnarInputType& input) const {
-    auto user = std::string(getColumn(input, _user_col));
+      SingleInputRef& input) const {
+    auto user = std::string(input.column(_user_col));
 
-    auto time = TimeObject(getColumn(input, _timestamp_col));
+    auto time = TimeObject(input.column(_timestamp_col));
     int64_t time_seconds = time.secondsSinceEpoch();
 
     float val;
     if (_include_current_row || _should_update_history) {
       char* end;
 
-      val = std::strtof(getColumn(input, _count_col).data(), &end);
+      val = std::strtof(input.column(_count_col).data(), &end);
       if (std::isnan(val) || std::isinf(val)) {
         val = 0.0;
       }

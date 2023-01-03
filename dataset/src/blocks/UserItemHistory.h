@@ -159,57 +159,34 @@ class UserItemHistoryBlock final : public Block {
   }
 
   Explanation explainIndex(uint32_t index_within_block,
-                           const RowInput& input_row) final {
-    return {_item_col.number(),
-            getExplanationReason(index_within_block, input_row)};
-  }
-
-  Explanation explainIndex(uint32_t index_within_block,
-                           const MapInput& input_map) final {
-    return {_item_col.name(),
-            getExplanationReason(index_within_block, input_map)};
-  }
-
-  template <typename ColumnarInputType>
-  std::string getExplanationReason(uint32_t index_within_block,
-                                   const ColumnarInputType& input) {
+                           SingleInputRef& input) final {
     if (_item_vectors) {
       // TODO(Geordie): Make more descriptive.
-      return "Metadata of previously seen item.";
+      return {_item_col, "Metadata of previously seen item."};
     }
 
-    auto user = std::string(getColumn(input, _user_col));
+    auto user = std::string(input.column(_user_col));
     auto& user_history = _per_user_history->at(user);
 
     for (auto record = user_history.rbegin(); record != user_history.rend();
          record++) {
       if (getItemId(record->item) == index_within_block) {
-        return "'" + record->item + "' is one of last " +
-               std::to_string(_track_last_n) + " values";
+        return {_item_col, "'" + record->item + "' is one of last " +
+                               std::to_string(_track_last_n) + " values"};
       }
     }
 
-    return "One of last " + std::to_string(_track_last_n) + " values";
+    return {_item_col,
+            "One of last " + std::to_string(_track_last_n) + " values"};
   }
 
  protected:
-  std::exception_ptr buildSegment(const RowInput& input_row,
+  std::exception_ptr buildSegment(SingleInputRef& input,
                                   SegmentedFeatureVector& vec) final {
-    return buildSegmentImpl(input_row, vec);
-  }
-
-  std::exception_ptr buildSegment(const MapInput& input_map,
-                                  SegmentedFeatureVector& vec) final {
-    return buildSegmentImpl(input_map, vec);
-  }
-
-  template <typename ColumnarInputType>
-  std::exception_ptr buildSegmentImpl(const ColumnarInputType& input,
-                                      SegmentedFeatureVector& vec) {
     try {
-      auto user_str = std::string(getColumn(input, _user_col));
-      auto item_str = std::string(getColumn(input, _item_col));
-      auto timestamp_str = std::string(getColumn(input, _timestamp_col));
+      auto user_str = std::string(input.column(_user_col));
+      auto item_str = std::string(input.column(_item_col));
+      auto timestamp_str = std::string(input.column(_timestamp_col));
 
       int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 

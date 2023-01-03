@@ -52,18 +52,7 @@ class TabularHashFeatures final : public Block {
   };
 
   Explanation explainIndex(uint32_t index_within_block,
-                           const RowInput& input_row) final {
-    return explainIndexImpl(index_within_block, input_row);
-  }
-
-  Explanation explainIndex(uint32_t index_within_block,
-                           const MapInput& input_map) final {
-    return explainIndexImpl(index_within_block, input_map);
-  }
-
-  template <typename ColumnarInputType>
-  Explanation explainIndexImpl(uint32_t index_within_block,
-                               const ColumnarInputType& input) {
+                           SingleInputRef& input) final {
     ColumnIdentifier first_column;
     ColumnIdentifier second_column;
 
@@ -77,34 +66,19 @@ class TabularHashFeatures final : public Block {
     }
 
     if (first_column == second_column) {
-      return {first_column.name(), std::string(input.at(first_column))};
+      return {first_column.name(), std::string(input.column(first_column))};
     }
 
     auto column_name = first_column.name() + "," + second_column.name();
-    auto keyword = std::string(input.at(first_column)) + "," +
-                   std::string(input.at(second_column));
+    auto keyword = std::string(input.column(first_column)) + "," +
+                   std::string(input.column(second_column));
 
     return {column_name, keyword};
   }
 
  protected:
-  std::exception_ptr buildSegment(const RowInput& input_row,
+  std::exception_ptr buildSegment(SingleInputRef& input,
                                   SegmentedFeatureVector& vec) final {
-    return buildSegmentImpl(input_row, vec);
-  }
-
-  std::exception_ptr buildSegment(const MapInput& input_map,
-                                  SegmentedFeatureVector& vec) final {
-    return buildSegmentImpl(input_map, vec);
-  }
-
-  // TODO(david) We should always include all unigrams but if the number of
-  // columns is too large, this processing time becomes slow. One idea is to
-  // cap the number of pairgrams at a certain threshold by selecting random
-  // pairs of columns to pairgram together.
-  template <typename ColumnarInputType>
-  std::exception_ptr buildSegmentImpl(const ColumnarInputType& input,
-                                      SegmentedFeatureVector& vec) {
     std::unordered_map<uint32_t, uint32_t> unigram_to_col_num;
     std::vector<uint32_t> tokens;
     if (auto e = forEachOutputToken(input, [&](const Token& token) {
@@ -126,8 +100,8 @@ class TabularHashFeatures final : public Block {
    * and applies a function. We do this to reduce code duplication between
    * buildSegment() and explainIndex()
    */
-  template <typename ColumnarInputType, typename TOKEN_PROCESSOR_T>
-  std::exception_ptr forEachOutputToken(const ColumnarInputType& input,
+  template <typename TOKEN_PROCESSOR_T>
+  std::exception_ptr forEachOutputToken(SingleInputRef& input,
                                         TOKEN_PROCESSOR_T token_processor) {
     static_assert(std::is_convertible<TOKEN_PROCESSOR_T,
                                       std::function<void(Token&)>>::value);
@@ -136,7 +110,7 @@ class TabularHashFeatures final : public Block {
     for (uint32_t col = 0; col < _metadata->numColumns(); col++) {
       auto column_identifier = _metadata->columnIdentifier(col);
 
-      std::string str_val(getColumn(input, column_identifier));
+      std::string str_val(input.column(column_identifier));
       if (str_val.empty()) {
         continue;
       }
@@ -187,20 +161,6 @@ class TabularHashFeatures final : public Block {
       }
     }
     return nullptr;
-  }
-
-  std::pair<ColumnIdentifier, ColumnIdentifier> getColumnIdentifiersForIndex(
-      const std::vector<std::string_view>& input_row, uint32_t index) {
-    std::pair<uint32_t, uint32_t> column_identifiers;
-    if (auto e = forEachOutputToken(input_row, [&](Token& token) {
-          if (token.token == index) {
-            column_identifiers = {std::move(token.first_column),
-                                  std::move(token.second_column)};
-          }
-        })) {
-      std::rethrow_exception(e);
-    }
-    return column_identifiers;
   }
 
  private:

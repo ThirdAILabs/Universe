@@ -50,18 +50,12 @@ class DateBlock final : public Block {
   };
 
   Explanation explainIndex(uint32_t index_within_block,
-                           const RowInput& input_row) final {
-    return {_col.number(), getExplanationReason(index_within_block, input_row)};
+                           SingleInputRef& input) final {
+    return {_col, getExplanationReason(index_within_block, input)};
   }
 
-  Explanation explainIndex(uint32_t index_within_block,
-                           const MapInput& input_map) final {
-    return {_col.name(), getExplanationReason(index_within_block, input_map)};
-  }
-
-  template <typename ColumnarInputType>
   std::string getExplanationReason(uint32_t index_within_block,
-                                   const ColumnarInputType& input) {
+                                   SingleInputRef& input) const {
     (void)input;
     std::string reason;
     if (index_within_block >= featureDim()) {
@@ -97,23 +91,12 @@ class DateBlock final : public Block {
   static constexpr uint32_t week_of_month_dim = 5;
   static constexpr uint32_t week_of_year_dim = 53;
 
-  std::exception_ptr buildSegment(const RowInput& input_row,
+  std::exception_ptr buildSegment(SingleInputRef& input,
                                   SegmentedFeatureVector& vec) final {
-    return buildSegmentImpl(input_row, vec);
-  }
-
-  std::exception_ptr buildSegment(const MapInput& input_map,
-                                  SegmentedFeatureVector& vec) final {
-    return buildSegmentImpl(input_map, vec);
-  }
-
-  template <typename ColumnarInputType>
-  std::exception_ptr buildSegmentImpl(const ColumnarInputType& input,
-                                      SegmentedFeatureVector& vec) {
     TimeObject time;
 
     try {
-      time = TimeObject(getColumn(input, _col));
+      time = TimeObject(input.column(_col));
     } catch (const std::invalid_argument& e) {
       return std::make_exception_ptr(e);
     }

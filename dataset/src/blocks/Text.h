@@ -34,29 +34,17 @@ class TextBlock : public Block {
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
   Explanation explainIndex(uint32_t index_within_block,
-                           const RowInput& input_row) final {
-    return {_col.number(),
-            getResponsibleWord(index_within_block, input_row.at(_col))};
-  }
-
-  Explanation explainIndex(uint32_t index_within_block,
-                           const MapInput& input_map) final {
-    return {_col.name(),
-            getResponsibleWord(index_within_block, input_map.at(_col))};
+                           SingleInputRef& input) final {
+    return {_col, getResponsibleWord(index_within_block, input.column(_col))};
   }
 
   virtual std::string getResponsibleWord(
       uint32_t index, const std::string_view& text) const = 0;
 
  protected:
-  std::exception_ptr buildSegment(const RowInput& input_row,
+  std::exception_ptr buildSegment(SingleInputRef& input,
                                   SegmentedFeatureVector& vec) final {
-    return encodeText(getColumn(input_row, _col), vec);
-  }
-
-  std::exception_ptr buildSegment(const MapInput& input_row,
-                                  SegmentedFeatureVector& vec) final {
-    return encodeText(getColumn(input_row, _col), vec);
+    return encodeText(input.column(_col), vec);
   }
 
   virtual std::exception_ptr encodeText(std::string_view text,

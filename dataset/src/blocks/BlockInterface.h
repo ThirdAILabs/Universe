@@ -3,9 +3,9 @@
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -82,15 +82,144 @@ struct ColumnIdentifier {
   }
 };
 
-static std::string getColumn(const MapInput& input_map,
-                             const ColumnIdentifier& column) {
-  return input_map.count(column) ? input_map.at(column) : "";
-}
+class SingleInputRef {
+ public:
+  virtual std::string_view column(const ColumnIdentifier& column) = 0;
+  virtual uint32_t size() = 0;
+  virtual std::exception_ptr assertValid(uint32_t expected_num_cols) = 0;
+  virtual ~SingleInputRef() = default;
+};
 
-static std::string_view getColumn(const RowInput& input_row,
-                                  const ColumnIdentifier& column) {
-  return input_row.size() > column.number() ? input_row.at(column) : "";
-}
+class SingleMapInputRef final : public SingleInputRef {
+ public:
+  // NOLINTNEXTLINE Implicit constructor is intentional
+  SingleMapInputRef(const MapInput& columns) : _columns(columns) {}
+
+  std::string_view column(const ColumnIdentifier& column) final {
+    if (!_columns.count(column.name())) {
+      return {};
+    }
+    return _columns.at(column.name());
+  }
+
+  uint32_t size() final { return _columns.size(); }
+
+  std::exception_ptr assertValid(uint32_t expected_num_cols) final {
+    (void)expected_num_cols;
+    return nullptr;
+  }
+
+ private:
+  const MapInput& _columns;
+};
+
+class SingleRowInputRef final : public SingleInputRef {
+ public:
+  // NOLINTNEXTLINE Implicit constructor is intentional
+  SingleRowInputRef(const RowInput& columns) : _columns(columns) {}
+
+  std::string_view column(const ColumnIdentifier& column) final {
+    return _columns.at(column.number());
+  }
+
+  std::exception_ptr assertValid(uint32_t expected_num_cols) final {
+    if (_columns.size() >= expected_num_cols) {
+      return nullptr;
+    }
+
+    std::stringstream error_ss;
+    error_ss << "Expected " << expected_num_cols
+             << " in each row of the dataset. Found row with "
+             << _columns.size() << " columns:";
+    for (auto column : _columns) {
+      error_ss << " '" << column << "'";
+    }
+    error_ss << ".";
+
+    return std::make_exception_ptr(std::invalid_argument(error_ss.str()));
+  }
+
+  uint32_t size() final { return _columns.size(); }
+
+ private:
+  const RowInput& _columns;
+};
+
+class SingleCsvLineInputRef final : public SingleInputRef {
+ public:
+  SingleCsvLineInputRef(const LineInput& line, char delimiter)
+      : _line(line), _delimiter(delimiter) {}
+
+  std::string_view column(const ColumnIdentifier& column) final {
+    parseToColumnsIfNecessary();
+    return SingleRowInputRef(*_columns).column(column);
+  }
+
+  uint32_t size() final { return _columns->size(); }
+
+  std::exception_ptr assertValid(uint32_t expected_num_cols) final {
+    parseToColumnsIfNecessary();
+    return SingleRowInputRef(*_columns).assertValid(expected_num_cols);
+  }
+
+ private:
+  void parseToColumnsIfNecessary() {
+    if (!_columns) {
+      _columns = ProcessorUtils::parseCsvRow(/* row= */ _line,
+                                             /* delimiter= */ _delimiter);
+    }
+  }
+
+  const LineInput& _line;
+  char _delimiter;
+  std::optional<RowInput> _columns;
+  std::exception_ptr _last_error;
+};
+
+class BatchInputRef {
+ public:
+  virtual SingleInputRef& sample(uint32_t index) = 0;
+  virtual uint32_t size() = 0;
+  virtual ~BatchInputRef() = default;
+};
+
+class BatchMapInputRef final : public BatchInputRef {
+ public:
+  // NOLINTNEXTLINE
+  BatchMapInputRef(const MapInputBatch& batch) : _batch(batch) {
+    _ref_batch.reserve(_batch.size());
+    for (const auto& input : _batch) {
+      _ref_batch.emplace_back(SingleMapInputRef(input));
+    }
+  }
+
+  SingleInputRef& sample(uint32_t index) final { return _ref_batch.at(index); }
+
+  uint32_t size() final { return _batch.size(); }
+
+ private:
+  const MapInputBatch& _batch;
+  std::vector<SingleMapInputRef> _ref_batch;
+};
+
+class BatchCsvLineInputRef final : public BatchInputRef {
+ public:
+  BatchCsvLineInputRef(const LineInputBatch& batch, char delimiter)
+      : _batch(batch) {
+    _ref_batch.reserve(_batch.size());
+    for (const auto& input : _batch) {
+      _ref_batch.emplace_back(SingleCsvLineInputRef(input, delimiter));
+    }
+  }
+
+  SingleInputRef& sample(uint32_t index) final { return _ref_batch.at(index); }
+
+  uint32_t size() final { return _batch.size(); }
+
+ private:
+  const LineInputBatch& _batch;
+  std::vector<SingleCsvLineInputRef> _ref_batch;
+};
 
 /**
  * Declare here so we can make it a friend of
@@ -124,6 +253,16 @@ struct Explanation {
       : column_number(0),
         keyword(std::move(keyword)),
         column_name(std::move(column_name)) {}
+
+  Explanation(const ColumnIdentifier& column_identifier, std::string keyword)
+      : keyword(std::move(keyword)) {
+    if (column_identifier.hasName()) {
+      column_name = column_identifier.name();
+    }
+    if (column_identifier.hasNumber()) {
+      column_number = column_identifier.number();
+    }
+  }
 
   std::string toString() const {
     std::stringstream s;
@@ -250,12 +389,11 @@ class Block {
    *
    * Returns:
    * exception_ptr: Since blocks can run in parallel in pragma
-   * threads, they can't throw their own exceptions. To fail in a block, return
-   * any exception_ptr and proceed with program execution without failing. The
-   * error should then be caught.
+   * threads, they can't throw their own exceptions. To fail in a block,
+   * return any exception_ptr and proceed with program execution without
+   * failing. The error should then be caught.
    */
-  template <typename ColumnarInputType>
-  std::exception_ptr addVectorSegment(const ColumnarInputType& input,
+  std::exception_ptr addVectorSegment(SingleInputRef& input,
                                       SegmentedFeatureVector& vec) {
     vec.addFeatureSegment(featureDim());
     return buildSegment(input, vec);
@@ -284,13 +422,11 @@ class Block {
    */
   virtual uint32_t expectedNumColumns() const = 0;
 
-  virtual void prepareForBatch(const RowInput& first_row) { (void)first_row; }
-
-  virtual void prepareForBatch(const MapInput& first_row) { (void)first_row; }
+  virtual void prepareForBatch(SingleInputRef& first_row) { (void)first_row; }
 
   /**
-   * For a given index, get the keyword which falls in that index when building
-   * the segmented feature vector.
+   * For a given index, get the keyword which falls in that index when
+   * building the segmented feature vector.
    *
    * Arguments:
    * index_within_block : index within the block so that we can get exact
@@ -300,13 +436,11 @@ class Block {
    * buildsegment , which may affect thread safety.
    *
    * Returns:
-   * column number and keyword responsible for the given index from that column.
+   * column number and keyword responsible for the given index from that
+   * column.
    */
   virtual Explanation explainIndex(uint32_t index_within_block,
-                                   const RowInput& input_row) = 0;
-
-  virtual Explanation explainIndex(uint32_t index_within_block,
-                                   const MapInput& input_map) = 0;
+                                   SingleInputRef& input_row) = 0;
 
   virtual ~Block() = default;
 
@@ -318,10 +452,7 @@ class Block {
    * WARNING: This function may be called in many threads simultaneously,
    * so it should be thread-safe or robust to data races.
    */
-  virtual std::exception_ptr buildSegment(const RowInput& input_row,
-                                          SegmentedFeatureVector& vec) = 0;
-
-  virtual std::exception_ptr buildSegment(const MapInput& input_map,
+  virtual std::exception_ptr buildSegment(SingleInputRef& input_row,
                                           SegmentedFeatureVector& vec) = 0;
 
  private:
@@ -386,10 +517,8 @@ struct BlockList {
     return max_expected_columns;
   }
 
-  template <typename ColumnarInputType>
   std::exception_ptr addVectorSegment(
-      const ColumnarInputType& sample,
-      SegmentedFeatureVector& segmented_vector) {
+      SingleInputRef& sample, SegmentedFeatureVector& segmented_vector) {
     for (auto& block : _blocks) {
       if (auto err = block->addVectorSegment(sample, segmented_vector)) {
         return err;
@@ -406,8 +535,7 @@ struct BlockList {
     return dim;
   }
 
-  template <typename ColumnarInputType>
-  void prepareForBatch(const ColumnarInputType& first_sample) {
+  void prepareForBatch(SingleInputRef& first_sample) {
     for (const auto& block : _blocks) {
       block->prepareForBatch(first_sample);
     }

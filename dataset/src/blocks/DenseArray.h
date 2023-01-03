@@ -4,6 +4,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
+#include <_types/_uint32_t.h>
 #include <cmath>
 #include <exception>
 #include <memory>
@@ -27,16 +28,15 @@ class DenseArrayBlock final : public Block {
    *   start_col: int - the column number of the first dense array entry.
    *   dim: int - the dimension of the dense array; the number of dense values.
    */
-  DenseArrayBlock(ColumnIdentifier start_col, uint32_t dim)
-      : _start_col(std::move(start_col)), _dim(dim) {}
+  DenseArrayBlock(uint32_t start_col, uint32_t dim)
+      : _start_col(start_col), _dim(dim) {}
 
-  static auto make(ColumnIdentifier start_col, uint32_t dim) {
-    return std::make_shared<DenseArrayBlock>(std::move(start_col), dim);
+  static auto make(uint32_t start_col, uint32_t dim) {
+    return std::make_shared<DenseArrayBlock>(start_col, dim);
   }
 
-  static auto makeSingle(ColumnIdentifier start_col) {
-    return std::make_shared<DenseArrayBlock>(std::move(start_col),
-                                             /* dim= */ 1);
+  static auto makeSingle(uint32_t start_col) {
+    return std::make_shared<DenseArrayBlock>(start_col, /* dim= */ 1);
   }
 
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
@@ -54,27 +54,19 @@ class DenseArrayBlock final : public Block {
   uint32_t expectedNumColumns() const final { return _start_col + _dim; };
 
   Explanation explainIndex(uint32_t index_within_block,
-                           const RowInput& input_row) final {
+                           SingleInputRef& input_row) final {
     char* end;
-    float value = std::strtof(input_row.at(index_within_block).data(), &end);
+    float value =
+        std::strtof(input_row.column(index_within_block).data(), &end);
     return {_start_col + index_within_block, std::to_string(value)};
   }
 
-  Explanation explainIndex(uint32_t index_within_block,
-                           const MapInput& input_map) final {
-    (void)index_within_block;
-    (void)input_map;
-    throw std::invalid_argument(
-        "Cannot build DenseArray segment with map input.");
-  }
-
  protected:
-  std::exception_ptr buildSegment(
-      const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
+  std::exception_ptr buildSegment(SingleInputRef& input_row,
+                                  SegmentedFeatureVector& vec) final {
     for (uint32_t i = _start_col; i < _start_col + _dim; i++) {
       char* end;
-      float value = std::strtof(input_row.at(i).data(), &end);
+      float value = std::strtof(input_row.column(i).data(), &end);
       if (std::isinf(value)) {
         value = 0;
       }
@@ -84,14 +76,6 @@ class DenseArrayBlock final : public Block {
       vec.addDenseFeatureToSegment(value);
     }
     return nullptr;
-  }
-
-  std::exception_ptr buildSegment(const MapInput& input_map,
-                                  SegmentedFeatureVector& vec) final {
-    (void)input_map;
-    (void)vec;
-    return std::make_exception_ptr(std::invalid_argument(
-        "Cannot build DenseArray segment with map input."));
   }
 
  private:

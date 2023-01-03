@@ -81,7 +81,8 @@ class TextBlockTest : public testing::Test {
       input_row_view[i] =
           std::string_view(input_row[i].c_str(), input_row[i].size());
     }
-    if (auto err = block.addVectorSegment(input_row_view, vec)) {
+    SingleRowInputRef input_row_view_ref(input_row_view);
+    if (auto err = block.addVectorSegment(input_row_view_ref, vec)) {
       std::rethrow_exception(err);
     }
   }

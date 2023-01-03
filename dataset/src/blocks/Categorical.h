@@ -46,15 +46,10 @@ class CategoricalBlock : public Block {
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
   Explanation explainIndex(uint32_t index_within_block,
-                           const RowInput& input_row) final {
-    return {_col.number(),
-            getResponsibleCategory(index_within_block, input_row[_col])};
-  }
-
-  Explanation explainIndex(uint32_t index_within_block,
-                           const MapInput& input_row) final {
-    return {_col.name(),
-            getResponsibleCategory(index_within_block, input_row.at(_col))};
+                           SingleInputRef& input) final {
+    
+    return {_col,
+            getResponsibleCategory(index_within_block, input.column(_col))};
   }
 
   /*
@@ -67,24 +62,21 @@ class CategoricalBlock : public Block {
       const std::string_view& category_value) const = 0;
 
  protected:
-  std::exception_ptr buildSegment(const RowInput& input_row,
+  std::exception_ptr buildSegment(SingleInputRef& input,
                                   SegmentedFeatureVector& vec) final {
-    return buildSegmentImpl(input_row, vec);
-  }
+    std::string_view column;
 
-  std::exception_ptr buildSegment(const MapInput& input_map,
-                                  SegmentedFeatureVector& vec) final {
-    return buildSegmentImpl(input_map, vec);
-  }
-
-  template <typename ColumnarInputType>
-  std::exception_ptr buildSegmentImpl(const ColumnarInputType& input_map,
-                                      SegmentedFeatureVector& vec) {
-    if (!_delimiter) {
-      return encodeCategory(getColumn(input_map, _col), vec);
+    try {
+      column = input.column(_col);
+    } catch (std::exception_ptr& e) {
+      return e;
     }
 
-    auto csv_category_set = std::string(input_map.at(_col));
+    if (!_delimiter) {
+      return encodeCategory(column, vec);
+    }
+
+    auto csv_category_set = std::string(column);
     auto categories =
         ProcessorUtils::parseCsvRow(csv_category_set, _delimiter.value());
     for (auto category : categories) {
