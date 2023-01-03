@@ -122,27 +122,11 @@ class UserItemHistoryBlock final : public Block {
     }
   }
 
-  void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
-    _user_col.updateColumnNumber(column_number_map);
-    _item_col.updateColumnNumber(column_number_map);
-    _timestamp_col.updateColumnNumber(column_number_map);
-  }
-
-  bool hasColumnNames() const final { return _user_col.hasName(); }
-
-  bool hasColumnNumbers() const final { return _user_col.hasNumber(); }
-
   uint32_t featureDim() const final {
     return _item_vectors ? _item_vectors->dim : _item_hash_range;
   }
 
   bool isDense() const final { return false; }
-
-  uint32_t expectedNumColumns() const final {
-    uint32_t max_col_idx = std::max<uint32_t>(_user_col, _item_col);
-    max_col_idx = std::max<uint32_t>(max_col_idx, _timestamp_col);
-    return max_col_idx + 1;
-  }
 
   static UserItemHistoryBlockPtr make(
       ColumnIdentifier user_col, ColumnIdentifier item_col,
@@ -217,6 +201,10 @@ class UserItemHistoryBlock final : public Block {
       return std::current_exception();
     }
     return nullptr;
+  }
+
+  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+    return {&_user_col, &_item_col, &_timestamp_col};
   }
 
  private:

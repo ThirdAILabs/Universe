@@ -34,22 +34,8 @@ class UserCountHistoryBlock final : public Block {
     }
   }
 
-  void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
-    _user_col.updateColumnNumber(column_number_map);
-    _count_col.updateColumnNumber(column_number_map);
-    _timestamp_col.updateColumnNumber(column_number_map);
-  }
-
-  bool hasColumnNames() const final { return _user_col.hasName(); }
-
-  bool hasColumnNumbers() const final { return _user_col.hasNumber(); }
-
   uint32_t featureDim() const final { return _history->historyLength(); }
   bool isDense() const final { return true; }
-
-  uint32_t expectedNumColumns() const final {
-    return std::max(_user_col, std::max(_count_col, _timestamp_col)) + 1;
-  }
 
   void prepareForBatch(SingleInputRef& first_row) final {
     auto time = TimeObject(first_row.column(_timestamp_col));
@@ -109,6 +95,10 @@ class UserCountHistoryBlock final : public Block {
       vec.addDenseFeatureToSegment(count);
     }
     return nullptr;
+  }
+
+  std::vector<ColumnIdentifier *> getColumnIdentifiers() final {
+    return {&_user_col, &_count_col, &_timestamp_col};
   }
 
  private:

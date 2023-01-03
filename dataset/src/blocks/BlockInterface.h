@@ -4,6 +4,7 @@
 #include <cereal/types/optional.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
+#include <algorithm>
 #include <cstdint>
 #include <exception>
 #include <memory>
@@ -25,11 +26,6 @@ using LineInput = std::string;
 // Batch input types
 using MapInputBatch = std::vector<std::unordered_map<std::string, std::string>>;
 using LineInputBatch = std::vector<std::string>;
-
-// INPUT TYPE TEMPLATE CONVENTION
-// MapInput or RowInput only: `template <typename ColumnarInputType>`
-// MapInput, RowInput, or LineInput only: `template <typename InputType>`
-// MapInputBatch or LineInputBatch only: `template <typename InputBatchType>`
 
 struct ColumnIdentifier {
   ColumnIdentifier() {}
@@ -399,12 +395,25 @@ class Block {
     return buildSegment(input, vec);
   }
 
-  virtual void updateColumnNumbers(
-      const ColumnNumberMap& column_number_map) = 0;
+  void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
+    for (auto* column_identifier : getColumnIdentifiers()) {
+      column_identifier->updateColumnNumber(column_number_map);
+    }
+  }
 
-  virtual bool hasColumnNames() const = 0;
+  bool hasColumnNames() {
+    auto column_identifiers = getColumnIdentifiers();
+    return std::all_of(
+        column_identifiers.begin(), column_identifiers.end(),
+        [](ColumnIdentifier* identifier) { return identifier->hasName(); });
+  }
 
-  virtual bool hasColumnNumbers() const = 0;
+  bool hasColumnNumbers() {
+    auto column_identifiers = getColumnIdentifiers();
+    return std::all_of(
+        column_identifiers.begin(), column_identifiers.end(),
+        [](ColumnIdentifier* identifier) { return identifier->hasNumber(); });
+  }
 
   /**
    * Returns the dimension of the vector encoding.
@@ -420,7 +429,17 @@ class Block {
    * Returns the minimum number of columns that the block expects
    * to see in each row of the dataset.
    */
-  virtual uint32_t expectedNumColumns() const = 0;
+  uint32_t expectedNumColumns() {
+    if (!hasColumnNumbers()) {
+      return 0;
+    }
+    uint32_t expected_num_columns = 0;
+    for (auto* column_identifier : getColumnIdentifiers()) {
+      expected_num_columns =
+          std::max(expected_num_columns, column_identifier->number());
+    }
+    return expected_num_columns;
+  }
 
   virtual void prepareForBatch(SingleInputRef& first_row) { (void)first_row; }
 
@@ -441,6 +460,8 @@ class Block {
    */
   virtual Explanation explainIndex(uint32_t index_within_block,
                                    SingleInputRef& input_row) = 0;
+
+  virtual std::vector<ColumnIdentifier*> getColumnIdentifiers() = 0;
 
   virtual ~Block() = default;
 

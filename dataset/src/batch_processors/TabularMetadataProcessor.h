@@ -58,10 +58,8 @@ class TabularMetadata {
       : _column_dtypes(std::move(column_dtypes)),
         _col_min_maxes(std::move(col_min_maxes)),
         _class_name_to_id(std::move(class_name_to_id)),
-        _expected_num_columns(0),
         _col_to_num_bins(std::move(col_to_num_bins)) {
     if (column_names.empty()) {
-      _expected_num_columns = column_dtypes.size();
       for (uint32_t col = 0; col < _column_dtypes.size(); col++) {
         _column_identifiers.push_back(col);
       }
@@ -79,26 +77,11 @@ class TabularMetadata {
     }
   }
 
-  void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
-    _expected_num_columns = 0;
-    for (auto& column_identifier : _column_identifiers) {
-      column_identifier.updateColumnNumber(column_number_map);
-      _expected_num_columns =
-          std::max(*_expected_num_columns, column_identifier.number());
-    }
-  }
-
-  bool hasColumnNames() const { return _column_identifiers.front().hasName(); }
-
-  bool hasColumnNumbers() const {
-    return _column_identifiers.front().hasNumber();
+  std::vector<ColumnIdentifier>& getColumnIdentifiers() {
+    return _column_identifiers;
   }
 
   ThreadSafeVocabularyPtr getClassToIdMap() { return _class_name_to_id; }
-
-  uint32_t expectedNumColumnsInRowInput() const {
-    return _expected_num_columns.value();
-  }
 
   uint32_t numColumns() const { return _column_dtypes.size(); }
 
@@ -232,8 +215,7 @@ class TabularMetadata {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_column_dtypes, _col_min_maxes, _column_identifiers,
-            _expected_num_columns, _col_to_num_bins, _class_name_to_id,
-            _label_col);
+            _col_to_num_bins, _class_name_to_id, _label_col);
   }
 
   std::vector<TabularDataType> _column_dtypes;
@@ -242,8 +224,6 @@ class TabularMetadata {
   ThreadSafeVocabularyPtr _class_name_to_id;
 
   std::vector<ColumnIdentifier> _column_identifiers;
-
-  std::optional<uint32_t> _expected_num_columns;
 
   // three additional bins are reserved: one for empty values, one for values
   // less than the min, and one for values greater than the max

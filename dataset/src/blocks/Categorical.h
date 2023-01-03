@@ -31,23 +31,12 @@ class CategoricalBlock : public Block {
                    std::optional<char> delimiter)
       : _dim(dim), _col(std::move(col)), _delimiter(delimiter) {}
 
-  void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
-    _col.updateColumnNumber(column_number_map);
-  }
-
-  bool hasColumnNames() const final { return _col.hasName(); }
-
-  bool hasColumnNumbers() const final { return _col.hasNumber(); }
-
   uint32_t featureDim() const final { return _dim; };
 
   bool isDense() const final { return false; };
 
-  uint32_t expectedNumColumns() const final { return _col + 1; };
-
   Explanation explainIndex(uint32_t index_within_block,
                            SingleInputRef& input) final {
-    
     return {_col,
             getResponsibleCategory(index_within_block, input.column(_col))};
   }
@@ -91,6 +80,10 @@ class CategoricalBlock : public Block {
 
   virtual std::exception_ptr encodeCategory(std::string_view category,
                                             SegmentedFeatureVector& vec) = 0;
+
+  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+    return {&_col};
+  }
 
   uint32_t _dim;
 

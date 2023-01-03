@@ -19,19 +19,9 @@ class TextBlock : public Block {
   explicit TextBlock(ColumnIdentifier col, uint32_t dim)
       : _dim(dim), _col(std::move(col)) {}
 
-  void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
-    _col.updateColumnNumber(column_number_map);
-  }
-
-  bool hasColumnNames() const final { return _col.hasName(); }
-
-  bool hasColumnNumbers() const final { return _col.hasNumber(); }
-
   uint32_t featureDim() const final { return _dim; };
 
   bool isDense() const final { return false; };
-
-  uint32_t expectedNumColumns() const final { return _col + 1; };
 
   Explanation explainIndex(uint32_t index_within_block,
                            SingleInputRef& input) final {
@@ -49,6 +39,10 @@ class TextBlock : public Block {
 
   virtual std::exception_ptr encodeText(std::string_view text,
                                         SegmentedFeatureVector& vec) = 0;
+
+  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+    return {&_col};
+  };
 
   uint32_t _dim;
 

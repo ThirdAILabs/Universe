@@ -28,14 +28,6 @@ class DateBlock final : public Block {
  public:
   explicit DateBlock(ColumnIdentifier col) : _col(std::move(col)) {}
 
-  void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
-    _col.updateColumnNumber(column_number_map);
-  }
-
-  bool hasColumnNames() const final { return _col.hasName(); }
-
-  bool hasColumnNumbers() const final { return _col.hasNumber(); }
-
   uint32_t featureDim() const final {
     return day_of_week_dim + month_of_year_dim + week_of_month_dim +
            week_of_year_dim;
@@ -43,19 +35,8 @@ class DateBlock final : public Block {
 
   bool isDense() const final { return false; };
 
-  uint32_t expectedNumColumns() const final {
-    // _col is the column index, so we expect at least
-    // _col + 1 columns in each input row.
-    return _col + 1;
-  };
-
   Explanation explainIndex(uint32_t index_within_block,
                            SingleInputRef& input) final {
-    return {_col, getExplanationReason(index_within_block, input)};
-  }
-
-  std::string getExplanationReason(uint32_t index_within_block,
-                                   SingleInputRef& input) const {
     (void)input;
     std::string reason;
     if (index_within_block >= featureDim()) {
@@ -78,7 +59,7 @@ class DateBlock final : public Block {
     } else {
       reason = "week_of_year";
     }
-    return reason;
+    return {_col, reason};
   }
 
   static auto make(ColumnIdentifier col) {
@@ -119,6 +100,10 @@ class DateBlock final : public Block {
     vec.addSparseFeatureToSegment(offset + week_of_year, 1.0);
 
     return nullptr;
+  }
+
+  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+    return {&_col};
   }
 
  private:

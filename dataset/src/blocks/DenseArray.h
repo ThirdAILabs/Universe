@@ -39,19 +39,9 @@ class DenseArrayBlock final : public Block {
     return std::make_shared<DenseArrayBlock>(start_col, /* dim= */ 1);
   }
 
-  void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
-    _start_col.updateColumnNumber(column_number_map);
-  }
-
-  bool hasColumnNames() const final { return _start_col.hasName(); }
-
-  bool hasColumnNumbers() const final { return _start_col.hasNumber(); }
-
   uint32_t featureDim() const final { return _dim; };
 
   bool isDense() const final { return true; };
-
-  uint32_t expectedNumColumns() const final { return _start_col + _dim; };
 
   Explanation explainIndex(uint32_t index_within_block,
                            SingleInputRef& input_row) final {
@@ -76,6 +66,10 @@ class DenseArrayBlock final : public Block {
       vec.addDenseFeatureToSegment(value);
     }
     return nullptr;
+  }
+
+  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+    return {&_start_col};
   }
 
  private:

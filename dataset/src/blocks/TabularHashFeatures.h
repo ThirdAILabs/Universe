@@ -35,21 +35,9 @@ class TabularHashFeatures final : public Block {
     ColumnIdentifier second_column;
   };
 
-  void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {
-    _metadata->updateColumnNumbers(column_number_map);
-  }
-
-  bool hasColumnNames() const final { return _metadata->hasColumnNames(); }
-
-  bool hasColumnNumbers() const final { return _metadata->hasColumnNumbers(); }
-
   uint32_t featureDim() const final { return _output_range; };
 
   bool isDense() const final { return false; };
-
-  uint32_t expectedNumColumns() const final {
-    return _metadata->expectedNumColumnsInRowInput();
-  };
 
   Explanation explainIndex(uint32_t index_within_block,
                            SingleInputRef& input) final {
@@ -161,6 +149,16 @@ class TabularHashFeatures final : public Block {
       }
     }
     return nullptr;
+  }
+
+  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+    auto& identifiers = _metadata->getColumnIdentifiers();
+    std::vector<ColumnIdentifier*> identifier_ptrs;
+    identifier_ptrs.reserve(identifiers.size());
+    for (auto& identifier : identifiers) {
+      identifier_ptrs.push_back(&identifier);
+    }
+    return identifier_ptrs;
   }
 
  private:
