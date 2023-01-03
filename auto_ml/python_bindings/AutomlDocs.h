@@ -818,7 +818,7 @@ Thus, UDT is at its best when its internal temporal context gets updated with
 new true samples. `model.index_batch()` does exactly this with a batch of samples. 
 
 Args: 
-    input_samples (ListDict[str, str]): The input sample as a dictionary 
+    input_samples (List[Dict[str, str]]): The input sample as a dictionary 
         where the keys are column names as specified in data_types and the "
         values are the respective column values. 
 
@@ -849,6 +849,82 @@ Example:
                 {"user_id": "A39574", "timestamp": "2022-12-25", "special_event": "christmas", "movie_title": "Home Alone"},
                 {"user_id": "A39574", "timestamp": "2022-12-26", "special_event": "christmas", "movie_title": "Home Alone 2"},
             ]
+        )
+)pbdoc";
+
+const char* const UDT_INDEX_METADATA = R"pbdoc(
+Indexes a single column metadata sample.
+
+Args: 
+    column_name (str): The name of the column associated with the metadata.
+    update (Dict[str, str]): The metadata sample as a dictionary 
+        where the keys are column names as specified in the data_types map of 
+        the metadata config and the values are the respective column values. This
+        map should also contain the metadata key.
+
+Example:
+    >>> model = bolt.UniversalDeepTransformer(
+            data_types={
+                "user_id": bolt.types.categorical(
+                    metadata=bolt.types.metadata(
+                        filename="user_meta.csv", 
+                        data_types={"age": bolt.types.numerical()}, 
+                        key_column_name="user_id"
+                    )
+                )
+            },
+            target="movie_title",
+            n_target_classes=500,
+        )
+    >>> model.index_metadata(
+            column_name="user_id", 
+            update={
+                "user_id": "XAEA12", # "user_id" column from metadata config's key_column_name
+                "age": "2", # "age" column as from metadata config's data_types
+            },
+        )
+)pbdoc";
+
+const char* const UDT_INDEX_METADATA_BATCH = R"pbdoc(
+Indexes a batch of column metadata samples.
+
+Args: 
+    column_name (str): The name of the column associated with the metadata.
+    updates (List[Dict[str, str]]): The metadata samples as a list of dictionaries 
+        where the keys are column names as specified in the data_types map of 
+        the metadata config and the values are the respective column values. The
+        maps should also contain the metadata key.
+
+Example:
+    >>> model = bolt.UniversalDeepTransformer(
+            data_types={
+                "user_id": bolt.types.categorical(
+                    metadata=bolt.types.metadata(
+                        filename="user_meta.csv", 
+                        data_types={"age": bolt.types.numerical()}, 
+                        key_column_name="user_id"
+                    )
+                )
+            },
+            target="movie_title",
+            n_target_classes=500,
+        )
+    >>> model.index_metadata_batch(
+            column_name="user_id", 
+            updates=[
+                {
+                    "user_id": "XAEA12", # "user_id" column from metadata config's key_column_name
+                    "age": "2", # "age" column as from metadata config's data_types
+                },
+                {
+                    "user_id": "A22298",
+                    "age": "52",
+                },
+                {
+                    "user_id": "B39915",
+                    "age": "33",
+                },
+            ],
         )
 )pbdoc";
 

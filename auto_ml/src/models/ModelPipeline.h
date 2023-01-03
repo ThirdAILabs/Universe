@@ -198,7 +198,8 @@ class ModelPipeline {
    */
   void trainOnStream(data::DatasetLoaderPtr& dataset,
                      bolt::TrainConfig train_config,
-                     uint32_t max_in_memory_batches);
+                     uint32_t max_in_memory_batches,
+                     const std::optional<ValidationOptions>& validation);
 
   /**
    * Helper for processing a streaming dataset in chunks for a single epoch.
@@ -252,9 +253,9 @@ class ModelPipeline {
     archive(_dataset_factory, _model, _output_processor, _train_eval_config);
   }
 
+ protected:
   static constexpr uint32_t ALL_BATCHES = std::numeric_limits<uint32_t>::max();
 
- protected:
   data::DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
   OutputProcessorPtr _output_processor;

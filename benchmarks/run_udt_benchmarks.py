@@ -3,10 +3,32 @@
 import argparse
 import importlib.util
 import inspect
+import json
 import os
 import subprocess
 from datetime import date
 from pathlib import Path
+
+import requests
+from mlflow_extraction import extract_mlflow_data
+
+# This webhook is associated with the `MLFLOW Benchmarks` slack app. Currently, it posts
+# messages to the #weekly_udt_benchmarks channel.
+SLACK_WEBHOOK = (
+    "https://hooks.slack.com/services/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"
+)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Launch a benchmarking run")
+    parser.add_argument(
+        "--test_run",
+        action="store_true",
+        default=False,
+        help="Flag to label the benchmarking job as a sanity test as opposed to an official run",
+    )
+    args = parser.parse_args()
+    return args
 
 
 def get_udt_configs(universe_dir):
@@ -26,23 +48,10 @@ def get_udt_configs(universe_dir):
     return udt_config_module.UDTBenchmarkConfig.__subclasses__()
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Launch a benchmarking run")
-    parser.add_argument(
-        "-l",
-        "--configs",
-        nargs="+",
-        required=False,
-        help="List of config file paths to benchmark",
-    )
-    parser.add_argument(
-        "--test_run",
-        action="store_true",
-        default=False,
-        help="Flag to label the benchmarking job as a sanity test as opposed to an official run",
-    )
-    args = parser.parse_args()
-    return args
+def send_slack_message(experiment_name):
+    df_md = extract_mlflow_data(experiment_name, markdown=True)
+    payload = {"text": f"*{experiment_name}* \n ```{df_md}```"}
+    return requests.post(SLACK_WEBHOOK, json.dumps(payload))
 
 
 def main():
@@ -65,7 +74,12 @@ def main():
             != 0
         ):
             exit_code += 1
-    exit(exit_code)
+
+    if exit_code:
+        exit(exit_code)
+    else:
+        for config in configs:
+            send_slack_message(config.experiment_name)
 
 
 if __name__ == "__main__":
