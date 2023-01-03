@@ -56,6 +56,8 @@ class Tensor {
    */
   const std::string& name() const;
 
+  virtual ~Tensor() = default;
+
  private:
   // TODO(Nicholas): Update this to support N dimensions (not required for V0).
   uint32_t _dim;

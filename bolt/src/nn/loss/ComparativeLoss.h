@@ -18,6 +18,8 @@ class ComparativeLoss : public Loss {
 
   std::vector<tensor::ActivationTensorPtr> outputsUsed() const final;
 
+  virtual ~ComparativeLoss() = default;
+
  private:
   /**
    * Helper function to iterate over the activations and labels depending on

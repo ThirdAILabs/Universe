@@ -29,6 +29,8 @@ class Loss {
    */
   tensor::InputTensorPtr labels() const { return _labels; }
 
+  virtual ~Loss() = default;
+
  protected:
   tensor::InputTensorPtr _labels;
 };

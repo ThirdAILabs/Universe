@@ -86,6 +86,8 @@ class Op {
    */
   const std::string& name() const { return _name; }
 
+  virtual ~Op() = default;
+
  private:
   std::string _name;
 };
