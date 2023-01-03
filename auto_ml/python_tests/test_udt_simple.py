@@ -173,30 +173,20 @@ def test_save_load():
     model.save(save_file)
     saved_model = bolt.UniversalDeepTransformer.load(filename=save_file)
 
-    print("h")
-
     eval_res = model.evaluate(TEST_FILE)
     saved_eval_res = saved_model.evaluate(TEST_FILE)
     assert (eval_res == saved_eval_res).all()
-    
-    print("eh")
 
     model.index(single_update())
     saved_model.index(single_update())
-
-    print("reh")
 
     predict_res = model.predict(single_sample())
     saved_predict_res = saved_model.predict(single_sample())
     assert (predict_res == saved_predict_res).all()
 
-    print("ereh")
-
     predict_batch_res = model.predict_batch(batch_sample())
     saved_predict_batch_res = saved_model.predict_batch(batch_sample())
     assert (predict_batch_res == saved_predict_batch_res).all()
-    
-    print("?ereh")
 
     explain_res = model.explain(single_sample())
     saved_explain_res = saved_model.explain(single_sample())
