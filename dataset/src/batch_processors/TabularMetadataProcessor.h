@@ -6,7 +6,6 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
 #include "ProcessorUtils.h"
-#include <_types/_uint32_t.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
