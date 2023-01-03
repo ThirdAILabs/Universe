@@ -1,9 +1,8 @@
 from collections import defaultdict
 
 import pytest
+from dataset_utils import get_simple_dag_model
 from thirdai import data
-
-from bolt.python_tests.utils import get_simple_dag_model
 
 pytestmark = [pytest.mark.unit]
 

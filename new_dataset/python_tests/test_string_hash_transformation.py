@@ -1,8 +1,6 @@
 import pytest
-from dataset_utils import sparse_bolt_dataset_to_numpy
+from dataset_utils import get_simple_dag_model, sparse_bolt_dataset_to_numpy
 from thirdai import bolt, data
-
-from bolt.python_tests.utils import get_simple_dag_model
 
 pytestmark = [pytest.mark.unit]
 
