@@ -19,6 +19,10 @@ class MockBlock final : public Block {
     _column.updateColumnNumber(column_number_map);
   }
 
+  bool hasColumnNames() const final { return _column.hasName(); }
+
+  bool hasColumnNumbers() const final { return _column.hasNumber(); }
+
   uint32_t featureDim() const override { return 1; };
 
   bool isDense() const override { return _dense; };
