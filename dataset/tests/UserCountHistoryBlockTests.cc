@@ -35,7 +35,7 @@ TEST(UserCountHistoryBlockTest, ExplanationWorks) {
 
   auto batch = processBatch(block, input_rows);
 
-  SingleRowInputRef input_row(ProcessorUtils::parseCsvRow(input_rows[5], ','));
+  SingleCsvLineInputRef input_row(input_rows[5], ',');
 
   auto explanation_0 =
       block->explainIndex(/* index_within_block= */ 0, input_row);
