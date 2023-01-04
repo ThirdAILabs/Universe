@@ -312,7 +312,12 @@ class TrainState {
             train_config.getReconstructHashFunctionsBatchInterval(batch_size,
                                                                   data_len)),
         stop_training(false),
-        train_metric_aggregator(train_config.getMetricAggregator()) {}
+        train_metric_aggregator(train_config.getMetricAggregator()) {
+    auto val_context = train_config.getValidationContext();
+    if (val_context.has_value()) {
+      validation_metric_names = val_context->config().getMetricNames();
+    }
+  }
 
   float learning_rate;
   uint32_t epoch;
@@ -325,6 +330,8 @@ class TrainState {
   bool stop_training;
 
   std::vector<double> epoch_times;
+
+  std::vector<std::string> validation_metric_names;
 
   MetricAggregator& getTrainMetricAggregator() {
     return train_metric_aggregator;

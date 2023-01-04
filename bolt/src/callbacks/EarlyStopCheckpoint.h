@@ -11,64 +11,172 @@
 namespace thirdai::bolt {
 
 /**
- * @brief This callback is intended to stop training early based on prediction
- * results from a given validation set. Saves the best model to model_save_path
+ * @brief
+ * TODO:
+  - what happens on serialization
+  - callback what happens if the user trains with or without this
+    callback, stops training, then starts training again with or without it
+  - optional metric name
+
  *
- * @param monitored_metric The metric to monitor for early stopping. The metric
- * is assumed to be associated with validation data.
- * @param model_save_path file path to save the model that scored the
- * best on the validation set
- * @param patience number of epochs with no improvement in validation score
- * after which training will be stopped.
- * @param min_delta minimum change in the monitored quantity to qualify as an
- * improvement, i.e. an absolute change of less than min_delta, will count as no
- * improvement.
+ */
+
+/**
+ * @brief This callback monitors a validation metric and gives users a means to
+ * configure their model training based on that metric. It provides features
+ * such as saving the best scoring model on the validation set, stopping
+ * training early, adjusting the learning rate, and more.
+ *
+ * @param monitored_metric Optional: The metric to monitor for early stopping.
+ * If there is no metric specified we will use the first validation metric in
+ * the training state. If there are no tracked validation metrics or if
+ * validation is not set up we will throw an error.
+ * @param model_save_path The file path to save the model that scored the
+ * best on the validation set.
+ * @param patience The number of epochs with no improvement in previous
+ * validation score after which we will evaluate whether to do one of two
+ * things: 1) adjust the learning rate and continue training or 2) stop
+ * training.
+ * @param max_lr_adjustments The maximum number of learning rate
+ * adjustments allowed after a "patience" interval.
+ * @param lr_multiplier Multiplier for the learning rate after a "patience"
+ * interval.
+ * @param min_delta The minimum change in the monitored quantity to qualify as
+ * an improvement, i.e. an absolute change of less than min_delta, will count as
+ * no improvement.
+ * @param compare_against One of "best" or "prev". Determines whether to compare
+ * against the best validation metric so far or the previous validation metric
+ * recorded.
+ * @param time_out Optional. Represents the number of seconds after which the
+ * model will stop training. Rounds up to the nearest epoch.
  *
  * Based on the keras design found here:
  * https://keras.io/api/callbacks/early_stopping/
  */
 class EarlyStopCheckpoint : public Callback {
  public:
-  EarlyStopCheckpoint(std::string monitored_metric, std::string model_save_path,
-                      uint32_t patience = 2, double min_delta = 0)
-      : _metric(makeMetric(monitored_metric)),
+  explicit EarlyStopCheckpoint(
+      std::string model_save_path,
+      std::optional<std::string> monitored_metric = std::nullopt,
+      uint32_t patience = 2, uint32_t max_lr_adjustments = 2,
+      float lr_multiplier = 0.5, double min_delta = 0,
+      std::string compare_against = "prev",
+      std::optional<double> time_out = std::nullopt)
+      : _monitored_metric_name(std::move(monitored_metric)),
         _model_save_path(std::move(model_save_path)),
         _patience(patience),
-        _epochs_since_best(0),
-        _best_validation_score(_metric->worst()),
-        _min_delta(std::abs(min_delta)) {}
+        _max_lr_adjustments(max_lr_adjustments),
+        _lr_multiplier(lr_multiplier),
+        _min_delta(std::abs(min_delta)),
+        _compare_against(std::move(compare_against)),
+        _time_out(time_out),
+        _n_consecutive_validation_drops(0),
+        _n_lr_adjustments(0),
+        _total_train_time(0) {
+    if (_patience == 0) {
+      throw std::invalid_argument("Patience should be greater than 0.");
+    }
+
+    if (compare_against != "best" && compare_against != "prev") {
+      throw std::invalid_argument(
+          "'compare_against' should be one of 'best' or 'prev'.");
+    }
+
+    if (lr_multiplier <= 0) {
+      throw std::invalid_argument("'lr_multiplier' should not be <= 0.");
+    }
+  }
 
   void onTrainBegin(BoltGraph& model, TrainState& train_state) final {
     (void)model;
-    (void)train_state;
+
+    // if the user passes in the metric we'll check for that one
+    if (_monitored_metric_name.has_value()) {
+      _metric = makeMetric(*_monitored_metric_name);
+    } else {
+      // if the user does not pass in a metric and there's only one available
+      // we'll use that. otherwise we'll throw an error telling the user to
+      // specify which one they'd like to use.
+      auto validation_metrics = train_state.validation_metric_names;
+      if (validation_metrics.empty()) {
+        throw std::invalid_argument(
+            "No validation metric was supplied and cannot infer a metric to "
+            "track. This is either because validation is not set up or because "
+            "no validation metric was passed into the model to track.");
+      }
+      std::string inferred_metric_name = validation_metrics.front();
+      _metric = makeMetric(inferred_metric_name);
+    }
+    _best_validation_score = _metric->worst();
+    _previous_validation_score = _metric->worst();
   }
 
   void onEpochEnd(BoltGraph& model, TrainState& train_state) final {
-    double metric_val =
-        train_state.getValidationMetrics(_metric->name()).back();
+    double metric_value =
+        train_state.getValidationMetrics(_metric->name()).front();
 
-    if (std::abs(metric_val - _best_validation_score) > _min_delta &&
-        _metric->betterThan(metric_val, _best_validation_score)) {
-      _best_validation_score = metric_val;
-      _epochs_since_best = 0;
-      model.save(_model_save_path);
-      return;
+    // if we've improved on the previous score
+    if (isImprovement(metric_value)) {
+      _n_consecutive_validation_drops = 0;
+    } else {
+      // if we have dropped the validation score from the previous score
+
+      _n_consecutive_validation_drops += 1;
+
+      // we know patience is not zero so this is safe
+      if (_n_consecutive_validation_drops == _patience) {
+        // stop training if we've lowered the learning rate enough times
+        if (_n_lr_adjustments == _max_lr_adjustments) {
+          train_state.stop_training = true;
+        } else {
+          // otherwise we adjust the learning rate and reset the count on
+          // consecutive validation drops
+          train_state.learning_rate *= _lr_multiplier;
+          _n_lr_adjustments += 1;
+          _n_consecutive_validation_drops = 0;
+        }
+      }
     }
 
-    _epochs_since_best++;
-    if (_epochs_since_best == _patience) {
+    // save the model if its the best so far
+    if (_metric->betterThan(metric_value, _best_validation_score)) {
+      _best_validation_score = metric_value;
+      model.save(_model_save_path);
+    }
+
+    // stop training if we've timed out
+    _total_train_time += train_state.epoch_times.back();
+    if (_time_out.has_value() && _total_train_time > _time_out) {
       train_state.stop_training = true;
     }
+
+    _previous_validation_score = metric_value;
   }
 
  private:
+  bool isImprovement(double metric_value) {
+    double score_to_compare_against = _previous_validation_score
+                                          ? _compare_against == "prev"
+                                          : _best_validation_score;
+    return std::abs(metric_value - score_to_compare_against) > _min_delta &&
+           _metric->betterThan(metric_value, score_to_compare_against);
+  }
+
+  std::optional<std::string> _monitored_metric_name;
   std::shared_ptr<Metric> _metric;
   std::string _model_save_path;
   uint32_t _patience;
-
-  uint32_t _epochs_since_best;
-  double _best_validation_score;
+  uint32_t _max_lr_adjustments;
+  double _lr_multiplier;
   double _min_delta;
+  std::string _compare_against;
+  std::optional<double> _time_out;
+
+  uint32_t _n_consecutive_validation_drops;
+  double _best_validation_score;
+  double _previous_validation_score;
+  uint32_t _n_lr_adjustments;
+  double _total_train_time;
 };
 
 using EarlyStopCheckpointPtr = std::shared_ptr<EarlyStopCheckpoint>;
