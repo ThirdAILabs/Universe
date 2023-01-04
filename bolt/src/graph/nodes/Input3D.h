@@ -51,3 +51,5 @@ class Input3D final : public Input {
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_FORCE_DYNAMIC_INIT(Input3D)  // NOLINT

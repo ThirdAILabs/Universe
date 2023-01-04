@@ -24,3 +24,4 @@ template void Input3D::serialize<cereal::PortableBinaryOutputArchive>(
 }  // namespace thirdai::bolt
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::Input3D)
+CEREAL_REGISTER_DYNAMIC_INIT(Input3D)

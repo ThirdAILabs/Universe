@@ -31,8 +31,8 @@ namespace thirdai::bolt {
  * size 4 x 4 x 3, would be flattened beforehand, and added (in numerical order)
  * to the input BoltVector. In the event of a future conv layer, we remap the
  * output patches to suitable locations (more info can be found in the
- * buildPatchMaps function). This input format is cumbersome and likely
- * ineffecient and will be refactored later.
+ * buildPatchMaps function). This input format is likely ineffecient and will be
+ * refactored later.
  *
  * Finally, the output of this layer can be either sparse or dense. In the event
  * of a sparse output, the order or patch information is the same but the output
@@ -177,7 +177,6 @@ class ConvLayer final {
             _num_patches, _prev_num_filters, _prev_num_sparse_filters,
             _kernel_size, _height, _width, _in_to_out, _out_to_in);
   }
-  
 
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   ConvLayer() {}
