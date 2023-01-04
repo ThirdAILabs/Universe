@@ -15,9 +15,9 @@ class MockBlock final : public Block {
   explicit MockBlock(ColumnIdentifier column, bool dense)
       : _column(std::move(column)), _dense(dense) {}
 
-  uint32_t featureDim() const override { return 1; };
+  uint32_t featureDim() const override { return 1; }
 
-  bool isDense() const override { return _dense; };
+  bool isDense() const override { return _dense; }
 
   Explanation explainIndex(uint32_t index_within_block,
                            SingleInputRef& columnar_sample) final {
@@ -44,7 +44,7 @@ class MockBlock final : public Block {
       vec.addSparseFeatureToSegment(0, val);
     }
     return nullptr;
-  };
+  }
 
  private:
   ColumnIdentifier _column;
