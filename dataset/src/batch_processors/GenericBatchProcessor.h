@@ -93,7 +93,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
            block_err) if (_parallel)
     for (size_t i = 0; i < rows.size(); ++i) {
       auto columns = ProcessorUtils::parseCsvRow(rows[i], _delimiter);
-      if (columns.size() < _expected_num_cols) {
+      if (columns.size() != _expected_num_cols) {
         std::stringstream error_ss;
         error_ss << "[ProcessorUtils::parseCsvRow] Expected "
                  << _expected_num_cols << " columns delimited by '"
