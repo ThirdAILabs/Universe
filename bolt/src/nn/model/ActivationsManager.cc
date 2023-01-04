@@ -32,4 +32,15 @@ void ActivationsManager::resetOutputGradients(uint32_t index_in_batch) {
   }
 }
 
+tensor::ActivationTensorPtr ActivationsManager::getTensor(
+    const std::string& name) const {
+  for (const auto& tensor : _activation_tensors) {
+    if (tensor->name() == name) {
+      return tensor;
+    }
+  }
+  throw std::invalid_argument("Could not find tensor with name '" + name +
+                              "'.");
+}
+
 }  // namespace thirdai::bolt::nn::model

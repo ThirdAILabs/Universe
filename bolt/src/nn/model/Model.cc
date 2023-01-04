@@ -97,6 +97,24 @@ ops::OpPtr Model::getOp(const std::string& name) const {
   throw std::invalid_argument("Could not find op with name '" + name + "'.");
 }
 
+tensor::ActivationTensorPtr Model::getTensor(const std::string& name) const {
+  return _activations.getTensor(name);
+}
+
+tensor::InputTensorPtr Model::getLabelsForOutput(
+    const std::string& output_name) {
+  for (const auto& loss : _losses) {
+    auto outputs_used = loss->outputsUsed();
+    if (outputs_used.size() == 1) {
+      if (outputs_used.at(0)->name() == output_name) {
+        return loss->labels();
+      }
+    }
+  }
+
+  return nullptr;
+}
+
 std::string Model::summary(bool print) const {
   std::stringstream summary;
 

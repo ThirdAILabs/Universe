@@ -66,9 +66,16 @@ class Model {
   const std::vector<ops::OpPtr>& ops() const;
 
   /**
-   * Retrieves on op by name.
+   * Retrieves on op by name. Throws if not found.
    */
   ops::OpPtr getOp(const std::string& name) const;
+
+  /**
+   * Retrieves a tensor by name. Throws if not found.
+   */
+  tensor::ActivationTensorPtr getTensor(const std::string& name) const;
+
+  tensor::InputTensorPtr getLabelsForOutput(const std::string& output_name);
 
   /**
    * Prints/returns a summary of the model. Throws if no op is found.

@@ -313,6 +313,8 @@ set(THIRDAI_SOURCES
     bolt/src/nn/tensor/InputTensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
+    bolt/src/train/metrics/Metric.cc
+    bolt/src/train/callbacks/Callback.cc
     bolt/src/graph/Graph.cc
     bolt/src/graph/ExecutionConfig.cc
     bolt/src/graph/nodes/FullyConnected.cc

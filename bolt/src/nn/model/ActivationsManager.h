@@ -35,6 +35,11 @@ class ActivationsManager {
    */
   constexpr uint32_t currentBatchSize() const { return _current_batch_size; }
 
+  /**
+   * Retrieves a tensor by name. Throws if not found.
+   */
+  tensor::ActivationTensorPtr getTensor(const std::string& name) const;
+
  private:
   std::vector<tensor::ActivationTensorPtr> _activation_tensors;
 
