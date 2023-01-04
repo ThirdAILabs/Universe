@@ -23,11 +23,11 @@ class MockBlock final : public Block {
 
   bool hasColumnNumbers() const final { return _column.hasNumber(); }
 
-  uint32_t featureDim() const override { return 1; };
+  uint32_t featureDim() const override { return 1; }
 
-  bool isDense() const override { return _dense; };
+  bool isDense() const override { return _dense; }
 
-  uint32_t expectedNumColumns() const final { return _column.number() + 1; };
+  uint32_t expectedNumColumns() const final { return _column.number() + 1; }
 
   Explanation explainIndex(uint32_t index_within_block,
                            const RowInput& columnar_sample) final {
@@ -69,7 +69,7 @@ class MockBlock final : public Block {
       vec.addSparseFeatureToSegment(0, val);
     }
     return nullptr;
-  };
+  }
 
  private:
   ColumnIdentifier _column;
