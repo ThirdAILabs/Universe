@@ -1,7 +1,9 @@
 #include "LayerConfig.h"
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/optional.hpp>
+#include <cereal/types/utility.hpp>
 
 namespace thirdai::bolt {
 
@@ -58,6 +60,12 @@ ConvLayerConfig::ConvLayerConfig(
   checkSparsity(sparsity);
 }
 
+template <class Archive>
+void ConvLayerConfig::serialize(Archive& archive) {
+  archive(num_filters, sparsity, activation_fn, kernel_size, next_kernel_size,
+          sampling_config);
+}
+
 EmbeddingLayerConfig::EmbeddingLayerConfig(
     uint32_t num_embedding_lookups, uint32_t lookup_size,
     uint32_t log_embedding_block_size, const std::string& reduction,
@@ -101,9 +109,18 @@ template void EmbeddingLayerConfig::serialize<cereal::BinaryOutputArchive>(
 
 template void FullyConnectedLayerConfig::serialize<cereal::BinaryInputArchive>(
     cereal::BinaryInputArchive&);
-
 template void FullyConnectedLayerConfig::serialize<cereal::BinaryOutputArchive>(
     cereal::BinaryOutputArchive&);
+
+template void ConvLayerConfig::serialize<cereal::BinaryInputArchive>(
+    cereal::BinaryInputArchive&);
+template void ConvLayerConfig::serialize<cereal::BinaryOutputArchive>(
+    cereal::BinaryOutputArchive&);
+
+template void ConvLayerConfig::serialize<cereal::PortableBinaryInputArchive>(
+    cereal::PortableBinaryInputArchive&);
+template void ConvLayerConfig::serialize<cereal::PortableBinaryOutputArchive>(
+    cereal::PortableBinaryOutputArchive&);
 
 template void NormalizationLayerConfig::serialize<cereal::BinaryInputArchive>(
     cereal::BinaryInputArchive&);

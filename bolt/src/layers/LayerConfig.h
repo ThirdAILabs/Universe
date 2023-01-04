@@ -80,15 +80,13 @@ class ConvLayerConfig final {
   std::pair<uint32_t, uint32_t> next_kernel_size;
   SamplingConfigPtr sampling_config;
 
- private:
-  // Private constructor for cereal
+  // Public constructor - it should only be called by cereal
   ConvLayerConfig() {}
 
+ private:
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(num_filters, sparsity, activation_fn, sampling_config, kernel_size);
-  }
+  void serialize(Archive& archive);
 };
 
 enum class EmbeddingReductionType {

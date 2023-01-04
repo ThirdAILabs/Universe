@@ -103,9 +103,11 @@ class Input : public Node {
 
   void checkDimForInput(const BoltVector& vec) const;
 
-  // Private constructor for cereal.
+ protected:
+  // Constructor for cereal
   Input() : _num_nonzeros_range(std::nullopt) {}
 
+ private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive);

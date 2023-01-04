@@ -13,7 +13,8 @@ set(DAG_MAIN_TESTS
     SwitchNodeTest
     DlrmTests
     DlrmAttentionNodeTests
-    PredictSingleTest)
+    PredictSingleTest
+    ConvNodeTest)
 
 foreach(DAG_MOCK_TEST IN LISTS DAG_MOCK_TESTS)
   add_executable(${DAG_MOCK_TEST} ${DAG_MOCK_TEST}.cc)

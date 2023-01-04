@@ -177,8 +177,8 @@ class ConvLayer final {
             _num_patches, _prev_num_filters, _prev_num_sparse_filters,
             _kernel_size, _height, _width, _in_to_out, _out_to_in);
   }
+  
 
- protected:
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   ConvLayer() {}
 };

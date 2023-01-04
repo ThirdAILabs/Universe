@@ -47,8 +47,8 @@ def define_model():
     input_layer = bolt.nn.Input3D(dim=(IMAGE_HEIGHT, IMAGE_WIDTH, NUM_CHANNELS))
 
     first_conv = bolt.nn.Conv(
-        num_filters=10,
-        sparsity=1,
+        num_filters=100,
+        sparsity=0.2,
         activation="relu",
         kernel_size=(4, 4),
         next_kernel_size=(1, 1),
@@ -154,7 +154,7 @@ def main():
         "--epochs", default=10, type=int, required=False, help="number of epochs"
     )
     parser.add_argument(
-        "--batch_size", default=100, type=float, required=False, help="batch size"
+        "--batch_size", default=20, type=float, required=False, help="batch size"
     )
 
     args = parser.parse_args()

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "Input.h"
 #include <tuple>
 
@@ -39,14 +41,13 @@ class Input3D final : public Input {
   }
 
  private:
+  Input3D() {}
+
+  friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<Input>(this), _input_size_3d);
-  }
+  void serialize(Archive& archive);
 
   std::tuple<uint32_t, uint32_t, uint32_t> _input_size_3d;
 };
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::Input3D)
