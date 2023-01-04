@@ -9,6 +9,7 @@ using dataset::ColumnNumberMap;
 
 DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     std::shared_ptr<dataset::DataLoader> data_loader, bool training) {
+  std::cout << "NO TEMPLATE VERSION" << std::endl;
   auto column_number_map =
       makeColumnNumberMapFromHeader(*data_loader, _config->delimiter);
   _column_number_to_name = column_number_map->getColumnNumToColNameMap();
