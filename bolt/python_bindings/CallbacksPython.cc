@@ -91,22 +91,39 @@ void createCallbacksSubmodule(py::module_& module) {
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
-      .def(py::init<std::string, std::string, uint32_t, double>(),
-           py::arg("monitored_metric"), py::arg("model_save_path"),
-           py::arg("patience"), py::arg("min_delta"), R"pbdoc(
+      .def(py::init<std::string, std::optional<std::string>, uint32_t, uint32_t,
+                    float, double, std::string, std::optional<double>>(),
+           py::arg("model_save_path"),
+           py::arg("monitored_metric") = std::nullopt, py::arg("patience") = 2,
+           py::arg("max_lr_adjustments") = 2, py::arg("lr_multiplier") = 0.5,
+           py::arg("min_delta"), py::arg("compare_against") = "prev",
+           py::arg("time_out") = std::nullopt, R"pbdoc(
 This callback is intended to stop training early based on prediction results 
 from a given validation set. Requires validation data specified in train.
 Saves the best model to model_save_path.
 Args:
-     monitored_metric (string): The metric to monitor for early stopping. The 
-          metric is assumed to be associated with validation data.
      model_save_path (string): The file path to save the model that scored the 
           best on the validation set
-     patience (int): The nuber of epochs with no improvement in validation score
-          after which training will be stopped.
+     monitored_metric (string): Optional. The metric to monitor for early 
+          stopping. If there is no metric specified we will use the first 
+          validation metric provided. If there are no tracked validation metrics
+          or if validation is not set up we will throw an error.
+     patience (int): The number of epochs with no improvement in validation score
+          after which we will evaluate whether to do one of two things: 1) adjust
+           the learning rate and continue training or 2) stop training. Defaults
+          to 2.
+     max_lr_adjustments (int): The maximum number of learning rate adjustments 
+          allowed after a "patience" interval. Defaults to 2.
+     lr_multiplier (float): Multiplier for the learning rate after a 'patience' 
+          interval. Defaults to 0.5. Must be positive.
      min_delta (float): The minimum change in the monitored metric to qualify 
           as an improvement, i.e. an absolute change of less than min_delta will
-          count as no improvement.
+          count as no improvement. Defaults to 0. 
+     compare_against (string): One of 'best' or 'prev'. Determines whether to 
+          compare against the best validation metric so far or the previous validation
+          metric recorded. Defaults to 'prev'.
+     time_out (float): Optional. Represents the number of seconds after which the
+          model will stop training. Rounds up to the nearest epoch.
 )pbdoc");
 }
 

@@ -16,8 +16,6 @@ namespace thirdai::bolt {
   - what happens on serialization
   - callback what happens if the user trains with or without this
     callback, stops training, then starts training again with or without it
-  - optional metric name
-
  *
  */
 
@@ -27,12 +25,12 @@ namespace thirdai::bolt {
  * such as saving the best scoring model on the validation set, stopping
  * training early, adjusting the learning rate, and more.
  *
- * @param monitored_metric Optional: The metric to monitor for early stopping.
- * If there is no metric specified we will use the first validation metric in
- * the training state. If there are no tracked validation metrics or if
- * validation is not set up we will throw an error.
  * @param model_save_path The file path to save the model that scored the
  * best on the validation set.
+ * @param monitored_metric Optional: The metric to monitor for early stopping.
+ * If there is no metric specified we will use the first validation metric
+ * provided. If there are no tracked validation metrics or if validation is not
+ * set up we will throw an error.
  * @param patience The number of epochs with no improvement in previous
  * validation score after which we will evaluate whether to do one of two
  * things: 1) adjust the learning rate and continue training or 2) stop
