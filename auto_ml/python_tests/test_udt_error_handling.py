@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from thirdai import bolt
 
@@ -32,6 +34,8 @@ def test_too_many_cols_in_train():
     ):
         model.train("too_many_cols", epochs=100)
 
+    os.remove("too_many_cols")
+
 
 def test_too_few_cols_in_train():
     create_simple_file(
@@ -53,3 +57,29 @@ def test_too_few_cols_in_train():
         match=".*Expected 3 columns delimited by ',' in each row of the dataset. Found row '1,1' with number of columns = 2.",
     ):
         model.train("too_few_cols", epochs=100)
+
+    os.remove("too_few_cols")
+
+
+def test_header_missing_cols():
+    create_simple_file(
+        col_names=["a", "b"], num_data_cols=2, file_name="header_missing_cols"
+    )
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "a": bolt.types.text(),
+            "b": bolt.types.text(),
+            "c": bolt.types.categorical(),
+        },
+        target="c",
+        n_target_classes=2,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="Expected a column named 'c' in header but could not find it",
+    ):
+        model.train("header_missing_cols", epochs=100)
+
+    os.remove("header_missing_cols")

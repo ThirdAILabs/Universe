@@ -37,6 +37,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
         _delimiter(delimiter),
         _parallel(parallel),
         _hash_range(hash_range),
+        _num_cols_in_header(std::nullopt),
         _expected_num_cols(0),
         _input_blocks_dense(
             std::all_of(input_blocks.begin(), input_blocks.end(),
@@ -88,12 +89,18 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     std::exception_ptr num_columns_error;
     std::exception_ptr block_err;
 
-#pragma omp parallel for default(none)                          \
-    shared(rows, batch_inputs, batch_labels, num_columns_error, \
-           block_err) if (_parallel)
+    // If there isn't a header, we are forced to assume that every row will
+    // have exactly as many columns as expected. Otherwise, we can assume that
+    // every row will have the same number of columns as the header
+    uint32_t expected_num_cols_in_batch =
+        _num_cols_in_header.value_or(_expected_num_cols);
+
+#pragma omp parallel for default(none)                                     \
+    shared(rows, batch_inputs, batch_labels, num_columns_error, block_err, \
+           expected_num_cols_in_batch) if (_parallel)
     for (size_t i = 0; i < rows.size(); ++i) {
       auto columns = ProcessorUtils::parseCsvRow(rows[i], _delimiter);
-      if (columns.size() != _expected_num_cols) {
+      if (columns.size() != expected_num_cols_in_batch) {
         std::stringstream error_ss;
         error_ss << "[ProcessorUtils::parseCsvRow] Expected "
                  << _expected_num_cols << " columns delimited by '"
@@ -126,7 +133,10 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
   bool expectsHeader() const final { return _expects_header; }
 
-  void processHeader(const std::string& header) final { (void)header; }
+  void processHeader(const std::string& header) final {
+    _num_cols_in_header =
+        ProcessorUtils::parseCsvRow(header, _delimiter).size();
+  }
 
   uint32_t getInputDim() const {
     return _hash_range.value_or(sumBlockDims(_input_blocks));
@@ -248,9 +258,9 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<BatchProcessor>(this), _expects_header,
-            _delimiter, _parallel, _hash_range, _expected_num_cols,
-            _input_blocks_dense, _label_blocks_dense, _input_blocks,
-            _label_blocks);
+            _delimiter, _parallel, _hash_range, _num_cols_in_header,
+            _expected_num_cols, _input_blocks_dense, _label_blocks_dense,
+            _input_blocks, _label_blocks);
   }
 
   // Private constructor for cereal.
@@ -260,6 +270,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   char _delimiter;
   bool _parallel;
   std::optional<uint32_t> _hash_range;
+  std::optional<uint32_t> _num_cols_in_header;
 
   uint32_t _expected_num_cols;
   bool _input_blocks_dense;
