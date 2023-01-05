@@ -75,6 +75,8 @@ class GenericDatasetLoader final : public DatasetLoader {
   dataset::StreamingGenericDatasetLoader _dataset;
 };
 
+using GenericDatasetLoaderPtr = std::unique_ptr<GenericDatasetLoader>;
+
 using DatasetLoaderPtr = std::unique_ptr<DatasetLoader>;
 
 class DatasetLoaderFactory {
@@ -130,6 +132,8 @@ class DatasetLoaderFactory {
         "This model cannot map ids to string labels since it assumes integer "
         "labels; the ids and labels are equivalent.");
   }
+
+  virtual bool hasTemporalTracking() const = 0;
 
   virtual ~DatasetLoaderFactory() = default;
 

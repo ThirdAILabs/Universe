@@ -81,13 +81,17 @@ def start_mlflow(config, mlflow_args):
             mlflow.log_artifact(mlflow_args.config_path)
 
 
-def start_mlflow_helper(experiment_name, run_name, dataset, model_name):
+def get_mlflow_uri():
     file_dir = os.path.dirname(os.path.abspath(__file__))
     file_name = os.path.join(file_dir, "config.toml")
     with open(file_name) as f:
         parsed_config = toml.load(f)
-        mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
+        return parsed_config["tracking"]["uri"]
 
+
+def start_mlflow_helper(experiment_name, run_name, dataset, model_name):
+    tracking_uri = get_mlflow_uri()
+    mlflow.set_tracking_uri(tracking_uri)
     mlflow.set_experiment(experiment_name)
     mlflow.start_run(
         run_name=run_name,

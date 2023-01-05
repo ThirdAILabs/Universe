@@ -45,8 +45,9 @@ class Worker:
         Initializes the worker, including wrapping the passed in model in a
         DistributedWrapper with the dataset read in.
         """
-
         self.train_source = train_source
+        self.train_source.load()
+
         logging.setup(
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
@@ -155,6 +156,7 @@ class Worker:
         self.batch_id_within_dataset += 1
         if self.batch_id_within_dataset == self.model.num_batches():
             return self._try_load_new_datasets_into_model()
+
         elif self.batch_id_within_dataset > self.model.num_batches():
             raise ValueError(
                 "Found a batch id higher than the number of batches which we should have caught during the last batch."
@@ -203,28 +205,12 @@ class Worker:
             self.comm.receive_gradients(averaged_gradients_ref)
 
     @timed
-    def update_parameters(self):
-        """
-        This function calls updateParameter function inside bolt, which
-        inherently updates the entire network.
-        """
-        self.model.update_parameters()
-
-    def num_of_batches(self) -> int:
-        """
-        This function returns the total number of batches the workers have.
-        """
-        return self.model.num_batches()
-
-    def model(self):
-        return self.model.model
-
-    @timed
     def _try_load_new_datasets_into_model(self) -> bool:
         """
         Returns whether the load was successful (if the generator stream is over
         then this will fail until we call restart on it).
         """
+
         load = self.train_source.next()
 
         if load == None:
@@ -243,3 +229,23 @@ class Worker:
             return False
 
         return True
+
+    @timed
+    def update_parameters(self):
+        """
+        This function calls updateParameter function inside bolt, which
+        inherently updates the entire network.
+        """
+        self.model.update_parameters()
+
+    def num_of_batches(self):
+        """
+        This function returns the total number of batches the workers have.
+        """
+        return self.model.num_batches()
+
+    def freeze_hash_tables(self):
+        self.model.freeze_hash_tables(True)
+
+    def model(self):
+        return self.model.model
