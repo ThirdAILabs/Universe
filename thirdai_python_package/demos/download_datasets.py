@@ -382,13 +382,17 @@ def prepare_query_reformulation_data(seed=42):
     return TRAIN_FILE_PATH, TEST_FILE_PATH, inference_batch
 
 
-def download_clinc_dataset():
+def download_clinc_dataset(
+    num_training_files=1, clinc_small=False, file_prefix="clinc"
+):
     CLINC_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/00570/clinc150_uci.zip"
     CLINC_ZIP = "./clinc150_uci.zip"
     CLINC_DIR = "./clinc"
     MAIN_FILE = CLINC_DIR + "/clinc150_uci/data_full.json"
-    TRAIN_FILE = "./clinc_train.csv"
-    TEST_FILE = "./clinc_test.csv"
+    SMALL_FILE = CLINC_DIR + "/clinc150_uci/data_small.json"
+    TRAIN_FILE = f"./{file_prefix}_train.csv"
+    TEST_FILE = f"./{file_prefix}_test.csv"
+    TRAIN_FILES = []
 
     _download_dataset(
         url=CLINC_URL,
@@ -397,7 +401,12 @@ def download_clinc_dataset():
         output_dir=CLINC_DIR,
     )
 
-    samples = json.load(open(MAIN_FILE))
+    samples = None
+
+    if clinc_small:
+        samples = json.load(open(SMALL_FILE))
+    else:
+        samples = json.load(open(MAIN_FILE))
 
     train_samples = samples["train"]
     test_samples = samples["test"]
@@ -413,17 +422,34 @@ def download_clinc_dataset():
     test_df["text"] = test_df["text"].apply(lambda x: x.replace(",", ""))
     test_df["category"] = pd.Categorical(test_df["category"]).codes
 
-    # The columns=["category", "text"] is just to force the order of the output
-    # columns which since the model pipeline which uses this function does not
-    # use the header to determine the column ordering.
-    train_df.to_csv(TRAIN_FILE, index=False, columns=["category", "text"])
     test_df.to_csv(TEST_FILE, index=False, columns=["category", "text"])
 
     inference_samples = []
     for _, row in test_df.iterrows():
         inference_samples.append(({"text": row["text"]}, row["category"]))
 
-    return TRAIN_FILE, TEST_FILE, inference_samples
+    # The columns=["category", "text"] is just to force the order of the output
+    # columns which since the model pipeline which uses this function does not
+    # use the header to determine the column ordering.
+    if num_training_files == 1:
+        train_df.to_csv(TRAIN_FILE, index=False, columns=["category", "text"])
+
+        return TRAIN_FILE, TEST_FILE, inference_samples
+    else:
+        training_data_per_file = len(train_df) // num_training_files
+
+        # saving all files with TRAIN_FILE_i(0 indexed)
+        for i in range(num_training_files):
+            l_index, r_index = (
+                i * training_data_per_file,
+                (i + 1) * training_data_per_file,
+            )
+            filename = f"{file_prefix}_train" + f"_{i}.csv"
+            train_df.iloc[l_index:r_index].to_csv(
+                filename, index=False, columns=["category", "text"]
+            )
+            TRAIN_FILES.append(filename)
+        return TRAIN_FILES, TEST_FILE, inference_samples
 
 
 def download_brazilian_houses_dataset():

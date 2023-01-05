@@ -1,4 +1,3 @@
-import math
 import os
 
 import numpy as np
@@ -72,3 +71,9 @@ def check_models_are_same_on_first_two_nodes(distributed_model):
             assert np.allclose(layer_1.weights.get(), layer_2.weights.get())
         if hasattr(layer_1, "biases"):
             assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
+
+
+def remove_files(file_names):
+    for file in file_names:
+        if os.path.exists(file):
+            os.remove(file)

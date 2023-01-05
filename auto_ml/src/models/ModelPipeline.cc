@@ -9,6 +9,7 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 namespace py = pybind11;
 
@@ -383,6 +384,31 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
   }
 
   return best_threshold;
+}
+
+void ModelPipeline::setModel(bolt::BoltGraphPtr& new_model) {
+  std::vector<bolt::NodePtr> new_model_nodes = new_model->getNodes();
+  std::vector<bolt::NodePtr> old_model_nodes = _model->getNodes();
+
+  if (new_model_nodes.size() != old_model_nodes.size()) {
+    throw std::invalid_argument(
+        "The new model must have the same number of nodes as the old model "
+        "(the old model has " +
+        std::to_string(old_model_nodes.size()) +
+        " layers while the new model "
+        "has " +
+        std::to_string(new_model_nodes.size()) + ". )");
+  }
+
+  for (uint32_t node_id = 0; node_id < new_model_nodes.size(); node_id++) {
+    if (new_model_nodes[node_id]->outputDim() !=
+        old_model_nodes[node_id]->outputDim()) {
+      throw std::invalid_argument(
+          "The new model must have the same layer dimensions as the old model, "
+          "but we found a layer with different dimension.");
+    }
+  }
+  _model = new_model;
 }
 
 }  // namespace thirdai::automl::models

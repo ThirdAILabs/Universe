@@ -200,6 +200,7 @@ set(THIRDAI_COMPILE_OPTIONS
     -Werror
     -Wno-unused-function
     -Wno-ignored-optimization-argument
+    -Wno-psabi
     -pedantic
     $<$<CONFIG:Debug>:-Og>
     $<$<CONFIG:Debug>:-g>

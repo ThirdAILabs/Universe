@@ -175,6 +175,10 @@ class ModelPipeline {
     return _dataset_factory;
   }
 
+  void setModel(bolt::BoltGraphPtr& new_model);
+
+  bolt::BoltGraphPtr getModel() { return _model; }
+
   virtual ~ModelPipeline() = default;
 
  protected:
