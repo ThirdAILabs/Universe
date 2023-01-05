@@ -1,7 +1,6 @@
 import numpy as np
 from thirdai import bolt, deployment
 
-
 class UDTBenchmarkConfig:
     learning_rate = 0.01
     num_epochs = 5
@@ -128,4 +127,4 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     # Learning rate scheduler that decreases the learning rate by a factor of 10
     # after the third epoch. This scheduling is what has given up the optimal
     # f-measure on the wayfair dataset.
-    callbacks = [bolt.callbacks.MultiStepLR(gamma=0.1, milestones=[3])]
+    callbacks = [bolt.callbacks.LearningRateScheduler(schedule=bolt.callbacks.MultiStepLR(gamma=0.1, milestones=[3]))]

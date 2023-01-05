@@ -36,7 +36,7 @@ def run_benchmark(config, run_name):
         data_types=config.data_types,
         target=config.target,
         n_target_classes=config.n_target_classes,
-        delimiter='\t', #config.delimiter,
+        delimiter=config.delimiter,
         model_config=config.model_config_path,
     )
 
@@ -47,8 +47,10 @@ def run_benchmark(config, run_name):
             mlflow_uri, config.experiment_name, run_name, config.dataset_name, {},
         )
     ]
-    # callbacks.extend(config.callbacks)
 
+    
+    callbacks.extend(config.callbacks)
+    
     model.train(
         config.train_file,
         epochs=config.num_epochs,
