@@ -53,13 +53,7 @@ class CategoricalBlock : public Block {
  protected:
   std::exception_ptr buildSegment(SingleInputRef& input,
                                   SegmentedFeatureVector& vec) final {
-    std::string_view column;
-
-    try {
-      column = input.column(_col);
-    } catch (std::exception_ptr& e) {
-      return e;
-    }
+    auto column = input.column(_col);
 
     if (!_delimiter) {
       return encodeCategory(column, vec);
