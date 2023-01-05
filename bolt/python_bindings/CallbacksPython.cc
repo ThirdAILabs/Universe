@@ -99,9 +99,9 @@ void createCallbacksSubmodule(py::module_& module) {
            py::arg("min_delta") = 0, py::arg("compare_against") = "prev",
            py::arg("time_out") = std::nullopt, R"pbdoc(
 This callback monitors a validation metric and gives users a means to configure 
-their model training based on that metric. It provides features such as saving 
-the best scoring model on the validation set, stopping training early, adjusting
-the learning rate, and more.
+their model training based on that metric. It provides features for saving 
+the best scoring model on the validation set, stopping training early when the model converges, adjusting
+the learning rate, and adding a training timeout.
 Args:
      model_save_path (string): The file path to save the model that scored the 
           best on the validation set
