@@ -303,14 +303,13 @@ void UDTDatasetFactory::save_stream(std::ostream& output_stream) const {
   oarchive(*this);
 }
 
-static UDTDatasetFactoryPtr UDTDatasetFactory::load(
-    const std::string& filename) {
+UDTDatasetFactoryPtr UDTDatasetFactory::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(filestream);
 }
 
-static UDTDatasetFactoryPtr UDTDatasetFactory::load_stream(
+UDTDatasetFactoryPtr UDTDatasetFactory::load_stream(
     std::istream& input_stream) {
   cereal::BinaryInputArchive iarchive(input_stream);
   std::shared_ptr<UDTDatasetFactory> deserialize_into(new UDTDatasetFactory());
