@@ -88,7 +88,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     }
     target = "labels"
     n_target_classes = 931
-    
+
     # TODO: mlflow does not support paranethetical characters in metric names.
     # We may need to revise our metric naming patterns to use this metric
     # metric_type = "f_measure(0.95)"
@@ -96,7 +96,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     experiment_name = "WayfairUDT"
     dataset_name = "wayfair"
     learning_rate = 0.001
-    delimiter = '\t'
+    delimiter = "\t"
 
     # Serialized model config used for testing
     # model_config = deployment.ModelConfig(
@@ -128,4 +128,8 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     # Learning rate scheduler that decreases the learning rate by a factor of 10
     # after the third epoch. This scheduling is what has given up the optimal
     # f-measure on the wayfair dataset.
-    callbacks = [bolt.callbacks.LearningRateScheduler(schedule=bolt.callbacks.MultiStepLR(gamma=0.1, milestones=[3]))]
+    callbacks = [
+        bolt.callbacks.LearningRateScheduler(
+            schedule=bolt.callbacks.MultiStepLR(gamma=0.1, milestones=[3])
+        )
+    ]

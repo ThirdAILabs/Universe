@@ -16,7 +16,8 @@ def parse_args():
         "--run_name", default="", help="The job name to track in mlflow"
     )
     parser.add_argument(
-        "--config_name", help="The python class name of the UDT benchmark config",
+        "--config_name",
+        help="The python class name of the UDT benchmark config",
     )
 
     args = parser.parse_args()
@@ -44,13 +45,16 @@ def run_benchmark(config, run_name):
 
     callbacks = [
         MlflowCallback(
-            mlflow_uri, config.experiment_name, run_name, config.dataset_name, {},
+            mlflow_uri,
+            config.experiment_name,
+            run_name,
+            config.dataset_name,
+            {},
         )
     ]
 
-    
     callbacks.extend(config.callbacks)
-    
+
     model.train(
         config.train_file,
         epochs=config.num_epochs,
