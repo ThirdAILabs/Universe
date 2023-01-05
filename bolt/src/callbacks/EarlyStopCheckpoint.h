@@ -119,7 +119,7 @@ class EarlyStopCheckpoint : public Callback {
     } else {
       // if we have dropped the validation score from the previous score
 
-      _n_consecutive_validation_drops += 1;
+      _n_consecutive_validation_drops++;
 
       // we know patience is not zero so this is safe
       if (_n_consecutive_validation_drops == _patience) {
