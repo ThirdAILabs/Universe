@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <algorithm>
 #include <cstdint>
@@ -485,57 +486,29 @@ class Block {
 };
 
 struct BlockList {
-  explicit BlockList(std::vector<BlockPtr>&& blocks) : _blocks(blocks) {
-    if (_blocks.empty()) {
-      return;
-    }
-
-    auto first_block_has_column_names = _blocks.front()->hasColumnNames();
-    for (const auto& block : _blocks) {
-      if (block->hasColumnNames() != first_block_has_column_names) {
-        throw std::invalid_argument(
-            "Blocks must either all have column names or all do not have "
-            "column names.");
-      }
-    }
-  }
+  explicit BlockList(std::vector<BlockPtr>&& blocks)
+      : _blocks(blocks),
+        _are_dense(computeIsDense(_blocks)),
+        _feature_dim(computeFeatureDim(_blocks)),
+        _expected_num_columns(allBlocksHaveColumnNumbers(_blocks)
+                                  ? computeExpectedNumColumns(_blocks)
+                                  : 0) {}
 
   BlockList() {}
 
   auto operator[](uint32_t index) { return _blocks[index]; }
 
-  void hasColumnNames() {}
-
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
     for (const auto& block : _blocks) {
       block->updateColumnNumbers(column_number_map);
     }
+    _expected_num_columns = computeExpectedNumColumns(_blocks);
   }
 
-  bool hasColumnNames() const {
-    if (_blocks.empty()) {
-      return false;
-    }
-    return _blocks.front()->hasColumnNames();
-  }
-
-  bool hasColumnNumbers() const {
-    if (_blocks.empty()) {
-      return false;
-    }
-    return _blocks.front()->hasColumnNumbers();
-  }
-
-  uint32_t expectedNumColumns() const {
-    if (!hasColumnNumbers()) {
-      return 0;
-    }
-    uint32_t max_expected_columns = 0;
+  void prepareForBatch(SingleInputRef& first_sample) {
     for (const auto& block : _blocks) {
-      max_expected_columns =
-          std::max(max_expected_columns, block->expectedNumColumns());
+      block->prepareForBatch(first_sample);
     }
-    return max_expected_columns;
   }
 
   std::exception_ptr addVectorSegment(
@@ -548,28 +521,80 @@ struct BlockList {
     return nullptr;
   }
 
-  uint32_t featureDim() const {
+  bool areDense() const { return _are_dense; }
+
+  uint32_t featureDim() const { return _feature_dim; }
+
+  uint32_t expectedNumColumns() const { return _expected_num_columns; }
+
+ private:
+  static bool computeIsDense(const std::vector<BlockPtr>& blocks) {
+    return std::all_of(
+        blocks.begin(), blocks.end(),
+        [](const std::shared_ptr<Block>& block) { return block->isDense(); });
+  }
+
+  static void verifyConsistentColumnIdentifiers(
+      const std::vector<BlockPtr>& blocks) {
+    if (blocks.empty()) {
+      return;
+    }
+
+    auto first_block_has_column_names = blocks.front()->hasColumnNames();
+    for (const auto& block : blocks) {
+      if (block->hasColumnNames() != first_block_has_column_names) {
+        throw std::invalid_argument(
+            "Blocks must either all have column names or all do not have "
+            "column names.");
+      }
+    }
+  }
+
+  static bool allBlocksHaveColumnNumbers(const std::vector<BlockPtr>& blocks) {
+    if (blocks.empty()) {
+      return false;
+    }
+
+    auto first_block_has_column_numbers = blocks.front()->hasColumnNumbers();
+    for (const auto& block : blocks) {
+      if (block->hasColumnNumbers() != first_block_has_column_numbers) {
+        throw std::invalid_argument(
+            "Blocks must either all be initialized with a column name or all "
+            "be initialized with a column number.");
+      }
+    }
+
+    return first_block_has_column_numbers;
+  }
+
+  static uint32_t computeExpectedNumColumns(
+      const std::vector<BlockPtr>& blocks) {
+    uint32_t max_expected_columns = 0;
+    for (const auto& block : blocks) {
+      max_expected_columns =
+          std::max(max_expected_columns, block->expectedNumColumns());
+    }
+    return max_expected_columns;
+  }
+
+  static uint32_t computeFeatureDim(const std::vector<BlockPtr>& blocks) {
     uint32_t dim = 0;
-    for (const auto& block : _blocks) {
+    for (const auto& block : blocks) {
       dim += block->featureDim();
     }
     return dim;
   }
 
-  void prepareForBatch(SingleInputRef& first_sample) {
-    for (const auto& block : _blocks) {
-      block->prepareForBatch(first_sample);
-    }
-  }
-
- private:
   std::vector<BlockPtr> _blocks;
+  bool _are_dense;
+  uint32_t _feature_dim;
+  uint32_t _expected_num_columns;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_blocks);
+    archive(_blocks, _are_dense, _expected_num_columns, _feature_dim);
   }
 };
 
