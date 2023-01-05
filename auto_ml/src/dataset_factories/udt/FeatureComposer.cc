@@ -2,39 +2,42 @@
 
 namespace thirdai::automl::data {
 
-void FeatureComposer::verifyConfigIsValid(
-    const UDTConfig& config,
+UDTConfigPtr FeatureComposer::verifyConfigIsValid(
+    UDTConfigPtr&& config,
     const TemporalRelationships& temporal_relationships) {
-  if (temporal_relationships.count(config.target)) {
+  if (temporal_relationships.count(config->target)) {
     throw std::invalid_argument(
         "The target column cannot be a temporal tracking key.");
   }
 
   for (const auto& [tracking_key_col_name, temporal_configs] :
        temporal_relationships) {
-    if (!config.data_types.count(tracking_key_col_name)) {
+    if (!config->data_types.count(tracking_key_col_name)) {
       throw std::invalid_argument("The tracking key '" + tracking_key_col_name +
                                   "' is not found in data_types.");
     }
 
-    if (!asCategorical(config.data_types.at(tracking_key_col_name))) {
+    if (!asCategorical(config->data_types.at(tracking_key_col_name))) {
       throw std::invalid_argument("Tracking keys must be categorical.");
     }
 
-    if (asCategorical(config.data_types.at(tracking_key_col_name))->delimiter) {
+    if (asCategorical(config->data_types.at(tracking_key_col_name))
+            ->delimiter) {
       throw std::invalid_argument(
           "Tracking keys cannot have a delimiter; columns containing "
           "tracking keys must only have one value per row.");
     }
 
     for (const auto& temporal_config : temporal_configs) {
-      if (!config.data_types.count(temporal_config.columnName())) {
+      if (!config->data_types.count(temporal_config.columnName())) {
         throw std::invalid_argument("The tracked column '" +
                                     temporal_config.columnName() +
                                     "' is not found in data_types.");
       }
     }
   }
+
+  return config;
 }
 
 std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
@@ -84,6 +87,7 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
     }
 
     if (auto numerical = asNumerical(data_type)) {
+      // tabular_datatypes.size() is the index of the next tabular data type.
       tabular_col_ranges[tabular_datatypes.size()] = numerical->range;
       tabular_col_bins[tabular_datatypes.size()] =
           getNumberOfBins(numerical->granularity);
