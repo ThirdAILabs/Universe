@@ -2,12 +2,16 @@
 
 #include <memory>
 
-namespace thirdai::bolt::train::trainer {
+namespace thirdai::bolt::train {
 
-class State {
+class TrainState {
  public:
-  explicit State(float learning_rate)
+  explicit TrainState(float learning_rate)
       : _learning_rate(learning_rate), _stop_training(false) {}
+
+  static std::shared_ptr<TrainState> make(float learning_rate) {
+    return std::make_shared<TrainState>(learning_rate);
+  }
 
   float learningRate() const { return _learning_rate; }
 
@@ -24,6 +28,6 @@ class State {
   bool _stop_training;
 };
 
-using StatePtr = std::shared_ptr<State>;
+using TrainStatePtr = std::shared_ptr<TrainState>;
 
-}  // namespace thirdai::bolt::train::trainer
+}  // namespace thirdai::bolt::train

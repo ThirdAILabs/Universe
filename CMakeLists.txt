@@ -315,6 +315,9 @@ set(THIRDAI_SOURCES
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/train/metrics/Metric.cc
     bolt/src/train/callbacks/Callback.cc
+    bolt/src/train/metrics/LossMetric.cc
+    bolt/src/train/metrics/ComparativeMetric.cc
+    bolt/src/train/trainer/Trainer.cc
     bolt/src/graph/Graph.cc
     bolt/src/graph/ExecutionConfig.cc
     bolt/src/graph/nodes/FullyConnected.cc

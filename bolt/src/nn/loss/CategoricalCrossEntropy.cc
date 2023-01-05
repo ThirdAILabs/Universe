@@ -1,5 +1,6 @@
 #include "CategoricalCrossEntropy.h"
 #include <optional>
+#include <cmath>
 
 namespace thirdai::bolt::nn::loss {
 
@@ -13,8 +14,18 @@ std::shared_ptr<CategoricalCrossEntropy> CategoricalCrossEntropy::make(
 }
 
 float CategoricalCrossEntropy::gradient(float activation, float label,
-                                        uint32_t batch_size) {
+                                        uint32_t batch_size) const {
   return (label - activation) / batch_size;
+}
+
+float CategoricalCrossEntropy::loss(float activation, float label) const {
+  // We add an small epsilon here to avoid log(0) in the case where the output
+  // is sparse and there is a nonzero label that is not among the active
+  // neurons.
+  if (label == 0) {
+    return 0.0;
+  }
+  return label * std::log(activation + 1e-7);
 }
 
 }  // namespace thirdai::bolt::nn::loss

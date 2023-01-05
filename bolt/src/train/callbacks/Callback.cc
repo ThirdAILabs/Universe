@@ -10,13 +10,13 @@ void Callback::setModel(nn::model::ModelPtr model) {
   this->model = std::move(model);
 }
 
-void Callback::setTrainState(trainer::StatePtr train_state) {
+void Callback::setTrainState(TrainStatePtr train_state) {
   this->train_state = std::move(train_state);
 }
 
 CallbackList::CallbackList(std::vector<CallbackPtr> callbacks,
                            nn::model::ModelPtr& model,
-                           trainer::StatePtr& train_state)
+                           TrainStatePtr& train_state)
     : _callbacks(std::move(callbacks)) {
   for (auto& callback : _callbacks) {
     callback->setModel(model);

@@ -4,47 +4,59 @@
 #include <bolt/src/nn/tensor/ActivationTensor.h>
 #include <bolt/src/nn/tensor/InputTensor.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <memory>
+#include <string>
 #include <unordered_map>
 
 namespace thirdai::bolt::train::metrics {
 
 class Metric {
  public:
-  void record(uint32_t index_in_batch);
+  virtual void record(uint32_t index_in_batch) = 0;
 
   virtual void reset() = 0;
 
-  virtual double value() const = 0;
+  virtual float value() const = 0;
 
-  virtual double worst() const = 0;
+  virtual float worst() const = 0;
 
-  virtual bool betterThan(double a, double b) const = 0;
+  virtual bool betterThan(float a, float b) const = 0;
 
   virtual std::string name() const = 0;
 
-  void setOutputs(nn::tensor::ActivationTensorPtr outputs);
+  virtual void setOutputs(nn::tensor::ActivationTensorPtr outputs) = 0;
 
-  void setLabels(nn::tensor::InputTensorPtr labels);
+  virtual void setLabels(nn::tensor::InputTensorPtr labels) = 0;
+
+  virtual std::string outputName() const = 0;
 
   virtual ~Metric() = default;
 
- protected:
-  virtual void record(const BoltVector& output, const BoltVector& labels) = 0;
-
- private:
-  nn::tensor::ActivationTensorPtr _outputs;
-  nn::tensor::InputTensorPtr _labels;
+  static void incrementAtomicFloat(std::atomic<float>& value, float increment);
 };
 
 using MetricPtr = std::shared_ptr<Metric>;
 
+// Maps outputs to metrics to values.
+using History =
+    std::unordered_map<std::string,
+                       std::unordered_map<std::string, std::vector<float>>>;
+
+using InputMetrics =
+    std::unordered_map<std::string, std::vector<metrics::MetricPtr>>;
+
 class MetricList {
  public:
-  MetricList(
-      const std::unordered_map<std::string, std::vector<MetricPtr>>& metrics,
-      const nn::model::ModelPtr& model);
+  MetricList(const InputMetrics& metrics, const nn::model::ModelPtr& model);
 
-  void recordLastBatch(uint32_t batch_size);
+  void recordBatch(uint32_t batch_size);
+
+  void updateHistory(std::shared_ptr<History>& history,
+                     const std::string& prefix);
+
+  std::string summarizeLastStep() const;
+
+  void reset();
 
  private:
   std::vector<MetricPtr> _metrics;

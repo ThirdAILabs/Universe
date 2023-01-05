@@ -9,10 +9,15 @@ namespace thirdai::bolt::nn::loss {
 class Loss {
  public:
   /**
-   * Computes the loss for the outputs used by this loss function for the given
-   * sample in the batch.
+   * Computes the loss gradients for the outputs used by this loss function for
+   * the given sample in the batch.
    */
-  virtual void gradients(uint32_t index_in_batch, uint32_t batch_size) = 0;
+  virtual void gradients(uint32_t index_in_batch, uint32_t batch_size) const = 0;
+
+  /**
+   * Computes the loss for the given sample in the batch.
+   */
+  virtual float loss(uint32_t index_in_batch) const = 0;
 
   /**
    * Returns which outputs in the model have gradients computed by this loss

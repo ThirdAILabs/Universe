@@ -1,29 +1,16 @@
 #include "Metric.h"
+#include <atomic>
 #include <stdexcept>
 
 namespace thirdai::bolt::train::metrics {
 
-void Metric::record(uint32_t index_in_batch) {
-  record(_outputs->getVector(index_in_batch),
-         _labels->getVector(index_in_batch));
-}
-
-void Metric::setOutputs(nn::tensor::ActivationTensorPtr outputs) {
-  if (_outputs != outputs) {
-    throw std::runtime_error(
-        "Cannot rebind the metric to a new model or a new output in the same "
-        "model");
-  }
-  _outputs = std::move(outputs);
-}
-
-void Metric::setLabels(nn::tensor::InputTensorPtr labels) {
-  if (_labels != labels) {
-    throw std::runtime_error(
-        "Cannot rebind the metric to a new model or a new output in the same "
-        "model");
-  }
-  _labels = std::move(labels);
+void Metric::incrementAtomicFloat(std::atomic<float>& value, float increment) {
+  bool success;
+  do {
+    float curr_val = value.load(std::memory_order_relaxed);
+    success = value.compare_exchange_weak(curr_val, curr_val + increment,
+                                          std::memory_order_relaxed);
+  } while (!success);
 }
 
 MetricList::MetricList(
@@ -38,12 +25,37 @@ MetricList::MetricList(
   }
 }
 
-void MetricList::recordLastBatch(uint32_t batch_size) {
+void MetricList::recordBatch(uint32_t batch_size) {
 #pragma omp parallel for default(none) shared(batch_size)
   for (uint32_t i = 0; i < batch_size; i++) {
     for (const auto& metric : _metrics) {
       metric->record(i);
     }
+  }
+}
+
+void MetricList::updateHistory(std::shared_ptr<History>& history,
+                               const std::string& prefix) {
+  for (const auto& metric : _metrics) {
+    (*history)[metric->name()][prefix + metric->outputName()].push_back(
+        metric->value());
+  }
+}
+
+std::string MetricList::summarizeLastStep() const {
+  std::stringstream summary;
+
+  for (const auto& metric : _metrics) {
+    summary << metric->outputName() << "::" << metric->name() << "=";
+    summary << metric->value() << " ";
+  }
+
+  return summary.str();
+}
+
+void MetricList::reset() {
+  for (auto& metric : _metrics) {
+    metric->reset();
   }
 }
 

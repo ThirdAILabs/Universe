@@ -130,6 +130,8 @@ std::string Model::summary(bool print) const {
   return summary.str();
 }
 
+uint32_t Model::trainSteps() const { return _train_steps; }
+
 void Model::forwardImpl(uint32_t input_batch_size, bool use_sparsity) {
   _activations.reallocateForBatch(input_batch_size, use_sparsity);
 

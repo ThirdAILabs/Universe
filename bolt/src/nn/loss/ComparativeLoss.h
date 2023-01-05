@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/loss/Loss.h>
+#include <bolt_vector/src/BoltVector.h>
 
 namespace thirdai::bolt::nn::loss {
 
@@ -14,7 +15,9 @@ class ComparativeLoss : public Loss {
  public:
   explicit ComparativeLoss(tensor::ActivationTensorPtr activations);
 
-  void gradients(uint32_t index_in_batch, uint32_t batch_size) final;
+  float loss(uint32_t index_in_batch) const final;
+
+  void gradients(uint32_t index_in_batch, uint32_t batch_size) const final;
 
   std::vector<tensor::ActivationTensorPtr> outputsUsed() const final;
 
@@ -22,19 +25,28 @@ class ComparativeLoss : public Loss {
 
  private:
   /**
-   * Helper function to iterate over the activations and labels depending on
+   * Helper functions to iterate over the activations and labels depending on
    * their sparsities.
    */
   template <bool ACT_DENSE, bool LABEL_DENSE>
+  float loss(const BoltVector& activations, const BoltVector& labels) const;
+
+  template <bool ACT_DENSE, bool LABEL_DENSE>
   void gradients(BoltVector& activations, const BoltVector& labels,
-                 uint32_t batch_size);
+                 uint32_t batch_size) const;
+
+  /**
+   * This method takes in the activation and label for the ith neuron and should
+   * return the loss contribution of that neuron.
+   */
+  virtual float loss(float activation, float label) const = 0;
 
   /**
    * This method takes in the activation and label for the ith neuron and should
    * return the loss gradient for that neuron.
    */
   virtual float gradient(float activation, float label,
-                         uint32_t batch_size) = 0;
+                         uint32_t batch_size) const = 0;
 
   tensor::ActivationTensorPtr _activations;
 };

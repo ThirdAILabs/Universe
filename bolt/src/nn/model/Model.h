@@ -66,6 +66,15 @@ class Model {
   const std::vector<ops::OpPtr>& ops() const;
 
   /**
+   * Sets the given labels as the current labels for the model. These are public
+   * so they can be used by the trainer to set labels before computing metrics
+   * during validation.
+   */
+  uint32_t setLabels(const std::vector<BoltBatch>& label_batches);
+
+  void setSingleLabel(const BoltBatch& labels);
+
+  /**
    * Retrieves on op by name. Throws if not found.
    */
   ops::OpPtr getOp(const std::string& name) const;
@@ -82,6 +91,8 @@ class Model {
    */
 
   std::string summary(bool print = true) const;
+
+  uint32_t trainSteps() const;
 
  private:
   /**
@@ -121,13 +132,6 @@ class Model {
   uint32_t setInputs(const std::vector<BoltBatch>& input_batches);
 
   void setSingleInput(const BoltBatch& inputs);
-
-  /**
-   * Sets the given labels as the current labels for the model.
-   */
-  uint32_t setLabels(const std::vector<BoltBatch>& label_batches);
-
-  void setSingleLabel(const BoltBatch& labels);
 
   /**
    * Traverses the graph and determines the order in which the ops should be
