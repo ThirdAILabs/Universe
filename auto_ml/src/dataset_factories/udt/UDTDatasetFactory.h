@@ -146,46 +146,16 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   uint32_t getLabelDim() final { return _label_dim; }
 
-  void save(const std::string& filename) const {
-    std::ofstream filestream =
-        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-    save_stream(filestream);
-  }
+  void save(const std::string& filename) const;
 
-  void save_stream(std::ostream& output_stream) const {
-    cereal::BinaryOutputArchive oarchive(output_stream);
-    oarchive(*this);
-  }
+  void save_stream(std::ostream& output_stream) const;
 
-  static UDTDatasetFactoryPtr load(const std::string& filename) {
-    std::ifstream filestream =
-        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-    return load_stream(filestream);
-  }
+  static UDTDatasetFactoryPtr load(const std::string& filename);
 
-  static UDTDatasetFactoryPtr load_stream(std::istream& input_stream) {
-    cereal::BinaryInputArchive iarchive(input_stream);
-    std::shared_ptr<UDTDatasetFactory> deserialize_into(
-        new UDTDatasetFactory());
-    iarchive(*deserialize_into);
-    return deserialize_into;
-  }
+  static UDTDatasetFactoryPtr load_stream(std::istream& input_stream);
 
-  void verifyCanDistribute() {
-    auto target_type = _config->data_types.at(_config->target);
-    if (asCategorical(target_type) && !_config->integer_target) {
-      throw std::invalid_argument(
-          "UDT with categorical target without integer_target=True cannot be "
-          "trained in distributed "
-          "setting. Please convert the categorical target column into "
-          "integer target to train UDT in distributed setting.");
-    }
-    if (!_temporal_relationships.empty()) {
-      throw std::invalid_argument(
-          "UDT with temporal relationships cannot be trained in a distributed "
-          "setting.");
-    }
-  }
+  void verifyCanDistribute();
+
   void resetDatasetFactory() {
     _labeled_history_updating_processor = {};
     _unlabeled_non_updating_processor = {};
