@@ -13,14 +13,32 @@ class DatasetLoader(ABC):
             dataset.BoltDataset,
         ]
     ]:
+        """
+        This function returns training data and labels if there is training data left for
+        ingestion for a epoch else, will return NULL.
+
+        Returns:
+            Optional[ Tuple[ Union[dataset.BoltDataset, List[dataset.BoltDataset]], dataset.BoltDataset, ] ]:
+                It either returns tuple of training data and training labels or None.
+        """
         pass
 
     @abstractmethod
     def restart() -> None:
+        """
+        This function is needed to be called before every epoch other than 1st epoch. It moves
+        the training data pointer to the front to restart ingestion of training data again.
+        """
         pass
 
     @abstractmethod
     def load() -> None:
+        """
+        This function is called only once before the first epoch. As this function is called
+        independently inside each worker, it can be used for multiple purposes which includes
+        initializing construct for data loaders which cannot be pickled across workers(ex. ifstream),
+        and if some initialization which needed to done independently for each workers.
+        """
         pass
 
 
@@ -33,7 +51,7 @@ class UDTDatasetLoader(DatasetLoader):
         max_in_memory_batches: int,
         data_processor,
     ):
-        self.generatore = None
+        self.generator = None
         self.data_processor = data_processor
         self.train_file = train_file
         self.batch_size = batch_size
