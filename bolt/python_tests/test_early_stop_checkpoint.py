@@ -61,7 +61,6 @@ def train_models(
         )
 
     model.train(train_data, train_labels, train_config)
-    model.train(train_data, train_labels, train_config)
     best_model = bolt.nn.Model.load(save_loc)
     os.remove(save_loc)
 
