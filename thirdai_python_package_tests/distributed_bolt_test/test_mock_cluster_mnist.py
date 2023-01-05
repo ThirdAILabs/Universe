@@ -10,7 +10,7 @@ import sys
 
 import numpy as np
 import pytest
-from cluster_utils import (
+from distributed_utils import (
     check_models_are_same_on_first_two_nodes,
     ray_two_node_cluster_config,
     split_into_2,

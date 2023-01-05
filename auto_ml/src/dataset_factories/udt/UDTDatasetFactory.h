@@ -40,6 +40,9 @@
 
 namespace thirdai::automl::data {
 
+class UDTDatasetFactory;
+using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
+
 class UDTDatasetFactory final : public DatasetLoaderFactory {
  public:
   explicit UDTDatasetFactory(UDTConfigPtr config, bool force_parallel,
@@ -153,6 +156,16 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   uint32_t getLabelDim() final { return _label_dim; }
+
+  void save(const std::string& filename) const;
+
+  void save_stream(std::ostream& output_stream) const;
+
+  static UDTDatasetFactoryPtr load(const std::string& filename);
+
+  static UDTDatasetFactoryPtr load_stream(std::istream& input_stream);
+
+  void verifyCanDistribute();
 
   void resetDatasetFactory() {
     _labeled_history_updating_processor = {};
@@ -378,7 +391,5 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
             _contextual_columns, _regression_binning);
   }
 };
-
-using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
 }  // namespace thirdai::automl::data
