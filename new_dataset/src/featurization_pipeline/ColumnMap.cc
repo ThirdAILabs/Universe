@@ -57,10 +57,10 @@ ContributionColumnMap ColumnMap::getContributions(
   for (uint32_t i = 0; i < num_columns; i++) {
     contribution_columns[i].resize(numRows());
   }
-  try {
 #pragma omp parallel for default(none) \
     shared(num_columns, indices, column_dims, gradients, contribution_columns)
-    for (uint32_t vec_idx = 0; vec_idx < numRows(); vec_idx++) {
+  for (uint32_t vec_idx = 0; vec_idx < numRows(); vec_idx++) {
+    try {
       std::vector<std::vector<columns::Contribution<uint32_t>>>
           contribuition_rows(num_columns);
       uint32_t start_index = 0;
@@ -88,9 +88,9 @@ ContributionColumnMap ColumnMap::getContributions(
         }
         contribution_columns[i].insert(contribuition_rows[i], vec_idx);
       }
+    } catch (std::exception const& e) {
+      throw std::exception(e);
     }
-  } catch (std::exception const& e) {
-    throw std::exception(e);
   }
   std::unordered_map<std::string, columns::ContibutionColumnBasePtr>
       contribution_map;
