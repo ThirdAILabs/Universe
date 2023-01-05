@@ -1,6 +1,7 @@
 import numpy as np
 from thirdai import bolt, deployment
 
+
 class UDTBenchmarkConfig:
     learning_rate = 0.01
     num_epochs = 5
