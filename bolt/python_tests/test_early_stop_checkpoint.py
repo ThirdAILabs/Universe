@@ -78,7 +78,7 @@ def run_early_stop_test(
     time_out=None,
 ):
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=N_CLASSES, n_samples=1000, noise_std=0.2
+        n_classes=N_CLASSES, n_samples=1000, noise_std=0.3
     )
     valid_data, valid_labels = gen_numpy_training_data(
         n_classes=N_CLASSES, n_samples=1000, noise_std=0.3
@@ -171,6 +171,14 @@ def test_throw_on_invalid_multiplier():
         bolt.callbacks.EarlyStopCheckpoint(
             model_save_path="dummy",
             lr_multiplier=-1,
+        )
+
+
+def test_throw_on_invalid_time_out():
+    with pytest.raises(ValueError, match=r"'time_out' cannot be negative."):
+        bolt.callbacks.EarlyStopCheckpoint(
+            model_save_path="dummy",
+            time_out=-1,
         )
 
 

@@ -83,6 +83,10 @@ class EarlyStopCheckpoint : public Callback {
   void onTrainBegin(BoltGraph& model, TrainState& train_state) final {
     (void)model;
 
+    // here we'll infer which metric to track for validation. we're doing this
+    // on train begin because we'd like to infer which metric we're using in
+    // case the user does not pass one in. we won't know until training begins
+
     // if the user passes in the metric we'll check for that one
     if (_monitored_metric_name.has_value()) {
       _metric = makeMetric(*_monitored_metric_name);
@@ -114,6 +118,8 @@ class EarlyStopCheckpoint : public Callback {
     } else {
       // if we have dropped the validation score from the previous score
 
+      _n_consecutive_validation_drops += 1;
+
       // we know patience is not zero so this is safe
       if (_n_consecutive_validation_drops == _patience) {
         // stop training if we've lowered the learning rate enough times
@@ -137,8 +143,6 @@ class EarlyStopCheckpoint : public Callback {
           _n_lr_adjustments += 1;
           _n_consecutive_validation_drops = 0;
         }
-      } else {
-        _n_consecutive_validation_drops += 1;
       }
     }
 
