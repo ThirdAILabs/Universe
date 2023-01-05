@@ -190,7 +190,3 @@ def test_time_out():
         metric_name="mean_squared_error",
         time_out=0.00001,
     )
-
-
-def test_train_then_stop_then_train_with_callback():
-    pass
