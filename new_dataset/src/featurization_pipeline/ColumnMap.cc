@@ -57,36 +57,40 @@ ContributionColumnMap ColumnMap::getContributions(
   for (uint32_t i = 0; i < num_columns; i++) {
     contribution_columns[i].resize(numRows());
   }
+  try {
 #pragma omp parallel for default(none) \
     shared(num_columns, indices, column_dims, gradients, contribution_columns)
-  for (uint32_t vec_idx = 0; vec_idx < numRows(); vec_idx++) {
-    std::vector<std::vector<columns::Contribution<uint32_t>>>
-        contribuition_rows(num_columns);
-    uint32_t start_index = 0;
-    for (uint32_t i = 0; i < num_columns; i++) {
-      if (indices) {
-        uint32_t j;
-        for (j = start_index; j < indices->at(vec_idx).size() &&
-                              indices->at(vec_idx)[j] < column_dims[i + 1];
-             j++) {
-          contribuition_rows[i].push_back(columns::Contribution<uint32_t>(
-              indices->at(vec_idx)[j], gradients[vec_idx][j]));
-        }
-        start_index = j;
-      } else {
-        uint32_t j;
-        for (j = start_index; j < gradients[vec_idx].size(); j++) {
-          if (j < column_dims[i + 1]) {
-            contribuition_rows[i].push_back(
-                columns::Contribution<uint32_t>(j, gradients[vec_idx][j]));
-          } else {
-            break;
+    for (uint32_t vec_idx = 0; vec_idx < numRows(); vec_idx++) {
+      std::vector<std::vector<columns::Contribution<uint32_t>>>
+          contribuition_rows(num_columns);
+      uint32_t start_index = 0;
+      for (uint32_t i = 0; i < num_columns; i++) {
+        if (indices) {
+          uint32_t j;
+          for (j = start_index; j < indices->at(vec_idx).size() &&
+                                indices->at(vec_idx)[j] < column_dims[i + 1];
+               j++) {
+            contribuition_rows[i].push_back(columns::Contribution<uint32_t>(
+                indices->at(vec_idx)[j], gradients[vec_idx][j]));
           }
+          start_index = j;
+        } else {
+          uint32_t j;
+          for (j = start_index; j < gradients[vec_idx].size(); j++) {
+            if (j < column_dims[i + 1]) {
+              contribuition_rows[i].push_back(
+                  columns::Contribution<uint32_t>(j, gradients[vec_idx][j]));
+            } else {
+              break;
+            }
+          }
+          start_index = j;
         }
-        start_index = j;
+        contribution_columns[i].insert(contribuition_rows[i], vec_idx);
       }
-      contribution_columns[i].insert(contribuition_rows[i], vec_idx);
     }
+  } catch (std::exception const& e) {
+    throw std::exception(e);
   }
   std::unordered_map<std::string, columns::ContibutionColumnBasePtr>
       contribution_map;
