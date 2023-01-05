@@ -72,7 +72,7 @@ class EarlyStopCheckpoint : public Callback {
     }
 
     if (lr_multiplier <= 0) {
-      throw std::invalid_argument("'lr_multiplier' should not be <= 0.");
+      throw std::invalid_argument("'lr_multiplier' should be > 0.");
     }
 
     if (_time_out.has_value() and _time_out < 0) {
