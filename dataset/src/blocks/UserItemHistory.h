@@ -114,12 +114,7 @@ class UserItemHistoryBlock final : public Block {
         _include_current_row(include_current_row),
         _item_col_delimiter(item_col_delimiter),
         _time_lag(time_lag) {
-    if (_user_col.hasName() != _item_col.hasName() ||
-        _user_col.hasName() != _timestamp_col.hasName()) {
-      throw std::invalid_argument(
-          "UserCountHistory: Columns must either all have names or all do not "
-          "have names.");
-    }
+    verifyConsistentColumnIdentifiers();
   }
 
   uint32_t featureDim() const final {

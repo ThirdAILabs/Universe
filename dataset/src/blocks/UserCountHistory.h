@@ -26,12 +26,7 @@ class UserCountHistoryBlock final : public Block {
         _history(std::move(history)),
         _should_update_history(should_update_history),
         _include_current_row(include_current_row) {
-    if (_user_col.hasName() != _count_col.hasName() ||
-        _user_col.hasName() != _timestamp_col.hasName()) {
-      throw std::invalid_argument(
-          "UserCountHistory: Columns must either all have names or all do not "
-          "have names.");
-    }
+    verifyConsistentColumnIdentifiers();
   }
 
   uint32_t featureDim() const final { return _history->historyLength(); }
