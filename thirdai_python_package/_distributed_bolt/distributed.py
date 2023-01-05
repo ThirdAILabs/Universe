@@ -46,8 +46,10 @@ def add_distributed_to_udt():
             filenames (List[str]): List of all the split files. The current design assumes all
                 the files are accessible by all the nodes.
 
-                Note: If the split training files are very big and can't be stored on all the nodes.
-                Then, one way around is to save the individual file on all nodes, with same name.
+                The current design does not guarantee independent mapping from file_ids to node_ids.
+                Hence, program could be errorneous, if each node doesn't have access to all the files.
+                However, one way around is to save the individual file on all nodes, with same name.
+                This way we could train in distributed setting without need to have shared mount.
             batch_size (Optional[int], optional): Batch Size for distributed training. It is the
                 batch size for overall training, per node batch size is batch_size//num_nodes.
                 Defaults to 2048.
@@ -55,7 +57,7 @@ def add_distributed_to_udt():
             epochs (int, optional): Number of epochs to train. Defaults to 3.
             max_in_memory_batches (Optional[int], optional): The maximum number of batches to load in
                 memory at a given time. If this is specified then the dataset will be processed
-                in a streaming fashion. Defaults to Defaults to None, which causes the entire dataset to be loaded in memory.
+                in a streaming fashion. Defaults to None, which causes the entire dataset to be loaded in memory.
             gcp_credentials_path (Optional[str], optional): Credentials for GCP, if using GCP for data
                 loading.
             metrics (List[str], optional): Metrics to be logged during training. Defaults to [].
@@ -253,10 +255,6 @@ class DistributedDataParallel:
         model: bolt.nn.Model,
         train_config: bolt.TrainConfig,
         train_sources: Union[List[DatasetLoader], List[str]],
-        batch_size: int = None,
-        max_in_memory_batches: int = None,
-        gcp_credentials_path: Optional[str] = None,
-        data_processor=None,
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -354,18 +352,18 @@ class DistributedDataParallel:
             self.communication_type,
         )
 
-        epoch_to_train = 0
+        starting_epoch = 0
         if freeze_hash_tables:
             self.train_on_epoch(
                 train_state_manager=train_state_manager,
-                epoch=epoch_to_train,
+                epoch=starting_epoch,
             )
 
             train_state_manager.freeze_hash_tables()
 
-            epoch_to_train += 1
+            starting_epoch += 1
 
-        for epoch in range(epoch_to_train, self.train_config.num_epochs):
+        for epoch in range(starting_epoch, self.train_config.num_epochs):
             self.train_on_epoch(train_state_manager=train_state_manager, epoch=epoch)
 
         return {
