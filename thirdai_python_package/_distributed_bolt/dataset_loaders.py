@@ -41,6 +41,13 @@ class DatasetLoader(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_current_data_chunk_id() -> int:
+        """
+        This function returns the current chunk id which is loaded. It is called to retrieve chunk
+        id for fault tolerance.
+        """
+
 
 class UDTDatasetLoader(DatasetLoader):
     def __init__(
@@ -58,7 +65,10 @@ class UDTDatasetLoader(DatasetLoader):
         self.gcp_credentials_path = gcp_credentials_path
         self.max_in_memory_batches = max_in_memory_batches
 
-    def load(self):
+        # book-keeping for fault-tolerance
+        self.next_count = 0
+
+    def load(self, chunks_to_skip):
         self.generator = self.data_processor.get_dataset_loader(
             _create_loader(
                 self.train_file,
@@ -68,13 +78,21 @@ class UDTDatasetLoader(DatasetLoader):
             training=True,
         )
 
+        while chunks_to_skip > 0:
+            chunks_to_skip -= 1
+            self.next()
+
     def next(self):
+        self.next_count += 1
         if self.max_in_memory_batches == None:
             load = self.generator.load_in_memory()
         else:
             load = self.generator.load_in_memory(self.max_in_memory_batches)
 
         return load
+
+    def get_current_data_chunk_id(self) -> int:
+        return self.next_count
 
     def restart(self):
         self.generator.restart()
@@ -102,10 +120,18 @@ class GenericInMemoryDatasetLoader(DatasetLoader):
         self.current_labels = None
         self.generated_for_this_epoch = False
 
-    def load(self):
-        pass
+        # book-keeping for fault-tolerance
+        self.next_count = 0
+
+    def load(self, chunks_to_skip):
+
+        while chunks_to_skip > 0:
+            chunks_to_skip -= 1
+            self.next()
 
     def next(self):
+        self.next_count += 1
+
         if self.generated_for_this_epoch:
             return None
         self.generated_for_this_epoch = True
@@ -117,6 +143,9 @@ class GenericInMemoryDatasetLoader(DatasetLoader):
                 self.current_dataset = [self.current_dataset]
 
         return self.current_dataset, self.current_labels
+
+    def get_current_data_chunk_id(self) -> int:
+        return self.next_count
 
     def restart(self):
         self.generated_for_this_epoch = False
@@ -156,10 +185,18 @@ class TabularDatasetLoader(DatasetLoader):
         self.y_col = y_col
         self.batch_size = batch_size
 
-    def load(self):
-        pass
+        # book-keeping for fault-tolerance
+        self.next_count = 0
+
+    def load(self, chunks_to_skip):
+
+        while chunks_to_skip > 0:
+            chunks_to_skip -= 1
+            self.next()
 
     def next(self):
+        self.next_count += 1
+
         load = self.column_map_generator.next()
         if load == None:
             return None
@@ -182,6 +219,9 @@ class TabularDatasetLoader(DatasetLoader):
             return None
 
         return [x_data], y_data
+
+    def get_current_data_chunk_id(self) -> int:
+        return self.next_count
 
     def restart(self):
         self.column_map_generator.restart()

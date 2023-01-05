@@ -3,6 +3,7 @@ import textwrap
 from functools import wraps
 from time import time
 
+import ray
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, logging
 
@@ -46,7 +47,11 @@ class Worker:
         DistributedWrapper with the dataset read in.
         """
         self.train_source = train_source
-        self.train_source.load()
+
+        chunks_to_skip, batch_to_run = ray.get(
+            primary_worker.get_train_source_pointers.remote()
+        )
+        self.train_source.load(chunks_to_skip=chunks_to_skip)
 
         logging.setup(
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
@@ -87,10 +92,12 @@ class Worker:
                 )
             )
 
-        if not self._try_load_new_datasets_into_model():
+        if not self._try_load_new_datasets_into_model(batch_to_run=batch_to_run):
             raise ValueError(
                 "There must be at least one loadable dataset in the passed in data source."
             )
+
+        self.batch_id_within_dataset = 0
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.
@@ -205,7 +212,7 @@ class Worker:
             self.comm.receive_gradients(averaged_gradients_ref)
 
     @timed
-    def _try_load_new_datasets_into_model(self) -> bool:
+    def _try_load_new_datasets_into_model(self, batch_to_run=0) -> bool:
         """
         Returns whether the load was successful (if the generator stream is over
         then this will fail until we call restart on it).
@@ -220,7 +227,7 @@ class Worker:
 
         self.train_data, self.train_labels = load
         self.model.set_datasets(self.train_data, self.train_labels)
-        self.batch_id_within_dataset = 0
+        self.batch_id_within_dataset = batch_to_run
 
         # This case should not be true since we currently require datasets
         # to be nonempty, but this is a good hedge against future data

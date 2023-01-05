@@ -58,3 +58,12 @@ class PrimaryWorker(Worker):
         """
         self.weights_biases = self.return_params()
         return self.weights_biases
+
+    def get_train_source_pointers(self):
+        return (
+            self.train_source.get_current_data_chunk_id(),
+            self.batch_id_within_dataset,
+        )
+
+    def get_model(self):
+        return self.model.model
