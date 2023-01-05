@@ -9,6 +9,7 @@ class UDTBenchmarkConfig:
     n_target_classes = 2
     delimiter = ","
     metric_type = "categorical_accuracy"
+    model_config = None
     model_config_path = None
     callbacks = []
 
@@ -80,7 +81,7 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
 class WayfairUDTConfig(UDTBenchmarkConfig):
     train_file = "/share/data/wayfair/train_raw_queries.txt"
     test_file = "/share/data/wayfair/dev_raw_queries.txt"
-    model_config_path = "udt_model_configs/wayfair.config"
+    model_config_path = "wayfair.config"
 
     data_types = {
         "labels": bolt.types.categorical(delimiter=","),
@@ -98,32 +99,31 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     learning_rate = 0.001
     delimiter = "\t"
 
-    # Serialized model config used for testing
-    # model_config = deployment.ModelConfig(
-    #     input_names=["input"],
-    #     nodes=[
-    #         deployment.FullyConnectedNodeConfig(
-    #             name="hidden",
-    #             dim=deployment.ConstantParameter(1024),
-    #             sparsity=deployment.ConstantParameter(1.0),
-    #             activation=deployment.ConstantParameter("relu"),
-    #             predecessor="input",
-    #         ),
-    #         deployment.FullyConnectedNodeConfig(
-    #             name="output",
-    #             dim=deployment.DatasetLabelDimensionParameter(),
-    #             sparsity=deployment.ConstantParameter(0.1),
-    #             activation=deployment.ConstantParameter("sigmoid"),
-    #             sampling_config=deployment.ConstantParameter(
-    #                 bolt.nn.DWTASamplingConfig(
-    #                     num_tables=64, hashes_per_table=4, reservoir_size=64
-    #                 )
-    #             ),
-    #             predecessor="hidden",
-    #         ),
-    #     ],
-    #     loss=bolt.nn.losses.BinaryCrossEntropy(),
-    # )
+    model_config = deployment.ModelConfig(
+        input_names=["input"],
+        nodes=[
+            deployment.FullyConnectedNodeConfig(
+                name="hidden",
+                dim=deployment.ConstantParameter(1024),
+                sparsity=deployment.ConstantParameter(1.0),
+                activation=deployment.ConstantParameter("relu"),
+                predecessor="input",
+            ),
+            deployment.FullyConnectedNodeConfig(
+                name="output",
+                dim=deployment.DatasetLabelDimensionParameter(),
+                sparsity=deployment.ConstantParameter(0.1),
+                activation=deployment.ConstantParameter("sigmoid"),
+                sampling_config=deployment.ConstantParameter(
+                    bolt.nn.DWTASamplingConfig(
+                        num_tables=64, hashes_per_table=4, reservoir_size=64
+                    )
+                ),
+                predecessor="hidden",
+            ),
+        ],
+        loss=bolt.nn.losses.BinaryCrossEntropy(),
+    )
 
     # Learning rate scheduler that decreases the learning rate by a factor of 10
     # after the third epoch. This scheduling is what has given up the optimal

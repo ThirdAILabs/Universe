@@ -33,6 +33,9 @@ def get_mlflow_uri():
 
 
 def run_benchmark(config, run_name):
+    if config.model_config is not None:
+        config.model_config.save(config.model_config_path)
+
     model = bolt.UniversalDeepTransformer(
         data_types=config.data_types,
         target=config.target,
