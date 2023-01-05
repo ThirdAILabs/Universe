@@ -11,15 +11,6 @@
 namespace thirdai::bolt {
 
 /**
- * @brief
- * TODO:
-  - what happens on serialization
-  - callback what happens if the user trains with or without this
-    callback, stops training, then starts training again with or without it
- *
- */
-
-/**
  * @brief This callback monitors a validation metric and gives users a means to
  * configure their model training based on that metric. It provides features
  * such as saving the best scoring model on the validation set, stopping
