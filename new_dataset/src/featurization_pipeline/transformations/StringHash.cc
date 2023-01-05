@@ -8,6 +8,7 @@
 namespace thirdai::data {
 
 void StringHash::apply(ColumnMap& columns, bool prepare_for_backpropagate) {
+  (void)prepare_for_backpropagate;
   auto column = columns.getStringColumn(_input_column_name);
 
   std::vector<uint32_t> hashed_values(column->numRows());
@@ -15,10 +16,6 @@ void StringHash::apply(ColumnMap& columns, bool prepare_for_backpropagate) {
 #pragma omp parallel for default(none) shared(column, hashed_values)
   for (uint64_t i = 0; i < column->numRows(); i++) {
     hashed_values[i] = hash((*column)[i]);
-  }
-
-  if (prepare_for_backpropagate) {
-    _hash_values = hashed_values;
   }
 
   auto output_column = std::make_shared<columns::CppTokenColumn>(
@@ -46,10 +43,6 @@ void StringHash::backpropagate(ColumnMap& columns,
   auto contribuition_column =
       contribuition_columns.getTokenContributionColumn(_output_column_name);
 
-  if (!_hash_values) {
-    throw std::invalid_argument(
-        "in apply method didn't prepare for backpropagation.");
-  }
   std::vector<std::vector<columns::Contribution<std::string>>> contributions(
       column->numRows());
 

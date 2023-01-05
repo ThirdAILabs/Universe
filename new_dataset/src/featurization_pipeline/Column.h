@@ -174,7 +174,10 @@ class ContibutionColumn : public ContibutionColumnBase {
  public:
   virtual std::vector<Contribution<T>> getRow(uint64_t n) const = 0;
 
-  virtual void insert(const std::vector<Contribution<T>>& row_values) = 0;
+  virtual void resize(uint64_t n) = 0;
+
+  virtual void insert(const std::vector<Contribution<T>>& row_values,
+                      uint64_t n) = 0;
 
   virtual ~ContibutionColumn() = default;
 };

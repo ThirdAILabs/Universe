@@ -35,6 +35,7 @@ ContributionColumnMap ColumnMap::getContributions(
     const std::vector<std::vector<float>>& raw_gradients,
     const std::optional<std::vector<std::vector<uint32_t>>>& indices) {
   auto output_columns = selectColumns(column_names);
+  uint32_t num_columns = output_columns.size();
   if (numRows() != raw_gradients.size()) {
     throw std::invalid_argument(
         "gradients size and number of rows doesn't match.");
@@ -52,12 +53,17 @@ ContributionColumnMap ColumnMap::getContributions(
   std::vector<std::vector<float>> gradients =
       bolt::getPercentagesFromGradients(raw_gradients);
   std::vector<columns::CppTokenContributionColumn> contribution_columns(
-      output_columns.size());
+      num_columns);
+  for (uint32_t i = 0; i < num_columns; i++) {
+    contribution_columns[i].resize(numRows());
+  }
+#pragma omp parallel for default(none) \
+    shared(num_columns, indices, column_dims, gradients, contribution_columns)
   for (uint32_t vec_idx = 0; vec_idx < numRows(); vec_idx++) {
     std::vector<std::vector<columns::Contribution<uint32_t>>>
-        contribuition_rows(output_columns.size());
+        contribuition_rows(num_columns);
     uint32_t start_index = 0;
-    for (uint32_t i = 0; i < output_columns.size(); i++) {
+    for (uint32_t i = 0; i < num_columns; i++) {
       if (indices) {
         uint32_t j;
         for (j = start_index; j < indices->at(vec_idx).size() &&
@@ -79,7 +85,7 @@ ContributionColumnMap ColumnMap::getContributions(
         }
         start_index = j;
       }
-      contribution_columns[i].insert(contribuition_rows[i]);
+      contribution_columns[i].insert(contribuition_rows[i], vec_idx);
     }
   }
   std::unordered_map<std::string, columns::ContibutionColumnBasePtr>

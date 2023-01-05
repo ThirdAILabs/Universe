@@ -30,8 +30,8 @@ def get_two_col_hashed_string_dataset(col_length, output_range):
 
 
 def test_string_explanations():
-    col_length = 10000
-    output_range = 10000
+    col_length = 50000
+    output_range = 50000
     featurizer, columns = get_two_col_hashed_string_dataset(col_length, output_range)
     columns = featurizer.featurize(columns, True)
     string_dataset = columns.convert_to_dataset(
@@ -53,6 +53,12 @@ def test_string_explanations():
     explanations = featurizer.explain(columns, contribution_columns)
 
     column_names = ["column1", "column2"]
+
+    for i in range(col_length):
+        temp = explanations.getitem("column1_hashes").get_row(i)
+        temp1 = explanations.getitem("column2_hashes").get_row(i)
+        assert temp[0].value == indices[i][0]
+        assert temp1[0].value == indices[i][1]
 
     for i in range(col_length):
         for column_name in column_names:

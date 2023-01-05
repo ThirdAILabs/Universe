@@ -281,10 +281,17 @@ class CppTokenContributionColumn : public TokenContributionColumn {
     return _data[n];
   }
 
+  void resize(uint64_t n) final { _data.resize(n); }
+
   uint64_t numRows() const final { return _data.size(); }
 
-  void insert(const std::vector<Contribution<uint32_t>>& row_values) final {
-    _data.push_back(row_values);
+  void insert(const std::vector<Contribution<uint32_t>>& row_values,
+              uint64_t n) final {
+    if (_data.size() < n) {
+      throw std::invalid_argument(
+          "index out of bounds or haven't reserved the vectors properly.");
+    }
+    _data[n] = row_values;
   }
 
  private:
@@ -305,8 +312,15 @@ class CppStringContributionColumn : public StringContributionColumn {
 
   uint64_t numRows() const final { return _data.size(); }
 
-  void insert(const std::vector<Contribution<std::string>>& row_values) final {
-    _data.push_back(row_values);
+  void resize(uint64_t n) final { _data.resize(n); }
+
+  void insert(const std::vector<Contribution<std::string>>& row_values,
+              uint64_t n) final {
+    if (_data.size() < n) {
+      throw std::invalid_argument(
+          "index out of bounds or haven't reserved the vectors properly.");
+    }
+    _data[n] = row_values;
   }
 
  private:

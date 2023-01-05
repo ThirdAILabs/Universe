@@ -32,8 +32,7 @@ class StringHash final : public Transformation {
       : _input_column_name(),
         _output_column_name(),
         _output_range(0),
-        _seed(0),
-        _hash_values(std::nullopt) {}
+        _seed(0) {}
 
   friend class cereal::access;
   template <class Archive>
@@ -48,7 +47,6 @@ class StringHash final : public Transformation {
   std::string _output_column_name;
   std::optional<uint32_t> _output_range;
   uint32_t _seed;
-  std::optional<std::vector<uint32_t>> _hash_values;
 };
 
 }  // namespace thirdai::data
