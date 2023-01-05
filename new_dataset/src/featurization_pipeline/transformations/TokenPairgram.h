@@ -123,20 +123,19 @@ class TokenPairgram : public Transformation {
 
       std::unordered_map<uint32_t, float> individual_contributions;
 
-      for(auto input_token:input_tokens_vector) {
+      for (auto input_token : input_tokens_vector) {
         individual_contributions[input_token] = 0;
       }
 
-      for (auto & row_token_contribution : row_token_contributions) {
-        for (auto val :
-             _pairgrams->at(row_idx)[row_token_contribution.value]) {
+      for (auto& row_token_contribution : row_token_contributions) {
+        for (auto val : _pairgrams->at(row_idx)[row_token_contribution.value]) {
           individual_contributions[val] +=
               (row_token_contribution.gradient) /
               (_pairgrams->at(row_idx)[row_token_contribution.value].size());
         }
       }
 
-// (TODO):have to see the percentages absolute sum to be 100 percent.
+      // (TODO):have to see the percentages absolute sum to be 100 percent.
       for (uint32_t i = 0; i < input_tokens_vector.size(); i++) {
         source_row_contributions[i] = {
             input_tokens_vector[i],
