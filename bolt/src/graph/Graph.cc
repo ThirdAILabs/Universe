@@ -811,8 +811,8 @@ void BoltGraph::verifyCanPredict(const DatasetContextBase& predict_context,
   }
   if (!returning_activations && num_metrics_tracked == 0) {
     throw std::invalid_argument(
-        "Doing inference without returning activations and no metrics is a "
-        "NOOP");
+        "Doing evaluation without metrics or activations is a no-op. "
+        "Did you forget to specify this in the EvalConfig?");
   }
 
   verifyInputForGraph(predict_context);

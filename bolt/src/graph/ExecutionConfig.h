@@ -357,7 +357,7 @@ class TrainState {
       return validation_metrics[metric_name];
     }
     throw std::invalid_argument("Could not find metric name '" + metric_name +
-                                "' in list of computed validation metrics. ");
+                                "' in list of computed validation metrics.");
   }
 
   const auto& getAllValidationMetrics() { return validation_metrics; }

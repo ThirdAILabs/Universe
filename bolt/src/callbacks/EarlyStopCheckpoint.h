@@ -75,13 +75,17 @@ class EarlyStopCheckpoint : public Callback {
       throw std::invalid_argument("Patience should be greater than 0.");
     }
 
-    if (compare_against != "best" && compare_against != "prev") {
+    if (_compare_against != "best" && _compare_against != "prev") {
       throw std::invalid_argument(
           "'compare_against' should be one of 'best' or 'prev'.");
     }
 
     if (lr_multiplier <= 0) {
       throw std::invalid_argument("'lr_multiplier' should not be <= 0.");
+    }
+
+    if (_time_out.has_value() and _time_out < 0) {
+      throw std::invalid_argument("'time_out' cannot be negative.");
     }
   }
 
@@ -96,11 +100,11 @@ class EarlyStopCheckpoint : public Callback {
       // we'll use that. otherwise we'll throw an error telling the user to
       // specify which one they'd like to use.
       auto validation_metrics = train_state.validation_metric_names;
-      if (validation_metrics.empty()) {
+      if (validation_metrics.size() != 1) {
         throw std::invalid_argument(
-            "No validation metric was supplied and cannot infer a metric to "
-            "track. This is either because validation is not set up or because "
-            "no validation metric was passed into the model to track.");
+            "Cannot infer a validation metric to track. This is either from "
+            "not setting up validation, not passing in a validation metric, or "
+            "passing in too many validation metrics.");
       }
       std::string inferred_metric_name = validation_metrics.front();
       _metric = makeMetric(inferred_metric_name);
@@ -119,20 +123,31 @@ class EarlyStopCheckpoint : public Callback {
     } else {
       // if we have dropped the validation score from the previous score
 
-      _n_consecutive_validation_drops += 1;
-
       // we know patience is not zero so this is safe
       if (_n_consecutive_validation_drops == _patience) {
         // stop training if we've lowered the learning rate enough times
         if (_n_lr_adjustments == _max_lr_adjustments) {
           train_state.stop_training = true;
+          std::cout
+              << "EarlyStopCheckpoint callback has made the maximum number of "
+                 "learning rate adjustments. Terminating training.\n"
+              << std::endl;
         } else {
           // otherwise we adjust the learning rate and reset the count on
           // consecutive validation drops
+          std::cout
+              << "EarlyStopCheckpoint: Validation metric has not improved for "
+              << _n_consecutive_validation_drops
+              << " consecutive epochs. Lowering the learning rate from "
+              << train_state.learning_rate << " to "
+              << train_state.learning_rate * _lr_multiplier << ".\n"
+              << std::endl;
           train_state.learning_rate *= _lr_multiplier;
           _n_lr_adjustments += 1;
           _n_consecutive_validation_drops = 0;
         }
+      } else {
+        _n_consecutive_validation_drops += 1;
       }
     }
 
@@ -146,6 +161,9 @@ class EarlyStopCheckpoint : public Callback {
     _total_train_time += train_state.epoch_times.back();
     if (_time_out.has_value() && _total_train_time > _time_out) {
       train_state.stop_training = true;
+      std::cout << "EarlyStopCheckpoint callback terminating training due to "
+                   "time_out.\n"
+                << std::endl;
     }
 
     _previous_validation_score = metric_value;
@@ -156,7 +174,7 @@ class EarlyStopCheckpoint : public Callback {
     double score_to_compare_against = _previous_validation_score
                                           ? _compare_against == "prev"
                                           : _best_validation_score;
-    return std::abs(metric_value - score_to_compare_against) > _min_delta &&
+    return std::abs(metric_value - score_to_compare_against) >= _min_delta &&
            _metric->betterThan(metric_value, score_to_compare_against);
   }
 

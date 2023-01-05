@@ -96,7 +96,7 @@ void createCallbacksSubmodule(py::module_& module) {
            py::arg("model_save_path"),
            py::arg("monitored_metric") = std::nullopt, py::arg("patience") = 2,
            py::arg("max_lr_adjustments") = 2, py::arg("lr_multiplier") = 0.5,
-           py::arg("min_delta"), py::arg("compare_against") = "prev",
+           py::arg("min_delta") = 0, py::arg("compare_against") = "prev",
            py::arg("time_out") = std::nullopt, R"pbdoc(
 This callback is intended to stop training early based on prediction results 
 from a given validation set. Requires validation data specified in train.
