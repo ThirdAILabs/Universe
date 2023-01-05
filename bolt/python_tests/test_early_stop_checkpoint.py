@@ -135,7 +135,7 @@ def test_early_stop_checkpoint_with_loss():
 def test_throw_on_no_validation():
     with pytest.raises(
         ValueError,
-        match=r"Could not find metric name 'mean_squared_error' in list of computed validation metrics.",
+        match=r"No validation metrics found. Remember to specify validation with metrics in the TrainConfig.",
     ):
         run_early_stop_test(
             loss=bolt.nn.losses.MeanSquaredError(),

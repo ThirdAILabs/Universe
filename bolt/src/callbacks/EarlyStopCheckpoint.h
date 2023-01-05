@@ -19,13 +19,13 @@ namespace thirdai::bolt {
  * @param model_save_path The file path to save the model that scored the
  * best on the validation set.
  * @param monitored_metric Optional: The metric to monitor for early stopping.
- * If there is no metric specified we will use the first validation metric
- * provided. If there are no tracked validation metrics or if validation is not
- * set up we will throw an error.
+ * If there is no metric specified we will use the validation metric
+ * provided. We will throw an error if there are no tracked validation metrics,
+ * if validation is not set up, or if there are multiple validation metrics.
  * @param patience The number of epochs with no improvement in previous
  * validation score after which we will evaluate whether to do one of two
  * things: 1) adjust the learning rate and continue training or 2) stop
- * training.
+ * training if we've changed the learning rate enough times.
  * @param max_lr_adjustments The maximum number of learning rate
  * adjustments allowed after a "patience" interval.
  * @param lr_multiplier Multiplier for the learning rate after a "patience"
@@ -36,8 +36,8 @@ namespace thirdai::bolt {
  * @param compare_against One of "best" or "prev". Determines whether to compare
  * against the best validation metric so far or the previous validation metric
  * recorded.
- * @param time_out Optional. Represents the number of seconds after which the
- * model will stop training. Rounds up to the nearest epoch.
+ * @param time_out Optional. Represents the total training time (in seconds)
+ * after which the model will stop training. Rounds up to the nearest epoch.
  *
  * Based on the keras design found here:
  * https://keras.io/api/callbacks/early_stopping/

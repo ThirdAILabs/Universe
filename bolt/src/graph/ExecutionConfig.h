@@ -353,6 +353,11 @@ class TrainState {
 
   const std::vector<double>& getValidationMetrics(
       const std::string& metric_name) {
+    if (validation_metrics.empty()) {
+      throw std::invalid_argument(
+          "No validation metrics found. Remember to specify validation with "
+          "metrics in the TrainConfig.");
+    }
     if (validation_metrics.count(metric_name) != 0) {
       return validation_metrics[metric_name];
     }

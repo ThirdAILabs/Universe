@@ -105,14 +105,14 @@ the learning rate, and more.
 Args:
      model_save_path (string): The file path to save the model that scored the 
           best on the validation set
-     monitored_metric (string): Optional. The metric to monitor for early 
-          stopping. If there is no metric specified we will use the first 
-          validation metric provided. If there are no tracked validation metrics
-          or if validation is not set up we will throw an error.
+     monitored_metric (string): Optional: The metric to monitor for early stopping.
+     If there is no metric specified we will use the validation metric provided. 
+     We will throw an error if there are no tracked validation metrics, if 
+     validation is not set up, or if there are multiple validation metrics.
      patience (int): The number of epochs with no improvement in validation score
           after which we will evaluate whether to do one of two things: 1) adjust
-           the learning rate and continue training or 2) stop training. Defaults
-          to 2.
+          the learning rate and continue training or 2) stop training if we've 
+          changed the learning rate enough times. Defaults to 2.
      max_lr_adjustments (int): The maximum number of learning rate adjustments 
           allowed after a "patience" interval. Defaults to 2.
      lr_multiplier (float): Multiplier for the learning rate after a 'patience' 
@@ -123,8 +123,8 @@ Args:
      compare_against (string): One of 'best' or 'prev'. Determines whether to 
           compare against the best validation metric so far or the previous validation
           metric recorded. Defaults to 'prev'.
-     time_out (float): Optional. Represents the number of seconds after which the
-          model will stop training. Rounds up to the nearest epoch.
+     time_out (float): Optional. Represents the total training time (in seconds)
+     after which the model will stop training. Rounds up to the nearest epoch.
 )pbdoc");
 }
 
