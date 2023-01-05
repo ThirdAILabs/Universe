@@ -90,7 +90,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     target = "labels"
     n_target_classes = 931
 
-    # TODO: mlflow does not support paranethetical characters in metric names.
+    # TODO: mlflow does not support parenthetical characters in metric names.
     # We may need to revise our metric naming patterns to use this metric
     # metric_type = "f_measure(0.95)"
 
