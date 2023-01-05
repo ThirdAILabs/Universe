@@ -141,7 +141,7 @@ class EarlyStopCheckpoint : public Callback {
               << train_state.learning_rate * _lr_multiplier << ".\n"
               << std::endl;
           train_state.learning_rate *= _lr_multiplier;
-          _n_lr_adjustments += 1;
+          _n_lr_adjustments++;
           _n_consecutive_validation_drops = 0;
         }
       }
