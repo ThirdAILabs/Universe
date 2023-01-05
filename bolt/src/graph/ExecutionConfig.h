@@ -343,7 +343,8 @@ class TrainState {
     }
   }
 
-  const std::vector<double>& getTrainMetrics(const std::string& metric_name) {
+  const std::vector<double>& getTrainMetricValues(
+      const std::string& metric_name) {
     return train_metric_aggregator.getSingleOutput(metric_name);
   }
 
@@ -351,7 +352,7 @@ class TrainState {
     return train_metric_aggregator.getOutput();
   }
 
-  const std::vector<double>& getValidationMetrics(
+  const std::vector<double>& getValidationMetricValues(
       const std::string& metric_name) {
     if (validation_metrics.empty()) {
       throw std::invalid_argument(

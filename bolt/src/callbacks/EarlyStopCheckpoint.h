@@ -97,7 +97,8 @@ class EarlyStopCheckpoint : public Callback {
       auto validation_metrics = train_state.validation_metric_names;
       if (validation_metrics.size() != 1) {
         throw std::invalid_argument(
-            "Cannot infer a validation metric to track for EarlyStopCheckpoint. This is either from "
+            "Cannot infer a validation metric to track for "
+            "EarlyStopCheckpoint. This is either from "
             "not setting up validation, not passing in a validation metric, or "
             "passing in too many validation metrics.");
       }
@@ -110,7 +111,7 @@ class EarlyStopCheckpoint : public Callback {
 
   void onEpochEnd(BoltGraph& model, TrainState& train_state) final {
     double metric_value =
-        train_state.getValidationMetrics(_metric->name()).front();
+        train_state.getValidationMetricValues(_metric->name()).front();
 
     // if we've improved on the previous score
     if (isImprovement(metric_value)) {

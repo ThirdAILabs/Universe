@@ -35,11 +35,11 @@ void createCallbacksSubmodule(py::module_& module) {
                      &TrainState::reconstruct_hash_functions_batch)
       .def_readwrite("stop_training", &TrainState::stop_training)
       .def_readonly("epoch_times", &TrainState::epoch_times)
-      .def("get_train_metrics", &TrainState::getTrainMetrics,
+      .def("get_train_metric_values", &TrainState::getTrainMetricValues,
            py::arg("metric_name"))
       .def("get_all_train_metrics", &TrainState::getAllTrainMetrics)
-      .def("get_validation_metrics", &TrainState::getValidationMetrics,
-           py::arg("metric_name"))
+      .def("get_validation_metric_values",
+           &TrainState::getValidationMetricValues, py::arg("metric_name"))
       .def("get_all_validation_metrics", &TrainState::getAllValidationMetrics);
 #else
   (void)py_callback;
