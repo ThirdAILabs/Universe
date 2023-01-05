@@ -104,7 +104,7 @@ the best scoring model on the validation set, stopping training early when the m
 the learning rate, and adding a training timeout.
 Args:
      model_save_path (string): The file path to save the model that scored the 
-          best on the validation set
+          best on the validation set.
      monitored_metric (string): Optional: The metric to monitor for early stopping.
      If there is no metric specified we will use the validation metric provided. 
      We will throw an error if there are no tracked validation metrics, if 
