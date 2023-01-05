@@ -47,13 +47,14 @@ class DenseArrayBlock final : public Block {
     char* end;
     float value =
         std::strtof(input_row.column(index_within_block).data(), &end);
-    return {_start_col + index_within_block, std::to_string(value)};
+    return {_start_col.number() + index_within_block, std::to_string(value)};
   }
 
  protected:
   std::exception_ptr buildSegment(SingleInputRef& input_row,
                                   SegmentedFeatureVector& vec) final {
-    for (uint32_t i = _start_col; i < _start_col + _dim; i++) {
+    for (uint32_t i = _start_col.number(); i < _start_col.number() + _dim;
+         i++) {
       char* end;
       float value = std::strtof(input_row.column(i).data(), &end);
       if (std::isinf(value)) {

@@ -3,8 +3,9 @@
 #include <cereal/access.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
+#include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
+#include <dataset/src/blocks/InputTypes.h>
 #include <algorithm>
 #include <cstdint>
 #include <exception>
@@ -18,205 +19,6 @@
 #include <vector>
 
 namespace thirdai::dataset {
-
-// Single input types
-using MapInput = std::unordered_map<std::string, std::string>;
-using RowInput = std::vector<std::string_view>;
-using LineInput = std::string;
-
-// Batch input types
-using MapInputBatch = std::vector<std::unordered_map<std::string, std::string>>;
-using LineInputBatch = std::vector<std::string>;
-
-struct ColumnIdentifier {
-  ColumnIdentifier() {}
-
-  // NOLINTNEXTLINE Ignore implicit conversion warning. That is intentional.
-  ColumnIdentifier(uint32_t column_number) : _column_number(column_number) {}
-
-  // NOLINTNEXTLINE Ignore implicit conversion warning. That is intentional.
-  ColumnIdentifier(const std::string& column_name)
-      : _column_name(column_name) {}
-
-  bool hasName() const { return !!_column_name; }
-
-  const std::string& name() const {
-    if (!_column_name) {
-      throw std::runtime_error(
-          "Tried to get missing column name from ColumnIdentifier.");
-    }
-    return _column_name.value();
-  }
-
-  // NOLINTNEXTLINE Ignore implicit conversion warning. That is intentional.
-  operator const std::string&() const { return name(); }
-
-  bool hasNumber() const { return !!_column_number; }
-
-  uint32_t number() const {
-    if (!_column_number) {
-      throw std::runtime_error(
-          "Tried to get missing column number from ColumnIdentifier.");
-    }
-    return _column_number.value();
-  }
-
-  // NOLINTNEXTLINE Ignore implicit conversion warning. That is intentional.
-  operator uint32_t() const { return number(); }
-
-  void updateColumnNumber(const ColumnNumberMap& column_number_map) {
-    _column_number = column_number_map.at(name());
-  }
-
- private:
-  std::optional<uint32_t> _column_number;
-  std::optional<std::string> _column_name;
-
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_column_number, _column_name);
-  }
-};
-
-class SingleInputRef {
- public:
-  virtual std::string_view column(const ColumnIdentifier& column) = 0;
-  virtual uint32_t size() = 0;
-  virtual std::exception_ptr assertValid(uint32_t expected_num_cols) = 0;
-  virtual ~SingleInputRef() = default;
-};
-
-class SingleMapInputRef final : public SingleInputRef {
- public:
-  // NOLINTNEXTLINE Implicit constructor is intentional
-  SingleMapInputRef(const MapInput& columns) : _columns(columns) {}
-
-  std::string_view column(const ColumnIdentifier& column) final {
-    if (!_columns.count(column.name())) {
-      return {};
-    }
-    return _columns.at(column.name());
-  }
-
-  uint32_t size() final { return _columns.size(); }
-
-  std::exception_ptr assertValid(uint32_t expected_num_cols) final {
-    (void)expected_num_cols;
-    return nullptr;
-  }
-
- private:
-  const MapInput& _columns;
-};
-
-class SingleRowInputRef final : public SingleInputRef {
- public:
-  // NOLINTNEXTLINE Implicit constructor is intentional
-  SingleRowInputRef(const RowInput& columns) : _columns(columns) {}
-
-  std::string_view column(const ColumnIdentifier& column) final {
-    return _columns.at(column.number());
-  }
-
-  std::exception_ptr assertValid(uint32_t expected_num_cols) final {
-    if (_columns.size() >= expected_num_cols) {
-      return nullptr;
-    }
-
-    std::stringstream error_ss;
-    error_ss << "Expected " << expected_num_cols
-             << " in each row of the dataset. Found row with "
-             << _columns.size() << " columns:";
-    for (auto column : _columns) {
-      error_ss << " '" << column << "'";
-    }
-    error_ss << ".";
-
-    return std::make_exception_ptr(std::invalid_argument(error_ss.str()));
-  }
-
-  uint32_t size() final { return _columns.size(); }
-
- private:
-  const RowInput& _columns;
-};
-
-class SingleCsvLineInputRef final : public SingleInputRef {
- public:
-  SingleCsvLineInputRef(const LineInput& line, char delimiter)
-      : _line(line), _delimiter(delimiter) {}
-
-  std::string_view column(const ColumnIdentifier& column) final {
-    parseToColumnsIfNecessary();
-    return SingleRowInputRef(*_columns).column(column);
-  }
-
-  uint32_t size() final { return _columns->size(); }
-
-  std::exception_ptr assertValid(uint32_t expected_num_cols) final {
-    parseToColumnsIfNecessary();
-    return SingleRowInputRef(*_columns).assertValid(expected_num_cols);
-  }
-
- private:
-  void parseToColumnsIfNecessary() {
-    if (!_columns) {
-      _columns = ProcessorUtils::parseCsvRow(/* row= */ _line,
-                                             /* delimiter= */ _delimiter);
-    }
-  }
-
-  const LineInput& _line;
-  char _delimiter;
-  std::optional<RowInput> _columns;
-  std::exception_ptr _last_error;
-};
-
-class BatchInputRef {
- public:
-  virtual SingleInputRef& sample(uint32_t index) = 0;
-  virtual uint32_t size() = 0;
-  virtual ~BatchInputRef() = default;
-};
-
-class BatchMapInputRef final : public BatchInputRef {
- public:
-  // NOLINTNEXTLINE
-  BatchMapInputRef(const MapInputBatch& batch) : _batch(batch) {
-    _ref_batch.reserve(_batch.size());
-    for (const auto& input : _batch) {
-      _ref_batch.emplace_back(SingleMapInputRef(input));
-    }
-  }
-
-  SingleInputRef& sample(uint32_t index) final { return _ref_batch.at(index); }
-
-  uint32_t size() final { return _batch.size(); }
-
- private:
-  const MapInputBatch& _batch;
-  std::vector<SingleMapInputRef> _ref_batch;
-};
-
-class BatchCsvLineInputRef final : public BatchInputRef {
- public:
-  BatchCsvLineInputRef(const LineInputBatch& batch, char delimiter)
-      : _batch(batch) {
-    _ref_batch.reserve(_batch.size());
-    for (const auto& input : _batch) {
-      _ref_batch.emplace_back(SingleCsvLineInputRef(input, delimiter));
-    }
-  }
-
-  SingleInputRef& sample(uint32_t index) final { return _ref_batch.at(index); }
-
-  uint32_t size() final { return _batch.size(); }
-
- private:
-  const LineInputBatch& _batch;
-  std::vector<SingleCsvLineInputRef> _ref_batch;
-};
 
 /**
  * Declare here so we can make it a friend of
@@ -402,18 +204,29 @@ class Block {
     }
   }
 
-  bool hasColumnNames() {
+  void verifyConsistentColumnIdentifiers() {
     auto column_identifiers = getColumnIdentifiers();
-    return std::all_of(
-        column_identifiers.begin(), column_identifiers.end(),
-        [](ColumnIdentifier* identifier) { return identifier->hasName(); });
+    if (column_identifiers.empty()) {
+      return;
+    }
+
+    auto first_column_identifier_has_column_numbers =
+        column_identifiers.front()->hasNumber();
+    for (const auto& column_identifier : column_identifiers) {
+      if (column_identifier->hasNumber() !=
+          first_column_identifier_has_column_numbers) {
+        throw std::invalid_argument(
+            "Columns must  be either all initialized with a name or all "
+            "initialized with a number.");
+      }
+    }
   }
 
   bool hasColumnNumbers() {
-    auto column_identifiers = getColumnIdentifiers();
-    return std::all_of(
-        column_identifiers.begin(), column_identifiers.end(),
-        [](ColumnIdentifier* identifier) { return identifier->hasNumber(); });
+    if (getColumnIdentifiers().empty()) {
+      return false;
+    }
+    return getColumnIdentifiers().front()->hasNumber();
   }
 
   /**
@@ -534,22 +347,6 @@ struct BlockList {
         [](const std::shared_ptr<Block>& block) { return block->isDense(); });
   }
 
-  static void verifyConsistentColumnIdentifiers(
-      const std::vector<BlockPtr>& blocks) {
-    if (blocks.empty()) {
-      return;
-    }
-
-    auto first_block_has_column_names = blocks.front()->hasColumnNames();
-    for (const auto& block : blocks) {
-      if (block->hasColumnNames() != first_block_has_column_names) {
-        throw std::invalid_argument(
-            "Blocks must either all have column names or all do not have "
-            "column names.");
-      }
-    }
-  }
-
   static bool allBlocksHaveColumnNumbers(const std::vector<BlockPtr>& blocks) {
     if (blocks.empty()) {
       return false;
@@ -559,8 +356,8 @@ struct BlockList {
     for (const auto& block : blocks) {
       if (block->hasColumnNumbers() != first_block_has_column_numbers) {
         throw std::invalid_argument(
-            "Blocks must either all be initialized with a column name or all "
-            "be initialized with a column number.");
+            "Blocks must be either all initialized with a column name or all "
+            "initialized with a column number.");
       }
     }
 
