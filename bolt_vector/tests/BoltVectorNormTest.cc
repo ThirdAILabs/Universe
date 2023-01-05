@@ -10,11 +10,11 @@ const float DELTA = 0.0001;
 
 std::vector<BoltVector> getDenseVectors() {
   BoltVector node_1_output =
-      BoltVector::makeDenseVectorWithGradients(/* values = */ {0.2, 0.1});
+      BoltVector::dense(/* values = */ {0.2, 0.1}, /*has_gradient=*/true);
   BoltVector node_2_output =
-      BoltVector::makeDenseVectorWithGradients(/* values= */ {-3.0, 2.0, 0.5});
+      BoltVector::dense(/* values= */ {-3.0, 2.0, 0.5}, /*has_gradient=*/true);
   BoltVector node_3_output =
-      BoltVector::makeDenseVectorWithGradients(/* values = */ {3.0, 4.0});
+      BoltVector::dense(/* values = */ {3.0, 4.0}, /*has_gradient=*/true);
 
   return {node_1_output, node_2_output, node_3_output};
 }

@@ -25,7 +25,7 @@ class NodeStateMachineTest {
  public:
   explicit NodeStateMachineTest(NodePtr node) : _node(std::move(node)) {
     _mock_output =
-        BoltVector::makeDenseVectorWithGradients(/* values = */ {0.5, 0.75});
+        BoltVector::dense(/* values = */ {0.5, 0.75}, /*has_gradient=*/true);
     _mock_node = std::make_shared<MockNodeWithOutput>(
         _mock_output, /* output_dense_dim = */ 2);
   }

@@ -33,7 +33,8 @@ struct TestDatasetGenerators {
           v.activations[label] += 1.0;
         }
         vectors.push_back(std::move(v));
-        labels.push_back(BoltVector::makeSparseVector({label}, {1.0}));
+        labels.push_back(BoltVector::sparse({label}, {1.0},
+                                            /*has_gradient=*/false));
       }
       data_batches.push_back(BoltBatch(std::move(vectors)));
       label_batches.push_back(BoltBatch(std::move(labels)));
@@ -66,9 +67,8 @@ struct TestDatasetGenerators {
 
       for (uint32_t vec_index = 0; vec_index < batch_size; vec_index++) {
         uint32_t token = tokens[batch_index * batch_size + vec_index];
-        batch_data.push_back(BoltVector::singleElementSparseVector(token));
-        batch_labels.push_back(
-            BoltVector::singleElementSparseVector(token % 2));
+        batch_data.push_back(BoltVector::sparse({token}, {1.0}));
+        batch_labels.push_back(BoltVector::sparse({token % 2}, {1.0}));
       }
 
       data.push_back(BoltBatch(std::move(batch_data)));
@@ -111,9 +111,11 @@ struct TestDatasetGenerators {
           v.activations[label] += 1.0;
         }
         dense_features.push_back(std::move(v));
-        categorical_features.push_back(BoltVector::singleElementSparseVector(
-            categorical_features_are_noise ? label_dist(gen) : label));
-        labels.push_back(BoltVector::makeSparseVector({label}, {1.0}));
+        categorical_features.push_back(BoltVector::sparse(
+            {categorical_features_are_noise ? label_dist(gen) : label}, {1.0},
+            /*has_gradient=*/false));
+        labels.push_back(
+            BoltVector::sparse({label}, {1.0}, /*has_gradient=*/false));
       }
       data_batches.emplace_back(std::move(dense_features));
       token_batches.emplace_back(std::move(categorical_features));
@@ -164,9 +166,9 @@ struct TestDatasetGenerators {
           }
         }
 
-        auto token_vector = BoltVector::makeSparseVector(
+        auto token_vector = BoltVector::sparse(
             std::vector<uint32_t>(tokens.begin(), tokens.end()),
-            std::vector<float>(tokens.size(), 1.0));
+            std::vector<float>(tokens.size(), 1.0), /*has_gradients=*/false);
 
         BoltVector label_vec(/* l= */ 1, /* is_dense= */ false);
         label_vec.active_neurons[0] = id_in_tokens;

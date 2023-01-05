@@ -65,8 +65,9 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
     for (uint32_t i = 0; i < tokens.size(); i++) {
       layer->forward(
           i,
-          BoltVector::makeSparseVector(
-              tokens.at(i), std::vector<float>(tokens.at(i).size(), 1.0)),
+          BoltVector::sparse(tokens.at(i),
+                             std::vector<float>(tokens.at(i).size(), 1.0),
+                             /*has_gradients=*/false),
           output[i]);
     }
 

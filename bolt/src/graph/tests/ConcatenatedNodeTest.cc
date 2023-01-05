@@ -116,11 +116,11 @@ void testConcatForwardAndBackwardPass(
 
 TEST(ConcatenatedNodeTest, DenseConcatTest) {
   BoltVector node_1_output =
-      BoltVector::makeDenseVectorWithGradients(/* values = */ {0.5, 0.75});
+      BoltVector::dense(/* values = */ {0.5, 0.75}, /*has_gradient=*/true);
   BoltVector node_2_output =
-      BoltVector::makeDenseVectorWithGradients(/* values = */ {0.25, 0, 0.25});
+      BoltVector::dense(/* values = */ {0.25, 0, 0.25}, /*has_gradient=*/true);
   BoltVector node_3_output =
-      BoltVector::makeDenseVectorWithGradients(/* values = */ {0});
+      BoltVector::dense(/* values = */ {0}, /*has_gradient=*/true);
   testConcatForwardAndBackwardPass(
       /* input_dense_dims = */ {2, 3, 1},
       /* inputs = */ {node_1_output, node_2_output, node_3_output},
@@ -156,7 +156,7 @@ TEST(ConcatenatedNodeTest, SparseAndDenseConcatTest) {
       /* indices = */ {17, 3}, /* values = */ {0.5, 0.75},
       /*has_gradient=*/true);
   BoltVector node_2_output =
-      BoltVector::makeDenseVectorWithGradients(/* values = */ {0.25, 0, 0.25});
+      BoltVector::dense(/* values = */ {0.25, 0, 0.25}, /*has_gradients=*/true);
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       testConcatForwardAndBackwardPass(
           /* input_dense_dims = */ {25, 3},

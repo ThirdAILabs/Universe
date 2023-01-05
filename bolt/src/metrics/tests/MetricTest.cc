@@ -16,13 +16,11 @@ TEST(MetricTest, CategoricalAccuracy) {
 
   {  // Dense outputs, dense labels
 
-    BoltVector a = BoltVector::makeDenseVector({4.0, 3.0, -1.5, 7.5, 0.0, 7.0});
-    BoltVector l_a =
-        BoltVector::makeDenseVector({1.0, 0.0, 0.0, 1.0, 0.0, 0.0});
+    BoltVector a = BoltVector::dense({4.0, 3.0, -1.5, 7.5, 0.0, 7.0});
+    BoltVector l_a = BoltVector::dense({1.0, 0.0, 0.0, 1.0, 0.0, 0.0});
 
-    BoltVector b = BoltVector::makeDenseVector({4.0, 3.0, -1.5, 7.5, 0.0, 7.0});
-    BoltVector l_b =
-        BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 1.0, 0.0});
+    BoltVector b = BoltVector::dense({4.0, 3.0, -1.5, 7.5, 0.0, 7.0});
+    BoltVector l_b = BoltVector::dense({1.0, 0.0, 0.0, 0.0, 1.0, 0.0});
 
     // Check correct value is computed for each sample
     single.record(a, l_a);
@@ -39,13 +37,11 @@ TEST(MetricTest, CategoricalAccuracy) {
 
   {  // Dense outputs, sparse labels
 
-    BoltVector a = BoltVector::makeDenseVector({4.0, 3.0, -1.5, 7.5, 0.0, 7.0});
-    BoltVector l_a =
-        BoltVector::makeSparseVector({0, 1, 3, 5}, {1.0, 1.0, 1.0, 1.0});
+    BoltVector a = BoltVector::dense({4.0, 3.0, -1.5, 7.5, 0.0, 7.0});
+    BoltVector l_a = BoltVector::sparse({0, 1, 3, 5}, {1.0, 1.0, 1.0, 1.0});
 
-    BoltVector b = BoltVector::makeDenseVector({4.0, 3.0, -1.5, 7.5, 0.0, 7.0});
-    BoltVector l_b =
-        BoltVector::makeSparseVector({0, 1, 4, 5}, {1.0, 1.0, 1.0, 1.0});
+    BoltVector b = BoltVector::dense({4.0, 3.0, -1.5, 7.5, 0.0, 7.0});
+    BoltVector l_b = BoltVector::sparse({0, 1, 4, 5}, {1.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
     single.record(a, l_a);
@@ -62,15 +58,11 @@ TEST(MetricTest, CategoricalAccuracy) {
 
   {  // Sparse outputs, dense labels
 
-    BoltVector a =
-        BoltVector::makeSparseVector({1, 2, 3, 5}, {3.0, -1.5, 7.5, 7.0});
-    BoltVector l_a =
-        BoltVector::makeDenseVector({1.0, 0.0, 0.0, 1.0, 0.0, 0.0});
+    BoltVector a = BoltVector::sparse({1, 2, 3, 5}, {3.0, -1.5, 7.5, 7.0});
+    BoltVector l_a = BoltVector::dense({1.0, 0.0, 0.0, 1.0, 0.0, 0.0});
 
-    BoltVector b =
-        BoltVector::makeSparseVector({1, 2, 3, 5}, {3.0, -1.5, 7.5, 7.0});
-    BoltVector l_b =
-        BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 1.0, 0.0});
+    BoltVector b = BoltVector::sparse({1, 2, 3, 5}, {3.0, -1.5, 7.5, 7.0});
+    BoltVector l_b = BoltVector::dense({1.0, 0.0, 0.0, 0.0, 1.0, 0.0});
 
     // Check correct value is computed for each sample
     single.record(a, l_a);
@@ -88,15 +80,11 @@ TEST(MetricTest, CategoricalAccuracy) {
 
   {  // Sparse outputs, sparse labels
 
-    BoltVector a =
-        BoltVector::makeSparseVector({1, 2, 3, 5}, {3.0, -1.5, 7.5, 7.0});
-    BoltVector l_a =
-        BoltVector::makeSparseVector({0, 1, 3, 5}, {1.0, 1.0, 1.0, 1.0});
+    BoltVector a = BoltVector::sparse({1, 2, 3, 5}, {3.0, -1.5, 7.5, 7.0});
+    BoltVector l_a = BoltVector::sparse({0, 1, 3, 5}, {1.0, 1.0, 1.0, 1.0});
 
-    BoltVector b =
-        BoltVector::makeSparseVector({1, 2, 3, 5}, {3.0, -1.5, 7.5, 7.0});
-    BoltVector l_b =
-        BoltVector::makeSparseVector({0, 1, 4, 5}, {1.0, 1.0, 1.0, 1.0});
+    BoltVector b = BoltVector::sparse({1, 2, 3, 5}, {3.0, -1.5, 7.5, 7.0});
+    BoltVector l_b = BoltVector::sparse({0, 1, 4, 5}, {1.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
     single.record(a, l_a);
@@ -136,12 +124,9 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorCorrectCalculation) {
 
     // WMAPE gives same result whether the input vector is a greater than
     // or less than the label by the same proportion.
-    BoltVector dense_pred_1 =
-        BoltVector::makeDenseVector({6.0, 4.5, 9.0, 1.5, 1.5, 1.5});
-    BoltVector dense_pred_2 =
-        BoltVector::makeDenseVector({2.0, 1.5, 3.0, 0.5, 0.5, 0.5});
-    BoltVector dense_truth =
-        BoltVector::makeDenseVector({4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
+    BoltVector dense_pred_1 = BoltVector::dense({6.0, 4.5, 9.0, 1.5, 1.5, 1.5});
+    BoltVector dense_pred_2 = BoltVector::dense({2.0, 1.5, 3.0, 0.5, 0.5, 0.5});
+    BoltVector dense_truth = BoltVector::dense({4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
     single.record(dense_pred_1, dense_truth);
@@ -160,18 +145,17 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorCorrectCalculation) {
   {  // Dense outputs, sparse labels
 
     // In this example, both vectors have same nonzero neurons.
-    BoltVector dense_pred_1 = BoltVector::makeDenseVector(
-        {6.0, 4.5, 0.0, 9.0, 0.0, 1.5, 0.0, 1.5, 1.5});
-    BoltVector sparse_truth_same_nonzero_neurons = BoltVector::makeSparseVector(
-        {0, 1, 3, 5, 7, 8}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
+    BoltVector dense_pred_1 =
+        BoltVector::dense({6.0, 4.5, 0.0, 9.0, 0.0, 1.5, 0.0, 1.5, 1.5});
+    BoltVector sparse_truth_same_nonzero_neurons =
+        BoltVector::sparse({0, 1, 3, 5, 7, 8}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
     // In this example, there is an active neuron in b that is not active in
     // l_b. Make sure the this active neuron is accounted for.
-    BoltVector dense_pred_2 = BoltVector::makeDenseVector(
-        {4.0, 4.5, 2.0, 9.0, 0.0, 1.5, 0.0, 1.5, 1.5});
+    BoltVector dense_pred_2 =
+        BoltVector::dense({4.0, 4.5, 2.0, 9.0, 0.0, 1.5, 0.0, 1.5, 1.5});
     BoltVector sparse_truth_different_nonzero_neurons =
-        BoltVector::makeSparseVector({0, 1, 3, 5, 7, 8},
-                                     {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
+        BoltVector::sparse({0, 1, 3, 5, 7, 8}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
     single.record(dense_pred_1, sparse_truth_same_nonzero_neurons);
@@ -190,18 +174,17 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorCorrectCalculation) {
   {  // Sparse outputs, dense labels
 
     // In this example, both vectors have same nonzero neurons.
-    BoltVector sparse_pred_1 = BoltVector::makeSparseVector(
-        {0, 1, 3, 5, 7, 8}, {6.0, 4.5, 9.0, 1.5, 1.5, 1.5});
-    BoltVector dense_truth_same_nonzero_neurons = BoltVector::makeDenseVector(
-        {4.0, 3.0, 0.0, 6.0, 0.0, 1.0, 0.0, 1.0, 1.0});
+    BoltVector sparse_pred_1 =
+        BoltVector::sparse({0, 1, 3, 5, 7, 8}, {6.0, 4.5, 9.0, 1.5, 1.5, 1.5});
+    BoltVector dense_truth_same_nonzero_neurons =
+        BoltVector::dense({4.0, 3.0, 0.0, 6.0, 0.0, 1.0, 0.0, 1.0, 1.0});
 
     // In this example, there is an active neuron in l_b that is not active in
     // b, and vice versa. Make sure the these active neurons are accounted for.
-    BoltVector sparse_pred_2 = BoltVector::makeSparseVector(
+    BoltVector sparse_pred_2 = BoltVector::sparse(
         {0, 1, 2, 3, 5, 7, 8}, {4.0, 4.5, 1.0, 9.0, 1.5, 1.5, 1.5});
     BoltVector dense_truth_different_nonzero_neurons =
-        BoltVector::makeDenseVector(
-            {4.0, 3.0, 0.0, 6.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
+        BoltVector::dense({4.0, 3.0, 0.0, 6.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
 
     // Check correct value is computed for each sample
     single.record(sparse_pred_1, dense_truth_same_nonzero_neurons);
@@ -220,18 +203,17 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorCorrectCalculation) {
   {  // Sparse outputs, sparse labels
 
     // In this example, both vectors have same nonzero neurons.
-    BoltVector sparse_pred_1 = BoltVector::makeSparseVector(
-        {0, 1, 3, 5, 7, 8}, {6.0, 4.5, 9.0, 1.5, 1.5, 1.5});
-    BoltVector sparse_truth_same_nonzero_neurons = BoltVector::makeSparseVector(
-        {0, 1, 3, 5, 7, 8}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
+    BoltVector sparse_pred_1 =
+        BoltVector::sparse({0, 1, 3, 5, 7, 8}, {6.0, 4.5, 9.0, 1.5, 1.5, 1.5});
+    BoltVector sparse_truth_same_nonzero_neurons =
+        BoltVector::sparse({0, 1, 3, 5, 7, 8}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
     // In this example, there is an active neuron in l_b that is not active in
     // b, and vice versa. Make sure the these active neurons are accounted for.
-    BoltVector sparse_pred_2 = BoltVector::makeSparseVector(
+    BoltVector sparse_pred_2 = BoltVector::sparse(
         {0, 1, 2, 3, 5, 7, 8}, {4.0, 4.5, 1.0, 9.0, 1.5, 1.5, 1.5});
     BoltVector sparse_truth_different_nonzero_neurons =
-        BoltVector::makeSparseVector({0, 1, 3, 5, 7, 9},
-                                     {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
+        BoltVector::sparse({0, 1, 3, 5, 7, 9}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
     single.record(sparse_pred_1, sparse_truth_same_nonzero_neurons);
@@ -263,15 +245,15 @@ TEST(MetricTest, FMeasure) {
     //                                          tp: 1, fp: 2, fn: 1
     //                         thresholded_neurons: 0, 3, 4
     BoltVector dense_pred_1 =
-        BoltVector::makeDenseVector({1.0, 0.2, 0.0, 1.0, 0.9, 0.0, 0.5, 0.0});
+        BoltVector::dense({1.0, 0.2, 0.0, 1.0, 0.9, 0.0, 0.5, 0.0});
     BoltVector dense_label_1 =
-        BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0});
+        BoltVector::dense({1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0});
 
     //                                          tp: 2, fp: 1, fn: 1
     BoltVector dense_pred_2 =
-        BoltVector::makeDenseVector({1.0, 0.0, 0.1, 0.9, 1.0, 0.0, 0.0, 0.6});
+        BoltVector::dense({1.0, 0.0, 0.1, 0.9, 1.0, 0.0, 0.0, 0.6});
     BoltVector dense_label_2 =
-        BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0});
+        BoltVector::dense({1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0});
 
     // Check correct value is computed for each sample
     single.record(dense_pred_1, dense_label_1);
@@ -289,14 +271,12 @@ TEST(MetricTest, FMeasure) {
 
   {  // Dense outputs, sparse labels
     BoltVector dense_pred_1 =
-        BoltVector::makeDenseVector({0.2, 0.2, 0.0, 0.9, 0.0, 1.0, 0.1, 0.0});
-    BoltVector sparse_label_1 =
-        BoltVector::makeSparseVector({3, 4, 7}, {1.0, 1.0, 1.0});
+        BoltVector::dense({0.2, 0.2, 0.0, 0.9, 0.0, 1.0, 0.1, 0.0});
+    BoltVector sparse_label_1 = BoltVector::sparse({3, 4, 7}, {1.0, 1.0, 1.0});
 
     BoltVector dense_pred_2 =
-        BoltVector::makeDenseVector({0.5, 0.0, 0.0, 1.0, 0.0, 0.9, 0.0, 0.0});
-    BoltVector sparse_label_2 =
-        BoltVector::makeSparseVector({3, 5}, {1.0, 1.0});
+        BoltVector::dense({0.5, 0.0, 0.0, 1.0, 0.0, 0.9, 0.0, 0.0});
+    BoltVector sparse_label_2 = BoltVector::sparse({3, 5}, {1.0, 1.0});
 
     // Check correct value is computed for each sample
     single.record(dense_pred_1, sparse_label_1);
@@ -312,15 +292,13 @@ TEST(MetricTest, FMeasure) {
   }
 
   {  // Sparse outputs, dense labels
-    BoltVector sparse_pred_1 =
-        BoltVector::makeSparseVector({0, 3, 5}, {0.1, 0.9, 1.0});
+    BoltVector sparse_pred_1 = BoltVector::sparse({0, 3, 5}, {0.1, 0.9, 1.0});
     BoltVector dense_label_1 =
-        BoltVector::makeDenseVector({0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0});
+        BoltVector::dense({0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0});
 
-    BoltVector sparse_pred_2 =
-        BoltVector::makeSparseVector({2, 3, 5}, {0.5, 1.0, 0.9});
+    BoltVector sparse_pred_2 = BoltVector::sparse({2, 3, 5}, {0.5, 1.0, 0.9});
     BoltVector dense_label_2 =
-        BoltVector::makeDenseVector({0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0});
+        BoltVector::dense({0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0});
 
     // Check correct value is computed for each sample
     single.record(sparse_pred_1, dense_label_1);
@@ -337,15 +315,13 @@ TEST(MetricTest, FMeasure) {
   }
 
   {  // Sparse outputs, sparse labels
-    BoltVector sparse_pred_1 = BoltVector::makeSparseVector(
-        {0, 2, 3, 4, 7}, {0.9, 0.2, 1.0, 0.9, 0.6});
-    BoltVector sparse_label_1 =
-        BoltVector::makeSparseVector({0, 6}, {1.0, 1.0});
+    BoltVector sparse_pred_1 =
+        BoltVector::sparse({0, 2, 3, 4, 7}, {0.9, 0.2, 1.0, 0.9, 0.6});
+    BoltVector sparse_label_1 = BoltVector::sparse({0, 6}, {1.0, 1.0});
 
-    BoltVector sparse_pred_2 = BoltVector::makeSparseVector(
-        {0, 1, 3, 4, 5}, {1.0, 0.0, 0.9, 1.0, 0.6});
-    BoltVector sparse_label_2 =
-        BoltVector::makeSparseVector({0, 4, 6}, {1.0, 1.0, 1.0});
+    BoltVector sparse_pred_2 =
+        BoltVector::sparse({0, 1, 3, 4, 5}, {1.0, 0.0, 0.9, 1.0, 0.6});
+    BoltVector sparse_label_2 = BoltVector::sparse({0, 4, 6}, {1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
     single.record(sparse_pred_1, sparse_label_1);
@@ -374,9 +350,9 @@ TEST(MetricTest, FMeasureWithVariableBeta) {
     //                                          tp: 1, fp: 3, fn: 0
     //                         thresholded_neurons: 0, 3, 4, 5
     BoltVector dense_pred_1 =
-        BoltVector::makeDenseVector({1.0, 0.2, 0.0, 1.0, 0.9, 0.8, 0.5, 0.0});
+        BoltVector::dense({1.0, 0.2, 0.0, 1.0, 0.9, 0.8, 0.5, 0.0});
     BoltVector dense_label_1 =
-        BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+        BoltVector::dense({1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
 
     // Check correct value is computed for each sample
     metric->record(dense_pred_1, dense_label_1);
@@ -395,9 +371,9 @@ TEST(MetricTest, FMeasureWithVariableBeta) {
     //                                          tp: 1, fp: 0, fn: 3
     //                         thresholded_neurons: 0
     BoltVector dense_pred_1 =
-        BoltVector::makeDenseVector({0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+        BoltVector::dense({0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
     BoltVector dense_label_1 =
-        BoltVector::makeDenseVector({1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0});
+        BoltVector::dense({1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0});
 
     // Check correct value is computed for each sample
     metric->record(dense_pred_1, dense_label_1);
@@ -439,8 +415,8 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorParallel) {
 #pragma omp parallel for default(none) \
     shared(metric, n_samples, predictions, truths)
   for (uint32_t i = 0; i < n_samples; i++) {
-    BoltVector pred = BoltVector::makeDenseVector({predictions[i]});
-    BoltVector truth = BoltVector::makeDenseVector({truths[i]});
+    BoltVector pred = BoltVector::dense({predictions[i]});
+    BoltVector truth = BoltVector::dense({truths[i]});
 
     metric.record(pred, truth);
   }
@@ -469,22 +445,19 @@ TEST(MetricTest, Recall) {
   std::vector<uint32_t> bad_sparse_output_active_neurons = {5, 1, 2};
   std::vector<float> bad_sparse_output_activations = {0.9, 0.8, 0.4};
 
-  auto dense_label = BoltVector::makeDenseVector(dense_label_activations);
-  auto good_dense_output =
-      BoltVector::makeDenseVector(good_dense_output_activations);
-  auto ok_dense_output =
-      BoltVector::makeDenseVector(ok_dense_output_activations);
-  auto bad_dense_output =
-      BoltVector::makeDenseVector(bad_dense_output_activations);
+  auto dense_label = BoltVector::dense(dense_label_activations);
+  auto good_dense_output = BoltVector::dense(good_dense_output_activations);
+  auto ok_dense_output = BoltVector::dense(ok_dense_output_activations);
+  auto bad_dense_output = BoltVector::dense(bad_dense_output_activations);
 
-  auto sparse_label = BoltVector::makeSparseVector(sparse_label_active_neurons,
-                                                   sparse_label_activations);
-  auto good_sparse_output = BoltVector::makeSparseVector(
+  auto sparse_label =
+      BoltVector::sparse(sparse_label_active_neurons, sparse_label_activations);
+  auto good_sparse_output = BoltVector::sparse(
       good_sparse_output_active_neurons, good_sparse_output_activations);
-  auto ok_sparse_output = BoltVector::makeSparseVector(
-      ok_sparse_output_active_neurons, ok_sparse_output_activations);
-  auto bad_sparse_output = BoltVector::makeSparseVector(
-      bad_sparse_output_active_neurons, bad_sparse_output_activations);
+  auto ok_sparse_output = BoltVector::sparse(ok_sparse_output_active_neurons,
+                                             ok_sparse_output_activations);
+  auto bad_sparse_output = BoltVector::sparse(bad_sparse_output_active_neurons,
+                                              bad_sparse_output_activations);
 
   {
     RecallAtK metric(3);

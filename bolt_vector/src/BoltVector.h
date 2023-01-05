@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <queue>
@@ -30,6 +31,15 @@ struct FoundActiveNeuron {
 };
 
 struct BoltVector {
+ private:
+  struct Storage {
+    std::unique_ptr<uint32_t> neurons;
+    std::unique_ptr<float> activations;
+    std::unique_ptr<float> gradients;
+  };
+
+  Storage _storage;
+
  public:
   uint32_t* active_neurons;
   float* activations;

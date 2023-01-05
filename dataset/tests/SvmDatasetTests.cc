@@ -120,7 +120,7 @@ TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
   // Check data vectors are correct.
   uint32_t vec_count = 0;
   for (const auto& batch : *data) {
-    uint32_t batch_size = batch.getBatchSize();
+    uint32_t batch_size = batch.size();
     ASSERT_TRUE(batch_size == batch_size ||
                 batch_size == num_vectors % batch_size);
 
@@ -141,8 +141,8 @@ TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
   // Check labels are correct.
   uint32_t label_count = 0;
   for (const auto& batch : *labels) {
-    ASSERT_TRUE(batch.getBatchSize() == batch_size ||
-                batch.getBatchSize() == num_vectors % batch_size);
+    ASSERT_TRUE(batch.size() == batch_size ||
+                batch.size() == num_vectors % batch_size);
 
     for (const auto& vec : batch) {
       ASSERT_EQ(vec.len, _vectors.at(label_count).labels.size());

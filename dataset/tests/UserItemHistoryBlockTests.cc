@@ -111,7 +111,7 @@ auto processSamples(std::vector<std::string>& samples, uint32_t track_last_n,
 auto groupVectorsByUser(BoltBatch&& batch,
                         const std::vector<uint32_t>& user_ids) {
   std::unordered_map<uint32_t, std::vector<BoltVector>> user_to_vectors;
-  for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
+  for (uint32_t i = 0; i < batch.size(); i++) {
     user_to_vectors[user_ids[i]].push_back(std::move(batch[i]));
   }
   return user_to_vectors;
@@ -216,9 +216,9 @@ TEST(UserItemHistoryBlockTests, CorrectMultiThread) {
   auto parallel_batch =
       processSamples(samples, track_last_n, /* parallel= */ true);
 
-  ASSERT_EQ(sequential_batch.getBatchSize(), parallel_batch.getBatchSize());
+  ASSERT_EQ(sequential_batch.size(), parallel_batch.size());
 
-  for (uint32_t i = 0; i < sequential_batch.getBatchSize(); i++) {
+  for (uint32_t i = 0; i < sequential_batch.size(); i++) {
     auto sequential_elements = vectorAsWeightedSet(sequential_batch[i]);
     auto parallel_elements = vectorAsWeightedSet(parallel_batch[i]);
 

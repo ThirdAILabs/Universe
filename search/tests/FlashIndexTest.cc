@@ -53,8 +53,8 @@ TEST(FlashIndexTest, FlashIndexSerializationTest) {
 
   uint32_t label_offset = 0;
   for (BoltBatch& batch : flash_index_batches) {
-    label_offset += batch.getBatchSize();
-    auto labels = createBatchLabels(batch.getBatchSize(), label_offset);
+    label_offset += batch.size();
+    auto labels = createBatchLabels(batch.size(), label_offset);
     flash_index.addBatch(batch, labels);
   }
 

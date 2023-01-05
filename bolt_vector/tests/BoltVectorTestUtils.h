@@ -65,7 +65,7 @@ inline std::vector<BoltVector> createRandomSparseVectors(
     std::generate(activations.begin(), activations.end(),
                   [&]() { return distribution(generator); });
 
-    auto vec = BoltVector::makeSparseVector(active_neurons, activations);
+    auto vec = BoltVector::sparse(active_neurons, activations);
 
     result.push_back(std::move(vec));
   }

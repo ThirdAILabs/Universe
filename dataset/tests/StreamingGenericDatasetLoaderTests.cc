@@ -68,8 +68,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     for (size_t batch_idx = 0; batch_idx < inputs->numBatches(); batch_idx++) {
       auto& input_batch = inputs->at(batch_idx);
       auto& label_batch = labels->at(batch_idx);
-      for (size_t vec_idx = 0; vec_idx < input_batch.getBatchSize();
-           vec_idx++) {
+      for (size_t vec_idx = 0; vec_idx < input_batch.size(); vec_idx++) {
         auto& input_vec = input_batch[vec_idx];
         auto& label_vec = label_batch[vec_idx];
 
@@ -94,8 +93,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
 
     for (size_t batch_idx = 0; batch_idx < inputs->numBatches(); batch_idx++) {
       auto& input_batch = inputs->at(batch_idx);
-      for (size_t vec_idx = 0; vec_idx < input_batch.getBatchSize();
-           vec_idx++) {
+      for (size_t vec_idx = 0; vec_idx < input_batch.size(); vec_idx++) {
         if (input_batch[vec_idx].activations[0] != cur_expected_value) {
           return false;
         }
@@ -114,8 +112,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
          batch_idx++) {
       auto& input_batch_1 = inputs_1->at(batch_idx);
       auto& input_batch_2 = inputs_2->at(batch_idx);
-      for (size_t vec_idx = 0; vec_idx < input_batch_1.getBatchSize();
-           vec_idx++) {
+      for (size_t vec_idx = 0; vec_idx < input_batch_1.size(); vec_idx++) {
         if (input_batch_1[vec_idx].activations[0] !=
             input_batch_2[vec_idx].activations[0]) {
           return false;
@@ -146,7 +143,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
       const float percent_original_vectors_threshold = 0.2;
       auto original_vectors_count = countOriginalVectors(batch, batch_idx);
       ASSERT_LE(original_vectors_count,
-                percent_original_vectors_threshold * batch.getBatchSize());
+                percent_original_vectors_threshold * batch.size());
 
       if (batch_idx > 0) {
         ASSERT_TRUE(containsVectorsFromEarlierBatch(batch, batch_idx));
@@ -185,8 +182,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
 
   static size_t countOriginalVectors(BoltBatch& batch, uint32_t batch_idx) {
     float original_value_range_start = batch_idx * batch_size;
-    float original_value_range_end =
-        original_value_range_start + batch.getBatchSize();
+    float original_value_range_end = original_value_range_start + batch.size();
     size_t count = 0;
 
     for (const auto& vec : batch) {
@@ -209,8 +205,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
 
   static bool containsVectorsFromLaterBatch(BoltBatch& batch,
                                             uint32_t batch_idx) {
-    float original_value_range_end =
-        batch_idx * batch_size + batch.getBatchSize();
+    float original_value_range_end = batch_idx * batch_size + batch.size();
     return std::any_of(batch.begin(), batch.end(), [&](const auto& vec) {
       return vec.activations[0] >= original_value_range_end;
     });

@@ -106,10 +106,10 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
 
   void verifySparseLabelBatch(const BoltBatch& labels,
                               uint32_t label_count_base) {
-    ASSERT_TRUE(labels.getBatchSize() == _batch_size ||
-                labels.getBatchSize() == _num_vectors % _batch_size);
+    ASSERT_TRUE(labels.size() == _batch_size ||
+                labels.size() == _num_vectors % _batch_size);
 
-    for (uint32_t v = 0; v < labels.getBatchSize(); v++) {
+    for (uint32_t v = 0; v < labels.size(); v++) {
       ASSERT_EQ(labels[v].len, 1);
       ASSERT_EQ(labels[v].active_neurons[0],
                 _ground_truths_vectors.at(label_count_base + v).label);
@@ -119,10 +119,10 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
 
   void verifyDenseInputBatch(const BoltBatch& dense_inputs,
                              uint32_t vec_count_base) {
-    ASSERT_TRUE(dense_inputs.getBatchSize() == _batch_size ||
-                dense_inputs.getBatchSize() == _num_vectors % _batch_size);
+    ASSERT_TRUE(dense_inputs.size() == _batch_size ||
+                dense_inputs.size() == _num_vectors % _batch_size);
 
-    for (uint32_t v = 0; v < dense_inputs.getBatchSize(); v++) {
+    for (uint32_t v = 0; v < dense_inputs.size(); v++) {
       ASSERT_EQ(dense_inputs[v].len, getNumDenseFeatures());
       for (uint32_t i = 0; i < getNumDenseFeatures(); i++) {
         float val =
@@ -136,10 +136,10 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
   }
 
   void verifyTokenBatch(const BoltBatch& tokens, uint32_t vec_count_base) {
-    ASSERT_TRUE(tokens.getBatchSize() == _batch_size ||
-                tokens.getBatchSize() == _num_vectors % _batch_size);
+    ASSERT_TRUE(tokens.size() == _batch_size ||
+                tokens.size() == _num_vectors % _batch_size);
 
-    for (uint32_t v = 0; v < tokens.getBatchSize(); v++) {
+    for (uint32_t v = 0; v < tokens.size(); v++) {
       EXPECT_EQ(tokens[v].len, getNumCategoricalFeatures());
       for (uint32_t i = 0; i < tokens[v].len; i++) {
         uint32_t correct_token = _ground_truths_vectors.at(vec_count_base + v)
@@ -176,21 +176,21 @@ TEST_F(ClickThroughDatasetTestFixture, InMemoryDatasetTestSparseLabel) {
   uint32_t label_count = 0;
   for (const auto& batch : *labels) {
     verifySparseLabelBatch(batch, label_count);
-    label_count += batch.getBatchSize();
+    label_count += batch.size();
   }
   ASSERT_EQ(label_count, _num_vectors);
 
   uint32_t vec_count = 0;
   for (const auto& dense_input : *dense_inputs) {
     verifyDenseInputBatch(dense_input, vec_count);
-    vec_count += dense_input.getBatchSize();
+    vec_count += dense_input.size();
   }
   ASSERT_EQ(vec_count, _num_vectors);
 
   uint32_t token_count = 0;
   for (const auto& token_input : *tokens) {
     verifyTokenBatch(token_input, token_count);
-    token_count += token_input.getBatchSize();
+    token_count += token_input.size();
   }
   ASSERT_EQ(token_count, _num_vectors);
 }

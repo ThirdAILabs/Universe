@@ -33,7 +33,7 @@ auto generateSwitchDataset() {
 
     for (uint32_t i = 0; i < vector_data->batchSize(batch_index); i++) {
       masked_indices.push_back(
-          BoltVector::singleElementSparseVector(int_dist(rand)));
+          BoltVector::sparse({int_dist(rand)}, {1.0}, /*has_gradient=*/false));
     }
 
     token_batches.emplace_back(BoltBatch(std::move(masked_indices)));

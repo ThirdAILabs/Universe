@@ -140,9 +140,9 @@ TEST_F(CategoricalBlockTest, ProducesCorrectVectorsDifferentColumns) {
 void verifyExpectedLabels(
     const BoltBatch& labels,
     const std::vector<std::vector<uint32_t>>& expected_labels) {
-  EXPECT_EQ(labels.getBatchSize(), expected_labels.size());
+  EXPECT_EQ(labels.size(), expected_labels.size());
 
-  for (uint32_t vec_index = 0; vec_index < labels.getBatchSize(); vec_index++) {
+  for (uint32_t vec_index = 0; vec_index < labels.size(); vec_index++) {
     ASSERT_EQ(labels[vec_index].len, expected_labels.at(vec_index).size());
     for (uint32_t i = 0; i < labels[vec_index].len; i++) {
       ASSERT_EQ(labels[vec_index].active_neurons[i],

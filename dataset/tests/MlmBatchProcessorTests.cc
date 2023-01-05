@@ -53,9 +53,9 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
 
   std::unordered_set<uint32_t> masked_word_hashes;
 
-  EXPECT_EQ(data.getBatchSize(), 4);
-  EXPECT_EQ(masked_indices.getBatchSize(), 4);
-  EXPECT_EQ(labels.getBatchSize(), 4);
+  EXPECT_EQ(data.size(), 4);
+  EXPECT_EQ(masked_indices.size(), 4);
+  EXPECT_EQ(labels.size(), 4);
 
   for (uint32_t i = 0; i < 4; i++) {
     auto unigrams = ids_from_words(vocab, tokenized_sentences[i]);
@@ -90,9 +90,9 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatchMultipleMaskedTokens) {
 
   auto [data, masked_indices, labels] = processor.createBatch(rows);
 
-  EXPECT_EQ(data.getBatchSize(), 4);
-  EXPECT_EQ(masked_indices.getBatchSize(), 4);
-  EXPECT_EQ(labels.getBatchSize(), 4);
+  EXPECT_EQ(data.size(), 4);
+  EXPECT_EQ(masked_indices.size(), 4);
+  EXPECT_EQ(labels.size(), 4);
 
   for (uint32_t index = 0; index < 4; index++) {
     // Only unit-test here is that percentage works.
