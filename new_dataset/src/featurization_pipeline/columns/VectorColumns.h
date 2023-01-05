@@ -327,4 +327,33 @@ class CppStringContributionColumn : public StringContributionColumn {
   std::vector<std::vector<Contribution<std::string>>> _data;
 };
 
+class CppDenseContributionColumn : public DenseContributionColumn {
+ public:
+  explicit CppDenseContributionColumn(
+      std::vector<std::vector<Contribution<float>>> data)
+      : _data(std::move(data)) {
+    check2DArrayNonEmpty<Contribution<float>>(_data);
+  }
+
+  std::vector<Contribution<float>> getRow(uint64_t n) const final {
+    return _data[n];
+  }
+
+  uint64_t numRows() const final { return _data.size(); }
+
+  void resize(uint64_t n) final { _data.resize(n); }
+
+  void insert(const std::vector<Contribution<float>>& row_values,
+              uint64_t n) final {
+    if (_data.size() < n) {
+      throw std::invalid_argument(
+          "index out of bounds or haven't reserved the vectors properly.");
+    }
+    _data[n] = row_values;
+  }
+
+ private:
+  std::vector<std::vector<Contribution<float>>> _data;
+};
+
 }  // namespace thirdai::data::columns

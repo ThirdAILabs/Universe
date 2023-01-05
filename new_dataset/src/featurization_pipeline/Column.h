@@ -184,6 +184,7 @@ class ContibutionColumn : public ContibutionColumnBase {
 
 using TokenContributionColumn = ContibutionColumn<uint32_t>;
 using StringContributionColumn = ContibutionColumn<std::string>;
+using DenseContributionColumn = ContibutionColumn<float>;
 
 using TokenContributionColumnPtr = std::shared_ptr<TokenContributionColumn>;
 

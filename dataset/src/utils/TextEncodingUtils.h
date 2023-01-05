@@ -143,6 +143,16 @@ class TextEncodingUtils {
     return pairgram_hashes;
   }
 
+  static std::vector<PairGram> returnPairgrams(
+      const std::vector<uint32_t>& unigram_hashes, uint32_t output_range) {
+    std::vector<PairGram> pairgram_hashes;
+
+    forEachPairgramFromUnigram(
+        unigram_hashes, output_range,
+        [&](PairGram pairgram) { pairgram_hashes.push_back(pairgram); });
+    return pairgram_hashes;
+  }
+
   /**
    * Pairgrams in a vector with possible repeated indices
    */

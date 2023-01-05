@@ -34,6 +34,10 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
                                               "TokenContribution")
       .def_readonly("value", &columns::Contribution<uint32_t>::value)
       .def_readonly("gradient", &columns::Contribution<uint32_t>::gradient);
+  py::class_<columns::Contribution<float>>(columns_submodule,
+                                           "DenseContribution")
+      .def_readonly("value", &columns::Contribution<float>::value)
+      .def_readonly("gradient", &columns::Contribution<float>::gradient);
 
   py::class_<columns::Column, columns::ColumnPtr>(columns_submodule, "Column",
                                                   docs::COLUMN_BASE)
@@ -98,7 +102,14 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
       .def("num_rows", &columns::CppTokenContributionColumn::numRows)
       .def("get_row", &columns::CppTokenContributionColumn::getRow,
            py::arg("row_number"));
-  ;
+
+  py::class_<columns::CppDenseContributionColumn,
+             columns::ContibutionColumnBase,
+             std::shared_ptr<columns::CppDenseContributionColumn>>(
+      contribution_columns_submodule, "DenseContributionColumn")
+      .def("num_rows", &columns::CppDenseContributionColumn::numRows)
+      .def("get_row", &columns::CppDenseContributionColumn::getRow,
+           py::arg("row_number"));
 
   auto augmentations_submodule =
       dataset_submodule.def_submodule("augmentations");
