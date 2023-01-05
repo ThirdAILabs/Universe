@@ -147,12 +147,31 @@ class EarlyStopCheckpoint : public Callback {
       }
     }
 
+    saveBestModel(model, metric_value);
+
+    handleTimeOut(train_state);
+
+    _previous_validation_score = metric_value;
+  }
+
+ private:
+  bool isImprovement(double metric_value) {
+    double score_to_compare_against = _compare_against == "prev"
+                                          ? _previous_validation_score
+                                          : _best_validation_score;
+    return std::abs(metric_value - score_to_compare_against) >= _min_delta &&
+           _metric->betterThan(metric_value, score_to_compare_against);
+  }
+
+  void saveBestModel(BoltGraph& model, double metric_value) {
     // save the model if its the best so far
     if (_metric->betterThan(metric_value, _best_validation_score)) {
       _best_validation_score = metric_value;
       model.save(_model_save_path);
     }
+  }
 
+  void handleTimeOut(TrainState& train_state) {
     // stop training if we've timed out
     _total_train_time += train_state.epoch_times.back();
     if (_time_out.has_value() && _total_train_time > _time_out) {
@@ -161,17 +180,6 @@ class EarlyStopCheckpoint : public Callback {
                    "time_out.\n"
                 << std::endl;
     }
-
-    _previous_validation_score = metric_value;
-  }
-
- private:
-  bool isImprovement(double metric_value) {
-    double score_to_compare_against = _previous_validation_score
-                                          ? _compare_against == "prev"
-                                          : _best_validation_score;
-    return std::abs(metric_value - score_to_compare_against) >= _min_delta &&
-           _metric->betterThan(metric_value, score_to_compare_against);
   }
 
   std::optional<std::string> _monitored_metric_name;
