@@ -11,7 +11,7 @@
 #include <hashing/src/MinHash.h>
 #include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
-#include <dataset/src/DataLoader.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
@@ -533,7 +533,7 @@ class QueryCandidateGenerator {
   std::shared_ptr<dataset::BoltDataset> loadDatasetInMemory(
       const std::string& file_name,
       const std::shared_ptr<dataset::GenericBatchProcessor>& batch_processor) {
-    auto file_data_loader = dataset::SimpleFileDataLoader::make(
+    auto file_data_loader = dataset::SimpleFileDataSource::make(
         file_name, _query_generator_config->batchSize());
 
     auto data_loader = std::make_unique<dataset::StreamingGenericDatasetLoader>(
@@ -545,7 +545,7 @@ class QueryCandidateGenerator {
 
   std::tuple<uint32_t, uint32_t> mapColumnNamesToIndices(
       const std::string& file_name, char delimiter) {
-    auto file_data_loader = dataset::SimpleFileDataLoader::make(
+    auto file_data_loader = dataset::SimpleFileDataSource::make(
         /* filename = */ file_name,
         /* target_batch_size = */ _query_generator_config->batchSize());
     auto file_header = file_data_loader->nextLine();

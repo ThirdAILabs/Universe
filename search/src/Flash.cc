@@ -64,19 +64,6 @@ void Flash<LABEL_T>::addDataset(
 }
 
 template <typename LABEL_T>
-void Flash<LABEL_T>::addDataset(
-    dataset::StreamingDataset<BoltBatch>& dataset,
-    const std::vector<std::vector<LABEL_T>>& labels) {
-  uint32_t batch_index = 0;
-  while (auto batch_tuple = dataset.nextBatchTuple()) {
-    const auto& batch = std::get<0>(batch_tuple.value());
-
-    addBatch(batch, labels[batch_index]);
-    batch_index++;
-  }
-}
-
-template <typename LABEL_T>
 void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
                               const std::vector<LABEL_T>& labels) {
   if (batch.getBatchSize() != labels.size()) {

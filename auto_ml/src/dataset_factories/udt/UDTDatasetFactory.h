@@ -18,12 +18,13 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
-#include <dataset/src/DataLoader.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
@@ -80,8 +81,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         contextual_columns, regression_binning);
   }
 
-  dataset::DataLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader, bool training) final;
+  dataset::DatasetLoaderPtr getLabeledDatasetLoader(
+      std::shared_ptr<dataset::DataSource> data_source, bool training) final;
 
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
     return featurizeInputImpl(input, /* should_update_history= */ false);
@@ -187,7 +188,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const std::string& col_name, const CategoricalDataTypePtr& categorical);
 
   static ColumnNumberMapPtr makeColumnNumberMap(
-      dataset::DataLoader& data_loader, char delimiter);
+      dataset::DataSource& data_source, char delimiter);
 
   std::vector<dataset::BlockPtr> buildMetadataInputBlocks(
       const CategoricalMetadataConfig& metadata_config,

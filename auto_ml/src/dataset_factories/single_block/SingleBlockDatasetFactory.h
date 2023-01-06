@@ -10,13 +10,13 @@
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
 #include <utils/StringManipulation.h>
 #include <exception>
 #include <optional>
 #include <stdexcept>
 #include <string_view>
 #include <unordered_map>
-#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
 
 namespace thirdai::automl::data {
 
@@ -39,10 +39,10 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
         _shuffle(shuffle),
         _delimiter(delimiter) {}
 
-  dataset::DataLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
+  dataset::DatasetLoaderPtr getLabeledDatasetLoader(
+      std::shared_ptr<dataset::DataSource> data_source, bool training) final {
     return std::make_unique<dataset::TabularDatasetLoader>(
-        data_loader, _labeled_batch_processor, _shuffle && training);
+        data_source, _labeled_batch_processor, _shuffle && training);
   }
 
   std::vector<BoltVector> featurizeInput(const std::string& input) final;

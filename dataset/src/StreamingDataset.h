@@ -1,9 +1,11 @@
 #pragma once
 
 #include "BatchProcessor.h"
-#include "DataLoader.h"
+#include "DataSource.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/Datasets.h>
 #include <dataset/src/InMemoryDataset.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <utils/Logging.h>
 #include <chrono>
 #include <limits>
@@ -14,19 +16,18 @@
 
 namespace thirdai::dataset {
 
-template <typename... BATCH_Ts>
 class StreamingDataset {
  public:
-  StreamingDataset(std::shared_ptr<DataLoader> data_loader,
-                   std::shared_ptr<BatchProcessor<BATCH_Ts...>> batch_processor)
-      : _data_loader(std::move(data_loader)),
+  StreamingDataset(std::shared_ptr<DataSource> data_source,
+                   std::shared_ptr<GenericBatchProcessor> batch_processor)
+      : _data_source(std::move(data_source)),
         _batch_processor(std::move(batch_processor)) {
     // Different formats of data may or may not contain headers. Thus we
     // delegate to the particular batch processor to determine if a header is
     // needed. The first row is interpreted as the header. The batch processor
     // is responsible for checking that the header is properly formatted.
     if (_batch_processor->expectsHeader()) {
-      auto header = _data_loader->nextLine();
+      auto header = _data_source->nextLine();
       if (!header) {
         throw std::invalid_argument("Cannot read empty file.");
       }
@@ -34,21 +35,27 @@ class StreamingDataset {
     }
   }
 
-  virtual std::optional<std::tuple<BATCH_Ts...>> nextBatchTuple() {
-    auto rows = _data_loader->nextBatch();
+  virtual std::optional<std::vector<BoltBatch>> nextBatchVector() {
+    auto rows = _data_source->nextBatch();
     if (!rows) {
       return std::nullopt;
     }
 
-    return _batch_processor->createBatch(*rows);
+    // TODO(Someone): Change these next few lines when batch processor returns 
+    // an optional of a vector of BoltBatches
+    auto optional_tuple = _batch_processor->createBatch(*rows);
+    std::vector<BoltBatch> result;
+    result.push_back(std::move(std::get<0>(optional_tuple)));
+    result.push_back(std::move(std::get<1>(optional_tuple)));
+    return result;
   }
 
-  virtual std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...>
+  virtual std::vector<std::shared_ptr<InMemoryDataset<BoltBatch>>>
   loadInMemory() {
     auto datasets = loadInMemory(std::numeric_limits<uint64_t>::max());
     if (!datasets) {
       throw std::invalid_argument("Cannot load datasets from empty resource '" +
-                                  _data_loader->resourceName() + "'.");
+                                  _data_source->resourceName() + "'.");
     }
     return datasets.value();
   }
@@ -56,38 +63,21 @@ class StreamingDataset {
   // This function maps the tuple of batches returned by nextBatch() into a
   // tuple of datasets where each dataset contains a list of batches of the
   // type corresponding to that element of the tuple. NOLINTNEXTLINE
-  std::optional<std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...>>
+  std::optional<std::vector<BoltDatasetPtr>>
   loadInMemory(uint64_t max_batches) {
-    std::tuple<std::vector<BATCH_Ts>...> batch_lists;
+    std::vector<std::vector<BoltBatch>> batch_lists;
 
     uint64_t len = 0;
     uint64_t loaded_batches = 0;
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    while (auto batch_tuple = nextBatchTuple()) {
-      len += std::get<0>(batch_tuple.value()).getBatchSize();
+    while (auto batch_vector = nextBatchVector()) {
+      
+      len += batch_vector->at(0).getBatchSize();
 
-      /**
-       * std::apply allows for a tuple to be applied to function that accepts a
-       * variadic template argument. We use this here to pass the tuple of
-       * vectors that we accumulate the batches in along with the tuple
-       * containing the next batches into a variadic template function that
-       * calls vector.push_back(...).
-       *
-       * Helpful stack overflow post about doing this:
-       * https://stackoverflow.com/questions/53305395/how-to-create-a-tuple-of-vectors-of-type-deduced-from-a-variadic-template-in-c
-       */
-      std::apply(
-          [&batch_tuple](auto&... batch_lists_arg) {
-            std::apply(
-                [&](auto&... batch_tuple_arg) {
-                  (..., batch_lists_arg.push_back(std::move(batch_tuple_arg)));
-                },
-                batch_tuple.value());
-          },
-          batch_lists);
-
+      batch_lists.push_back(std::move(*batch_vector));
+    
       loaded_batches++;
       if (loaded_batches >= max_batches) {
         break;
@@ -97,46 +87,45 @@ class StreamingDataset {
     auto end = std::chrono::high_resolution_clock::now();
     logging::info(
         "Loaded {} vectors from '{}' in {} seconds.", len,
-        _data_loader->resourceName(),
+        _data_source->resourceName(),
         std::chrono::duration_cast<std::chrono::seconds>(end - start).count());
 
-    if (std::get<0>(batch_lists).empty()) {
+    if (batch_lists.empty()) {
       return std::nullopt;
     }
 
-    // We use std::apply again here to call a function acception a variadic
-    // template that maps each vector of batches to an InMemoryDataset.
-    std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs =
-        std::apply(
-            [](auto&... batch_lists_arg) {
-              return std::make_tuple(
-                  std::make_shared<InMemoryDataset<BATCH_Ts>>(
-                      std::move(batch_lists_arg))...);
-            },
-            batch_lists);
+    std::vector<BoltDatasetPtr> dataset_ptrs;
+    for (uint32_t dataset_id = 0; dataset_id < batch_lists.at(0).size(); dataset_id++) {
+      std::vector<BoltBatch> dataset_batches;
+      dataset_batches.reserve(batch_lists.size());
+for (auto & batch_list : batch_lists) {
+        dataset_batches.push_back(std::move(batch_list.at(dataset_id)));
+      }
+      dataset_ptrs.emplace_back(dataset_batches);
+    }
 
     return dataset_ptrs;
   }
 
-  uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }
+  uint32_t getMaxBatchSize() const { return _data_source->getMaxBatchSize(); }
 
   virtual void restart() {
-    _data_loader->restart();
+    _data_source->restart();
 
     // When we restart we need to make sure we don't reread the header. s
     if (_batch_processor->expectsHeader()) {
-      auto header = _data_loader->nextLine();
+      auto header = _data_source->nextLine();
       if (!header) {
         throw std::invalid_argument("Cannot read empty file.");
       }
     }
   }
 
-  static std::shared_ptr<StreamingDataset<BATCH_Ts...>> loadDataset(
-      std::shared_ptr<DataLoader> data_loader,
-      std::shared_ptr<BatchProcessor<BATCH_Ts...>> batch_processor) {
-    auto dataset = std::make_shared<StreamingDataset<BATCH_Ts...>>(
-        std::move(data_loader), std::move(batch_processor));
+  static std::shared_ptr<StreamingDataset> loadDataset(
+      std::shared_ptr<DataSource> data_source,
+      std::shared_ptr<GenericBatchProcessor> batch_processor) {
+    auto dataset = std::make_shared<StreamingDataset>(
+        std::move(data_source), std::move(batch_processor));
 
     return dataset;
   }
@@ -144,10 +133,10 @@ class StreamingDataset {
   virtual ~StreamingDataset() = default;
 
  protected:
-  std::shared_ptr<DataLoader> _data_loader;
+  std::shared_ptr<DataSource> _data_source;
 
  private:
-  std::shared_ptr<BatchProcessor<BATCH_Ts...>> _batch_processor;
+  std::shared_ptr<GenericBatchProcessor> _batch_processor;
 };
 
 }  // namespace thirdai::dataset

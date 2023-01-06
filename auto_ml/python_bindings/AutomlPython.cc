@@ -4,10 +4,9 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
 #include <pybind11/detail/common.h>
 #include <limits>
-#include <auto_ml/src/dataset_factories/udt/TabularDatasetLoader.h>
-
 
 namespace thirdai::automl::python {
 
@@ -63,16 +62,16 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("parameters") = py::dict(),
            docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG,
            bolt::python::OutputRedirect())
-      .def("train_with_loader", &ModelPipeline::train, py::arg("data_source"),
+      .def("train_with_source", &ModelPipeline::train, py::arg("data_source"),
            py::arg("train_config"), py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
-           docs::MODEL_PIPELINE_TRAIN_DATA_LOADER,
+           docs::MODEL_PIPELINE_TRAIN_DATA_SOURCE,
            bolt::python::OutputRedirect())
-      .def("evaluate_with_loader", &ModelPipeline::evaluate,
+      .def("evaluate_with_source", &ModelPipeline::evaluate,
            py::arg("data_source"), py::arg("eval_config") = std::nullopt,
            py::arg("return_predicted_class") = false,
            py::arg("return_metrics") = false,
-           docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER,
+           docs::MODEL_PIPELINE_EVALUATE_DATA_SOURCE,
            bolt::python::OutputRedirect())
       .def("predict",
            py::overload_cast<const LineInput&, bool, bool>(
@@ -107,18 +106,18 @@ void createModelsSubmodule(py::module_& module) {
             return models::DEFAULT_EVALUATE_BATCH_SIZE;
           });
 
-  py::class_<data::TabularDatasetLoader, data::TabularDatasetLoaderPtr>(
+  py::class_<dataset::TabularDatasetLoader, dataset::TabularDatasetLoaderPtr>(
       models_submodule, "TabularDatasetLoader")
-      .def("load_in_memory", &data::TabularDatasetLoader::loadInMemory,
+      .def("load_in_memory", &dataset::TabularDatasetLoader::loadInMemory,
            py::arg("max_in_memory_batches") =
                std::numeric_limits<uint32_t>::max())
-      .def("restart", &data::TabularDatasetLoader::restart);
+      .def("restart", &dataset::TabularDatasetLoader::restart);
 
   py::class_<data::UDTDatasetFactory, data::UDTDatasetFactoryPtr>(
       models_submodule, "TemporalContext")
       .def("get_dataset_loader",
            &data::UDTDatasetFactory::getLabeledDatasetLoader,
-           py::arg("data_loader"), py::arg("training"))
+           py::arg("data_source"), py::arg("training"))
       .def("reset", &data::UDTDatasetFactory::resetTemporalTrackers,
            docs::TEMPORAL_CONTEXT_RESET)
       .def("update_temporal_trackers",

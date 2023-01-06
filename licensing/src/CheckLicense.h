@@ -1,5 +1,5 @@
 #pragma once
-#include <dataset/src/DataLoader.h>
+#include <dataset/src/DataSource.h>
 #include <optional>
 #include <string>
 
@@ -13,6 +13,6 @@ void activate(const std::string& api_key);
 
 void deactivate();
 
-void verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader);
+void verifyAllowedDataset(const dataset::DataSourcePtr& data_source);
 
 }  // namespace thirdai::licensing

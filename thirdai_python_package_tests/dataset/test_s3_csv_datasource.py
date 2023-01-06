@@ -43,10 +43,10 @@ def setup_mock_s3(s3):
 def load_all_batches(storage_path, batch_size):
     from thirdai import dataset
 
-    loader = dataset.CSVDataLoader(storage_path=storage_path, batch_size=batch_size)
+    source = dataset.CSVDataSource(storage_path=storage_path, batch_size=batch_size)
     batches = []
     while True:
-        next_batch = loader.next_batch()
+        next_batch = source.next_batch()
         if not next_batch:
             break
         batches.append(next_batch)
@@ -56,10 +56,10 @@ def load_all_batches(storage_path, batch_size):
 def load_all_lines(storage_path, batch_size):
     from thirdai import dataset
 
-    loader = dataset.CSVDataLoader(storage_path=storage_path, batch_size=batch_size)
+    source = dataset.CSVDataSource(storage_path=storage_path, batch_size=batch_size)
     lines = []
     while True:
-        next_line = loader.next_line()
+        next_line = source.next_line()
         if not next_line:
             break
         lines.append(next_line)
@@ -67,7 +67,7 @@ def load_all_lines(storage_path, batch_size):
 
 
 @mock_s3
-def test_s3_data_loader_by_batch(s3):
+def test_s3_data_source_by_batch(s3):
     setup_mock_s3(s3)
 
     batches = load_all_batches(
@@ -85,10 +85,10 @@ def test_s3_data_loader_by_batch(s3):
     assert "".join(["".join(batch) for batch in batches]) == "1" * num_lines_per_file
 
 
-# This is similar to test_s3_data_loader_by_batch, but additionally ensures
+# This is similar to test_s3_data_source_by_batch, but additionally ensures
 # that the linewise loading is correct
 @mock_s3
-def test_s3_data_loader_by_line(s3):
+def test_s3_data_source_by_line(s3):
 
     setup_mock_s3(s3)
 

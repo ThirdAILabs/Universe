@@ -1,6 +1,6 @@
 
 #include "CheckLicense.h"
-#include <dataset/src/DataLoader.h>
+#include <dataset/src/DataSource.h>
 #include <optional>
 #include <stdexcept>
 #include <unordered_set>
@@ -45,9 +45,9 @@ void deactivate() {
   _entitlements.clear();
 }
 
-void verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader) {
+void verifyAllowedDataset(const dataset::DataSourcePtr& data_source) {
 #ifndef THIRDAI_CHECK_LICENSE
-  (void)data_loader;
+  (void)data_source;
   return;
 #else
   if (_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
@@ -55,7 +55,7 @@ void verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader) {
   }
 
   std::string dataset_hash =
-      sha256File(/* filename = */ data_loader->resourceName());
+      sha256File(/* filename = */ data_source->resourceName());
   if (!_entitlements.count(dataset_hash)) {
     throw std::runtime_error(
         "This dataset is not authorized under this license.");

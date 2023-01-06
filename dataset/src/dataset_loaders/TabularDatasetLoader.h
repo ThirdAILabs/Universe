@@ -6,7 +6,7 @@ namespace thirdai::dataset {
 
 class TabularDatasetLoader final : public DatasetLoader {
  public:
-  TabularDatasetLoader(std::shared_ptr<dataset::DataLoader> data_loader,
+  TabularDatasetLoader(const std::shared_ptr<dataset::DataSource>& data_source,
                        dataset::GenericBatchProcessorPtr batch_processor,
                        bool shuffle);
 
@@ -21,4 +21,4 @@ class TabularDatasetLoader final : public DatasetLoader {
 
 using TabularDatasetLoaderPtr = std::unique_ptr<TabularDatasetLoader>;
 
-} // namespace thirdai::dataset
+}  // namespace thirdai::dataset

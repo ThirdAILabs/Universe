@@ -51,7 +51,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
       StreamingGenericDatasetLoader&& pipeline) {
     std::vector<BoltBatch> input_batches;
     std::vector<BoltBatch> label_batches;
-    while (auto batch = pipeline.nextBatchTuple()) {
+    while (auto batch = pipeline.nextBatchVector()) {
       auto [input_batch, label_batch] = std::move(batch.value());
       input_batches.push_back(std::move(input_batch));
       label_batches.push_back(std::move(label_batch));

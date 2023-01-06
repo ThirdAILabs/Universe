@@ -1,3 +1,5 @@
+#pragma once
+
 #include <dataset/src/Datasets.h>
 
 namespace thirdai::dataset {
@@ -17,4 +19,4 @@ class DatasetLoader {
 
 using DatasetLoaderPtr = std::unique_ptr<DatasetLoader>;
 
-} // namespace thirdai::dataset
+}  // namespace thirdai::dataset

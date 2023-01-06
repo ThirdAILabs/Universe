@@ -1,11 +1,12 @@
 #include "TabularDatasetLoader.h"
+#include <dataset/src/DataSource.h>
 
 namespace thirdai::dataset {
 
 TabularDatasetLoader::TabularDatasetLoader(
-    std::shared_ptr<dataset::DataLoader> data_loader,
+    const std::shared_ptr<dataset::DataSource>& data_source,
     dataset::GenericBatchProcessorPtr batch_processor, bool shuffle)
-    : _dataset(std::move(data_loader), std::move(batch_processor), shuffle) {}
+    : _dataset(data_source, std::move(batch_processor), shuffle) {}
 
 std::optional<std::pair<InputDatasets, LabelDataset>>
 TabularDatasetLoader::loadInMemory(uint32_t max_in_memory_batches) {
@@ -20,4 +21,4 @@ TabularDatasetLoader::loadInMemory(uint32_t max_in_memory_batches) {
       InputDatasets{data}, labels);
 }
 
-} // namespace thirdai::dataset
+}  // namespace thirdai::dataset
