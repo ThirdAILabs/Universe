@@ -2,8 +2,10 @@
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <pybind11/detail/common.h>
+#include <limits>
 
 namespace thirdai::automl::python {
 
@@ -39,7 +41,9 @@ void defineAutomlInModule(py::module_& module) {
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
            py::arg("source_column"), py::arg("target_column"),
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
-
+      .def("__new__", &UDTFactory::buildUDTGeneratorWrapperTargetOnly,
+           py::arg("target_column"), py::arg("dataset_size"),
+           docs::UDT_GENERATOR_INIT)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 }
@@ -92,6 +96,8 @@ void createModelsSubmodule(py::module_& module) {
                   docs::MODEL_PIPELINE_LOAD)
       .def("get_data_processor", &ModelPipeline::getDataProcessor,
            docs::MODEL_PIPELINE_GET_DATA_PROCESSOR)
+      .def("_get_model", &ModelPipeline::getModel)
+      .def("_set_model", &ModelPipeline::setModel, py::arg("trained_model"))
       .def_property_readonly("default_train_batch_size",
                              &ModelPipeline::defaultBatchSize)
       .def_property_readonly_static(
@@ -99,8 +105,18 @@ void createModelsSubmodule(py::module_& module) {
             return models::DEFAULT_EVALUATE_BATCH_SIZE;
           });
 
+  py::class_<data::GenericDatasetLoader, data::GenericDatasetLoaderPtr>(
+      models_submodule, "GenericDatasetLoader")
+      .def("load_in_memory", &data::GenericDatasetLoader::loadInMemory,
+           py::arg("max_in_memory_batches") =
+               std::numeric_limits<uint32_t>::max())
+      .def("restart", &data::GenericDatasetLoader::restart);
+
   py::class_<data::UDTDatasetFactory, data::UDTDatasetFactoryPtr>(
       models_submodule, "TemporalContext")
+      .def("get_dataset_loader",
+           &data::UDTDatasetFactory::getLabeledDatasetLoader,
+           py::arg("data_loader"), py::arg("training"))
       .def("reset", &data::UDTDatasetFactory::resetTemporalTrackers,
            docs::TEMPORAL_CONTEXT_RESET)
       .def("update_temporal_trackers",
@@ -110,7 +126,10 @@ void createModelsSubmodule(py::module_& module) {
       .def("batch_update_temporal_trackers",
            py::overload_cast<const LineInputBatch&>(
                &data::UDTDatasetFactory::batchUpdateTemporalTrackers),
-           py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
+           py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH)
+      .def("verify_can_distribute",
+           &data::UDTDatasetFactory::verifyCanDistribute)
+      .def(bolt::python::getPickleFunction<data::UDTDatasetFactory>());
 
   py::class_<data::UDTConfig, data::UDTConfigPtr>(models_submodule, "UDTConfig")
       .def(py::init<data::ColumnDataTypes,
@@ -349,6 +368,16 @@ QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapper(
   (void)obj;
   return QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
       /* source_column_name = */ source_column,
+      /* target_column_name = */ target_column,
+      /* dataset_size = */ dataset_size);
+}
+
+QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapperTargetOnly(
+    py::object& obj, const std::string& target_column,
+    const std::string& dataset_size) {
+  (void)obj;
+  return QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
+      /* source_column_name = */ target_column,
       /* target_column_name = */ target_column,
       /* dataset_size = */ dataset_size);
 }

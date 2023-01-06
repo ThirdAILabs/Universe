@@ -3,17 +3,132 @@ import os
 import tempfile
 import textwrap
 import time
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 import ray
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
-from thirdai._distributed_bolt.dataset_loaders import DatasetLoader
+from thirdai._distributed_bolt.dataset_loaders import DatasetLoader, UDTDatasetLoader
 from thirdai._thirdai import bolt
 
 from .utils import get_num_cpus, init_logging
+
+
+def add_distributed_to_udt():
+    def train_distributed(
+        self,
+        cluster_config: RayTrainingClusterConfig,
+        filenames: List[str],
+        batch_size: Optional[int] = None,
+        learning_rate: float = 0.001,
+        epochs: int = 3,
+        max_in_memory_batches: Optional[int] = None,
+        gcp_credentials_path: Optional[str] = None,
+        metrics: List[str] = [],
+        verbose: bool = True,
+    ):
+        """
+        This function trains UDT in the distributed setting. ThirdAI uses Ray
+        Core(https://docs.ray.io/en/latest/ray-core/walkthrough.html) for its
+        distributed offering. This function assumes there is a ray cluster already
+        running on the machine where this function is called or the machine should
+        have an access to a ray cluster.
+
+        To start a ray cluster see here:(https://docs.ray.io/en/latest/ray-core/walkthrough.html)
+
+        Args:
+            cluster_config (thirdai.distributed_bolt.RayTrainingClusterConfig):
+                Here, you can describe the configuration for your cluster training,
+                It includes declaring the number of workers, communication you want to use and
+                the cluster address if a remote cluster is used.
+            filenames (List[str]): List of all the split files. The current design assumes all
+                the files are accessible by all the nodes.
+
+                The current design does not guarantee independent mapping from file_ids to node_ids.
+                Hence, program could be errorneous, if each node doesn't have access to all the files.
+                However, one way around is to save the individual file on all nodes, with same name.
+                This way we could train in distributed setting without need to have shared mount.
+            batch_size (Optional[int], optional): Batch Size for distributed training. It is the
+                batch size for overall training, per node batch size is batch_size//num_nodes.
+                Defaults to 2048.
+            learning_rate (float, optional): Learning rate for distributed training. Defaults to 0.001.
+            epochs (int, optional): Number of epochs to train. Defaults to 3.
+            max_in_memory_batches (Optional[int], optional): The maximum number of batches to load in
+                memory at a given time. If this is specified then the dataset will be processed
+                in a streaming fashion. Defaults to None, which causes the entire dataset to be loaded in memory.
+            gcp_credentials_path (Optional[str], optional): Credentials for GCP, if using GCP for data
+                loading.
+            metrics (List[str], optional): Metrics to be logged during training. Defaults to [].
+            verbose (bool, optional): Prints info about training. Defaults to True.
+
+        Returns:
+            Dict: returns
+
+        Example:
+
+            import thirdai
+            cluster_config = thirdai.distributed_bolt.RayTrainingClusterConfig(
+                num_workers=2,
+                communication_type="circular",
+                cluster_address="auto",
+            )
+            udt_model.train_distributed(
+                cluster_config=cluster_config,
+                filenames=["train_file_1", "train_file_2",....],
+            )
+        """
+
+        data_processor = self.get_data_processor()
+
+        # checks and raises an error if the given UDT is not supported in distributed context
+        data_processor.verify_can_distribute()
+
+        if batch_size is None:
+            batch_size = self.default_train_batch_size
+
+        # calculating batch size per node
+        batch_size = batch_size // cluster_config.num_workers
+
+        train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
+
+        if not verbose:
+            train_config.silence()
+        if metrics:
+            train_config.with_metrics(metrics)
+
+        model = self._get_model()
+
+        dist_model = DistributedDataParallel(
+            cluster_config=cluster_config,
+            model=model,
+            train_config=train_config,
+            train_sources=[
+                UDTDatasetLoader(
+                    train_file=file,
+                    batch_size=batch_size,
+                    gcp_credentials_path=gcp_credentials_path,
+                    max_in_memory_batches=max_in_memory_batches,
+                    data_processor=data_processor,
+                )
+                for file in filenames
+            ],
+        )
+
+        # We are freezing hashtables by default for distributed training after one epoch,
+        # Ideally we should read freezehashtables from UDTOptions and then pass
+        # it to distributed Wrapper. However, for the time being we are just
+        # initializing freeze-hash-tables=True by default.
+        metrics = dist_model.train(freeze_hash_tables=True)
+
+        model = dist_model.get_model()
+
+        self._set_model(trained_model=model)
+
+        return metrics
+
+    setattr(bolt.models.Pipeline, "train_distributed", train_distributed)
 
 
 class RayTrainingClusterConfig:
@@ -139,7 +254,7 @@ class DistributedDataParallel:
         cluster_config: RayTrainingClusterConfig,
         model: bolt.nn.Model,
         train_config: bolt.TrainConfig,
-        train_sources: List[DatasetLoader],
+        train_sources: Union[List[DatasetLoader], List[str]],
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -207,8 +322,15 @@ class DistributedDataParallel:
         self.logging.info(
             f"Data loaded on all nodes, minimmum num batches is {self.num_of_batches}."
         )
+        self.total_batches_trained = 0
 
-    def train(self) -> Dict[str, Union[int, str]]:
+    def train_on_epoch(self, train_state_manager, epoch):
+        while train_state_manager.train_batch(epoch=epoch):
+            self.total_batches_trained += 1
+        self.total_batches_trained += 1
+        train_state_manager.move_to_next_epoch()
+
+    def train(self, freeze_hash_tables=False) -> Dict[str, Union[int, str]]:
         """
         Runs distributed training on the passed in Bolt model on the passed in
         Ray cluster. Note that this method does not call finish_training on the
@@ -230,16 +352,23 @@ class DistributedDataParallel:
             self.communication_type,
         )
 
-        total_batches_trained = 0
-        for epoch in range(self.train_config.num_epochs):
-            while train_state_manager.train_batch(epoch):
-                total_batches_trained += 1
-            total_batches_trained += 1
-            train_state_manager.move_to_next_epoch()
+        starting_epoch = 0
+        if freeze_hash_tables:
+            self.train_on_epoch(
+                train_state_manager=train_state_manager,
+                epoch=starting_epoch,
+            )
+
+            train_state_manager.freeze_hash_tables()
+
+            starting_epoch += 1
+
+        for epoch in range(starting_epoch, self.train_config.num_epochs):
+            self.train_on_epoch(train_state_manager=train_state_manager, epoch=epoch)
 
         return {
             "time": time.time() - train_start,
-            "total_batches_trained": total_batches_trained,
+            "total_batches_trained": self.total_batches_trained,
         }
 
     def get_model(self, worker_id=0):
