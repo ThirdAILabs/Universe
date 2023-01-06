@@ -200,6 +200,8 @@ setup(
             "gcsfs",
             "s3fs",
             "mock",
+            "tensorflow",
+            "scikit-image",
         ],
         "benchmark": [
             "toml",
