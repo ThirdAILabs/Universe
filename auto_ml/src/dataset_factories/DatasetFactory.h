@@ -51,10 +51,10 @@ class DatasetLoader {
 
 class GenericDatasetLoader final : public DatasetLoader {
  public:
-  GenericDatasetLoader(std::shared_ptr<dataset::DataSource> data_source,
+  GenericDatasetLoader(const std::shared_ptr<dataset::DataSource>& data_source,
                        dataset::GenericBatchProcessorPtr batch_processor,
                        bool shuffle)
-      : _dataset(std::move(data_source), std::move(batch_processor), shuffle) {}
+      : _dataset(data_source, std::move(batch_processor), shuffle) {}
 
   std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
       uint32_t max_in_memory_batches) final {
