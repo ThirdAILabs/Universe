@@ -6,6 +6,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include <bolt/src/utils/ProgressBar.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/MinHash.h>
 #include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
@@ -45,7 +46,7 @@ class QueryCandidateGeneratorConfig {
       const std::string& hash_function, uint32_t num_tables,
       uint32_t hashes_per_table, uint32_t range, std::vector<uint32_t> n_grams,
       std::optional<uint32_t> reservoir_size, std::string source_column_name,
-      std::string target_column_name, uint32_t batch_size = 10000,
+      std::string target_column_name, uint32_t batch_size = 10,
       uint32_t default_text_encoding_dim = std::numeric_limits<uint32_t>::max())
       : _num_tables(num_tables),
         _hashes_per_table(hashes_per_table),
@@ -339,6 +340,8 @@ class QueryCandidateGenerator {
         loadDatasetInMemory(/* file_name = */ file_name,
                             /* batch_processor = */ eval_batch_processor);
 
+    ProgressBar bar("evaluate", data->numBatches());
+
     std::vector<std::vector<std::string>> output_queries;
     for (const auto& batch : *data) {
       std::vector<std::vector<uint32_t>> candidate_query_labels =
@@ -347,11 +350,16 @@ class QueryCandidateGenerator {
               /* top_k = */ top_k,
               /* pad_zeros = */ false);
 
+      bar.increment();
+
       for (auto& candidate_query_label_vector : candidate_query_labels) {
         auto top_k = getQueryCandidatesAsStrings(candidate_query_label_vector);
         output_queries.push_back(std::move(top_k));
       }
     }
+
+    bar.close(
+        fmt::format("evaluate | batches {} | complete", data->numBatches()));
 
     if (source_column_index != target_column_index) {
       std::vector<std::string> correct_queries =
@@ -549,12 +557,19 @@ class QueryCandidateGenerator {
     auto column_number_map =
         std::make_shared<ColumnNumberMap>(*file_header, delimiter);
 
-    uint32_t source_column_index =
-        column_number_map->at(_query_generator_config->sourceColumnName());
     uint32_t target_column_index =
         column_number_map->at(_query_generator_config->targetColumnName());
 
-    return {source_column_index, target_column_index};
+    // If the source column is also specified then return its index, otherwise
+    // just use the target column as the source as well.
+    if (column_number_map->containsColumn(
+            _query_generator_config->sourceColumnName())) {
+      uint32_t source_column_index =
+          column_number_map->at(_query_generator_config->sourceColumnName());
+      return {source_column_index, target_column_index};
+    }
+
+    return {target_column_index, target_column_index};
   }
 
   std::shared_ptr<QueryCandidateGeneratorConfig> _query_generator_config;

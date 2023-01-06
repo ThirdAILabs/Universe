@@ -464,10 +464,11 @@ const char* const UDT_GENERATOR_INIT = R"pbdoc(
 UniversalDeepTransformer (UDT) Constructor. 
 
 Args:
+    source_column (str): Optional. Column name specifying the source queries in the input 
+        dataset. If provided then the model can use these queries to augment its training.
+        If not provided then the model be trained from the target queries directly.
     target_column (str): Column name specifying the target queries in the input dataset. 
         Queries in this column are the target that the UDT model learns to predict. 
-    source_column (str): Column name specifying the source queries in the input dataset. 
-        The UDT model uses is trained based on these queries. 
     dataset_size (str): The size of the input dataset. This size factor informs what
         UDT model to create. 
 
@@ -490,7 +491,9 @@ Example:
 
 const char* const UDT_GENERATOR_TRAIN = R"pbdoc(
 Trains a UniversalDeepTransformer (UDT) model for query reformulation on a given dataset 
-using a file on disk.
+using a file on disk. The filename must contain at least 1 column containing the target
+queries. If `source` was also specified when constructing the model then a second 
+column may be present containing the source queries.
 
 Args:
     filename (str): Path to the dataset file.
