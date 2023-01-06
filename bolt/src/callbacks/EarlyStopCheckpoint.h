@@ -128,7 +128,7 @@ class EarlyStopCheckpoint : public Callback {
     } else {
       // if we have dropped the validation score from the previous score
 
-      _n_consecutive_validation_drops += 1;
+      _n_consecutive_validation_drops++;
 
       // we know patience is not zero so this is safe
       if (_n_consecutive_validation_drops == _patience) {
@@ -152,7 +152,7 @@ class EarlyStopCheckpoint : public Callback {
           logging::info(logline);
 
           train_state.learning_rate *= _lr_multiplier;
-          _n_lr_adjustments += 1;
+          _n_lr_adjustments++;
           _n_consecutive_validation_drops = 0;
         }
       }
