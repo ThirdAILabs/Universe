@@ -517,7 +517,7 @@ InferenceResult BoltGraph::evaluate(
                           .count();
 
   std::string logline = fmt::format(
-      "evaluate | epoch {} | eval_steps {} | {} | eval_batches {} | time {}ms",
+      "evaluate | epoch {} | train_steps {} | {} | eval_batches {} | time {}ms",
       _epoch, _updates, metrics.summary(), predict_context.numBatches(),
       test_time);
 
