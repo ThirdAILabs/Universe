@@ -28,10 +28,10 @@ class PrimaryWorker(Worker):
         communication_type: str,
         log_dir: str,
     ):
+        self.wrapped_model = model_to_wrap
 
         super().__init__(
             num_workers=num_workers,
-            model_to_wrap=model_to_wrap,
             train_source=train_source,
             id=0,
             primary_worker=self,
@@ -60,10 +60,17 @@ class PrimaryWorker(Worker):
         return self.weights_biases
 
     def get_train_source_pointers(self):
+        """
+        This function returns the current loaded chunk and the batch_id within dataset which is
+        running for loaded dataset on head node.
+
+        Returns:
+            Tuple[int,int]: The first value specifies the id for current loaded chunk, it would be non-zero just in case of streaming scenario.
+        """
         return (
             self.train_source.get_current_data_chunk_id() - 1,
             self.batch_id_within_dataset,
         )
 
     def get_model(self):
-        return self.model.model
+        return self.wrapped_model

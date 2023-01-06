@@ -34,7 +34,6 @@ class Worker:
     def __init__(
         self,
         num_workers: int,
-        model_to_wrap: bolt.nn.Model,
         train_source,
         id: int,
         primary_worker,
@@ -62,11 +61,18 @@ class Worker:
         )
 
         start = time()
-        self.model = bolt.DistributedTrainingWrapper(
-            model=model_to_wrap,
-            train_config=train_config,
-            worker_id=id,
-        )
+        if id == 0:
+            self.model = bolt.DistributedTrainingWrapper(
+                model=self.wrapped_model,
+                train_config=train_config,
+                worker_id=id,
+            )
+        else:
+            self.model = bolt.DistributedTrainingWrapper(
+                model=ray.get(primary_worker.get_model.remote()),
+                train_config=train_config,
+                worker_id=id,
+            )
         end = time()
 
         logging.info(f"func initializing_model | time {(end - start)*1000} ms")
