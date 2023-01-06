@@ -158,16 +158,23 @@ def train_udt_query_reformulation_model(
     return model
 
 
+# This test is for regular query reformulation with source and target queries.
 def test_udt_generator_source_target(prepared_datasets):
     model = train_udt_query_reformulation_model(TRAIN_SOURCE_TARGET_FILE)
     run_generator_test(model=model, source_col_index=1, target_col_index=0)
 
 
+# This test is for a query reformuulation model that was created with both the
+# source and target column specified, but trained on a dataset which doesn't contain
+# a source column.
 def test_udt_generator_source_not_specified(prepared_datasets):
     model = train_udt_query_reformulation_model(TRAIN_TARGET_ONLY_FILE)
     run_generator_test(model=model, source_col_index=1, target_col_index=0)
 
 
+# This test is for a query reformuulation model that was created with only the
+# target column specified, and trained on a dataset which doesn't contain
+# a source column.
 def test_udt_generator_target_only(prepared_datasets):
     model = bolt.UniversalDeepTransformer(
         target_column="target_column",
