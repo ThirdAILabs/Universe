@@ -5,6 +5,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/metrics/Metric.h>
 #include <dataset/src/Datasets.h>
+#include <utils/Logging.h>
 #include <functional>
 #include <limits>
 
@@ -87,14 +88,22 @@ class EarlyStopCheckpoint : public Callback {
     // on train begin because we'd like to infer which metric we're using in
     // case the user does not pass one in. we won't know until training begins
 
+    auto validation_metrics = train_state.validation_metric_names;
+
     // if the user passes in the metric we'll check for that one
     if (_monitored_metric_name.has_value()) {
+      if (std::find(validation_metrics.begin(), validation_metrics.end(),
+                    _monitored_metric_name) == validation_metrics.end()) {
+        throw std::invalid_argument(
+            "EarlyStopCheckpoint: Could not find metric " +
+            *_monitored_metric_name +
+            " in list of provided validation metrics.");
+      }
       _metric = makeMetric(*_monitored_metric_name);
     } else {
       // if the user does not pass in a metric and there's only one available
       // we'll use that. otherwise we'll throw an error telling the user to
       // specify which one they'd like to use.
-      auto validation_metrics = train_state.validation_metric_names;
       if (validation_metrics.size() != 1) {
         throw std::invalid_argument(
             "Cannot infer a validation metric to track for "
@@ -111,7 +120,7 @@ class EarlyStopCheckpoint : public Callback {
 
   void onEpochEnd(BoltGraph& model, TrainState& train_state) final {
     double metric_value =
-        train_state.getValidationMetricValues(_metric->name()).front();
+        train_state.getValidationMetricValues(_metric->name()).back();
 
     // if we've improved on the previous score
     if (isImprovement(metric_value)) {
@@ -126,20 +135,22 @@ class EarlyStopCheckpoint : public Callback {
         // stop training if we've lowered the learning rate enough times
         if (_n_lr_adjustments == _max_lr_adjustments) {
           train_state.stop_training = true;
-          std::cout
-              << "EarlyStopCheckpoint callback has made the maximum number of "
-                 "learning rate adjustments. Terminating training.\n"
-              << std::endl;
+          std::string logline =
+              "EarlyStopCheckpoint callback has made the maximum number of "
+              "learning rate adjustments. Terminating training.";
+          std::cout << logline << "\n" << std::endl;
+          logging::info(logline);
         } else {
           // otherwise we adjust the learning rate and reset the count on
           // consecutive validation drops
-          std::cout
-              << "EarlyStopCheckpoint: Validation metric has not improved for "
-              << _n_consecutive_validation_drops
-              << " consecutive epochs. Lowering the learning rate from "
-              << train_state.learning_rate << " to "
-              << train_state.learning_rate * _lr_multiplier << ".\n"
-              << std::endl;
+          std::string logline = fmt::format(
+              "EarlyStopCheckpoint: Validation metric has not improved for {} "
+              "consecutive epochs. Lowering the learning rate from {} to {}.",
+              _n_consecutive_validation_drops, train_state.learning_rate,
+              train_state.learning_rate * _lr_multiplier);
+          std::cout << logline << "\n" << std::endl;
+          logging::info(logline);
+
           train_state.learning_rate *= _lr_multiplier;
           _n_lr_adjustments += 1;
           _n_consecutive_validation_drops = 0;
@@ -176,9 +187,11 @@ class EarlyStopCheckpoint : public Callback {
     _total_train_time += train_state.epoch_times.back();
     if (_time_out.has_value() && _total_train_time > _time_out) {
       train_state.stop_training = true;
-      std::cout << "EarlyStopCheckpoint callback terminating training due to "
-                   "time_out.\n"
-                << std::endl;
+      std::string logline =
+          "EarlyStopCheckpoint callback terminating training due to "
+          "time_out.";
+      std::cout << logline << "\n" << std::endl;
+      logging::info(logline);
     }
   }
 

@@ -22,6 +22,8 @@ def train_models(
     with_validation=True,
     with_validation_metrics=True,
     time_out=None,
+    epochs=10,
+    extra_callbacks=[],
 ):
     model = get_simple_dag_model(
         input_dim=N_CLASSES,
@@ -48,9 +50,9 @@ def train_models(
     )
 
     train_config = (
-        bolt.TrainConfig(learning_rate=0.01, epochs=10)
+        bolt.TrainConfig(learning_rate=0.01, epochs=epochs)
         .with_metrics([metric_name])
-        .with_callbacks([early_stop_callback])
+        .with_callbacks([early_stop_callback] + extra_callbacks)
     )
 
     if with_validation:
@@ -76,9 +78,11 @@ def run_early_stop_test(
     with_validation=True,
     with_validation_metrics=True,
     time_out=None,
+    epochs=10,
+    extra_callbacks=[],
 ):
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=N_CLASSES, n_samples=1000, noise_std=0.3
+        n_classes=N_CLASSES, n_samples=1000, noise_std=0.4
     )
     valid_data, valid_labels = gen_numpy_training_data(
         n_classes=N_CLASSES, n_samples=1000, noise_std=0.3
@@ -95,6 +99,8 @@ def run_early_stop_test(
         with_validation,
         with_validation_metrics,
         time_out,
+        epochs,
+        extra_callbacks,
     )
 
     eval_config = bolt.EvalConfig().with_metrics([metric_name])
@@ -135,7 +141,7 @@ def test_early_stop_checkpoint_with_loss():
 def test_throw_on_no_validation():
     with pytest.raises(
         ValueError,
-        match=r"No validation metrics found. Remember to specify validation with metrics in the TrainConfig.",
+        match=r"EarlyStopCheckpoint: Could not find metric mean_squared_error in list of provided validation metrics.",
     ):
         run_early_stop_test(
             loss=bolt.nn.losses.MeanSquaredError(),
@@ -148,7 +154,7 @@ def test_throw_on_no_validation():
 def test_throw_on_no_validation_metrics():
     with pytest.raises(
         ValueError,
-        match=r"Doing evaluation without metrics or activations is a no-op. Did you forget to specify this in the EvalConfig?",
+        match=r"EarlyStopCheckpoint: Could not find metric mean_squared_error in list of provided validation metrics.",
     ):
         run_early_stop_test(
             loss=bolt.nn.losses.MeanSquaredError(),
@@ -167,7 +173,7 @@ def test_throw_on_zero_patience():
 
 
 def test_throw_on_invalid_multiplier():
-    with pytest.raises(ValueError, match=r"'lr_multiplier' should not be <= 0."):
+    with pytest.raises(ValueError, match=r"'lr_multiplier' should be > 0."):
         bolt.callbacks.EarlyStopCheckpoint(
             model_save_path="dummy",
             lr_multiplier=-1,
@@ -191,10 +197,36 @@ def test_invalid_compare_against_string():
         )
 
 
+def test_with_unused_metric_name():
+    with pytest.raises(ValueError, match=r"'dummy' is not a valid metric."):
+        run_early_stop_test(
+            loss=bolt.nn.losses.MeanSquaredError(),
+            output_activation="linear",
+            metric_name="dummy",
+        )
+
+
+class CountEpochCallback(bolt.callbacks.Callback):
+    def __init__(self):
+        super().__init__()
+        self.epoch_count = 0
+
+    def on_epoch_end(self, model, train_state):
+        self.epoch_count += 1
+
+
 def test_time_out():
+    count_epoch_callback = CountEpochCallback()
+
+    total_epochs = 100
+
     run_early_stop_test(
         loss=bolt.nn.losses.MeanSquaredError(),
         output_activation="linear",
         metric_name="mean_squared_error",
-        time_out=0.00001,
+        time_out=1,
+        epochs=total_epochs,
+        extra_callbacks=[count_epoch_callback],
     )
+
+    assert count_epoch_callback.epoch_count < total_epochs
