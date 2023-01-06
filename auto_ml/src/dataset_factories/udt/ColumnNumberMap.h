@@ -62,6 +62,10 @@ class ColumnNumberMap {
     return col_num_to_col_name;
   }
 
+  bool count(const std::string& column_name) {
+    return _name_to_num.count(column_name);
+  }
+
  private:
   std::unordered_map<std::string, uint32_t> _name_to_num;
   uint32_t _n_cols;

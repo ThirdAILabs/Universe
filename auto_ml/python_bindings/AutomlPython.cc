@@ -4,6 +4,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <pybind11/detail/common.h>
+#include <optional>
 
 namespace thirdai::automl::python {
 
@@ -37,7 +38,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("options") = py::dict(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
-           py::arg("source_column"), py::arg("target_column"),
+           py::arg("source_column") = std::nullopt, py::arg("target_column"),
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
 
       .def_static("load", &UDTFactory::load, py::arg("filename"),
@@ -197,7 +198,7 @@ void createModelsSubmodule(py::module_& module) {
   py::class_<QueryCandidateGenerator, std::shared_ptr<QueryCandidateGenerator>>(
       models_submodule, "UDTGenerator")
       .def(py::init(&QueryCandidateGenerator::buildGeneratorFromDefaultConfig),
-           py::arg("source_column"), py::arg("target_column"),
+           py::arg("source_column") = std::nullopt, py::arg("target_column"),
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
       .def("train", &QueryCandidateGenerator::buildFlashIndex,
            py::arg("filename"), docs::UDT_GENERATOR_TRAIN)
@@ -344,7 +345,7 @@ py::object predictTokensWrapper(ModelPipeline& model,
 // UDT Factory Methods
 
 QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapper(
-    py::object& obj, const std::string& source_column,
+    py::object& obj, const std::optional<std::string>& source_column,
     const std::string& target_column, const std::string& dataset_size) {
   (void)obj;
   return QueryCandidateGenerator::buildGeneratorFromDefaultConfig(

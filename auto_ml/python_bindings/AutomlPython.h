@@ -39,7 +39,7 @@ py::object predictTokensWrapper(ModelPipeline& model,
 class UDTFactory {
  public:
   static QueryCandidateGenerator buildUDTGeneratorWrapper(
-      py::object& obj, const std::string& source_column,
+      py::object& obj, const std::optional<std::string>& source_column,
       const std::string& target_column, const std::string& dataset_size);
 
   static UniversalDeepTransformer buildUDTClassifierWrapper(

@@ -44,7 +44,8 @@ class QueryCandidateGeneratorConfig {
   QueryCandidateGeneratorConfig(
       const std::string& hash_function, uint32_t num_tables,
       uint32_t hashes_per_table, uint32_t range, std::vector<uint32_t> n_grams,
-      std::optional<uint32_t> reservoir_size, std::string source_column_name,
+      std::optional<uint32_t> reservoir_size,
+      std::optional<std::string> source_column_name,
       std::string target_column_name, uint32_t batch_size = 10000,
       uint32_t default_text_encoding_dim = std::numeric_limits<uint32_t>::max())
       : _num_tables(num_tables),
@@ -53,7 +54,9 @@ class QueryCandidateGeneratorConfig {
         _range(range),
         _n_grams(std::move(n_grams)),
         _reservoir_size(reservoir_size),
-        _source_column_name(std::move(source_column_name)),
+        _source_column_name((source_column_name != std::nullopt)
+                                ? source_column_name.value()
+                                : target_column_name),
         _target_column_name(std::move(target_column_name)),
         _default_text_encoding_dim(default_text_encoding_dim) {
     _hash_function = getHashFunction(
@@ -112,7 +115,7 @@ class QueryCandidateGeneratorConfig {
   std::vector<uint32_t> nGrams() const { return _n_grams; }
 
   static std::shared_ptr<QueryCandidateGeneratorConfig> fromDefault(
-      const std::string& source_column_name,
+      const std::optional<std::string>& source_column_name,
       const std::string& target_column_name, const std::string& dataset_size) {
     // Initialize "medium" dataset size default parameters
     uint32_t num_tables = 128;
@@ -204,7 +207,7 @@ class QueryCandidateGenerator {
   }
 
   static QueryCandidateGenerator buildGeneratorFromDefaultConfig(
-      const std::string& source_column_name,
+      const std::optional<std::string>& source_column_name,
       const std::string& target_column_name, const std::string& dataset_size) {
     auto config = QueryCandidateGeneratorConfig::fromDefault(
         /* source_column_name = */ source_column_name,
@@ -549,11 +552,16 @@ class QueryCandidateGenerator {
     auto column_number_map =
         std::make_shared<ColumnNumberMap>(*file_header, delimiter);
 
-    uint32_t source_column_index =
-        column_number_map->at(_query_generator_config->sourceColumnName());
     uint32_t target_column_index =
         column_number_map->at(_query_generator_config->targetColumnName());
 
+    if (column_number_map->count(_query_generator_config->sourceColumnName())) {
+      uint32_t source_column_index =
+          column_number_map->at(_query_generator_config->sourceColumnName());
+      return {source_column_index, target_column_index};
+    }
+    uint32_t source_column_index =
+        column_number_map->at(_query_generator_config->targetColumnName());
     return {source_column_index, target_column_index};
   }
 
