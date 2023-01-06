@@ -14,6 +14,11 @@ def create_simple_file(col_names, num_data_cols, file_name, num_rows=5):
 
 
 def test_too_many_cols_in_train():
+    """
+    This test expect an error because this dataset has 3 columns in
+    the header but has 4 columns in subsequent rows (UDT expects the same number
+    of columns in every row).
+    """
     create_simple_file(
         col_names=["a", "b", "c"], num_data_cols=4, file_name="too_many_cols"
     )
@@ -38,6 +43,11 @@ def test_too_many_cols_in_train():
 
 
 def test_too_few_cols_in_train():
+    """
+    This test expect an error because this dataset has 3 columns in
+    the header but has 2 columns in subsequent rows (UDT expects the same number
+    of columns in every row).
+    """
     create_simple_file(
         col_names=["a", "b", "c"], num_data_cols=2, file_name="too_few_cols"
     )
