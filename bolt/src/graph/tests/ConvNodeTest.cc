@@ -10,19 +10,10 @@ namespace thirdai::bolt::tests {
 uint32_t N_CLASSES = 2;
 
 /**
- * Creates a simple image dataset with a Checkerboard pattern. The pattern
- * assumes images with one channel and of two types. Each image will look either
- * like this:
- * 1, 1, 0, 0
- * 1, 1, 0, 0
- * 0, 0, 1, 1
- * 0, 0, 1, 1
- *
- * Or with 1's and 0's reversed.
- *
- * The label depends on if the top left corner has a 1 or not.
- *
- * We also add some small noise to the images.
+ * Creates a super simple dataset of 16 * 16 * 1 "images" where if exactly one
+ * pixel at random is 1 and the rest are 0 the label is 1. Otherwise the vector
+ * will be all 0s and the label is 0. This is a very easy sanity check to see if
+ * the filters work.
  */
 static std::tuple<dataset::BoltDatasetPtr, dataset::BoltDatasetPtr>
 generateSimpleImageDataset() {
@@ -33,6 +24,7 @@ generateSimpleImageDataset() {
   std::mt19937 gen(892734);
   std::uniform_int_distribution<uint32_t> label_dist(0, N_CLASSES - 1);
   std::normal_distribution<float> noise_dist(0, 0.1);
+  std::uniform_int_distribution<> random_index_dist(25, 63);
 
   std::vector<BoltBatch> data_batches;
   std::vector<BoltBatch> label_batches;
@@ -42,13 +34,10 @@ generateSimpleImageDataset() {
     for (uint32_t i = 0; i < batch_size; i++) {
       uint32_t label = label_dist(gen);
       BoltVector v(image_size, /* is_dense= */ true, /* has_gradient=*/false);
-      std::vector<float> sample_image;
+      std::vector<float> sample_image(image_size, 0);
       if (label == 1) {
-        sample_image = {1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1};
-      } else {
-        sample_image = {0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0};
+        sample_image[random_index_dist(gen)];
       }
-      assert(sample_image.size() == image_size);
 
       for (uint32_t i; i < image_size; i++) {
         sample_image[i] += noise_dist(gen);
@@ -70,16 +59,15 @@ generateSimpleImageDataset() {
 
 static TrainConfig getTrainConfig(uint32_t epochs) {
   TrainConfig config =
-      TrainConfig::makeConfig(/* learning_rate= */ 0.001, /* epochs= */ epochs)
-          .withMetrics({"mean_squared_error"})
-          .silence();
+      TrainConfig::makeConfig(/* learning_rate= */ 0.01, /* epochs= */ epochs)
+          .withMetrics({"categorical_accuracy"});
 
   return config;
 }
 
 static EvalConfig getEvalConfig() {
   EvalConfig config =
-      EvalConfig::makeConfig().withMetrics({"categorical_accuracy"}).silence();
+      EvalConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
   return config;
 }
@@ -88,7 +76,7 @@ TEST(ConvNodeTest, SimpleConvTestWithSaveLoad) {
   auto input_layer = Input3D::make(std::make_tuple(4, 4, 1));
 
   auto conv_node = ConvNode::makeAutotuned(
-      /* num_filters= */ 10, /* sparsity= */ 1.0, /* activation= */ "relu",
+      /* num_filters= */ 50, /* sparsity= */ 1.0, /* activation= */ "relu",
       /* kernel_size= */ std::make_pair(2, 2),
       /* next_kernel_size= */ std::make_pair(1, 1));
   conv_node->addPredecessor(input_layer);
@@ -102,7 +90,7 @@ TEST(ConvNodeTest, SimpleConvTestWithSaveLoad) {
   auto [data, labels] = generateSimpleImageDataset();
 
   model.train(/* train_data= */ {data}, labels,
-              getTrainConfig(/* epochs= */ 5));
+              getTrainConfig(/* epochs= */ 10));
 
   auto test_metrics =
       model.evaluate(/* test_data= */ {data}, labels, getEvalConfig());
