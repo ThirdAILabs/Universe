@@ -37,7 +37,7 @@ void MetricList::recordBatch(uint32_t batch_size) {
 void MetricList::updateHistory(std::shared_ptr<History>& history,
                                const std::string& prefix) {
   for (const auto& metric : _metrics) {
-    (*history)[metric->name()][prefix + metric->outputName()].push_back(
+    (*history)[metric->outputName()][prefix + metric->name()].push_back(
         metric->value());
   }
 }

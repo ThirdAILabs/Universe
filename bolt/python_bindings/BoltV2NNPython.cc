@@ -1,4 +1,4 @@
-#include "BoltV2Python.h"
+#include "BoltV2NNPython.h"
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>

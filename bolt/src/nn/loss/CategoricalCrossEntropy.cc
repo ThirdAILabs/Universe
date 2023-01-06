@@ -1,6 +1,6 @@
 #include "CategoricalCrossEntropy.h"
-#include <optional>
 #include <cmath>
+#include <optional>
 
 namespace thirdai::bolt::nn::loss {
 
@@ -25,7 +25,7 @@ float CategoricalCrossEntropy::loss(float activation, float label) const {
   if (label == 0) {
     return 0.0;
   }
-  return label * std::log(activation + 1e-7);
+  return -label * std::log(activation + 1e-7);
 }
 
 }  // namespace thirdai::bolt::nn::loss

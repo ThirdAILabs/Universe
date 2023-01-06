@@ -48,7 +48,9 @@ metrics::History Trainer::train(
       callbacks.onBatchBegin();
 
       _model->trainOnBatchSingleInput(train_data.first->at(batch_idx),
-                                      train_data.first->at(batch_idx));
+                                      train_data.second->at(batch_idx));
+
+      _model->updateParameters(train_state->learningRate());
 
       train_metrics.recordBatch(train_data.first->at(batch_idx).getBatchSize());
 
@@ -61,6 +63,11 @@ metrics::History Trainer::train(
           steps_since_validation == *steps_per_validation) {
         validate(*validation_data, validation_metrics);
         steps_since_validation = 0;
+      }
+
+      if (train_state->isTrainingStopped()) {
+        // TODO(Nicholas): Print stuff and have more graceful termination
+        return *_history;
       }
     }
 
@@ -90,8 +97,12 @@ metrics::History Trainer::train(
 
 void Trainer::validate(const LabeledDataset& validation_data,
                        metrics::MetricList& validation_metrics) {
-  for (uint32_t batch_idx = 0; batch_idx < validation_data.first->numBatches();
-       batch_idx++) {
+  uint32_t num_batches = validation_data.first->numBatches();
+  ProgressBar bar("validate", num_batches);
+
+  auto val_start = now();
+
+  for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
     // TODO(Nicholas): Add option to use sparsity for validation.
     _model->forwardSingleInput(validation_data.first->at(batch_idx),
                                /* use_sparsity= */ false);
@@ -100,9 +111,16 @@ void Trainer::validate(const LabeledDataset& validation_data,
 
     validation_metrics.recordBatch(
         validation_data.first->at(batch_idx).getBatchSize());
+
+    bar.increment();
   }
 
+  auto val_end = now();
+
   validation_metrics.updateHistory(_history, /* prefix= */ "val_");
+
+  bar.close(formatValidateLogLine(validation_metrics.summarizeLastStep(),
+                                  num_batches, between(val_start, val_end)));
 
   validation_metrics.reset();
 }
@@ -111,6 +129,15 @@ std::string Trainer::formatTrainLogLine(std::string metric_summary,
                                         uint32_t batches, int64_t time) {
   std::string logline = fmt::format(
       "train | epoch {} | train_steps {} | {} | train_batches {} | time {}s",
+      _epoch, _model->trainSteps(), metric_summary, batches, time);
+
+  return logline;
+}
+
+std::string Trainer::formatValidateLogLine(std::string metric_summary,
+                                           uint32_t batches, int64_t time) {
+  std::string logline = fmt::format(
+      "validate | epoch {} | train_steps {} | {} | val_batches {} | time {}s",
       _epoch, _model->trainSteps(), metric_summary, batches, time);
 
   return logline;

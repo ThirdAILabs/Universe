@@ -28,10 +28,11 @@ class Trainer {
   void validate(const LabeledDataset& validation_data,
                 metrics::MetricList& validation_metrics);
 
-  std::string formatTrainLogLine(std::string metric_summary,
-                                    uint32_t batches, int64_t time);
+  std::string formatTrainLogLine(std::string metric_summary, uint32_t batches,
+                                 int64_t time);
 
-                                    
+  std::string formatValidateLogLine(std::string metric_summary,
+                                    uint32_t batches, int64_t time);
 
   nn::model::ModelPtr _model;
 

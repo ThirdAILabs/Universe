@@ -26,4 +26,10 @@ bool LossMetric::betterThan(float a, float b) const { return a < b; }
 
 std::string LossMetric::name() const { return "loss"; }
 
+std::string LossMetric::outputName() const {
+  // TODO(Nicholas): handle multiple outputs in loss, for example contrastive
+  // loss.
+  return _loss_fn->outputsUsed().at(0)->name();
+}
+
 }  // namespace thirdai::bolt::train::metrics
