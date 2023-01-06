@@ -41,7 +41,9 @@ void defineAutomlInModule(py::module_& module) {
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
            py::arg("source_column"), py::arg("target_column"),
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
-
+      .def("__new__", &UDTFactory::buildUDTGeneratorWrapperTargetOnly,
+           py::arg("target_column"), py::arg("dataset_size"),
+           docs::UDT_GENERATOR_INIT)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 }
@@ -366,6 +368,16 @@ QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapper(
   (void)obj;
   return QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
       /* source_column_name = */ source_column,
+      /* target_column_name = */ target_column,
+      /* dataset_size = */ dataset_size);
+}
+
+QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapperTargetOnly(
+    py::object& obj, const std::string& target_column,
+    const std::string& dataset_size) {
+  (void)obj;
+  return QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
+      /* source_column_name = */ target_column,
       /* target_column_name = */ target_column,
       /* dataset_size = */ dataset_size);
 }

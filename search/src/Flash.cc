@@ -46,7 +46,7 @@ void Flash<LABEL_T>::addDataset(
   auto num_batches = dataset.numBatches();
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
       /* verbose = */ verbose,
-      /* description = */ fmt::format("Processing {} batches", num_batches),
+      /* description = */ fmt::format("train"),
       /* max_steps = */ dataset.numBatches());
   for (uint64_t batch_index = 0; batch_index < num_batches; batch_index++) {
     const auto& batch = dataset[batch_index];
@@ -58,7 +58,8 @@ void Flash<LABEL_T>::addDataset(
   }
   if (bar) {
     bar->close(
-        /* comment = */ fmt::format("Finished Training the Model"));
+        /* comment = */ fmt::format("train | batches {} | complete",
+                                    num_batches));
   }
 }
 
