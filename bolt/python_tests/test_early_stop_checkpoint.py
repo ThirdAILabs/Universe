@@ -82,7 +82,7 @@ def run_early_stop_test(
     extra_callbacks=[],
 ):
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=N_CLASSES, n_samples=1000, noise_std=0.4
+        n_classes=N_CLASSES, n_samples=1000, noise_std=0.3
     )
     valid_data, valid_labels = gen_numpy_training_data(
         n_classes=N_CLASSES, n_samples=1000, noise_std=0.3
