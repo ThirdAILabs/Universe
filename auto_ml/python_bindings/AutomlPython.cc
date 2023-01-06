@@ -6,6 +6,8 @@
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <pybind11/detail/common.h>
 #include <limits>
+#include <auto_ml/src/dataset_factories/udt/TabularDatasetLoader.h>
+
 
 namespace thirdai::automl::python {
 
@@ -105,12 +107,12 @@ void createModelsSubmodule(py::module_& module) {
             return models::DEFAULT_EVALUATE_BATCH_SIZE;
           });
 
-  py::class_<data::GenericDatasetLoader, data::GenericDatasetLoaderPtr>(
-      models_submodule, "GenericDatasetLoader")
-      .def("load_in_memory", &data::GenericDatasetLoader::loadInMemory,
+  py::class_<data::TabularDatasetLoader, data::TabularDatasetLoaderPtr>(
+      models_submodule, "TabularDatasetLoader")
+      .def("load_in_memory", &data::TabularDatasetLoader::loadInMemory,
            py::arg("max_in_memory_batches") =
                std::numeric_limits<uint32_t>::max())
-      .def("restart", &data::GenericDatasetLoader::restart);
+      .def("restart", &data::TabularDatasetLoader::restart);
 
   py::class_<data::UDTDatasetFactory, data::UDTDatasetFactoryPtr>(
       models_submodule, "TemporalContext")

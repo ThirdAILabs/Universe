@@ -80,7 +80,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         contextual_columns, regression_binning);
   }
 
-  DatasetLoaderPtr getLabeledDatasetLoader(
+  dataset::DataLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) final;
 
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {

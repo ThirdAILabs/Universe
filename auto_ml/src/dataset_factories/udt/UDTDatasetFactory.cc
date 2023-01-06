@@ -2,10 +2,11 @@
 #include <cereal/archives/binary.hpp>
 #include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
 #include <stdexcept>
+#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
 
 namespace thirdai::automl::data {
 
-DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
+dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     std::shared_ptr<dataset::DataLoader> data_loader, bool training) {
   auto current_column_number_map =
       makeColumnNumberMap(*data_loader, _config->delimiter);
@@ -33,7 +34,7 @@ DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
   // Restart so batch processor does not skip a sample.
   data_loader->restart();
 
-  return std::make_unique<GenericDatasetLoader>(
+  return std::make_unique<dataset::TabularDatasetLoader>(
       data_loader, _labeled_history_updating_processor,
       /* shuffle= */ training);
 }

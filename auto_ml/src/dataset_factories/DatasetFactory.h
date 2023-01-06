@@ -36,52 +36,9 @@ namespace thirdai::automl::data {
  *
  */
 
-using InputDatasets = std::vector<dataset::BoltDatasetPtr>;
-using LabelDataset = dataset::BoltDatasetPtr;
-
-class DatasetLoader {
- public:
-  virtual std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
-      uint32_t max_in_memory_batches) = 0;
-
-  virtual void restart() = 0;
-
-  virtual ~DatasetLoader() = default;
-};
-
-class GenericDatasetLoader final : public DatasetLoader {
- public:
-  GenericDatasetLoader(std::shared_ptr<dataset::DataLoader> data_loader,
-                       dataset::GenericBatchProcessorPtr batch_processor,
-                       bool shuffle)
-      : _dataset(std::move(data_loader), std::move(batch_processor), shuffle) {}
-
-  std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
-      uint32_t max_in_memory_batches) final {
-    auto datasets = _dataset.loadInMemoryWithMaxBatches(max_in_memory_batches);
-    if (!datasets) {
-      return std::nullopt;
-    }
-
-    auto& [data, labels] = datasets.value();
-
-    return std::make_optional<std::pair<InputDatasets, LabelDataset>>(
-        InputDatasets{data}, labels);
-  }
-
-  void restart() final { _dataset.restart(); }
-
- private:
-  dataset::StreamingGenericDatasetLoader _dataset;
-};
-
-using GenericDatasetLoaderPtr = std::unique_ptr<GenericDatasetLoader>;
-
-using DatasetLoaderPtr = std::unique_ptr<DatasetLoader>;
-
 class DatasetLoaderFactory {
  public:
-  virtual DatasetLoaderPtr getLabeledDatasetLoader(
+  virtual dataset::DataLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) = 0;
 
   virtual std::vector<BoltVector> featurizeInput(const LineInput& input) = 0;
