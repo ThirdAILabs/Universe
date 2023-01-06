@@ -48,9 +48,13 @@ class Worker:
         """
         self.train_source = train_source
 
-        chunks_to_skip, batch_to_run = ray.get(
-            primary_worker.get_train_source_pointers.remote()
-        )
+        if id != 0:
+            chunks_to_skip, batch_to_run = ray.get(
+                primary_worker.get_train_source_pointers.remote()
+            )
+        else:
+            chunks_to_skip, batch_to_run = 0, 0
+
         self.train_source.load(chunks_to_skip=chunks_to_skip)
 
         logging.setup(
@@ -96,8 +100,6 @@ class Worker:
             raise ValueError(
                 "There must be at least one loadable dataset in the passed in data source."
             )
-
-        self.batch_id_within_dataset = 0
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.

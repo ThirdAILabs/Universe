@@ -61,7 +61,7 @@ class PrimaryWorker(Worker):
 
     def get_train_source_pointers(self):
         return (
-            self.train_source.get_current_data_chunk_id(),
+            self.train_source.get_current_data_chunk_id() - 1,
             self.batch_id_within_dataset,
         )
 
