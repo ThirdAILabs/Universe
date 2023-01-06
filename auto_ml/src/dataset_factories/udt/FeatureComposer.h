@@ -7,7 +7,6 @@
 #include "DataTypes.h"
 #include "TemporalContext.h"
 #include "UDTConfig.h"
-#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
@@ -17,6 +16,7 @@
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
+#include <dataset/src/utils/TabularMetadata.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cstdint>
 #include <limits>
