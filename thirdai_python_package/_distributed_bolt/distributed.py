@@ -234,11 +234,11 @@ class RayTrainingClusterConfig:
         )
 
         self.primary_worker_config = PrimaryWorker.options(
-            num_cpus=num_cpus_to_use, max_concurrency=2
+            num_cpus=num_cpus_to_use, max_concurrency=3
         )
 
         self.replica_worker_configs = [
-            ReplicaWorker.options(num_cpus=num_cpus_to_use, max_concurrency=2)
+            ReplicaWorker.options(num_cpus=num_cpus_to_use, max_concurrency=3)
             for _ in range(self.num_workers - 1)
         ]
 
@@ -303,7 +303,6 @@ class DistributedDataParallel:
             self.replica_workers.append(
                 replica_worker_config.remote(
                     num_workers=cluster_config.num_workers,
-                    model_to_wrap=ray_model_ref,
                     train_source=train_sources[worker_id],
                     train_config=train_config,
                     id=worker_id,
