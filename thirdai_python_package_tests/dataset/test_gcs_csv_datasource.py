@@ -39,12 +39,12 @@ def disk_persisted_dataset(testing_dataframe):
 
 
 @mock.patch("pandas.read_csv")
-def test_csv_loader_from_gcs(
+def test_csv_source_from_gcs(
     pandas_read_csv, disk_persisted_dataset, testing_dataframe
 ):
     """
     This unit test uses a mock for pandas.read_csv function because otherwise the actual
-    function call in the CSVDataLoader class will attempt to establish a connection
+    function call in the CSVDataSource class will attempt to establish a connection
     with the given storage path for GCS, which will throw a network Error.
     """
     storage_client = mock.create_autospec(storage.Client)
@@ -57,15 +57,15 @@ def test_csv_loader_from_gcs(
     )
     blob.upload_from_filename.assert_called_with(TEST_FILE)
 
-    # create a csv data loader
-    loader = dataset.CSVDataLoader(
+    # create a csv data source
+    source = dataset.CSVDataSource(
         storage_path=f"gcs://{BUCKET}",
         batch_size=5,
     )
 
     all_records = []
     while True:
-        record = loader.next_line()
+        record = source.next_line()
         if record == None:
             break
         all_records.append(record)

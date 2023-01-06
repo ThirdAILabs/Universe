@@ -29,7 +29,7 @@ def ray_two_node_cluster_config():
 
         # We set the working_dir for the cluster equal to this directory
         # so that pickle works. Otherwise, unpickling the function
-        # defined in test_mock_cluster_arbitrary_streaming_data_loader.py would not
+        # defined in test_mock_cluster_arbitrary_streaming_data_source.py would not
         # work, since pickle needs to be able to import the file the object/function
         # was originally defined in.
         working_dir = os.path.dirname(os.path.realpath(__file__))

@@ -24,14 +24,14 @@ namespace thirdai::automl::data {
 /**
  * Structure of Dataset Loading:
  * DatasetLoaderFactory:
- *      takes in DataLoaders, for instance S3, a file, etc. and returns a
+ *      takes in DataSources, for instance S3, a file, etc. and returns a
  *      DatasetLoader for the given resource. This factory can also maintain any
  *      state that's needed to load datasets, for instance in the Tabular and
- *      Sequential data loaders which are stateful.
+ *      Sequential data sources which are stateful.
  *
  * DatasetLoader:
  *      Can return bolt datasets form the associated data source until it is
- *      exhausted. For instance a data loader would be returned by the factory
+ *      exhausted. For instance a data source would be returned by the factory
  *      for each data source train or evaluate is invoked with.
  *
  */
@@ -51,10 +51,10 @@ class DatasetLoader {
 
 class GenericDatasetLoader final : public DatasetLoader {
  public:
-  GenericDatasetLoader(std::shared_ptr<dataset::DataLoader> data_loader,
+  GenericDatasetLoader(std::shared_ptr<dataset::DataSource> data_source,
                        dataset::GenericBatchProcessorPtr batch_processor,
                        bool shuffle)
-      : _dataset(std::move(data_loader), std::move(batch_processor), shuffle) {}
+      : _dataset(std::move(data_source), std::move(batch_processor), shuffle) {}
 
   std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
       uint32_t max_in_memory_batches) final {
@@ -82,7 +82,7 @@ using DatasetLoaderPtr = std::unique_ptr<DatasetLoader>;
 class DatasetLoaderFactory {
  public:
   virtual DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader, bool training) = 0;
+      std::shared_ptr<dataset::DataSource> data_source, bool training) = 0;
 
   virtual std::vector<BoltVector> featurizeInput(const LineInput& input) = 0;
 
