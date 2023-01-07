@@ -56,13 +56,6 @@ class ColumnParser {
     ParsingState state = ParsingState::Start;
     DelimiterMatcher delimiter_parser(delimiter);
 
-    // EnteredUnquotedColumn: begin is begin
-    // FoundQuoteInFirstPosition: begin is begin + 1
-    // End candidate is ++current if InQuotedColumn or InUnquotedColumn
-    // Can transition to FoundQuoteInQuotedColumn if FoundQuoteInFirstPosition
-    // or InQuotedColumn. Can transition to delimiter if
-    // Start, FoundQuoteInQuotedColumn or InUnquotedColumn
-
     for (auto char_iter = begin; char_iter < end; char_iter++) {
       state = nextState(state, *char_iter, delimiter_parser);
 
