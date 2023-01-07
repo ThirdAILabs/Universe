@@ -30,7 +30,7 @@ SingleBlockDatasetFactoryConfig::createDatasetState(
       /* data_block= */ data_block,
       /* unlabeled_data_block= */ unlabeled_data_block,
       /* label_block=*/label_block, /* shuffle= */ shuffle,
-      /* delimiter= */ delimiter.at(0), /* has_header= */ _has_header);
+      /* delimiter= */ delimiter, /* has_header= */ _has_header);
 }
 
 }  // namespace thirdai::automl::deployment

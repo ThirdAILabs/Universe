@@ -247,9 +247,9 @@ void createUDTTypesSubmodule(py::module_& module) {
              automl::data::CategoricalMetadataConfigPtr>(udt_types_submodule,
                                                          "metadata")
       .def(py::init<std::string, std::string, automl::data::ColumnDataTypes,
-                    char>(),
+                    std::string>(),
            py::arg("filename"), py::arg("key_column_name"),
-           py::arg("data_types"), py::arg("delimiter") = ',',
+           py::arg("data_types"), py::arg("delimiter") = ",",
            docs::UDT_CATEGORICAL_METADATA_CONFIG);
 
   py::class_<automl::data::CategoricalDataType, automl::data::DataType,

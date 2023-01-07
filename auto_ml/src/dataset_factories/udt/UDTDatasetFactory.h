@@ -193,7 +193,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const std::string& col_name, const CategoricalDataTypePtr& categorical);
 
   static ColumnNumberMapPtr makeColumnNumberMapFromHeader(
-      dataset::DataLoader& data_loader, char delimiter);
+      dataset::DataLoader& data_loader, const std::string& delimiter);
 
   std::vector<dataset::BlockPtr> buildMetadataInputBlocks(
       const CategoricalMetadataConfig& metadata_config) const;

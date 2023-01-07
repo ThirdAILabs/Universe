@@ -65,7 +65,7 @@ struct UDTConfig {
         time_granularity(
             dataset::stringToGranularity(std::move(time_granularity))),
         lookahead(lookahead),
-        delimiter(delimiter) {}
+        delimiter({delimiter}) {}
 
   ColumnDataTypes data_types;
   UserProvidedTemporalRelationships provided_relationships;
@@ -74,7 +74,7 @@ struct UDTConfig {
   bool integer_target;
   dataset::QuantityTrackingGranularity time_granularity;
   uint32_t lookahead;
-  char delimiter;
+  std::string delimiter;
 
   uint32_t hash_range = DEFAULT_HASH_RANGE;
 

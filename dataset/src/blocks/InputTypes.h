@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dataset/src/blocks/ColumnIdentifier.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -81,7 +82,7 @@ class SingleRowInputRef final : public SingleInputRef {
 
 class SingleCsvLineInputRef final : public SingleInputRef {
  public:
-  SingleCsvLineInputRef(const LineInput& line, char delimiter)
+  SingleCsvLineInputRef(const LineInput& line, const std::string& delimiter)
       : _line(line), _delimiter(delimiter) {}
 
   std::string_view column(const ColumnIdentifier& column) final {
@@ -99,13 +100,12 @@ class SingleCsvLineInputRef final : public SingleInputRef {
  private:
   void parseToColumnsIfNecessary() {
     if (!_columns) {
-      _columns = ProcessorUtils::parseCsvRow(/* row= */ _line,
-                                             /* delimiter= */ _delimiter);
+      _columns = CSV::parse(_line, _delimiter);
     }
   }
 
   const LineInput& _line;
-  char _delimiter;
+  const std::string& _delimiter;
   std::optional<RowInput> _columns;
   std::exception_ptr _last_error;
 };
@@ -138,7 +138,8 @@ class BatchMapInputRef final : public BatchInputRef {
 
 class BatchCsvLineInputRef final : public BatchInputRef {
  public:
-  BatchCsvLineInputRef(const LineInputBatch& batch, char delimiter)
+  BatchCsvLineInputRef(const LineInputBatch& batch,
+                       const std::string& delimiter)
       : _batch(batch) {
     _ref_batch.reserve(_batch.size());
     for (const auto& input : _batch) {

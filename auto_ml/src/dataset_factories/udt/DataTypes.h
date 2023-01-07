@@ -143,7 +143,7 @@ struct CategoricalMetadataConfig {
   std::string metadata_file;
   std::string key;
   ColumnDataTypes column_data_types;
-  char delimiter = ',';
+  std::string delimiter = ",";
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/

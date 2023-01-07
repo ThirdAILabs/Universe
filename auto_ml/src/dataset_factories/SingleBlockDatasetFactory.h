@@ -24,7 +24,7 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
   SingleBlockDatasetFactory(dataset::BlockPtr data_block,
                             dataset::BlockPtr unlabeled_data_block,
                             dataset::BlockPtr label_block, bool shuffle,
-                            char delimiter, bool has_header)
+                            std::string delimiter, bool has_header)
       : _labeled_batch_processor(
             std::make_shared<dataset::GenericBatchProcessor>(
                 std::vector<dataset::BlockPtr>{std::move(data_block)},
@@ -34,9 +34,9 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
             std::make_shared<dataset::GenericBatchProcessor>(
                 std::vector<dataset::BlockPtr>{std::move(unlabeled_data_block)},
                 std::vector<dataset::BlockPtr>{},
-                /* has_header= */ has_header, delimiter)),
+                /* has_header= */ has_header, std::move(delimiter))),
         _shuffle(shuffle),
-        _delimiter(delimiter) {}
+        _delimiter({delimiter}) {}
 
   DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
@@ -70,7 +70,7 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
   dataset::GenericBatchProcessorPtr _labeled_batch_processor;
   dataset::GenericBatchProcessorPtr _unlabeled_batch_processor;
   bool _shuffle;
-  char _delimiter;
+  std::string _delimiter;
 
   // Private constructor for cereal.
   SingleBlockDatasetFactory() {}

@@ -5,10 +5,10 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
-#include "ProcessorUtils.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
 #include <exception>
@@ -25,7 +25,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   GenericBatchProcessor(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
-      char delimiter = ',', bool parallel = true,
+      std::string delimiter = ",", bool parallel = true,
       /*
         If hash_range has a value, then features from different blocks
         will be aggregated by hashing them to the same range but with
@@ -34,7 +34,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       */
       std::optional<uint32_t> hash_range = std::nullopt)
       : _expects_header(has_header),
-        _delimiter(delimiter),
+        _delimiter(std::move(delimiter)),
         _parallel(parallel),
         _hash_range(hash_range),
         /**
@@ -49,7 +49,9 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
         _input_blocks(std::move(input_blocks)),
         _label_blocks(std::move(label_blocks)),
         _expected_num_cols(std::max(_input_blocks.expectedNumColumns(),
-                                    _label_blocks.expectedNumColumns())) {}
+                                    _label_blocks.expectedNumColumns())) {
+    CSV::verifyDelimiterIsValid(_delimiter);
+  }
 
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
     _input_blocks.updateColumnNumbers(column_number_map);
@@ -156,11 +158,11 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   static std::shared_ptr<GenericBatchProcessor> make(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
-      char delimiter = ',', bool parallel = true,
+      std::string delimiter = ",", bool parallel = true,
       std::optional<uint32_t> hash_range = std::nullopt) {
-    return std::make_shared<GenericBatchProcessor>(input_blocks, label_blocks,
-                                                   has_header, delimiter,
-                                                   parallel, hash_range);
+    return std::make_shared<GenericBatchProcessor>(
+        input_blocks, label_blocks, has_header, std::move(delimiter), parallel,
+        hash_range);
   }
 
  private:
@@ -207,7 +209,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   GenericBatchProcessor() {}
 
   bool _expects_header;
-  char _delimiter;
+  std::string _delimiter;
   bool _parallel;
   std::optional<uint32_t> _hash_range;
 

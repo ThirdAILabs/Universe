@@ -4,6 +4,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <cstdint>
 #include <map>
 #include <sstream>
@@ -14,9 +15,9 @@ namespace thirdai::dataset {
 
 class ColumnNumberMap {
  public:
-  ColumnNumberMap(const std::string& header, char delimiter) : _n_cols(0) {
-    auto header_columns =
-        dataset::ProcessorUtils::parseCsvRow(header, delimiter);
+  ColumnNumberMap(const std::string& header, const std::string& delimiter)
+      : _n_cols(0) {
+    auto header_columns = CSV::parse(header, delimiter);
     _n_cols = header_columns.size();
     for (uint32_t col_num = 0; col_num < header_columns.size(); col_num++) {
       std::string col_name(header_columns[col_num]);

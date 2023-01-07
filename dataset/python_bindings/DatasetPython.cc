@@ -282,12 +282,12 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<StreamingGenericDatasetLoader>(dataset_submodule, "DataPipeline")
       .def(py::init<std::string, std::vector<std::shared_ptr<Block>>,
                     std::vector<std::shared_ptr<Block>>, uint32_t, bool,
-                    DatasetShuffleConfig, bool, char>(),
+                    DatasetShuffleConfig, bool, std::string>(),
            py::arg("filename"), py::arg("input_blocks"),
            py::arg("label_blocks"), py::arg("batch_size"),
            py::arg("shuffle") = false,
            py::arg("config") = DatasetShuffleConfig(),
-           py::arg("has_header") = false, py::arg("delimiter") = ',')
+           py::arg("has_header") = false, py::arg("delimiter") = ",")
       .def("next_batch", &StreamingGenericDatasetLoader::nextBatchTuple)
       .def("load_in_memory", &StreamingGenericDatasetLoader::loadInMemory)
       .def("get_max_batch_size",

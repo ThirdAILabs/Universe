@@ -381,7 +381,7 @@ class QueryCandidateGenerator {
         std::make_shared<dataset::GenericBatchProcessor>(
             /* input_blocks = */ inference_input_blocks,
             /* labels_blocks = */ std::vector<dataset::BlockPtr>{},
-            /* has_header = */ false, /* delimiter = */ ',');
+            /* has_header = */ false, /* delimiter = */ ",");
   }
 
   std::shared_ptr<dataset::GenericBatchProcessor>
@@ -392,7 +392,7 @@ class QueryCandidateGenerator {
     return std::make_shared<dataset::GenericBatchProcessor>(
         /* input_blocks = */ input_blocks,
         /* label_blocks = */ std::vector<dataset::BlockPtr>{},
-        /* has_header = */ true, /* delimiter = */ ',');
+        /* has_header = */ true, /* delimiter = */ ",");
   }
 
   std::vector<dataset::BlockPtr> constructInputBlocks(
@@ -541,8 +541,9 @@ class QueryCandidateGenerator {
       throw std::invalid_argument(
           "The Input Dataset File must have a Valid Header with Column Names.");
     }
+    std::string delimiter_str = {delimiter};
     auto column_number_map =
-        std::make_shared<ColumnNumberMap>(*file_header, delimiter);
+        std::make_shared<ColumnNumberMap>(*file_header, delimiter_str);
 
     uint32_t source_column_index =
         column_number_map->at(_query_generator_config->sourceColumnName());

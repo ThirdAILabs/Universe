@@ -221,7 +221,7 @@ void UniversalDeepTransformer::coldStartPretraining(
       /* text_column_name= */ metadata.text_column_name,
       /* label_column_name= */ dataset_config->target,
       /* batch_size= */ _train_eval_config.defaultBatchSize(),
-      /* column_delimiter= */ dataset_config->delimiter,
+      /* column_delimiter= */ dataset_config->delimiter.at(0),
       /* label_delimiter= */ metadata.label_delimiter);
 
   auto train_config =

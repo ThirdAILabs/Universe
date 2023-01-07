@@ -119,7 +119,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
 }
 
 ColumnNumberMapPtr UDTDatasetFactory::makeColumnNumberMapFromHeader(
-    dataset::DataLoader& data_loader, char delimiter) {
+    dataset::DataLoader& data_loader, const std::string& delimiter) {
   auto header = data_loader.nextLine();
   if (!header) {
     throw std::invalid_argument(
