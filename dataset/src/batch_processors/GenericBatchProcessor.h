@@ -9,6 +9,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
 #include <exception>
@@ -34,7 +35,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       */
       std::optional<uint32_t> hash_range = std::nullopt)
       : _expects_header(has_header),
-        _delimiter(delimiter),
+        _delimiter({delimiter}),
         _parallel(parallel),
         _hash_range(hash_range),
         _expected_num_cols(0),
@@ -59,6 +60,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
          */
         _input_blocks(std::move(input_blocks)),
         _label_blocks(std::move(label_blocks)) {
+    CSV::verifyDelimiterIsValid(_delimiter);
     for (const auto& block : _input_blocks) {
       _expected_num_cols =
           std::max(block->expectedNumColumns(), _expected_num_cols);
@@ -74,7 +76,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     std::vector<BoltVector> batch_inputs(rows.size());
     std::vector<BoltVector> batch_labels(rows.size());
 
-    auto first_row = ProcessorUtils::parseCsvRow(rows.at(0), _delimiter);
+    auto first_row = CSV::parse(rows.at(0), _delimiter);
     prepareInputBlocksForBatch(first_row);
     for (auto& block : _label_blocks) {
       block->prepareForBatch(first_row);
@@ -92,7 +94,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     shared(rows, batch_inputs, batch_labels, num_columns_error, \
            block_err) if (_parallel)
     for (size_t i = 0; i < rows.size(); ++i) {
-      auto columns = ProcessorUtils::parseCsvRow(rows[i], _delimiter);
+      auto columns = CSV::parse(rows[i], _delimiter);
       if (columns.size() < _expected_num_cols) {
         std::stringstream error_ss;
         error_ss << "[ProcessorUtils::parseCsvRow] Expected "
@@ -257,7 +259,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   GenericBatchProcessor() {}
 
   bool _expects_header;
-  char _delimiter;
+  std::string _delimiter;
   bool _parallel;
   std::optional<uint32_t> _hash_range;
 
