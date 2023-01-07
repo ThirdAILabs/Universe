@@ -71,7 +71,7 @@ ops::Op* ActivationTensor::source() const { return _source; }
 
 std::vector<uint32_t> ActivationTensor::shape() const {
   uint32_t batch_size = _vectors.size();
-  return {batch_size, dim()};
+  return {batch_size, numNonzeros().value()};
 }
 
 const uint32_t* ActivationTensor::activeNeuronsPtr() const {
