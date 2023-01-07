@@ -420,7 +420,6 @@ def download_clinc_dataset():
     inference_samples = []
     for _, row in test_df.iterrows():
         inference_samples.append(({"text": row["text"]}, row["category"]))
-
     return TRAIN_FILE, TEST_FILE, inference_samples
 
 

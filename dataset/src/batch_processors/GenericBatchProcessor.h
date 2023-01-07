@@ -5,7 +5,6 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
-#include "ProcessorUtils.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -97,11 +96,10 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       auto columns = CSV::parse(rows[i], _delimiter);
       if (columns.size() < _expected_num_cols) {
         std::stringstream error_ss;
-        error_ss << "[ProcessorUtils::parseCsvRow] Expected "
-                 << _expected_num_cols << " columns delimited by '"
-                 << _delimiter << "' in each row of the dataset. Found row '"
-                 << rows[i] << "' with number of columns = " << columns.size()
-                 << ".";
+        error_ss << "Expected " << _expected_num_cols
+                 << " columns delimited by '" << _delimiter
+                 << "' in each row of the dataset. Found row '" << rows[i]
+                 << "' with number of columns = " << columns.size() << ".";
 #pragma omp critical
         num_columns_error =
             std::make_exception_ptr(std::invalid_argument(error_ss.str()));
