@@ -289,12 +289,11 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<TabularDatasetLoader, DatasetLoader>(dataset_submodule,
                                                   "TabularDatasetLoader")
-      .def(py::init<std::string, std::vector<std::shared_ptr<Block>>,
-                    std::vector<std::shared_ptr<Block>>, uint32_t, bool,
+      .def(py::init<DataSourcePtr, std::vector<std::shared_ptr<Block>>,
+                    std::vector<std::shared_ptr<Block>>, bool,
                     DatasetShuffleConfig, bool, char>(),
-           py::arg("filename"), py::arg("input_blocks"),
-           py::arg("label_blocks"), py::arg("batch_size"),
-           py::arg("shuffle") = false,
+           py::arg("data_source"), py::arg("input_blocks"),
+           py::arg("label_blocks"), py::arg("shuffle") = false,
            py::arg("config") = DatasetShuffleConfig(),
            py::arg("has_header") = false, py::arg("delimiter") = ',')
       .def("get_input_dim", &TabularDatasetLoader::getInputDim)

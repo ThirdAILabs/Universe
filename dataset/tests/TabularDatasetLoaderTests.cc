@@ -256,7 +256,7 @@ TEST_F(TabularDatasetLoaderTests, CorrectVectorsInShuffledInMemoryData) {
   auto shuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto in_memory_data = shuffled_pipeline.loadInMemory();
   assertCorrectVectors(in_memory_data.first.at(0), in_memory_data.second);
-  ASSERT_TRUE(isOrdered(in_memory_data.first.at(0)));
+  ASSERT_FALSE(isOrdered(in_memory_data.first.at(0)));
 }
 
 TEST_F(TabularDatasetLoaderTests, CorrectVectorsInShuffledStreamedData) {
@@ -264,7 +264,7 @@ TEST_F(TabularDatasetLoaderTests, CorrectVectorsInShuffledStreamedData) {
   auto shuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto streamed_data = streamToInMemoryDataset(std::move(shuffled_pipeline));
   assertCorrectVectors(streamed_data.at(0), streamed_data.at(1));
-  ASSERT_TRUE(isOrdered(streamed_data.at(0)));
+  ASSERT_FALSE(isOrdered(streamed_data.at(0)));
 }
 
 TEST_F(TabularDatasetLoaderTests, ShuffledInMemoryDataSameSeedSameOrder) {

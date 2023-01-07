@@ -69,8 +69,8 @@ TabularDatasetLoader::loadInMemory(uint64_t max_in_memory_batches) {
   BoltDatasetPtr labels =
       std::make_shared<BoltDataset>(std::move(batch_lists.back()));
   std::vector<BoltDatasetPtr> data;
-  for (uint32_t i = 0; i < data.size() - 1; i++) {
-    data.emplace_back(std::move(data.at(i)));
+  for (uint32_t i = 0; i < batch_lists.size() - 1; i++) {
+    data.push_back(std::make_shared<BoltDataset>(std::move(batch_lists.at(i))));
   }
 
   std::cout << "loading data | source '" << _data_source->resourceName()
