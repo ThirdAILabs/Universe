@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <cstdint>
+#include <stdexcept>
 #include <utility>
 
 namespace thirdai::dataset::tests {
@@ -11,8 +12,8 @@ namespace thirdai::dataset::tests {
 void testCsvParser(std::string input_string, std::string delimiter,
                    std::vector<std::string> expected_parsed_result) {
   // TODO(Geordie): Implement
-  CsvRowParser parser(delimiter);
-  auto parsed_result = parser.parse(input_string);
+  CSV::verifyDelimiterIsValid(delimiter);
+  auto parsed_result = CSV::parse(input_string, delimiter);
   ASSERT_EQ(parsed_result.size(), expected_parsed_result.size());
   for (uint32_t i = 0; i < parsed_result.size(); i++) {
     ASSERT_EQ(std::string(parsed_result[i]), expected_parsed_result[i]);
@@ -50,6 +51,17 @@ TEST(CsvParserTests, DoubleQuotesInStringColumnNotMistakenAsOuterQuotes) {
   // a substring for performance reasons.
   testCsvParser(R"("""This is in quotes"", and this is not.")", ",",
                 {R"(""This is in quotes"", and this is not.)"});
+}
+
+TEST(CsvParserTests, BadDelimiterThrows) {
+  // NOLINTNEXTLINE since clang-tidy doesn't like ASSERT_THROW
+  ASSERT_THROW(testCsvParser("", "\\", {}), std::invalid_argument);
+  // NOLINTNEXTLINE since clang-tidy doesn't like ASSERT_THROW
+  ASSERT_THROW(testCsvParser("", "\"", {}), std::invalid_argument);
+  // NOLINTNEXTLINE since clang-tidy doesn't like ASSERT_THROW
+  ASSERT_THROW(testCsvParser("", "\n", {}), std::invalid_argument);
+  // NOLINTNEXTLINE since clang-tidy doesn't like ASSERT_THROW
+  ASSERT_THROW(testCsvParser("", "\r", {}), std::invalid_argument);
 }
 
 }  // namespace thirdai::dataset::tests
