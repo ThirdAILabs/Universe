@@ -8,10 +8,9 @@
 
 namespace thirdai::dataset {
 
-template <typename... BATCH_Ts>
 class BatchProcessor {
  public:
-  virtual std::tuple<BATCH_Ts...> createBatch(
+  virtual std::vector<BoltBatch> createBatch(
       const std::vector<std::string>& rows) = 0;
 
   virtual bool expectsHeader() const = 0;
@@ -32,9 +31,11 @@ class BatchProcessor {
   }
 };
 
-class UnaryBoltBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
+using BatchProcessorPtr = std::shared_ptr<BatchProcessor>;
+
+class UnaryBoltBatchProcessor : public BatchProcessor {
  public:
-  std::tuple<BoltBatch, BoltBatch> createBatch(
+  std::vector<BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> _data_vecs = std::vector<BoltVector>(rows.size());
     std::vector<BoltVector> _label_vecs = std::vector<BoltVector>(rows.size());
@@ -47,8 +48,8 @@ class UnaryBoltBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       _label_vecs[row_id] = std::move(p.second);
     }
 
-    return std::make_tuple(BoltBatch(std::move(_data_vecs)),
-                           BoltBatch(std::move(_label_vecs)));
+    return {BoltBatch(std::move(_data_vecs)),
+            BoltBatch(std::move(_label_vecs))};
   }
 
  protected:
@@ -72,9 +73,9 @@ class UnaryBoltBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
  * This BatchProcessor provides an interface to compute metadata about a dataset
  * in a streaming fashion without creating BoltVectors
  */
-class ComputeBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
+class ComputeBatchProcessor : public BatchProcessor {
  public:
-  std::tuple<BoltBatch, BoltBatch> createBatch(
+  std::vector<BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     // TODO(david) enable parallel by making metadata calculation thread safe
     // #pragma omp parallel for default(none) shared(rows)
@@ -82,7 +83,7 @@ class ComputeBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       processRow(row);
     }
 
-    return std::make_tuple(BoltBatch(), BoltBatch());
+    return {BoltBatch(), BoltBatch()};
   }
 
  protected:
@@ -103,6 +104,5 @@ class ComputeBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::BatchProcessor<thirdai::BoltBatch>)
 CEREAL_REGISTER_TYPE(thirdai::dataset::UnaryBoltBatchProcessor)
 CEREAL_REGISTER_TYPE(thirdai::dataset::ComputeBatchProcessor)

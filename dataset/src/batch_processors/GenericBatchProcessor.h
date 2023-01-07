@@ -20,7 +20,7 @@
 
 namespace thirdai::dataset {
 
-class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
+class GenericBatchProcessor : public BatchProcessor {
  public:
   GenericBatchProcessor(
       std::vector<std::shared_ptr<Block>> input_blocks,
@@ -69,7 +69,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     }
   }
 
-  std::tuple<BoltBatch, BoltBatch> createBatch(
+  std::vector<BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> batch_inputs(rows.size());
     std::vector<BoltVector> batch_labels(rows.size());
@@ -120,8 +120,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     if (num_columns_error) {
       std::rethrow_exception(num_columns_error);
     }
-    return std::make_tuple(BoltBatch(std::move(batch_inputs)),
-                           BoltBatch(std::move(batch_labels)));
+    return {BoltBatch(std::move(batch_inputs)),
+            BoltBatch(std::move(batch_labels))};
   }
 
   bool expectsHeader() const final { return _expects_header; }

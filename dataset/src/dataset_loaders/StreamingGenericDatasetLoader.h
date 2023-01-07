@@ -5,7 +5,6 @@
 #include "StreamingDataset.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <chrono>
 #include <cstddef>
 #include <limits>
@@ -15,21 +14,7 @@
 
 namespace thirdai::dataset {
 
-struct DatasetShuffleConfig {
-  DatasetShuffleConfig() : n_batches(1000), seed(time(NULL)) {}
-
-  explicit DatasetShuffleConfig(size_t n_batches_in_buffer)
-      : n_batches(n_batches_in_buffer), seed(time(NULL)) {}
-
-  DatasetShuffleConfig(size_t n_batches_in_buffer, uint32_t seed)
-      : n_batches(n_batches_in_buffer), seed(seed) {}
-
-  size_t n_batches;
-  uint32_t seed;
-};
-
-class StreamingGenericDatasetLoader
-    : public StreamingDataset {
+class StreamingGenericDatasetLoader : public StreamingDataset {
  public:
   /**
    * This constructor accepts a pointer to any data source.
@@ -42,16 +27,16 @@ class StreamingGenericDatasetLoader
       bool has_header = false, char delimiter = ',', bool parallel = true)
       : StreamingGenericDatasetLoader(
             source,
-            std::make_shared<GenericBatchProcessor>(
-                std::move(input_blocks), std::move(label_blocks), has_header,
-                delimiter, parallel),
+            std::make_shared<BatchProcessor>(std::move(input_blocks),
+                                             std::move(label_blocks),
+                                             has_header, delimiter, parallel),
             shuffle, config) {}
 
   /**
    * This constructor accepts a generic batch processor instead of blocks.
    */
   StreamingGenericDatasetLoader(
-      std::string filename, std::shared_ptr<GenericBatchProcessor> processor,
+      std::string filename, std::shared_ptr<BatchProcessor> processor,
       uint32_t batch_size, bool shuffle = false,
       DatasetShuffleConfig config = DatasetShuffleConfig())
       : StreamingGenericDatasetLoader(
@@ -59,13 +44,13 @@ class StreamingGenericDatasetLoader
             std::move(processor), shuffle, config) {}
 
   /**
-   * Constructor that takes in a pointer to GenericBatchProcessor so we can pass
+   * Constructor that takes in a pointer to BatchProcessor so we can pass
    * this pointer to both the base class constructor and this class's member
    * variable initializer.
    */
   StreamingGenericDatasetLoader(
       const std::shared_ptr<DataSource>& source,
-      std::shared_ptr<GenericBatchProcessor> processor, bool shuffle = false,
+      std::shared_ptr<BatchProcessor> processor, bool shuffle = false,
       DatasetShuffleConfig config = DatasetShuffleConfig())
       : StreamingDataset(source, processor),
         _processor(std::move(processor)),
@@ -185,7 +170,7 @@ class StreamingGenericDatasetLoader
     return false;
   }
 
-  std::shared_ptr<GenericBatchProcessor> _processor;
+  std::shared_ptr<BatchProcessor> _processor;
   ShuffleBatchBuffer _buffer;
   bool _shuffle;
   size_t _batch_buffer_size;
