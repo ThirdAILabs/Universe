@@ -39,13 +39,13 @@ class ComparativeLoss : public Loss {
    * This method takes in the activation and label for the ith neuron and should
    * return the loss contribution of that neuron.
    */
-  virtual float loss(float activation, float label) const = 0;
+  virtual float singleLoss(float activation, float label) const = 0;
 
   /**
    * This method takes in the activation and label for the ith neuron and should
    * return the loss gradient for that neuron.
    */
-  virtual float gradient(float activation, float label,
+  virtual float singleGradient(float activation, float label,
                          uint32_t batch_size) const = 0;
 
   tensor::ActivationTensorPtr _activations;

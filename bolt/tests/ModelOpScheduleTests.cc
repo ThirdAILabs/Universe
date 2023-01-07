@@ -65,7 +65,7 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
   std::vector<tensor::ActivationTensorPtr> _outputs;
 };
 
-class MockLoss : public loss::Loss {
+class MockLoss final : public loss::Loss {
  public:
   explicit MockLoss(std::vector<tensor::ActivationTensorPtr> outputs_used)
       : _outputs_used(std::move(outputs_used)) {}
@@ -74,7 +74,12 @@ class MockLoss : public loss::Loss {
     return std::make_shared<MockLoss>(std::move(outputs_used));
   }
 
-  void gradients(uint32_t i, uint32_t batch_size) final {
+  float loss(uint32_t i) const final {
+    (void)i;
+    return 0.0;
+  }
+
+  void gradients(uint32_t i, uint32_t batch_size) const final {
     (void)i;
     (void)batch_size;
   }

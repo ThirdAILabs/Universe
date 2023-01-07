@@ -72,7 +72,7 @@ float ComparativeLoss::loss(const BoltVector& activations,
     for (uint32_t i = 0; i < dim; i++) {
       float activation = activations.findActiveNeuron<ACT_DENSE>(i).activation;
       float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
-      total_loss += loss(activation, label);
+      total_loss += singleLoss(activation, label);
     }
     return total_loss;
   }
@@ -88,7 +88,7 @@ float ComparativeLoss::loss(const BoltVector& activations,
         labels.findActiveNeuron<LABEL_DENSE>(activations.active_neurons[i])
             .activation;
     float activation = activations.activations[i];
-    total_loss += loss(activation, label);
+    total_loss += singleLoss(activation, label);
   }
 
   for (uint32_t i = 0; i < labels.len; i++) {
@@ -99,7 +99,7 @@ float ComparativeLoss::loss(const BoltVector& activations,
     if (!activation_neuron.pos) {
       float label = labels.activations[i];
       // The activation is 0 since this isn't in the output active neurons.
-      total_loss += loss(/* activation= */ 0.0, label);
+      total_loss += singleLoss(/* activation= */ 0.0, label);
     }
   }
   return total_loss;
@@ -127,7 +127,7 @@ void ComparativeLoss::gradients(BoltVector& activations,
     float label_val =
         labels.findActiveNeuron<LABEL_DENSE>(active_neuron).activation;
     activations.gradients[i] =
-        gradient(activations.activations[i], label_val, batch_size);
+        singleGradient(activations.activations[i], label_val, batch_size);
   }
 }
 
