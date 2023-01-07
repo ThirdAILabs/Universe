@@ -32,6 +32,8 @@ TEST(CsvParserTests, HandlesMultipleColumns) {
 
 TEST(CsvParserTests, HandlesEmptyColumns) {
   testCsvParser("A,,C,D", ",", {"A", "", "C", "D"});
+  testCsvParser(",B,C,D", ",", {"", "B", "C", "D"});
+  testCsvParser("A,B,C,", ",", {"A", "B", "C", ""});
 }
 
 TEST(CsvParserTests, RemovesDoubleQuotesAroundStringColumn) {
