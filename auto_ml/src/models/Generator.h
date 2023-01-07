@@ -532,21 +532,21 @@ class QueryCandidateGenerator {
   std::shared_ptr<dataset::BoltDataset> loadDatasetInMemory(
       const std::string& file_name,
       const std::shared_ptr<dataset::GenericBatchProcessor>& batch_processor) {
-    auto file_data_loader = dataset::SimpleFileDataSource::make(
+    auto file_data_source = dataset::SimpleFileDataSource::make(
         file_name, _query_generator_config->batchSize());
 
-    auto data_loader = std::make_unique<dataset::TabularDatasetLoader>(
-        file_data_loader, batch_processor, /* shuffle = */ false);
+    auto data_source = std::make_unique<dataset::TabularDatasetLoader>(
+        file_data_source, batch_processor, /* shuffle = */ false);
 
-    return data_loader->loadInMemory().first.at(0);
+    return data_source->loadInMemory().first.at(0);
   }
 
   std::tuple<uint32_t, uint32_t> mapColumnNamesToIndices(
       const std::string& file_name, char delimiter) {
-    auto file_data_loader = dataset::SimpleFileDataSource::make(
+    auto file_data_source = dataset::SimpleFileDataSource::make(
         /* filename = */ file_name,
         /* target_batch_size = */ _query_generator_config->batchSize());
-    auto file_header = file_data_loader->nextLine();
+    auto file_header = file_data_source->nextLine();
 
     if (!file_header) {
       throw std::invalid_argument(
