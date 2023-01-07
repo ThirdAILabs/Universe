@@ -200,6 +200,7 @@ set(THIRDAI_COMPILE_OPTIONS
     -Werror
     -Wno-unused-function
     -Wno-ignored-optimization-argument
+    -Wno-psabi
     -pedantic
     $<$<CONFIG:Debug>:-Og>
     $<$<CONFIG:Debug>:-g>
@@ -260,8 +261,8 @@ add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 # Turn off prometheus-cpp's testing build so that we don't try to build two
 # copies of gmock
-option(ENABLE_TESTING "" OFF)
-option(ENABLE_PUSH "" OFF)
+set(ENABLE_TESTING OFF)
+set(ENABLE_PUSH OFF)
 add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
 
 # PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
@@ -360,6 +361,8 @@ set(THIRDAI_SOURCES
     auto_ml/src/deployment_config/NodeConfig.cc
     auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactoryConfig.cc
     auto_ml/src/deployment_config/dataset_configs/UDTDatasetFactoryConfig.cc
+    auto_ml/src/cold_start/ColdStartDataSource.cc
+    auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the

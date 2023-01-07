@@ -3,11 +3,11 @@ from typing import List, Optional
 from urllib.parse import urlparse
 
 import pandas as pd
-from thirdai._thirdai.dataset import DataLoader
+from thirdai._thirdai.dataset import DataSource
 
 
-class CSVDataLoader(DataLoader):
-    """CSV data loader that can be used to load from a cloud
+class CSVDataSource(DataSource):
+    """CSV data source that can be used to load from a cloud
     storage instance such as s3 and GCS.
 
     Args:

@@ -88,6 +88,10 @@ class DistributedTrainingWrapper {
     _train_context = new_context;
   }
 
+  void freezeHashTables(bool insert_labels_if_not_found) {
+    _bolt_graph->freezeHashTables(insert_labels_if_not_found);
+  }
+
  private:
   void requireTrainContext() {
     if (!_train_context.has_value()) {

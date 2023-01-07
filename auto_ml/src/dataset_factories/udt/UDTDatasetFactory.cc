@@ -1,13 +1,14 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
+#include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
 #include <stdexcept>
 
 namespace thirdai::automl::data {
 
 DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
-    std::shared_ptr<dataset::DataLoader> data_loader, bool training) {
+    std::shared_ptr<dataset::DataSource> data_source, bool training) {
   auto current_column_number_map =
-      makeColumnNumberMap(*data_loader, _config->delimiter);
+      makeColumnNumberMap(*data_source, _config->delimiter);
 
   if (!_column_number_map) {
     _column_number_map = std::move(current_column_number_map);
@@ -30,10 +31,10 @@ DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
 
   // The batch processor will treat the next line as a header
   // Restart so batch processor does not skip a sample.
-  data_loader->restart();
+  data_source->restart();
 
   return std::make_unique<GenericDatasetLoader>(
-      data_loader, _labeled_history_updating_processor,
+      data_source, _labeled_history_updating_processor,
       /* shuffle= */ training);
 }
 
@@ -99,36 +100,39 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
 
   auto metadata = categorical->metadata_config;
 
-  auto data_loader =
-      dataset::SimpleFileDataLoader::make(metadata->metadata_file,
+  auto data_source =
+      dataset::SimpleFileDataSource::make(metadata->metadata_file,
                                           /* target_batch_size= */ 2048);
 
-  auto column_numbers = makeColumnNumberMap(*data_loader, metadata->delimiter);
+  _metadata_column_number_maps[col_name] =
+      makeColumnNumberMap(*data_source, metadata->delimiter);
 
-  auto input_blocks = buildMetadataInputBlocks(*metadata, *column_numbers);
+  auto input_blocks = buildMetadataInputBlocks(
+      *metadata, *_metadata_column_number_maps[col_name]);
 
   auto key_vocab = dataset::ThreadSafeVocabulary::make(
       /* vocab_size= */ 0, /* limit_vocab_size= */ false);
   auto label_block = dataset::StringLookupCategoricalBlock::make(
-      column_numbers->at(metadata->key), key_vocab);
+      _metadata_column_number_maps[col_name]->at(metadata->key), key_vocab);
+
+  _metadata_processors[col_name] = dataset::GenericBatchProcessor::make(
+      /* input_blocks= */ std::move(input_blocks),
+      /* label_blocks= */ {std::move(label_block)},
+      /* has_header= */ false, /* delimiter= */ metadata->delimiter,
+      /* parallel= */ true, /* hash_range= */ _config->hash_range);
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
-  dataset::StreamingGenericDatasetLoader metadata_loader(
-      /* loader= */ data_loader,
-      /* processor= */
-      dataset::GenericBatchProcessor::make(
-          /* input_blocks= */ std::move(input_blocks),
-          /* label_blocks= */ {std::move(label_block)},
-          /* has_header= */ false, /* delimiter= */ metadata->delimiter,
-          /* parallel= */ true, /* hash_range= */ _config->hash_range));
+  dataset::StreamingGenericDatasetLoader metadata_source(
+      /* source= */ data_source,
+      /* processor= */ _metadata_processors[col_name]);
 
-  return preprocessedVectorsFromDataset(metadata_loader, *key_vocab);
+  return preprocessedVectorsFromDataset(metadata_source, *key_vocab);
 }
 
 ColumnNumberMapPtr UDTDatasetFactory::makeColumnNumberMap(
-    dataset::DataLoader& data_loader, char delimiter) {
-  auto header = data_loader.nextLine();
+    dataset::DataSource& data_source, char delimiter) {
+  auto header = data_source.nextLine();
   if (!header) {
     throw std::invalid_argument(
         "The dataset must have a header that contains column names.");
@@ -173,6 +177,36 @@ UDTDatasetFactory::preprocessedVectorsFromDataset(
 
   return std::make_shared<dataset::PreprocessedVectors>(
       std::move(preprocessed_vectors), dataset.getInputDim());
+}
+
+void UDTDatasetFactory::updateMetadata(const std::string& col_name,
+                                       const MapInput& update) {
+  verifyColumnMetadataExists(col_name);
+
+  auto metadata_config = getColumnMetadataConfig(col_name);
+
+  auto vec = boltVectorFromInput(*_metadata_processors.at(col_name),
+                                 *_metadata_column_number_maps.at(col_name),
+                                 metadata_config->delimiter, update);
+
+  const auto& key = update.at(metadata_config->key);
+  _vectors_map.at(col_name)->vectors[key] = vec;
+}
+
+void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
+                                            const MapInputBatch& updates) {
+  verifyColumnMetadataExists(col_name);
+  auto metadata_config = getColumnMetadataConfig(col_name);
+
+  auto [batch, _] = _metadata_processors.at(col_name)->createBatch(
+      lineInputBatchFromMapInputBatch(
+          *_metadata_column_number_maps.at(col_name),
+          metadata_config->delimiter, updates));
+
+  for (uint32_t update_idx = 0; update_idx < updates.size(); update_idx++) {
+    const auto& key = updates.at(update_idx).at(metadata_config->key);
+    _vectors_map.at(col_name)->vectors[key] = batch[update_idx];
+  }
 }
 
 dataset::GenericBatchProcessorPtr
@@ -258,23 +292,25 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildInputBlocks(
 }
 
 std::vector<std::string_view> UDTDatasetFactory::toVectorOfStringViews(
+    const ColumnNumberMap& column_number_map, char delimiter,
     const MapInput& input) {
-  verifyColumnNumberMapIsInitialized();
-  std::vector<std::string_view> string_view_input(
-      _column_number_map->numCols());
+  (void)delimiter;
+  std::vector<std::string_view> string_view_input(column_number_map.numCols());
   for (const auto& [col_name, val] : input) {
-    string_view_input[_column_number_map->at(col_name)] =
+    string_view_input[column_number_map.at(col_name)] =
         std::string_view(val.data(), val.length());
   }
   return string_view_input;
 }
 
 std::vector<std::string> UDTDatasetFactory::lineInputBatchFromMapInputBatch(
+    const ColumnNumberMap& column_number_map, char delimiter,
     const MapInputBatch& input_maps) {
   std::vector<std::string> string_batch(input_maps.size());
   for (uint32_t i = 0; i < input_maps.size(); i++) {
-    auto vals = toVectorOfStringViews(input_maps[i]);
-    string_batch[i] = concatenateWithDelimiter(vals, _config->delimiter);
+    auto vals =
+        toVectorOfStringViews(column_number_map, delimiter, input_maps[i]);
+    string_batch[i] = concatenateWithDelimiter(vals, delimiter);
   }
   return string_batch;
 }
@@ -290,6 +326,47 @@ std::string UDTDatasetFactory::concatenateWithDelimiter(
       substrings.begin() + 1, substrings.end(),
       [&](const std::string_view& substr) { s << delimiter << substr; });
   return s.str();
+}
+
+void UDTDatasetFactory::save(const std::string& filename) const {
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  save_stream(filestream);
+}
+
+void UDTDatasetFactory::save_stream(std::ostream& output_stream) const {
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
+
+UDTDatasetFactoryPtr UDTDatasetFactory::load(const std::string& filename) {
+  std::ifstream filestream =
+      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  return load_stream(filestream);
+}
+
+UDTDatasetFactoryPtr UDTDatasetFactory::load_stream(
+    std::istream& input_stream) {
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<UDTDatasetFactory> deserialize_into(new UDTDatasetFactory());
+  iarchive(*deserialize_into);
+  return deserialize_into;
+}
+
+void UDTDatasetFactory::verifyCanDistribute() {
+  auto target_type = _config->data_types.at(_config->target);
+  if (asCategorical(target_type) && !_config->integer_target) {
+    throw std::invalid_argument(
+        "UDT with categorical target without integer_target=True cannot be "
+        "trained in distributed "
+        "setting. Please convert the categorical target column into "
+        "integer target to train UDT in distributed setting.");
+  }
+  if (!_temporal_relationships.empty()) {
+    throw std::invalid_argument(
+        "UDT with temporal relationships cannot be trained in a distributed "
+        "setting.");
+  }
 }
 
 }  // namespace thirdai::automl::data

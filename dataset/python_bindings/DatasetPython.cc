@@ -1,7 +1,7 @@
 #include "DatasetPython.h"
-#include "PyDataLoader.h"
+#include "PyDataSource.h"
 #include <bolt_vector/src/BoltVector.h>
-#include <dataset/src/DataLoader.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/InMemoryDataset.h>
@@ -261,17 +261,17 @@ void createDatasetSubmodule(py::module_& module) {
            "features.");
 #endif
 
-  py::class_<DataLoader, PyDataLoader, std::shared_ptr<DataLoader>>(
-      dataset_submodule, "DataLoader")
+  py::class_<DataSource, PyDataSource, std::shared_ptr<DataSource>>(
+      dataset_submodule, "DataSource")
       .def(py::init<uint32_t>(), py::arg("target_batch_size"))
-      .def("next_batch", &DataLoader::nextBatch)
-      .def("next_line", &DataLoader::nextLine)
-      .def("resource_name", &DataLoader::resourceName)
-      .def("restart", &DataLoader::restart);
+      .def("next_batch", &DataSource::nextBatch)
+      .def("next_line", &DataSource::nextLine)
+      .def("resource_name", &DataSource::resourceName)
+      .def("restart", &DataSource::restart);
 
-  py::class_<SimpleFileDataLoader, DataLoader,
-             std::shared_ptr<SimpleFileDataLoader>>(dataset_submodule,
-                                                    "FileDataLoader")
+  py::class_<SimpleFileDataSource, DataSource,
+             std::shared_ptr<SimpleFileDataSource>>(dataset_submodule,
+                                                    "FileDataSource")
       .def(py::init<const std::string&, uint32_t>(), py::arg("filename"),
            py::arg("batch_size"));
 
@@ -422,9 +422,9 @@ void createDatasetSubmodule(py::module_& module) {
       "a BoltDataset storing the labels.");
   dataset_submodule.def(
       "load_bolt_svm_dataset", SvmDatasetLoader::loadDataset,
-      py::arg("data_loader"), py::arg("softmax_for_multiclass") = true,
+      py::arg("data_source"), py::arg("softmax_for_multiclass") = true,
       "The same as the other implementation of this method, but takes in a "
-      "custom data loader instead of a file name.");
+      "custom data source instead of a file name.");
 
   dataset_submodule.def("from_numpy", &numpy::numpyToBoltVectorDataset,
                         py::arg("data"), py::arg("batch_size") = std::nullopt);

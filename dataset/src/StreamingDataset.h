@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BatchProcessor.h"
-#include "DataLoader.h"
+#include "DataSource.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/InMemoryDataset.h>
@@ -50,16 +50,16 @@ class StreamingDataset {
   using DatasetTuple =
       typename generate_tuple_type<BoltDatasetPtr, sizeof...(BATCH_Ts)>::type;
 
-  StreamingDataset(std::shared_ptr<DataLoader> data_loader,
+  StreamingDataset(std::shared_ptr<DataSource> data_source,
                    std::shared_ptr<BatchProcessor<BATCH_Ts...>> batch_processor)
-      : _data_loader(std::move(data_loader)),
+      : _data_source(std::move(data_source)),
         _batch_processor(std::move(batch_processor)) {
     // Different formats of data may or may not contain headers. Thus we
     // delegate to the particular batch processor to determine if a header is
     // needed. The first row is interpreted as the header. The batch processor
     // is responsible for checking that the header is properly formatted.
     if (_batch_processor->expectsHeader()) {
-      auto header = _data_loader->nextLine();
+      auto header = _data_source->nextLine();
       if (!header) {
         throw std::invalid_argument("Cannot read empty file.");
       }
@@ -68,7 +68,7 @@ class StreamingDataset {
   }
 
   virtual std::optional<std::tuple<BATCH_Ts...>> nextBatchTuple() {
-    auto rows = _data_loader->nextBatch();
+    auto rows = _data_source->nextBatch();
     if (!rows) {
       return std::nullopt;
     }
@@ -124,12 +124,12 @@ class StreamingDataset {
     auto end = std::chrono::high_resolution_clock::now();
     logging::info(
         "Loaded {} vectors from '{}' in {} seconds.", len,
-        _data_loader->resourceName(),
+        _data_source->resourceName(),
         std::chrono::duration_cast<std::chrono::seconds>(end - start).count());
 
     if (std::get<0>(batch_lists).empty()) {
       throw std::invalid_argument("Cannot load datasets from empty resource '" +
-                                  _data_loader->resourceName() + "'.");
+                                  _data_source->resourceName() + "'.");
     }
 
     // We use std::apply again here to call a function acception a variadic
@@ -143,14 +143,14 @@ class StreamingDataset {
     return dataset_ptrs;
   }
 
-  uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }
+  uint32_t getMaxBatchSize() const { return _data_source->getMaxBatchSize(); }
 
   virtual void restart() {
-    _data_loader->restart();
+    _data_source->restart();
 
     // When we restart we need to make sure we don't reread the header. s
     if (_batch_processor->expectsHeader()) {
-      auto header = _data_loader->nextLine();
+      auto header = _data_source->nextLine();
       if (!header) {
         throw std::invalid_argument("Cannot read empty file.");
       }
@@ -158,10 +158,10 @@ class StreamingDataset {
   }
 
   static std::shared_ptr<StreamingDataset<BATCH_Ts...>> loadDataset(
-      std::shared_ptr<DataLoader> data_loader,
+      std::shared_ptr<DataSource> data_source,
       std::shared_ptr<BatchProcessor<BATCH_Ts...>> batch_processor) {
     auto dataset = std::make_shared<StreamingDataset<BATCH_Ts...>>(
-        std::move(data_loader), std::move(batch_processor));
+        std::move(data_source), std::move(batch_processor));
 
     return dataset;
   }
@@ -169,7 +169,7 @@ class StreamingDataset {
   virtual ~StreamingDataset() = default;
 
  protected:
-  std::shared_ptr<DataLoader> _data_loader;
+  std::shared_ptr<DataSource> _data_source;
 
  private:
   std::shared_ptr<BatchProcessor<BATCH_Ts...>> _batch_processor;
