@@ -101,6 +101,10 @@ void TabularDatasetLoader::restart() {
       throw std::invalid_argument("Cannot read empty file.");
     }
   }
+
+  _buffer = ShuffleBatchBuffer(
+      /* shuffle_seed= */ time(NULL),
+      /* batch_size= */ _data_source->getMaxBatchSize());
 }
 
 void TabularDatasetLoader::prefillShuffleBuffer() {

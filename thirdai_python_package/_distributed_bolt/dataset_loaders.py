@@ -139,7 +139,8 @@ class SvmDatasetLoader(GenericInMemoryDatasetLoader):
         )
 
 
-class TabularDatasetLoader(DatasetLoader):
+# New data pipeline tabular dataset loader
+class TabularDatasetLoaderNDP(DatasetLoader):
     def __init__(
         self,
         column_map_generator: data.ColumnMapGenerator,

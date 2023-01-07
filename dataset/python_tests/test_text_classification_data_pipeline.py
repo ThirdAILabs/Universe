@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pytest
 from thirdai import bolt, dataset
-from thirdai.dataset import TabularDatasetLoader, blocks
+from thirdai.dataset import FileDataSource, TabularDatasetLoader, blocks
 
 
 def generate_text_classification_dataset(filename, delim):
@@ -19,11 +19,10 @@ def generate_text_classification_dataset(filename, delim):
 
 
 def helper_for_text_classification_data_pipeline(text_block, delim):
-    file = "test_text_classification.csv"
-    generate_text_classification_dataset(file, delim)
+    filename = "test_text_classification.csv"
+    generate_text_classification_dataset(filename, delim)
     pipeline = TabularDatasetLoader(
-        file,
-        batch_size=256,
+        data_source=FileDataSource(filename, batch_size=256),
         input_blocks=[text_block],
         label_blocks=[blocks.NumericalId(col=0, n_classes=3)],
         delimiter=delim,
