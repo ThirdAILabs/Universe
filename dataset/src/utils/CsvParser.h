@@ -1,4 +1,4 @@
-#include <_types/_uint32_t.h>
+#include <cstdint>
 #include <exception>
 #include <iostream>
 #include <iterator>
@@ -47,17 +47,15 @@ class ColumnParser {
  public:
   ColumnParser(std::string::const_iterator begin,
                const std::string::const_iterator& end,
-               const std::string& delimiter,
-               std::optional<char> escape_char = std::nullopt)
+               const std::string& delimiter)
       : _column_begin_candidate(begin),
         _column_end_candidate(begin),
-        _next_column_start_parse(begin),
-        _escape_char(escape_char) {
+        _next_column_start_parse(begin) {
     ParsingState state = ParsingState::Start;
-    DelimiterMatcher delimiter_parser(delimiter);
+    DelimiterMatcher delimiter_matcher(delimiter);
 
     for (auto char_iter = begin; char_iter < end; char_iter++) {
-      state = nextState(state, *char_iter, delimiter_parser);
+      state = nextState(state, *char_iter, delimiter_matcher);
 
       switch (state) {
         case ParsingState::InUnquotedColumn:
@@ -87,17 +85,25 @@ class ColumnParser {
 
  private:
   static ParsingState nextState(ParsingState previous_state, char character,
-                                DelimiterMatcher& delimiter_parser) {
+                                DelimiterMatcher& delimiter_matcher) {
     switch (previous_state) {
       case ParsingState::Start:
-        return fromStart(character, delimiter_parser);
-      case ParsingState::InQuotedColumn:
-        return fromQuotedColumn(character);
       case ParsingState::FoundQuoteInQuotedColumn:
-        return fromFoundQuoteInQuotedColumn(character, delimiter_parser);
+        if (character == '"') {
+          return ParsingState::InQuotedColumn;
+        }
+        return nextStateFromOutsideQuotes(character, delimiter_matcher);
+
       case ParsingState::InUnquotedColumn:
       case ParsingState::MatchedPartOfDelimiter:
-        return fromOutsideQuotes(character, delimiter_parser);
+        return nextStateFromOutsideQuotes(character, delimiter_matcher);
+
+      case ParsingState::InQuotedColumn:
+        if (character == '"') {
+          return ParsingState::FoundQuoteInQuotedColumn;
+        }
+        return ParsingState::InQuotedColumn;
+
       case ParsingState::MatchedDelimiter:
         throw std::invalid_argument(
             "Cannot transition from MatchedWholeDelimiter.");
@@ -105,33 +111,9 @@ class ColumnParser {
     throw std::invalid_argument("Invalid state.");
   }
 
-  static ParsingState fromStart(char character,
-                                DelimiterMatcher& delimiter_parser) {
-    if (character == '"') {
-      return ParsingState::InQuotedColumn;
-    }
-    return fromOutsideQuotes(character, delimiter_parser);
-  }
-
-  static ParsingState fromQuotedColumn(char character) {
-    if (character == '"') {
-      return ParsingState::FoundQuoteInQuotedColumn;
-    }
-    return ParsingState::InQuotedColumn;
-  }
-
-  static ParsingState fromFoundQuoteInQuotedColumn(
-      char character, DelimiterMatcher& delimiter_parser) {
-    if (character == '"') {
-      return ParsingState::InQuotedColumn;
-    }
-
-    return fromOutsideQuotes(character, delimiter_parser);
-  }
-
-  static ParsingState fromOutsideQuotes(char character,
-                                        DelimiterMatcher& delimiter_parser) {
-    switch (delimiter_parser.matchDelimiter(character)) {
+  static ParsingState nextStateFromOutsideQuotes(
+      char character, DelimiterMatcher& delimiter_matcher) {
+    switch (delimiter_matcher.matchDelimiter(character)) {
       case DelimiterMatchState::Mismatch:
         return ParsingState::InUnquotedColumn;
       case DelimiterMatchState::HalfMatch:
@@ -144,7 +126,6 @@ class ColumnParser {
   std::string::const_iterator _column_begin_candidate;
   std::string::const_iterator _column_end_candidate;
   std::string::const_iterator _next_column_start_parse;
-  std::optional<char> _escape_char;
 };
 
 class CsvRowParser {
