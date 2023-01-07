@@ -408,9 +408,7 @@ def download_clinc_dataset():
     train_df = pd.DataFrame({"text": train_text, "category": train_category})
     test_df = pd.DataFrame({"text": test_text, "category": test_category})
 
-    train_df["text"] = train_df["text"].apply(lambda x: x.replace(",", ""))
     train_df["category"] = pd.Categorical(train_df["category"]).codes
-    test_df["text"] = test_df["text"].apply(lambda x: x.replace(",", ""))
     test_df["category"] = pd.Categorical(test_df["category"]).codes
 
     # The columns=["category", "text"] is just to force the order of the output
