@@ -87,6 +87,11 @@ class Model {
   tensor::InputTensorPtr getLabelsForOutput(const std::string& output_name);
 
   /**
+   * Returns a list of the output tensors in the model.
+   */
+  const std::vector<tensor::ActivationTensorPtr>& outputs() const;
+
+  /**
    * Prints/returns a summary of the model. Throws if no op is found.
    */
 

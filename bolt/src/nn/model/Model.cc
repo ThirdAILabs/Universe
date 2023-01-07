@@ -115,6 +115,10 @@ tensor::InputTensorPtr Model::getLabelsForOutput(
   return nullptr;
 }
 
+const std::vector<tensor::ActivationTensorPtr>& Model::outputs() const {
+  return _outputs;
+}
+
 std::string Model::summary(bool print) const {
   std::stringstream summary;
 

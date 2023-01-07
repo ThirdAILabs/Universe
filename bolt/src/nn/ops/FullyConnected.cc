@@ -136,7 +136,7 @@ FullyConnectedFactory::FullyConnectedFactory(
 }
 
 tensor::ActivationTensorPtr FullyConnectedFactory::apply(
-    tensor::TensorPtr& input) {
+    const tensor::TensorPtr& input) {
   if (!_kernel) {
     FullyConnectedLayerConfig config(_dim, _sparsity, _activation, _sampling);
 

@@ -83,7 +83,7 @@ class FullyConnectedFactory {
                         uint32_t rebuild_hash_tables,
                         uint32_t reconstruct_hash_functions);
 
-  tensor::ActivationTensorPtr apply(tensor::TensorPtr& input);
+  tensor::ActivationTensorPtr apply(const tensor::TensorPtr& input);
 
  private:
   uint32_t _dim;
