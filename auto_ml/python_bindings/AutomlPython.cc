@@ -106,12 +106,14 @@ void createModelsSubmodule(py::module_& module) {
             return models::DEFAULT_EVALUATE_BATCH_SIZE;
           });
 
-  py::class_<dataset::TabularDatasetLoader, dataset::TabularDatasetLoaderPtr>(
-      models_submodule, "TabularDatasetLoader")
-      .def("load_in_memory", &dataset::TabularDatasetLoader::loadInMemory,
-           py::arg("max_in_memory_batches") =
-               std::numeric_limits<uint32_t>::max())
-      .def("restart", &dataset::TabularDatasetLoader::restart);
+  // TODO(Josh): ADD THIS BACK
+  //   py::class_<dataset::TabularDatasetLoader,
+  //   dataset::TabularDatasetLoaderPtr>(
+  //       models_submodule, "TabularDatasetLoader")
+  //       .def("load_in_memory", &dataset::TabularDatasetLoader::loadInMemory,
+  //            py::arg("max_in_memory_batches") =
+  //                std::numeric_limits<uint32_t>::max())
+  //       .def("restart", &dataset::TabularDatasetLoader::restart);
 
   py::class_<data::UDTDatasetFactory, data::UDTDatasetFactoryPtr>(
       models_submodule, "TemporalContext")

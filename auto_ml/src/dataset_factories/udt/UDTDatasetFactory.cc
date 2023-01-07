@@ -1,7 +1,6 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
 #include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
-#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
 #include <stdexcept>
 
 namespace thirdai::automl::data {
@@ -124,9 +123,10 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
-  dataset::StreamingGenericDatasetLoader metadata_source(
+  dataset::TabularDatasetLoader metadata_source(
       /* source= */ data_source,
-      /* processor= */ _metadata_processors[col_name]);
+      /* processor= */ _metadata_processors[col_name],
+      /* shuffle = */ false);
 
   return preprocessedVectorsFromDataset(metadata_source, *key_vocab);
 }
@@ -161,12 +161,18 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildMetadataInputBlocks(
 
 dataset::PreprocessedVectorsPtr
 UDTDatasetFactory::preprocessedVectorsFromDataset(
-    dataset::StreamingGenericDatasetLoader& dataset,
+    dataset::TabularDatasetLoader& dataset,
     dataset::ThreadSafeVocabulary& key_vocab) {
-  auto [vectors, ids] = dataset.loadInMemory();
+  auto [datasets, ids] = dataset.loadInMemory();
 
-  std::unordered_map<std::string, BoltVector> preprocessed_vectors(
-      vectors->len());
+  if (datasets.size() != 1) {
+    throw std::runtime_error(
+        "For now, the batch processor should return just a single input "
+        "dataset.");
+  }
+  auto vectors = datasets.at(0);
+
+  std::unordered_map<std::string, BoltVector> preprocessed_vectors(ids->len());
 
   for (uint32_t batch = 0; batch < vectors->numBatches(); batch++) {
     for (uint32_t vec = 0; vec < vectors->at(batch).getBatchSize(); vec++) {
@@ -176,8 +182,9 @@ UDTDatasetFactory::preprocessedVectorsFromDataset(
     }
   }
 
+  // TODO(Josh): FIX THIS
   return std::make_shared<dataset::PreprocessedVectors>(
-      std::move(preprocessed_vectors), dataset.getInputDim());
+      std::move(preprocessed_vectors), 0);
 }
 
 void UDTDatasetFactory::updateMetadata(const std::string& col_name,
@@ -199,10 +206,11 @@ void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
   verifyColumnMetadataExists(col_name);
   auto metadata_config = getColumnMetadataConfig(col_name);
 
-  auto [batch, _] = _metadata_processors.at(col_name)->createBatch(
-      lineInputBatchFromMapInputBatch(
-          *_metadata_column_number_maps.at(col_name),
-          metadata_config->delimiter, updates));
+  auto batch = _metadata_processors.at(col_name)
+                   ->createBatch(lineInputBatchFromMapInputBatch(
+                       *_metadata_column_number_maps.at(col_name),
+                       metadata_config->delimiter, updates))
+                   .at(0);
 
   for (uint32_t update_idx = 0; update_idx < updates.size(); update_idx++) {
     const auto& key = updates.at(update_idx).at(metadata_config->key);

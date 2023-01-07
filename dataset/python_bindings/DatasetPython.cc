@@ -7,7 +7,6 @@
 #include <dataset/src/InMemoryDataset.h>
 #include <dataset/src/NumpyDataset.h>
 #include <dataset/src/ShuffleBatchBuffer.h>
-#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/Vocabulary.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -279,21 +278,19 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<size_t, uint32_t>(), py::arg("n_batches") = 1000,
            py::arg("seed") = time(NULL));
 
-  py::class_<StreamingGenericDatasetLoader>(dataset_submodule, "DataPipeline")
-      .def(py::init<std::string, std::vector<std::shared_ptr<Block>>,
-                    std::vector<std::shared_ptr<Block>>, uint32_t, bool,
-                    DatasetShuffleConfig, bool, char>(),
-           py::arg("filename"), py::arg("input_blocks"),
-           py::arg("label_blocks"), py::arg("batch_size"),
-           py::arg("shuffle") = false,
-           py::arg("config") = DatasetShuffleConfig(),
-           py::arg("has_header") = false, py::arg("delimiter") = ',')
-      .def("next_batch", &StreamingGenericDatasetLoader::nextBatchVector)
-      .def("load_in_memory", &StreamingGenericDatasetLoader::loadInMemory)
-      .def("get_max_batch_size",
-           &StreamingGenericDatasetLoader::getMaxBatchSize)
-      .def("get_input_dim", &StreamingGenericDatasetLoader::getInputDim)
-      .def("get_label_dim", &StreamingGenericDatasetLoader::getLabelDim);
+  //  TODO(Josh): Fix this to add it back
+  //   py::class_<TabularDatasetLoader>(dataset_submodule, "DataPipeline")
+  //       .def(py::init<std::string, std::vector<std::shared_ptr<Block>>,
+  //                     std::vector<std::shared_ptr<Block>>, uint32_t, bool,
+  //                     DatasetShuffleConfig, bool, char>(),
+  //            py::arg("filename"), py::arg("input_blocks"),
+  //            py::arg("label_blocks"), py::arg("batch_size"),
+  //            py::arg("shuffle") = false,
+  //            py::arg("config") = DatasetShuffleConfig(),
+  //            py::arg("has_header") = false, py::arg("delimiter") = ',')
+  //       .def("load_in_memory", &TabularDatasetLoader::loadInMemory);
+  //  .def("get_input_dim", &TabularDatasetLoader::getInputDim)
+  //  .def("get_label_dim", &TabularDatasetLoader::getLabelDim);
 
   dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
                         py::arg("indices"), py::arg("values"));

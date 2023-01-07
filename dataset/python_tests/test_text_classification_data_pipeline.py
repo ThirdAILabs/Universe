@@ -30,6 +30,7 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
     )
     [data, labels] = pipeline.load_in_memory()
 
+    # TODO(Josh): Fix this to add it back
     input_layer = bolt.nn.Input(dim=pipeline.get_input_dim())
     hidden_layer = bolt.nn.FullyConnected(dim=1000, sparsity=0.1, activation="relu")(
         input_layer

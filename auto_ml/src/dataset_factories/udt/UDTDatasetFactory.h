@@ -19,12 +19,12 @@
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/DataSource.h>
-#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
@@ -195,7 +195,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const ColumnNumberMap& column_numbers) const;
 
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
-      dataset::StreamingGenericDatasetLoader& dataset,
+      dataset::TabularDatasetLoader& dataset,
       dataset::ThreadSafeVocabulary& key_vocab);
 
   template <typename InputType>
@@ -223,13 +223,14 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   std::vector<BoltBatch> featurizeInputBatchImpl(const LineInputBatch& inputs,
                                                  bool should_update_history) {
     verifyProcessorsAreInitialized();
-    auto [input_batch, _] =
-        getProcessor(should_update_history).createBatch(inputs);
+    auto batches = getProcessor(should_update_history).createBatch(inputs);
+
+    // TODO(any): This assumes we will have just one input batch
 
     // We cannot use the initializer list because the copy constructor is
     // deleted for BoltBatch.
     std::vector<BoltBatch> batch_list;
-    batch_list.emplace_back(std::move(input_batch));
+    batch_list.emplace_back(std::move(batches.at(0)));
     return batch_list;
   }
 

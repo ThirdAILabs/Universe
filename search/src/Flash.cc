@@ -5,6 +5,7 @@
 #include <dataset/src/InMemoryDataset.h>
 #include <licensing/src/CheckLicense.h>
 #include <search/src/Flash.h>
+#include <utils/Logging.h>
 #include <algorithm>
 #include <memory>
 #include <optional>

@@ -32,49 +32,53 @@ class ShuffleBatchBuffer {
         _reached_end_of_dataset(false),
         _batch_size(batch_size) {}
 
-  void insertBatch(std::tuple<BoltBatch, BoltBatch>&& batch, bool shuffle) {
-    checkConsistentBatchSize(std::get<0>(batch).getBatchSize(),
-                             std::get<1>(batch).getBatchSize());
+  void insertBatch(std::vector<BoltBatch>&& batch, bool shuffle) {
+    // checkConsistentBatchSize(std::get<0>(batch).getBatchSize(),
+    //                          std::get<1>(batch).getBatchSize());
 
-    _input_batches.push_back(std::move(std::get<0>(batch)));
-    _label_batches.push_back(std::move(std::get<1>(batch)));
+    // _input_batches.push_back(std::move(std::get<0>(batch)));
+    // _label_batches.push_back(std::move(std::get<1>(batch)));
 
-    if (shuffle) {
-      swapShuffle(_input_batches, _label_batches, _batch_size, _gen);
-    }
+    // if (shuffle) {
+    //   swapShuffle(_input_batches, _label_batches, _batch_size, _gen);
+    // }
+    (void)batch;
+    (void)shuffle;
   }
 
-  std::optional<std::pair<BoltBatch, BoltBatch>> popBatch() {
-    assert(_input_batches.empty() == _label_batches.empty());
-    if (_input_batches.empty()) {
-      return {};
-    }
+  std::optional<std::vector<BoltBatch>> popBatch() {
+    // assert(_input_batches.empty() == _label_batches.empty());
+    // if (_input_batches.empty()) {
+    //   return {};
+    // }
 
-    auto input_batch = std::move(_input_batches.front());
-    auto label_batch = std::move(_label_batches.front());
-    _input_batches.pop_front();
-    _label_batches.pop_front();
-    return {{std::move(input_batch), std::move(label_batch)}};
+    // auto input_batch = std::move(_input_batches.front());
+    // auto label_batch = std::move(_label_batches.front());
+    // _input_batches.pop_front();
+    // _label_batches.pop_front();
+    // return {{std::move(input_batch), std::move(label_batch)}};
+    return {};
   }
 
-  std::pair<std::vector<BoltBatch>, std::vector<BoltBatch>> exportBuffer() {
-    /*
-      This doesn't double our memory footprint since the
-      batches are moved;
-      the amount of memory allocated to the underlying
-      vectors remains the same.
-    */
-    std::vector<BoltBatch> input_batch_vector(
-        std::make_move_iterator(_input_batches.begin()),
-        std::make_move_iterator(_input_batches.end()));
-    std::vector<BoltBatch> label_batch_vector(
-        std::make_move_iterator(_label_batches.begin()),
-        std::make_move_iterator(_label_batches.end()));
+  std::vector<std::vector<BoltBatch>> exportBuffer() {
+    // /*
+    //   This doesn't double our memory footprint since the
+    //   batches are moved;
+    //   the amount of memory allocated to the underlying
+    //   vectors remains the same.
+    // */
+    // std::vector<BoltBatch> input_batch_vector(
+    //     std::make_move_iterator(_input_batches.begin()),
+    //     std::make_move_iterator(_input_batches.end()));
+    // std::vector<BoltBatch> label_batch_vector(
+    //     std::make_move_iterator(_label_batches.begin()),
+    //     std::make_move_iterator(_label_batches.end()));
 
-    _input_batches.clear();
-    _label_batches.clear();
+    // _input_batches.clear();
+    // _label_batches.clear();
 
-    return {std::move(input_batch_vector), std::move(label_batch_vector)};
+    // return {std::move(input_batch_vector), std::move(label_batch_vector)};
+    return {};
   }
 
   inline bool empty() const { return _input_batches.empty(); }

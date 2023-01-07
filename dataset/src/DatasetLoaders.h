@@ -3,12 +3,14 @@
 #include "BatchProcessor.h"
 #include "Datasets.h"
 #include "InMemoryDataset.h"
-#include "StreamingDataset.h"
+#include "dataset/src/dataset_loaders/TabularDatasetLoader.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_processors/ClickThroughBatchProcessor.h>
 #include <dataset/src/batch_processors/SvmBatchProcessor.h>
 #include <memory>
 #include <utility>
+
+// TODO(Josh): Fix this file
 
 namespace thirdai::dataset {
 
@@ -26,9 +28,10 @@ struct SvmDatasetLoader {
       bool softmax_for_multiclass = true) {
     auto batch_processor =
         std::make_shared<SvmBatchProcessor>(softmax_for_multiclass);
-    auto dataset = StreamingDataset<BoltBatch, BoltBatch>::loadDataset(
-        data_source, batch_processor);
-    return dataset->loadInMemory();
+    auto dataset_loader = TabularDatasetLoader(data_source, batch_processor,
+                                               /* shuffle = */ false);
+    auto datasets = dataset_loader.loadInMemory();
+    return {datasets.first.at(0), datasets.second};
   }
 };
 
@@ -49,10 +52,10 @@ struct ClickThroughDatasetLoader {
       char delimiter) {
     auto batch_processor = std::make_shared<ClickThroughBatchProcessor>(
         num_dense_features, max_num_categorical_features, delimiter);
-    auto dataset =
-        StreamingDataset<BoltBatch, BoltBatch, BoltBatch>::loadDataset(
-            data_source, batch_processor);
-    return dataset->loadInMemory();
+    auto dataset_loader = TabularDatasetLoader(data_source, batch_processor,
+                                               /* shuffle = */ false);
+    auto datasets = dataset_loader.loadInMemory();
+    return {datasets.first.at(0), datasets.first.at(1), datasets.second};
   }
 };
 

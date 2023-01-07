@@ -14,7 +14,7 @@ static BoltBatch processBatch(BlockPtr block,
   GenericBatchProcessor processor(
       /* input_blocks= */ {std::move(block)}, /* label_blocks= */ {},
       /* has_header= */ false, /* delimiter= */ ',', /* parallel= */ false);
-  auto [batch, _] = processor.createBatch(input_rows);
+  auto batch = processor.createBatch(input_rows).at(0);
   return std::move(batch);
 }
 

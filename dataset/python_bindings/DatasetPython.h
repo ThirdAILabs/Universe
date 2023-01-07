@@ -3,6 +3,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
+#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
 #include <pybind11/cast.h>
 #include <pybind11/gil.h>
 #include <pybind11/numpy.h>
@@ -55,13 +56,14 @@ class MLMDatasetLoader {
     auto data_source =
         std::make_shared<dataset::SimpleFileDataSource>(filename, batch_size);
 
-    auto dataset = std::make_shared<dataset::StreamingDataset>(
-        data_source, _batch_processor);
+    auto dataset = std::make_shared<dataset::TabularDatasetLoader>(
+        data_source, _batch_processor, /* shuffle = */ false);
 
-    auto [data, masked_indices, labels] = dataset->loadInMemory();
+    auto datasets = dataset->loadInMemory();
 
-    return py::make_tuple(py::cast(data), py::cast(masked_indices),
-                          py::cast(labels));
+    return py::make_tuple(py::cast(datasets.first.at(0)),
+                          py::cast(datasets.first.at(1)),
+                          py::cast(datasets.second));
   }
 
  private:
