@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdint>
 #include <exception>
 #include <iostream>
@@ -128,50 +130,42 @@ class ColumnParser {
   std::string::const_iterator _next_column_start_parse;
 };
 
-class CsvRowParser {
- public:
-  explicit CsvRowParser(const std::string& delimiter) : _delimiter(delimiter) {
-    verifyDelimiterCorrectness(_delimiter);
+namespace CSV {
+static std::vector<std::string_view> parse(const std::string& line,
+                                           const std::string& delimiter) {
+  std::vector<std::string_view> row;
+
+  auto column_start_parse = line.begin();
+  while (column_start_parse != line.end()) {
+    ColumnParser column(column_start_parse, line.end(), delimiter);
+    row.emplace_back(column.begin().base(),
+                     std::distance(column.begin(), column.end()));
+    column_start_parse = column.nextColumnStartParse();
   }
+  return row;
+}
 
-  std::vector<std::string_view> parse(const std::string& line) const {
-    std::vector<std::string_view> row;
-
-    auto column_start_parse = line.begin();
-    while (column_start_parse != line.end()) {
-      ColumnParser column(column_start_parse, line.end(), _delimiter);
-      row.emplace_back(column.begin().base(),
-                       std::distance(column.begin(), column.end()));
-      column_start_parse = column.nextColumnStartParse();
-    }
-    return row;
+static void verifyDelimiterIsValid(const std::string& delimiter) {
+  if (delimiter.empty()) {
+    throw std::invalid_argument("Delimiter cannot be an empty string.");
   }
-
- private:
-  static void verifyDelimiterCorrectness(const std::string& delimiter) {
-    if (delimiter.empty()) {
-      throw std::invalid_argument("Delimiter cannot be an empty string.");
-    }
-    // NOLINTNEXTLINE We don't use Abseil.
-    if (delimiter.find('\\') != std::string::npos) {
-      throw std::invalid_argument(
-          "Delimiter cannot contain the escape character '\\'.");
-    }
-    // NOLINTNEXTLINE We don't use Abseil.
-    if (delimiter.find('\n') != std::string::npos ||
-        // NOLINTNEXTLINE We don't use Abseil.
-        delimiter.find('\r') != std::string::npos) {
-      throw std::invalid_argument(
-          "Delimiter cannot contain the newline or return characters.");
-    }
-    if (delimiter == "\"") {
-      throw std::invalid_argument(
-          "Cannot use double quotes (\") as delimiter.");
-    }
+  // NOLINTNEXTLINE We don't use Abseil.
+  if (delimiter.find('\\') != std::string::npos) {
+    throw std::invalid_argument(
+        "Delimiter cannot contain the escape character '\\'.");
   }
+  // NOLINTNEXTLINE We don't use Abseil.
+  if (delimiter.find('\n') != std::string::npos ||
+      // NOLINTNEXTLINE We don't use Abseil.
+      delimiter.find('\r') != std::string::npos) {
+    throw std::invalid_argument(
+        "Delimiter cannot contain the newline or return characters.");
+  }
+  if (delimiter == "\"") {
+    throw std::invalid_argument("Cannot use double quotes (\") as delimiter.");
+  }
+}
 
-  const std::string& _delimiter;
-};
+}  // namespace CSV
 
-// I can add a unicode state
 }  // namespace thirdai::dataset
