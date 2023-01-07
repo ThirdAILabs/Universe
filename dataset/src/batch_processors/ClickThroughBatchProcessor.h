@@ -4,6 +4,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
 #include <cmath>
+#include <optional>
 #include <stdexcept>
 #include <string>
 

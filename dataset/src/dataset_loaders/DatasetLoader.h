@@ -12,7 +12,6 @@ class DatasetLoader {
   virtual std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
       uint64_t max_in_memory_batches) = 0;
 
-  // TODO(Josh): Does this need to be virtual
   std::pair<InputDatasets, LabelDataset> loadInMemory() {
     auto datasets = loadInMemory(std::numeric_limits<uint64_t>::max());
     if (!datasets) {

@@ -5,6 +5,7 @@
 #include <dataset/src/ShuffleBatchBuffer.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
@@ -38,6 +39,28 @@ class TabularDatasetLoader final : public DatasetLoader {
 
   // TODO(Josh): This should be private, but okay for now
   std::optional<std::vector<BoltBatch>> nextBatchVector();
+
+  uint32_t getInputDim() {
+    auto dimensions = _batch_processor->getDimensions();
+    if (!dimensions.has_value()) {
+      throw std::runtime_error(
+          "Cannot get the input dimension of this tabular dataset loader's "
+          "batch processor.");
+    }
+    return dimensions->at(0);
+  }
+
+  uint32_t getLabelDim() {
+    auto dimensions = _batch_processor->getDimensions();
+    if (!dimensions.has_value()) {
+      throw std::runtime_error(
+          "Cannot get the input dimension of this tabular dataset loader's "
+          "batch processor.");
+    }
+    // TODO(Josh): Again, this is assuming we have one input and one label
+    // dataset
+    return dimensions->at(1);
+  }
 
  private:
   void prefillShuffleBuffer();

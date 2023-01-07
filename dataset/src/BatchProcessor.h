@@ -19,6 +19,12 @@ class BatchProcessor {
 
   virtual ~BatchProcessor() = default;
 
+  // Returns a vector of the BoltVector dimensions one would get if they called
+  // createBatch if this can be known
+  virtual std::optional<std::vector<uint32_t>> getDimensions() {
+    // By default we assume that the dimensions cannot be known
+    return std::nullopt;
+  }
   // Default constructor for cereal.
   BatchProcessor() {}
 
@@ -85,6 +91,8 @@ class ComputeBatchProcessor : public BatchProcessor {
 
     return {BoltBatch(), BoltBatch()};
   }
+
+  std::optional<std::vector<uint32_t>> getDimensions() final { return {}; }
 
  protected:
   virtual void processRow(const std::string& row) = 0;

@@ -161,9 +161,9 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildMetadataInputBlocks(
 
 dataset::PreprocessedVectorsPtr
 UDTDatasetFactory::preprocessedVectorsFromDataset(
-    dataset::TabularDatasetLoader& dataset,
+    dataset::TabularDatasetLoader& dataset_loader,
     dataset::ThreadSafeVocabulary& key_vocab) {
-  auto [datasets, ids] = dataset.loadInMemory();
+  auto [datasets, ids] = dataset_loader.loadInMemory();
 
   if (datasets.size() != 1) {
     throw std::runtime_error(
@@ -182,9 +182,8 @@ UDTDatasetFactory::preprocessedVectorsFromDataset(
     }
   }
 
-  // TODO(Josh): FIX THIS
   return std::make_shared<dataset::PreprocessedVectors>(
-      std::move(preprocessed_vectors), 0);
+      std::move(preprocessed_vectors), dataset_loader.getInputDim());
 }
 
 void UDTDatasetFactory::updateMetadata(const std::string& col_name,

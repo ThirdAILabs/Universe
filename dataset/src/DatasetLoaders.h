@@ -10,8 +10,6 @@
 #include <memory>
 #include <utility>
 
-// TODO(Josh): Fix this file
-
 namespace thirdai::dataset {
 
 struct SvmDatasetLoader {
