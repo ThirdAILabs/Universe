@@ -70,6 +70,7 @@ class ColumnParser {
           break;
         case ParsingState::MatchedDelimiter:
           _next_column_start_parse = char_iter + 1;
+          _ended_with_delimiter = true;
           return;
         default:
           break;
@@ -79,11 +80,13 @@ class ColumnParser {
     // Only reach here if we don't match the delimiter after reaching
     // the end of the string.
     _next_column_start_parse = end;
+    _ended_with_delimiter = false;
   }
 
-  auto begin() { return _column_begin_candidate; }
-  auto end() { return _column_end_candidate; }
-  auto nextColumnStartParse() { return _next_column_start_parse; }
+  auto begin() const { return _column_begin_candidate; }
+  auto end() const { return _column_end_candidate; }
+  auto nextColumnStartParse() const { return _next_column_start_parse; }
+  auto endedWithDelimiter() const { return _ended_with_delimiter; }
 
  private:
   static ParsingState nextState(ParsingState previous_state, char character,
@@ -128,6 +131,7 @@ class ColumnParser {
   std::string::const_iterator _column_begin_candidate;
   std::string::const_iterator _column_end_candidate;
   std::string::const_iterator _next_column_start_parse;
+  bool _ended_with_delimiter;
 };
 
 namespace CSV {
@@ -135,13 +139,21 @@ static std::vector<std::string_view> parse(const std::string& line,
                                            const std::string& delimiter) {
   std::vector<std::string_view> row;
 
+  bool last_column_ended_with_delimiter = false;
+
   auto column_start_parse = line.begin();
   while (column_start_parse != line.end()) {
     ColumnParser column(column_start_parse, line.end(), delimiter);
     row.emplace_back(column.begin().base(),
                      std::distance(column.begin(), column.end()));
     column_start_parse = column.nextColumnStartParse();
+    last_column_ended_with_delimiter = column.endedWithDelimiter();
   }
+
+  if (last_column_ended_with_delimiter) {
+    row.emplace_back();
+  }
+
   return row;
 }
 
