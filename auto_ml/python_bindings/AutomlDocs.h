@@ -80,11 +80,11 @@ Examples:
 
 )pbdoc";
 
-const char* const MODEL_PIPELINE_TRAIN_DATA_LOADER = R"pbdoc(
-Trains a ModelPipeline on a given dataset using any DataLoader.
+const char* const MODEL_PIPELINE_TRAIN_DATA_SOURCE = R"pbdoc(
+Trains a ModelPipeline on a given dataset using any DataSource.
 
 Args:
-    data_source (dataset.DataLoader): A data loader for the given dataset.
+    data_source (dataset.DataSource): A data source for the given dataset.
     train_config (bolt.TrainConfig): The training config specifies the number
         of epochs and learning_rate, and optionally allows for specification of a
         validation dataset, metrics, callbacks, and how frequently to log metrics 
@@ -101,7 +101,7 @@ Returns:
 Examples:
     >>> train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     >>> model.train(
-            data_source=dataset.CSVDataLoader(...), train_config=train_config, max_in_memory_batches=12
+            data_source=dataset.CSVDataSource(...), train_config=train_config, max_in_memory_batches=12
         )
 
 )pbdoc";
@@ -135,12 +135,12 @@ Examples:
 
 )pbdoc";
 
-const char* const MODEL_PIPELINE_EVALUATE_DATA_LOADER = R"pbdoc(
+const char* const MODEL_PIPELINE_EVALUATE_DATA_SOURCE = R"pbdoc(
 Evaluates the ModelPipeline on the given dataset and returns a numpy array of the 
 activations.
 
 Args:
-    data_source (dataset.DataLoader): A data loader for the given dataset.
+    data_source (dataset.DataSource): A data source for the given dataset.
     eval_config (Option[bolt.EvalConfig]): The predict config is optional
         and allows for specification of metrics to compute and whether to use sparse
         inference.
@@ -159,7 +159,7 @@ Returns:
     The shape of each array will be (dataset_length, num_nonzeros_in_output).
 
 Examples:
-    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.CSVDataLoader(...))
+    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.CSVDataSource(...))
 
 )pbdoc";
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DataLoader.h"
+#include "DataSource.h"
 #include "ShuffleBatchBuffer.h"
 #include "StreamingDataset.h"
 #include <bolt_vector/src/BoltVector.h>
@@ -32,16 +32,16 @@ class StreamingGenericDatasetLoader
     : public StreamingDataset<BoltBatch, BoltBatch> {
  public:
   /**
-   * This constructor accepts a pointer to any data loader.
+   * This constructor accepts a pointer to any data source.
    */
   StreamingGenericDatasetLoader(
-      std::shared_ptr<DataLoader> loader,
+      const std::shared_ptr<DataSource>& source,
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, bool shuffle = false,
       DatasetShuffleConfig config = DatasetShuffleConfig(),
       bool has_header = false, char delimiter = ',', bool parallel = true)
       : StreamingGenericDatasetLoader(
-            std::move(loader),
+            source,
             std::make_shared<GenericBatchProcessor>(
                 std::move(input_blocks), std::move(label_blocks), has_header,
                 delimiter, parallel),
@@ -55,7 +55,7 @@ class StreamingGenericDatasetLoader
       uint32_t batch_size, bool shuffle = false,
       DatasetShuffleConfig config = DatasetShuffleConfig())
       : StreamingGenericDatasetLoader(
-            std::make_shared<SimpleFileDataLoader>(filename, batch_size),
+            std::make_shared<SimpleFileDataSource>(filename, batch_size),
             std::move(processor), shuffle, config) {}
 
   /**
@@ -64,17 +64,17 @@ class StreamingGenericDatasetLoader
    * variable initializer.
    */
   StreamingGenericDatasetLoader(
-      std::shared_ptr<DataLoader> loader,
+      const std::shared_ptr<DataSource>& source,
       std::shared_ptr<GenericBatchProcessor> processor, bool shuffle = false,
       DatasetShuffleConfig config = DatasetShuffleConfig())
-      : StreamingDataset(loader, processor),
+      : StreamingDataset(source, processor),
         _processor(std::move(processor)),
-        _buffer(config.seed, loader->getMaxBatchSize()),
+        _buffer(config.seed, source->getMaxBatchSize()),
         _shuffle(shuffle),
         _batch_buffer_size(config.n_batches) {}
 
   /**
-   * This constructor does not accept a data loader and
+   * This constructor does not accept a data source and
    * defaults to a simple file loader.
    */
   StreamingGenericDatasetLoader(
@@ -84,7 +84,7 @@ class StreamingGenericDatasetLoader
       DatasetShuffleConfig config = DatasetShuffleConfig(),
       bool has_header = false, char delimiter = ',', bool parallel = true)
       : StreamingGenericDatasetLoader(
-            std::make_shared<SimpleFileDataLoader>(filename, batch_size),
+            std::make_shared<SimpleFileDataSource>(filename, batch_size),
             std::move(input_blocks), std::move(label_blocks), shuffle, config,
             has_header, delimiter, parallel) {}
 
@@ -107,7 +107,7 @@ class StreamingGenericDatasetLoader
 #if THIRDAI_EXPOSE_ALL
     // This is useful internally but we don't want to expose it to keep the
     // output clear and simple.
-    std::cout << "loading data | source '" << _data_loader->resourceName()
+    std::cout << "loading data | source '" << _data_source->resourceName()
               << "'" << std::endl;
 #endif
 
@@ -127,7 +127,7 @@ class StreamingGenericDatasetLoader
 #if THIRDAI_EXPOSE_ALL
       // This is to ensure that it always prints complete if it prints that it
       // has started loading above.
-      std::cout << "loading data | source '" << _data_loader->resourceName()
+      std::cout << "loading data | source '" << _data_source->resourceName()
                 << "' | vectors 0 | batches 0 | time " << duration
                 << "s | complete\n"
                 << std::endl;
@@ -139,7 +139,7 @@ class StreamingGenericDatasetLoader
         std::make_shared<BoltDataset>(std::move(input_batches)),
         std::make_shared<BoltDataset>(std::move(label_batches)));
 
-    std::cout << "loading data | source '" << _data_loader->resourceName()
+    std::cout << "loading data | source '" << _data_source->resourceName()
               << "' | vectors " << std::get<0>(dataset)->len() << " | batches "
               << std::get<0>(dataset)->numBatches() << " | time " << duration
               << "s | complete\n"
@@ -153,10 +153,10 @@ class StreamingGenericDatasetLoader
   uint32_t getLabelDim() { return _processor->getLabelDim(); }
 
   void restart() final {
-    _data_loader->restart();
+    _data_source->restart();
     // When we restart we need to make sure we don't reread the header. s
     if (_processor->expectsHeader()) {
-      auto header = _data_loader->nextLine();
+      auto header = _data_source->nextLine();
       if (!header) {
         throw std::invalid_argument("Cannot read empty file.");
       }
@@ -164,7 +164,7 @@ class StreamingGenericDatasetLoader
 
     _buffer = ShuffleBatchBuffer(
         /* shuffle_seed= */ time(NULL),
-        /* batch_size= */ _data_loader->getMaxBatchSize());
+        /* batch_size= */ _data_source->getMaxBatchSize());
   }
 
  private:

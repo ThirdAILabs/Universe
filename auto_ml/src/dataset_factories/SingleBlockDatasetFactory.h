@@ -39,9 +39,9 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
         _delimiter(delimiter) {}
 
   DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
+      std::shared_ptr<dataset::DataSource> data_source, bool training) final {
     return std::make_unique<GenericDatasetLoader>(
-        data_loader, _labeled_batch_processor, _shuffle && training);
+        data_source, _labeled_batch_processor, _shuffle && training);
   }
 
   std::vector<BoltVector> featurizeInput(const std::string& input) final;
