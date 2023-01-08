@@ -46,7 +46,7 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
 
     assert metrics[0]["categorical_accuracy"] > 0.9
 
-    os.remove(file)
+    os.remove(filename)
 
 
 @pytest.mark.integration
