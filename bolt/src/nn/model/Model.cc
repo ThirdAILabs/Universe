@@ -314,7 +314,9 @@ std::unordered_map<ops::OpPtr, uint32_t> Model::getInDegrees() const {
 void Model::checkNoOutputsHaveDependentOps() const {
   for (const auto& output : _outputs) {
     if (!output->dependantOps().empty()) {
-      throw std::invalid_argument("Outputs must not be inputs to any ops.");
+      throw std::invalid_argument(
+          "Outputs must not be inputs to any ops. Found output '" +
+          output->name() + "' with a dependent op.");
     }
   }
 }
@@ -326,7 +328,9 @@ void Model::checkOnlyOutputsHaveNoDependentOps() const {
   for (const auto& activation : _activations.activationTensors()) {
     if (activation->dependantOps().empty() && !outputs_set.count(activation)) {
       throw std::invalid_argument(
-          "All non outputs must be used in at least one op.");
+          "All non outputs must be used in at least one op. Found tensor '" +
+          activation->name() +
+          "' that has no dependent ops and is not an output.");
     }
   }
 }
@@ -338,7 +342,12 @@ void Model::checkAllOutputsAreUsedInLosses() const {
   for (const auto& loss : _losses) {
     for (const auto& output : loss->outputsUsed()) {
       if (!outputs_set.count(output)) {
-        throw std::invalid_argument("Only outputs can be used in losses.");
+        throw std::invalid_argument(
+            "Only outputs can be used in losses and outputs cannot be reused "
+            "in multiple losses. Found tensor '" +
+            output->name() +
+            "' which is either not an output or or has already been used in a "
+            "loss function.");
       }
 
       outputs_set.erase(output);
@@ -346,7 +355,10 @@ void Model::checkAllOutputsAreUsedInLosses() const {
   }
 
   if (!outputs_set.empty()) {
-    throw std::invalid_argument("All outputs must be used by a loss.");
+    throw std::invalid_argument(
+        "All outputs must be used by a loss. Found an output '" +
+        (*outputs_set.begin())->name() +
+        "' which is not used by any loss function.");
   }
 }
 
