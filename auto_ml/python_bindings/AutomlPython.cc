@@ -227,11 +227,8 @@ void createModelsSubmodule(py::module_& module) {
              const std::string& filename, uint32_t top_k, bool return_scores) {
             auto [reformulated_queries, scores] =
                 udt_generator_model.evaluateOnFile(filename, top_k);
-            if (return_scores) {
-              return py::make_tuple(std::move(reformulated_queries),
-                                    std::move(scores));
-            }
-            return py::make_tuple(std::move(reformulated_queries));
+            return UDTFactory::makeGeneratorInferenceTuple(
+                reformulated_queries, scores, return_scores);
           },
           py::arg("filename"), py::arg("top_k"),
           py::arg("return_scores") = false, docs::UDT_GENERATOR_EVALUATE)
@@ -241,11 +238,8 @@ void createModelsSubmodule(py::module_& module) {
              const std::string& sample, uint32_t top_k, bool return_scores) {
             auto [reformulated_queries, scores] =
                 udt_generator_model.queryFromList({sample}, top_k);
-            if (return_scores) {
-              return py::make_tuple(std::move(reformulated_queries),
-                                    std::move(scores));
-            }
-            return py::make_tuple(std::move(reformulated_queries));
+            return UDTFactory::makeGeneratorInferenceTuple(
+                reformulated_queries, scores, return_scores);
           },
           py::arg("query"), py::arg("top_k"), py::arg("return_scores") = false,
           docs::UDT_GENERATOR_PREDICT)
@@ -256,11 +250,8 @@ void createModelsSubmodule(py::module_& module) {
              bool return_scores) {
             auto [reformulated_queries, scores] =
                 udt_generator_model.queryFromList(queries, top_k);
-            if (return_scores) {
-              return py::make_tuple(std::move(reformulated_queries),
-                                    std::move(scores));
-            }
-            return py::make_tuple(std::move(reformulated_queries));
+            return UDTFactory::makeGeneratorInferenceTuple(
+                reformulated_queries, scores, return_scores);
           },
           py::arg("queries"), py::arg("top_k"),
           py::arg("return_scores") = false, docs::UDT_GENERATOR_PREDICT_BATCH)
@@ -468,5 +459,4 @@ py::object UDTFactory::load(const std::string& filename) {
 
   throw std::invalid_argument("Found an invalid header byte in the saved file");
 }
-
 }  // namespace thirdai::automl::python

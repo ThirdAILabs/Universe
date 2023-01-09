@@ -135,7 +135,7 @@ def run_generator_test(
     query_pairs = read_csv_file(file_name=TRAIN_SOURCE_TARGET_FILE)
 
     queries = [query_pair[source_col_index] for query_pair in query_pairs]
-    generated_candidates = model.predict_batch(queries=queries, top_k=5)
+    (generated_candidates,) = model.predict_batch(queries=queries, top_k=5)
 
     correct_results = 0
     for query_index in range(len(query_pairs)):
@@ -195,10 +195,10 @@ def test_udt_generator_load_and_save(prepared_datasets):
     trained_model.save(filename=MODEL_PATH)
 
     deserialized_model = bolt.UniversalDeepTransformer.load(filename=MODEL_PATH)
-    model_eval_outputs = trained_model.evaluate(
+    (model_eval_outputs,) = trained_model.evaluate(
         filename=TRAIN_SOURCE_TARGET_FILE, top_k=5
     )
-    deserialized_model_outputs = deserialized_model.evaluate(
+    (deserialized_model_outputs,) = deserialized_model.evaluate(
         filename=TRAIN_SOURCE_TARGET_FILE, top_k=5
     )
 
@@ -222,6 +222,6 @@ def test_udt_generator_return_scores(prepared_datasets):
     )
 
     assert len(generated_candidates) == len(scores)
-    for score in scores:
-        assert len(score) == top_k
+    for index, score in enumerate(scores):
+        assert len(score) == len(generated_candidates[index])
         assert all(a >= b for a, b in zip(score, score[1:]))

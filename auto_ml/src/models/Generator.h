@@ -283,7 +283,7 @@ class QueryCandidateGenerator {
    *
    * @param queries
    * @param top_k
-   * @return A vector of suggested queries
+   * @return A vector of suggested queries and the corresponding scores.
 
    */
   std::pair<std::vector<std::vector<std::string>>,
@@ -324,7 +324,7 @@ class QueryCandidateGenerator {
    *
    * @param file_name: CSV file expected to have correct queries in column 0,
    * and incorrect queries in column 1.
-   * @return Recommended queries
+   * @return Recommended queries and the corresponding scores.
    */
   std::pair<std::vector<std::vector<std::string>>,
             std::vector<std::vector<float>>>
@@ -341,6 +341,7 @@ class QueryCandidateGenerator {
     auto data =
         loadDatasetInMemory(/* file_name = */ file_name,
                             /* batch_processor = */ eval_batch_processor);
+    ProgressBar bar("evaluate", data->numBatches());
 
     std::vector<std::vector<std::string>> output_queries;
     std::vector<std::vector<float>> output_scores;
@@ -350,6 +351,7 @@ class QueryCandidateGenerator {
               /* batch = */ batch,
               /* top_k = */ top_k,
               /* pad_zeros = */ false);
+      bar.increment();
 
       for (auto& candidate_query_label_vector : candidate_query_labels) {
         auto top_k = getQueryCandidatesAsStrings(candidate_query_label_vector);
@@ -359,6 +361,9 @@ class QueryCandidateGenerator {
         output_scores.push_back(std::move(candidate_query_score_vector));
       }
     }
+
+    bar.close(
+        fmt::format("evaluate | batches {} | complete", data->numBatches()));
 
     if (source_column_index != target_column_index) {
       std::vector<std::string> correct_queries =
