@@ -375,6 +375,10 @@ def prepare_query_reformulation_data(seed=42):
         noise_level=TEST_NOISE_LEVEL,
     )
 
+    # TODO(Geordie): Fix this when the new CSV parser is in
+    train_data_with_noise = train_data_with_noise.replace(",", "", regex=True)
+    test_data_with_noise = test_data_with_noise.replace(",", "", regex=True)
+
     # Write dataset to CSV
     train_data_with_noise.to_csv(TRAIN_FILE_PATH, index=False)
     test_data_with_noise.to_csv(TEST_FILE_PATH, index=False)
