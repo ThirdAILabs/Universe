@@ -4,7 +4,7 @@ Using the DeploymentConfig and ModelPipeline
 The `ModelPipeline` is a wrapper around a Bolt DAG model and a dataset pipeline that 
 abstracts the process of loading and featurizing a dataset and training a model into
 a single interface that hides the complexity from the user. Rather than take in a
-`BoltDataset`, it takes in raw files/DataLoaders and hides the data processing step.
+`BoltDataset`, it takes in raw files/DataSources and hides the data processing step.
 
 The `DeploymentConfig` is a way of specifying the architecture and parameters of a 
 `ModelPipeline` while allowing us to hide architecture decisions from customers, 

@@ -94,7 +94,9 @@ class TabularHashFeatures : public Block {
                                       std::function<void(Token)>>::value);
     std::unordered_map<uint32_t, uint32_t> unigram_to_col_num;
     std::vector<uint32_t> unigram_hashes;
-    for (uint32_t col = 0; col < input_row.size(); col++) {
+    for (uint32_t col = 0;
+         col < std::min<size_t>(input_row.size(), _metadata->numColumns());
+         col++) {
       std::string str_val(input_row[col]);
       switch (_metadata->colType(col)) {
         case TabularDataType::Numeric: {

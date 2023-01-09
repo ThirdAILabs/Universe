@@ -131,7 +131,7 @@ def test_invalid_parameter_type_throws():
 def test_input_mismatch_throws():
     with pytest.raises(
         ValueError,
-        match=r"Number of inputs in model config does not match number of inputs returned from data loader.",
+        match=r"Number of inputs in model config does not match number of inputs returned from data source.",
     ):
         bolt.models.Pipeline(
             deployment_config=get_config(add_extra_input=True),

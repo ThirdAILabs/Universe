@@ -1,15 +1,15 @@
-#include "ColdStartDataLoader.h"
+#include "ColdStartDataSource.h"
 #include <stdexcept>
 
 namespace thirdai::automl::cold_start {
 
-ColdStartDataLoader::ColdStartDataLoader(const data::ColumnMap& column_map,
+ColdStartDataSource::ColdStartDataSource(const data::ColumnMap& column_map,
                                          std::string text_column_name,
                                          std::string label_column_name,
                                          uint32_t batch_size,
                                          char column_delimiter,
                                          std::optional<char> label_delimiter)
-    : DataLoader(batch_size),
+    : DataSource(batch_size),
       _text_column(column_map.getStringColumn(text_column_name)),
       _label_column(column_map.getTokenArrayColumn(label_column_name)),
       _row_idx(0),
@@ -19,7 +19,7 @@ ColdStartDataLoader::ColdStartDataLoader(const data::ColumnMap& column_map,
       _label_delimiter(label_delimiter),
       _header(getHeader()) {}
 
-std::optional<std::vector<std::string>> ColdStartDataLoader::nextBatch() {
+std::optional<std::vector<std::string>> ColdStartDataSource::nextBatch() {
   std::vector<std::string> rows;
 
   while (auto row = nextLine()) {
@@ -37,7 +37,7 @@ std::optional<std::vector<std::string>> ColdStartDataLoader::nextBatch() {
   return rows;
 }
 
-std::optional<std::string> ColdStartDataLoader::nextLine() {
+std::optional<std::string> ColdStartDataSource::nextLine() {
   if (_header) {
     std::string header = std::move(_header.value());
     _header = std::nullopt;
@@ -46,7 +46,7 @@ std::optional<std::string> ColdStartDataLoader::nextLine() {
   return getNextRowAsString();
 }
 
-std::optional<std::string> ColdStartDataLoader::getNextRowAsString() {
+std::optional<std::string> ColdStartDataSource::getNextRowAsString() {
   if (_row_idx == _text_column->numRows()) {
     return std::nullopt;
   }
@@ -62,7 +62,7 @@ std::optional<std::string> ColdStartDataLoader::getNextRowAsString() {
   return row;
 }
 
-std::string ColdStartDataLoader::getLabelsAsString() {
+std::string ColdStartDataSource::getLabelsAsString() {
   auto labels = (*_label_column)[_row_idx];
 
   if (labels.size() == 0) {
