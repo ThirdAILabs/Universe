@@ -5,14 +5,14 @@ import ray
 
 
 class Circular:
-    def __init__(self, model, id, primary_worker, num_workers):
+    def __init__(self, model, id, primary_worker, num_workers, friend):
 
         self.model = model
         self.id = id
         self.primary_worker = primary_worker
         self.num_workers = num_workers
 
-        self.friend = None  # this variable is set up in set_friend
+        self.friend = friend  # this variable is set up in set_friend
         self.partitions = []
         self.friend_gradients = []
         self.gradients = []
@@ -83,7 +83,10 @@ class Circular:
         :return: returns True, after functions complete
         :rtype: bool
         """
-        self.model.gradient_reference().set_gradients(self.gradients)
+        if len(self.gradients) != 0:
+            self.model.gradient_reference().set_gradients(self.gradients)
+        else:
+            print("Gradients are:", self.gradients)
 
     def update_partitions(
         self,

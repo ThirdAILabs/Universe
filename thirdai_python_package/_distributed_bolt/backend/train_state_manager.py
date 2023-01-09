@@ -115,11 +115,17 @@ class TrainStateManager:
         """
         Trains the model and returns whether all workers have a next batch.
         """
-        all_workers_have_next_batch = self._compute_and_store_next_batch_gradients()
-        self._communicate()
-        self._update_parameters()
-        self._log_post_batch(epoch)
-        self.batch_id_within_epoch += 1
+        all_workers_have_next_batch = True
+        try:
+            all_workers_have_next_batch = self._compute_and_store_next_batch_gradients()
+            self._communicate()
+            self._update_parameters()
+            self._log_post_batch(epoch)
+            self.batch_id_within_epoch += 1
+        except KeyboardInterrupt:
+            raise KeyboardInterrupt
+        except Exception:
+            print("Some Error happened!")
         return all_workers_have_next_batch
 
     def move_to_next_epoch(self):

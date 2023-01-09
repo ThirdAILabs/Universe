@@ -300,8 +300,21 @@ class DistributedDataParallel:
         for worker_id, replica_worker_config in enumerate(
             cluster_config.replica_worker_configs, start=1
         ):
-            self.replica_workers.append(
-                replica_worker_config.remote(
+            if worker_id is 1:
+                self.replica_workers.append(
+                    replica_worker_config.remote(
+                        num_workers=cluster_config.num_workers,
+                        train_source=train_sources[worker_id],
+                        train_config=train_config,
+                        id=worker_id,
+                        primary_worker=self.primary_worker,
+                        communication_type=cluster_config.communication_type,
+                        log_dir=cluster_config.log_dir,
+                        friend=self.primary_worker,
+                    )
+                )
+            else:
+                replica_worker = replica_worker_config.remote(
                     num_workers=cluster_config.num_workers,
                     train_source=train_sources[worker_id],
                     train_config=train_config,
@@ -309,8 +322,9 @@ class DistributedDataParallel:
                     primary_worker=self.primary_worker,
                     communication_type=cluster_config.communication_type,
                     log_dir=cluster_config.log_dir,
+                    friend=self.replica_workers[worker_id - 1],
                 )
-            )
+                self.replica_workers.append(replica_worker)
 
         self.workers = [self.primary_worker] + self.replica_workers
 

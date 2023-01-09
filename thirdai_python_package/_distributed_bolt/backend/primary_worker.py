@@ -3,7 +3,7 @@ from thirdai._distributed_bolt.backend.worker import Worker
 from thirdai._thirdai import bolt
 
 
-@ray.remote(max_restarts=1, max_task_retries=-1)
+@ray.remote(max_restarts=1)
 class PrimaryWorker(Worker):
     """
     This is a ray remote class(Actor). Read about them here.
@@ -38,6 +38,7 @@ class PrimaryWorker(Worker):
             train_config=train_config,
             communication_type=communication_type,
             log_dir=log_dir,
+            friend=None,
         )
 
     def gradients_avg(self):

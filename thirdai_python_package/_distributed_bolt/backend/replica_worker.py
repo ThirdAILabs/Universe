@@ -3,7 +3,7 @@ from thirdai._distributed_bolt.backend.worker import Worker
 from thirdai._thirdai import bolt
 
 
-@ray.remote(max_restarts=-1, max_task_retries=-1)
+@ray.remote(max_restarts=-1)
 class ReplicaWorker(Worker):
     """
     This is a ray remote class(Actor). Read about them here.
@@ -31,6 +31,7 @@ class ReplicaWorker(Worker):
         primary_worker,
         communication_type,
         log_dir: str,
+        friend,
     ):
         """
         Calls the constructor for Worker
@@ -56,4 +57,5 @@ class ReplicaWorker(Worker):
             train_config=train_config,
             communication_type=communication_type,
             log_dir=log_dir,
+            friend=friend,
         )

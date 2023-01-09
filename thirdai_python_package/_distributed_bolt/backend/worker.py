@@ -40,6 +40,7 @@ class Worker:
         train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
+        friend,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
@@ -84,7 +85,7 @@ class Worker:
 
         if self.communication_type == "circular":
             self.comm = comm.Circular(
-                self.model, self.id, self.primary_worker, self.num_workers
+                self.model, self.id, self.primary_worker, self.num_workers, friend
             )
         elif self.communication_type == "linear":
             self.comm = comm.Linear(self.model, self.id, self.primary_worker)
