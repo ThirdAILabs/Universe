@@ -4,7 +4,7 @@
 namespace thirdai::bolt::train::callbacks {
 
 void Callback::setModel(nn::model::ModelPtr model) {
-  if (this->model != model) {
+  if (this->model && this->model != model) {
     throw std::invalid_argument("Cannot bind callback to new model.");
   }
   this->model = std::move(model);

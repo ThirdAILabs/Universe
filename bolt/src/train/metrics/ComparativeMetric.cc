@@ -8,7 +8,7 @@ void ComparativeMetric::record(uint32_t index_in_batch) {
 }
 
 void ComparativeMetric::setOutputs(nn::tensor::ActivationTensorPtr outputs) {
-  if (_outputs != outputs) {
+  if (_outputs && _outputs != outputs) {
     throw std::runtime_error(
         "Cannot rebind the metric to a new model or a new output in the same "
         "model");
@@ -17,7 +17,7 @@ void ComparativeMetric::setOutputs(nn::tensor::ActivationTensorPtr outputs) {
 }
 
 void ComparativeMetric::setLabels(nn::tensor::InputTensorPtr labels) {
-  if (_labels != labels) {
+  if (_labels && _labels != labels) {
     throw std::runtime_error(
         "Cannot rebind the metric to a new model or a new output in the same "
         "model");

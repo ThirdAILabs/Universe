@@ -13,7 +13,7 @@ namespace thirdai::bolt::nn::tests {
 static constexpr uint32_t N_CLASSES = 100;
 
 auto getDataset(uint32_t n_batches, uint32_t batch_size) {
-  return ::thirdai::bolt::tests::TestDatasetGenerators::
+  return thirdai::bolt::tests::TestDatasetGenerators::
       generateSimpleVectorDataset(
           /* n_classes= */ N_CLASSES, /* n_batches= */ n_batches,
           /* batch_size= */ batch_size, /* noisy_dataset= */ false);
@@ -21,9 +21,7 @@ auto getDataset(uint32_t n_batches, uint32_t batch_size) {
 
 model::ModelPtr createModel(bool with_hidden_layer) {
   auto input = tensor::InputTensor::make(
-      /* dim= */ N_CLASSES,
-      /* sparsity_type= */ tensor::SparsityType::Unknown,
-      /* num_nonzeros= */ std::nullopt);
+      /* dim= */ N_CLASSES);
 
   tensor::TensorPtr input_to_output_layer;
 
@@ -45,9 +43,7 @@ model::ModelPtr createModel(bool with_hidden_layer) {
   for (uint32_t i = 0; i < 2; i++) {
     ops::FullyConnectedFactory output(
         /* dim= */ N_CLASSES, /* sparsity= */ 1.0, /* activation*/ "softmax",
-        /* sampling= */ nullptr,
-        /* rebuild_hash_tables= */ 1000000,
-        /* reconstruct_hash_functions= */ 1000000);
+        /* sampling= */ nullptr);
 
     outputs.push_back(output.apply(input_to_output_layer));
 

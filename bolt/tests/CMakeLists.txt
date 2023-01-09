@@ -7,7 +7,8 @@ set(BOLT_NN_TESTS
     ComparativeLossTests
     FullyConnectedModelTests
     TensorTests
-    InvalidModelTests)
+    InvalidModelTests
+    TrainerTests)
 
 foreach(BOLT_NN_TEST IN LISTS BOLT_NN_TESTS)
   add_executable(${BOLT_NN_TEST} ${BOLT_NN_TEST}.cc)

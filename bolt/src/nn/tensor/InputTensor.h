@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Tensor.h"
+#include <optional>
 
 namespace thirdai::bolt::nn::tensor {
 
@@ -19,8 +20,8 @@ class InputTensor final : public Tensor {
               std::optional<uint32_t> num_nonzeros);
 
   static std::shared_ptr<InputTensor> make(
-      uint32_t dim, SparsityType sparsity_type,
-      std::optional<uint32_t> num_nonzeros);
+      uint32_t dim, SparsityType sparsity_type = SparsityType::Unknown,
+      std::optional<uint32_t> num_nonzeros = std::nullopt);
 
   std::optional<uint32_t> numNonzeros() const final;
 

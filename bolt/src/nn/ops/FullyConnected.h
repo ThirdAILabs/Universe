@@ -3,6 +3,7 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/InputTensor.h>
+#include <limits>
 #include <memory>
 
 namespace thirdai::bolt::nn::ops {
@@ -78,10 +79,12 @@ using FullyConnectedPtr = std::shared_ptr<FullyConnected>;
 
 class FullyConnectedFactory {
  public:
-  FullyConnectedFactory(uint32_t dim, float sparsity, std::string activation,
-                        SamplingConfigPtr sampling,
-                        uint32_t rebuild_hash_tables,
-                        uint32_t reconstruct_hash_functions);
+  FullyConnectedFactory(
+      uint32_t dim, float sparsity, std::string activation,
+      SamplingConfigPtr sampling,
+      uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
+      uint32_t reconstruct_hash_functions =
+          std::numeric_limits<uint32_t>::max());
 
   tensor::ActivationTensorPtr apply(const tensor::TensorPtr& input);
 

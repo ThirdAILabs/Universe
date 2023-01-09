@@ -8,6 +8,8 @@ namespace thirdai::bolt::train::callbacks {
 
 class Callback {
  public:
+  Callback() : model(nullptr) {}
+
   virtual void onTrainBegin() {}
 
   virtual void onTrainEnd() {}
