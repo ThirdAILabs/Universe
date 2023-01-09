@@ -8,7 +8,7 @@
 namespace thirdai::bolt {
 
 /**
- * The Input3D node functions exactly the same as the normal Input node except
+ * The Input3D node functions is a shallow wrapper of the normal Input node that adds functionality for interpreting the single dimensional input vectors as 3D tensors.
  * the input dimension is specified with three values: width, height, and depth.
  * Input3D will then note these values and assume input BoltVectors of total
  * dimension = width * height * depth. This is useful to provide additional
