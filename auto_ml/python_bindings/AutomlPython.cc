@@ -221,16 +221,21 @@ void createModelsSubmodule(py::module_& module) {
       .def("train", &QueryCandidateGenerator::buildFlashIndex,
            py::arg("filename"), docs::UDT_GENERATOR_TRAIN)
       .def("evaluate", &QueryCandidateGenerator::evaluateOnFile,
-           py::arg("filename"), py::arg("top_k"), docs::UDT_GENERATOR_EVALUATE)
+           py::arg("filename"), py::arg("top_k"),
+           py::arg("return_activations") = false, docs::UDT_GENERATOR_EVALUATE)
       .def(
           "predict",
           [](QueryCandidateGenerator& udt_generator_model,
-             const std::string& sample, uint32_t top_k) {
-            return udt_generator_model.queryFromList({sample}, top_k);
+             const std::string& sample, uint32_t top_k,
+             bool return_activations) {
+            return udt_generator_model.queryFromList({sample}, top_k,
+                                                     return_activations);
           },
-          py::arg("query"), py::arg("top_k"), docs::UDT_GENERATOR_PREDICT)
+          py::arg("query"), py::arg("top_k"),
+          py::arg("return_activations") = false, docs::UDT_GENERATOR_PREDICT)
       .def("predict_batch", &QueryCandidateGenerator::queryFromList,
            py::arg("queries"), py::arg("top_k"),
+           py::arg("return_activations") = false,
            docs::UDT_GENERATOR_PREDICT_BATCH)
       .def("save", &UDTFactory::save_generator, py::arg("filename"),
            docs::UDT_GENERATOR_SAVE);

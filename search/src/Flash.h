@@ -70,9 +70,9 @@ class Flash {
    * padded with 0s to obtain a vector of length k. Otherwise less than k
    * results will be returned.
    */
-  std::vector<std::vector<LABEL_T>> queryBatch(const BoltBatch& batch,
-                                               uint32_t top_k,
-                                               bool pad_zeros = false) const;
+  std::pair<std::vector<std::vector<LABEL_T>>, std::vector<std::vector<float>>>
+  queryBatch(const BoltBatch& batch, uint32_t top_k,
+             bool pad_zeros = false) const;
 
  private:
   /**
@@ -86,7 +86,7 @@ class Flash {
    * has length n, because it must be sorted to find the top k. Note that
    * the input query_result will be modified (it will be sorted).
    */
-  std::vector<LABEL_T> getTopKUsingPriorityQueue(
+  std::pair<std::vector<LABEL_T>, std::vector<float>> getTopKUsingPriorityQueue(
       std::vector<LABEL_T>& query_result, uint32_t top_k) const;
 
   std::shared_ptr<hashing::HashFunction> _hash_function;
