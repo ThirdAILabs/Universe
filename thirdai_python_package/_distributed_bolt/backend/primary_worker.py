@@ -73,4 +73,5 @@ class PrimaryWorker(Worker):
         )
 
     def get_model(self):
+        # need to return model.model
         return self.wrapped_model
