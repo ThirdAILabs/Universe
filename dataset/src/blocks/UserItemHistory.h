@@ -94,8 +94,8 @@ class UserItemHistoryBlock final : public Block {
   static constexpr uint32_t ITEM_HASH_SEED = 341;
 
  public:
-  UserItemHistoryBlock(uint32_t user_col, uint32_t item_col,
-                       uint32_t timestamp_col,
+  UserItemHistoryBlock(ColumnIdentifier user_col, ColumnIdentifier item_col,
+                       ColumnIdentifier timestamp_col,
                        ItemHistoryCollectionPtr item_history_collection,
                        uint32_t track_last_n, uint32_t item_hash_range,
                        bool should_update_history = true,
@@ -103,9 +103,9 @@ class UserItemHistoryBlock final : public Block {
                        std::optional<char> item_col_delimiter = std::nullopt,
                        int64_t time_lag = 0,
                        PreprocessedVectorsPtr item_vectors = nullptr)
-      : _user_col(user_col),
-        _item_col(item_col),
-        _timestamp_col(timestamp_col),
+      : _user_col(std::move(user_col)),
+        _item_col(std::move(item_col)),
+        _timestamp_col(std::move(timestamp_col)),
         _track_last_n(track_last_n),
         _item_hash_range(item_hash_range),
         _item_vectors(std::move(item_vectors)),
@@ -113,7 +113,9 @@ class UserItemHistoryBlock final : public Block {
         _should_update_history(should_update_history),
         _include_current_row(include_current_row),
         _item_col_delimiter(item_col_delimiter),
-        _time_lag(time_lag) {}
+        _time_lag(time_lag) {
+    verifyConsistentColumnIdentifiers();
+  }
 
   uint32_t featureDim() const final {
     return _item_vectors ? _item_vectors->dim : _item_hash_range;
@@ -121,35 +123,28 @@ class UserItemHistoryBlock final : public Block {
 
   bool isDense() const final { return false; }
 
-  uint32_t expectedNumColumns() const final {
-    uint32_t max_col_idx = std::max(_user_col, _item_col);
-    max_col_idx = std::max(max_col_idx, _timestamp_col);
-    return max_col_idx + 1;
-  }
-
   static UserItemHistoryBlockPtr make(
-      uint32_t user_col, uint32_t item_col, uint32_t timestamp_col,
-      ItemHistoryCollectionPtr records, uint32_t track_last_n,
-      uint32_t item_hash_range, bool should_update_history = true,
-      bool include_current_row = false,
+      ColumnIdentifier user_col, ColumnIdentifier item_col,
+      ColumnIdentifier timestamp_col, ItemHistoryCollectionPtr records,
+      uint32_t track_last_n, uint32_t item_hash_range,
+      bool should_update_history = true, bool include_current_row = false,
       std::optional<char> item_col_delimiter = std::nullopt,
       int64_t time_lag = 0, PreprocessedVectorsPtr item_vectors = nullptr) {
     return std::make_shared<UserItemHistoryBlock>(
-        user_col, item_col, timestamp_col, std::move(records), track_last_n,
-        item_hash_range, should_update_history, include_current_row,
-        item_col_delimiter, time_lag, std::move(item_vectors));
+        std::move(user_col), std::move(item_col), std::move(timestamp_col),
+        std::move(records), track_last_n, item_hash_range,
+        should_update_history, include_current_row, item_col_delimiter,
+        time_lag, std::move(item_vectors));
   }
 
-  // TODO(YASH): See whether length of history makes sense in explanations.
-  Explanation explainIndex(
-      uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) final {
+  Explanation explainIndex(uint32_t index_within_block,
+                           SingleInputRef& input) final {
     if (_item_vectors) {
       // TODO(Geordie): Make more descriptive.
       return {_item_col, "Metadata of previously seen item."};
     }
 
-    auto user = std::string(input_row.at(_user_col));
+    auto user = std::string(input.column(_user_col));
     auto& user_history = _per_user_history->at(user);
 
     for (auto record = user_history.rbegin(); record != user_history.rend();
@@ -165,13 +160,12 @@ class UserItemHistoryBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(
-      const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
+  std::exception_ptr buildSegment(SingleInputRef& input,
+                                  SegmentedFeatureVector& vec) final {
     try {
-      auto user_str = std::string(input_row.at(_user_col));
-      auto item_str = std::string(input_row.at(_item_col));
-      auto timestamp_str = std::string(input_row.at(_timestamp_col));
+      auto user_str = std::string(input.column(_user_col));
+      auto item_str = std::string(input.column(_item_col));
+      auto timestamp_str = std::string(input.column(_timestamp_col));
 
       int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 
@@ -202,6 +196,10 @@ class UserItemHistoryBlock final : public Block {
       return std::current_exception();
     }
     return nullptr;
+  }
+
+  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+    return {&_user_col, &_item_col, &_timestamp_col};
   }
 
  private:
@@ -274,9 +272,9 @@ class UserItemHistoryBlock final : public Block {
                        user_history.end());
   }
 
-  uint32_t _user_col;
-  uint32_t _item_col;
-  uint32_t _timestamp_col;
+  ColumnIdentifier _user_col;
+  ColumnIdentifier _item_col;
+  ColumnIdentifier _timestamp_col;
   uint32_t _track_last_n;
   uint32_t _item_hash_range;
 

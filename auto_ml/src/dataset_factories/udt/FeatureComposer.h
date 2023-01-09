@@ -3,7 +3,6 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/unordered_map.hpp>
-#include "ColumnNumberMap.h"
 #include "DataTypes.h"
 #include "TemporalContext.h"
 #include "UDTConfig.h"
@@ -37,21 +36,19 @@ using ColumnVocabularies =
 
 class FeatureComposer {
  public:
-  static void verifyConfigIsValid(
-      const UDTConfig& config,
+  static UDTConfigPtr verifyConfigIsValid(
+      UDTConfigPtr&& config,
       const TemporalRelationships& temporal_relationships);
 
   static std::vector<dataset::BlockPtr> makeNonTemporalFeatureBlocks(
       const UDTConfig& config,
       const TemporalRelationships& temporal_relationships,
-      const ColumnNumberMap& column_numbers,
       const PreprocessedVectorsMap& vectors_map,
       uint32_t text_pairgrams_word_limit, bool contextual_columns);
 
   static std::vector<dataset::BlockPtr> makeTemporalFeatureBlocks(
       const UDTConfig& config,
       const TemporalRelationships& temporal_relationships,
-      const ColumnNumberMap& column_numbers,
       const PreprocessedVectorsMap& vectors_map, TemporalContext& context,
       bool should_update_history);
 
@@ -82,21 +79,20 @@ class FeatureComposer {
 
   static dataset::BlockPtr makeTemporalCategoricalBlock(
       uint32_t temporal_relationship_id, const UDTConfig& config,
-      TemporalContext& context, const ColumnNumberMap& column_numbers,
-      const TemporalConfig& temporal_config, const std::string& key_column,
-      const std::string& timestamp_column, bool should_update_history,
-      dataset::PreprocessedVectorsPtr vectors);
+      TemporalContext& context, const TemporalConfig& temporal_config,
+      const std::string& key_column, const std::string& timestamp_column,
+      bool should_update_history, dataset::PreprocessedVectorsPtr vectors);
 
   static dataset::BlockPtr makeTemporalNumericalBlock(
       uint32_t temporal_relationship_id, const UDTConfig& config,
-      TemporalContext& context, const ColumnNumberMap& column_numbers,
-      const TemporalConfig& temporal_config, const std::string& key_column,
-      const std::string& timestamp_column, bool should_update_history);
+      TemporalContext& context, const TemporalConfig& temporal_config,
+      const std::string& key_column, const std::string& timestamp_column,
+      bool should_update_history);
 
   static dataset::TabularHashFeaturesPtr makeTabularHashFeaturesBlock(
       const std::vector<dataset::TabularDataType>& tabular_datatypes,
       const std::unordered_map<uint32_t, std::pair<double, double>>& col_ranges,
-      const std::vector<std::string>& num_to_name, bool contextual_columns,
+      const std::vector<std::string>& column_names, bool contextual_columns,
       std::unordered_map<uint32_t, uint32_t> col_num_bins);
 
   static dataset::ThreadSafeVocabularyPtr& vocabForColumn(

@@ -230,10 +230,6 @@ void UniversalDeepTransformer::coldStartPretraining(
 
   train(data_source, train_config, /* validation= */ std::nullopt,
         /* max_in_memory_batches= */ std::nullopt);
-
-  // We reset the dataset factory in case the ordering of the label and text
-  // columns we assume here does not match the user's dataset.
-  udtDatasetFactory().resetDatasetFactory();
 }
 
 std::pair<OutputProcessorPtr, std::optional<dataset::RegressionBinningStrategy>>

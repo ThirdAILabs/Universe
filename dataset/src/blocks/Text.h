@@ -16,32 +16,33 @@ namespace thirdai::dataset {
  */
 class TextBlock : public Block {
  public:
-  explicit TextBlock(uint32_t col, uint32_t dim) : _dim(dim), _col(col) {}
+  explicit TextBlock(ColumnIdentifier col, uint32_t dim)
+      : _dim(dim), _col(std::move(col)) {}
 
   uint32_t featureDim() const final { return _dim; };
 
   bool isDense() const final { return false; };
 
-  uint32_t expectedNumColumns() const final { return _col + 1; };
-
-  Explanation explainIndex(
-      uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) final {
-    return {_col, getResponsibleWord(index_within_block, input_row.at(_col))};
+  Explanation explainIndex(uint32_t index_within_block,
+                           SingleInputRef& input) final {
+    return {_col, getResponsibleWord(index_within_block, input.column(_col))};
   }
 
   virtual std::string getResponsibleWord(
       uint32_t index, const std::string_view& text) const = 0;
 
  protected:
-  std::exception_ptr buildSegment(
-      const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
-    return encodeText(input_row.at(_col), vec);
+  std::exception_ptr buildSegment(SingleInputRef& input,
+                                  SegmentedFeatureVector& vec) final {
+    return encodeText(input.column(_col), vec);
   }
 
   virtual std::exception_ptr encodeText(std::string_view text,
                                         SegmentedFeatureVector& vec) = 0;
+
+  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+    return {&_col};
+  };
 
   uint32_t _dim;
 
@@ -49,7 +50,7 @@ class TextBlock : public Block {
   TextBlock() {}
 
  private:
-  uint32_t _col;
+  ColumnIdentifier _col;
 
   friend class cereal::access;
   template <typename Archive>
@@ -67,13 +68,14 @@ using TextBlockPtr = std::shared_ptr<TextBlock>;
 class PairGramTextBlock final : public TextBlock {
  public:
   explicit PairGramTextBlock(
-      uint32_t col, uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
-      : TextBlock(col, dim) {}
+      ColumnIdentifier col,
+      uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
+      : TextBlock(std::move(col), dim) {}
 
   static auto make(
-      uint32_t col,
+      ColumnIdentifier col,
       uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
-    return std::make_shared<PairGramTextBlock>(col, dim);
+    return std::make_shared<PairGramTextBlock>(std::move(col), dim);
   }
 
   std::string getResponsibleWord(uint32_t index,
@@ -117,14 +119,15 @@ using PairGramTextBlockPtr = std::shared_ptr<PairGramTextBlock>;
 class UniGramTextBlock final : public TextBlock {
  public:
   explicit UniGramTextBlock(
-      uint32_t col, uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+      ColumnIdentifier col,
+      uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
       char delimiter = ' ')
-      : TextBlock(col, dim), _delimiter(delimiter) {}
+      : TextBlock(std::move(col), dim), _delimiter(delimiter) {}
 
-  static auto make(uint32_t col,
+  static auto make(ColumnIdentifier col,
                    uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
                    char delimiter = ' ') {
-    return std::make_shared<UniGramTextBlock>(col, dim, delimiter);
+    return std::make_shared<UniGramTextBlock>(std::move(col), dim, delimiter);
   }
 
   std::string getResponsibleWord(uint32_t index,
@@ -169,14 +172,14 @@ using UniGramTextBlockPtr = std::shared_ptr<UniGramTextBlock>;
 class CharKGramTextBlock final : public TextBlock {
  public:
   CharKGramTextBlock(
-      uint32_t col, uint32_t k,
+      ColumnIdentifier col, uint32_t k,
       uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
-      : TextBlock(col, dim), _k(k) {}
+      : TextBlock(std::move(col), dim), _k(k) {}
 
   static auto make(
-      uint32_t col, uint32_t k,
+      ColumnIdentifier col, uint32_t k,
       uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM) {
-    return std::make_shared<CharKGramTextBlock>(col, k, dim);
+    return std::make_shared<CharKGramTextBlock>(std::move(col), k, dim);
   }
 
   std::string getResponsibleWord(uint32_t index,

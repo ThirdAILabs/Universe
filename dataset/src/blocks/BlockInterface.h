@@ -1,12 +1,19 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/types/optional.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/blocks/ColumnIdentifier.h>
+#include <dataset/src/blocks/ColumnNumberMap.h>
+#include <dataset/src/blocks/InputTypes.h>
+#include <algorithm>
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -45,6 +52,16 @@ struct Explanation {
       : column_number(0),
         keyword(std::move(keyword)),
         column_name(std::move(column_name)) {}
+
+  Explanation(const ColumnIdentifier& column_identifier, std::string keyword)
+      : keyword(std::move(keyword)) {
+    if (column_identifier.hasName()) {
+      column_name = column_identifier.name();
+    }
+    if (column_identifier.hasNumber()) {
+      column_number = column_identifier.number();
+    }
+  }
 
   std::string toString() const {
     std::stringstream s;
@@ -171,15 +188,45 @@ class Block {
    *
    * Returns:
    * exception_ptr: Since blocks can run in parallel in pragma
-   * threads, they can't throw their own exceptions. To fail in a block, return
-   * any exception_ptr and proceed with program execution without failing. The
-   * error should then be caught.
+   * threads, they can't throw their own exceptions. To fail in a block,
+   * return any exception_ptr and proceed with program execution without
+   * failing. The error should then be caught.
    */
-  std::exception_ptr addVectorSegment(
-      const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) {
+  std::exception_ptr addVectorSegment(SingleInputRef& input,
+                                      SegmentedFeatureVector& vec) {
     vec.addFeatureSegment(featureDim());
-    return buildSegment(input_row, vec);
+    return buildSegment(input, vec);
+  }
+
+  void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
+    for (auto* column_identifier : getColumnIdentifiers()) {
+      column_identifier->updateColumnNumber(column_number_map);
+    }
+  }
+
+  void verifyConsistentColumnIdentifiers() {
+    auto column_identifiers = getColumnIdentifiers();
+    if (column_identifiers.empty()) {
+      return;
+    }
+
+    auto first_column_identifier_has_column_numbers =
+        column_identifiers.front()->hasNumber();
+    for (const auto& column_identifier : column_identifiers) {
+      if (column_identifier->hasNumber() !=
+          first_column_identifier_has_column_numbers) {
+        throw std::invalid_argument(
+            "Columns must  be either all initialized with a name or all "
+            "initialized with a number.");
+      }
+    }
+  }
+
+  bool hasColumnNumbers() {
+    if (getColumnIdentifiers().empty()) {
+      return false;
+    }
+    return getColumnIdentifiers().front()->hasNumber();
   }
 
   /**
@@ -196,15 +243,23 @@ class Block {
    * Returns the minimum number of columns that the block expects
    * to see in each row of the dataset.
    */
-  virtual uint32_t expectedNumColumns() const = 0;
-
-  virtual void prepareForBatch(const std::vector<std::string_view>& first_row) {
-    (void)first_row;
+  uint32_t expectedNumColumns() {
+    if (!hasColumnNumbers()) {
+      return 0;
+    }
+    uint32_t expected_num_columns = 0;
+    for (auto* column_identifier : getColumnIdentifiers()) {
+      expected_num_columns =
+          std::max(expected_num_columns, column_identifier->number());
+    }
+    return expected_num_columns;
   }
 
+  virtual void prepareForBatch(SingleInputRef& first_row) { (void)first_row; }
+
   /**
-   * For a given index, get the keyword which falls in that index when building
-   * the segmented feature vector.
+   * For a given index, get the keyword which falls in that index when
+   * building the segmented feature vector.
    *
    * Arguments:
    * index_within_block : index within the block so that we can get exact
@@ -214,11 +269,13 @@ class Block {
    * buildsegment , which may affect thread safety.
    *
    * Returns:
-   * column number and keyword responsible for the given index from that column.
+   * column number and keyword responsible for the given index from that
+   * column.
    */
-  virtual Explanation explainIndex(
-      uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) = 0;
+  virtual Explanation explainIndex(uint32_t index_within_block,
+                                   SingleInputRef& input_row) = 0;
+
+  virtual std::vector<ColumnIdentifier*> getColumnIdentifiers() = 0;
 
   virtual ~Block() = default;
 
@@ -230,15 +287,111 @@ class Block {
    * WARNING: This function may be called in many threads simultaneously,
    * so it should be thread-safe or robust to data races.
    */
-  virtual std::exception_ptr buildSegment(
-      const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) = 0;
+  virtual std::exception_ptr buildSegment(SingleInputRef& input_row,
+                                          SegmentedFeatureVector& vec) = 0;
 
  private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     (void)archive;
+  }
+};
+
+struct BlockList {
+  explicit BlockList(std::vector<BlockPtr>&& blocks)
+      : _blocks(blocks),
+        _are_dense(computeIsDense(_blocks)),
+        _feature_dim(computeFeatureDim(_blocks)),
+        _expected_num_columns(allBlocksHaveColumnNumbers(_blocks)
+                                  ? computeExpectedNumColumns(_blocks)
+                                  : 0) {}
+
+  BlockList() {}
+
+  auto operator[](uint32_t index) { return _blocks[index]; }
+
+  void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
+    for (const auto& block : _blocks) {
+      block->updateColumnNumbers(column_number_map);
+    }
+    _expected_num_columns = computeExpectedNumColumns(_blocks);
+  }
+
+  void prepareForBatch(SingleInputRef& first_sample) {
+    for (const auto& block : _blocks) {
+      block->prepareForBatch(first_sample);
+    }
+  }
+
+  std::exception_ptr addVectorSegment(
+      SingleInputRef& sample, SegmentedFeatureVector& segmented_vector) {
+    for (auto& block : _blocks) {
+      if (auto err = block->addVectorSegment(sample, segmented_vector)) {
+        return err;
+      }
+    }
+    return nullptr;
+  }
+
+  bool areDense() const { return _are_dense; }
+
+  uint32_t featureDim() const { return _feature_dim; }
+
+  uint32_t expectedNumColumns() const { return _expected_num_columns; }
+
+ private:
+  static bool computeIsDense(const std::vector<BlockPtr>& blocks) {
+    return std::all_of(
+        blocks.begin(), blocks.end(),
+        [](const std::shared_ptr<Block>& block) { return block->isDense(); });
+  }
+
+  static bool allBlocksHaveColumnNumbers(const std::vector<BlockPtr>& blocks) {
+    if (blocks.empty()) {
+      return false;
+    }
+
+    auto first_block_has_column_numbers = blocks.front()->hasColumnNumbers();
+    for (const auto& block : blocks) {
+      if (block->hasColumnNumbers() != first_block_has_column_numbers) {
+        throw std::invalid_argument(
+            "Blocks must be either all initialized with a column name or all "
+            "initialized with a column number.");
+      }
+    }
+
+    return first_block_has_column_numbers;
+  }
+
+  static uint32_t computeExpectedNumColumns(
+      const std::vector<BlockPtr>& blocks) {
+    uint32_t max_expected_columns = 0;
+    for (const auto& block : blocks) {
+      max_expected_columns =
+          std::max(max_expected_columns, block->expectedNumColumns());
+    }
+    return max_expected_columns;
+  }
+
+  static uint32_t computeFeatureDim(const std::vector<BlockPtr>& blocks) {
+    uint32_t dim = 0;
+    for (const auto& block : blocks) {
+      dim += block->featureDim();
+    }
+    return dim;
+  }
+
+  std::vector<BlockPtr> _blocks;
+  bool _are_dense;
+  uint32_t _feature_dim;
+  uint32_t _expected_num_columns;
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_blocks, _are_dense, _expected_num_columns, _feature_dim);
   }
 };
 

@@ -9,7 +9,6 @@
 #include <bolt/src/utils/ProgressBar.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/MinHash.h>
-#include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
@@ -33,8 +32,8 @@
 
 namespace thirdai::automl::models {
 
-using data::ColumnNumberMap;
-using data::ColumnNumberMapPtr;
+using dataset::ColumnNumberMap;
+using dataset::ColumnNumberMapPtr;
 using search::Flash;
 
 class QueryCandidateGeneratorConfig {
@@ -519,14 +518,10 @@ class QueryCandidateGenerator {
   }
 
   BoltVector featurizeSingleQuery(const std::string& query) const {
-    BoltVector output_vector;
     std::vector<std::string_view> input_vector{
         std::string_view(query.data(), query.length())};
-    if (auto exception = _inference_batch_processor->makeInputVector(
-            input_vector, output_vector)) {
-      std::rethrow_exception(exception);
-    }
-    return output_vector;
+    dataset::SingleRowInputRef input_vector_ref(input_vector);
+    return _inference_batch_processor->makeInputVector(input_vector_ref);
   }
 
   std::shared_ptr<dataset::BoltDataset> loadDatasetInMemory(
