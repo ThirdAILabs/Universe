@@ -76,8 +76,11 @@ metrics::History Trainer::train(
 
     train_metrics.updateHistory(_history, /*prefix= */ "train_");
 
-    bar.close(formatTrainLogLine(train_metrics.summarizeLastStep(), num_batches,
-                                 between(epoch_start, epoch_end)));
+    std::string log_line =
+        formatTrainLogLine(train_metrics.summarizeLastStep(), num_batches,
+                           between(epoch_start, epoch_end));
+    bar.close(log_line);
+    logging::info(log_line);
 
     train_metrics.reset();
 
@@ -120,8 +123,11 @@ void Trainer::validate(const LabeledDataset& validation_data,
 
   validation_metrics.updateHistory(_history, /* prefix= */ "val_");
 
-  bar.close(formatValidateLogLine(validation_metrics.summarizeLastStep(),
-                                  num_batches, between(val_start, val_end)));
+  std::string log_line =
+      formatValidateLogLine(validation_metrics.summarizeLastStep(), num_batches,
+                            between(val_start, val_end));
+  bar.close(log_line);
+  logging::info(log_line);
 
   validation_metrics.reset();
 }
