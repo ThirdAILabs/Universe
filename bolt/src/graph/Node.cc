@@ -46,7 +46,7 @@ void Node::prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) {
   prepareForBatchProcessingImpl(batch_size, use_sparsity);
 
   if (batch_size > 0 && getOutputVector(0).len == 0) {
-    throw std::invalid_argument(
+    throw std::runtime_error(
         "Node: '" + name() +
         "' allocated with output dimension=0. Please check that the the "
         "dimensions of nodes are nonzero, and that the dimension will be "
