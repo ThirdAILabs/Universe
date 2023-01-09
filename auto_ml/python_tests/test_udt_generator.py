@@ -102,6 +102,10 @@ def transform_queries(dataframe: pd.DataFrame) -> pd.DataFrame:
 @pytest.fixture(scope="session")
 def prepared_datasets(grammar_correction_dataset) -> None:
     transformed_queries = transform_queries(dataframe=grammar_correction_dataset)
+
+    # TODO(Geordie): Fix this when the new CSV parser is in
+    transformed_queries = transformed_queries.replace(",", "", regex=True)
+
     transformed_queries.to_csv(
         TRAIN_SOURCE_TARGET_FILE,
         columns=["target_column", "source_column"],

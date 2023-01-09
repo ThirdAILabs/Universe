@@ -15,7 +15,7 @@ namespace py = pybind11;
 
 namespace thirdai::automl::models {
 
-void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
+void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
                           bolt::TrainConfig& train_config,
                           const std::optional<ValidationOptions>& validation,
                           std::optional<uint32_t> max_in_memory_batches) {
@@ -43,7 +43,7 @@ void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
     if (validation && !validation->metrics().empty()) {
       std::optional<float> threshold =
           tuneBinaryClassificationPredictionThreshold(
-              /* data_source= */ dataset::SimpleFileDataLoader::make(
+              /* data_source= */ dataset::SimpleFileDataSource::make(
                   validation->filename(), DEFAULT_EVALUATE_BATCH_SIZE),
               /* metric_name= */ validation->metrics().at(0));
 
@@ -68,7 +68,7 @@ void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
 }
 
 py::object ModelPipeline::evaluate(
-    const dataset::DataLoaderPtr& data_source,
+    const dataset::DataSourcePtr& data_source,
     std::optional<bolt::EvalConfig>& eval_config_opt,
     bool return_predicted_class, bool return_metrics) {
   auto start_time = std::chrono::system_clock::now();
@@ -203,7 +203,7 @@ std::vector<dataset::Explanation> ModelPipeline::explain(
 // We take in the TrainConfig by value to copy it so we can modify the number
 // epochs.
 void ModelPipeline::trainInMemory(
-    data::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+    dataset::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
     const std::optional<ValidationOptions>& validation) {
   auto loaded_data = dataset->loadInMemory(ALL_BATCHES);
   if (!loaded_data) {
@@ -213,7 +213,7 @@ void ModelPipeline::trainInMemory(
 
   if (validation) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
-        dataset::SimpleFileDataLoader::make(validation->filename(),
+        dataset::SimpleFileDataSource::make(validation->filename(),
                                             DEFAULT_EVALUATE_BATCH_SIZE),
         /* training= */ false);
 
@@ -243,7 +243,7 @@ void ModelPipeline::trainInMemory(
 // We take in the TrainConfig by value to copy it so we can modify the number
 // epochs.
 void ModelPipeline::trainOnStream(
-    data::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+    dataset::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
     uint32_t max_in_memory_batches,
     const std::optional<ValidationOptions>& validation) {
   /**
@@ -261,7 +261,7 @@ void ModelPipeline::trainOnStream(
    */
   if (validation && !_dataset_factory->hasTemporalTracking()) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
-        dataset::SimpleFileDataLoader::make(validation->filename(),
+        dataset::SimpleFileDataSource::make(validation->filename(),
                                             DEFAULT_EVALUATE_BATCH_SIZE),
         /* training= */ false);
 
@@ -296,7 +296,7 @@ void ModelPipeline::trainOnStream(
 }
 
 void ModelPipeline::trainSingleEpochOnStream(
-    data::DatasetLoaderPtr& dataset, const bolt::TrainConfig& train_config,
+    dataset::DatasetLoaderPtr& dataset, const bolt::TrainConfig& train_config,
     uint32_t max_in_memory_batches) {
   while (auto datasets = dataset->loadInMemory(max_in_memory_batches)) {
     auto& [data, labels] = datasets.value();
@@ -321,7 +321,7 @@ void ModelPipeline::updateRehashRebuildInTrainConfig(
 }
 
 std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
-    const dataset::DataLoaderPtr& data_source, const std::string& metric_name) {
+    const dataset::DataSourcePtr& data_source, const std::string& metric_name) {
   uint32_t num_batches =
       MAX_SAMPLES_FOR_THRESHOLD_TUNING / data_source->getMaxBatchSize();
 

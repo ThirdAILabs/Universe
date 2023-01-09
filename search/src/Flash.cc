@@ -5,6 +5,7 @@
 #include <dataset/src/InMemoryDataset.h>
 #include <licensing/src/CheckLicense.h>
 #include <search/src/Flash.h>
+#include <utils/Logging.h>
 #include <algorithm>
 #include <memory>
 #include <optional>
@@ -60,19 +61,6 @@ void Flash<LABEL_T>::addDataset(
     bar->close(
         /* comment = */ fmt::format("train | batches {} | complete",
                                     num_batches));
-  }
-}
-
-template <typename LABEL_T>
-void Flash<LABEL_T>::addDataset(
-    dataset::StreamingDataset<BoltBatch>& dataset,
-    const std::vector<std::vector<LABEL_T>>& labels) {
-  uint32_t batch_index = 0;
-  while (auto batch_tuple = dataset.nextBatchTuple()) {
-    const auto& batch = std::get<0>(batch_tuple.value());
-
-    addBatch(batch, labels[batch_index]);
-    batch_index++;
   }
 }
 

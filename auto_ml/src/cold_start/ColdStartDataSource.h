@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dataset/src/DataLoader.h>
+#include <dataset/src/DataSource.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <memory>
 #include <optional>
@@ -10,9 +10,9 @@
 
 namespace thirdai::automl::cold_start {
 
-class ColdStartDataLoader final : public dataset::DataLoader {
+class ColdStartDataSource final : public dataset::DataSource {
  public:
-  ColdStartDataLoader(const thirdai::data::ColumnMap& column_map,
+  ColdStartDataSource(const thirdai::data::ColumnMap& column_map,
                       std::string text_column_name,
                       std::string label_column_name, uint32_t batch_size,
                       char column_delimiter,
@@ -22,7 +22,7 @@ class ColdStartDataLoader final : public dataset::DataLoader {
                    std::string text_column_name, std::string label_column_name,
                    uint32_t batch_size, char column_delimiter,
                    std::optional<char> label_delimiter) {
-    return std::make_shared<ColdStartDataLoader>(
+    return std::make_shared<ColdStartDataSource>(
         column_map, std::move(text_column_name), std::move(label_column_name),
         batch_size, column_delimiter, label_delimiter);
   }

@@ -226,9 +226,9 @@ MetricData BoltGraph::train(
       }
 
       auto train_end = std::chrono::high_resolution_clock::now();
-      int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
-                               train_end - train_start)
-                               .count();
+      int64_t epoch_time =
+          std::chrono::ceil<std::chrono::seconds>(train_end - train_start)
+              .count();
 
       std::string logline = fmt::format(
           "train | epoch {} | train_steps {} | {} | train_batches {} | time "
@@ -811,8 +811,8 @@ void BoltGraph::verifyCanPredict(const DatasetContextBase& predict_context,
   }
   if (!returning_activations && num_metrics_tracked == 0) {
     throw std::invalid_argument(
-        "Doing inference without returning activations and no metrics is a "
-        "NOOP");
+        "Doing evaluation without metrics or activations is a no-op. "
+        "Did you forget to specify this in the EvalConfig?");
   }
 
   verifyInputForGraph(predict_context);

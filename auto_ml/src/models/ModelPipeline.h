@@ -11,7 +11,7 @@
 #include <auto_ml/src/deployment_config/DeploymentConfig.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/deployment_config/TrainEvalParameters.h>
-#include <dataset/src/DataLoader.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <exceptions/src/Exceptions.h>
 #include <pybind11/pybind11.h>
@@ -84,7 +84,7 @@ class ModelPipeline {
       const std::unordered_map<std::string, deployment::UserParameterInput>&
           user_specified_parameters) {
     auto [dataset_factory, model] =
-        config->createDataLoaderAndModel(user_specified_parameters);
+        config->createDataSourceAndModel(user_specified_parameters);
     return ModelPipeline(
         std::move(dataset_factory), std::move(model),
         CategoricalOutputProcessor::make(
@@ -102,7 +102,7 @@ class ModelPipeline {
    * loaded with temporal tracking in UDT. See comment in trainOnStream for more
    * details.
    */
-  void train(const std::shared_ptr<dataset::DataLoader>& data_source,
+  void train(const std::shared_ptr<dataset::DataSource>& data_source,
              bolt::TrainConfig& train_config,
              const std::optional<ValidationOptions>& validation,
              std::optional<uint32_t> max_in_memory_batches);
@@ -112,7 +112,7 @@ class ModelPipeline {
    * specifed in the EvalConfig. Returns the activations of the final layer by
    * default, returns metrics if return_metrics = true.
    */
-  py::object evaluate(const dataset::DataLoaderPtr& data_source,
+  py::object evaluate(const dataset::DataSourcePtr& data_source,
                       std::optional<bolt::EvalConfig>& eval_config_opt,
                       bool return_predicted_class, bool return_metrics);
 
@@ -190,7 +190,7 @@ class ModelPipeline {
   /**
    * Performs in memory training on the given dataset.
    */
-  void trainInMemory(data::DatasetLoaderPtr& dataset,
+  void trainInMemory(dataset::DatasetLoaderPtr& dataset,
                      bolt::TrainConfig train_config,
                      const std::optional<ValidationOptions>& validation);
 
@@ -200,7 +200,7 @@ class ModelPipeline {
    * training data if temporal tracking is used in UDT but it is not simple to
    * load validation data after training data for a streaming dataset.
    */
-  void trainOnStream(data::DatasetLoaderPtr& dataset,
+  void trainOnStream(dataset::DatasetLoaderPtr& dataset,
                      bolt::TrainConfig train_config,
                      uint32_t max_in_memory_batches,
                      const std::optional<ValidationOptions>& validation);
@@ -208,7 +208,7 @@ class ModelPipeline {
   /**
    * Helper for processing a streaming dataset in chunks for a single epoch.
    */
-  void trainSingleEpochOnStream(data::DatasetLoaderPtr& dataset,
+  void trainSingleEpochOnStream(dataset::DatasetLoaderPtr& dataset,
                                 const bolt::TrainConfig& train_config,
                                 uint32_t max_in_memory_batches);
 
@@ -248,7 +248,7 @@ class ModelPipeline {
    * shuffle the data to obtain the batches.
    */
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
-      const dataset::DataLoaderPtr& data_source,
+      const dataset::DataSourcePtr& data_source,
       const std::string& metric_name);
 
   friend class cereal::access;

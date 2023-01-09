@@ -2,7 +2,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -14,7 +14,7 @@
 
 namespace thirdai::dataset {
 
-class StreamingGenericDatasetLoaderTests : public ::testing::Test {
+class TabularDatasetLoaderTests : public ::testing::Test {
  public:
   // We need this custom setup method to be called at the beginning of every
   // test with a different file name so that we can safely run tests in parallel
@@ -27,8 +27,8 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
 
   void TearDown() override { ASSERT_FALSE(remove(_mock_file_name.c_str())); }
 
-  static StreamingGenericDatasetLoader makeMockPipeline(bool shuffle,
-                                                        uint32_t seed = 0) {
+  static TabularDatasetLoader makeMockPipeline(bool shuffle,
+                                               uint32_t seed = 0) {
     auto mock_block =
         std::make_shared<MockBlock>(/* column = */ 0, /* dense = */ true);
 
@@ -39,30 +39,28 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     std::vector<std::shared_ptr<Block>> input_blocks({mock_block, mock_block});
     std::vector<std::shared_ptr<Block>> label_blocks({mock_block});
 
-    return {_mock_file_name,
-            input_blocks,
-            label_blocks,
-            batch_size,
-            shuffle,
-            DatasetShuffleConfig(n_batches_in_shuffle_buffer, seed)};
+    auto data_source =
+        std::make_shared<SimpleFileDataSource>(_mock_file_name, batch_size);
+
+    return TabularDatasetLoader(
+        data_source, input_blocks, label_blocks, shuffle,
+        DatasetShuffleConfig(n_batches_in_shuffle_buffer, seed));
   }
 
-  static std::tuple<BoltDatasetPtr, BoltDatasetPtr> streamToInMemoryDataset(
-      StreamingGenericDatasetLoader&& pipeline) {
+  static std::vector<BoltDatasetPtr> streamToInMemoryDataset(
+      TabularDatasetLoader&& pipeline) {
     std::vector<BoltBatch> input_batches;
     std::vector<BoltBatch> label_batches;
-    while (auto batch = pipeline.nextBatchTuple()) {
-      auto [input_batch, label_batch] = std::move(batch.value());
-      input_batches.push_back(std::move(input_batch));
-      label_batches.push_back(std::move(label_batch));
+    while (auto batch = pipeline.nextBatchVector()) {
+      input_batches.push_back(std::move(batch->at(0)));
+      label_batches.push_back(std::move(batch->at(1)));
     }
     return {std::make_shared<BoltDataset>(std::move(input_batches)),
             std::make_shared<BoltDataset>(std::move(label_batches))};
   }
 
-  static void assertCorrectVectors(
-      std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset) {
-    const auto& [inputs, labels] = dataset;
+  static void assertCorrectVectors(const BoltDatasetPtr& inputs,
+                                   const BoltDatasetPtr& labels) {
     std::vector<bool> found(inputs->len());
 
     for (size_t batch_idx = 0; batch_idx < inputs->numBatches(); batch_idx++) {
@@ -86,9 +84,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     }
   }
 
-  static bool isOrdered(std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset) {
-    const auto& [inputs, _] = dataset;
-
+  static bool isOrdered(const BoltDatasetPtr& inputs) {
     // Expected activation of i-th vector = i.
     float cur_expected_value = 0.0;
 
@@ -105,11 +101,8 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     return true;
   }
 
-  static bool sameOrder(std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset_1,
-                        std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset_2) {
-    const auto& [inputs_1, _1] = dataset_1;
-    const auto& [inputs_2, _2] = dataset_2;
-
+  static bool sameOrder(const BoltDatasetPtr& inputs_1,
+                        const BoltDatasetPtr& inputs_2) {
     for (size_t batch_idx = 0; batch_idx < inputs_1->numBatches();
          batch_idx++) {
       auto& input_batch_1 = inputs_1->at(batch_idx);
@@ -125,10 +118,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     return true;
   }
 
-  static void assertShuffledEnough(
-      std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset) {
-    const auto& [inputs, _] = dataset;
-
+  static void assertShuffledEnough(const BoltDatasetPtr& inputs) {
     // Defined as the number of batches between a vector's
     // original batch and its final batch.
     uint32_t max_vector_displacement = 0;
@@ -245,54 +235,51 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
   static constexpr uint32_t n_batches_in_shuffle_buffer = 10;
 };
 
-TEST_F(StreamingGenericDatasetLoaderTests, CorrectUnshuffledInMemoryData) {
-  StreamingGenericDatasetLoaderTests::setUp("mock0.txt");
+TEST_F(TabularDatasetLoaderTests, CorrectUnshuffledInMemoryData) {
+  TabularDatasetLoaderTests::setUp("mock0.txt");
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ false);
   auto in_memory_data = unshuffled_pipeline.loadInMemory();
-  assertCorrectVectors(in_memory_data);
-  ASSERT_TRUE(isOrdered(in_memory_data));
+  assertCorrectVectors(in_memory_data.first.at(0), in_memory_data.second);
+  ASSERT_TRUE(isOrdered(in_memory_data.first.at(0)));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests, CorrectUnshuffledStreamedData) {
-  StreamingGenericDatasetLoaderTests::setUp("mock1.txt");
+TEST_F(TabularDatasetLoaderTests, CorrectUnshuffledStreamedData) {
+  TabularDatasetLoaderTests::setUp("mock1.txt");
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ false);
   auto streamed_data = streamToInMemoryDataset(std::move(unshuffled_pipeline));
-  assertCorrectVectors(streamed_data);
-  ASSERT_TRUE(isOrdered(streamed_data));
+  assertCorrectVectors(streamed_data.at(0), streamed_data.at(1));
+  ASSERT_TRUE(isOrdered(streamed_data.at(0)));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests,
-       CorrectVectorsInShuffledInMemoryData) {
-  StreamingGenericDatasetLoaderTests::setUp("mock2.txt");
+TEST_F(TabularDatasetLoaderTests, CorrectVectorsInShuffledInMemoryData) {
+  TabularDatasetLoaderTests::setUp("mock2.txt");
   auto shuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto in_memory_data = shuffled_pipeline.loadInMemory();
-  assertCorrectVectors(in_memory_data);
-  ASSERT_FALSE(isOrdered(in_memory_data));
+  assertCorrectVectors(in_memory_data.first.at(0), in_memory_data.second);
+  ASSERT_FALSE(isOrdered(in_memory_data.first.at(0)));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests,
-       CorrectVectorsInShuffledStreamedData) {
-  StreamingGenericDatasetLoaderTests::setUp("mock3.txt");
+TEST_F(TabularDatasetLoaderTests, CorrectVectorsInShuffledStreamedData) {
+  TabularDatasetLoaderTests::setUp("mock3.txt");
   auto shuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto streamed_data = streamToInMemoryDataset(std::move(shuffled_pipeline));
-  assertCorrectVectors(streamed_data);
-  ASSERT_FALSE(isOrdered(streamed_data));
+  assertCorrectVectors(streamed_data.at(0), streamed_data.at(1));
+  ASSERT_FALSE(isOrdered(streamed_data.at(0)));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests,
-       ShuffledInMemoryDataSameSeedSameOrder) {
-  StreamingGenericDatasetLoaderTests::setUp("mock4.txt");
+TEST_F(TabularDatasetLoaderTests, ShuffledInMemoryDataSameSeedSameOrder) {
+  TabularDatasetLoaderTests::setUp("mock4.txt");
   uint32_t seed = 10;
   auto shuffled_pipeline_1 = makeMockPipeline(/* shuffle = */ true, seed);
   auto shuffled_pipeline_2 = makeMockPipeline(/* shuffle = */ true, seed);
   auto in_memory_data_1 = shuffled_pipeline_1.loadInMemory();
   auto in_memory_data_2 = shuffled_pipeline_2.loadInMemory();
-  ASSERT_TRUE(sameOrder(in_memory_data_1, in_memory_data_2));
+  ASSERT_TRUE(
+      sameOrder(in_memory_data_1.first.at(0), in_memory_data_2.first.at(0)));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests,
-       ShuffledStreamedDataSameSeedSameOrder) {
-  StreamingGenericDatasetLoaderTests::setUp("mock5.txt");
+TEST_F(TabularDatasetLoaderTests, ShuffledStreamedDataSameSeedSameOrder) {
+  TabularDatasetLoaderTests::setUp("mock5.txt");
   uint32_t seed = 10;
   auto shuffled_pipeline_1 = makeMockPipeline(/* shuffle = */ true, seed);
   auto shuffled_pipeline_2 = makeMockPipeline(/* shuffle = */ true, seed);
@@ -300,24 +287,25 @@ TEST_F(StreamingGenericDatasetLoaderTests,
       streamToInMemoryDataset(std::move(shuffled_pipeline_1));
   auto streamed_data_2 =
       streamToInMemoryDataset(std::move(shuffled_pipeline_2));
-  ASSERT_TRUE(sameOrder(streamed_data_1, streamed_data_2));
+  ASSERT_TRUE(sameOrder(streamed_data_1.at(0), streamed_data_2.at(0)));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests,
+TEST_F(TabularDatasetLoaderTests,
        ShuffledInMemoryDataDifferentSeedDifferentOrder) {
-  StreamingGenericDatasetLoaderTests::setUp("mock6.txt");
+  TabularDatasetLoaderTests::setUp("mock6.txt");
   auto shuffled_pipeline_1 =
       makeMockPipeline(/* shuffle = */ true, /* seed = */ 1);
   auto shuffled_pipeline_2 =
       makeMockPipeline(/* shuffle = */ true, /* seed = */ 2);
   auto in_memory_data_1 = shuffled_pipeline_1.loadInMemory();
   auto in_memory_data_2 = shuffled_pipeline_2.loadInMemory();
-  ASSERT_FALSE(sameOrder(in_memory_data_1, in_memory_data_2));
+  ASSERT_FALSE(
+      sameOrder(in_memory_data_1.first.at(0), in_memory_data_2.first.at(0)));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests,
+TEST_F(TabularDatasetLoaderTests,
        ShuffledStreamedDataDifferentSeedDifferentOrder) {
-  StreamingGenericDatasetLoaderTests::setUp("mock7.txt");
+  TabularDatasetLoaderTests::setUp("mock7.txt");
   auto shuffled_pipeline_1 =
       makeMockPipeline(/* shuffle = */ true, /* seed = */ 1);
   auto shuffled_pipeline_2 =
@@ -326,23 +314,21 @@ TEST_F(StreamingGenericDatasetLoaderTests,
       streamToInMemoryDataset(std::move(shuffled_pipeline_1));
   auto streamed_data_2 =
       streamToInMemoryDataset(std::move(shuffled_pipeline_2));
-  ASSERT_FALSE(sameOrder(streamed_data_1, streamed_data_2));
+  ASSERT_FALSE(sameOrder(streamed_data_1.at(0), streamed_data_2.at(0)));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests,
-       ShuffledInMemoryDataIsShuffledEnough) {
-  StreamingGenericDatasetLoaderTests::setUp("mock8.txt");
+TEST_F(TabularDatasetLoaderTests, ShuffledInMemoryDataIsShuffledEnough) {
+  TabularDatasetLoaderTests::setUp("mock8.txt");
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto in_memory_data = unshuffled_pipeline.loadInMemory();
-  assertShuffledEnough(in_memory_data);
+  assertShuffledEnough(in_memory_data.first.at(0));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests,
-       ShuffledStreamedDataIsShuffledEnough) {
-  StreamingGenericDatasetLoaderTests::setUp("mock9.txt");
+TEST_F(TabularDatasetLoaderTests, ShuffledStreamedDataIsShuffledEnough) {
+  TabularDatasetLoaderTests::setUp("mock9.txt");
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto streamed_data = streamToInMemoryDataset(std::move(unshuffled_pipeline));
-  assertShuffledEnough(streamed_data);
+  assertShuffledEnough(streamed_data.at(0));
 }
 
 }  // namespace thirdai::dataset

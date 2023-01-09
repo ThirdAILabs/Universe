@@ -18,12 +18,13 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
-#include <dataset/src/DataLoader.h>
-#include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
@@ -80,8 +81,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         contextual_columns, regression_binning);
   }
 
-  DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader, bool training) final;
+  dataset::DatasetLoaderPtr getLabeledDatasetLoader(
+      std::shared_ptr<dataset::DataSource> data_source, bool training) final;
 
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
     return featurizeInputImpl(input, /* should_update_history= */ false);
@@ -187,14 +188,14 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const std::string& col_name, const CategoricalDataTypePtr& categorical);
 
   static ColumnNumberMapPtr makeColumnNumberMap(
-      dataset::DataLoader& data_loader, char delimiter);
+      dataset::DataSource& data_source, char delimiter);
 
   std::vector<dataset::BlockPtr> buildMetadataInputBlocks(
       const CategoricalMetadataConfig& metadata_config,
       const ColumnNumberMap& column_numbers) const;
 
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
-      dataset::StreamingGenericDatasetLoader& dataset,
+      dataset::TabularDatasetLoader& dataset,
       dataset::ThreadSafeVocabulary& key_vocab);
 
   template <typename InputType>
@@ -222,13 +223,14 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   std::vector<BoltBatch> featurizeInputBatchImpl(const LineInputBatch& inputs,
                                                  bool should_update_history) {
     verifyProcessorsAreInitialized();
-    auto [input_batch, _] =
-        getProcessor(should_update_history).createBatch(inputs);
+    auto batches = getProcessor(should_update_history).createBatch(inputs);
+
+    // TODO(any): This assumes we will have just one input batch
 
     // We cannot use the initializer list because the copy constructor is
     // deleted for BoltBatch.
     std::vector<BoltBatch> batch_list;
-    batch_list.emplace_back(std::move(input_batch));
+    batch_list.emplace_back(std::move(batches.at(0)));
     return batch_list;
   }
 
