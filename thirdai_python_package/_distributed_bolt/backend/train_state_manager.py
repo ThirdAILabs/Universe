@@ -149,6 +149,7 @@ class TrainStateManager:
         Calls primary worker to complete the communication
         and then asks all the worker to recieve the updated gradients in their networks
         """
+
         start_communication_time = time.time()
         if self.communication_type == "linear":
             self.run_linear_cluster_communication()

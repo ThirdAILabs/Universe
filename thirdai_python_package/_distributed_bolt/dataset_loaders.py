@@ -95,6 +95,7 @@ class UDTDatasetLoader(DatasetLoader):
         return self.next_count
 
     def restart(self):
+        self.next_count = 0
         self.generator.restart()
 
 
@@ -148,6 +149,7 @@ class GenericInMemoryDatasetLoader(DatasetLoader):
         return self.next_count
 
     def restart(self):
+        self.next_count = 0
         self.generated_for_this_epoch = False
 
 
@@ -224,4 +226,5 @@ class TabularDatasetLoader(DatasetLoader):
         return self.next_count
 
     def restart(self):
+        self.next_count = 0
         self.column_map_generator.restart()

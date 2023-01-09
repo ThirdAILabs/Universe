@@ -3,7 +3,7 @@ from thirdai._distributed_bolt.backend.worker import Worker
 from thirdai._thirdai import bolt
 
 
-@ray.remote(max_restarts=2)
+@ray.remote(max_restarts=1, max_task_retries=-1)
 class PrimaryWorker(Worker):
     """
     This is a ray remote class(Actor). Read about them here.
