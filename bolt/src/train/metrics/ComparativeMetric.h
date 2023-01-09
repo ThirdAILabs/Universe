@@ -7,6 +7,9 @@
 
 namespace thirdai::bolt::train::metrics {
 
+/**
+ * Implementation helper for metrics which directly compare two bolt vectors.
+ */
 class ComparativeMetric : public Metric {
  public:
   void record(uint32_t index_in_batch) final;
@@ -20,6 +23,10 @@ class ComparativeMetric : public Metric {
   virtual ~ComparativeMetric() = default;
 
  protected:
+  /**
+   * Metrics implementing this class must implement this simplified record
+   * function.
+   */
   virtual void record(const BoltVector& output, const BoltVector& label) = 0;
 
  private:

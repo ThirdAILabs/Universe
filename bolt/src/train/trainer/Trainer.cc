@@ -29,7 +29,8 @@ metrics::History Trainer::train(
   metrics::MetricList train_metrics(train_metrics_in, _model);
   metrics::MetricList validation_metrics(validation_metrics_in, _model);
 
-  callbacks::CallbackList callbacks(callbacks_in, _model, train_state);
+  callbacks::CallbackList callbacks(callbacks_in, _model, train_state,
+                                    _history);
 
   callbacks.onTrainBegin();
 

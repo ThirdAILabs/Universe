@@ -5,6 +5,9 @@
 
 namespace thirdai::bolt::train::metrics {
 
+/**
+ * Computes the categorical accuracy (precision@1) for the given output.
+ */
 class CategoricalAccuracy final : public ComparativeMetric {
  public:
   CategoricalAccuracy();

@@ -6,6 +6,9 @@
 
 namespace thirdai::bolt::train::metrics {
 
+/**
+ * Metric representing the loss of a given loss function.
+ */
 class LossMetric final : public Metric {
  public:
   explicit LossMetric(nn::loss::LossPtr loss_fn);

@@ -26,7 +26,8 @@ class Model {
    * Computes the forward pass through the model for the given batch.
    * Activations are not cleared until the next call to forward or trainOnBatch.
    * Labels will not be selected by sparse fully connected layers which yield
-   * outputs since labels are not provided.
+   * outputs since labels are not provided. For this type of sampling
+   * trainOnBatch must be used.
    */
   void forward(const std::vector<BoltBatch>& inputs, bool use_sparsity);
 
@@ -84,6 +85,15 @@ class Model {
    */
   tensor::ActivationTensorPtr getTensor(const std::string& name) const;
 
+  /**
+   * Returns the input tensor that stores the labels for a given output tensor.
+   * Attempts to find an output tensor with the given name whose gradients are
+   * computed in a loss function which depends on no other output tensor. The
+   * reason for this is that if a loss function is compute directly on the
+   * tensor and a label vector we assume that the label vector maps directly to
+   * the neurons in the output tensor. Returns nullptr if not such output tensor
+   * is found.
+   */
   tensor::InputTensorPtr getLabelsForOutput(const std::string& output_name);
 
   /**
@@ -97,6 +107,10 @@ class Model {
 
   std::string summary(bool print = true) const;
 
+  /**
+   * Returns how many train steps the model has taken. Used for logging in
+   * trainer.
+   */
   uint32_t trainSteps() const;
 
  private:

@@ -5,12 +5,10 @@
 namespace thirdai::bolt::train::metrics {
 
 void Metric::incrementAtomicFloat(std::atomic<float>& value, float increment) {
-  bool success;
-  do {
-    float curr_val = value.load(std::memory_order_relaxed);
-    success = value.compare_exchange_weak(curr_val, curr_val + increment,
-                                          std::memory_order_relaxed);
-  } while (!success);
+  float curr_val = value.load(std::memory_order_relaxed);
+  while (!value.compare_exchange_weak(curr_val, curr_val + increment,
+                                      std::memory_order_relaxed)) {
+  }
 }
 
 MetricList::MetricList(
