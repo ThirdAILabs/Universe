@@ -226,11 +226,10 @@ void createModelsSubmodule(py::module_& module) {
           [](QueryCandidateGenerator& udt_generator_model,
              const std::string& filename, uint32_t top_k, bool return_scores) {
             auto [reformulated_queries, scores] =
-                udt_generator_model.evaluateOnFile(filename, top_k,
-                                                   return_scores);
+                udt_generator_model.evaluateOnFile(filename, top_k);
             if (return_scores) {
               return py::make_tuple(std::move(reformulated_queries),
-                                    std::move(scores.value()));
+                                    std::move(scores));
             }
             return py::make_tuple(std::move(reformulated_queries));
           },
@@ -241,11 +240,10 @@ void createModelsSubmodule(py::module_& module) {
           [](QueryCandidateGenerator& udt_generator_model,
              const std::string& sample, uint32_t top_k, bool return_scores) {
             auto [reformulated_queries, scores] =
-                udt_generator_model.queryFromList({sample}, top_k,
-                                                  return_scores);
+                udt_generator_model.queryFromList({sample}, top_k);
             if (return_scores) {
               return py::make_tuple(std::move(reformulated_queries),
-                                    std::move(scores.value()));
+                                    std::move(scores));
             }
             return py::make_tuple(std::move(reformulated_queries));
           },
@@ -257,11 +255,10 @@ void createModelsSubmodule(py::module_& module) {
              const std::vector<std::string>& queries, uint32_t top_k,
              bool return_scores) {
             auto [reformulated_queries, scores] =
-                udt_generator_model.queryFromList(queries, top_k,
-                                                  return_scores);
+                udt_generator_model.queryFromList(queries, top_k);
             if (return_scores) {
               return py::make_tuple(std::move(reformulated_queries),
-                                    std::move(scores.value()));
+                                    std::move(scores));
             }
             return py::make_tuple(std::move(reformulated_queries));
           },
