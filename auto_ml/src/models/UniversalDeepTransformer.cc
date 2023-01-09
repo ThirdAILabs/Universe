@@ -29,13 +29,15 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
     const deployment::UserInputMap& options) {
+  auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
+        embedding_dimension, prediction_depth, input_hash_range] =
+      processUDTOptions(options);
+
   auto dataset_config = std::make_shared<data::UDTConfig>(
       std::move(data_types), std::move(temporal_tracking_relationships),
       std::move(target_col), n_target_classes, integer_target,
-      std::move(time_granularity), lookahead, delimiter);
+      std::move(time_granularity), lookahead, delimiter, input_hash_range);
 
-  auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
-        embedding_dimension, prediction_depth] = processUDTOptions(options);
   std::string target_column = dataset_config->target;
 
   if (prediction_depth > 1) {
@@ -326,6 +328,17 @@ UniversalDeepTransformer::processUDTOptions(
       uint32_t int_value = option_value.resolveIntegerParam("prediction_depth");
       if (int_value != 0) {
         options.prediction_depth = int_value;
+      } else {
+        std::stringstream error;
+        error << "Invalid value for option '" << option_name
+              << "'. Received value '" << std::to_string(int_value) + "'.";
+
+        throw std::invalid_argument(error.str());
+      }
+    } else if (option_name == "input_hash_range") {
+      uint32_t int_value = option_value.resolveIntegerParam("input_hash_range");
+      if (int_value != 0) {
+        options.input_hash_range = int_value;
       } else {
         std::stringstream error;
         error << "Invalid value for option '" << option_name

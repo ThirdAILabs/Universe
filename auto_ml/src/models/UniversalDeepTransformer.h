@@ -205,6 +205,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
     bool freeze_hash_tables = true;
     uint32_t embedding_dimension = DEFAULT_HIDDEN_DIM;
     uint32_t prediction_depth = 1;
+    uint32_t input_hash_range = 100000;
   };
 
   static UDTOptions processUDTOptions(

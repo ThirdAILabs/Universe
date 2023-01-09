@@ -56,7 +56,8 @@ struct UDTConfig {
             UserProvidedTemporalRelationships temporal_tracking_relationships,
             std::string target, std::optional<uint32_t> n_target_classes,
             bool integer_target = false, std::string time_granularity = "d",
-            uint32_t lookahead = 0, char delimiter = ',')
+            uint32_t lookahead = 0, char delimiter = ',',
+            uint32_t hash_range = 100000)
       : data_types(std::move(data_types)),
         provided_relationships(std::move(temporal_tracking_relationships)),
         target(std::move(target)),
@@ -65,7 +66,8 @@ struct UDTConfig {
         time_granularity(
             dataset::stringToGranularity(std::move(time_granularity))),
         lookahead(lookahead),
-        delimiter(delimiter) {}
+        delimiter(delimiter),
+        hash_range(hash_range) {}
 
   ColumnDataTypes data_types;
   UserProvidedTemporalRelationships provided_relationships;
@@ -75,8 +77,7 @@ struct UDTConfig {
   dataset::QuantityTrackingGranularity time_granularity;
   uint32_t lookahead;
   char delimiter;
-
-  uint32_t hash_range = DEFAULT_HASH_RANGE;
+  uint32_t hash_range;
 
  private:
   // Private constructor for Cereal.
