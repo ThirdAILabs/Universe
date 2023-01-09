@@ -96,7 +96,9 @@ jobs:
           CIBW_BUILD_VERBOSITY: 3
 
           # On linux we copy a valid license to the home directory within the docker
-          CIBW_BEFORE_TEST_LINUX: cp docker/product/slim/license.serialized ~/license.serialized
+          CIBW_BEFORE_TEST_LINUX: >
+            cp docker/product/slim/license.serialized ~/license.serialized &&
+            yum install golang -y
           CIBW_TEST_EXTRAS: "test"
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
