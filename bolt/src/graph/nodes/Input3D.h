@@ -52,4 +52,8 @@ class Input3D final : public Input {
 
 }  // namespace thirdai::bolt
 
+// we need to force dynamic init for cereal to work, otherwise registration of
+// the object will never take place. see here for more info:
+// https://uscilab.github.io/cereal/assets/doxygen/polymorphic_8hpp.html#a01ebe0f840ac20c307f64622384e4dae
+// we NOLINT since clang-tidy gets mad but cereal wants the class named this way
 CEREAL_FORCE_DYNAMIC_INIT(Input3D)  // NOLINT

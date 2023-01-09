@@ -27,9 +27,6 @@ class Input : public Node {
                  std::optional<std::pair<uint32_t, uint32_t>>
                      num_nonzeros_range = std::nullopt);
 
-  // constructor for cereal
-  Input() : _num_nonzeros_range(std::nullopt) {}
-
  public:
   static std::shared_ptr<Input> make(uint32_t expected_dim) {
     return std::shared_ptr<Input>(new Input(expected_dim));
@@ -105,6 +102,9 @@ class Input : public Node {
   NodeState getState() const final;
 
   void checkDimForInput(const BoltVector& vec) const;
+
+  // Private constructor for cereal.
+  Input() : _num_nonzeros_range(std::nullopt) {}
 
   friend class cereal::access;
   template <class Archive>

@@ -24,7 +24,7 @@ generateSimpleImageDataset() {
   std::mt19937 gen(892734);
   std::uniform_int_distribution<uint32_t> label_dist(0, N_CLASSES - 1);
   std::normal_distribution<float> noise_dist(0, 0.1);
-  std::uniform_int_distribution<> random_index_dist(25, 63);
+  std::uniform_int_distribution<uint32_t> random_index_dist(0, 15);
 
   std::vector<BoltBatch> data_batches;
   std::vector<BoltBatch> label_batches;
@@ -36,7 +36,7 @@ generateSimpleImageDataset() {
       BoltVector v(image_size, /* is_dense= */ true, /* has_gradient=*/false);
       std::vector<float> sample_image(image_size, 0);
       if (label == 1) {
-        sample_image[random_index_dist(gen)];
+        sample_image[random_index_dist(gen)] = 1;
       }
 
       for (uint32_t i; i < image_size; i++) {
@@ -95,6 +95,8 @@ TEST(ConvNodeTest, SimpleConvTestWithSaveLoad) {
   auto test_metrics =
       model.evaluate(/* test_data= */ {data}, labels, getEvalConfig());
 
+  std::cout << test_metrics.first["categorical_accuracy"] << std::endl;
+
   ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.9);
 
   std::string save_loc = "save.loc";
@@ -103,6 +105,18 @@ TEST(ConvNodeTest, SimpleConvTestWithSaveLoad) {
 
   auto loaded_test_metrics =
       loaded_model->evaluate(/* test_data= */ {data}, labels, getEvalConfig());
+
+  std::cout << loaded_test_metrics.first["categorical_accuracy"] << std::endl;
+
+   loaded_test_metrics =
+      loaded_model->evaluate(/* test_data= */ {data}, labels, getEvalConfig());
+
+  std::cout << loaded_test_metrics.first["categorical_accuracy"] << std::endl;
+
+   loaded_test_metrics =
+      loaded_model->evaluate(/* test_data= */ {data}, labels, getEvalConfig());
+
+  std::cout << loaded_test_metrics.first["categorical_accuracy"] << std::endl;
 
   ASSERT_EQ(test_metrics.first["categorical_accuracy"],
             loaded_test_metrics.first["categorical_accuracy"]);

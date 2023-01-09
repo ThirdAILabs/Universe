@@ -219,14 +219,53 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
   py::class_<ConvNode, ConvNodePtr, Node>(nn_submodule, "Conv")
       .def(py::init(&ConvNode::makeDense), py::arg("num_filters"),
            py::arg("activation"), py::arg("kernel_size"),
-           py::arg("next_kernel_size"))
+           py::arg("next_kernel_size"), R"pbdoc(
+Constructs a dense ConvNode object.
+
+Args:
+    * num_filters (int): The number of filters used in the convolution.
+    * activation (string): Specifies the activation function to use, no 
+    restrictions on case - We support five activation functions: 
+    ReLU, Softmax, Tanh, Sigmoid, and Linear.
+    * kernel_size (tuple): Size of the kernels to use (x_len, y_len). Currently 
+    only square kernels are supported and are non-overlapping
+    * next_kernel_size (tuple): The next conv node's kernel size. If next node 
+    is a fully connected node, use (1, 1). 
+)pbdoc")
       .def(py::init(&ConvNode::makeAutotuned), py::arg("num_filters"),
            py::arg("sparsity"), py::arg("activation"), py::arg("kernel_size"),
-           py::arg("next_kernel_size"))
+           py::arg("next_kernel_size"), R"pbdoc(
+Constructs a sparse ConvNode object.
+
+Args:
+    * num_filters (int): The number of filters used in the convolution.
+    * sparsity (float): Sparsity represented in the filters used. 
+    * activation (string): Specifies the activation function to use, no 
+    restrictions on case - We support five activation functions: 
+    ReLU, Softmax, Tanh, Sigmoid, and Linear.
+    * kernel_size (tuple): Size of the kernels to use (x_len, y_len). Currently 
+    only square kernels are supported and are non-overlapping
+    * next_kernel_size (tuple): The next conv node's kernel size. If next node 
+    is a fully connected node, use (1, 1). 
+)pbdoc")
 #if THIRDAI_EXPOSE_ALL
       .def(py::init(&ConvNode::make), py::arg("num_filters"),
            py::arg("sparsity"), py::arg("activation"), py::arg("kernel_size"),
-           py::arg("next_kernel_size"), py::arg("sampling_config"))
+           py::arg("next_kernel_size"), py::arg("sampling_config"), R"pbdoc(
+Constructs a sparse ConvNode object.
+
+Args:
+    * num_filters (int): The number of filters used in the convolution.
+    * sparsity (float): Sparsity represented in the filters used. 
+    * activation (string): Specifies the activation function to use, no 
+    restrictions on case - We support five activation functions: 
+    ReLU, Softmax, Tanh, Sigmoid, and Linear.
+    * kernel_size (tuple): Size of the kernels to use (x_len, y_len). Currently 
+    only square kernels are supported and are non-overlapping
+    * next_kernel_size (tuple): The next conv node's kernel size. If next node 
+    is a fully connected node, use (1, 1). 
+    * sampling_config (SamplingConfig)
+)pbdoc")
 #endif
       .def("__call__", &ConvNode::addPredecessor, py::arg("prev_layer"),
            "Tells the graph which layer should act as input to this conv "
