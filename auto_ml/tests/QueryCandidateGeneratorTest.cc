@@ -63,7 +63,7 @@ void assertQueryingWithoutTrainingThrowsException(
   ASSERT_THROW(query_candidate_generator.queryFromList(  // NOLINT
                    /* queries = */ {"first test query", "second test query"},
                    /* top_k= */ 5,
-                   /* return_activations= */ false),
+                   /* return_scores= */ false),
                exceptions::QueryCandidateGeneratorException);
 }
 

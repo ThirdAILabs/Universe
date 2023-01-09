@@ -289,7 +289,7 @@ class QueryCandidateGenerator {
   std::pair<std::vector<std::vector<std::string>>,
             std::optional<std::vector<std::vector<float>>>>
   queryFromList(const std::vector<std::string>& queries, uint32_t top_k,
-                bool return_activations) {
+                bool return_scores) {
     if (!_flash_index) {
       throw exceptions::QueryCandidateGeneratorException(
           "Attempting to Generate Candidate Queries without Training the "
@@ -316,7 +316,7 @@ class QueryCandidateGenerator {
 
       query_outputs.emplace_back(std::move(top_k_candidates));
     }
-    if (return_activations) {
+    if (return_scores) {
       return {std::move(query_outputs), std::move(candidate_query_scores)};
     }
     return {std::move(query_outputs), std::nullopt};
@@ -333,7 +333,7 @@ class QueryCandidateGenerator {
   std::pair<std::vector<std::vector<std::string>>,
             std::optional<std::vector<std::vector<float>>>>
   evaluateOnFile(const std::string& file_name, uint32_t top_k,
-                 bool return_activations) {
+                 bool return_scores) {
     if (!_flash_index) {
       throw exceptions::QueryCandidateGeneratorException(
           "Attempting to Evaluate the Generator without Training.");
@@ -375,7 +375,7 @@ class QueryCandidateGenerator {
                        /* generated_queries = */ output_queries,
                        /* K = */ top_k);
     }
-    if (return_activations) {
+    if (return_scores) {
       return {std::move(output_queries), std::move(output_scores)};
     }
     return {std::move(output_queries), std::nullopt};

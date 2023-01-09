@@ -224,52 +224,49 @@ void createModelsSubmodule(py::module_& module) {
       .def(
           "evaluate",
           [](QueryCandidateGenerator& udt_generator_model,
-             const std::string& filename, uint32_t top_k,
-             bool return_activations) {
+             const std::string& filename, uint32_t top_k, bool return_scores) {
             auto [reformulated_queries, scores] =
                 udt_generator_model.evaluateOnFile(filename, top_k,
-                                                   return_activations);
-            if (return_activations) {
+                                                   return_scores);
+            if (return_scores) {
               return py::make_tuple(std::move(reformulated_queries),
                                     std::move(scores.value()));
             }
             return py::make_tuple(std::move(reformulated_queries));
           },
           py::arg("filename"), py::arg("top_k"),
-          py::arg("return_activations") = false, docs::UDT_GENERATOR_EVALUATE)
+          py::arg("return_scores") = false, docs::UDT_GENERATOR_EVALUATE)
       .def(
           "predict",
           [](QueryCandidateGenerator& udt_generator_model,
-             const std::string& sample, uint32_t top_k,
-             bool return_activations) {
+             const std::string& sample, uint32_t top_k, bool return_scores) {
             auto [reformulated_queries, scores] =
                 udt_generator_model.queryFromList({sample}, top_k,
-                                                  return_activations);
-            if (return_activations) {
+                                                  return_scores);
+            if (return_scores) {
               return py::make_tuple(std::move(reformulated_queries),
                                     std::move(scores.value()));
             }
             return py::make_tuple(std::move(reformulated_queries));
           },
-          py::arg("query"), py::arg("top_k"),
-          py::arg("return_activations") = false, docs::UDT_GENERATOR_PREDICT)
+          py::arg("query"), py::arg("top_k"), py::arg("return_scores") = false,
+          docs::UDT_GENERATOR_PREDICT)
       .def(
           "predict_batch",
           [](QueryCandidateGenerator& udt_generator_model,
              const std::vector<std::string>& queries, uint32_t top_k,
-             bool return_activations) {
+             bool return_scores) {
             auto [reformulated_queries, scores] =
                 udt_generator_model.queryFromList(queries, top_k,
-                                                  return_activations);
-            if (return_activations) {
+                                                  return_scores);
+            if (return_scores) {
               return py::make_tuple(std::move(reformulated_queries),
                                     std::move(scores.value()));
             }
             return py::make_tuple(std::move(reformulated_queries));
           },
           py::arg("queries"), py::arg("top_k"),
-          py::arg("return_activations") = false,
-          docs::UDT_GENERATOR_PREDICT_BATCH)
+          py::arg("return_scores") = false, docs::UDT_GENERATOR_PREDICT_BATCH)
       .def("save", &UDTFactory::save_generator, py::arg("filename"),
            docs::UDT_GENERATOR_SAVE);
 }
