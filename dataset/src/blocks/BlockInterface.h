@@ -250,7 +250,7 @@ class Block {
     uint32_t expected_num_columns = 0;
     for (auto* column_identifier : getColumnIdentifiers()) {
       expected_num_columns =
-          std::max(expected_num_columns, column_identifier->number());
+          std::max(expected_num_columns, column_identifier->number() + 1);
     }
     return expected_num_columns;
   }
