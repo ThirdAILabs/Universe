@@ -13,8 +13,9 @@
 
 namespace thirdai::licensing {
 
-static const std::string FULL_ACCESS_ENTITLEMENT = "FULL_ACCESS";
 #if THIRDAI_CHECK_LICENSE
+
+static const std::string FULL_ACCESS_ENTITLEMENT = "FULL_ACCESS";
 
 static std::optional<std::string> _license_path = {};
 static std::optional<std::string> _api_key = {};
@@ -33,6 +34,7 @@ void checkLicense() {
 
   if (_heartbeat_thread != nullptr) {
     _heartbeat_thread->verify();
+    return;
   }
 
   SignedLicense::findVerifyAndCheckLicense(_license_path);

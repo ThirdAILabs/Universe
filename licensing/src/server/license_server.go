@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -41,6 +42,9 @@ var ActiveTimeoutMillis int64 = 1000000
 // The single global machine tracker for the server
 var globalTracker MachineTracker
 
+// Whether to not sign responses (if this is true, just returns an empty string)
+var doNotSignResponses bool
+
 type VerifyRequest struct {
 	// Machine id to track currently licensed machines
 	MachineId string `json:"machine_id"`
@@ -74,11 +78,20 @@ func heartbeat(response_writer http.ResponseWriter, req *http.Request) {
 	}
 
 	toSign := fmt.Sprintf("%s\n%s", parsedReq.MachineId, parsedReq.Metadata)
+
+	if doNotSignResponses {
+		return
+	}
+
 	signatureBytes := []byte(Sign(toSign))
 	response_writer.Write(signatureBytes)
 }
 
 func main() {
+	doNotSignResponsesPtr := flag.Bool("do_not_sign_responses", false, "whether to not sign responses (for now set to false only during testing)")
+	flag.Parse()
+	doNotSignResponses = *doNotSignResponsesPtr
+
 	http.HandleFunc("/heartbeat", heartbeat)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

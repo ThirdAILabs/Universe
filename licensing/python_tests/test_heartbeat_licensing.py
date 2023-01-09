@@ -65,16 +65,20 @@ def wait_for_server_end():
             return
 
 
-def license_server_helper(max_workers):
-    go_run_script = (
-        python_test_dir_path
-        / ".."
-        / "src"
-        / "server"
-        / f"license-server-max-{max_workers}"
+def license_server_helper(max_workers, do_not_sign_responses=False):
+    go_run_script = str(
+        (
+            python_test_dir_path
+            / ".."
+            / "src"
+            / "server"
+            / f"license-server-max-{max_workers}"
+        ).resolve()
     )
+    if do_not_sign_responses:
+        go_run_script += " --do_not_sign_responses"
     server_process = subprocess.Popen(
-        str(go_run_script.resolve()), stdout=subprocess.PIPE, universal_newlines=True
+        go_run_script, stdout=subprocess.PIPE, universal_newlines=True, shell=True
     )
     wait_for_server_start()
     yield server_process
@@ -85,6 +89,11 @@ def license_server_helper(max_workers):
 @pytest.fixture(scope="function")
 def normal_license_server():
     yield from license_server_helper(max_num_workers_normal)
+
+
+@pytest.fixture(scope="function")
+def no_signing_license_server():
+    yield from license_server_helper(max_num_workers_normal, do_not_sign_responses=True)
 
 
 @pytest.fixture(scope="function")
@@ -108,6 +117,14 @@ def test_with_invalid_heartbeat_grace_period():
         thirdai.licensing.start_heartbeat(
             invalid_heartbeat_location, heartbeat_timeout=100000
         )
+
+
+def test_heartbeat_fails_with_no_signature(no_signing_license_server):
+    with pytest.raises(
+        RuntimeError,
+        match=f"Could not establish initial connection to licensing server.",
+    ):
+        thirdai.licensing.start_heartbeat(LOCAL_HEARTBEAT_SERVER)
 
 
 def test_valid_heartbeat(normal_license_server):
