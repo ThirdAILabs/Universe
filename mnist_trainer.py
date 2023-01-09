@@ -22,9 +22,7 @@ output = bolt.nn.FullyConnected(dim=10, activation="softmax")(hidden)
 
 loss = bolt.nn.losses.CategoricalCrossEntropy(output)
 
-model = bolt.nn.Model(
-    inputs=[input_layer], outputs=[output], losses=[loss]
-)
+model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
 
 model.summary()
 

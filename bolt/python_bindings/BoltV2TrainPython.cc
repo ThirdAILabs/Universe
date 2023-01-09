@@ -1,6 +1,7 @@
 #include "BoltV2TrainPython.h"
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/train/callbacks/Callback.h>
+#include <bolt/src/train/metrics/CategoricalAccuracy.h>
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <pybind11/stl.h>
@@ -26,6 +27,11 @@ void createBoltV2TrainSubmodule(py::module_& module) {
   py::class_<metrics::LossMetric, std::shared_ptr<metrics::LossMetric>,
              metrics::Metric>(metrics, "LossMetric")
       .def(py::init<nn::loss::LossPtr>(), py::arg("loss_fn"));
+
+  py::class_<metrics::CategoricalAccuracy,
+             std::shared_ptr<metrics::CategoricalAccuracy>, metrics::Metric>(
+      metrics, "CategoricalAccuracy")
+      .def(py::init<>());
 
   auto callbacks = train.def_submodule("callbacks");
 
