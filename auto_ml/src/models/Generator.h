@@ -20,10 +20,6 @@
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exceptions/src/Exceptions.h>
-#include <pybind11/cast.h>
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/pytypes.h>
 #include <search/src/Flash.h>
 #include <fstream>
 #include <limits>
@@ -36,7 +32,6 @@
 #include <utility>
 #include <vector>
 
-namespace py = pybind11;
 namespace thirdai::automl::models {
 
 using data::ColumnNumberMap;
@@ -291,8 +286,10 @@ class QueryCandidateGenerator {
    * @return A vector of suggested queries
 
    */
-  py::tuple queryFromList(const std::vector<std::string>& queries,
-                          uint32_t top_k, bool return_activations) {
+  std::pair<std::vector<std::vector<std::string>>,
+            std::optional<std::vector<std::vector<float>>>>
+  queryFromList(const std::vector<std::string>& queries, uint32_t top_k,
+                bool return_activations) {
     if (!_flash_index) {
       throw exceptions::QueryCandidateGeneratorException(
           "Attempting to Generate Candidate Queries without Training the "
@@ -320,10 +317,9 @@ class QueryCandidateGenerator {
       query_outputs.emplace_back(std::move(top_k_candidates));
     }
     if (return_activations) {
-      return py::make_tuple(std::move(query_outputs),
-                            std::move(candidate_query_scores));
+      return {std::move(query_outputs), std::move(candidate_query_scores)};
     }
-    return py::make_tuple(std::move(query_outputs));
+    return {std::move(query_outputs), std::nullopt};
   }
 
   /**
@@ -334,8 +330,10 @@ class QueryCandidateGenerator {
    * and incorrect queries in column 1.
    * @return Recommended queries
    */
-  py::tuple evaluateOnFile(const std::string& file_name, uint32_t top_k,
-                           bool return_activations) {
+  std::pair<std::vector<std::vector<std::string>>,
+            std::optional<std::vector<std::vector<float>>>>
+  evaluateOnFile(const std::string& file_name, uint32_t top_k,
+                 bool return_activations) {
     if (!_flash_index) {
       throw exceptions::QueryCandidateGeneratorException(
           "Attempting to Evaluate the Generator without Training.");
@@ -378,10 +376,9 @@ class QueryCandidateGenerator {
                        /* K = */ top_k);
     }
     if (return_activations) {
-      return py::make_tuple(std::move(output_queries),
-                            std::move(output_scores));
+      return {std::move(output_queries), std::move(output_scores)};
     }
-    return py::make_tuple(std::move(output_queries));
+    return {std::move(output_queries), std::nullopt};
   }
 
   std::unordered_map<std::string, uint32_t> getQueriesToLabelsMap() const {
