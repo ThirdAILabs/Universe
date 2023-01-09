@@ -224,8 +224,8 @@ Constructs a dense ConvNode object.
 
 Args:
     * num_filters (int): The number of filters used in the convolution.
-    * activation (string): Specifies the activation function to use, no 
-    restrictions on case - We support five activation functions: 
+    * activation (string): Specifies the activation function to use, case 
+    insensitive - We support five activation functions: 
     ReLU, Softmax, Tanh, Sigmoid, and Linear.
     * kernel_size (tuple): Size of the kernels to use (x_len, y_len). Currently 
     only square kernels are supported and are non-overlapping
@@ -240,8 +240,8 @@ Constructs a sparse ConvNode object.
 Args:
     * num_filters (int): The number of filters used in the convolution.
     * sparsity (float): Sparsity represented in the filters used. 
-    * activation (string): Specifies the activation function to use, no 
-    restrictions on case - We support five activation functions: 
+    * activation (string): Specifies the activation function to use, case 
+    insensitive - We support five activation functions: 
     ReLU, Softmax, Tanh, Sigmoid, and Linear.
     * kernel_size (tuple): Size of the kernels to use (x_len, y_len). Currently 
     only square kernels are supported and are non-overlapping
@@ -257,8 +257,8 @@ Constructs a sparse ConvNode object.
 Args:
     * num_filters (int): The number of filters used in the convolution.
     * sparsity (float): Sparsity represented in the filters used. 
-    * activation (string): Specifies the activation function to use, no 
-    restrictions on case - We support five activation functions: 
+    * activation (string): Specifies the activation function to use, case 
+    insensitive - We support five activation functions: 
     ReLU, Softmax, Tanh, Sigmoid, and Linear.
     * kernel_size (tuple): Size of the kernels to use (x_len, y_len). Currently 
     only square kernels are supported and are non-overlapping
