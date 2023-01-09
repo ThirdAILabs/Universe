@@ -91,9 +91,10 @@ uint32_t ConvNode::outputDim() const {
         "predecessor.");
   }
   if (node_state == NodeState::PredecessorsSet) {
-    auto [prev_height, prev_width, prev_depth] = getPredecessorOutputDim();
-    return (height / (*_config).kernel_size.first) *
-           (width / (*_config).kernel_size.second) * (*_config).num_filters;
+    auto [prev_height, prev_width, _] = getPredecessorOutputDim();
+    return (prev_height / (*_config).kernel_size.first) *
+           (prev_width / (*_config).kernel_size.second) *
+           (*_config).num_filters;
   }
   return _layer->getDim();
 }
