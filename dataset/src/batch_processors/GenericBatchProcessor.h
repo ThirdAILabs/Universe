@@ -9,6 +9,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
 #include <exception>
@@ -63,8 +64,14 @@ class GenericBatchProcessor : public BatchProcessor {
     std::vector<BoltVector> batch_inputs(input_batch.size());
     std::vector<BoltVector> batch_labels(input_batch.size());
 
+    // If there isn't a header, we are forced to assume that every row will
+    // have exactly as many columns as expected. Otherwise, we can assume that
+    // every row will have the same number of columns as the header
+    uint32_t expected_num_cols_in_batch =
+        _num_cols_in_header.value_or(_expected_num_cols);
+
     auto& first_sample = input_batch.sample(0);
-    if (auto error = first_sample.assertValid(_expected_num_cols)) {
+    if (auto error = first_sample.assertValid(expected_num_cols_in_batch)) {
       std::rethrow_exception(error);
     }
     _input_blocks.prepareForBatch(first_sample);
@@ -76,12 +83,6 @@ class GenericBatchProcessor : public BatchProcessor {
       an error inside an OpenMP structured block has undefined behavior.
     */
     std::exception_ptr featurization_err;
-
-    // If there isn't a header, we are forced to assume that every row will
-    // have exactly as many columns as expected. Otherwise, we can assume that
-    // every row will have the same number of columns as the header
-    uint32_t expected_num_cols_in_batch =
-        _num_cols_in_header.value_or(_expected_num_cols);
 #pragma omp parallel for default(none)                                 \
     shared(input_batch, batch_inputs, batch_labels, featurization_err, \
            expected_num_cols_in_batch) if (_parallel)
@@ -122,8 +123,7 @@ class GenericBatchProcessor : public BatchProcessor {
   bool expectsHeader() const final { return _expects_header; }
 
   void processHeader(const std::string& header) final {
-    _num_cols_in_header =
-        ProcessorUtils::parseCsvRow(header, _delimiter).size();
+    _num_cols_in_header = SingleCsvLineInputRef(header, _delimiter).size();
   }
 
   uint32_t getInputDim() const {

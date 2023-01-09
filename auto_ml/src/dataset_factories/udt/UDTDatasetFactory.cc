@@ -7,7 +7,7 @@ namespace thirdai::automl::data {
 
 using dataset::ColumnNumberMap;
 
-DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
+dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     std::shared_ptr<dataset::DataSource> data_source, bool training) {
   auto column_number_map =
       makeColumnNumberMapFromHeader(*data_source, _config->delimiter);
@@ -93,6 +93,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
 
   auto column_numbers =
       makeColumnNumberMapFromHeader(*data_source, metadata->delimiter);
+  data_source->restart();
 
   auto input_blocks = buildMetadataInputBlocks(*metadata);
 
@@ -104,7 +105,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   _metadata_processors[col_name] = dataset::GenericBatchProcessor::make(
       /* input_blocks= */ std::move(input_blocks),
       /* label_blocks= */ {std::move(label_block)},
-      /* has_header= */ false, /* delimiter= */ metadata->delimiter,
+      /* has_header= */ true, /* delimiter= */ metadata->delimiter,
       /* parallel= */ true, /* hash_range= */ _config->hash_range);
 
   _metadata_processors[col_name]->updateColumnNumbers(*column_numbers);
@@ -121,7 +122,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
 
 ColumnNumberMapPtr UDTDatasetFactory::makeColumnNumberMapFromHeader(
     dataset::DataSource& data_source, char delimiter) {
-  auto header = data_loader.nextLine();
+  auto header = data_source.nextLine();
   if (!header) {
     throw std::invalid_argument(
         "The dataset must have a header that contains column names.");

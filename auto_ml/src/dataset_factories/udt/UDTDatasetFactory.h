@@ -194,7 +194,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const std::string& col_name, const CategoricalDataTypePtr& categorical);
 
   static ColumnNumberMapPtr makeColumnNumberMapFromHeader(
-      dataset::DataLoader& data_loader, char delimiter);
+      dataset::DataSource& data_source, char delimiter);
 
   std::vector<dataset::BlockPtr> buildMetadataInputBlocks(
       const CategoricalMetadataConfig& metadata_config) const;
@@ -205,8 +205,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> featurizeInputBatchImpl(dataset::BatchInputRef& inputs,
                                                  bool should_update_history) {
-    auto [input_batch, _] =
-        getProcessor(should_update_history).createBatch(inputs);
+    auto batches = getProcessor(should_update_history).createBatch(inputs);
 
     // We cannot use the initializer list because the copy constructor is
     // deleted for BoltBatch.

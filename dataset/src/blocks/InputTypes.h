@@ -57,13 +57,13 @@ class SingleRowInputRef final : public SingleInputRef {
   }
 
   std::exception_ptr assertValid(uint32_t expected_num_cols) final {
-    if (_columns.size() >= expected_num_cols) {
+    if (_columns.size() == expected_num_cols) {
       return nullptr;
     }
 
     std::stringstream error_ss;
     error_ss << "Expected " << expected_num_cols
-             << " in each row of the dataset. Found row with "
+             << " columns in each row of the dataset. Found row with "
              << _columns.size() << " columns:";
     for (auto column : _columns) {
       error_ss << " '" << column << "'";
@@ -89,7 +89,10 @@ class SingleCsvLineInputRef final : public SingleInputRef {
     return SingleRowInputRef(*_columns).column(column);
   }
 
-  uint32_t size() final { return _columns->size(); }
+  uint32_t size() final {
+    parseToColumnsIfNecessary();
+    return _columns->size();
+  }
 
   std::exception_ptr assertValid(uint32_t expected_num_cols) final {
     parseToColumnsIfNecessary();
