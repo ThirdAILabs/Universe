@@ -108,12 +108,12 @@ TEST(ConvNodeTest, SimpleConvTestWithSaveLoad) {
 
   std::cout << loaded_test_metrics.first["categorical_accuracy"] << std::endl;
 
-   loaded_test_metrics =
+  loaded_test_metrics =
       loaded_model->evaluate(/* test_data= */ {data}, labels, getEvalConfig());
 
   std::cout << loaded_test_metrics.first["categorical_accuracy"] << std::endl;
 
-   loaded_test_metrics =
+  loaded_test_metrics =
       loaded_model->evaluate(/* test_data= */ {data}, labels, getEvalConfig());
 
   std::cout << loaded_test_metrics.first["categorical_accuracy"] << std::endl;

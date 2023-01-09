@@ -8,12 +8,13 @@
 namespace thirdai::bolt {
 
 /**
- * The Input3D node functions is a shallow wrapper of the normal Input node that adds functionality for interpreting the single dimensional input vectors as 3D tensors.
- * the input dimension is specified with three values: width, height, and depth.
- * Input3D will then note these values and assume input BoltVectors of total
- * dimension = width * height * depth. This is useful to provide additional
- * information for treating input vectors as 3D (e.g. for image processing)
- * while still passing in typical 1D BoltVectors as input.
+ * The Input3D node functions is a shallow wrapper of the normal Input node that
+ * adds functionality for interpreting the single dimensional input vectors as
+ * 3D tensors. the input dimension is specified with three values: width,
+ * height, and depth. Input3D will then note these values and assume input
+ * BoltVectors of total dimension = width * height * depth. This is useful to
+ * provide additional information for treating input vectors as 3D (e.g. for
+ * image processing) while still passing in typical 1D BoltVectors as input.
  *
  * The notion of sparsity is loosely defined in this format. You may use this
  * node however you wish, it is only a means to provide more information to
