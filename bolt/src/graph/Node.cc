@@ -3,6 +3,7 @@
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -43,6 +44,14 @@ void Node::prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) {
   }
 
   prepareForBatchProcessingImpl(batch_size, use_sparsity);
+
+  if (batch_size > 0 && getOutputVector(0).len == 0) {
+    throw std::invalid_argument(
+        "Node: '" + name() +
+        "' allocated with output dimension=0. Please check that the the "
+        "dimensions of nodes are nonzero, and that the dimension will be "
+        "nonzero after applying sparsity.");
+  }
 }
 
 void Node::cleanupAfterBatchProcessing() {
