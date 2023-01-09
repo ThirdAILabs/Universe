@@ -43,7 +43,7 @@ namespace thirdai::bolt {
 class ConvLayer final {
  public:
   ConvLayer(const ConvLayerConfig& config, uint32_t prev_height,
-            uint32_t prev_width, uint32_t prev_depth, float prev_sparsity);
+            uint32_t prev_width, uint32_t prev_num_channels, float prev_sparsity);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels);

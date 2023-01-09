@@ -6,15 +6,15 @@
 namespace thirdai::bolt {
 
 ConvLayer::ConvLayer(const ConvLayerConfig& config, uint32_t prev_height,
-                     uint32_t prev_width, uint32_t prev_depth,
+                     uint32_t prev_width, uint32_t prev_num_channels,
                      float prev_sparsity)
-    : _prev_dim(prev_height * prev_width * prev_depth),
+    : _prev_dim(prev_height * prev_width * prev_num_channels),
       _sparsity(config.sparsity),
       _act_func(config.activation_fn),
       _num_filters(config.num_filters),
       _num_sparse_filters(config.num_filters * config.sparsity),
-      _prev_num_filters(prev_depth),
-      _prev_num_sparse_filters(prev_depth * prev_sparsity),
+      _prev_num_filters(prev_num_channels),
+      _prev_num_sparse_filters(prev_num_channels * prev_sparsity),
       _kernel_size(config.kernel_size.first * config.kernel_size.second) {
   if (_act_func != ActivationFunction::ReLU) {
     throw std::invalid_argument(
