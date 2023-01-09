@@ -205,8 +205,6 @@ def test_udt_generator_load_and_save(prepared_datasets):
     for index in range(len(model_eval_outputs)):
         assert model_eval_outputs[index] == deserialized_model_outputs[index]
 
-    delete_created_files()
-
 
 # This test checks whether the returned scores are sorted and have valid lengths
 def test_udt_generator_return_scores(prepared_datasets):
@@ -225,3 +223,5 @@ def test_udt_generator_return_scores(prepared_datasets):
     for index, score in enumerate(scores):
         assert len(score) == len(generated_candidates[index])
         assert all(a >= b for a, b in zip(score, score[1:]))
+
+    delete_created_files()
