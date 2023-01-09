@@ -42,6 +42,10 @@ class UDTFactory {
       py::object& obj, const std::string& source_column,
       const std::string& target_column, const std::string& dataset_size);
 
+  static QueryCandidateGenerator buildUDTGeneratorWrapperTargetOnly(
+      py::object& obj, const std::string& target_column,
+      const std::string& dataset_size);
+
   static UniversalDeepTransformer buildUDTClassifierWrapper(
       py::object& obj, data::ColumnDataTypes data_types,
       data::UserProvidedTemporalRelationships temporal_tracking_relationships,

@@ -2,16 +2,20 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <pybind11/stl.h>
 #include <telemetry/src/PrometheusClient.h>
+#include <iostream>
 #include <limits>
+#include <memory>
 #include <stdexcept>
+#include <string>
 
 namespace py = pybind11;
 
 namespace thirdai::automl::models {
 
-void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
+void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
                           bolt::TrainConfig& train_config,
                           const std::optional<ValidationOptions>& validation,
                           std::optional<uint32_t> max_in_memory_batches) {
@@ -25,7 +29,8 @@ void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
   updateRehashRebuildInTrainConfig(train_config);
 
   if (max_in_memory_batches) {
-    trainOnStream(dataset, train_config, max_in_memory_batches.value());
+    trainOnStream(dataset, train_config, max_in_memory_batches.value(),
+                  validation);
   } else {
     trainInMemory(dataset, train_config, validation);
   }
@@ -38,7 +43,7 @@ void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
     if (validation && !validation->metrics().empty()) {
       std::optional<float> threshold =
           tuneBinaryClassificationPredictionThreshold(
-              /* data_source= */ dataset::SimpleFileDataLoader::make(
+              /* data_source= */ dataset::SimpleFileDataSource::make(
                   validation->filename(), DEFAULT_EVALUATE_BATCH_SIZE),
               /* metric_name= */ validation->metrics().at(0));
 
@@ -63,7 +68,7 @@ void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
 }
 
 py::object ModelPipeline::evaluate(
-    const dataset::DataLoaderPtr& data_source,
+    const dataset::DataSourcePtr& data_source,
     std::optional<bolt::EvalConfig>& eval_config_opt,
     bool return_predicted_class, bool return_metrics) {
   auto start_time = std::chrono::system_clock::now();
@@ -208,7 +213,7 @@ void ModelPipeline::trainInMemory(
 
   if (validation) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
-        dataset::SimpleFileDataLoader::make(validation->filename(),
+        dataset::SimpleFileDataSource::make(validation->filename(),
                                             DEFAULT_EVALUATE_BATCH_SIZE),
         /* training= */ false);
 
@@ -237,9 +242,42 @@ void ModelPipeline::trainInMemory(
 
 // We take in the TrainConfig by value to copy it so we can modify the number
 // epochs.
-void ModelPipeline::trainOnStream(data::DatasetLoaderPtr& dataset,
-                                  bolt::TrainConfig train_config,
-                                  uint32_t max_in_memory_batches) {
+void ModelPipeline::trainOnStream(
+    data::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+    uint32_t max_in_memory_batches,
+    const std::optional<ValidationOptions>& validation) {
+  /**
+   * If there are temporal relationships then we cannot do validation because
+   * loading the validation data before all of the training data could lead to
+   * an invalid state in the temporal trackers. For in memory training we can
+   * simply load all of the training data and then the validation data. If there
+   * are no temporal trackers then we can load the validiation data here and
+   * then proceed to load the training data. To handle validation with streaming
+   * data and temporal trackers we would have to read the whole training
+   * dataset, then load the validation data, reset the temporal trackers, and
+   * then start reading the data for training. This case is currently not
+   * supported because it would be extremely inefficient if the dataset is
+   * sufficiently large.
+   */
+  if (validation && !_dataset_factory->hasTemporalTracking()) {
+    auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
+        dataset::SimpleFileDataSource::make(validation->filename(),
+                                            DEFAULT_EVALUATE_BATCH_SIZE),
+        /* training= */ false);
+
+    auto [val_data, val_labels] =
+        validation_dataset->loadInMemory(ALL_BATCHES).value();
+
+    train_config.withValidation(val_data, val_labels,
+                                validation->validationConfig(),
+                                validation->interval());
+  } else if (validation && !_dataset_factory->hasTemporalTracking()) {
+    std::cerr
+        << "Warning: Currently specifying validation along with "
+           "max_in_memory_batches is not supported with temporal tracking."
+        << std::endl;
+  }
+
   uint32_t epochs = train_config.epochs();
   // We want a single epoch in the train config in order to train for a single
   // epoch for each pass over the dataset.
@@ -283,7 +321,7 @@ void ModelPipeline::updateRehashRebuildInTrainConfig(
 }
 
 std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
-    const dataset::DataLoaderPtr& data_source, const std::string& metric_name) {
+    const dataset::DataSourcePtr& data_source, const std::string& metric_name) {
   uint32_t num_batches =
       MAX_SAMPLES_FOR_THRESHOLD_TUNING / data_source->getMaxBatchSize();
 
@@ -346,6 +384,31 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
   }
 
   return best_threshold;
+}
+
+void ModelPipeline::setModel(bolt::BoltGraphPtr& new_model) {
+  std::vector<bolt::NodePtr> new_model_nodes = new_model->getNodes();
+  std::vector<bolt::NodePtr> old_model_nodes = _model->getNodes();
+
+  if (new_model_nodes.size() != old_model_nodes.size()) {
+    throw std::invalid_argument(
+        "The new model must have the same number of nodes as the old model "
+        "(the old model has " +
+        std::to_string(old_model_nodes.size()) +
+        " layers while the new model "
+        "has " +
+        std::to_string(new_model_nodes.size()) + ". )");
+  }
+
+  for (uint32_t node_id = 0; node_id < new_model_nodes.size(); node_id++) {
+    if (new_model_nodes[node_id]->outputDim() !=
+        old_model_nodes[node_id]->outputDim()) {
+      throw std::invalid_argument(
+          "The new model must have the same layer dimensions as the old model, "
+          "but we found a layer with different dimension.");
+    }
+  }
+  _model = new_model;
 }
 
 }  // namespace thirdai::automl::models

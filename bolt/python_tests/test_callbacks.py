@@ -128,7 +128,7 @@ class CollectTrainAccuracy(bolt.callbacks.Callback):
         self.accuracies = []
 
     def on_train_end(self, model, train_state):
-        self.accuracies = train_state.get_train_metrics("categorical_accuracy")
+        self.accuracies = train_state.get_train_metric_values("categorical_accuracy")
 
 
 def test_train_state_correctly_updates_metrics():

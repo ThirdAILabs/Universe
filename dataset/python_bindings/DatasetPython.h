@@ -52,12 +52,12 @@ class MLMDatasetLoader {
             std::move(vocab), pairgram_range, masked_tokens_percentage)) {}
 
   py::tuple load(const std::string& filename, uint32_t batch_size) {
-    auto data_loader =
-        std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
+    auto data_source =
+        std::make_shared<dataset::SimpleFileDataSource>(filename, batch_size);
 
     auto dataset = std::make_shared<
         dataset::StreamingDataset<BoltBatch, BoltBatch, BoltBatch>>(
-        data_loader, _batch_processor);
+        data_source, _batch_processor);
 
     auto [data, masked_indices, labels] = dataset->loadInMemory();
 

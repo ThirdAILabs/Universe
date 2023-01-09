@@ -9,9 +9,9 @@
 
 namespace thirdai::dataset {
 
-class DataLoader {
+class DataSource {
  public:
-  explicit DataLoader(uint32_t target_batch_size)
+  explicit DataSource(uint32_t target_batch_size)
       : _target_batch_size(target_batch_size) {}
 
   virtual std::optional<std::vector<std::string>> nextBatch() = 0;
@@ -24,24 +24,24 @@ class DataLoader {
 
   uint32_t getMaxBatchSize() const { return _target_batch_size; }
 
-  virtual ~DataLoader() = default;
+  virtual ~DataSource() = default;
 
  protected:
   uint32_t _target_batch_size;
 };
 
-using DataLoaderPtr = std::shared_ptr<DataLoader>;
+using DataSourcePtr = std::shared_ptr<DataSource>;
 
-class SimpleFileDataLoader final : public DataLoader {
+class SimpleFileDataSource final : public DataSource {
  public:
-  SimpleFileDataLoader(const std::string& filename, uint32_t target_batch_size)
-      : DataLoader(target_batch_size),
+  SimpleFileDataSource(const std::string& filename, uint32_t target_batch_size)
+      : DataSource(target_batch_size),
         _file(SafeFileIO::ifstream(filename)),
         _filename(filename) {}
 
-  static std::shared_ptr<SimpleFileDataLoader> make(
+  static std::shared_ptr<SimpleFileDataSource> make(
       const std::string& filename, uint32_t target_batch_size) {
-    return std::make_shared<SimpleFileDataLoader>(filename, target_batch_size);
+    return std::make_shared<SimpleFileDataSource>(filename, target_batch_size);
   }
 
   std::optional<std::vector<std::string>> nextBatch() final {

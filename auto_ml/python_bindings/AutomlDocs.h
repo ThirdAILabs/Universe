@@ -80,11 +80,11 @@ Examples:
 
 )pbdoc";
 
-const char* const MODEL_PIPELINE_TRAIN_DATA_LOADER = R"pbdoc(
-Trains a ModelPipeline on a given dataset using any DataLoader.
+const char* const MODEL_PIPELINE_TRAIN_DATA_SOURCE = R"pbdoc(
+Trains a ModelPipeline on a given dataset using any DataSource.
 
 Args:
-    data_source (dataset.DataLoader): A data loader for the given dataset.
+    data_source (dataset.DataSource): A data source for the given dataset.
     train_config (bolt.TrainConfig): The training config specifies the number
         of epochs and learning_rate, and optionally allows for specification of a
         validation dataset, metrics, callbacks, and how frequently to log metrics 
@@ -101,7 +101,7 @@ Returns:
 Examples:
     >>> train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     >>> model.train(
-            data_source=dataset.CSVDataLoader(...), train_config=train_config, max_in_memory_batches=12
+            data_source=dataset.CSVDataSource(...), train_config=train_config, max_in_memory_batches=12
         )
 
 )pbdoc";
@@ -135,12 +135,12 @@ Examples:
 
 )pbdoc";
 
-const char* const MODEL_PIPELINE_EVALUATE_DATA_LOADER = R"pbdoc(
+const char* const MODEL_PIPELINE_EVALUATE_DATA_SOURCE = R"pbdoc(
 Evaluates the ModelPipeline on the given dataset and returns a numpy array of the 
 activations.
 
 Args:
-    data_source (dataset.DataLoader): A data loader for the given dataset.
+    data_source (dataset.DataSource): A data source for the given dataset.
     eval_config (Option[bolt.EvalConfig]): The predict config is optional
         and allows for specification of metrics to compute and whether to use sparse
         inference.
@@ -159,7 +159,7 @@ Returns:
     The shape of each array will be (dataset_length, num_nonzeros_in_output).
 
 Examples:
-    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.CSVDataLoader(...))
+    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.CSVDataSource(...))
 
 )pbdoc";
 
@@ -464,10 +464,15 @@ const char* const UDT_GENERATOR_INIT = R"pbdoc(
 UniversalDeepTransformer (UDT) Constructor. 
 
 Args:
+    source_column (str): Optional. Column name specifying the source queries in the input 
+        dataset. If provided then the model can use these queries to augment its training.
+        If not provided then the model be trained from the target queries directly. If the 
+        source column is specified the the model can be trained with in both a supervised 
+        setting where (incorrect query, correct query) pairs are provided and in an 
+        unsupervised setting where only correct queries are provided. If source is not specified
+        then it can only be trained in an unsupervised setting.
     target_column (str): Column name specifying the target queries in the input dataset. 
         Queries in this column are the target that the UDT model learns to predict. 
-    source_column (str): Column name specifying the source queries in the input dataset. 
-        The UDT model uses is trained based on these queries. 
     dataset_size (str): The size of the input dataset. This size factor informs what
         UDT model to create. 
 
@@ -490,7 +495,11 @@ Example:
 
 const char* const UDT_GENERATOR_TRAIN = R"pbdoc(
 Trains a UniversalDeepTransformer (UDT) model for query reformulation on a given dataset 
-using a file on disk.
+using a file on disk. The filename must contain at least 1 column containing the target
+queries. If `source` was also specified when constructing the model then a second 
+column may be present containing the source queries. If a source column is present 
+then the model is trained in a supervised setting using the (source, target) pairs, if 
+it is not present it is trained in an unsupervised setting using just the target queries.
 
 Args:
     filename (str): Path to the dataset file.
@@ -818,7 +827,7 @@ Thus, UDT is at its best when its internal temporal context gets updated with
 new true samples. `model.index_batch()` does exactly this with a batch of samples. 
 
 Args: 
-    input_samples (ListDict[str, str]): The input sample as a dictionary 
+    input_samples (List[Dict[str, str]]): The input sample as a dictionary 
         where the keys are column names as specified in data_types and the "
         values are the respective column values. 
 
@@ -849,6 +858,82 @@ Example:
                 {"user_id": "A39574", "timestamp": "2022-12-25", "special_event": "christmas", "movie_title": "Home Alone"},
                 {"user_id": "A39574", "timestamp": "2022-12-26", "special_event": "christmas", "movie_title": "Home Alone 2"},
             ]
+        )
+)pbdoc";
+
+const char* const UDT_INDEX_METADATA = R"pbdoc(
+Indexes a single column metadata sample.
+
+Args: 
+    column_name (str): The name of the column associated with the metadata.
+    update (Dict[str, str]): The metadata sample as a dictionary 
+        where the keys are column names as specified in the data_types map of 
+        the metadata config and the values are the respective column values. This
+        map should also contain the metadata key.
+
+Example:
+    >>> model = bolt.UniversalDeepTransformer(
+            data_types={
+                "user_id": bolt.types.categorical(
+                    metadata=bolt.types.metadata(
+                        filename="user_meta.csv", 
+                        data_types={"age": bolt.types.numerical()}, 
+                        key_column_name="user_id"
+                    )
+                )
+            },
+            target="movie_title",
+            n_target_classes=500,
+        )
+    >>> model.index_metadata(
+            column_name="user_id", 
+            update={
+                "user_id": "XAEA12", # "user_id" column from metadata config's key_column_name
+                "age": "2", # "age" column as from metadata config's data_types
+            },
+        )
+)pbdoc";
+
+const char* const UDT_INDEX_METADATA_BATCH = R"pbdoc(
+Indexes a batch of column metadata samples.
+
+Args: 
+    column_name (str): The name of the column associated with the metadata.
+    updates (List[Dict[str, str]]): The metadata samples as a list of dictionaries 
+        where the keys are column names as specified in the data_types map of 
+        the metadata config and the values are the respective column values. The
+        maps should also contain the metadata key.
+
+Example:
+    >>> model = bolt.UniversalDeepTransformer(
+            data_types={
+                "user_id": bolt.types.categorical(
+                    metadata=bolt.types.metadata(
+                        filename="user_meta.csv", 
+                        data_types={"age": bolt.types.numerical()}, 
+                        key_column_name="user_id"
+                    )
+                )
+            },
+            target="movie_title",
+            n_target_classes=500,
+        )
+    >>> model.index_metadata_batch(
+            column_name="user_id", 
+            updates=[
+                {
+                    "user_id": "XAEA12", # "user_id" column from metadata config's key_column_name
+                    "age": "2", # "age" column as from metadata config's data_types
+                },
+                {
+                    "user_id": "A22298",
+                    "age": "52",
+                },
+                {
+                    "user_id": "B39915",
+                    "age": "33",
+                },
+            ],
         )
 )pbdoc";
 

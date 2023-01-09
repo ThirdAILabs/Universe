@@ -1,5 +1,5 @@
 #pragma once
-#include <dataset/src/DataLoader.h>
+#include <dataset/src/DataSource.h>
 #include <optional>
 #include <string>
 
@@ -10,9 +10,9 @@ namespace thirdai::licensing {
 void checkLicense();
 
 // If license checking is enabled, verifies that the file corresponding to the
-// passed in data loader is authorized under the license. If license checking is
+// passed in data source is authorized under the license. If license checking is
 // disabled, this is a NOOP.
-void verifyAllowedDataset(const dataset::DataLoaderPtr& data_loader);
+void verifyAllowedDataset(const dataset::DataSourcePtr& data_source);
 
 // License verification method 1: Keygen api key
 void activate(const std::string& api_key);

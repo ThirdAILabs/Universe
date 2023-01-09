@@ -200,6 +200,7 @@ set(THIRDAI_COMPILE_OPTIONS
     -Werror
     -Wno-unused-function
     -Wno-ignored-optimization-argument
+    -Wno-psabi
     -pedantic
     $<$<CONFIG:Debug>:-Og>
     $<$<CONFIG:Debug>:-g>
@@ -360,7 +361,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/deployment_config/NodeConfig.cc
     auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactoryConfig.cc
     auto_ml/src/deployment_config/dataset_configs/UDTDatasetFactoryConfig.cc
-    auto_ml/src/cold_start/ColdStartDataLoader.cc
+    auto_ml/src/cold_start/ColdStartDataSource.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc)
 
