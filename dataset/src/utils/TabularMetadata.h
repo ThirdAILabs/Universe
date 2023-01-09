@@ -5,8 +5,8 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
-#include "ProcessorUtils.h"
 #include <dataset/src/BatchProcessor.h>
+#include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cmath>
