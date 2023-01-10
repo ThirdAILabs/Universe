@@ -372,4 +372,4 @@ def test_return_metrics():
     metrics = model.evaluate(
         TEST_FILE, metrics=["categorical_accuracy"], return_metrics=True
     )
-    assert metrics["categorical_accuracy"] >= 0
+    assert metrics["categorical_accuracy"] > 0
