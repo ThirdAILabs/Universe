@@ -5,6 +5,24 @@
 
 namespace thirdai::automl::data {
 
+UDTDatasetFactory::UDTDatasetFactory(
+    UDTConfigPtr config, bool force_parallel, uint32_t text_pairgram_word_limit,
+    bool contextual_columns,
+    std::optional<dataset::RegressionBinningStrategy> regression_binning)
+    : _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
+          config->data_types, config->provided_relationships,
+          config->lookahead)),
+      _config(FeatureComposer::verifyConfigIsValid(std::move(config),
+                                                   _temporal_relationships)),
+      _context(std::make_shared<TemporalContext>()),
+      _parallel(_temporal_relationships.empty() || force_parallel),
+      _text_pairgram_word_limit(text_pairgram_word_limit),
+      _contextual_columns(contextual_columns),
+      _regression_binning(regression_binning),
+      _vectors_map(processAllMetadata()),
+      _labeled_history_updating_processor(makeLabeledUpdatingProcessor()),
+      _unlabeled_non_updating_processor(makeUnlabeledNonUpdatingProcessor()) {}
+
 dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     std::shared_ptr<dataset::DataSource> data_source, bool training) {
   auto column_number_map =
