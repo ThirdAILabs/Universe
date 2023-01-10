@@ -47,7 +47,12 @@ class ShuffleBatchBuffer {
     return batches;
   }
 
-  std::vector<std::vector<BoltBatch>> exportBuffer() {
+  /**
+   * Exports min(num_batches, size()) batches into a vector of vector of
+   * BoltBatch
+   */
+  std::vector<std::vector<BoltBatch>> exportBuffer(uint64_t num_batches) {
+    uint64_t num_batches_in_result = std::min<uint64_t>(num_batches, size());
     /*
       This doesn't double our memory footprint since the
       batches are moved;
@@ -58,9 +63,12 @@ class ShuffleBatchBuffer {
     for (auto& batch_buffer : _batch_buffers) {
       std::vector<BoltBatch> batch_list(
           std::make_move_iterator(batch_buffer.begin()),
-          std::make_move_iterator(batch_buffer.end()));
+          std::make_move_iterator(batch_buffer.begin() +
+                                  num_batches_in_result));
       exported_batch_lists.push_back(std::move(batch_list));
-      batch_buffer.clear();
+      for (uint32_t i = 0; i < num_batches_in_result; i++) {
+        batch_buffer.pop_front();
+      }
     }
 
     return exported_batch_lists;

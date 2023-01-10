@@ -13,7 +13,8 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
     : _data_source(std::move(data_source)),
       _batch_processor(std::move(batch_processor)),
       _shuffle(shuffle),
-      _buffer(shuffle_config.n_batches, _data_source->getMaxBatchSize()) {
+      _batch_buffer_size((shuffle_config.n_batches)),
+      _buffer(shuffle_config.seed, _data_source->getMaxBatchSize()) {
   // Different formats of data may or may not contain headers. Thus we
   // delegate to the particular batch processor to determine if a header is
   // needed. The first row is interpreted as the header. The batch processor
@@ -37,7 +38,7 @@ std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory() {
 }
 
 std::optional<std::pair<InputDatasets, LabelDataset>>
-DatasetLoader::loadInMemory(uint64_t max_in_memory_batches) {
+DatasetLoader::loadInMemory(uint64_t num_batches) {
 #if THIRDAI_EXPOSE_ALL
   // This is useful internally but we don't want to expose it to keep the
   // output clear and simple.
@@ -47,10 +48,10 @@ DatasetLoader::loadInMemory(uint64_t max_in_memory_batches) {
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  fillShuffleBuffer(/* fill_size = */ std::max<size_t>(max_in_memory_batches,
-                                                       _batch_buffer_size));
+  fillShuffleBuffer(
+      /* fill_size = */ std::max<size_t>(num_batches, _batch_buffer_size));
 
-  auto batch_lists = _buffer.exportBuffer();
+  auto batch_lists = _buffer.exportBuffer(num_batches);
   auto end = std::chrono::high_resolution_clock::now();
   auto duration =
       std::chrono::duration_cast<std::chrono::seconds>(end - start).count();

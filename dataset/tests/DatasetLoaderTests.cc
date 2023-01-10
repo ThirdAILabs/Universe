@@ -78,7 +78,7 @@ class DatasetLoaderTests : public ::testing::Test {
         ASSERT_EQ(label_vec.len, 1);
         ASSERT_EQ(input_vec.activations[0], input_vec.activations[1]);
         ASSERT_EQ(input_vec.activations[0], label_vec.activations[0]);
-        found[static_cast<size_t>(input_vec.activations[0])] = true;
+        found.at(static_cast<size_t>(input_vec.activations[0])) = true;
       }
     }
 
