@@ -39,7 +39,7 @@ class TabularHashFeatures final : public Block {
   bool isDense() const final { return false; };
 
   Explanation explainIndex(uint32_t index_within_block,
-                           SingleInputRef& input) final {
+                           ColumnarInputSample& input) final {
     ColumnIdentifier first_column;
     ColumnIdentifier second_column;
 
@@ -64,7 +64,7 @@ class TabularHashFeatures final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(SingleInputRef& input,
+  std::exception_ptr buildSegment(ColumnarInputSample& input,
                                   SegmentedFeatureVector& vec) final {
     std::unordered_map<uint32_t, uint32_t> unigram_to_col_num;
     std::vector<uint32_t> tokens;
@@ -88,7 +88,7 @@ class TabularHashFeatures final : public Block {
    * buildSegment() and explainIndex()
    */
   template <typename TOKEN_PROCESSOR_T>
-  std::exception_ptr forEachOutputToken(SingleInputRef& input,
+  std::exception_ptr forEachOutputToken(ColumnarInputSample& input,
                                         TOKEN_PROCESSOR_T token_processor) {
     static_assert(std::is_convertible<TOKEN_PROCESSOR_T,
                                       std::function<void(Token&)>>::value);

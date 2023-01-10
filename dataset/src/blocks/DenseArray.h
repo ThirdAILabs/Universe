@@ -43,7 +43,7 @@ class DenseArrayBlock final : public Block {
   bool isDense() const final { return true; };
 
   Explanation explainIndex(uint32_t index_within_block,
-                           SingleInputRef& input_row) final {
+                           SingleColumnarInput& input_row) final {
     char* end;
     float value =
         std::strtof(input_row.column(index_within_block).data(), &end);
@@ -51,7 +51,7 @@ class DenseArrayBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(SingleInputRef& input_row,
+  std::exception_ptr buildSegment(SingleColumnarInput& input_row,
                                   SegmentedFeatureVector& vec) final {
     for (uint32_t i = _start_col.number(); i < _start_col.number() + _dim;
          i++) {

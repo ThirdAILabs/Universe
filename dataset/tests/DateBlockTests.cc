@@ -236,7 +236,7 @@ TEST_F(DateBlockTests, ExplainMethodGivesCorrectDayName) {
   for (const auto& vec : batch) {
     auto day_of_week = dayOfWeek(vec);
     ASSERT_TRUE(day_of_week.has_value());
-    SingleRowInputRef empty_input_row({});
+    RowInputRef empty_input_row({});
     auto day = block->explainIndex(*day_of_week, empty_input_row);
     ASSERT_TRUE(days[day_number++] == day.keyword);
   }
@@ -260,7 +260,7 @@ TEST_F(DateBlockTests, ExplainMethodGivesCorrectMonthName) {
   for (const auto& vec : batch) {
     auto month_of_year = monthOfYear(vec);
     ASSERT_TRUE(month_of_year.has_value());
-    SingleRowInputRef empty_input_row({});
+    RowInputRef empty_input_row({});
     auto month = block->explainIndex(*month_of_year + monthOfYearOffset(),
                                      empty_input_row);
     ASSERT_TRUE(months[month_number++] == month.keyword);

@@ -31,14 +31,14 @@ class UserCountHistoryBlock final : public Block {
   uint32_t featureDim() const final { return _history->historyLength(); }
   bool isDense() const final { return true; }
 
-  void prepareForBatch(BatchInputRef& incoming_batch) final {
+  void prepareForBatch(BatchedColumnarInput& incoming_batch) final {
     auto& first_row = incoming_batch.sample(0);
     auto time = TimeObject(first_row.column(_timestamp_col));
     _history->checkpoint(/* new_lowest_timestamp= */ time.secondsSinceEpoch());
   }
 
   Explanation explainIndex(uint32_t index_within_block,
-                           SingleInputRef& input) final {
+                           ColumnarInputSample& input) final {
     auto [user, time_seconds, val] = getUserTimeVal(input);
 
     auto counts = indexAndGetCountsFromHistory(
@@ -78,7 +78,7 @@ class UserCountHistoryBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(SingleInputRef& input,
+  std::exception_ptr buildSegment(ColumnarInputSample& input,
                                   SegmentedFeatureVector& vec) final {
     auto [user, time_seconds, val] = getUserTimeVal(input);
 
@@ -98,7 +98,7 @@ class UserCountHistoryBlock final : public Block {
 
  private:
   std::tuple<std::string, int64_t, float> getUserTimeVal(
-      SingleInputRef& input) const {
+      ColumnarInputSample& input) const {
     auto user = std::string(input.column(_user_col));
 
     auto time = TimeObject(input.column(_timestamp_col));

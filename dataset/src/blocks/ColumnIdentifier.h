@@ -55,15 +55,6 @@ struct ColumnIdentifier {
     _column_number = column_number_map.at(name());
   }
 
-  void resetColumnNumber() {
-    if (!hasName()) {
-      throw std::logic_error(
-          "Cannot reset the column number of a ColumnIdentifier that does "
-          "not have a column name.");
-    }
-    _column_number = std::nullopt;
-  }
-
   friend bool operator==(const ColumnIdentifier& lhs,
                          const ColumnIdentifier& rhs) {
     return lhs._column_name == rhs._column_name &&

@@ -192,7 +192,7 @@ class Block {
    * return any exception_ptr and proceed with program execution without
    * failing. The error should then be caught.
    */
-  std::exception_ptr addVectorSegment(SingleInputRef& input,
+  std::exception_ptr addVectorSegment(ColumnarInputSample& input,
                                       SegmentedFeatureVector& vec) {
     vec.addFeatureSegment(featureDim());
     return buildSegment(input, vec);
@@ -207,17 +207,6 @@ class Block {
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
     for (auto* column_identifier : getConsistentColumnIdentifiers()) {
       column_identifier->updateColumnNumber(column_number_map);
-    }
-  }
-
-  /**
-   * Resets the column numbers of the current block's column identifiers.
-   * Can be used to prevent issues arising from outdated column numbers
-   * (e.g. reading a new file with a different column ordering)
-   */
-  void resetColumnNumbers() {
-    for (auto* column_identifier : getConsistentColumnIdentifiers()) {
-      column_identifier->resetColumnNumber();
     }
   }
 
@@ -266,7 +255,7 @@ class Block {
    * Allows blocks to prepare for the incoming batch without being affected by
    * parallelism. Avoid if possible since this can be slow.
    */
-  virtual void prepareForBatch(BatchInputRef& incoming_batch) {
+  virtual void prepareForBatch(ColumnarInputBatch& incoming_batch) {
     (void)incoming_batch;
   }
 
@@ -286,7 +275,7 @@ class Block {
    * column.
    */
   virtual Explanation explainIndex(uint32_t index_within_block,
-                                   SingleInputRef& input_row) = 0;
+                                   ColumnarInputSample& input_row) = 0;
 
   virtual ~Block() = default;
 
@@ -298,7 +287,7 @@ class Block {
    * WARNING: This function may be called in many threads simultaneously,
    * so it should be thread-safe or robust to data races.
    */
-  virtual std::exception_ptr buildSegment(SingleInputRef& input_row,
+  virtual std::exception_ptr buildSegment(ColumnarInputSample& input_row,
                                           SegmentedFeatureVector& vec) = 0;
 
   virtual std::vector<ColumnIdentifier*> getColumnIdentifiers() = 0;
@@ -367,7 +356,7 @@ struct BlockList {
    * Dispatches the method each Block. See method definition in the
    * Block class for details.
    */
-  void prepareForBatch(BatchInputRef& incoming_batch) {
+  void prepareForBatch(ColumnarInputBatch& incoming_batch) {
     for (const auto& block : _blocks) {
       block->prepareForBatch(incoming_batch);
     }
@@ -378,7 +367,7 @@ struct BlockList {
    * Block class for details.
    */
   std::exception_ptr addVectorSegment(
-      SingleInputRef& sample, SegmentedFeatureVector& segmented_vector) {
+      ColumnarInputSample& sample, SegmentedFeatureVector& segmented_vector) {
     for (auto& block : _blocks) {
       if (auto err = block->addVectorSegment(sample, segmented_vector)) {
         return err;

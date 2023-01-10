@@ -136,7 +136,7 @@ class UserItemHistoryBlock final : public Block {
   }
 
   Explanation explainIndex(uint32_t index_within_block,
-                           SingleInputRef& input) final {
+                           ColumnarInputSample& input) final {
     if (_item_vectors) {
       // TODO(Geordie): Make more descriptive.
       return {_item_col, "Metadata of previously seen item."};
@@ -158,7 +158,7 @@ class UserItemHistoryBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(SingleInputRef& input,
+  std::exception_ptr buildSegment(ColumnarInputSample& input,
                                   SegmentedFeatureVector& vec) final {
     try {
       auto user_str = std::string(input.column(_user_col));

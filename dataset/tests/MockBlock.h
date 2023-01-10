@@ -20,7 +20,7 @@ class MockBlock final : public Block {
   bool isDense() const override { return _dense; }
 
   Explanation explainIndex(uint32_t index_within_block,
-                           SingleInputRef& columnar_sample) final {
+                           ColumnarInputSample& columnar_sample) final {
     (void)columnar_sample;
     (void)index_within_block;
     throw std::invalid_argument(
@@ -32,7 +32,7 @@ class MockBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(SingleInputRef& input,
+  std::exception_ptr buildSegment(ColumnarInputSample& input,
                                   SegmentedFeatureVector& vec) final {
     auto val_str = input.column(_column);
     char* end;

@@ -36,7 +36,7 @@ class CategoricalBlock : public Block {
   bool isDense() const final { return false; };
 
   Explanation explainIndex(uint32_t index_within_block,
-                           SingleInputRef& input) final {
+                           SingleColumnarInput& input) final {
     return {_col,
             getResponsibleCategory(index_within_block, input.column(_col))};
   }
@@ -51,7 +51,7 @@ class CategoricalBlock : public Block {
       const std::string_view& category_value) const = 0;
 
  protected:
-  std::exception_ptr buildSegment(SingleInputRef& input,
+  std::exception_ptr buildSegment(SingleColumnarInput& input,
                                   SegmentedFeatureVector& vec) final {
     auto column = input.column(_col);
 

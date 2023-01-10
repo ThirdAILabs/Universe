@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dataset/src/blocks/ColumnIdentifier.h>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -16,18 +17,36 @@ using LineInput = std::string;
 using MapInputBatch = std::vector<std::unordered_map<std::string, std::string>>;
 using LineInputBatch = std::vector<std::string>;
 
-class SingleInputRef {
+/**
+ * An interface that allows the data pipeline to operate on arbitrary
+ * representations of a single columnar input sample.
+ *
+ *
+ *
+ * SingleInputRef is short for single input reference. Single -
+ *
+ * An interface for wrappers around a single columnar input sample of an
+ * arbitrary format.
+ * It is called "single" input ref because the underlying data structure
+ * represents a single input sample.
+ */
+class ColumnarInputSample {
  public:
+  // TODO(Geordie): Add methods to parse column into their real types?
+  // E.g. "1" -> int(1)
+
+  /**
+   * Get
+   */
   virtual std::string_view column(const ColumnIdentifier& column) = 0;
   virtual uint32_t size() = 0;
-  virtual std::exception_ptr assertValid(uint32_t expected_num_cols) = 0;
-  virtual ~SingleInputRef() = default;
+  virtual ~ColumnarInputSample() = default;
 };
 
-class SingleMapInputRef final : public SingleInputRef {
+class MapSampleRef final : public ColumnarInputSample {
  public:
   // NOLINTNEXTLINE Implicit constructor is intentional
-  SingleMapInputRef(const MapInput& columns) : _columns(columns) {}
+  MapSampleRef(const MapInput& columns) : _columns(columns) {}
 
   std::string_view column(const ColumnIdentifier& column) final {
     if (!_columns.count(column.name())) {
@@ -38,39 +57,17 @@ class SingleMapInputRef final : public SingleInputRef {
 
   uint32_t size() final { return _columns.size(); }
 
-  std::exception_ptr assertValid(uint32_t expected_num_cols) final {
-    (void)expected_num_cols;
-    return nullptr;
-  }
-
  private:
   const MapInput& _columns;
 };
 
-class SingleRowInputRef final : public SingleInputRef {
+class RowSampleRef final : public ColumnarInputSample {
  public:
   // NOLINTNEXTLINE Implicit constructor is intentional
-  SingleRowInputRef(const RowInput& columns) : _columns(columns) {}
+  RowSampleRef(const RowInput& columns) : _columns(columns) {}
 
   std::string_view column(const ColumnIdentifier& column) final {
     return _columns.at(column.number());
-  }
-
-  std::exception_ptr assertValid(uint32_t expected_num_cols) final {
-    if (_columns.size() == expected_num_cols) {
-      return nullptr;
-    }
-
-    std::stringstream error_ss;
-    error_ss << "Expected " << expected_num_cols
-             << " columns in each row of the dataset. Found row with "
-             << _columns.size() << " columns:";
-    for (auto column : _columns) {
-      error_ss << " '" << column << "'";
-    }
-    error_ss << ".";
-
-    return std::make_exception_ptr(std::invalid_argument(error_ss.str()));
   }
 
   uint32_t size() final { return _columns.size(); }
@@ -79,82 +76,81 @@ class SingleRowInputRef final : public SingleInputRef {
   const RowInput& _columns;
 };
 
-class SingleCsvLineInputRef final : public SingleInputRef {
+class CsvSampleRef final : public ColumnarInputSample {
  public:
-  SingleCsvLineInputRef(const LineInput& line, char delimiter)
-      : _line(line), _delimiter(delimiter) {}
+  CsvSampleRef(const LineInput& line, char delimiter,
+               std::optional<uint32_t> expected_num_cols = std::nullopt)
+      : _columns(ProcessorUtils::parseCsvRow(line, delimiter)) {
+    if (expected_num_cols && expected_num_cols != _columns->size()) {
+      std::stringstream error_ss;
+      error_ss << "Expected " << *expected_num_cols
+               << " columns in each row of the dataset. Found row with "
+               << _columns->size() << " columns:";
+      throw std::invalid_argument(error_ss.str());
+    }
+  }
 
   std::string_view column(const ColumnIdentifier& column) final {
-    parseToColumnsIfNecessary();
-    return SingleRowInputRef(*_columns).column(column);
+    return RowSampleRef(*_columns).column(column);
   }
 
-  uint32_t size() final {
-    parseToColumnsIfNecessary();
-    return _columns->size();
-  }
-
-  std::exception_ptr assertValid(uint32_t expected_num_cols) final {
-    parseToColumnsIfNecessary();
-    return SingleRowInputRef(*_columns).assertValid(expected_num_cols);
-  }
+  uint32_t size() final { return _columns->size(); }
 
  private:
-  void parseToColumnsIfNecessary() {
-    if (!_columns) {
-      _columns = ProcessorUtils::parseCsvRow(/* row= */ _line,
-                                             /* delimiter= */ _delimiter);
-    }
-  }
-
-  const LineInput& _line;
-  char _delimiter;
   std::optional<RowInput> _columns;
-  std::exception_ptr _last_error;
 };
 
-class BatchInputRef {
+class ColumnarInputBatch {
  public:
-  virtual SingleInputRef& sample(uint32_t index) = 0;
+  virtual ColumnarInputSample& sample(uint32_t index) = 0;
   virtual uint32_t size() = 0;
-  virtual ~BatchInputRef() = default;
+  virtual ~ColumnarInputBatch() = default;
 };
 
-class BatchMapInputRef final : public BatchInputRef {
+class MapBatchRef final : public ColumnarInputBatch {
  public:
   // NOLINTNEXTLINE
-  BatchMapInputRef(const MapInputBatch& batch) : _batch(batch) {
+  MapBatchRef(const MapInputBatch& batch) : _batch(batch) {
     _ref_batch.reserve(_batch.size());
     for (const auto& input : _batch) {
-      _ref_batch.emplace_back(SingleMapInputRef(input));
+      _ref_batch.emplace_back(MapSampleRef(input));
     }
   }
 
-  SingleInputRef& sample(uint32_t index) final { return _ref_batch.at(index); }
+  ColumnarInputSample& sample(uint32_t index) final {
+    return _ref_batch.at(index);
+  }
 
   uint32_t size() final { return _batch.size(); }
 
  private:
   const MapInputBatch& _batch;
-  std::vector<SingleMapInputRef> _ref_batch;
+  std::vector<MapSampleRef> _ref_batch;
 };
 
-class BatchCsvLineInputRef final : public BatchInputRef {
+class CsvBatchRef final : public ColumnarInputBatch {
  public:
-  BatchCsvLineInputRef(const LineInputBatch& batch, char delimiter)
-      : _batch(batch) {
-    _ref_batch.reserve(_batch.size());
-    for (const auto& input : _batch) {
-      _ref_batch.emplace_back(SingleCsvLineInputRef(input, delimiter));
-    }
-  }
+  CsvBatchRef(const LineInputBatch& batch, char delimiter,
+              std::optional<uint32_t> expected_num_columns)
+      : _batch(batch),
+        _ref_batch(_batch.size()),
+        _delimiter(delimiter),
+        _expected_num_columns(expected_num_columns) {}
 
-  SingleInputRef& sample(uint32_t index) final { return _ref_batch.at(index); }
+  ColumnarInputSample& sample(uint32_t index) final {
+    if (!_ref_batch.at(index)) {
+      _ref_batch.at(index) =
+          CsvSampleRef(_batch.at(index), _delimiter, _expected_num_columns);
+    }
+    return *_ref_batch.at(index);
+  }
 
   uint32_t size() final { return _batch.size(); }
 
  private:
   const LineInputBatch& _batch;
-  std::vector<SingleCsvLineInputRef> _ref_batch;
+  std::vector<std::optional<CsvSampleRef>> _ref_batch;
+  char _delimiter;
+  std::optional<uint32_t> _expected_num_columns;
 };
 }  // namespace thirdai::dataset
