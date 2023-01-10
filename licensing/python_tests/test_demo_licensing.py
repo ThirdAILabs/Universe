@@ -17,7 +17,7 @@ SMALL_CENSUS_KEY = "HKRW-4R97-KRLY-TMVY-79TW-3FHH-NRHR-HLYC"
 
 
 def test_census_key_works_on_small_census():
-    thirdai.activate(SMALL_CENSUS_KEY)
+    thirdai.licensing.activate(SMALL_CENSUS_KEY)
     train_filename, _, _ = thirdai.demos.download_census_income()
     small_census_filename = "small_census.txt"
     with open(small_census_filename, "w") as output:
@@ -32,7 +32,7 @@ def test_census_key_works_on_small_census():
 
 
 def test_census_key_fails_on_others():
-    thirdai.activate(SMALL_CENSUS_KEY)
+    thirdai.licensing.activate(SMALL_CENSUS_KEY)
     with pytest.raises(
         RuntimeError,
         match="This dataset is not authorized under this license.",
@@ -48,4 +48,4 @@ def set_license_back_to_valid():
     # The yield means that pytest will wait until the test finishes to run
     # the code below it
     yield
-    thirdai.deactivate()
+    thirdai.licensing.deactivate()

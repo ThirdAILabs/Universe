@@ -29,7 +29,7 @@ invalid_license_path = dir_path / "invalid_license.serialized"
 def test_with_valid_license():
     import thirdai
 
-    thirdai.set_thirdai_license_path(str(valid_license_path))
+    thirdai.licensing.set_path(str(valid_license_path))
     this_should_require_a_license_search()
     this_should_require_a_license_bolt()
 
@@ -41,7 +41,7 @@ def test_with_valid_license():
 def test_with_expired_license():
     import thirdai
 
-    thirdai.set_thirdai_license_path(str(expired_license_path))
+    thirdai.licensing.set_path(str(expired_license_path))
     with pytest.raises(Exception, match=r".*license file is expired.*"):
         this_should_require_a_license_search()
     with pytest.raises(Exception, match=r".*license file is expired.*"):
@@ -55,7 +55,7 @@ def test_with_expired_license():
 def test_with_invalid_license():
     import thirdai
 
-    thirdai.set_thirdai_license_path(str(invalid_license_path))
+    thirdai.licensing.set_path(str(invalid_license_path))
     with pytest.raises(Exception, match=r".*license verification failure.*"):
         this_should_require_a_license_search()
     with pytest.raises(Exception, match=r".*license verification failure.*"):
@@ -70,4 +70,4 @@ def set_license_back_to_valid():
 
     # The yield means that it will run AFTER each test, not before.
     yield
-    thirdai.set_thirdai_license_path(str(valid_license_path))
+    thirdai.licensing.set_path(str(valid_license_path))
