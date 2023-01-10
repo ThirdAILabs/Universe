@@ -13,6 +13,9 @@ class FullyConnected final
     : public Op,
       public std::enable_shared_from_this<FullyConnected> {
  public:
+  // TODO(Nicholas): rebuild_hash_tables & reconstruct_hash_functions should be
+  // moved to the sampling config once bolt v1 is depreciated and there are no
+  // compatability concerns.
   static std::shared_ptr<FullyConnected> make(
       uint32_t dim, uint32_t input_dim, float sparsity,
       const std::string& activation, SamplingConfigPtr sampling,
