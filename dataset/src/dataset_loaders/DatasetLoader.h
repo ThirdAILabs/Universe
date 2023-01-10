@@ -8,6 +8,19 @@
 
 namespace thirdai::dataset {
 
+struct DatasetShuffleConfig {
+  DatasetShuffleConfig() : n_batches(1000), seed(time(NULL)) {}
+
+  explicit DatasetShuffleConfig(size_t n_batches_in_buffer)
+      : n_batches(n_batches_in_buffer), seed(time(NULL)) {}
+
+  DatasetShuffleConfig(size_t n_batches_in_buffer, uint32_t seed)
+      : n_batches(n_batches_in_buffer), seed(seed) {}
+
+  size_t n_batches;
+  uint32_t seed;
+};
+
 using InputDatasets = std::vector<dataset::BoltDatasetPtr>;
 using LabelDataset = dataset::BoltDatasetPtr;
 class DatasetLoader final {
@@ -16,29 +29,12 @@ class DatasetLoader final {
                 dataset::BatchProcessorPtr batch_processor, bool shuffle,
                 DatasetShuffleConfig shuffle_config = DatasetShuffleConfig());
 
-  // TODO(Josh): Can we get rid of this constructor?
-  DatasetLoader(const DataSourcePtr& source,
-                std::vector<std::shared_ptr<Block>> input_blocks,
-                std::vector<std::shared_ptr<Block>> label_blocks,
-                bool shuffle = false,
-                DatasetShuffleConfig config = DatasetShuffleConfig(),
-                bool has_header = false, char delimiter = ',',
-                bool parallel = true)
-      : DatasetLoader(source,
-                      std::make_shared<GenericBatchProcessor>(
-                          std::move(input_blocks), std::move(label_blocks),
-                          has_header, delimiter, parallel),
-                      shuffle, config) {}
-
   std::pair<InputDatasets, LabelDataset> loadInMemory();
 
   std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
       uint64_t max_in_memory_batches);
 
   void restart();
-
-  // TODO(Josh): This should be private, but okay for now
-  std::optional<std::vector<BoltBatch>> nextBatchVector();
 
   uint32_t getInputDim() {
     auto dimensions = _batch_processor->getDimensions();
@@ -63,21 +59,21 @@ class DatasetLoader final {
   }
 
  private:
-  void prefillShuffleBuffer();
-
-  // Returns whether data source is not exhausted
-  bool addNextBatchToBuffer();
+  // Adds batches to the buffer until the data source is finished or the buffer
+  // reaches the passed in fill_size
+  void fillShuffleBuffer(size_t fill_size);
 
   DataSourcePtr _data_source;
   std::shared_ptr<BatchProcessor> _batch_processor;
-  uint32_t _max_batch_size;
 
   // Even if the value of _shuffle is false, we still use a ShuffleBatchBuffer,
   // since we pass in the value of _shuffle.
   // TODO(Josh/Geordie): This is a bit confusing, if we aren't shuffling we
   // probably shouldn't use a ShuffleBatchBuffer
   bool _shuffle;
-  uint32_t _batch_buffer_size;
+  // We try to ensure at least this many batches are in the buffer and shuffled
+  // when we  return shuffled values
+  size_t _batch_buffer_size;
   ShuffleBatchBuffer _buffer;
 };
 

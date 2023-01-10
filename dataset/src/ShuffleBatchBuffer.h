@@ -12,19 +12,6 @@
 
 namespace thirdai::dataset {
 
-struct DatasetShuffleConfig {
-  DatasetShuffleConfig() : n_batches(1000), seed(time(NULL)) {}
-
-  explicit DatasetShuffleConfig(size_t n_batches_in_buffer)
-      : n_batches(n_batches_in_buffer), seed(time(NULL)) {}
-
-  DatasetShuffleConfig(size_t n_batches_in_buffer, uint32_t seed)
-      : n_batches(n_batches_in_buffer), seed(seed) {}
-
-  size_t n_batches;
-  uint32_t seed;
-};
-
 class ShuffleBatchBuffer {
  public:
   explicit ShuffleBatchBuffer(uint32_t shuffle_seed, size_t batch_size)
@@ -81,6 +68,18 @@ class ShuffleBatchBuffer {
 
   inline bool empty() const {
     return _batch_buffers.empty() || _batch_buffers.at(0).empty();
+  }
+
+  size_t size() const {
+    if (empty()) {
+      return 0;
+    }
+    return _batch_buffers.at(0).size();
+  }
+
+  void clear() {
+    _batch_buffers.clear();
+    _reached_end_of_dataset = false;
   }
 
  private:

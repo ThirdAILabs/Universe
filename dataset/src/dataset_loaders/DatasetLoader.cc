@@ -12,10 +12,8 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
                              bool shuffle, DatasetShuffleConfig shuffle_config)
     : _data_source(std::move(data_source)),
       _batch_processor(std::move(batch_processor)),
-      _max_batch_size(_data_source->getMaxBatchSize()),
       _shuffle(shuffle),
-      _batch_buffer_size(shuffle_config.n_batches),
-      _buffer(shuffle_config.seed, _max_batch_size) {
+      _buffer(shuffle_config.n_batches, _data_source->getMaxBatchSize()) {
   // Different formats of data may or may not contain headers. Thus we
   // delegate to the particular batch processor to determine if a header is
   // needed. The first row is interpreted as the header. The batch processor
@@ -49,10 +47,8 @@ DatasetLoader::loadInMemory(uint64_t max_in_memory_batches) {
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  uint32_t batch_cnt = 0;
-  while (batch_cnt < max_in_memory_batches && addNextBatchToBuffer()) {
-    batch_cnt++;
-  }
+  fillShuffleBuffer(/* fill_size = */ std::max<size_t>(max_in_memory_batches,
+                                                       _batch_buffer_size));
 
   auto batch_lists = _buffer.exportBuffer();
   auto end = std::chrono::high_resolution_clock::now();
@@ -90,15 +86,6 @@ DatasetLoader::loadInMemory(uint64_t max_in_memory_batches) {
   return std::make_pair(data, labels);
 }
 
-std::optional<std::vector<BoltBatch>> DatasetLoader::nextBatchVector() {
-  if (_buffer.empty()) {
-    prefillShuffleBuffer();
-  }
-  addNextBatchToBuffer();
-
-  return _buffer.popBatch();
-}
-
 void DatasetLoader::restart() {
   _data_source->restart();
 
@@ -110,28 +97,19 @@ void DatasetLoader::restart() {
     }
   }
 
-  _buffer = ShuffleBatchBuffer(
-      /* shuffle_seed= */ time(NULL),
-      /* batch_size= */ _data_source->getMaxBatchSize());
+  _buffer.clear();
 }
 
-void DatasetLoader::prefillShuffleBuffer() {
-  size_t n_prefill_batches = _batch_buffer_size - 1;
-  size_t n_added = 0;
-  while (n_added < n_prefill_batches && addNextBatchToBuffer()) {
-    n_added++;
-  }
-}
+void DatasetLoader::fillShuffleBuffer(size_t fill_size) {
+  while (_buffer.size() <= fill_size) {
+    auto rows = _data_source->nextBatch();
+    if (!rows) {
+      return;
+    }
 
-bool DatasetLoader::addNextBatchToBuffer() {
-  auto rows = _data_source->nextBatch();
-  if (!rows) {
-    return false;
+    auto batch = _batch_processor->createBatch(*rows);
+    _buffer.insertBatch(std::move(batch), _shuffle);
   }
-
-  auto batch = _batch_processor->createBatch(*rows);
-  _buffer.insertBatch(std::move(batch), _shuffle);
-  return true;
 }
 
 }  // namespace thirdai::dataset

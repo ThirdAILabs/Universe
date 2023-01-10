@@ -2,6 +2,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <algorithm>
 #include <atomic>
@@ -41,8 +42,11 @@ class DatasetLoaderTests : public ::testing::Test {
     auto data_source =
         std::make_shared<SimpleFileDataSource>(_mock_file_name, batch_size);
 
+    auto batch_processor =
+        std::make_shared<GenericBatchProcessor>(input_blocks, label_blocks);
+
     return DatasetLoader(
-        data_source, input_blocks, label_blocks, shuffle,
+        data_source, batch_processor, shuffle,
         DatasetShuffleConfig(n_batches_in_shuffle_buffer, seed));
   }
 
@@ -50,9 +54,9 @@ class DatasetLoaderTests : public ::testing::Test {
       DatasetLoader&& pipeline) {
     std::vector<BoltBatch> input_batches;
     std::vector<BoltBatch> label_batches;
-    while (auto batch = pipeline.nextBatchVector()) {
-      input_batches.push_back(std::move(batch->at(0)));
-      label_batches.push_back(std::move(batch->at(1)));
+    while (auto batch = pipeline.loadInMemory(1)) {
+      input_batches.push_back(std::move(batch->first.at(0)->at(0)));
+      label_batches.push_back(std::move(batch->second->at(0)));
     }
     return {std::make_shared<BoltDataset>(std::move(input_batches)),
             std::make_shared<BoltDataset>(std::move(label_batches))};
