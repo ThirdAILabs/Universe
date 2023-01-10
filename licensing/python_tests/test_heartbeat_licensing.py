@@ -107,6 +107,7 @@ def test_with_invalid_heartbeat_location():
         match=f"Could not establish initial connection to licensing server.",
     ):
         thirdai.licensing.start_heartbeat(invalid_heartbeat_location)
+    thirdai.licensing.end_heartbeat()
 
 
 def test_with_invalid_heartbeat_grace_period():
@@ -117,6 +118,7 @@ def test_with_invalid_heartbeat_grace_period():
         thirdai.licensing.start_heartbeat(
             invalid_heartbeat_location, heartbeat_timeout=100000
         )
+    thirdai.licensing.end_heartbeat()
 
 
 def test_heartbeat_fails_with_no_signature(no_signing_license_server):
@@ -125,6 +127,7 @@ def test_heartbeat_fails_with_no_signature(no_signing_license_server):
         match=f"Could not establish initial connection to licensing server.",
     ):
         thirdai.licensing.start_heartbeat(LOCAL_HEARTBEAT_SERVER)
+    thirdai.licensing.end_heartbeat()
 
 
 def test_valid_heartbeat(normal_license_server):
@@ -147,6 +150,7 @@ def test_heartbeat_multiple_machines(normal_license_server):
         subprocess.run(f"python3 {heartbeat_script.resolve()}", shell=True).returncode
         != 0
     )
+    thirdai.licensing.end_heartbeat()
 
 
 def test_more_machines_after_server_timeout(fast_timeout_license_server):
@@ -173,8 +177,9 @@ def test_client_side_timeout_after_heartbeat_fail(normal_license_server):
         match=f"The heartbeat thread could not verify with the server because there has not been a successful heartbeat in 1 seconds.*",
     ):
         this_should_require_a_license_bolt()
+    thirdai.licensing.end_heartbeat()
 
-    # TODO(Josh): Add metrics check to this
+    # TODO(Josh): Check that we are adding these failures to our Prometheus metrics
 
 
 def test_maintenance_of_valid_heartbeat(normal_license_server):
@@ -188,3 +193,4 @@ def test_maintenance_of_valid_heartbeat(normal_license_server):
     thirdai.licensing.start_heartbeat(LOCAL_HEARTBEAT_SERVER, heartbeat_timeout=0)
     time.sleep(1)
     this_should_require_a_license_bolt()
+    thirdai.licensing.end_heartbeat()

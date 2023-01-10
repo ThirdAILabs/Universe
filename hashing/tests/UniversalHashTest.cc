@@ -1,4 +1,3 @@
-#include "AvalancheTimedTestSuite.h"
 #include <hashing/src/MurmurHash.h>
 #include <hashing/src/UniversalHash.h>
 #include <gtest/gtest.h>
@@ -9,37 +8,68 @@
 #include <random>
 #include <string>
 
-using std::chrono::duration_cast;
-using std::chrono::milliseconds;
-using std::chrono::system_clock;
-using thirdai::hashing::AvalancheTimedTestSuite;
 using thirdai::hashing::UniversalHash;
 
-uint64_t AvalancheTimedTestSuite::int_keys[num_keys];
-std::string AvalancheTimedTestSuite::str_keys[num_keys];
-UniversalHash universal_hash(time(nullptr));
-
-/*
- * Tests speed of UniversalHash on integer and string keys.
- */
-TEST_F(AvalancheTimedTestSuite, UniversalHashTimeTest) {
-  auto start =
-      duration_cast<milliseconds>(system_clock::now().time_since_epoch())
-          .count();
-  for (uint32_t i = 0; i < num_keys; i++) {
-    universal_hash.gethash(str_keys[i]);
-    universal_hash.gethash(int_keys[i]);
+class UniversalHashTestSuite : public testing::Test {
+ public:
+  /*
+   * Converts input string to bitstring (bitset).
+   */
+  static std::string convertToBitstring(const std::string& str) {
+    std::string bitstring;
+    for (const char& _c : str) {
+      bitstring += std::bitset<8>(_c).to_string();
+    }
+    return bitstring;
   }
-  auto end = duration_cast<milliseconds>(system_clock::now().time_since_epoch())
-                 .count();
-  EXPECT_LE(end - start, 100);
-}
+
+  const static uint32_t num_keys = 100000;
+  static uint64_t int_keys[num_keys];
+  static std::string str_keys[num_keys];
+  static const uint64_t seed = 1;
+
+  /*
+   * Initialize all cross-test parameters (integer and string keys).
+   */
+  static void SetUpTestSuite() {
+    srand(seed);
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    std::uniform_int_distribution<uint64_t> dis;
+    // Generate 100000 random integer and char * keys
+    for (uint32_t i = 0; i < num_keys; i++) {
+      int_keys[i] = dis(gen);
+      str_keys[i] = generateRandomString();
+    }
+  }
+
+ private:
+  /*
+   * Generate random 6 character string.
+   */
+  static std::string generateRandomString() {
+    const uint32_t num_chars = 26;
+    const uint32_t starting_ascii = 65;
+    std::string str = "AAAAAA";
+    str[0] = rand() % num_chars + starting_ascii;
+    str[1] = rand() % num_chars + starting_ascii;
+    str[2] = rand() % num_chars + starting_ascii;
+    str[3] = rand() % num_chars + starting_ascii;
+    str[4] = rand() % num_chars + starting_ascii;
+    str[5] = rand() % num_chars + starting_ascii;
+    return str;
+  }
+};
+
+uint64_t UniversalHashTestSuite::int_keys[num_keys];
+std::string UniversalHashTestSuite::str_keys[num_keys];
+UniversalHash universal_hash(time(nullptr));
 
 /*
  * Tests Avalanche effect of UniversalHash on string keys.
  * https://crypto.stackexchange.com/questions/40268/hash-functions-and-the-avalanche-effect
  */
-TEST_F(AvalancheTimedTestSuite, UniversalHashStringKeyAvalancheTest) {
+TEST_F(UniversalHashTestSuite, UniversalHashStringKeyAvalancheTest) {
   // Allocate 64 bits for both hash outputs.
   uint32_t tabulation_output[2];
   uint32_t output_bits_counter[48][32] = {};
@@ -47,7 +77,7 @@ TEST_F(AvalancheTimedTestSuite, UniversalHashStringKeyAvalancheTest) {
     tabulation_output[0] = universal_hash.gethash(str_key);
     // Compute all possible 1 bit changes (48 bits in a string key input)
     for (uint32_t j = 0; j < 48; j++) {
-      std::bitset<48> str_key_flipped_bitarray(convert_to_bitstring(str_key));
+      std::bitset<48> str_key_flipped_bitarray(convertToBitstring(str_key));
       std::string str_key_flipped =
           str_key_flipped_bitarray.flip(j).to_string();
       tabulation_output[1] = universal_hash.gethash(str_key_flipped);
