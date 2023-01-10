@@ -39,8 +39,13 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
         cluster_config=ray_two_node_cluster_config("linear"),
         filenames=[f"{os.getcwd()}/{TRAIN_FILE_1}", f"{os.getcwd()}/{TRAIN_FILE_2}"],
         batch_size=256,
+<<<<<<< HEAD
         epochs=1,
         learning_rate=0.02,
+=======
+        epochs=6,
+        learning_rate=0.01,
+>>>>>>> parent of d61eee1c (Removed one redundant tests)
         metrics=["mean_squared_error"],
         verbose=True,
     )
