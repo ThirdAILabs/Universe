@@ -8,9 +8,8 @@
 namespace thirdai::dataset {
 
 TabularDatasetLoader::TabularDatasetLoader(
-    std::shared_ptr<dataset::DataSource> data_source,
-    dataset::BatchProcessorPtr batch_processor, bool shuffle,
-    DatasetShuffleConfig config)
+    DataSourcePtr data_source, dataset::BatchProcessorPtr batch_processor,
+    bool shuffle, DatasetShuffleConfig config)
     : _data_source(std::move(data_source)),
       _batch_processor(std::move(batch_processor)),
       _max_batch_size(_data_source->getMaxBatchSize()),

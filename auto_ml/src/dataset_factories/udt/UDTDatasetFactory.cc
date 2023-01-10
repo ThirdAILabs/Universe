@@ -1,12 +1,13 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
 #include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
+#include <dataset/src/DataSource.h>
 #include <stdexcept>
 
 namespace thirdai::automl::data {
 
 dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
-    std::shared_ptr<dataset::DataSource> data_source, bool training) {
+    dataset::DataSourcePtr data_source, bool training) {
   auto current_column_number_map =
       makeColumnNumberMap(*data_source, _config->delimiter);
 

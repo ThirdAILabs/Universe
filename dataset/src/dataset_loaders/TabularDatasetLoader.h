@@ -18,7 +18,7 @@ class TabularDatasetLoader final : public DatasetLoader {
                        DatasetShuffleConfig config = DatasetShuffleConfig());
 
   // TODO(Josh): Can we get rid of this constructor?
-  TabularDatasetLoader(const std::shared_ptr<DataSource>& source,
+  TabularDatasetLoader(const DataSourcePtr& source,
                        std::vector<std::shared_ptr<Block>> input_blocks,
                        std::vector<std::shared_ptr<Block>> label_blocks,
                        bool shuffle = false,
@@ -68,7 +68,7 @@ class TabularDatasetLoader final : public DatasetLoader {
   // Returns whether data source is not exhausted
   bool addNextBatchToBuffer();
 
-  std::shared_ptr<DataSource> _data_source;
+  DataSourcePtr _data_source;
   std::shared_ptr<BatchProcessor> _batch_processor;
   uint32_t _max_batch_size;
 

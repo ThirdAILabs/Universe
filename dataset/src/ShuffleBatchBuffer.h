@@ -101,6 +101,11 @@ class ShuffleBatchBuffer {
   }
 
   inline void checkConsistentBatchSize(const std::vector<BoltBatch>& batches) {
+    if (batches.empty()) {
+      throw std::runtime_error(
+          "[ShuffleBatchBuffer::insertBatch] Expected at least one "
+          "batch to be inserted for shuffling but found 0.");
+    }
     uint32_t first_data_batch_size = batches.at(0).getBatchSize();
     for (uint32_t i = 1; i < batches.size(); i++) {
       if (batches.at(i).getBatchSize() != first_data_batch_size) {

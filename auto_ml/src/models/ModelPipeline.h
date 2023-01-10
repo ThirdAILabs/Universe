@@ -190,7 +190,7 @@ class ModelPipeline {
   /**
    * Performs in memory training on the given dataset.
    */
-  void trainInMemory(dataset::DatasetLoaderPtr& dataset,
+  void trainInMemory(dataset::DatasetLoaderPtr& dataset_loader,
                      bolt::TrainConfig train_config,
                      const std::optional<ValidationOptions>& validation);
 
@@ -200,7 +200,7 @@ class ModelPipeline {
    * training data if temporal tracking is used in UDT but it is not simple to
    * load validation data after training data for a streaming dataset.
    */
-  void trainOnStream(dataset::DatasetLoaderPtr& dataset,
+  void trainOnStream(dataset::DatasetLoaderPtr& dataset_loader,
                      bolt::TrainConfig train_config,
                      uint32_t max_in_memory_batches,
                      const std::optional<ValidationOptions>& validation);
@@ -208,7 +208,7 @@ class ModelPipeline {
   /**
    * Helper for processing a streaming dataset in chunks for a single epoch.
    */
-  void trainSingleEpochOnStream(dataset::DatasetLoaderPtr& dataset,
+  void trainSingleEpochOnStream(dataset::DatasetLoaderPtr& dataset_loader,
                                 const bolt::TrainConfig& train_config,
                                 uint32_t max_in_memory_batches);
 

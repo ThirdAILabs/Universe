@@ -8,7 +8,6 @@
 #include <dataset/src/NumpyDataset.h>
 #include <dataset/src/ShuffleBatchBuffer.h>
 #include <dataset/src/Vocabulary.h>
-#include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
@@ -261,8 +260,8 @@ void createDatasetSubmodule(py::module_& module) {
            "features.");
 #endif
 
-  py::class_<DataSource, PyDataSource, std::shared_ptr<DataSource>>(
-      dataset_submodule, "DataSource")
+  py::class_<DataSource, PyDataSource, DataSourcePtr>(dataset_submodule,
+                                                      "DataSource")
       .def(py::init<uint32_t>(), py::arg("target_batch_size"))
       .def("next_batch", &DataSource::nextBatch)
       .def("next_line", &DataSource::nextLine)
@@ -279,7 +278,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<size_t, uint32_t>(), py::arg("n_batches") = 1000,
            py::arg("seed") = time(NULL));
 
-  py::class_<DatasetLoader>(dataset_submodule, "DatasetLoader")
+  py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
+                                              "DatasetLoader")
       .def("load_in_memory", py::overload_cast<>(&DatasetLoader::loadInMemory))
       .def("load_in_memory",
            py::overload_cast<uint64_t>(&dataset::DatasetLoader::loadInMemory),
@@ -287,8 +287,8 @@ void createDatasetSubmodule(py::module_& module) {
                std::numeric_limits<uint32_t>::max())
       .def("restart", &dataset::DatasetLoader::restart);
 
-  py::class_<TabularDatasetLoader, DatasetLoader>(dataset_submodule,
-                                                  "TabularDatasetLoader")
+  py::class_<TabularDatasetLoader, DatasetLoader, TabularDatasetLoaderPtr>(
+      dataset_submodule, "TabularDatasetLoader")
       .def(py::init<DataSourcePtr, std::vector<std::shared_ptr<Block>>,
                     std::vector<std::shared_ptr<Block>>, bool,
                     DatasetShuffleConfig, bool, char>(),

@@ -203,9 +203,9 @@ std::vector<dataset::Explanation> ModelPipeline::explain(
 // We take in the TrainConfig by value to copy it so we can modify the number
 // epochs.
 void ModelPipeline::trainInMemory(
-    dataset::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+    dataset::DatasetLoaderPtr& dataset_loader, bolt::TrainConfig train_config,
     const std::optional<ValidationOptions>& validation) {
-  auto loaded_data = dataset->loadInMemory(ALL_BATCHES);
+  auto loaded_data = dataset_loader->loadInMemory(ALL_BATCHES);
   if (!loaded_data) {
     throw std::invalid_argument("No data passed to train.");
   }
@@ -243,7 +243,7 @@ void ModelPipeline::trainInMemory(
 // We take in the TrainConfig by value to copy it so we can modify the number
 // epochs.
 void ModelPipeline::trainOnStream(
-    dataset::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+    dataset::DatasetLoaderPtr& dataset_loader, bolt::TrainConfig train_config,
     uint32_t max_in_memory_batches,
     const std::optional<ValidationOptions>& validation) {
   /**
@@ -284,27 +284,29 @@ void ModelPipeline::trainOnStream(
   train_config.setEpochs(/* new_epochs= */ 1);
 
   if (_train_eval_config.freezeHashTables() && epochs > 1) {
-    trainSingleEpochOnStream(dataset, train_config, max_in_memory_batches);
+    trainSingleEpochOnStream(dataset_loader, train_config,
+                             max_in_memory_batches);
     _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
     --epochs;
   }
 
   for (uint32_t e = 0; e < epochs; e++) {
-    trainSingleEpochOnStream(dataset, train_config, max_in_memory_batches);
+    trainSingleEpochOnStream(dataset_loader, train_config,
+                             max_in_memory_batches);
   }
 }
 
 void ModelPipeline::trainSingleEpochOnStream(
-    dataset::DatasetLoaderPtr& dataset, const bolt::TrainConfig& train_config,
-    uint32_t max_in_memory_batches) {
-  while (auto datasets = dataset->loadInMemory(max_in_memory_batches)) {
+    dataset::DatasetLoaderPtr& dataset_loader,
+    const bolt::TrainConfig& train_config, uint32_t max_in_memory_batches) {
+  while (auto datasets = dataset_loader->loadInMemory(max_in_memory_batches)) {
     auto& [data, labels] = datasets.value();
 
     _model->train({data}, labels, train_config);
   }
 
-  dataset->restart();
+  dataset_loader->restart();
 }
 
 void ModelPipeline::updateRehashRebuildInTrainConfig(

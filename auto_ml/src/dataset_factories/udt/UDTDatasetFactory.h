@@ -82,7 +82,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataSource> data_source, bool training) final;
+      dataset::DataSourcePtr data_source, bool training) final;
 
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
     return featurizeInputImpl(input, /* should_update_history= */ false);
@@ -195,7 +195,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const ColumnNumberMap& column_numbers) const;
 
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
-      dataset::TabularDatasetLoader& dataset,
+      dataset::TabularDatasetLoader& dataset_loader,
       dataset::ThreadSafeVocabulary& key_vocab);
 
   template <typename InputType>
