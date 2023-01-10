@@ -1,4 +1,4 @@
-#include "TabularDatasetLoader.h"
+#include "DatasetLoader.h"
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/ShuffleBatchBuffer.h>
@@ -7,9 +7,9 @@
 
 namespace thirdai::dataset {
 
-TabularDatasetLoader::TabularDatasetLoader(
-    DataSourcePtr data_source, dataset::BatchProcessorPtr batch_processor,
-    bool shuffle, DatasetShuffleConfig config)
+DatasetLoader::DatasetLoader(DataSourcePtr data_source,
+                             dataset::BatchProcessorPtr batch_processor,
+                             bool shuffle, DatasetShuffleConfig config)
     : _data_source(std::move(data_source)),
       _batch_processor(std::move(batch_processor)),
       _max_batch_size(_data_source->getMaxBatchSize()),
@@ -29,8 +29,17 @@ TabularDatasetLoader::TabularDatasetLoader(
   }
 }
 
+std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory() {
+  auto datasets = loadInMemory(std::numeric_limits<uint64_t>::max());
+  if (!datasets) {
+    throw std::invalid_argument(
+        "Did not find any data to load from the data source.");
+  }
+  return datasets.value();
+}
+
 std::optional<std::pair<InputDatasets, LabelDataset>>
-TabularDatasetLoader::loadInMemory(uint64_t max_in_memory_batches) {
+DatasetLoader::loadInMemory(uint64_t max_in_memory_batches) {
 #if THIRDAI_EXPOSE_ALL
   // This is useful internally but we don't want to expose it to keep the
   // output clear and simple.
@@ -81,7 +90,7 @@ TabularDatasetLoader::loadInMemory(uint64_t max_in_memory_batches) {
   return std::make_pair(data, labels);
 }
 
-std::optional<std::vector<BoltBatch>> TabularDatasetLoader::nextBatchVector() {
+std::optional<std::vector<BoltBatch>> DatasetLoader::nextBatchVector() {
   if (_buffer.empty()) {
     prefillShuffleBuffer();
   }
@@ -90,7 +99,7 @@ std::optional<std::vector<BoltBatch>> TabularDatasetLoader::nextBatchVector() {
   return _buffer.popBatch();
 }
 
-void TabularDatasetLoader::restart() {
+void DatasetLoader::restart() {
   _data_source->restart();
 
   // When we restart we need to make sure we don't reread the header. s
@@ -106,7 +115,7 @@ void TabularDatasetLoader::restart() {
       /* batch_size= */ _data_source->getMaxBatchSize());
 }
 
-void TabularDatasetLoader::prefillShuffleBuffer() {
+void DatasetLoader::prefillShuffleBuffer() {
   size_t n_prefill_batches = _batch_buffer_size - 1;
   size_t n_added = 0;
   while (n_added < n_prefill_batches && addNextBatchToBuffer()) {
@@ -114,7 +123,7 @@ void TabularDatasetLoader::prefillShuffleBuffer() {
   }
 }
 
-bool TabularDatasetLoader::addNextBatchToBuffer() {
+bool DatasetLoader::addNextBatchToBuffer() {
   auto rows = _data_source->nextBatch();
   if (!rows) {
     return false;

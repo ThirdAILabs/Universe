@@ -10,7 +10,7 @@
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <utils/StringManipulation.h>
 #include <exception>
 #include <optional>
@@ -41,7 +41,7 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataSource> data_source, bool training) final {
-    return std::make_unique<dataset::TabularDatasetLoader>(
+    return std::make_unique<dataset::DatasetLoader>(
         data_source, _labeled_batch_processor, _shuffle && training);
   }
 

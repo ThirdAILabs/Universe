@@ -24,7 +24,6 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
-#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
@@ -195,7 +194,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const ColumnNumberMap& column_numbers) const;
 
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
-      dataset::TabularDatasetLoader& dataset_loader,
+      dataset::DatasetLoader& dataset_loader,
       dataset::ThreadSafeVocabulary& key_vocab);
 
   template <typename InputType>

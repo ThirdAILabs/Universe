@@ -535,7 +535,7 @@ class QueryCandidateGenerator {
     auto file_data_source = dataset::SimpleFileDataSource::make(
         file_name, _query_generator_config->batchSize());
 
-    auto data_source = std::make_unique<dataset::TabularDatasetLoader>(
+    auto data_source = std::make_unique<dataset::DatasetLoader>(
         file_data_source, batch_processor, /* shuffle = */ false);
 
     return data_source->loadInMemory().first.at(0);

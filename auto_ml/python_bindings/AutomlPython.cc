@@ -4,7 +4,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
-#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
 #include <limits>
 

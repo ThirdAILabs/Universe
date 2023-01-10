@@ -34,7 +34,7 @@ dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
   // Restart so batch processor does not skip a sample.
   data_source->restart();
 
-  return std::make_unique<dataset::TabularDatasetLoader>(
+  return std::make_unique<dataset::DatasetLoader>(
       data_source, _labeled_history_updating_processor,
       /* shuffle= */ training);
 }
@@ -124,7 +124,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
-  dataset::TabularDatasetLoader metadata_source(
+  dataset::DatasetLoader metadata_source(
       /* source= */ data_source,
       /* processor= */ _metadata_processors[col_name],
       /* shuffle = */ false);
@@ -162,7 +162,7 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildMetadataInputBlocks(
 
 dataset::PreprocessedVectorsPtr
 UDTDatasetFactory::preprocessedVectorsFromDataset(
-    dataset::TabularDatasetLoader& dataset_loader,
+    dataset::DatasetLoader& dataset_loader,
     dataset::ThreadSafeVocabulary& key_vocab) {
   auto [datasets, ids] = dataset_loader.loadInMemory();
 
