@@ -23,6 +23,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
+#include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
@@ -67,25 +68,25 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       std::shared_ptr<dataset::DataSource> data_source, bool training) final;
 
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
-    dataset::CsvLineInputRef input_ref(input, _config->delimiter);
+    dataset::CsvSampleRef input_ref(input, _config->delimiter);
     return {getProcessor(/* should_update_history= */ false)
                 .makeInputVector(input_ref)};
   }
 
   std::vector<BoltVector> featurizeInput(const MapInput& input) final {
-    dataset::MapInputRef input_ref(input);
+    dataset::MapSampleRef input_ref(input);
     return {getProcessor(/* should_update_history= */ false)
                 .makeInputVector(input_ref)};
   }
 
   std::vector<BoltVector> updateTemporalTrackers(const LineInput& input) {
-    dataset::CsvLineInputRef input_ref(input, _config->delimiter);
+    dataset::CsvSampleRef input_ref(input, _config->delimiter);
     return {getProcessor(/* should_update_history= */ true)
                 .makeInputVector(input_ref)};
   }
 
   std::vector<BoltVector> updateTemporalTrackers(const MapInput& input) {
-    dataset::MapInputRef input_ref(input);
+    dataset::MapSampleRef input_ref(input);
     return {getProcessor(/* should_update_history= */ true)
                 .makeInputVector(input_ref)};
   }
@@ -102,7 +103,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> featurizeInputBatch(
       const MapInputBatch& inputs) final {
-    dataset::BatchedMapInputRef inputs_ref(inputs);
+    dataset::MapBatchRef inputs_ref(inputs);
     return featurizeInputBatchImpl(inputs_ref,
                                    /* should_update_history= */ false);
   }
@@ -118,7 +119,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> batchUpdateTemporalTrackers(
       const MapInputBatch& inputs) {
-    dataset::BatchedMapInputRef inputs_ref(inputs);
+    dataset::MapBatchRef inputs_ref(inputs);
     return featurizeInputBatchImpl(inputs_ref,
                                    /* should_update_history= */ true);
   }
@@ -129,7 +130,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio,
       const LineInput& sample) final {
-    dataset::CsvLineInputRef sample_ref(sample, _config->delimiter);
+    dataset::CsvSampleRef sample_ref(sample, _config->delimiter);
     return bolt::getSignificanceSortedExplanations(
         gradients_indices, gradients_ratio, sample_ref,
         _unlabeled_non_updating_processor);
@@ -138,7 +139,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio, const MapInput& sample) final {
-    dataset::MapInputRef sample_ref(sample);
+    dataset::MapSampleRef sample_ref(sample);
     return bolt::getSignificanceSortedExplanations(
         gradients_indices, gradients_ratio, sample_ref,
         _unlabeled_non_updating_processor);
@@ -186,7 +187,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       dataset::ThreadSafeVocabulary& key_vocab);
 
   std::vector<BoltBatch> featurizeInputBatchImpl(
-      dataset::BatchColumnarInput& inputs, bool should_update_history) {
+      dataset::ColumnarInputBatch& inputs, bool should_update_history) {
     auto batches = getProcessor(should_update_history).createBatch(inputs);
 
     // We cannot use the initializer list because the copy constructor is

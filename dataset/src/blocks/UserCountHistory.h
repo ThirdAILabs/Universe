@@ -31,7 +31,7 @@ class UserCountHistoryBlock final : public Block {
   uint32_t featureDim() const final { return _history->historyLength(); }
   bool isDense() const final { return true; }
 
-  void prepareForBatch(BatchedColumnarInput& incoming_batch) final {
+  void prepareForBatch(ColumnarInputBatch& incoming_batch) final {
     auto& first_row = incoming_batch.sample(0);
     auto time = TimeObject(first_row.column(_timestamp_col));
     _history->checkpoint(/* new_lowest_timestamp= */ time.secondsSinceEpoch());

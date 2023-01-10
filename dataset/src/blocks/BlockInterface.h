@@ -251,7 +251,7 @@ class Block {
   }
 
   /**
-   * MUST NOT BE CALLED IN A PARALLEL SECTION
+   * DO NOT CALL IN A PARALLEL REGION
    * Allows blocks to prepare for the incoming batch without being affected by
    * parallelism. Avoid if possible since this can be slow.
    */

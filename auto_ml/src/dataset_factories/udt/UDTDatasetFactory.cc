@@ -1,6 +1,7 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/InputTypes.h>
 #include <stdexcept>
 
 namespace thirdai::automl::data {
@@ -196,7 +197,7 @@ void UDTDatasetFactory::updateMetadata(const std::string& col_name,
 
   auto metadata_config = getColumnMetadataConfig(col_name);
 
-  dataset::SingleMapInputRef update_ref(update);
+  dataset::MapSampleRef update_ref(update);
   auto vec = _metadata_processors.at(col_name)->makeInputVector(update_ref);
 
   const auto& key = update.at(metadata_config->key);
@@ -208,7 +209,7 @@ void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
   verifyColumnMetadataExists(col_name);
   auto metadata_config = getColumnMetadataConfig(col_name);
 
-  dataset::BatchMapInputRef updates_ref(updates);
+  dataset::MapBatchRef updates_ref(updates);
   auto batch =
       _metadata_processors.at(col_name)->createBatch(updates_ref).at(0);
 

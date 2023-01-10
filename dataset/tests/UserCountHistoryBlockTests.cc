@@ -35,7 +35,7 @@ TEST(UserCountHistoryBlockTest, ExplanationWorks) {
 
   auto batch = processBatch(block, input_rows);
 
-  CsvLineInputRef input_row(input_rows[5], ',');
+  CsvSampleRef input_row(input_rows[5], ',');
 
   auto explanation_0 =
       block->explainIndex(/* index_within_block= */ 0, input_row);
@@ -186,7 +186,7 @@ TEST(UserCountHistoryBlockTest,
   input_row_view[1] = std::string_view(val.data(), /* len= */ 1);
   input_row_view[2] = std::string_view(timestamp.data(), /* len= */ 10);
 
-  RowInputRef input_row_view_ref(input_row_view);
+  RowSampleRef input_row_view_ref(input_row_view);
   block->explainIndex(/* index_within_block= */ 0, input_row_view_ref);
 
   auto count_after =

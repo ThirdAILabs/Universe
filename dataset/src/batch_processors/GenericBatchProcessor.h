@@ -61,7 +61,7 @@ class GenericBatchProcessor : public BatchProcessor {
                                   _label_blocks.expectedNumColumns());
   };
 
-  std::vector<BoltBatch> createBatch(BatchedColumnarInput& input_batch) {
+  std::vector<BoltBatch> createBatch(ColumnarInputBatch& input_batch) {
     std::vector<BoltVector> batch_inputs(input_batch.size());
     std::vector<BoltVector> batch_labels(input_batch.size());
 
@@ -98,16 +98,16 @@ class GenericBatchProcessor : public BatchProcessor {
     // every row will have the same number of columns as the header
     uint32_t expected_num_cols_in_batch =
         _num_cols_in_header.value_or(_expected_num_cols);
-    BatchedCsvLineInputRef input_batch_ref(input_batch, _delimiter,
-                                           expected_num_cols_in_batch);
+    CsvBatchRef input_batch_ref(input_batch, _delimiter,
+                                expected_num_cols_in_batch);
     return createBatch(input_batch_ref);
   }
 
   bool expectsHeader() const final { return _expects_header; }
 
   void processHeader(const std::string& header) final {
-    _num_cols_in_header = CsvLineInputRef(header, _delimiter,
-                                          /* expected_num_cols= */ std::nullopt)
+    _num_cols_in_header = CsvSampleRef(header, _delimiter,
+                                       /* expected_num_cols= */ std::nullopt)
                               .size();
   }
 
@@ -179,7 +179,7 @@ class GenericBatchProcessor : public BatchProcessor {
 
  private:
   std::exception_ptr featurizeSampleInBatch(
-      uint32_t index_in_batch, BatchedColumnarInput& input_batch,
+      uint32_t index_in_batch, ColumnarInputBatch& input_batch,
       std::vector<BoltVector>& batch_inputs,
       std::vector<BoltVector>& batch_labels) {
     try {

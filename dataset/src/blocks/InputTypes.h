@@ -19,16 +19,9 @@ using LineInputBatch = std::vector<std::string>;
 
 /**
  * An interface that allows the data pipeline to operate on arbitrary
- * representations of a single columnar input sample.
- *
- *
- *
- * SingleInputRef is short for single input reference. Single -
- *
- * An interface for wrappers around a single columnar input sample of an
- * arbitrary format.
- * It is called "single" input ref because the underlying data structure
- * represents a single input sample.
+ * representations of a columnar input sample.
+ * For example, a columnar input sample can be a vector of strings, where each
+ * element is a column, or a map from column names to their values.
  */
 class ColumnarInputSample {
  public:
@@ -36,17 +29,28 @@ class ColumnarInputSample {
   // E.g. "1" -> int(1)
 
   /**
-   * Get
+   * Returns the identified column (either by column number or column name)
+   * as a string view.
    */
   virtual std::string_view column(const ColumnIdentifier& column) = 0;
+  /**
+   * The size of the columnar sample; the number of columns.
+   */
   virtual uint32_t size() = 0;
   virtual ~ColumnarInputSample() = default;
 };
 
+/**
+ * A wrapper around a reference to a columnar sample represented by a map from
+ * column names (string) to column values (string). Implements the
+ * ColumnarInputSample interface.
+ *
+ * It wraps around a reference instead of the object directly to prevent copying
+ * overheads.
+ */
 class MapSampleRef final : public ColumnarInputSample {
  public:
-  // NOLINTNEXTLINE Implicit constructor is intentional
-  MapSampleRef(const MapInput& columns) : _columns(columns) {}
+  explicit MapSampleRef(const MapInput& columns) : _columns(columns) {}
 
   std::string_view column(const ColumnIdentifier& column) final {
     if (!_columns.count(column.name())) {
@@ -61,10 +65,16 @@ class MapSampleRef final : public ColumnarInputSample {
   const MapInput& _columns;
 };
 
+/**
+ * A wrapper around a reference to a columnar sample represented by a vector
+ * of string views. Implements the ColumnarInputSample interface.
+ *
+ * It wraps around a reference instead of the object directly to prevent copying
+ * overheads.
+ */
 class RowSampleRef final : public ColumnarInputSample {
  public:
-  // NOLINTNEXTLINE Implicit constructor is intentional
-  RowSampleRef(const RowInput& columns) : _columns(columns) {}
+  explicit RowSampleRef(const RowInput& columns) : _columns(columns) {}
 
   std::string_view column(const ColumnIdentifier& column) final {
     return _columns.at(column.number());
@@ -76,6 +86,13 @@ class RowSampleRef final : public ColumnarInputSample {
   const RowInput& _columns;
 };
 
+/**
+ * A wrapper around a reference to a columnar sample represented by a CSV
+ * string. Implements the ColumnarInputSample interface.
+ *
+ * It wraps around a reference instead of the object directly to prevent copying
+ * overheads.
+ */
 class CsvSampleRef final : public ColumnarInputSample {
  public:
   CsvSampleRef(const LineInput& line, char delimiter,
@@ -100,17 +117,44 @@ class CsvSampleRef final : public ColumnarInputSample {
   std::optional<RowInput> _columns;
 };
 
+/**
+ * An interface that allows the data pipeline to operate on arbitrary
+ * representations of a columnar input batch.
+ * For example, a columnar input batch can be a vector of maps from column names
+ * to their values, or a vector of CSV strings.
+ * ColumnarInputBatch is essentially a vector of ColumnarInputSamples, but we
+ * chose not to use a vector like that for two reasons:
+ * 1. There cannot be a vector of abstract classes; we will have to use
+ * pointers.
+ * 2. This gives us the flexibility to accomodate more representations and
+ * include custom logic as needed.
+ */
 class ColumnarInputBatch {
  public:
+  /**
+   * Gets a reference to the index-th sample in the batch.
+   */
   virtual ColumnarInputSample& sample(uint32_t index) = 0;
+  /**
+   * Returns the size of the batch.
+   */
   virtual uint32_t size() = 0;
   virtual ~ColumnarInputBatch() = default;
 };
 
+/**
+ * A wrapper around a reference to a vector of columnar samples represented by
+ * maps from column names (string) to column values (string). Implements the
+ * ColumnarInputSample interface.
+ *
+ * It wraps around a reference instead of the object directly to prevent copying
+ * overheads.
+ */
 class MapBatchRef final : public ColumnarInputBatch {
  public:
   // NOLINTNEXTLINE
   MapBatchRef(const MapInputBatch& batch) : _batch(batch) {
+    // We only store references so this is very fast.
     _ref_batch.reserve(_batch.size());
     for (const auto& input : _batch) {
       _ref_batch.emplace_back(MapSampleRef(input));
@@ -128,6 +172,13 @@ class MapBatchRef final : public ColumnarInputBatch {
   std::vector<MapSampleRef> _ref_batch;
 };
 
+/**
+ * A wrapper around a reference to a vector of columnar samples represented by
+ * CSV strings. Implements the ColumnarInputSample interface.
+ *
+ * It wraps around a reference instead of the object directly to prevent copying
+ * overheads.
+ */
 class CsvBatchRef final : public ColumnarInputBatch {
  public:
   CsvBatchRef(const LineInputBatch& batch, char delimiter,
@@ -138,6 +189,12 @@ class CsvBatchRef final : public ColumnarInputBatch {
         _expected_num_columns(expected_num_columns) {}
 
   ColumnarInputSample& sample(uint32_t index) final {
+    /*
+      Constructing CsvSampleRef also parses the CSV string. This is an
+      expensive operation, so we delay it until the caller demands the sample
+      (lazy execution). Additionally, if called in a parallel region, then
+      the parsing process is also parallelized across samples.
+    */
     if (!_ref_batch.at(index)) {
       _ref_batch.at(index) =
           CsvSampleRef(_batch.at(index), _delimiter, _expected_num_columns);

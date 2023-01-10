@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/InputTypes.h>
 
 namespace thirdai::automl::data {
 
@@ -9,7 +10,7 @@ std::vector<BoltVector> SingleBlockDatasetFactory::featurizeInput(
     const std::string& input) {
   std::vector<std::string_view> input_vector = {
       std::string_view(input.data(), input.length())};
-  dataset::SingleRowInputRef input_vector_ref(input_vector);
+  dataset::RowSampleRef input_vector_ref(input_vector);
   return {_unlabeled_batch_processor->makeInputVector(input_vector_ref)};
 }
 
@@ -38,7 +39,7 @@ uint32_t SingleBlockDatasetFactory::labelToNeuronId(
 std::vector<dataset::Explanation> SingleBlockDatasetFactory::explain(
     const std::optional<std::vector<uint32_t>>& gradients_indices,
     const std::vector<float>& gradients_ratio, const std::string& sample) {
-  dataset::SingleCsvLineInputRef sample_ref(sample, _delimiter);
+  dataset::CsvSampleRef sample_ref(sample, _delimiter);
   return bolt::getSignificanceSortedExplanations(gradients_indices,
                                                  gradients_ratio, sample_ref,
                                                  _unlabeled_batch_processor);
