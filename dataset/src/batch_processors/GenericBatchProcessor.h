@@ -70,12 +70,8 @@ class GenericBatchProcessor : public BatchProcessor {
     uint32_t expected_num_cols_in_batch =
         _num_cols_in_header.value_or(_expected_num_cols);
 
-    auto& first_sample = input_batch.sample(0);
-    if (auto error = first_sample.assertValid(expected_num_cols_in_batch)) {
-      std::rethrow_exception(error);
-    }
-    _input_blocks.prepareForBatch(first_sample);
-    _label_blocks.prepareForBatch(first_sample);
+    _input_blocks.prepareForBatch(input_batch);
+    _label_blocks.prepareForBatch(input_batch);
 
     /*
       These variables keep track of the presence of an erroneous input line.

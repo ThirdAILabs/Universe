@@ -113,9 +113,7 @@ class UserItemHistoryBlock final : public Block {
         _should_update_history(should_update_history),
         _include_current_row(include_current_row),
         _item_col_delimiter(item_col_delimiter),
-        _time_lag(time_lag) {
-    verifyConsistentColumnIdentifiers();
-  }
+        _time_lag(time_lag) {}
 
   uint32_t featureDim() const final {
     return _item_vectors ? _item_vectors->dim : _item_hash_range;
