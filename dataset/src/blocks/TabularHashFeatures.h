@@ -5,7 +5,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <hashing/src/UniversalHash.h>
-#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
+#include <dataset/src/blocks/TabularMetadata.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exception>
 #include <stdexcept>
