@@ -26,9 +26,7 @@ class TabularHashFeatures final : public Block {
                       bool with_pairgrams = true)
       : _metadata(std::move(metadata)),
         _output_range(output_range),
-        _with_pairgrams(with_pairgrams) {
-    verifyConsistentColumnIdentifiers();
-  }
+        _with_pairgrams(with_pairgrams) {}
 
   struct Token {
     uint32_t token;
