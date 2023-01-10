@@ -14,7 +14,7 @@ class DatasetLoader final {
  public:
   DatasetLoader(std::shared_ptr<dataset::DataSource> data_source,
                 dataset::BatchProcessorPtr batch_processor, bool shuffle,
-                DatasetShuffleConfig config = DatasetShuffleConfig());
+                DatasetShuffleConfig shuffle_config = DatasetShuffleConfig());
 
   // TODO(Josh): Can we get rid of this constructor?
   DatasetLoader(const DataSourcePtr& source,

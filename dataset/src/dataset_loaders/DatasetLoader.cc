@@ -9,13 +9,13 @@ namespace thirdai::dataset {
 
 DatasetLoader::DatasetLoader(DataSourcePtr data_source,
                              dataset::BatchProcessorPtr batch_processor,
-                             bool shuffle, DatasetShuffleConfig config)
+                             bool shuffle, DatasetShuffleConfig shuffle_config)
     : _data_source(std::move(data_source)),
       _batch_processor(std::move(batch_processor)),
       _max_batch_size(_data_source->getMaxBatchSize()),
       _shuffle(shuffle),
-      _batch_buffer_size(config.n_batches),
-      _buffer(config.seed, _max_batch_size) {
+      _batch_buffer_size(shuffle_config.n_batches),
+      _buffer(shuffle_config.seed, _max_batch_size) {
   // Different formats of data may or may not contain headers. Thus we
   // delegate to the particular batch processor to determine if a header is
   // needed. The first row is interpreted as the header. The batch processor

@@ -1,12 +1,6 @@
 #pragma once
 
-#include <hashing/src/MurmurHash.h>
 #include <dataset/src/Datasets.h>
-#include <pybind11/cast.h>
-#include <pybind11/gil.h>
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <memory>
 
