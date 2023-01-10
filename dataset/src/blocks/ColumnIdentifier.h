@@ -45,19 +45,8 @@ struct ColumnIdentifier {
 
   friend bool operator==(const ColumnIdentifier& lhs,
                          const ColumnIdentifier& rhs) {
-    if (lhs.hasName() != rhs.hasName()) {
-      return false;
-    }
-    if (lhs.hasName() && lhs.name() != rhs.name()) {
-      return false;
-    }
-    if (lhs.hasNumber() != rhs.hasNumber()) {
-      return false;
-    }
-    if (lhs.hasNumber() && lhs.number() != rhs.number()) {
-      return false;
-    }
-    return true;
+    return lhs._column_name == rhs._column_name &&
+           lhs._column_number == rhs._column_number;
   }
 
  private:
