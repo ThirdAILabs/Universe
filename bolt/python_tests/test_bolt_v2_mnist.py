@@ -37,6 +37,7 @@ def test_bolt_on_mnist():
 
     hidden_layer = bolt.nn.FullyConnected(
         dim=20000,
+        input_dim=784,
         sparsity=0.01,
         activation="relu",
         sampling_config=old_bolt.nn.DWTASamplingConfig(
@@ -45,7 +46,7 @@ def test_bolt_on_mnist():
         rebuild_hash_tables=12,
         reconstruct_hash_functions=40,
     )(input_layer)
-    output = bolt.nn.FullyConnected(dim=10, activation="softmax")(hidden_layer)
+    output = bolt.nn.FullyConnected(dim=10, input_dim=20000, activation="softmax")(hidden_layer)
 
     loss = bolt.nn.losses.CategoricalCrossEntropy(output)
 

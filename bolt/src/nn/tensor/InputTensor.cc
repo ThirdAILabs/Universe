@@ -21,7 +21,8 @@ std::shared_ptr<InputTensor> InputTensor::make(
   return std::make_shared<InputTensor>(dim, sparsity_type, num_nonzeros);
 }
 
-std::optional<uint32_t> InputTensor::numNonzeros() const {
+std::optional<uint32_t> InputTensor::numNonzeros(bool use_sparsity) const {
+  (void)use_sparsity;  // Sparsity is fixed for inputs.
   return _num_nonzeros;
 }
 

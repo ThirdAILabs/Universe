@@ -19,9 +19,8 @@ namespace thirdai::bolt::nn::tests {
 TEST(InvalidModelTests, OutputWithDependentOps) {
   auto input = emptyInput();
 
-  auto act_1 = Noop::apply({input}, /* n_outputs= */ 1, "act_1")[0];
-
-  auto act_2 = Noop::apply({act_1}, /* n_outputs= */ 1, "act_2")[0];
+  auto act_1 = Noop::make("act_1")->apply({input});
+  auto act_2 = Noop::make("act_2")->apply({act_1});
 
   auto loss = MockLoss::make({act_1, act_2});
 
@@ -33,33 +32,12 @@ TEST(InvalidModelTests, OutputWithDependentOps) {
       "dependent op.");
 }
 
-TEST(InvalidModelTests, OnlyOutputsHaveNoDependents) {
-  auto input = emptyInput();
-
-  auto act_1 = Noop::apply({input}, /* n_outputs= */ 1, "act_1")[0];
-
-  auto act_2 = Noop::apply({act_1}, /* n_outputs= */ 1, "act_2")[0];
-
-  auto act_3 = Noop::apply({act_1}, /* n_outputs= */ 1, "act_3")[0];
-
-  auto loss = MockLoss::make({act_2});
-
-  // NOLINTNEXTLINE (clang-tidy doesn't like ASSERT_THROW)
-  CHECK_MODEL_EXCEPTION(
-      model::Model(/* inputs= */ {input}, /* outputs= */ {act_2},
-                   /* losses= */ {loss}),
-      "All non outputs must be used in at least one op. Found tensor 'act_3' "
-      "that has no dependent ops and is not an output.");
-}
-
 TEST(InvalidModelTests, AllOutputsUsedInLoss) {
   auto input = emptyInput();
 
-  auto act_1 = Noop::apply({input}, /* n_outputs= */ 1, "act_1")[0];
-
-  auto act_2 = Noop::apply({act_1}, /* n_outputs= */ 1, "act_2")[0];
-
-  auto act_3 = Noop::apply({act_1}, /* n_outputs= */ 1, "act_3")[0];
+  auto act_1 = Noop::make("act_1")->apply({input});
+  auto act_2 = Noop::make("act_2")->apply({act_1});
+  auto act_3 = Noop::make("act_3")->apply({act_1});
 
   auto loss = MockLoss::make({act_2});
 
@@ -74,11 +52,9 @@ TEST(InvalidModelTests, AllOutputsUsedInLoss) {
 TEST(InvalidModelTests, OnlyOutputsUsedInLoss) {
   auto input = emptyInput();
 
-  auto act_1 = Noop::apply({input}, /* n_outputs= */ 1, "act_1")[0];
-
-  auto act_2 = Noop::apply({act_1}, /* n_outputs= */ 1, "act_2")[0];
-
-  auto act_3 = Noop::apply({act_1}, /* n_outputs= */ 1, "act_3")[0];
+  auto act_1 = Noop::make("act_1")->apply({input});
+  auto act_2 = Noop::make("act_2")->apply({act_1});
+  auto act_3 = Noop::make("act_3")->apply({act_1});
 
   auto loss_1 = MockLoss::make({act_1, act_2});
   auto loss_2 = MockLoss::make({act_3});
@@ -95,11 +71,9 @@ TEST(InvalidModelTests, OnlyOutputsUsedInLoss) {
 TEST(InvalidModelTests, OutputsCannotBeReusedInLosses) {
   auto input = emptyInput();
 
-  auto act_1 = Noop::apply({input}, /* n_outputs= */ 1, "act_1")[0];
-
-  auto act_2 = Noop::apply({act_1}, /* n_outputs= */ 1, "act_2")[0];
-
-  auto act_3 = Noop::apply({act_1}, /* n_outputs= */ 1, "act_3")[0];
+  auto act_1 = Noop::make("act_1")->apply({input});
+  auto act_2 = Noop::make("act_1")->apply({act_1});
+  auto act_3 = Noop::make("act_1")->apply({act_1});
 
   auto loss_1 = MockLoss::make({act_2});
   auto loss_2 = MockLoss::make({act_2, act_3});

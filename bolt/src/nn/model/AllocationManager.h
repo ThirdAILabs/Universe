@@ -5,11 +5,15 @@
 namespace thirdai::bolt::nn::model {
 
 /**
- * This class manages the ActivationTensors in the model.
+ * This class manages the allocation ActivationTensors in the model. This means
+ * that it is responsible for tracking the currenly allocated batch size and
+ * whether sparsity is used so that the tensors can be reallocated when either
+ * changes. It can also be called to reallocate the tensors when the sparsity of
+ * one of the ops changes.
  */
-class ActivationsManager {
+class AllocationManager {
  public:
-  explicit ActivationsManager(
+  explicit AllocationManager(
       std::vector<tensor::ActivationTensorPtr> activation_tensors);
 
   /**

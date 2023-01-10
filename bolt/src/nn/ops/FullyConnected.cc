@@ -7,52 +7,62 @@
 
 namespace thirdai::bolt::nn::ops {
 
-tensor::ActivationTensorPtr FullyConnected::apply(
-    std::shared_ptr<FullyConnectedLayer> kernel, tensor::Tensor* input,
-    std::string name, uint32_t rebuild_hash_tables,
-    uint32_t reconstruct_hash_functions) {
-  auto op = std::shared_ptr<FullyConnected>(
-      new FullyConnected(std::move(kernel), input, std::move(name),
-                         rebuild_hash_tables, reconstruct_hash_functions));
-
-  input->addDependantOp(op);
-
-  return op->_output;
+std::string nextFullyConnectedOpName() {
+  static uint32_t constructed = 0;
+  return "fc_" + std::to_string(++constructed);
 }
 
-FullyConnected::FullyConnected(std::shared_ptr<FullyConnectedLayer> kernel,
-                               tensor::Tensor* input, std::string name,
+std::shared_ptr<FullyConnected> FullyConnected::make(
+    uint32_t dim, uint32_t input_dim, float sparsity,
+    const std::string& activation, SamplingConfigPtr sampling,
+    uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions) {
+  return std::shared_ptr<FullyConnected>(new FullyConnected(
+      dim, input_dim, sparsity, activation, std::move(sampling),
+      rebuild_hash_tables, reconstruct_hash_functions));
+}
+
+FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
+                               const std::string& activation,
+                               SamplingConfigPtr sampling,
                                uint32_t rebuild_hash_tables,
                                uint32_t reconstruct_hash_functions)
-    : Op(std::move(name)),
-      _kernel(std::move(kernel)),
+    : Op(nextFullyConnectedOpName()),
       _rebuild_hash_tables(rebuild_hash_tables),
       _reconstruct_hash_functions(reconstruct_hash_functions),
       _updates_since_rebuild_hash_tables(0),
-      _updates_since_reconstruct_hash_functions(0),
-      _input(input) {
-  _output = tensor::ActivationTensor::make(_kernel->getDim(),
-                                           _kernel->getSparseDim(), this);
+      _updates_since_reconstruct_hash_functions(0) {
+  if (!sampling) {
+    sampling = DWTASamplingConfig::autotune(dim, sparsity);
+  }
+  FullyConnectedLayerConfig config(dim, sparsity, activation,
+                                   std::move(sampling));
+
+  _kernel = std::make_shared<FullyConnectedLayer>(config, input_dim);
 }
 
-void FullyConnected::forward(uint32_t index_in_batch, bool training) {
+void FullyConnected::forward(const tensor::TensorList& inputs,
+                             tensor::ActivationTensor* output,
+                             uint32_t index_in_batch, bool training) {
   // If the op is an output pass in labels during training to ensure labels are
   // in active neuron set.
   const BoltVector* labels = nullptr;
-  if (training && _labels) {
-    labels = &_labels->getVector(index_in_batch);
-  }
-  _kernel->forward(_input->getVector(index_in_batch),
-                   _output->getVector(index_in_batch), labels);
+  (void)training;
+  // if (training && _labels) {
+  //   labels = &_labels->getVector(index_in_batch);
+  // }
+  _kernel->forward(inputs[0]->getVector(index_in_batch),
+                   output->getVector(index_in_batch), labels);
 }
 
-void FullyConnected::backpropagate(uint32_t index_in_batch) {
-  BoltVector& input = _input->getVector(index_in_batch);
+void FullyConnected::backpropagate(tensor::TensorList& inputs,
+                                   tensor::ActivationTensor* output,
+                                   uint32_t index_in_batch) {
+  BoltVector& input = inputs[0]->getVector(index_in_batch);
 
   if (input.hasGradients()) {
-    _kernel->backpropagate(input, _output->getVector(index_in_batch));
+    _kernel->backpropagate(input, output->getVector(index_in_batch));
   } else {
-    _kernel->backpropagateInputLayer(input, _output->getVector(index_in_batch));
+    _kernel->backpropagateInputLayer(input, output->getVector(index_in_batch));
   }
 }
 
@@ -73,19 +83,26 @@ void FullyConnected::updateParameters(float learning_rate,
   }
 }
 
+uint32_t FullyConnected::numNonzerosInOutput(const tensor::TensorList& inputs,
+                                             bool use_sparsity) const {
+  // The number of output nonzeros for a FullyConnected op do not depend on its
+  // inputs.
+  (void)inputs;
+  if (use_sparsity) {
+    return _kernel->getSparseDim();
+  }
+  return _kernel->getDim();
+}
+
 void FullyConnected::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
 
-std::vector<tensor::Tensor*> FullyConnected::inputs() const { return {_input}; }
-
-std::vector<tensor::ActivationTensorPtr> FullyConnected::outputs() const {
-  return {_output};
-}
-
-void FullyConnected::summary(std::ostream& summary) const {
-  summary << "FullyConnected(" << name() << "): " << _input->name() << " -> "
-          << _output->name();
+void FullyConnected::summary(std::ostream& summary,
+                             const tensor::TensorList& inputs,
+                             const tensor::ActivationTensor* output) const {
+  summary << "FullyConnected(" << name() << "): " << inputs[0]->name() << " -> "
+          << output->name();
   summary << " :: dim=" << _kernel->getDim()
           << ", sparsity=" << _kernel->getSparsity() << ", activation="
           << activationFunctionToStr(_kernel->getActivationFunction());
@@ -98,8 +115,17 @@ void FullyConnected::summary(std::ostream& summary) const {
   }
 }
 
-void FullyConnected::setLabels(tensor::InputTensorPtr labels) {
-  _labels = std::move(labels);
+tensor::ActivationTensorPtr FullyConnected::apply(tensor::TensorPtr input) {
+  if (input->dim() != _kernel->getInputDim()) {
+    std::stringstream error;
+    error << "Cannot apply FullyConnected op with weight matrix of shape ("
+          << _kernel->getDim() << ", " << _kernel->getInputDim()
+          << ") to input tensor with dim " << input->dim() << ".";
+
+    throw std::invalid_argument(error.str());
+  }
+  return tensor::ActivationTensor::make(_kernel->getDim(), shared_from_this(),
+                                        {std::move(input)});
 }
 
 std::vector<uint32_t> FullyConnected::dimensions() const {
@@ -112,45 +138,6 @@ const float* FullyConnected::weightsPtr() const {
 
 const float* FullyConnected::biasesPtr() const {
   return _kernel->getBiasesPtr();
-}
-
-std::string nextFullyConnectedOpName() {
-  static uint32_t constructed = 0;
-  return "fc_" + std::to_string(++constructed);
-}
-
-FullyConnectedFactory::FullyConnectedFactory(
-    uint32_t dim, float sparsity, std::string activation,
-    SamplingConfigPtr sampling, uint32_t rebuild_hash_tables,
-    uint32_t reconstruct_hash_functions)
-    : _dim(dim),
-      _sparsity(sparsity),
-      _activation(std::move(activation)),
-      _sampling(std::move(sampling)),
-      _rebuild_hash_tables(rebuild_hash_tables),
-      _reconstruct_hash_functions(reconstruct_hash_functions),
-      _name(nextFullyConnectedOpName()) {
-  if (!_sampling) {
-    _sampling = DWTASamplingConfig::autotune(_dim, _sparsity);
-  }
-}
-
-tensor::ActivationTensorPtr FullyConnectedFactory::apply(
-    const tensor::TensorPtr& input) {
-  if (!_kernel) {
-    FullyConnectedLayerConfig config(_dim, _sparsity, _activation, _sampling);
-
-    _kernel = std::make_shared<FullyConnectedLayer>(config, input->dim());
-  } else if (input->dim() != _kernel->getInputDim()) {
-    throw std::invalid_argument(
-        "Cannot apply a fully connected layer with input dimension " +
-        std::to_string(_kernel->getInputDim()) + " to tensor with dimension " +
-        std::to_string(input->dim()) + ".");
-  }
-
-  return FullyConnected::apply(_kernel, input.get(), _name,
-                               _rebuild_hash_tables,
-                               _reconstruct_hash_functions);
 }
 
 }  // namespace thirdai::bolt::nn::ops

@@ -23,7 +23,7 @@ class InputTensor final : public Tensor {
       uint32_t dim, SparsityType sparsity_type = SparsityType::Unknown,
       std::optional<uint32_t> num_nonzeros = std::nullopt);
 
-  std::optional<uint32_t> numNonzeros() const final;
+  std::optional<uint32_t> numNonzeros(bool use_sparsity) const final;
 
   BoltVector& getVector(uint32_t index) final;
 

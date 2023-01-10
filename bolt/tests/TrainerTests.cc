@@ -39,11 +39,12 @@ static constexpr uint32_t N_CLASSES = 50;
 TEST(TrainerTest, Training) {
   auto input = nn::tensor::InputTensor::make(/* dim= */ N_CLASSES);
 
-  auto output = nn::ops::FullyConnectedFactory(
-                    /* dim= */ N_CLASSES, /* sparsity= */ 1.0,
-                    /* activation= */ "softmax",
-                    /* sampling=*/nullptr)
-                    .apply(input);
+  auto output =
+      nn::ops::FullyConnected::make(
+          /* dim= */ N_CLASSES, /* input_dim= */ N_CLASSES, /* sparsity= */ 1.0,
+          /* activation= */ "softmax",
+          /* sampling=*/nullptr)
+          ->apply(input);
 
   auto loss = nn::loss::CategoricalCrossEntropy::make(output);
 

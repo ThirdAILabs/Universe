@@ -23,29 +23,35 @@ model::ModelPtr createModel(bool with_hidden_layer) {
   auto input = tensor::InputTensor::make(
       /* dim= */ N_CLASSES);
 
+  uint32_t input_dim_to_last_layer;
   tensor::TensorPtr input_to_output_layer;
 
   if (with_hidden_layer) {
     uint32_t dim = 1000;
     float sparsity = 0.2;
-    ops::FullyConnectedFactory hidden(
-        /* dim= */ dim, /* sparsity= */ sparsity, /* activation*/ "relu",
+    auto hidden = ops::FullyConnected::make(
+        /* dim= */ dim, /* input_dim= */ N_CLASSES, /* sparsity= */ sparsity,
+        /* activation*/ "relu",
         /* sampling= */ DWTASamplingConfig::autotune(dim, sparsity),
         /* rebuild_hash_tables= */ 4, /* reconstruct_hash_functions= */ 20);
 
-    input_to_output_layer = hidden.apply(input);
+    input_dim_to_last_layer = dim;
+    input_to_output_layer = hidden->apply(input);
   } else {
+    input_dim_to_last_layer = N_CLASSES;
     input_to_output_layer = input;
   }
 
   std::vector<tensor::ActivationTensorPtr> outputs;
   std::vector<loss::LossPtr> losses;
   for (uint32_t i = 0; i < 2; i++) {
-    ops::FullyConnectedFactory output(
-        /* dim= */ N_CLASSES, /* sparsity= */ 1.0, /* activation*/ "softmax",
+    auto output = ops::FullyConnected::make(
+        /* dim= */ N_CLASSES,
+        /* input_dim= */ input_dim_to_last_layer, /* sparsity= */ 1.0,
+        /* activation*/ "softmax",
         /* sampling= */ nullptr);
 
-    outputs.push_back(output.apply(input_to_output_layer));
+    outputs.push_back(output->apply(input_to_output_layer));
 
     losses.push_back(loss::CategoricalCrossEntropy::make(outputs.back()));
   }

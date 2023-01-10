@@ -1,3 +1,4 @@
+#include "TestUtils.h"
 #include "gtest/gtest.h"
 #include <bolt/src/nn/loss/ComparativeLoss.h>
 
@@ -51,8 +52,10 @@ BoltVector denseLabel() {
 }
 
 tensor::ActivationTensorPtr sparseOutput() {
-  auto output = tensor::ActivationTensor::make(
-      /* dim= */ 8, /* sparse_nonzeros= */ 4, /* source= */ nullptr);
+  auto output = Noop::make("noop", /* dim= */ 8, /* num_nonzeros= */ 4)
+                    ->apply({emptyInput()});
+  // auto output = tensor::ActivationTensor::make(
+  //     /* dim= */ 8, /* sparse_nonzeros= */ 4, /* source= */ nullptr);
   output->allocate(/* batch_size= */ 1, /* use_sparsity= */ true);
 
   std::vector<uint32_t> indices = {0, 1, 4, 7};
@@ -68,8 +71,8 @@ tensor::ActivationTensorPtr sparseOutput() {
 }
 
 tensor::ActivationTensorPtr denseOutput() {
-  auto output = tensor::ActivationTensor::make(
-      /* dim= */ 8, /* sparse_nonzeros= */ 8, /* source= */ nullptr);
+  auto output = Noop::make("noop", /* dim= */ 8, /* num_nonzeros= */ 8)
+                    ->apply({emptyInput()});
   output->allocate(/* batch_size= */ 1, /* use_sparsity= */ true);
 
   std::vector<float> values = {0.0, 4.0, 0.0, 0.0, 5.0, 0.0, 0.0, 6.0};
@@ -109,7 +112,7 @@ void runTest(bool output_sparse, bool label_sparse, bool test_loss,
   }
 }
 
-TEST(ComparativeLossTest, LossDenseOutputDenseLabels) {
+TEST(ComparativeLossTests, LossDenseOutputDenseLabels) {
   std::vector<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {0.0, 0.0}, {0.0, 0.0},
       {5.0, 2.0}, {0.0, 0.0}, {0.0, 3.0}, {6.0, 0.0}};
@@ -118,7 +121,7 @@ TEST(ComparativeLossTest, LossDenseOutputDenseLabels) {
           /* test_loss= */ true, expected_called_with);
 }
 
-TEST(ComparativeLossTest, LossDenseOutputSparseLabels) {
+TEST(ComparativeLossTests, LossDenseOutputSparseLabels) {
   std::vector<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {0.0, 0.0}, {0.0, 0.0},
       {5.0, 2.0}, {0.0, 0.0}, {0.0, 3.0}, {6.0, 0.0}};
@@ -127,7 +130,7 @@ TEST(ComparativeLossTest, LossDenseOutputSparseLabels) {
           /* test_loss= */ true, expected_called_with);
 }
 
-TEST(ComparativeLossTest, LossSparseOutputDenseLabels) {
+TEST(ComparativeLossTests, LossSparseOutputDenseLabels) {
   std::vector<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {0.0, 0.0}, {0.0, 0.0},
       {5.0, 2.0}, {0.0, 0.0}, {0.0, 3.0}, {6.0, 0.0}};
@@ -135,14 +138,14 @@ TEST(ComparativeLossTest, LossSparseOutputDenseLabels) {
           /* test_loss= */ true, expected_called_with);
 }
 
-TEST(ComparativeLossTest, LossSparseOutputSparseLabels) {
+TEST(ComparativeLossTests, LossSparseOutputSparseLabels) {
   std::vector<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {5.0, 2.0}, {6.0, 0.0}, {0.0, 0.0}, {0.0, 3.0}};
   runTest(/* output_sparse= */ true, /* label_sparse= */ true,
           /* test_loss= */ true, expected_called_with);
 }
 
-TEST(ComparativeLossTest, GradientDenseOutputDenseLabels) {
+TEST(ComparativeLossTests, GradientDenseOutputDenseLabels) {
   std::vector<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {0.0, 0.0}, {0.0, 0.0},
       {5.0, 2.0}, {0.0, 0.0}, {0.0, 3.0}, {6.0, 0.0}};
@@ -150,7 +153,7 @@ TEST(ComparativeLossTest, GradientDenseOutputDenseLabels) {
           /* test_loss= */ false, expected_called_with);
 }
 
-TEST(ComparativeLossTest, GradientDenseOutputSparseLabels) {
+TEST(ComparativeLossTests, GradientDenseOutputSparseLabels) {
   std::vector<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {0.0, 0.0}, {0.0, 0.0},
       {5.0, 2.0}, {0.0, 0.0}, {0.0, 3.0}, {6.0, 0.0}};
@@ -158,14 +161,14 @@ TEST(ComparativeLossTest, GradientDenseOutputSparseLabels) {
           /* test_loss= */ false, expected_called_with);
 }
 
-TEST(ComparativeLossTest, GradientSparseOutputDenseLabels) {
+TEST(ComparativeLossTests, GradientSparseOutputDenseLabels) {
   std::vector<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {5.0, 2.0}, {6.0, 0.0}};
   runTest(/* output_sparse= */ true, /* label_sparse= */ false,
           /* test_loss= */ false, expected_called_with);
 }
 
-TEST(ComparativeLossTest, GradientSparseOutputSparseLabels) {
+TEST(ComparativeLossTests, GradientSparseOutputSparseLabels) {
   std::vector<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {5.0, 2.0}, {6.0, 0.0}};
   runTest(/* output_sparse= */ true, /* label_sparse= */ true,

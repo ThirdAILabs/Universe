@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ActivationsManager.h"
+#include "AllocationManager.h"
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/ActivationTensor.h>
@@ -65,6 +65,8 @@ class Model {
    * during the forward pass.
    */
   const std::vector<ops::OpPtr>& ops() const;
+
+  const std::vector<tensor::ActivationTensorPtr>& tensors() const;
 
   /**
    * Sets the given labels as the current labels for the model. These are public
@@ -162,14 +164,13 @@ class Model {
    * Gets the in degrees for each op, which is the number of tensors they take
    * as input.
    */
-  std::unordered_map<ops::OpPtr, uint32_t> getInDegrees() const;
+  std::unordered_map<tensor::ActivationTensorPtr, uint32_t> getOutDegrees()
+      const;
 
   /**
    * These methods perform checks to make sure that model is valid.
    */
   void checkNoOutputsHaveDependentOps() const;
-
-  void checkOnlyOutputsHaveNoDependentOps() const;
 
   void checkAllOutputsAreUsedInLosses() const;
 
@@ -184,11 +185,12 @@ class Model {
   std::vector<tensor::InputTensorPtr> _inputs;
   std::vector<tensor::InputTensorPtr> _label_inputs;
   std::vector<tensor::ActivationTensorPtr> _outputs;
-
   std::vector<loss::LossPtr> _losses;
 
-  std::vector<ops::OpPtr> _op_schedule;
-  ActivationsManager _activations;
+  std::vector<ops::OpPtr> _ops;
+  std::vector<tensor::ActivationTensorPtr> _activation_tensors;
+
+  AllocationManager _allocation_manager;
 
   uint32_t _train_steps;
 };

@@ -3,13 +3,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <vector>
 
-namespace thirdai::bolt::nn::ops {
-
-class Op;
-using OpPtr = std::shared_ptr<Op>;
-
-}  // namespace thirdai::bolt::nn::ops
-
 namespace thirdai::bolt::nn::tensor {
 
 /**
@@ -35,20 +28,7 @@ class Tensor {
    * fixed it will return std::nullopt. If the output is dense then this should
    * be equivalent to calling dim().
    */
-  virtual std::optional<uint32_t> numNonzeros() const = 0;
-
-  /**
-   * Indicates that the provided op is dependent on this tensor, meaning that it
-   * uses it as an input. This is used to construct the model and ensure correct
-   * ordering of ops.
-   */
-  void addDependantOp(ops::OpPtr op);
-
-  /**
-   * Returns the dependent ops of the tensor. These are the ops which use the
-   * tensor as input.
-   */
-  const std::vector<ops::OpPtr>& dependantOps() const;
+  virtual std::optional<uint32_t> numNonzeros(bool use_sparsity) const = 0;
 
   /**
    * Returns the name of the tensor. All tensors in a model must have a unique
@@ -62,11 +42,10 @@ class Tensor {
   // TODO(Nicholas): Update this to support N dimensions (not required for V0).
   uint32_t _dim;
   std::string _name;
-
- protected:
-  std::vector<ops::OpPtr> _dependant_ops;
 };
 
 using TensorPtr = std::shared_ptr<Tensor>;
+
+using TensorList = std::vector<TensorPtr>;
 
 }  // namespace thirdai::bolt::nn::tensor

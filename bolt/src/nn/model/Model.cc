@@ -1,7 +1,9 @@
 #include "Model.h"
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/tensor/ActivationTensor.h>
 #include <bolt/src/nn/tensor/InputTensor.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <algorithm>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -16,7 +18,7 @@ Model::Model(std::vector<tensor::InputTensorPtr> inputs,
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
-      _activations({}),
+      _allocation_manager({}),
       _train_steps(0) {
   for (const auto& loss : _losses) {
     _label_inputs.push_back(loss->labels());
@@ -25,7 +27,6 @@ Model::Model(std::vector<tensor::InputTensorPtr> inputs,
   createOpSchedule();
 
   checkNoOutputsHaveDependentOps();
-  checkOnlyOutputsHaveNoDependentOps();
   checkAllOutputsAreUsedInLosses();
 
   matchOutputFullyConnectedLayersWithLabels();
@@ -81,15 +82,19 @@ void Model::trainOnBatchSingleInput(const BoltBatch& inputs,
 
 void Model::updateParameters(float learning_rate) {
   ++_train_steps;
-  for (auto& op : _op_schedule) {
+  for (auto& op : _ops) {
     op->updateParameters(learning_rate, _train_steps);
   }
 }
 
-const std::vector<ops::OpPtr>& Model::ops() const { return _op_schedule; }
+const std::vector<ops::OpPtr>& Model::ops() const { return _ops; }
+
+const std::vector<tensor::ActivationTensorPtr>& Model::tensors() const {
+  return _activation_tensors;
+}
 
 ops::OpPtr Model::getOp(const std::string& name) const {
-  for (const auto& op : _op_schedule) {
+  for (const auto& op : _ops) {
     if (op->name() == name) {
       return op;
     }
@@ -98,7 +103,14 @@ ops::OpPtr Model::getOp(const std::string& name) const {
 }
 
 tensor::ActivationTensorPtr Model::getTensor(const std::string& name) const {
-  return _activations.getTensor(name);
+  for (const auto& tensor : _activation_tensors) {
+    if (tensor->name() == name) {
+      return tensor;
+    }
+  }
+
+  throw std::invalid_argument("Could not find tensor with name '" + name +
+                              "'.");
 }
 
 tensor::InputTensorPtr Model::getLabelsForOutput(
@@ -122,8 +134,8 @@ const std::vector<tensor::ActivationTensorPtr>& Model::outputs() const {
 std::string Model::summary(bool print) const {
   std::stringstream summary;
 
-  for (const auto& op : _op_schedule) {
-    op->summary(summary);
+  for (const auto& tensor : _activation_tensors) {
+    tensor->source()->summary(summary, tensor->inputs(), tensor.get());
     summary << '\n';
   }
 
@@ -137,7 +149,7 @@ std::string Model::summary(bool print) const {
 uint32_t Model::trainSteps() const { return _train_steps; }
 
 void Model::forwardImpl(uint32_t input_batch_size, bool use_sparsity) {
-  _activations.reallocateForBatch(input_batch_size, use_sparsity);
+  _allocation_manager.reallocateForBatch(input_batch_size, use_sparsity);
 
 #pragma omp parallel for default(none) shared(input_batch_size)
   for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
@@ -147,7 +159,7 @@ void Model::forwardImpl(uint32_t input_batch_size, bool use_sparsity) {
 }
 
 void Model::backpropagateImpl(uint32_t label_batch_size) {
-  if (label_batch_size != _activations.currentBatchSize()) {
+  if (label_batch_size != _allocation_manager.currentBatchSize()) {
     throw std::invalid_argument(
         "Label batch size does not match input batch size.");
   }
@@ -165,7 +177,8 @@ void Model::trainOnBatchImpl(uint32_t input_batch_size,
     throw std::invalid_argument(
         "Input batch size and label batch size do not match.");
   }
-  _activations.reallocateForBatch(input_batch_size, /* use_sparsity= */ true);
+  _allocation_manager.reallocateForBatch(input_batch_size,
+                                         /* use_sparsity= */ true);
 
 #pragma omp parallel for default(none) shared(input_batch_size)
   for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
@@ -176,20 +189,21 @@ void Model::trainOnBatchImpl(uint32_t input_batch_size,
 }
 
 void Model::forwardVector(uint32_t index_in_batch, bool training) {
-  for (auto& op : _op_schedule) {
-    op->forward(index_in_batch, training);
+  for (auto& tensor : _activation_tensors) {
+    tensor->forward(index_in_batch, training);
   }
 }
 
 void Model::backpropagateVector(uint32_t index_in_batch) {
-  _activations.resetOutputGradients(index_in_batch);
+  _allocation_manager.resetOutputGradients(index_in_batch);
 
   for (auto& loss : _losses) {
-    loss->gradients(index_in_batch, _activations.currentBatchSize());
+    loss->gradients(index_in_batch, _allocation_manager.currentBatchSize());
   }
 
-  for (auto op = _op_schedule.rbegin(); op != _op_schedule.rend(); ++op) {
-    (*op)->backpropagate(index_in_batch);
+  for (auto tensor = _activation_tensors.rbegin();
+       tensor != _activation_tensors.rend(); ++tensor) {
+    (*tensor)->backpropagate(index_in_batch);
   }
 }
 
@@ -248,89 +262,84 @@ void Model::setSingleLabel(const BoltBatch& labels) {
 }
 
 void Model::createOpSchedule() {
-  std::unordered_map<ops::OpPtr, uint32_t> in_degrees = getInDegrees();
+  std::unordered_map<tensor::ActivationTensorPtr, uint32_t> out_degrees =
+      getOutDegrees();
 
-  std::queue<ops::OpPtr> queue;
+  std::queue<tensor::ActivationTensorPtr> queue;
 
-  for (const auto& input : _inputs) {
-    for (const auto& op : input->dependantOps()) {
-      in_degrees[op]--;
-      if (in_degrees[op] == 0) {
-        queue.push(op);
-        in_degrees.erase(op);
-      }
-    }
+  for (const auto& output : _outputs) {
+    queue.push(output);
   }
-
-  std::vector<tensor::ActivationTensorPtr> activations;
 
   while (!queue.empty()) {
-    auto next_op = queue.front();
+    auto next_tensor = queue.front();
     queue.pop();
-    _op_schedule.push_back(next_op);
+    _activation_tensors.push_back(next_tensor);
 
-    for (const auto& output : next_op->outputs()) {
-      activations.push_back(output);
-      for (const auto& op : output->dependantOps()) {
-        in_degrees[op]--;
-        if (in_degrees[op] == 0) {
-          queue.push(op);
-          in_degrees.erase(op);
-        }
+    for (const auto& input : next_tensor->inputs()) {
+      auto act_input = tensor::asActivationTensor(input);
+      if (!act_input) {
+        continue;
+      }
+
+      out_degrees.at(act_input)--;
+      if (out_degrees.at(act_input) == 0) {
+        queue.push(act_input);
+        out_degrees.erase(act_input);
       }
     }
   }
 
-  _activations = ActivationsManager(activations);
+  std::reverse(_activation_tensors.begin(), _activation_tensors.end());
+
+  for (auto& tensor : _activation_tensors) {
+    _ops.push_back(tensor->source());
+  }
+
+  _allocation_manager = AllocationManager(_activation_tensors);
 }
 
-std::unordered_map<ops::OpPtr, uint32_t> Model::getInDegrees() const {
-  std::unordered_map<ops::OpPtr, uint32_t> in_degrees;
+std::unordered_map<tensor::ActivationTensorPtr, uint32_t> Model::getOutDegrees()
+    const {
+  std::unordered_map<tensor::ActivationTensorPtr, uint32_t> out_degrees;
 
-  std::vector<tensor::TensorPtr> unexplored(_inputs.begin(), _inputs.end());
+  std::unordered_set<tensor::ActivationTensorPtr> visited;
 
-  while (!unexplored.empty()) {
-    std::vector<tensor::TensorPtr> next_unexplored;
+  std::function<void(const tensor::ActivationTensorPtr&)> recurse;
 
-    for (const auto& tensor : unexplored) {
-      for (const auto& op : tensor->dependantOps()) {
-        if (!in_degrees.count(op)) {
-          in_degrees[op] = op->inputs().size();
-
-          auto op_outputs = op->outputs();
-
-          next_unexplored.insert(next_unexplored.end(), op_outputs.begin(),
-                                 op_outputs.end());
-        }
-      }
+  recurse = [&visited, &out_degrees,
+             &recurse](const tensor::ActivationTensorPtr& tensor) {
+    if (visited.count(tensor)) {
+      return;
     }
 
-    unexplored = next_unexplored;
+    visited.insert(tensor);
+
+    for (const auto& input : tensor->inputs()) {
+      auto act_input = tensor::asActivationTensor(input);
+      // If it's an input tensor its execution order doesn't matter.
+      if (act_input) {
+        out_degrees[act_input]++;
+        recurse(act_input);
+      }
+    }
+  };
+
+  for (const auto& output : _outputs) {
+    recurse(output);
   }
 
-  return in_degrees;
+  return out_degrees;
 }
 
 void Model::checkNoOutputsHaveDependentOps() const {
+  auto out_degrees = getOutDegrees();
+
   for (const auto& output : _outputs) {
-    if (!output->dependantOps().empty()) {
+    if (out_degrees.count(output)) {
       throw std::invalid_argument(
           "Outputs must not be inputs to any ops. Found output '" +
           output->name() + "' with a dependent op.");
-    }
-  }
-}
-
-void Model::checkOnlyOutputsHaveNoDependentOps() const {
-  std::unordered_set<tensor::ActivationTensorPtr> outputs_set(_outputs.begin(),
-                                                              _outputs.end());
-
-  for (const auto& activation : _activations.activationTensors()) {
-    if (activation->dependantOps().empty() && !outputs_set.count(activation)) {
-      throw std::invalid_argument(
-          "All non outputs must be used in at least one op. Found tensor '" +
-          activation->name() +
-          "' that has no dependent ops and is not an output.");
     }
   }
 }
@@ -366,11 +375,11 @@ void Model::matchOutputFullyConnectedLayersWithLabels() {
   for (const auto& loss : _losses) {
     auto outputs_used = loss->outputsUsed();
     if (outputs_used.size() == 1) {
-      auto* fully_connected =
-          dynamic_cast<ops::FullyConnected*>(outputs_used.at(0)->source());
+      auto fully_connected = std::dynamic_pointer_cast<ops::FullyConnected>(
+          outputs_used.at(0)->source());
 
       if (fully_connected) {
-        fully_connected->setLabels(loss->labels());
+        // fully_connected->setLabels(loss->labels());
       }
     }
   }

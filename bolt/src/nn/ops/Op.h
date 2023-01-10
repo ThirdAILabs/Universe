@@ -1,8 +1,13 @@
 #pragma once
 
-#include <bolt/src/nn/tensor/ActivationTensor.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <memory>
+
+namespace thirdai::bolt::nn::tensor {
+
+class ActivationTensor;
+
+}  // namespace thirdai::bolt::nn::tensor
 
 namespace thirdai::bolt::nn::ops {
 
@@ -22,7 +27,9 @@ class Op {
    * of the batch the computation is for. This allows the model to parallelize
    * the entire forward and backward pass through the graph across the batch.
    */
-  virtual void forward(uint32_t index_in_batch, bool training) = 0;
+  virtual void forward(const tensor::TensorList& inputs,
+                       tensor::ActivationTensor* output,
+                       uint32_t index_in_batch, bool training) = 0;
 
   /**
    * Computes the gradients of the parameters in the op and the op's input with
@@ -32,7 +39,9 @@ class Op {
    * of the batch the computation is for. This allows the model to parallelize
    * the entire forward and backward pass through the graph across the batch.
    */
-  virtual void backpropagate(uint32_t index_in_batch) = 0;
+  virtual void backpropagate(tensor::TensorList& inputs,
+                             tensor::ActivationTensor* output,
+                             uint32_t index_in_batch) = 0;
 
   /**
    * Performs a parameter update on any parameters in the op. The parameter
@@ -42,6 +51,9 @@ class Op {
    */
   virtual void updateParameters(float learning_rate, uint32_t train_steps) = 0;
 
+  virtual uint32_t numNonzerosInOutput(const tensor::TensorList& inputs,
+                                       bool use_sparsity) const = 0;
+
   /**
    * Disables sparse parameter updates for updateParameters in the op. This is
    * used for distributed and also can be beneficial in cases where most of the
@@ -50,35 +62,10 @@ class Op {
   virtual void disableSparseParameterUpdates() = 0;
 
   /**
-   * Returns the input tensor(s) of the op. The inputs here is stored as a raw
-   * pointers instead of smart pointers to avoid cycles since the input tensors
-   * will store smart pointers to the ops that use them in their dependent_ops
-   * field. The graph only stores smart pointers in the forward direction in the
-   * graph and raw pointers in the backward direction to avoid cycles.
-   */
-  virtual std::vector<tensor::Tensor*> inputs() const = 0;
-
-  /**
-   * Returns the output tensor(s) of the op.
-   */
-  virtual std::vector<tensor::ActivationTensorPtr> outputs() const = 0;
-
-  /**
-   * Indicates to the op that the sparsity of one of its inputs has changed.
-   * This method is called on the dependent ops of any activation tensor
-   * when its number of sparse nonzeros changes. This is because for certain
-   * ops the number of nonzeros in its input may affect its output. For
-   * example in a concatenation op if one of the inputs increases its
-   * sparsity and hence its number of nonzeros then the number of nonzeros
-   * in the concatenated output will change as well. For many ops this will
-   * be a no-op.
-   */
-  virtual void notifyInputSparsityChange() = 0;
-
-  /**
    * Returns a summary of the op.
    */
-  virtual void summary(std::ostream& summary) const = 0;
+  virtual void summary(std::ostream& summary, const tensor::TensorList& inputs,
+                       const tensor::ActivationTensor* output) const = 0;
 
   /**
    * Returns the name of the op. All of the ops in a model must have a unique

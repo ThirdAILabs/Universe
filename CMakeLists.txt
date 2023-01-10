@@ -305,7 +305,7 @@ add_subdirectory(utils)
 
 set(THIRDAI_SOURCES
     bolt_vector/src/BoltVector.cc
-    bolt/src/nn/model/ActivationsManager.cc
+    bolt/src/nn/model/AllocationManager.cc
     bolt/src/nn/model/Model.cc
     bolt/src/nn/ops/FullyConnected.cc
     bolt/src/nn/tensor/Tensor.cc
