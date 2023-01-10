@@ -41,6 +41,10 @@ void ActivationTensor::backpropagate(uint32_t index_in_batch) {
   _source->backpropagate(_inputs, this, index_in_batch);
 }
 
+void ActivationTensor::addInput(InputTensorPtr input) {
+  _inputs.push_back(std::move(input));
+}
+
 void ActivationTensor::allocate(uint32_t batch_size, bool use_sparsity) {
   _vectors.clear();
   _vectors.reserve(batch_size);

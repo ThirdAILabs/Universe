@@ -47,9 +47,9 @@ void FullyConnected::forward(const tensor::TensorList& inputs,
   // in active neuron set.
   const BoltVector* labels = nullptr;
   (void)training;
-  // if (training && _labels) {
-  //   labels = &_labels->getVector(index_in_batch);
-  // }
+  if (training && inputs.size() == 2) {
+    labels = &inputs[1]->getVector(index_in_batch);
+  }
   _kernel->forward(inputs[0]->getVector(index_in_batch),
                    output->getVector(index_in_batch), labels);
 }

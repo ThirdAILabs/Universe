@@ -379,7 +379,7 @@ void Model::matchOutputFullyConnectedLayersWithLabels() {
           outputs_used.at(0)->source());
 
       if (fully_connected) {
-        // fully_connected->setLabels(loss->labels());
+        outputs_used.at(0)->addInput(loss->labels());
       }
     }
   }

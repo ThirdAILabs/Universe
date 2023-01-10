@@ -2,6 +2,7 @@
 
 #include "Tensor.h"
 #include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/tensor/InputTensor.h>
 
 namespace thirdai::bolt::nn::tensor {
 
@@ -25,21 +26,42 @@ class ActivationTensor final : public Tensor {
    */
   const TensorList& inputs() const;
 
+  /**
+   * Returns the number of nonzeros the tensor will contain depending on wether
+   * or not sparsity is being used. This function will likely delegate to the
+   * source op of the tensor.
+   */
   std::optional<uint32_t> numNonzeros(bool use_sparsity) const final;
 
   BoltVector& getVector(uint32_t index) final;
 
+  /**
+   * Computes the activations of the neurons in the tensor from its inputs using
+   * its source op.
+   */
   void forward(uint32_t index_in_batch, bool training);
 
+  /**
+   * Backpropagates the gradients of the tensor to its inputs using the source
+   * op.
+   */
   void backpropagate(uint32_t index_in_batch);
 
   /**
+   * Adds an additional input to the tensor which will be passed into its source
+   * op during forward and backward. This is only intended to be used to add the
+   * labels as an extra input to the FullyConnected op when the FullyConnected
+   * op yields an output and we want the labels to always be in the set of
+   * active neurons.
+   */
+  void addInput(InputTensorPtr input);
+
+  /**
    * Reallocates the number of vectors stored in the Tensor to reflect either a
-   * change in the batch size the model is processing or a change in whether
-   * sparsity is being used for the forward pass or not. If use_sparsity is
-   * false then it will allocate dense vectors if the dimension of the tensor.
-   * Otherwise it will allocate sparse vectors with _sparse_nonzeros number of
-   * nonzero elements.
+   * change in the batch size the model is processing, a change in whether
+   * sparsity is being used for the computations, or a change in the sparsity of
+   * some op in the model. This method obtains its number of nonzeros from its
+   * source op by passing in the inputs and wether sparsity is enabled.
    */
   void allocate(uint32_t batch_size, bool use_sparsity);
 

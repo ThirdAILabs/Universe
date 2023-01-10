@@ -20,6 +20,12 @@ class FullyConnected final
       uint32_t reconstruct_hash_functions =
           std::numeric_limits<uint32_t>::max());
 
+  /**
+   * Inputs will always have size=1, except if the op yields an output, in which
+   * case the labels will be passed in as a second input so that the layer can
+   * ensure that the label neurons are among the active neurons set if it's
+   * sparse.
+   */
   void forward(const tensor::TensorList& inputs,
                tensor::ActivationTensor* output, uint32_t index_in_batch,
                bool training) final;
@@ -38,7 +44,11 @@ class FullyConnected final
   void summary(std::ostream& summary, const tensor::TensorList& inputs,
                const tensor::ActivationTensor* output) const final;
 
+  /**
+   * Applies the op to an input tensor and yields a new output tensor.
+   */
   tensor::ActivationTensorPtr apply(tensor::TensorPtr input);
+
   /**
    * Returns the dimensions of the layer as {dim, input_dim}.
    */
