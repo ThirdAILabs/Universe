@@ -123,9 +123,7 @@ TEST(TensorTests, InputTensor) {
 
   BoltBatch batch(std::move(vectors));
 
-  auto tensor = tensor::InputTensor::make(
-      /* dim= */ 4, /* sparsity_type= */ tensor::SparsityType::Unknown,
-      /* num_nonzeros= */ std::nullopt);
+  auto tensor = tensor::InputTensor::make(/* dim= */ 4);
 
   tensor->setInputs(batch);
 

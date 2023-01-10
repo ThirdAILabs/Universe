@@ -5,23 +5,23 @@
 
 namespace thirdai::bolt::nn::tensor {
 
-enum class SparsityType {
-  Sparse,
-  Dense,
-  Unknown,
-};
-
 /**
  * Subclass of Tensor which represents inputs to the model.
  */
 class InputTensor final : public Tensor {
  public:
-  InputTensor(uint32_t dim, SparsityType sparsity_type,
-              std::optional<uint32_t> num_nonzeros);
+  /**
+   * The argument num_nonzeros sets how many nonzero elements sparse inputs must
+   * have. This is required for concatenation of tokens in embedding layers and
+   * for concatenation ops to be able to concatenate sparse inputs. If not
+   * provided the input can still accept sparse inputs, but will not preform any
+   * checks on their number of nonzeros and will return std::nullopt if
+   * numNonzeros() is called on it.
+   */
+  InputTensor(uint32_t dim, std::optional<uint32_t> num_nonzeros);
 
   static std::shared_ptr<InputTensor> make(
-      uint32_t dim, SparsityType sparsity_type = SparsityType::Unknown,
-      std::optional<uint32_t> num_nonzeros = std::nullopt);
+      uint32_t dim, std::optional<uint32_t> num_nonzeros = std::nullopt);
 
   std::optional<uint32_t> numNonzeros(bool use_sparsity) const final;
 
@@ -33,21 +33,12 @@ class InputTensor final : public Tensor {
    */
   void setInputs(const BoltBatch& batch);
 
-  /**
-   * Returns if the input contains vectors that are sparse, dense, or unknown
-   * (meaning it is unknown if they will be sparse or dense, or they could be
-   * either). Some ops like concatenation will need to know the sparsity of
-   * their inputs.
-   */
-  SparsityType sparsityType() const;
-
  private:
   BoltBatch* _input_batch;
 
   // The number of nonzeros is optional because this may not be fixed for some
   // inputs.
   std::optional<uint32_t> _num_nonzeros;
-  SparsityType _sparsity_type;
 };
 
 using InputTensorPtr = std::shared_ptr<InputTensor>;

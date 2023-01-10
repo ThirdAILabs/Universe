@@ -33,15 +33,9 @@ void createBoltV2NNSubmodule(py::module_& module) {
 
   py::class_<tensor::Tensor, tensor::TensorPtr>(nn, "Tensor");  // NOLINT
 
-  py::enum_<tensor::SparsityType>(nn, "SparsityType")
-      .value("Sparse", tensor::SparsityType::Sparse)
-      .value("Dense", tensor::SparsityType::Dense)
-      .value("Unknown", tensor::SparsityType::Unknown);
-
   py::class_<tensor::InputTensor, tensor::InputTensorPtr, tensor::Tensor>(
       nn, "Input")
       .def(py::init(&tensor::InputTensor::make), py::arg("dim"),
-           py::arg("sparsity_type") = tensor::SparsityType::Unknown,
            py::arg("sparse_nonzeros") = std::nullopt);
 
   py::class_<tensor::ActivationTensor, tensor::ActivationTensorPtr,

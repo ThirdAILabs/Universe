@@ -5,9 +5,7 @@ namespace thirdai::bolt::nn::loss {
 
 ComparativeLoss::ComparativeLoss(tensor::ActivationTensorPtr activations)
     : _activations(std::move(activations)) {
-  _labels = tensor::InputTensor::make(_activations->dim(),
-                                      tensor::SparsityType::Unknown,
-                                      /* num_nonzeros= */ std::nullopt);
+  _labels = tensor::InputTensor::make(_activations->dim());
 }
 
 float ComparativeLoss::loss(uint32_t index_in_batch) const {

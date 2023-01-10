@@ -1,5 +1,6 @@
 #include "InputTensor.h"
 #include <optional>
+#include <stdexcept>
 #include <string>
 
 namespace thirdai::bolt::nn::tensor {
@@ -9,16 +10,12 @@ std::string nextInputTensorName() {
   return "input_" + std::to_string(++constructed);
 }
 
-InputTensor::InputTensor(uint32_t dim, SparsityType sparsity_type,
-                         std::optional<uint32_t> num_nonzeros)
-    : Tensor(dim, nextInputTensorName()),
-      _num_nonzeros(num_nonzeros),
-      _sparsity_type(sparsity_type) {}
+InputTensor::InputTensor(uint32_t dim, std::optional<uint32_t> num_nonzeros)
+    : Tensor(dim, nextInputTensorName()), _num_nonzeros(num_nonzeros) {}
 
 std::shared_ptr<InputTensor> InputTensor::make(
-    uint32_t dim, SparsityType sparsity_type,
-    std::optional<uint32_t> num_nonzeros) {
-  return std::make_shared<InputTensor>(dim, sparsity_type, num_nonzeros);
+    uint32_t dim, std::optional<uint32_t> num_nonzeros) {
+  return std::make_shared<InputTensor>(dim, num_nonzeros);
 }
 
 std::optional<uint32_t> InputTensor::numNonzeros(bool use_sparsity) const {
@@ -31,16 +28,20 @@ BoltVector& InputTensor::getVector(uint32_t index) {
 }
 
 void InputTensor::setInputs(const BoltBatch& batch) {
-  std::optional<std::pair<uint32_t, uint32_t>> num_nonzeros_range =
-      std::nullopt;
+  batch.verifyExpectedDimension(dim(), /* num_nonzeros_range= */ std::nullopt,
+                                "Input");
   if (_num_nonzeros) {
-    num_nonzeros_range = {*_num_nonzeros, *_num_nonzeros};
+    for (const auto& vec : batch) {
+      if (!vec.isDense() && vec.len != *_num_nonzeros) {
+        std::stringstream error;
+        error << "Expected sparse input to have " << *_num_nonzeros
+              << " nonzeros but found vector with " << vec.len << " nonzeros.";
+        throw std::invalid_argument(error.str());
+      }
+    }
   }
-  batch.verifyExpectedDimension(dim(), num_nonzeros_range, "Input");
 
   _input_batch = const_cast<BoltBatch*>(&batch);
 }
-
-SparsityType InputTensor::sparsityType() const { return _sparsity_type; }
 
 }  // namespace thirdai::bolt::nn::tensor

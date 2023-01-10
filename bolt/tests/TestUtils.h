@@ -96,9 +96,7 @@ class MockLoss final : public loss::Loss {
 };
 
 inline tensor::InputTensorPtr emptyInput() {
-  return tensor::InputTensor::make(
-      /* dim= */ 1, /* sparsity_type= */ tensor::SparsityType::Unknown,
-      /* num_nonzeros= */ std::nullopt);
+  return tensor::InputTensor::make(/* dim= */ 1);
 }
 
 }  // namespace thirdai::bolt::nn::tests
