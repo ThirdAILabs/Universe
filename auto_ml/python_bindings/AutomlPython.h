@@ -65,6 +65,15 @@ class UDTFactory {
   static void save_generator(const QueryCandidateGenerator& generator,
                              const std::string& filename);
 
+  static py::object makeGeneratorInferenceTuple(
+      std::vector<std::vector<std::string>> queries,
+      std::vector<std::vector<float>> scores, bool return_scores) {
+    if (return_scores) {
+      return py::make_tuple(std::move(queries), std::move(scores));
+    }
+    return py::make_tuple(std::move(queries));
+  }
+
   static py::object load(const std::string& filename);
 };
 

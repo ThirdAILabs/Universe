@@ -283,11 +283,12 @@ class QueryCandidateGenerator {
    *
    * @param queries
    * @param top_k
-   * @return A vector of suggested queries
+   * @return A vector of suggested queries and the corresponding scores.
 
    */
-  std::vector<std::vector<std::string>> queryFromList(
-      const std::vector<std::string>& queries, uint32_t top_k) {
+  std::pair<std::vector<std::vector<std::string>>,
+            std::vector<std::vector<float>>>
+  queryFromList(const std::vector<std::string>& queries, uint32_t top_k) {
     if (!_flash_index) {
       throw exceptions::QueryCandidateGeneratorException(
           "Attempting to Generate Candidate Queries without Training the "
@@ -299,22 +300,22 @@ class QueryCandidateGenerator {
       featurized_queries[query_index] =
           featurizeSingleQuery(queries[query_index]);
     }
-    std::vector<std::vector<uint32_t>> candidate_query_labels =
+    auto [candidate_query_labels, candidate_query_scores] =
         _flash_index->queryBatch(
             /* batch = */ BoltBatch(std::move(featurized_queries)),
             /* top_k = */ top_k,
             /* pad_zeros = */ false);
 
-    std::vector<std::vector<std::string>> outputs;
-    outputs.reserve(queries.size());
+    std::vector<std::vector<std::string>> query_outputs;
+    query_outputs.reserve(queries.size());
 
     for (auto& candidate_query_label_vector : candidate_query_labels) {
       auto top_k_candidates =
           getQueryCandidatesAsStrings(candidate_query_label_vector);
 
-      outputs.emplace_back(std::move(top_k_candidates));
+      query_outputs.emplace_back(std::move(top_k_candidates));
     }
-    return outputs;
+    return {std::move(query_outputs), std::move(candidate_query_scores)};
   }
 
   /**
@@ -323,10 +324,11 @@ class QueryCandidateGenerator {
    *
    * @param file_name: CSV file expected to have correct queries in column 0,
    * and incorrect queries in column 1.
-   * @return Recommended queries
+   * @return Recommended queries and the corresponding scores.
    */
-  std::vector<std::vector<std::string>> evaluateOnFile(
-      const std::string& file_name, uint32_t top_k) {
+  std::pair<std::vector<std::vector<std::string>>,
+            std::vector<std::vector<float>>>
+  evaluateOnFile(const std::string& file_name, uint32_t top_k) {
     if (!_flash_index) {
       throw exceptions::QueryCandidateGeneratorException(
           "Attempting to Evaluate the Generator without Training.");
@@ -339,22 +341,24 @@ class QueryCandidateGenerator {
     auto data =
         loadDatasetInMemory(/* file_name = */ file_name,
                             /* batch_processor = */ eval_batch_processor);
-
     ProgressBar bar("evaluate", data->numBatches());
 
     std::vector<std::vector<std::string>> output_queries;
+    std::vector<std::vector<float>> output_scores;
     for (const auto& batch : *data) {
-      std::vector<std::vector<uint32_t>> candidate_query_labels =
+      auto [candidate_query_labels, candidate_query_scores] =
           _flash_index->queryBatch(
               /* batch = */ batch,
               /* top_k = */ top_k,
               /* pad_zeros = */ false);
-
       bar.increment();
 
       for (auto& candidate_query_label_vector : candidate_query_labels) {
         auto top_k = getQueryCandidatesAsStrings(candidate_query_label_vector);
         output_queries.push_back(std::move(top_k));
+      }
+      for (auto& candidate_query_score_vector : candidate_query_scores) {
+        output_scores.push_back(std::move(candidate_query_score_vector));
       }
     }
 
@@ -371,7 +375,7 @@ class QueryCandidateGenerator {
                        /* generated_queries = */ output_queries,
                        /* K = */ top_k);
     }
-    return output_queries;
+    return {std::move(output_queries), std::move(output_scores)};
   }
 
   std::unordered_map<std::string, uint32_t> getQueriesToLabelsMap() const {
