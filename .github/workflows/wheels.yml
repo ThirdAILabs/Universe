@@ -96,7 +96,9 @@ jobs:
           CIBW_BUILD_VERBOSITY: 3
 
           # On linux we copy a valid license to the home directory within the docker
-          CIBW_BEFORE_TEST_LINUX: cp docker/product/slim/license.serialized ~/license.serialized
+          CIBW_BEFORE_TEST_LINUX: >
+            cp docker/product/slim/license.serialized ~/license.serialized &&
+            yum install golang -y
           CIBW_TEST_EXTRAS: "test"
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
@@ -156,3 +158,23 @@ jobs:
       with:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}
+
+    - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
+      if: success()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel_id: pypi_package_releases
+        status: SUCCESS
+        color: good
+
+    - name: Notify slack fail
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel_id: pypi_package_releases
+        status: FAILED
+        color: danger
