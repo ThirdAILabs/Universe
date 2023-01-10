@@ -14,11 +14,6 @@ class Tensor {
   explicit Tensor(uint32_t dim, std::string name);
 
   /**
-   * Returns the ith vector in the tensor.
-   */
-  virtual BoltVector& getVector(uint32_t index) = 0;
-
-  /**
    * Returns the dimension of the vectors in the tensor.
    */
   uint32_t dim() const;
@@ -29,6 +24,11 @@ class Tensor {
    * be equivalent to calling dim().
    */
   virtual std::optional<uint32_t> numNonzeros(bool use_sparsity) const = 0;
+
+  /**
+   * Returns the ith vector in the tensor.
+   */
+  virtual BoltVector& getVector(uint32_t index) = 0;
 
   /**
    * Returns the name of the tensor. All tensors in a model must have a unique

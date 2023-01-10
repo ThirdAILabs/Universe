@@ -9,7 +9,7 @@
 
 namespace thirdai::bolt::nn::tests {
 
-TEST(ModelOpScheduleTests, SingleOutput) {
+TEST(ComputationScheduleTests, SingleOutput) {
   auto input = emptyInput();
 
   auto act_1 = Noop::make("op_1")->apply({input});
@@ -24,20 +24,20 @@ TEST(ModelOpScheduleTests, SingleOutput) {
                      /* outputs= */ {act_5},
                      /* losses= */ {loss});
 
-  ASSERT_EQ(model.ops().size(), 5);
+  ASSERT_EQ(model.opComputationOrder().size(), 5);
   uint32_t op_cnt = 0;
-  for (const auto& op : model.ops()) {
+  for (const auto& op : model.opComputationOrder()) {
     ASSERT_EQ(op->name(), "op_" + std::to_string(++op_cnt));
   }
 
-  ASSERT_EQ(model.tensors().size(), 5);
+  ASSERT_EQ(model.tensorComputationOrder().size(), 5);
   uint32_t tensor_cnt = 0;
-  for (const auto& tensor : model.tensors()) {
+  for (const auto& tensor : model.tensorComputationOrder()) {
     ASSERT_EQ(tensor->name(), "act_" + std::to_string(++tensor_cnt));
   }
 }
 
-TEST(ModelOpScheduleTests, MultipleOutputs) {
+TEST(ComputationScheduleTests, MultipleOutputs) {
   auto input_1 = emptyInput();
   auto input_2 = emptyInput();
   auto input_3 = emptyInput();
@@ -59,30 +59,30 @@ TEST(ModelOpScheduleTests, MultipleOutputs) {
 
   std::vector<uint32_t> first_part_of_order = {1, 2, 3, 5, 6};
 
-  ASSERT_EQ(model.ops().size(), 7);
-  ASSERT_EQ(model.tensors().size(), 7);
+  ASSERT_EQ(model.opComputationOrder().size(), 7);
+  ASSERT_EQ(model.tensorComputationOrder().size(), 7);
 
   for (uint32_t i = 0; i < 5; i++) {
-    ASSERT_EQ(model.ops()[i]->name(),
+    ASSERT_EQ(model.opComputationOrder()[i]->name(),
               "op_" + std::to_string(first_part_of_order[i]));
-    ASSERT_EQ(model.tensors()[i]->name(),
+    ASSERT_EQ(model.tensorComputationOrder()[i]->name(),
               "act_" + std::to_string(first_part_of_order[i]));
   }
 
-  auto sixth_op = model.ops()[5]->name();
-  auto seventh_op = model.ops()[6]->name();
+  auto sixth_op = model.opComputationOrder()[5]->name();
+  auto seventh_op = model.opComputationOrder()[6]->name();
 
   ASSERT_TRUE(sixth_op == "op_4" && seventh_op == "op_7" ||
               sixth_op == "op_7" && seventh_op == "op_4");
 
-  auto sixth_tensor = model.tensors()[5]->name();
-  auto seventh_tensor = model.tensors()[6]->name();
+  auto sixth_tensor = model.tensorComputationOrder()[5]->name();
+  auto seventh_tensor = model.tensorComputationOrder()[6]->name();
 
   ASSERT_TRUE(sixth_tensor == "act_4" && seventh_tensor == "act_7" ||
               sixth_tensor == "act_7" && seventh_tensor == "act_4");
 }
 
-TEST(ModelOpScheduleTests, TestRecurrence) {
+TEST(ComputationScheduleTests, Recurrence) {
   auto input_1 = emptyInput();
   auto input_2 = emptyInput();
   auto input_3 = emptyInput();
@@ -105,14 +105,15 @@ TEST(ModelOpScheduleTests, TestRecurrence) {
 
   std::vector<std::string> op_order = {"recurrence", "recurrence", "recurrence",
                                        "recurrence", "output"};
-  ASSERT_EQ(model.ops().size(), 5);
+  ASSERT_EQ(model.opComputationOrder().size(), 5);
   for (uint32_t i = 0; i < 5; i++) {
-    ASSERT_EQ(model.ops()[i]->name(), op_order[i]);
+    ASSERT_EQ(model.opComputationOrder()[i]->name(), op_order[i]);
   }
 
-  ASSERT_EQ(model.tensors().size(), 5);
+  ASSERT_EQ(model.tensorComputationOrder().size(), 5);
   for (uint32_t i = 0; i < 5; i++) {
-    ASSERT_EQ(model.tensors()[i]->name(), "act_" + std::to_string(i + 1));
+    ASSERT_EQ(model.tensorComputationOrder()[i]->name(),
+              "act_" + std::to_string(i + 1));
   }
 }
 

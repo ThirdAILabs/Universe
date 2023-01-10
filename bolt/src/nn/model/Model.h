@@ -64,9 +64,14 @@ class Model {
    * Returns the list of ops in the model in the order they will be executed
    * during the forward pass.
    */
-  const std::vector<ops::OpPtr>& ops() const;
+  std::vector<ops::OpPtr> opComputationOrder() const;
 
-  const std::vector<tensor::ActivationTensorPtr>& tensors() const;
+  /**
+   * Returns the list of ops in the model in the order their values will be
+   * computed during the forward pass.
+   */
+  const std::vector<tensor::ActivationTensorPtr>& tensorComputationOrder()
+      const;
 
   /**
    * Sets the given labels as the current labels for the model. These are public
@@ -158,7 +163,7 @@ class Model {
    * Traverses the graph and determines the order in which the ops should be
    * executed.
    */
-  void createOpSchedule();
+  void createComputationSchedule();
 
   /**
    * Gets the in degrees for each op, which is the number of tensors they take
@@ -188,7 +193,7 @@ class Model {
   std::vector<loss::LossPtr> _losses;
 
   std::vector<ops::OpPtr> _ops;
-  std::vector<tensor::ActivationTensorPtr> _activation_tensors;
+  std::vector<tensor::ActivationTensorPtr> _activation_tensor_computation_order;
 
   AllocationManager _allocation_manager;
 

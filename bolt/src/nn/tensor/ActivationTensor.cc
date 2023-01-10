@@ -25,14 +25,6 @@ ops::OpPtr ActivationTensor::source() const { return _source; }
 
 const TensorList& ActivationTensor::inputs() const { return _inputs; }
 
-std::optional<uint32_t> ActivationTensor::numNonzeros(bool use_sparsity) const {
-  return _source->numNonzerosInOutput(_inputs, use_sparsity);
-}
-
-BoltVector& ActivationTensor::getVector(uint32_t index) {
-  return _vectors[index];
-}
-
 void ActivationTensor::forward(uint32_t index_in_batch, bool training) {
   _source->forward(_inputs, this, index_in_batch, training);
 }
@@ -41,8 +33,12 @@ void ActivationTensor::backpropagate(uint32_t index_in_batch) {
   _source->backpropagate(_inputs, this, index_in_batch);
 }
 
-void ActivationTensor::addInput(InputTensorPtr input) {
-  _inputs.push_back(std::move(input));
+std::optional<uint32_t> ActivationTensor::numNonzeros(bool use_sparsity) const {
+  return _source->numNonzerosInOutput(_inputs, use_sparsity);
+}
+
+BoltVector& ActivationTensor::getVector(uint32_t index) {
+  return _vectors[index];
 }
 
 void ActivationTensor::allocate(uint32_t batch_size, bool use_sparsity) {
@@ -68,6 +64,10 @@ void ActivationTensor::allocate(uint32_t batch_size, bool use_sparsity) {
                             _gradients.data() + i * num_nonzeros, num_nonzeros);
     }
   }
+}
+
+void ActivationTensor::addInput(InputTensorPtr input) {
+  _inputs.push_back(std::move(input));
 }
 
 std::vector<uint32_t> ActivationTensor::shape() const {

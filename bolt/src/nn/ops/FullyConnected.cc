@@ -12,15 +12,6 @@ std::string nextFullyConnectedOpName() {
   return "fc_" + std::to_string(++constructed);
 }
 
-std::shared_ptr<FullyConnected> FullyConnected::make(
-    uint32_t dim, uint32_t input_dim, float sparsity,
-    const std::string& activation, SamplingConfigPtr sampling,
-    uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions) {
-  return std::shared_ptr<FullyConnected>(new FullyConnected(
-      dim, input_dim, sparsity, activation, std::move(sampling),
-      rebuild_hash_tables, reconstruct_hash_functions));
-}
-
 FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
                                const std::string& activation,
                                SamplingConfigPtr sampling,
@@ -38,6 +29,15 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
                                    std::move(sampling));
 
   _kernel = std::make_shared<FullyConnectedLayer>(config, input_dim);
+}
+
+std::shared_ptr<FullyConnected> FullyConnected::make(
+    uint32_t dim, uint32_t input_dim, float sparsity,
+    const std::string& activation, SamplingConfigPtr sampling,
+    uint32_t rebuild_hash_tables, uint32_t reconstruct_hash_functions) {
+  return std::shared_ptr<FullyConnected>(new FullyConnected(
+      dim, input_dim, sparsity, activation, std::move(sampling),
+      rebuild_hash_tables, reconstruct_hash_functions));
 }
 
 void FullyConnected::forward(const tensor::TensorList& inputs,

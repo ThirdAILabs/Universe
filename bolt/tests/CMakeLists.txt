@@ -3,7 +3,7 @@ enable_testing()
 include(GoogleTest)
 
 set(BOLT_NN_TESTS
-    ModelOpScheduleTests
+    ComputationScheduleTests
     ComparativeLossTests
     FullyConnectedModelTests
     TensorTests

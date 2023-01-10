@@ -7,7 +7,7 @@ namespace thirdai::bolt::nn::tests {
 
 class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
  private:
-  explicit Noop(std::string name, uint32_t dim = 1, uint32_t num_nonzeros = 1)
+  explicit Noop(std::string name, uint32_t dim, uint32_t num_nonzeros)
       : ops::Op(std::move(name)), _dim(dim), _num_nonzeros(num_nonzeros) {}
 
  public:
@@ -17,7 +17,7 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
   }
 
   tensor::ActivationTensorPtr apply(const tensor::TensorList& inputs) {
-    return tensor::ActivationTensor::make(1, shared_from_this(), inputs);
+    return tensor::ActivationTensor::make(_dim, shared_from_this(), inputs);
   }
 
   void forward(const tensor::TensorList& inputs,

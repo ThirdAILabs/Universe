@@ -7,7 +7,12 @@
 namespace thirdai::bolt::nn::tensor {
 
 /**
- * Subclass of Tensor which represents the outputs of an op.
+ * Subclass of Tensor which represents a computation in the model/computation
+ * graph as well as the outputs of the computation. It stores the op that
+ * generates the output as well as references the input tensor(s) for the
+ * computation. This class comprises the core of the computation graph in the
+ * model by storing the relationship between inputs and outputs within the
+ * model and how information is passed between them.
  */
 class ActivationTensor final : public Tensor {
  public:
@@ -27,34 +32,29 @@ class ActivationTensor final : public Tensor {
   const TensorList& inputs() const;
 
   /**
-   * Returns the number of nonzeros the tensor will contain depending on wether
-   * or not sparsity is being used. This function will likely delegate to the
-   * source op of the tensor.
-   */
-  std::optional<uint32_t> numNonzeros(bool use_sparsity) const final;
-
-  BoltVector& getVector(uint32_t index) final;
-
-  /**
    * Computes the activations of the neurons in the tensor from its inputs using
-   * its source op.
+   * its source op. Calls the forward method of the source op.
    */
   void forward(uint32_t index_in_batch, bool training);
 
   /**
    * Backpropagates the gradients of the tensor to its inputs using the source
-   * op.
+   * op. Calls the backpropagate method of the source op.
    */
   void backpropagate(uint32_t index_in_batch);
 
   /**
-   * Adds an additional input to the tensor which will be passed into its source
-   * op during forward and backward. This is only intended to be used to add the
-   * labels as an extra input to the FullyConnected op when the FullyConnected
-   * op yields an output and we want the labels to always be in the set of
-   * active neurons.
+   * Returns the number of nonzeros the tensor will contain depending on wether
+   * or not sparsity is being used and the inputs. Calls the numNonzeros method
+   * of the source op.
    */
-  void addInput(InputTensorPtr input);
+  std::optional<uint32_t> numNonzeros(bool use_sparsity) const final;
+
+  /**
+   * Returns the ith vector stored in the tensor. This will be the ith output of
+   * the op the last time it was computed.
+   */
+  BoltVector& getVector(uint32_t index) final;
 
   /**
    * Reallocates the number of vectors stored in the Tensor to reflect either a
@@ -64,6 +64,15 @@ class ActivationTensor final : public Tensor {
    * source op by passing in the inputs and wether sparsity is enabled.
    */
   void allocate(uint32_t batch_size, bool use_sparsity);
+
+  /**
+   * Adds an additional input to the tensor which will be passed into its source
+   * op during forward and backward. This is only intended to be used to add the
+   * labels as an extra input to the FullyConnected op when the FullyConnected
+   * op yields an output and we want the labels to always be in the set of
+   * active neurons.
+   */
+  void addInput(InputTensorPtr input);
 
   /**
    * Returns the current shape of the active neurons, activations, and

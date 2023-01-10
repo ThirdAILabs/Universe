@@ -24,7 +24,7 @@ Model::Model(std::vector<tensor::InputTensorPtr> inputs,
     _label_inputs.push_back(loss->labels());
   }
 
-  createOpSchedule();
+  createComputationSchedule();
 
   checkNoOutputsHaveDependentOps();
   checkAllOutputsAreUsedInLosses();
@@ -87,10 +87,17 @@ void Model::updateParameters(float learning_rate) {
   }
 }
 
-const std::vector<ops::OpPtr>& Model::ops() const { return _ops; }
+std::vector<ops::OpPtr> Model::opComputationOrder() const {
+  std::vector<ops::OpPtr> ops;
+  for (const auto& tensor : _activation_tensor_computation_order) {
+    ops.push_back(tensor->source());
+  }
+  return ops;
+}
 
-const std::vector<tensor::ActivationTensorPtr>& Model::tensors() const {
-  return _activation_tensors;
+const std::vector<tensor::ActivationTensorPtr>& Model::tensorComputationOrder()
+    const {
+  return _activation_tensor_computation_order;
 }
 
 ops::OpPtr Model::getOp(const std::string& name) const {
@@ -103,7 +110,7 @@ ops::OpPtr Model::getOp(const std::string& name) const {
 }
 
 tensor::ActivationTensorPtr Model::getTensor(const std::string& name) const {
-  for (const auto& tensor : _activation_tensors) {
+  for (const auto& tensor : _activation_tensor_computation_order) {
     if (tensor->name() == name) {
       return tensor;
     }
@@ -134,7 +141,7 @@ const std::vector<tensor::ActivationTensorPtr>& Model::outputs() const {
 std::string Model::summary(bool print) const {
   std::stringstream summary;
 
-  for (const auto& tensor : _activation_tensors) {
+  for (const auto& tensor : _activation_tensor_computation_order) {
     tensor->source()->summary(summary, tensor->inputs(), tensor.get());
     summary << '\n';
   }
@@ -189,7 +196,7 @@ void Model::trainOnBatchImpl(uint32_t input_batch_size,
 }
 
 void Model::forwardVector(uint32_t index_in_batch, bool training) {
-  for (auto& tensor : _activation_tensors) {
+  for (auto& tensor : _activation_tensor_computation_order) {
     tensor->forward(index_in_batch, training);
   }
 }
@@ -201,8 +208,8 @@ void Model::backpropagateVector(uint32_t index_in_batch) {
     loss->gradients(index_in_batch, _allocation_manager.currentBatchSize());
   }
 
-  for (auto tensor = _activation_tensors.rbegin();
-       tensor != _activation_tensors.rend(); ++tensor) {
+  for (auto tensor = _activation_tensor_computation_order.rbegin();
+       tensor != _activation_tensor_computation_order.rend(); ++tensor) {
     (*tensor)->backpropagate(index_in_batch);
   }
 }
@@ -261,7 +268,7 @@ void Model::setSingleLabel(const BoltBatch& labels) {
   _label_inputs[0]->setInputs(labels);
 }
 
-void Model::createOpSchedule() {
+void Model::createComputationSchedule() {
   std::unordered_map<tensor::ActivationTensorPtr, uint32_t> out_degrees =
       getOutDegrees();
 
@@ -274,7 +281,7 @@ void Model::createOpSchedule() {
   while (!queue.empty()) {
     auto next_tensor = queue.front();
     queue.pop();
-    _activation_tensors.push_back(next_tensor);
+    _activation_tensor_computation_order.push_back(next_tensor);
 
     for (const auto& input : next_tensor->inputs()) {
       auto act_input = tensor::asActivationTensor(input);
@@ -290,13 +297,17 @@ void Model::createOpSchedule() {
     }
   }
 
-  std::reverse(_activation_tensors.begin(), _activation_tensors.end());
+  std::reverse(_activation_tensor_computation_order.begin(),
+               _activation_tensor_computation_order.end());
 
-  for (auto& tensor : _activation_tensors) {
-    _ops.push_back(tensor->source());
+  // We need to handle the case where ops are use multiple times in the model.
+  std::unordered_set<ops::OpPtr> unique_ops;
+  for (auto& tensor : _activation_tensor_computation_order) {
+    unique_ops.insert(tensor->source());
   }
+  _ops = {unique_ops.begin(), unique_ops.end()};
 
-  _allocation_manager = AllocationManager(_activation_tensors);
+  _allocation_manager = AllocationManager(_activation_tensor_computation_order);
 }
 
 std::unordered_map<tensor::ActivationTensorPtr, uint32_t> Model::getOutDegrees()
