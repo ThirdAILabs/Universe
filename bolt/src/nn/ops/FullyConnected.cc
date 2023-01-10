@@ -102,7 +102,7 @@ void FullyConnected::summary(std::ostream& summary,
                              const tensor::ActivationTensor* output) const {
   summary << "FullyConnected(" << name() << "): " << inputs[0]->name() << " -> "
           << output->name();
-  summary << " :: dim=" << _kernel->getDim()
+  summary << " [dim=" << _kernel->getDim()
           << ", sparsity=" << _kernel->getSparsity() << ", activation="
           << activationFunctionToStr(_kernel->getActivationFunction());
   if (_kernel->getSparsity() < 1.0) {
@@ -112,6 +112,7 @@ void FullyConnected::summary(std::ostream& summary,
     summary << ", reconstruct_hash_functions=" << _reconstruct_hash_functions;
     summary << ")";
   }
+  summary << "]";
 }
 
 tensor::ActivationTensorPtr FullyConnected::apply(tensor::TensorPtr input) {

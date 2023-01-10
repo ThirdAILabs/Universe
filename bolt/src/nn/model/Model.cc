@@ -141,10 +141,16 @@ const std::vector<tensor::ActivationTensorPtr>& Model::outputs() const {
 std::string Model::summary(bool print) const {
   std::stringstream summary;
 
-  for (const auto& tensor : _activation_tensor_computation_order) {
+  summary << "===================== Model =====================\n";
+  for (uint32_t i = 0; i < _activation_tensor_computation_order.size(); i++) {
+    const auto& tensor = _activation_tensor_computation_order[i];
     tensor->source()->summary(summary, tensor->inputs(), tensor.get());
-    summary << '\n';
+    summary << "\n";
+    if (i < _activation_tensor_computation_order.size() - 1) {
+      summary << "-------------------------------------------------\n";
+    }
   }
+  summary << "=================================================\n";
 
   if (print) {
     std::cout << summary.str() << std::endl;
