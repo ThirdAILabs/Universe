@@ -29,6 +29,10 @@ class DatasetLoader final {
                 dataset::BatchProcessorPtr batch_processor, bool shuffle,
                 DatasetShuffleConfig shuffle_config = DatasetShuffleConfig());
 
+  // TODO(Josh/Geordie/Nick/David): We should generalize these next two load
+  // methods to return a vector of BoltDatasets, and figure out which are
+  // inputs and which are labels in UDT
+
   std::pair<InputDatasets, LabelDataset> loadInMemory();
 
   std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
@@ -37,25 +41,15 @@ class DatasetLoader final {
   void restart();
 
   uint32_t getInputDim() {
-    auto dimensions = _batch_processor->getDimensions();
-    if (!dimensions.has_value()) {
-      throw std::runtime_error(
-          "Cannot get the input dimension of this tabular dataset loader's "
-          "batch processor.");
-    }
-    return dimensions->at(0);
+    // TODO(Josh): This is assuming we have one input and one label
+    // dataset
+    return _batch_processor->getDimensions().at(0);
   }
 
   uint32_t getLabelDim() {
-    auto dimensions = _batch_processor->getDimensions();
-    if (!dimensions.has_value()) {
-      throw std::runtime_error(
-          "Cannot get the input dimension of this tabular dataset loader's "
-          "batch processor.");
-    }
     // TODO(Josh): Again, this is assuming we have one input and one label
     // dataset
-    return dimensions->at(1);
+    return _batch_processor->getDimensions().at(1);
   }
 
  private:

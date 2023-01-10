@@ -144,7 +144,7 @@ class GenericBatchProcessor : public BatchProcessor {
 
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
 
-  std::optional<std::vector<uint32_t>> getDimensions() final {
+  std::vector<uint32_t> getDimensions() final {
     std::vector<uint32_t> dims = {getInputDim(), getLabelDim()};
     return dims;
   }
