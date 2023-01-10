@@ -46,7 +46,6 @@ void FullyConnected::forward(const tensor::TensorList& inputs,
   // If the op is an output pass in labels during training to ensure labels are
   // in active neuron set.
   const BoltVector* labels = nullptr;
-  (void)training;
   if (training && inputs.size() == 2) {
     labels = &inputs[1]->getVector(index_in_batch);
   }
