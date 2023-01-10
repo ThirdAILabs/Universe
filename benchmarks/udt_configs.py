@@ -17,16 +17,17 @@ class UDTBenchmarkConfig:
 class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     train_file = "/share/data/udt_datasets/yelp_polarity/train.csv"
     test_file = "/share/data/udt_datasets/yelp_polarity/test.csv"
-    
+
     data_types = {
         "text": bolt.types.text(),
         "label": bolt.types.categorical(),
     }
 
     target = "label"
-    delimiter='\t'
+    delimiter = "\t"
     experiment_name = "YelpPolarityUDT"
     dataset_name = "yelp_polarity"
+
 
 class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     train_file = (
