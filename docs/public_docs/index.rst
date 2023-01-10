@@ -31,6 +31,8 @@ To get access to our package, refer to `thirdai.com
 
    thirdailog
    
+   thirdailicensing
+
    thirdaisearch
 
 

@@ -370,8 +370,9 @@ set(THIRDAI_SOURCES
 # corresponding flag is set
 if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
-  set(THIRDAI_SOURCES ${THIRDAI_SOURCES}
-                      licensing/src/keygen/KeygenCommunication.cc)
+  set(THIRDAI_SOURCES
+      ${THIRDAI_SOURCES} licensing/src/keygen/KeygenCommunication.cc
+      licensing/src/heartbeat/Heartbeat.cc)
 endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
@@ -406,7 +407,8 @@ pybind11_add_module(
   auto_ml/src/models/ModelPipeline.cc
   auto_ml/src/models/OutputProcessor.cc
   auto_ml/src/models/UniversalDeepTransformer.cc
-  telemetry/python_bindings/TelemetryPython.cc)
+  telemetry/python_bindings/TelemetryPython.cc
+  licensing/python_bindings/LicensingPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
 

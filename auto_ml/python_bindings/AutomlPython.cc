@@ -214,18 +214,40 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
       .def("train", &QueryCandidateGenerator::buildFlashIndex,
            py::arg("filename"), docs::UDT_GENERATOR_TRAIN)
-      .def("evaluate", &QueryCandidateGenerator::evaluateOnFile,
-           py::arg("filename"), py::arg("top_k"), docs::UDT_GENERATOR_EVALUATE)
+      .def(
+          "evaluate",
+          [](QueryCandidateGenerator& udt_generator_model,
+             const std::string& filename, uint32_t top_k, bool return_scores) {
+            auto [reformulated_queries, scores] =
+                udt_generator_model.evaluateOnFile(filename, top_k);
+            return UDTFactory::makeGeneratorInferenceTuple(
+                reformulated_queries, scores, return_scores);
+          },
+          py::arg("filename"), py::arg("top_k"),
+          py::arg("return_scores") = false, docs::UDT_GENERATOR_EVALUATE)
       .def(
           "predict",
           [](QueryCandidateGenerator& udt_generator_model,
-             const std::string& sample, uint32_t top_k) {
-            return udt_generator_model.queryFromList({sample}, top_k);
+             const std::string& sample, uint32_t top_k, bool return_scores) {
+            auto [reformulated_queries, scores] =
+                udt_generator_model.queryFromList({sample}, top_k);
+            return UDTFactory::makeGeneratorInferenceTuple(
+                reformulated_queries, scores, return_scores);
           },
-          py::arg("query"), py::arg("top_k"), docs::UDT_GENERATOR_PREDICT)
-      .def("predict_batch", &QueryCandidateGenerator::queryFromList,
-           py::arg("queries"), py::arg("top_k"),
-           docs::UDT_GENERATOR_PREDICT_BATCH)
+          py::arg("query"), py::arg("top_k"), py::arg("return_scores") = false,
+          docs::UDT_GENERATOR_PREDICT)
+      .def(
+          "predict_batch",
+          [](QueryCandidateGenerator& udt_generator_model,
+             const std::vector<std::string>& queries, uint32_t top_k,
+             bool return_scores) {
+            auto [reformulated_queries, scores] =
+                udt_generator_model.queryFromList(queries, top_k);
+            return UDTFactory::makeGeneratorInferenceTuple(
+                reformulated_queries, scores, return_scores);
+          },
+          py::arg("queries"), py::arg("top_k"),
+          py::arg("return_scores") = false, docs::UDT_GENERATOR_PREDICT_BATCH)
       .def("save", &UDTFactory::save_generator, py::arg("filename"),
            docs::UDT_GENERATOR_SAVE);
 }
@@ -430,5 +452,4 @@ py::object UDTFactory::load(const std::string& filename) {
 
   throw std::invalid_argument("Found an invalid header byte in the saved file");
 }
-
 }  // namespace thirdai::automl::python
