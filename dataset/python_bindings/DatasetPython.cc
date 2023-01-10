@@ -231,14 +231,14 @@ void createDatasetSubmodule(py::module_& module) {
                   std::unordered_map<uint32_t, std::pair<double, double>>
                       col_min_maxes,
                   std::unordered_map<std::string, uint32_t> class_name_to_id,
-                  std::vector<std::string> column_names = {},
+                  const std::vector<std::string>& column_names,
                   std::optional<std::unordered_map<uint32_t, uint32_t>>
                       col_to_num_bins = std::nullopt) {
                  return std::make_shared<TabularMetadata>(
                      std::move(column_dtypes), std::move(col_min_maxes),
                      ThreadSafeVocabulary::make(std::move(class_name_to_id),
                                                 /* fixed = */ true),
-                     std::move(column_names), std::move(col_to_num_bins));
+                     column_names, std::move(col_to_num_bins));
                }),
            py::arg("column_dtypes"), py::arg("col_min_maxes"),
            py::arg("class_name_to_id") =
