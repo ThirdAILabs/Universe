@@ -342,7 +342,7 @@ class Block {
 struct BlockList {
   explicit BlockList(std::vector<BlockPtr>&& blocks)
       : _blocks(blocks),
-        _are_dense(computeIsDense(_blocks)),
+        _are_dense(computeAreDense(_blocks)),
         _feature_dim(computeFeatureDim(_blocks)),
         _expected_num_columns(allBlocksHaveColumnNumbers(_blocks)
                                   ? computeExpectedNumColumns(_blocks)
@@ -352,6 +352,10 @@ struct BlockList {
 
   auto operator[](uint32_t index) { return _blocks[index]; }
 
+  /**
+   * Dispatches the method each Block. See method definition in the
+   * Block class for details.
+   */
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
     for (const auto& block : _blocks) {
       block->updateColumnNumbers(column_number_map);
@@ -359,12 +363,20 @@ struct BlockList {
     _expected_num_columns = computeExpectedNumColumns(_blocks);
   }
 
+  /**
+   * Dispatches the method each Block. See method definition in the
+   * Block class for details.
+   */
   void prepareForBatch(BatchInputRef& incoming_batch) {
     for (const auto& block : _blocks) {
       block->prepareForBatch(incoming_batch);
     }
   }
 
+  /**
+   * Dispatches the method each Block. See method definition in the
+   * Block class for details.
+   */
   std::exception_ptr addVectorSegment(
       SingleInputRef& sample, SegmentedFeatureVector& segmented_vector) {
     for (auto& block : _blocks) {
@@ -382,7 +394,7 @@ struct BlockList {
   uint32_t expectedNumColumns() const { return _expected_num_columns; }
 
  private:
-  static bool computeIsDense(const std::vector<BlockPtr>& blocks) {
+  static bool computeAreDense(const std::vector<BlockPtr>& blocks) {
     return std::all_of(
         blocks.begin(), blocks.end(),
         [](const std::shared_ptr<Block>& block) { return block->isDense(); });
