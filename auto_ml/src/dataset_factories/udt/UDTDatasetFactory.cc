@@ -5,20 +5,18 @@
 
 namespace thirdai::automl::data {
 
-using dataset::ColumnNumberMap;
-
 dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     std::shared_ptr<dataset::DataSource> data_source, bool training) {
   auto column_number_map =
       makeColumnNumberMapFromHeader(*data_source, _config->delimiter);
-  _column_number_to_name = column_number_map->getColumnNumToColNameMap();
+  _column_number_to_name = column_number_map.getColumnNumToColNameMap();
 
   // The batch processor will treat the next line as a header
   // Restart so batch processor does not skip a sample.
   data_source->restart();
 
-  _labeled_history_updating_processor->updateColumnNumbers(*column_number_map);
-  _unlabeled_non_updating_processor->updateColumnNumbers(*column_number_map);
+  _labeled_history_updating_processor->updateColumnNumbers(column_number_map);
+  _unlabeled_non_updating_processor->updateColumnNumbers(column_number_map);
 
   return std::make_unique<dataset::TabularDatasetLoader>(
       data_source, _labeled_history_updating_processor,
@@ -108,7 +106,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
       /* has_header= */ true, /* delimiter= */ metadata->delimiter,
       /* parallel= */ true, /* hash_range= */ _config->hash_range);
 
-  _metadata_processors[col_name]->updateColumnNumbers(*column_numbers);
+  _metadata_processors[col_name]->updateColumnNumbers(column_numbers);
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
@@ -120,7 +118,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   return preprocessedVectorsFromDataset(metadata_source, *key_vocab);
 }
 
-ColumnNumberMapPtr UDTDatasetFactory::makeColumnNumberMapFromHeader(
+ColumnNumberMap UDTDatasetFactory::makeColumnNumberMapFromHeader(
     dataset::DataSource& data_source, char delimiter) {
   auto header = data_source.nextLine();
   if (!header) {
@@ -128,7 +126,7 @@ ColumnNumberMapPtr UDTDatasetFactory::makeColumnNumberMapFromHeader(
         "The dataset must have a header that contains column names.");
   }
 
-  return std::make_shared<ColumnNumberMap>(*header, delimiter);
+  return {*header, delimiter};
 }
 
 std::vector<dataset::BlockPtr> UDTDatasetFactory::buildMetadataInputBlocks(

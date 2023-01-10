@@ -41,7 +41,7 @@
 
 namespace thirdai::automl::data {
 
-using dataset::ColumnNumberMapPtr;
+using dataset::ColumnNumberMap;
 class UDTDatasetFactory;
 using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
@@ -193,7 +193,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
       const std::string& col_name, const CategoricalDataTypePtr& categorical);
 
-  static ColumnNumberMapPtr makeColumnNumberMapFromHeader(
+  static ColumnNumberMap makeColumnNumberMapFromHeader(
       dataset::DataSource& data_source, char delimiter);
 
   std::vector<dataset::BlockPtr> buildMetadataInputBlocks(
