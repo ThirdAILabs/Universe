@@ -2,6 +2,7 @@
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartDataSource.h>
@@ -15,6 +16,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/StringManipulation.h>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -83,6 +85,19 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
         /* output_dim= */ dataset_factory->getLabelDim(),
         /* hidden_layer_size= */ embedding_dimension);
   }
+
+  // If we are using a softmax activation then we want to normalize the target
+  // labels (so they sum to 1.0) in order for softmax to work correctly.
+  auto fc_output =
+      std::dynamic_pointer_cast<bolt::FullyConnectedNode>(model->output());
+  if (fc_output &&
+      fc_output->getActivationFunction() == bolt::ActivationFunction::Softmax) {
+    // TODO(Nicholas, Geordie): Refactor the way that models are constructed so
+    // that we can discover if the output is softmax prior to constructing the
+    // dataset factory so we don't need this method.
+    dataset_factory->enableTargetCategoryNormalization();
+  }
+
   deployment::TrainEvalParameters train_eval_parameters(
       /* rebuild_hash_tables_interval= */ std::nullopt,
       /* reconstruct_hash_functions_interval= */ std::nullopt,
