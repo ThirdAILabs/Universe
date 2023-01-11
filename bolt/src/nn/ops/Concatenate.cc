@@ -2,6 +2,7 @@
 #include <bolt/src/nn/tensor/ActivationTensor.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <memory>
+#include <numeric>
 #include <stdexcept>
 
 namespace thirdai::bolt::nn::ops {
@@ -63,10 +64,9 @@ void Concatenate::forward(const tensor::TensorList& inputs,
 
     if (!output_vector.isDense()) {
       if (input_vector.isDense()) {
-        for (uint32_t i = 0; i < input_vector.len; i++) {
-          output_vector.active_neurons[i + current_offset_in_output] =
-              i + _neuron_offsets[input_idx];
-        }
+        std::iota(output_vector.active_neurons,
+                  output_vector.active_neurons + output_vector.len,
+                  _neuron_offsets[input_idx]);
       } else {
         for (uint32_t i = 0; i < input_vector.len; i++) {
           output_vector.active_neurons[i + current_offset_in_output] =
@@ -89,8 +89,10 @@ void Concatenate::backpropagate(tensor::TensorList& inputs,
   for (auto& input : inputs) {
     BoltVector& input_vector = input->getVector(index_in_batch);
 
-    std::copy(input_vector.gradients, input_vector.gradients + input_vector.len,
-              output_vector.gradients + current_offset_in_output);
+    for (uint32_t i = 0; i < input_vector.len; i++) {
+      input_vector.gradients[i] +=
+          output_vector.gradients[i + current_offset_in_output];
+    }
 
     current_offset_in_output += input_vector.len;
   }
