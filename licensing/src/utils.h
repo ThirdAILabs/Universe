@@ -1,9 +1,12 @@
 #pragma once
 
+#include <cryptopp/base64.h>
 #include <cryptopp/files.h>    // FileSource
 #include <cryptopp/filters.h>  // HashFilter
 #include <cryptopp/hex.h>      // HexEncoder
 #include <cryptopp/sha.h>      // SHA256
+#include <cryptopp/xed25519.h>
+#include <random>
 #include <string>
 
 namespace thirdai::licensing {
@@ -36,6 +39,32 @@ inline std::string sha256File(const std::string& filename) {
                     /* output = */ digest))));
 
   return digest;
+}
+
+inline std::string getRandomIdentifier(uint32_t numBytesRandomness) {
+  static std::random_device dev;
+  static std::mt19937 rng(dev());
+
+  const char* v = "0123456789abcdef";
+  std::uniform_int_distribution<uint32_t> dist(0, strlen(v));
+
+  std::string res;
+  for (uint32_t i = 0; i < numBytesRandomness * 2; i++) {
+    res += v[dist(rng)];
+  }
+  return res;
+}
+
+/*
+ * Creates an ed25519Verifier from the passed in public key string. The string
+ * should be a DER format file encoded in base64.
+ */
+inline CryptoPP::ed25519Verifier createVerifierFromBase64String(
+    const std::string& base64_key) {
+  CryptoPP::StringSource source(/* string = */ base64_key,
+                                /* pumpAll = */ true,
+                                /* attachment = */ new CryptoPP::Base64Decoder);
+  return CryptoPP::ed25519::Verifier(source);
 }
 
 }  // namespace thirdai::licensing

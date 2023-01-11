@@ -6,6 +6,7 @@ __all__ = [
     "data",
     "hashing",
     "distributed_bolt",
+    "licensing",
     "set_global_num_threads",
     "logging",
 ]
@@ -15,20 +16,12 @@ import thirdai.bolt as bolt
 import thirdai.data as data
 import thirdai.dataset as dataset
 import thirdai.hashing as hashing
+import thirdai.licensing as licensing
 import thirdai.search as search
 
 # Relay __version__ from C++
 from thirdai._thirdai import __version__, logging
 
-# Import the top level methods so they are available directly from thirdai
-# If the import fails it means this build doesn't expose these methods, so we
-# just pass
-try:
-    from thirdai._thirdai import activate, deactivate, set_thirdai_license_path
-
-    __all__.extend(["set_thirdai_license_path", "activate", "deactivate"])
-except ImportError:
-    pass
 try:
     from thirdai._thirdai import set_global_num_threads
 

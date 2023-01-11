@@ -25,7 +25,6 @@
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
-#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
@@ -65,7 +64,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataSource> data_source, bool training) final;
+      dataset::DataSourcePtr data_source, bool training) final;
 
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
     dataset::CsvSampleRef input_ref(input, _config->delimiter);
@@ -183,7 +182,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const CategoricalMetadataConfig& metadata_config) const;
 
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
-      dataset::TabularDatasetLoader& dataset,
+      dataset::DatasetLoader& dataset_loader,
       dataset::ThreadSafeVocabulary& key_vocab);
 
   std::vector<BoltBatch> featurizeInputBatchImpl(

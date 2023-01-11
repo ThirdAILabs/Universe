@@ -61,6 +61,10 @@ mnist_data
 # Clang tidy
 clang_tidy_logs
 
+# Licensing server binaries
+licensing/src/server/license-server
+licensing/src/server/license-server-max-*
+
 # -- Begin vim .gitignore
 # Swap
 [._]*.s[a-v][a-z]
