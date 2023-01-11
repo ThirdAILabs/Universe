@@ -20,8 +20,6 @@ class ComparativeMetric : public Metric {
 
   std::string outputName() const final;
 
-  virtual ~ComparativeMetric() = default;
-
  protected:
   /**
    * Metrics implementing this class must implement this simplified record
