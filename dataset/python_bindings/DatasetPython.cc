@@ -219,40 +219,22 @@ void createDatasetSubmodule(py::module_& module) {
            "True if the block produces dense features, False otherwise.");
 
 #if THIRDAI_EXPOSE_ALL
-  py::enum_<TabularDataType>(dataset_submodule, "TabularDataType")
-      .value("Label", TabularDataType::Label)
-      .value("Categorical", TabularDataType::Categorical)
-      .value("Numeric", TabularDataType::Numeric);
-
-  py::class_<TabularMetadata, std::shared_ptr<TabularMetadata>>(
-      dataset_submodule, "TabularMetadata", "Metadata for a tabular dataset.")
-      .def(py::init(
-               [](std::vector<TabularDataType> column_dtypes,
-                  std::unordered_map<uint32_t, std::pair<double, double>>
-                      col_min_maxes,
-                  std::unordered_map<std::string, uint32_t> class_name_to_id,
-                  const std::vector<std::string>& column_names,
-                  std::optional<std::unordered_map<uint32_t, uint32_t>>
-                      col_to_num_bins = std::nullopt) {
-                 return std::make_shared<TabularMetadata>(
-                     std::move(column_dtypes), std::move(col_min_maxes),
-                     ThreadSafeVocabulary::make(std::move(class_name_to_id),
-                                                /* fixed = */ true),
-                     column_names, std::move(col_to_num_bins));
-               }),
-           py::arg("column_dtypes"), py::arg("col_min_maxes"),
-           py::arg("class_name_to_id") =
-               std::unordered_map<std::string, uint32_t>(),
-           py::arg("column_names") = std::vector<std::string>(),
-           py::arg("col_to_num_bins") = std::nullopt);
+  py::class_<TabularColumn, std::shared_ptr<TabularColumn>>(
+      dataset_submodule, "TabularColumn",
+      "Column configuration for TabularHashFeatures block.")
+      .def_static("Categorical", &TabularColumn::Categorical,
+                  py::arg("column_identifier"))
+      .def_static("Numeric", &TabularColumn::Numeric,
+                  py::arg("column_identifier"), py::arg("range"),
+                  py::arg("num_bins") = DEFAULT_NUM_BINS);
 
   py::class_<TabularHashFeatures, Block, std::shared_ptr<TabularHashFeatures>>(
       block_submodule, "TabularHashFeatures",
       "Given some metadata about a tabular dataset, assign unique "
       "categories to columns and compute either pairgramsor unigrams of the "
       "categories depending on the 'use_pairgrams' flag.")
-      .def(py::init<std::shared_ptr<TabularMetadata>, uint32_t, bool>(),
-           py::arg("metadata"), py::arg("output_range"),
+      .def(py::init<std::vector<TabularColumn>, uint32_t, bool>(),
+           py::arg("columns"), py::arg("output_range"),
            py::arg("use_pairgrams"))
       .def("feature_dim", &TabularHashFeatures::featureDim,
            "Returns the dimension of the vector encoding.")
