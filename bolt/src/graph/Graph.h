@@ -15,6 +15,7 @@
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <licensing/src/CheckLicense.h>
+#include <utils/version.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -96,11 +97,11 @@ class BoltGraph {
   // This only saves the graph in the compiled state, that is any parameters and
   // graph structure are preserved, but any state related to train or predict is
   // discarded.
-  void save(const std::string& filename) const;
+  void saveToFile(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
 
-  static BoltGraphPtr load(const std::string& filename);
+  static BoltGraphPtr loadFromFile(const std::string& filename);
 
   static BoltGraphPtr load_stream(std::istream& input_stream);
 
@@ -185,8 +186,29 @@ class BoltGraph {
   void reconstructHashFunctions();
 
   friend class cereal::access;
+
   template <class Archive>
-  void serialize(Archive& archive);
+  void save(Archive& archive) const /* {
+     archive(version());
+
+     archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
+             _epoch, _updates);
+   }*/;
+
+  template <class Archive>
+  void load(Archive& archive) /*{
+    std::string save_version;
+    archive(save_version);
+
+    if (save_version != version()) {
+      throw std::runtime_error(
+          "Cannot load Bolt model. The model was saved with version '" +
+          save_version + "' but the current version is '" + version() + "'.");
+    }
+
+    archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
+            _epoch, _updates);
+  }*/;
 
   bool graphCompiled() const { return _loss != nullptr; }
 

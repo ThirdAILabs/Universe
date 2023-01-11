@@ -526,8 +526,8 @@ That's all for now, folks! More docs coming soon :)
           "The third element, the active neuron matrix, is only present if "
           "we are returning activations AND the ouptut is sparse.",
           bolt::python::OutputRedirect())
-      .def("save", &BoltGraph::save, py::arg("filename"))
-      .def_static("load", &BoltGraph::load, py::arg("filename"))
+      .def("save", &BoltGraph::saveToFile, py::arg("filename"))
+      .def_static("load", &BoltGraph::loadFromFile, py::arg("filename"))
       .def("__str__",
            [](const BoltGraph& model) {
              return model.summarize(/* print = */ false,

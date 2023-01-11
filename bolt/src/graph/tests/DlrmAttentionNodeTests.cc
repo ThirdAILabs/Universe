@@ -74,8 +74,8 @@ TEST(DlrmAttentionNodeTest, TestSetMembership) {
   auto original_accuracy = metrics["categorical_accuracy"];
 
   std::string save_filename = "./tmp_dlrm_attention_model";
-  model.save(save_filename);
-  auto loaded_model = BoltGraph::load(save_filename);
+  model.saveToFile(save_filename);
+  auto loaded_model = BoltGraph::loadFromFile(save_filename);
 
   auto loaded_accuracy = model.evaluate({data, tokens}, labels, eval_cfg)
                              .first["categorical_accuracy"];

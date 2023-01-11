@@ -85,9 +85,9 @@ TEST(SaveLoadDAGTest, SaveAndLoadGraph) {
   ASSERT_GE(test_metrics1["categorical_accuracy"], 0.95);
 
   std::string save_loc = "./saved_dag_model";
-  model.model->save(save_loc);
+  model.model->saveToFile(save_loc);
 
-  auto new_model = BoltGraph::load(save_loc);
+  auto new_model = BoltGraph::loadFromFile(save_loc);
 
   auto eval_config =
       EvalConfig::makeConfig().withMetrics({"categorical_accuracy"});
@@ -178,9 +178,9 @@ TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
   ASSERT_GT(test_metrics.first["categorical_accuracy"], 0.9);
 
   std::string save_filename = "./tmp_saved_embedding_model";
-  model.save(save_filename);
+  model.saveToFile(save_filename);
 
-  auto loaded_model = BoltGraph::load(save_filename);
+  auto loaded_model = BoltGraph::loadFromFile(save_filename);
 
   auto new_test_metrics = loaded_model->evaluate(
       /* test_data= */ {data}, labels, eval_config);

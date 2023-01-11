@@ -178,7 +178,7 @@ class EarlyStopCheckpoint : public Callback {
     // save the model if its the best so far
     if (_metric->betterThan(metric_value, _best_validation_score)) {
       _best_validation_score = metric_value;
-      model.save(_model_save_path);
+      model.saveToFile(_model_save_path);
     }
   }
 

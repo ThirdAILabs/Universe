@@ -1,4 +1,5 @@
 #include "Graph.h"
+#include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
@@ -15,6 +16,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
 #include <utils/Logging.h>
+#include <utils/Version.h>
 #include <algorithm>
 #include <chrono>
 #include <csignal>
@@ -80,7 +82,7 @@ void BoltGraph::logValidateAndSave(uint32_t batch_size,
       _updates % save_context->frequency() == 0) {
     const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
     logging::info("Saving most recent model to {}", checkpoint_path);
-    save(checkpoint_path);
+    saveToFile(checkpoint_path);
   }
 
   const std::optional<ValidationContext>& validation =
@@ -112,7 +114,7 @@ void BoltGraph::logValidateAndSave(uint32_t batch_size,
           const std::string checkpoint_path =
               save_context->prefix() + ".best.bolt";
           logging::info("Saving best model to {}", checkpoint_path);
-          save(checkpoint_path);
+          saveToFile(checkpoint_path);
         }
       } else {
         logging::error(
@@ -263,7 +265,7 @@ MetricData BoltGraph::train(
     const std::optional<SaveContext>& save_context = train_config.saveContext();
     if (save_context) {
       const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
-      save(checkpoint_path);
+      saveToFile(checkpoint_path);
     }
 
     callbacks.onEpochEnd(*this, train_state);
@@ -861,16 +863,34 @@ void BoltGraph::freezeHashTables(bool insert_labels_if_not_found) {
   }
 }
 
-template void BoltGraph::serialize(cereal::BinaryInputArchive&);
-template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
+template void BoltGraph::save(cereal::BinaryOutputArchive&) const;
 
 template <class Archive>
-void BoltGraph::serialize(Archive& archive) {
+void BoltGraph::save(Archive& archive) const {
+  archive(version());
+
   archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
           _epoch, _updates);
 }
 
-void BoltGraph::save(const std::string& filename) const {
+template void BoltGraph::load(cereal::BinaryInputArchive&);
+
+template <class Archive>
+void BoltGraph::load(Archive& archive) {
+  std::string save_version;
+  archive(save_version);
+
+  if (save_version != version()) {
+    throw std::runtime_error(
+        "Cannot load Bolt model. The model was saved with version " +
+        save_version + " but the current version is " + version() + ".");
+  }
+
+  archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
+          _epoch, _updates);
+}
+
+void BoltGraph::saveToFile(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
@@ -885,7 +905,7 @@ void BoltGraph::save_stream(std::ostream& output_stream) const {
   oarchive(*this);
 }
 
-BoltGraphPtr BoltGraph::load(const std::string& filename) {
+BoltGraphPtr BoltGraph::loadFromFile(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(filestream);
