@@ -69,11 +69,13 @@ class Worker:
                 worker_id=id,
             )
         else:
+            primary_model_ref = primary_worker.model.remote()
             self.model = bolt.DistributedTrainingWrapper(
-                model=ray.get(primary_worker.get_model.remote()),
+                model=ray.get(primary_model_ref),
                 train_config=train_config,
                 worker_id=id,
             )
+            del primary_model_ref
         end = time()
 
         logging.info(f"func initializing_model | time {(end - start)*1000} ms")
@@ -169,6 +171,9 @@ class Worker:
             )
         self.comm.compute_and_store_batch_gradients(self.batch_id_within_dataset)
 
+        logging.info(
+            f"func compute_and_store_next_batch_gradients | batch {self.batch_id_within_dataset} completed"
+        )
         self.batch_id_within_dataset += 1
         if self.batch_id_within_dataset == self.model.num_batches():
             return self._try_load_new_datasets_into_model()
@@ -264,4 +269,9 @@ class Worker:
         self.model.freeze_hash_tables(True)
 
     def model(self):
+        print("Id: ", self.id, " returning model.")
         return self.model.model
+
+    @timed
+    def ping(self):
+        return "pong"

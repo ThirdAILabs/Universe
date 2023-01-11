@@ -72,7 +72,3 @@ class PrimaryWorker(Worker):
             self.train_source.get_current_data_chunk_id() - 1,
             self.batch_id_within_dataset,
         )
-
-    def get_model(self):
-        # need to return model.model
-        return self.wrapped_model
