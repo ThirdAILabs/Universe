@@ -2,6 +2,7 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/ActivationTensor.h>
@@ -76,6 +77,11 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def_property_readonly("biases", [](const ops::FullyConnected& op) {
         return toNumpy(op.biasesPtr(), {op.dimensions()[0]});
       });
+
+  py::class_<ops::Concatenate, std::shared_ptr<ops::Concatenate>, ops::Op>(
+      nn, "Concatenate")
+      .def(py::init(&ops::Concatenate::make))
+      .def("__call__", &ops::Concatenate::apply);
 
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
