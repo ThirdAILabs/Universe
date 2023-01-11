@@ -15,7 +15,6 @@
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <licensing/src/CheckLicense.h>
-#include <utils/version.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -188,27 +187,10 @@ class BoltGraph {
   friend class cereal::access;
 
   template <class Archive>
-  void save(Archive& archive) const /* {
-     archive(version());
-
-     archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
-             _epoch, _updates);
-   }*/;
+  void save(Archive& archive) const;
 
   template <class Archive>
-  void load(Archive& archive) /*{
-    std::string save_version;
-    archive(save_version);
-
-    if (save_version != version()) {
-      throw std::runtime_error(
-          "Cannot load Bolt model. The model was saved with version '" +
-          save_version + "' but the current version is '" + version() + "'.");
-    }
-
-    archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
-            _epoch, _updates);
-  }*/;
+  void load(Archive& archive);
 
   bool graphCompiled() const { return _loss != nullptr; }
 
