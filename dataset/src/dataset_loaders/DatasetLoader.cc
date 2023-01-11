@@ -49,8 +49,10 @@ DatasetLoader::loadInMemory(uint64_t num_batches) {
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  fillShuffleBuffer(
-      /* fill_size = */ std::max<size_t>(num_batches, _batch_buffer_size));
+  // We fill the buffer with num_batches + _batch_buffer_size number of batches
+  // so that after exporting num_batches from the buffer we still have
+  // _batch_buffer_size number of batches left for future shuffling.
+  fillShuffleBuffer(num_batches + _batch_buffer_size);
 
   auto batch_lists = _buffer.exportBuffer(num_batches);
   auto end = std::chrono::high_resolution_clock::now();
