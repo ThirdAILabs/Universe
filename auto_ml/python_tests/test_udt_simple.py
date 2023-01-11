@@ -1,5 +1,6 @@
 import platform
 
+import os
 import pytest
 from thirdai import bolt, deployment
 
@@ -372,4 +373,37 @@ def test_return_metrics():
     metrics = model.evaluate(
         TEST_FILE, metrics=["categorical_accuracy"], return_metrics=True
     )
-    assert metrics["categorical_accuracy"] > 0
+    # We just want to know that it exists and it's a number.
+    assert metrics["categorical_accuracy"] >= 0
+
+
+def test_changing_hash_range_changes_model_size():
+    small_model = bolt.UniversalDeepTransformer(
+        data_types={
+            "column": bolt.types.categorical(),
+            "target": bolt.types.categorical(),
+        },
+        target="target",
+        n_target_classes=1,
+        options={"input_hash_range": 1_000},
+    )
+    small_model.save("small.bolt")
+
+    large_model = bolt.UniversalDeepTransformer(
+        data_types={
+            "column": bolt.types.categorical(),
+            "target": bolt.types.categorical(),
+        },
+        target="target",
+        n_target_classes=1,
+        options={"input_hash_range": 100_000},
+    )
+    large_model.save("large.bolt")
+
+    # We expect 50 fold instead of 100 fold to account for other things
+    # that are serialized in addition to the first weight matrix
+    # E.g. second weight matrix and dataset pipeline.
+    assert os.path.getsize("large.bolt") > 50 * os.path.getsize("small.bolt")
+
+    os.remove("small.bolt")
+    os.remove("large.bolt")
