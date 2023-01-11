@@ -19,7 +19,7 @@ void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
                           bolt::TrainConfig& train_config,
                           const std::optional<ValidationOptions>& validation,
                           std::optional<uint32_t> max_in_memory_batches) {
-  licensing::verifyAllowedDataset(data_source);
+  licensing::verifyAllowedDataset(data_source->resourceName());
 
   auto start_time = std::chrono::system_clock::now();
 
