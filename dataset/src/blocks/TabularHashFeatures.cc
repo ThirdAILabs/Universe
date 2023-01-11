@@ -147,3 +147,5 @@ uint32_t TabularHashFeatures::computeBin(const TabularColumn& column,
 }
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::TabularHashFeatures)

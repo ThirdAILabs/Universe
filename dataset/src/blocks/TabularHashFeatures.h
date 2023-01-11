@@ -4,17 +4,11 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
-#include <hashing/src/HashUtils.h>
 #include <hashing/src/UniversalHash.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <cstdlib>
-#include <exception>
-#include <stdexcept>
-#include <string_view>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -155,5 +149,3 @@ class TabularHashFeatures final : public Block {
 using TabularHashFeaturesPtr = std::shared_ptr<TabularHashFeatures>;
 
 }  // namespace thirdai::dataset
-
-CEREAL_REGISTER_TYPE(thirdai::dataset::TabularHashFeatures)
