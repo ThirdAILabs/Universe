@@ -46,7 +46,7 @@ class ComparativeLoss : public Loss {
    * return the loss gradient for that neuron.
    */
   virtual float singleGradient(float activation, float label,
-                         uint32_t batch_size) const = 0;
+                               uint32_t batch_size) const = 0;
 
   tensor::ActivationTensorPtr _activations;
 };
