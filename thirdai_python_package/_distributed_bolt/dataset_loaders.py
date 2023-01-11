@@ -5,7 +5,7 @@ from thirdai import data, dataset
 from thirdai.bolt.udt_modifications import _create_data_source
 
 
-class DatasetLoader(ABC):
+class DistributedDatasetLoader(ABC):
     @abstractmethod
     def next() -> Optional[
         Tuple[
@@ -42,7 +42,7 @@ class DatasetLoader(ABC):
         pass
 
 
-class UDTDatasetLoader(DatasetLoader):
+class DistributedUDTDatasetLoader(DistributedDatasetLoader):
     def __init__(
         self,
         train_file: str,
@@ -86,7 +86,7 @@ class UDTDatasetLoader(DatasetLoader):
         self.generator.restart()
 
 
-class GenericInMemoryDatasetLoader(DatasetLoader):
+class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
     """
     Wraps a generator function that returns a single pair of training and label
     datasets into an in memory data generator ready to pass into the distributed
@@ -128,7 +128,7 @@ class GenericInMemoryDatasetLoader(DatasetLoader):
         self.generated_for_this_epoch = False
 
 
-class SvmDatasetLoader(GenericInMemoryDatasetLoader):
+class DistributedSvmDatasetLoader(DistributedGenericInMemoryDatasetLoader):
     """
     Returns a simple in memory data generator ready to pass into the distributed
     API that will read in the given file name with the given batch_size. The
@@ -145,8 +145,7 @@ class SvmDatasetLoader(GenericInMemoryDatasetLoader):
         )
 
 
-# New data pipeline tabular dataset loader
-class TabularDatasetLoaderNDP(DatasetLoader):
+class DistributedTabularDatasetLoader(DistributedDatasetLoader):
     def __init__(
         self,
         column_map_generator: data.ColumnMapGenerator,

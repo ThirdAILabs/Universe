@@ -1,4 +1,7 @@
-from .dataset_loaders import SvmDatasetLoader, TabularDatasetLoaderNDP
+from .dataset_loaders import (
+    DistributedSvmDatasetLoader,
+    DistributedTabularDatasetLoader,
+)
 from .distributed import (
     DistributedDataParallel,
     RayTrainingClusterConfig,

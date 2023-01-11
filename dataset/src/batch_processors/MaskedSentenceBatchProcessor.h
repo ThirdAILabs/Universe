@@ -103,4 +103,7 @@ class MaskedSentenceBatchProcessor final : public BatchProcessor {
   std::optional<float> _masked_tokens_percentage;
 };  // namespace thirdai::dataset
 
+using MaskedSentenceBatchProcessorPtr =
+    std::shared_ptr<MaskedSentenceBatchProcessor>;
+
 }  // namespace thirdai::dataset

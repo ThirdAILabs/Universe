@@ -12,19 +12,6 @@
 
 namespace thirdai::dataset {
 
-struct DatasetShuffleConfig {
-  DatasetShuffleConfig() : n_batches(1000), seed(time(NULL)) {}
-
-  explicit DatasetShuffleConfig(size_t n_batches_in_buffer)
-      : n_batches(n_batches_in_buffer), seed(time(NULL)) {}
-
-  DatasetShuffleConfig(size_t n_batches_in_buffer, uint32_t seed)
-      : n_batches(n_batches_in_buffer), seed(seed) {}
-
-  size_t n_batches;
-  uint32_t seed;
-};
-
 class ShuffleBatchBuffer {
  public:
   explicit ShuffleBatchBuffer(uint32_t shuffle_seed, size_t batch_size)
@@ -60,7 +47,12 @@ class ShuffleBatchBuffer {
     return batches;
   }
 
-  std::vector<std::vector<BoltBatch>> exportBuffer() {
+  /**
+   * Exports min(num_batches, size()) batches into a vector of vector of
+   * BoltBatch
+   */
+  std::vector<std::vector<BoltBatch>> exportBuffer(uint64_t num_batches) {
+    uint64_t num_batches_in_result = std::min<uint64_t>(num_batches, size());
     /*
       This doesn't double our memory footprint since the
       batches are moved;
@@ -71,9 +63,12 @@ class ShuffleBatchBuffer {
     for (auto& batch_buffer : _batch_buffers) {
       std::vector<BoltBatch> batch_list(
           std::make_move_iterator(batch_buffer.begin()),
-          std::make_move_iterator(batch_buffer.end()));
+          std::make_move_iterator(batch_buffer.begin() +
+                                  num_batches_in_result));
       exported_batch_lists.push_back(std::move(batch_list));
-      batch_buffer.clear();
+      for (uint32_t i = 0; i < num_batches_in_result; i++) {
+        batch_buffer.pop_front();
+      }
     }
 
     return exported_batch_lists;
@@ -81,6 +76,18 @@ class ShuffleBatchBuffer {
 
   inline bool empty() const {
     return _batch_buffers.empty() || _batch_buffers.at(0).empty();
+  }
+
+  size_t size() const {
+    if (empty()) {
+      return 0;
+    }
+    return _batch_buffers.at(0).size();
+  }
+
+  void clear() {
+    _batch_buffers.clear();
+    _reached_end_of_dataset = false;
   }
 
  private:
@@ -101,6 +108,11 @@ class ShuffleBatchBuffer {
   }
 
   inline void checkConsistentBatchSize(const std::vector<BoltBatch>& batches) {
+    if (batches.empty()) {
+      throw std::runtime_error(
+          "[ShuffleBatchBuffer::insertBatch] Expected at least one "
+          "batch to be inserted for shuffling but found 0.");
+    }
     uint32_t first_data_batch_size = batches.at(0).getBatchSize();
     for (uint32_t i = 1; i < batches.size(); i++) {
       if (batches.at(i).getBatchSize() != first_data_batch_size) {

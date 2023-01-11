@@ -1,22 +1,21 @@
-#include "TabularDatasetLoader.h"
+#include "DatasetLoader.h"
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/ShuffleBatchBuffer.h>
 #include <utils/Logging.h>
+#include <limits>
 #include <utility>
 
 namespace thirdai::dataset {
 
-TabularDatasetLoader::TabularDatasetLoader(
-    std::shared_ptr<dataset::DataSource> data_source,
-    dataset::BatchProcessorPtr batch_processor, bool shuffle,
-    DatasetShuffleConfig config)
+DatasetLoader::DatasetLoader(DataSourcePtr data_source,
+                             dataset::BatchProcessorPtr batch_processor,
+                             bool shuffle, DatasetShuffleConfig shuffle_config)
     : _data_source(std::move(data_source)),
       _batch_processor(std::move(batch_processor)),
-      _max_batch_size(_data_source->getMaxBatchSize()),
       _shuffle(shuffle),
-      _batch_buffer_size(config.n_batches),
-      _buffer(config.seed, _max_batch_size) {
+      _batch_buffer_size(shuffle_config.n_batches),
+      _buffer(shuffle_config.seed, _data_source->getMaxBatchSize()) {
   // Different formats of data may or may not contain headers. Thus we
   // delegate to the particular batch processor to determine if a header is
   // needed. The first row is interpreted as the header. The batch processor
@@ -30,8 +29,18 @@ TabularDatasetLoader::TabularDatasetLoader(
   }
 }
 
+// Loads the entire data source at once
+std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory() {
+  auto datasets = loadInMemory(std::numeric_limits<size_t>::max());
+  if (!datasets) {
+    throw std::invalid_argument(
+        "Did not find any data to load from the data source.");
+  }
+  return datasets.value();
+}
+
 std::optional<std::pair<InputDatasets, LabelDataset>>
-TabularDatasetLoader::loadInMemory(uint64_t max_in_memory_batches) {
+DatasetLoader::loadInMemory(size_t num_batches) {
 #if THIRDAI_EXPOSE_ALL
   // This is useful internally but we don't want to expose it to keep the
   // output clear and simple.
@@ -41,12 +50,21 @@ TabularDatasetLoader::loadInMemory(uint64_t max_in_memory_batches) {
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  uint32_t batch_cnt = 0;
-  while (batch_cnt < max_in_memory_batches && addNextBatchToBuffer()) {
-    batch_cnt++;
+  // We fill the buffer with num_batches + _batch_buffer_size number of batches
+  // so that after exporting num_batches from the buffer we still have
+  // _batch_buffer_size number of batches left for future shuffling.
+  // We also much check if the sum overflows, since in the frequent case we
+  // want to load all batches we pass in std::numeric_limits<size_t> which will
+  // cause an overflow. For the source of this overflow check, see:
+  // https://stackoverflow.com/q/199333/how-do-i-detect-unsigned-integer-overflow
+  size_t fill_size = num_batches + _batch_buffer_size;
+  bool overflowed = fill_size < (num_batches | _batch_buffer_size);
+  if (overflowed) {
+    fill_size = std::numeric_limits<size_t>::max();
   }
+  fillShuffleBuffer(fill_size);
 
-  auto batch_lists = _buffer.exportBuffer();
+  auto batch_lists = _buffer.exportBuffer(num_batches);
   auto end = std::chrono::high_resolution_clock::now();
   auto duration =
       std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
@@ -82,16 +100,7 @@ TabularDatasetLoader::loadInMemory(uint64_t max_in_memory_batches) {
   return std::make_pair(data, labels);
 }
 
-std::optional<std::vector<BoltBatch>> TabularDatasetLoader::nextBatchVector() {
-  if (_buffer.empty()) {
-    prefillShuffleBuffer();
-  }
-  addNextBatchToBuffer();
-
-  return _buffer.popBatch();
-}
-
-void TabularDatasetLoader::restart() {
+void DatasetLoader::restart() {
   _data_source->restart();
 
   // When we restart we need to make sure we don't reread the header. s
@@ -102,28 +111,20 @@ void TabularDatasetLoader::restart() {
     }
   }
 
-  _buffer = ShuffleBatchBuffer(
-      /* shuffle_seed= */ time(NULL),
-      /* batch_size= */ _data_source->getMaxBatchSize());
+  _buffer.clear();
 }
 
-void TabularDatasetLoader::prefillShuffleBuffer() {
-  size_t n_prefill_batches = _batch_buffer_size - 1;
-  size_t n_added = 0;
-  while (n_added < n_prefill_batches && addNextBatchToBuffer()) {
-    n_added++;
-  }
-}
+void DatasetLoader::fillShuffleBuffer(size_t fill_size) {
+  std::cout << fill_size << std::endl;
+  while (_buffer.size() <= fill_size) {
+    auto rows = _data_source->nextBatch();
+    if (!rows) {
+      return;
+    }
 
-bool TabularDatasetLoader::addNextBatchToBuffer() {
-  auto rows = _data_source->nextBatch();
-  if (!rows) {
-    return false;
+    auto batch = _batch_processor->createBatch(*rows);
+    _buffer.insertBatch(std::move(batch), _shuffle);
   }
-
-  auto batch = _batch_processor->createBatch(*rows);
-  _buffer.insertBatch(std::move(batch), _shuffle);
-  return true;
 }
 
 }  // namespace thirdai::dataset

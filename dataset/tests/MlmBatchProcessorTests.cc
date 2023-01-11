@@ -2,7 +2,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
-#include <dataset/src/dataset_loaders/TabularDatasetLoader.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <unordered_map>
 
