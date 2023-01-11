@@ -58,10 +58,10 @@ std::vector<tensor::ActivationTensorPtr> ComparativeLoss::outputsUsed() const {
 template <bool ACT_DENSE, bool LABEL_DENSE>
 float ComparativeLoss::loss(const BoltVector& activations,
                             const BoltVector& labels) const {
-  assert(ACT_DENSE != activations.active_neurons == nullptr);
-  assert(LABEL_DENSE != labels.active_neurons == nullptr);
+  assert(ACT_DENSE == activations.isDense());
+  assert(LABEL_DENSE == labels.isDense());
   if constexpr (ACT_DENSE && LABEL_DENSE) {
-    assert(output.len == labels.len);
+    assert(activations.len == labels.len);
   }
 
   if constexpr (ACT_DENSE || LABEL_DENSE) {
@@ -107,10 +107,10 @@ template <bool ACT_DENSE, bool LABEL_DENSE>
 void ComparativeLoss::gradients(BoltVector& activations,
                                 const BoltVector& labels,
                                 uint32_t batch_size) const {
-  assert(ACT_DENSE != activations.active_neurons == nullptr);
-  assert(LABEL_DENSE != labels.active_neurons == nullptr);
+  assert(ACT_DENSE == activations.isDense());
+  assert(LABEL_DENSE == labels.isDense());
   if constexpr (ACT_DENSE && LABEL_DENSE) {
-    assert(output.len == labels.len);
+    assert(activations.len == labels.len);
   }
 
   /**
