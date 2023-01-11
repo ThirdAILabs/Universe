@@ -15,7 +15,7 @@ std::string nextConcatenateOpName() {
 Concatenate::Concatenate() : Op(nextConcatenateOpName()) {}
 
 std::shared_ptr<Concatenate> Concatenate::make() {
-  return std::make_shared<Concatenate>();
+  return std::shared_ptr<Concatenate>(new Concatenate());
 }
 
 tensor::ActivationTensorPtr Concatenate::apply(
@@ -64,9 +64,10 @@ void Concatenate::forward(const tensor::TensorList& inputs,
 
     if (!output_vector.isDense()) {
       if (input_vector.isDense()) {
-        std::iota(output_vector.active_neurons,
-                  output_vector.active_neurons + output_vector.len,
-                  _neuron_offsets[input_idx]);
+        uint32_t* start =
+            output_vector.active_neurons + current_offset_in_output;
+
+        std::iota(start, start + input_vector.len, _neuron_offsets[input_idx]);
       } else {
         for (uint32_t i = 0; i < input_vector.len; i++) {
           output_vector.active_neurons[i + current_offset_in_output] =
@@ -77,6 +78,8 @@ void Concatenate::forward(const tensor::TensorList& inputs,
 
     current_offset_in_output += input_vector.len;
   }
+
+  assert(current_offset_in_output == output_vector.len);
 }
 
 void Concatenate::backpropagate(tensor::TensorList& inputs,
@@ -89,9 +92,11 @@ void Concatenate::backpropagate(tensor::TensorList& inputs,
   for (auto& input : inputs) {
     BoltVector& input_vector = input->getVector(index_in_batch);
 
-    for (uint32_t i = 0; i < input_vector.len; i++) {
-      input_vector.gradients[i] +=
-          output_vector.gradients[i + current_offset_in_output];
+    if (input_vector.hasGradients()) {
+      for (uint32_t i = 0; i < input_vector.len; i++) {
+        input_vector.gradients[i] +=
+            output_vector.gradients[i + current_offset_in_output];
+      }
     }
 
     current_offset_in_output += input_vector.len;
