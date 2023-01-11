@@ -132,7 +132,7 @@ void Trainer::validate(const LabeledDataset& validation_data,
   validation_metrics.reset();
 }
 
-std::string Trainer::formatTrainLogLine(std::string metric_summary,
+std::string Trainer::formatTrainLogLine(const std::string& metric_summary,
                                         uint32_t batches, int64_t time) {
   std::string logline = fmt::format(
       "train | epoch {} | train_steps {} | {} | train_batches {} | time {}s",
@@ -141,7 +141,7 @@ std::string Trainer::formatTrainLogLine(std::string metric_summary,
   return logline;
 }
 
-std::string Trainer::formatValidateLogLine(std::string metric_summary,
+std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
                                            uint32_t batches, int64_t time) {
   std::string logline = fmt::format(
       "validate | epoch {} | train_steps {} | {} | val_batches {} | time {}s",

@@ -61,13 +61,13 @@ class Trainer {
   /**
    * Returns a formatted log line for the end of each epoch.
    */
-  std::string formatTrainLogLine(std::string metric_summary, uint32_t batches,
-                                 int64_t time);
+  std::string formatTrainLogLine(const std::string& metric_summary,
+                                 uint32_t batches, int64_t time);
 
   /**
    * Returns a formatted log line for the result of each call to validate.
    */
-  std::string formatValidateLogLine(std::string metric_summary,
+  std::string formatValidateLogLine(const std::string& metric_summary,
                                     uint32_t batches, int64_t time);
 
   nn::model::ModelPtr _model;

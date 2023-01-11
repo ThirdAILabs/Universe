@@ -18,7 +18,8 @@ ActivationTensor::ActivationTensor(uint32_t dim, ops::OpPtr source,
 std::shared_ptr<ActivationTensor> ActivationTensor::make(uint32_t dim,
                                                          ops::OpPtr source,
                                                          TensorList inputs) {
-  return std::make_shared<ActivationTensor>(dim, source, std::move(inputs));
+  return std::make_shared<ActivationTensor>(dim, std::move(source),
+                                            std::move(inputs));
 }
 
 ops::OpPtr ActivationTensor::source() const { return _source; }
