@@ -58,6 +58,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         _parallel(_temporal_relationships.empty() || force_parallel),
         _text_pairgram_word_limit(text_pairgram_word_limit),
         _contextual_columns(contextual_columns),
+        _normalize_target_categories(false),
         _regression_binning(regression_binning) {
     FeatureComposer::verifyConfigIsValid(*_config, _temporal_relationships);
 
@@ -179,6 +180,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   UDTConfigPtr config() { return _config; }
+
+  void enableTargetCategoryNormalization() {
+    _normalize_target_categories = true;
+  }
 
  private:
   PreprocessedVectorsMap processAllMetadata();
@@ -373,6 +378,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   bool _parallel;
   uint32_t _text_pairgram_word_limit;
   bool _contextual_columns;
+  bool _normalize_target_categories;
 
   std::optional<dataset::RegressionBinningStrategy> _regression_binning;
 
@@ -388,7 +394,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
             _column_number_to_name, _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _metadata_processors, _input_dim,
             _label_dim, _parallel, _text_pairgram_word_limit,
-            _contextual_columns, _regression_binning);
+            _contextual_columns, _normalize_target_categories,
+            _regression_binning);
   }
 };
 

@@ -244,7 +244,8 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
       return dataset::NumericalCategoricalBlock::make(
           /* col= */ target_col_num,
           /* n_classes= */ _config->n_target_classes.value(),
-          /* delimiter= */ target_config->delimiter);
+          /* delimiter= */ target_config->delimiter,
+          /* normalize_categories= */ _normalize_target_categories);
     }
     if (!_vocabs.count(_config->target)) {
       _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
@@ -252,7 +253,8 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
     }
     return dataset::StringLookupCategoricalBlock::make(
         /* col= */ target_col_num, /* vocab= */ _vocabs.at(_config->target),
-        /* delimiter= */ target_config->delimiter);
+        /* delimiter= */ target_config->delimiter,
+        /* normalize_categories= */ _normalize_target_categories);
   }
   if (asNumerical(target_type)) {
     if (!_regression_binning) {
