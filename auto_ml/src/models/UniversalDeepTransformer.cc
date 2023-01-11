@@ -86,12 +86,15 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
         /* hidden_layer_size= */ embedding_dimension);
   }
 
+  // If we are using a softmax activation then we want to normalize the target
+  // labels (so they sum to 1.0) in order for softmax to work correctly.
   auto fc_output =
       std::dynamic_pointer_cast<bolt::FullyConnectedNode>(model->output());
   if (fc_output &&
       fc_output->getActivationFunction() == bolt::ActivationFunction::Softmax) {
-    // If we are using a softmax activation then we want to normalize the target
-    // labels (so they sum to 1.0) in order for softmax to work correctly.
+    // TODO(Nicholas, Geordie): Refactor the way that models are constructed so
+    // that we can discover if the output is softmax prior to constructing the
+    // dataset factory so we don't need this method.
     dataset_factory->enableTargetCategoryNormalization();
   }
 
