@@ -231,7 +231,7 @@ class DatasetLoaderTests : public ::testing::Test {
     This tests that our method works even when the last
     batch is smaller.
   */
-  static constexpr uint32_t mock_file_lines = 5100;
+  static constexpr uint32_t mock_file_lines = 10100;
 
   static constexpr uint32_t batch_size = 200;
 

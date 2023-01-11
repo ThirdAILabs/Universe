@@ -287,7 +287,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_label_dim", &DatasetLoader::getLabelDim)
       .def("load_in_memory", py::overload_cast<>(&DatasetLoader::loadInMemory))
       .def("load_in_memory",
-           py::overload_cast<uint64_t>(&dataset::DatasetLoader::loadInMemory),
+           py::overload_cast<size_t>(&dataset::DatasetLoader::loadInMemory),
            py::arg("num_batches") = std::numeric_limits<uint32_t>::max())
       .def("restart", &dataset::DatasetLoader::restart);
 

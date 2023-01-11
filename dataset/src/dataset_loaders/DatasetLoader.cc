@@ -3,6 +3,7 @@
 #include <dataset/src/Datasets.h>
 #include <dataset/src/ShuffleBatchBuffer.h>
 #include <utils/Logging.h>
+#include <limits>
 #include <utility>
 
 namespace thirdai::dataset {
@@ -30,7 +31,7 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
 
 // Loads the entire data source at once
 std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory() {
-  auto datasets = loadInMemory(std::numeric_limits<uint64_t>::max());
+  auto datasets = loadInMemory(std::numeric_limits<size_t>::max());
   if (!datasets) {
     throw std::invalid_argument(
         "Did not find any data to load from the data source.");
@@ -39,7 +40,7 @@ std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory() {
 }
 
 std::optional<std::pair<InputDatasets, LabelDataset>>
-DatasetLoader::loadInMemory(uint64_t num_batches) {
+DatasetLoader::loadInMemory(size_t num_batches) {
 #if THIRDAI_EXPOSE_ALL
   // This is useful internally but we don't want to expose it to keep the
   // output clear and simple.
@@ -52,7 +53,16 @@ DatasetLoader::loadInMemory(uint64_t num_batches) {
   // We fill the buffer with num_batches + _batch_buffer_size number of batches
   // so that after exporting num_batches from the buffer we still have
   // _batch_buffer_size number of batches left for future shuffling.
-  fillShuffleBuffer(num_batches + _batch_buffer_size);
+  // We also much check if the sum overflows, since in the frequent case we
+  // want to load all batches we pass in std::numeric_limits<size_t> which will
+  // cause an overflow. For the source of this overflow check, see:
+  // https://stackoverflow.com/q/199333/how-do-i-detect-unsigned-integer-overflow
+  size_t fill_size = num_batches + _batch_buffer_size;
+  bool overflowed = fill_size < (num_batches | _batch_buffer_size);
+  if (overflowed) {
+    fill_size = std::numeric_limits<size_t>::max();
+  }
+  fillShuffleBuffer(fill_size);
 
   auto batch_lists = _buffer.exportBuffer(num_batches);
   auto end = std::chrono::high_resolution_clock::now();
@@ -105,6 +115,7 @@ void DatasetLoader::restart() {
 }
 
 void DatasetLoader::fillShuffleBuffer(size_t fill_size) {
+  std::cout << fill_size << std::endl;
   while (_buffer.size() <= fill_size) {
     auto rows = _data_source->nextBatch();
     if (!rows) {

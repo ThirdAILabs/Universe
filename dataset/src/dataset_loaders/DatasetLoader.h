@@ -36,7 +36,7 @@ class DatasetLoader final {
   std::pair<InputDatasets, LabelDataset> loadInMemory();
 
   std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
-      uint64_t num_batches);
+      size_t num_batches);
 
   void restart();
 
