@@ -378,6 +378,11 @@ def test_return_metrics():
 
 
 def test_changing_hash_range_changes_model_size():
+    """Checks that passing in a different input hash range option into UDT
+    actually changes the input hash range. Since UDT does not provide a method
+    to get the input hash range, we instead do this indirectly by comparing
+    the size of the serialized model.
+    """
     small_model = bolt.UniversalDeepTransformer(
         data_types={
             "column": bolt.types.categorical(),
