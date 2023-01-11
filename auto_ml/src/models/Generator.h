@@ -19,6 +19,7 @@
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exceptions/src/Exceptions.h>
+#include <licensing/src/CheckLicense.h>
 #include <search/src/Flash.h>
 #include <fstream>
 #include <limits>
@@ -206,6 +207,8 @@ class QueryCandidateGenerator {
   static QueryCandidateGenerator buildGeneratorFromDefaultConfig(
       const std::string& source_column_name,
       const std::string& target_column_name, const std::string& dataset_size) {
+    licensing::checkLicense();
+
     auto config = QueryCandidateGeneratorConfig::fromDefault(
         /* source_column_name = */ source_column_name,
         /* target_column_name = */ target_column_name,
@@ -249,6 +252,8 @@ class QueryCandidateGenerator {
    * @param file_name
    */
   void buildFlashIndex(const std::string& file_name) {
+    licensing::verifyAllowedDataset(file_name);
+
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
         /* file_name = */ file_name, /* delimiter = */ ',');
     auto training_batch_processor = constructGenericBatchProcessor(
