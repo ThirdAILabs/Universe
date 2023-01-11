@@ -8,19 +8,6 @@
 
 namespace thirdai::dataset {
 
-struct DatasetShuffleConfig {
-  DatasetShuffleConfig() : n_batches(1000), seed(time(NULL)) {}
-
-  explicit DatasetShuffleConfig(size_t n_batches_in_buffer)
-      : n_batches(n_batches_in_buffer), seed(time(NULL)) {}
-
-  DatasetShuffleConfig(size_t n_batches_in_buffer, uint32_t seed)
-      : n_batches(n_batches_in_buffer), seed(seed) {}
-
-  size_t n_batches;
-  uint32_t seed;
-};
-
 using InputDatasets = std::vector<dataset::BoltDatasetPtr>;
 using LabelDataset = dataset::BoltDatasetPtr;
 class DatasetLoader final {
