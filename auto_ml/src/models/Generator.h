@@ -13,7 +13,6 @@
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -545,11 +544,10 @@ class QueryCandidateGenerator {
     auto file_data_source = dataset::SimpleFileDataSource::make(
         file_name, _query_generator_config->batchSize());
 
-    auto data_source = std::make_unique<dataset::StreamingGenericDatasetLoader>(
-        file_data_source, batch_processor);
+    auto data_source = std::make_unique<dataset::DatasetLoader>(
+        file_data_source, batch_processor, /* shuffle = */ false);
 
-    auto [data, _] = data_source->loadInMemory();
-    return data;
+    return data_source->loadInMemory().first.at(0);
   }
 
   std::tuple<uint32_t, uint32_t> mapColumnNamesToIndices(

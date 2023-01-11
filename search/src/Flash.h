@@ -55,10 +55,6 @@ class Flash {
   void addDataset(const dataset::InMemoryDataset<BoltBatch>& dataset,
                   const std::vector<std::vector<LABEL_T>>& labels,
                   bool verbose);
-
-  void addDataset(dataset::StreamingDataset<BoltBatch>& dataset,
-                  const std::vector<std::vector<LABEL_T>>& labels);
-
   /**
    * Insert this batch into the Flash data structure.
    */

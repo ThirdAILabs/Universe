@@ -12,8 +12,7 @@
 
 namespace thirdai::dataset {
 
-class MaskedSentenceBatchProcessor final
-    : public BatchProcessor<BoltBatch, BoltBatch, BoltBatch> {
+class MaskedSentenceBatchProcessor final : public BatchProcessor {
  public:
   explicit MaskedSentenceBatchProcessor(std::shared_ptr<Vocabulary> vocab,
                                         uint32_t output_range)
@@ -29,7 +28,7 @@ class MaskedSentenceBatchProcessor final
     _masked_tokens_percentage = masked_tokens_percentage;
   }
 
-  std::tuple<BoltBatch, BoltBatch, BoltBatch> createBatch(
+  std::vector<BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> vectors(rows.size());
     std::vector<BoltVector> masked_indices(rows.size());
@@ -44,9 +43,8 @@ class MaskedSentenceBatchProcessor final
       labels[i] = std::move(label);
     }
 
-    return std::make_tuple(BoltBatch(std::move(vectors)),
-                           BoltBatch(std::move(masked_indices)),
-                           BoltBatch(std::move(labels)));
+    return {BoltBatch(std::move(vectors)), BoltBatch(std::move(masked_indices)),
+            BoltBatch(std::move(labels))};
   }
 
   bool expectsHeader() const final { return false; }
@@ -104,5 +102,8 @@ class MaskedSentenceBatchProcessor final
   // words in the input sequence are randomly masked.
   std::optional<float> _masked_tokens_percentage;
 };  // namespace thirdai::dataset
+
+using MaskedSentenceBatchProcessorPtr =
+    std::shared_ptr<MaskedSentenceBatchProcessor>;
 
 }  // namespace thirdai::dataset

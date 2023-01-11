@@ -5,11 +5,11 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/StreamingDataset.h>
-#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -36,52 +36,9 @@ namespace thirdai::automl::data {
  *
  */
 
-using InputDatasets = std::vector<dataset::BoltDatasetPtr>;
-using LabelDataset = dataset::BoltDatasetPtr;
-
-class DatasetLoader {
- public:
-  virtual std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
-      uint32_t max_in_memory_batches) = 0;
-
-  virtual void restart() = 0;
-
-  virtual ~DatasetLoader() = default;
-};
-
-class GenericDatasetLoader final : public DatasetLoader {
- public:
-  GenericDatasetLoader(const std::shared_ptr<dataset::DataSource>& data_source,
-                       dataset::GenericBatchProcessorPtr batch_processor,
-                       bool shuffle)
-      : _dataset(data_source, std::move(batch_processor), shuffle) {}
-
-  std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
-      uint32_t max_in_memory_batches) final {
-    auto datasets = _dataset.loadInMemoryWithMaxBatches(max_in_memory_batches);
-    if (!datasets) {
-      return std::nullopt;
-    }
-
-    auto& [data, labels] = datasets.value();
-
-    return std::make_optional<std::pair<InputDatasets, LabelDataset>>(
-        InputDatasets{data}, labels);
-  }
-
-  void restart() final { _dataset.restart(); }
-
- private:
-  dataset::StreamingGenericDatasetLoader _dataset;
-};
-
-using GenericDatasetLoaderPtr = std::unique_ptr<GenericDatasetLoader>;
-
-using DatasetLoaderPtr = std::unique_ptr<DatasetLoader>;
-
 class DatasetLoaderFactory {
  public:
-  virtual DatasetLoaderPtr getLabeledDatasetLoader(
+  virtual dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataSource> data_source, bool training) = 0;
 
   virtual std::vector<BoltVector> featurizeInput(const LineInput& input) = 0;

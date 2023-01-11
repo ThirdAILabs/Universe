@@ -68,7 +68,7 @@ def distributed_trained_clinc(clinc_model, ray_two_node_cluster_config):
     y_featurizer = data.FeaturizationPipeline(transformations=[])
 
     train_sources = [
-        db.TabularDatasetLoader(
+        db.DistributedTabularDatasetLoader(
             column_map_generator=column_map_generator,
             x_featurizer=x_featurizer,
             y_featurizer=y_featurizer,
