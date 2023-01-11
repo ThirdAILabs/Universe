@@ -46,7 +46,9 @@ def test_bolt_on_mnist():
         rebuild_hash_tables=12,
         reconstruct_hash_functions=40,
     )(input_layer)
-    output = bolt.nn.FullyConnected(dim=10, input_dim=20000, activation="softmax")(hidden_layer)
+    output = bolt.nn.FullyConnected(dim=10, input_dim=20000, activation="softmax")(
+        hidden_layer
+    )
 
     loss = bolt.nn.losses.CategoricalCrossEntropy(output)
 
