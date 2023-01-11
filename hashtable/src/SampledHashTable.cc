@@ -2,7 +2,9 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include <_types/_uint32_t.h>
 #include <cassert>
+#include <queue>
 #include <random>
 
 namespace thirdai::hashtable {
@@ -77,6 +79,78 @@ void SampledHashTable<LABEL_T>::queryBySet(
          i++) {
       store.insert(_data[DataIdx(table, row_index, i)]);
     }
+  }
+}
+
+/*
+ * We insert the elements found in the buckets in a hashmap that stores the
+ * number of times an element occurs in different hash tables. Everytime the
+ * element is found, we increase its value in the hashmap. We then find the
+ * top-k elements which are needed to insert into the store set to make it equal
+ * to the outputsize using a priority queue. Then, if insertLabels is true, we
+ * insert the labels in store which have not been retrieved in the hash buckets
+ * identified by the hashes array. Finally, we insert the values of temp_store
+ * into store.
+ */
+template <typename LABEL_T>
+void SampledHashTable<LABEL_T>::queryWithFrequencyRanking(
+    uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
+    uint32_t outputsize, bool insertLabels) {
+  using neuron = std::pair<int, uint32_t>;
+  std::unordered_set<uint32_t> temp_store;
+  std::unordered_map<uint32_t, int> count_map;
+
+  uint64_t table = 0;
+  for (table = 0; table < _num_tables; table++) {
+    uint32_t row_index = hashes[table];
+    assert(row_index < _range);
+    uint32_t counter = _counters[CounterIdx(table, row_index)];
+
+    uint32_t elements_found = std::min<uint64_t>(counter, _reservoir_size);
+    for (uint32_t i = 0; i < elements_found; i++) {
+      uint32_t neuron_id = _data[DataIdx(table, row_index, i)];
+      if (!count_map.count(neuron_id)) {
+        count_map[neuron_id] = 0;
+      }
+      count_map[neuron_id] += 1;
+    }
+  }
+
+  size_t number_extra_elements = std::min<size_t>(outputsize - store.size(), 0);
+  std::priority_queue<neuron, std::vector<neuron>, std::greater<neuron>> queue;
+  for (auto& x : count_map) {
+    queue.emplace(x.second, x.first);
+    if (queue.size() > number_extra_elements) {
+      queue.pop();
+    }
+  }
+
+  while (!queue.empty()) {
+    temp_store.insert(queue.top().second);
+    queue.pop();
+  }
+
+  if (insertLabels) {
+    for (auto x : store) {
+      if (temp_store.find(x) == temp_store.end()) {
+        for (uint32_t table = 0; table < _num_tables; table++) {
+          uint32_t row_id = hashes[table];
+          assert(row_id < _range);
+
+          uint32_t counter = atomic_fetch_and_add(table, row_id);
+
+          if (counter < _reservoir_size) {
+            _data[DataIdx(table, row_id, counter)] = x;
+          } else {
+            uint64_t rand_num = _gen_rand[x * 13 % _max_rand] % _reservoir_size;
+            _data[DataIdx(table, row_id, rand_num)] = x;
+          }
+        }
+      }
+    }
+  }
+  for (auto x : temp_store) {
+    store.insert(x);
   }
 }
 
