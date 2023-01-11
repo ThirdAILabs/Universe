@@ -372,4 +372,5 @@ def test_return_metrics():
     metrics = model.evaluate(
         TEST_FILE, metrics=["categorical_accuracy"], return_metrics=True
     )
+    # We just want to know that it exists and it's a number.
     assert metrics["categorical_accuracy"] >= 0
