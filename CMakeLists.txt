@@ -308,6 +308,7 @@ set(THIRDAI_SOURCES
     bolt/src/nn/model/AllocationManager.cc
     bolt/src/nn/model/Model.cc
     bolt/src/nn/ops/FullyConnected.cc
+    bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/tensor/ActivationTensor.cc
     bolt/src/nn/tensor/InputTensor.cc
