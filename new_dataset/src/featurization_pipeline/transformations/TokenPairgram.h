@@ -44,11 +44,11 @@ class TokenPairgram : public Transformation {
       std::vector<uint32_t> input_tokens_vector(input_tokens_buffer.begin(),
                                                 input_tokens_buffer.end());
       std::vector<uint32_t> pairgrams =
-          dataset::TextEncodingUtils::computeRawPairgramsFromUnigrams(
+          dataset::TextEncoding::computeRawPairgramsFromUnigrams(
               input_tokens_vector, _output_range);
 
       std::vector<std::pair<uint32_t, float>> deduplicated_pairgrams;
-      dataset::TextEncodingUtils::sumRepeatedIndices(
+      dataset::TextEncoding::sumRepeatedIndices(
           pairgrams, /* base_value= */ 1.0,
           [&](uint32_t pairgram, float value) {
             deduplicated_pairgrams.push_back(std::make_pair(pairgram, value));

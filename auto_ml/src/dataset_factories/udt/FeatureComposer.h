@@ -11,7 +11,6 @@
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
-#include <dataset/src/blocks/TabularMetadata.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>

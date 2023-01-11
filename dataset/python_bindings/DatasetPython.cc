@@ -116,7 +116,7 @@ void createDatasetSubmodule(py::module_& module) {
       "A block that encodes text as a weighted set of ordered pairs of "
       "space-separated words.")
       .def(py::init<uint32_t, uint32_t>(), py::arg("col"),
-           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+           py::arg("dim") = TextEncoding::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
@@ -131,7 +131,7 @@ void createDatasetSubmodule(py::module_& module) {
       block_submodule, "TextUniGram",
       "A block that encodes text as a weighted set of space-separated words.")
       .def(py::init<uint32_t, uint32_t>(), py::arg("col"),
-           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+           py::arg("dim") = TextEncoding::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
@@ -148,7 +148,7 @@ void createDatasetSubmodule(py::module_& module) {
       "A block that encodes text as a weighted set of character trigrams.")
       .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("col"),
            py::arg("k"),
-           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+           py::arg("dim") = TextEncoding::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "

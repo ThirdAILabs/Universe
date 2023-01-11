@@ -1,4 +1,5 @@
 #include "FeatureComposer.h"
+#include <dataset/src/blocks/TabularHashFeatures.h>
 
 namespace thirdai::automl::data {
 
@@ -50,11 +51,7 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
   auto non_temporal_columns =
       getNonTemporalColumns(config.data_types, temporal_relationships);
 
-  std::vector<dataset::TabularDataType> tabular_datatypes;
-  std::vector<std::string> tabular_column_names;
-
-  std::unordered_map<uint32_t, std::pair<double, double>> tabular_col_ranges;
-  std::unordered_map<uint32_t, uint32_t> tabular_col_bins;
+  std::vector<dataset::TabularColumn> tabular_columns;
 
   /*
     Order of column names and data types is always consistent because
@@ -81,18 +78,16 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
             col_name, /* dim= */ std::numeric_limits<uint32_t>::max(),
             *categorical->delimiter));
       } else {
-        tabular_datatypes.push_back(dataset::TabularDataType::Categorical);
-        tabular_column_names.push_back(col_name);
+        tabular_columns.push_back(dataset::TabularColumn::Categorical(
+            /* identifier= */ col_name));
       }
     }
 
     if (auto numerical = asNumerical(data_type)) {
       // tabular_datatypes.size() is the index of the next tabular data type.
-      tabular_col_ranges[tabular_datatypes.size()] = numerical->range;
-      tabular_col_bins[tabular_datatypes.size()] =
-          getNumberOfBins(numerical->granularity);
-      tabular_datatypes.push_back(dataset::TabularDataType::Numeric);
-      tabular_column_names.push_back(col_name);
+      tabular_columns.push_back(dataset::TabularColumn::Numeric(
+          /* identifier= */ col_name, /* range= */ numerical->range,
+          /* num_bins= */ getNumberOfBins(numerical->granularity)));
     }
 
     if (auto text_meta = asText(data_type)) {
@@ -120,9 +115,10 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
   // TODO(Geordie): This is redundant, remove this later.
   // we always use tabular unigrams but add pairgrams on top of it if the
   // contextual_columns flag is true
-  blocks.push_back(makeTabularHashFeaturesBlock(
-      tabular_datatypes, tabular_col_ranges, tabular_column_names,
-      contextual_columns, tabular_col_bins));
+  blocks.push_back(std::make_shared<dataset::TabularHashFeatures>(
+      /* columns= */ tabular_columns,
+      /* output_range= */ std::numeric_limits<uint32_t>::max(),
+      /* with_pairgrams= */ contextual_columns));
 
   return blocks;
 }
@@ -298,23 +294,6 @@ dataset::BlockPtr FeatureComposer::makeTemporalNumericalBlock(
       /* history= */ numerical_history,
       /* should_update_history= */ should_update_history,
       /* include_current_row= */ temporal_meta.include_current_row);
-}
-
-dataset::TabularHashFeaturesPtr FeatureComposer::makeTabularHashFeaturesBlock(
-    const std::vector<dataset::TabularDataType>& tabular_datatypes,
-    const std::unordered_map<uint32_t, std::pair<double, double>>& col_ranges,
-    const std::vector<std::string>& column_names, bool contextual_columns,
-    std::unordered_map<uint32_t, uint32_t> col_num_bins) {
-  auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
-      tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr,
-      /* column_names= */ column_names, /* col_to_num_bins= */ col_num_bins);
-
-  // output range of MAXINT is fine since features are later
-  // hashed into a range. In fact it may reduce hash collisions.
-  return std::make_shared<dataset::TabularHashFeatures>(
-      tabular_metadata,
-      /* output_range= */ std::numeric_limits<uint32_t>::max(),
-      /* with_pairgrams= */ contextual_columns);
 }
 
 dataset::ThreadSafeVocabularyPtr& FeatureComposer::vocabForColumn(

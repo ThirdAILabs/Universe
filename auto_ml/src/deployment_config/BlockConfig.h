@@ -88,7 +88,7 @@ class TextBlockConfig final : public BlockConfig {
   explicit TextBlockConfig(bool use_pairgrams)
       : _use_pairgrams(use_pairgrams),
         _range(ConstantParameter<uint32_t>::make(
-            dataset::TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)) {}
+            dataset::TextEncoding::DEFAULT_TEXT_ENCODING_DIM)) {}
 
   dataset::BlockPtr getBlock(
       uint32_t column,
