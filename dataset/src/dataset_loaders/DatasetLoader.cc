@@ -13,7 +13,7 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
     : _data_source(std::move(data_source)),
       _batch_processor(std::move(batch_processor)),
       _shuffle(shuffle),
-      _batch_buffer_size((shuffle_config.n_batches)),
+      _batch_buffer_size(shuffle_config.n_batches),
       _buffer(shuffle_config.seed, _data_source->getMaxBatchSize()) {
   // Different formats of data may or may not contain headers. Thus we
   // delegate to the particular batch processor to determine if a header is
@@ -28,6 +28,7 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
   }
 }
 
+// Loads the entire data source at once
 std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory() {
   auto datasets = loadInMemory(std::numeric_limits<uint64_t>::max());
   if (!datasets) {
