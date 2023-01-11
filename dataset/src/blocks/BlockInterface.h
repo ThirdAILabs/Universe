@@ -192,41 +192,36 @@ class Block {
    * return any exception_ptr and proceed with program execution without
    * failing. The error should then be caught.
    */
-  std::exception_ptr addVectorSegment(SingleInputRef& input,
+  std::exception_ptr addVectorSegment(ColumnarInputSample& input,
                                       SegmentedFeatureVector& vec) {
     vec.addFeatureSegment(featureDim());
     return buildSegment(input, vec);
   }
 
+  /**
+   * Updates the column numbers corresponding to each column name used by this
+   * block. Throws an error if the block is not initialized with column names.
+   * The column numbers allow the block to efficiently read from a tabular
+   * dataset.
+   */
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
-    for (auto* column_identifier : getColumnIdentifiers()) {
+    for (auto* column_identifier : getConsistentColumnIdentifiers()) {
       column_identifier->updateColumnNumber(column_number_map);
     }
   }
 
-  void verifyConsistentColumnIdentifiers() {
-    auto column_identifiers = getColumnIdentifiers();
-    if (column_identifiers.empty()) {
-      return;
-    }
-
-    auto first_column_identifier_has_column_numbers =
-        column_identifiers.front()->hasNumber();
-    for (const auto& column_identifier : column_identifiers) {
-      if (column_identifier->hasNumber() !=
-          first_column_identifier_has_column_numbers) {
-        throw std::invalid_argument(
-            "Columns must  be either all initialized with a name or all "
-            "initialized with a number.");
-      }
-    }
-  }
-
+  /**
+   * Returns true if all of the current block's column identifiers have a column
+   * number, returns false otherwise.
+   */
   bool hasColumnNumbers() {
-    if (getColumnIdentifiers().empty()) {
+    auto column_identifiers = getConsistentColumnIdentifiers();
+    if (column_identifiers.empty()) {
       return false;
     }
-    return getColumnIdentifiers().front()->hasNumber();
+    // We don't have to go through all column identifiers because the
+    // getConsistentColumnIdentifiers ensures consistency.
+    return column_identifiers.front()->hasNumber();
   }
 
   /**
@@ -243,19 +238,26 @@ class Block {
    * Returns the minimum number of columns that the block expects
    * to see in each row of the dataset.
    */
-  uint32_t expectedNumColumns() {
+  uint32_t computeExpectedNumColumns() {
     if (!hasColumnNumbers()) {
       return 0;
     }
     uint32_t expected_num_columns = 0;
-    for (auto* column_identifier : getColumnIdentifiers()) {
+    for (auto* column_identifier : getConsistentColumnIdentifiers()) {
       expected_num_columns =
-          std::max(expected_num_columns, column_identifier->number());
+          std::max(expected_num_columns, column_identifier->number() + 1);
     }
     return expected_num_columns;
   }
 
-  virtual void prepareForBatch(SingleInputRef& first_row) { (void)first_row; }
+  /**
+   * DO NOT CALL IN A PARALLEL REGION
+   * Allows blocks to prepare for the incoming batch without being affected by
+   * parallelism. Avoid if possible since this can be slow.
+   */
+  virtual void prepareForBatch(ColumnarInputBatch& incoming_batch) {
+    (void)incoming_batch;
+  }
 
   /**
    * For a given index, get the keyword which falls in that index when
@@ -273,9 +275,7 @@ class Block {
    * column.
    */
   virtual Explanation explainIndex(uint32_t index_within_block,
-                                   SingleInputRef& input_row) = 0;
-
-  virtual std::vector<ColumnIdentifier*> getColumnIdentifiers() = 0;
+                                   ColumnarInputSample& input_row) = 0;
 
   virtual ~Block() = default;
 
@@ -287,10 +287,34 @@ class Block {
    * WARNING: This function may be called in many threads simultaneously,
    * so it should be thread-safe or robust to data races.
    */
-  virtual std::exception_ptr buildSegment(SingleInputRef& input_row,
+  virtual std::exception_ptr buildSegment(ColumnarInputSample& input_row,
                                           SegmentedFeatureVector& vec) = 0;
 
+  virtual std::vector<ColumnIdentifier*> getColumnIdentifiers() = 0;
+
  private:
+  /**
+   * All of a block's column identifiers must be either all initialized with a
+   * name or all initialized with a number. Must be called by blocks during
+   * construction to throw an error if this condition is not fulfilled.
+   */
+  std::vector<ColumnIdentifier*> getConsistentColumnIdentifiers() {
+    auto column_identifiers = getColumnIdentifiers();
+    if (column_identifiers.empty()) {
+      return column_identifiers;
+    }
+
+    auto* first_column_identifier = column_identifiers.front();
+    for (const auto& column_identifier : column_identifiers) {
+      if (!first_column_identifier->consistentWith(*column_identifier)) {
+        throw std::invalid_argument(
+            "ColumnIdentifiers are inconsistent; some have numbers/names while "
+            "others don't.");
+      }
+    }
+    return column_identifiers;
+  }
+
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
@@ -298,10 +322,16 @@ class Block {
   }
 };
 
+/**
+ * A container for featurization blocks that dispatches methods to
+ * its constituent blocks. Use this instead of std::vector<BlockPtr>
+ * whenever possible. This avoids having to repeat logic like
+ * "for block in blocks, do something".
+ */
 struct BlockList {
   explicit BlockList(std::vector<BlockPtr>&& blocks)
       : _blocks(blocks),
-        _are_dense(computeIsDense(_blocks)),
+        _are_dense(computeAreDense(_blocks)),
         _feature_dim(computeFeatureDim(_blocks)),
         _expected_num_columns(allBlocksHaveColumnNumbers(_blocks)
                                   ? computeExpectedNumColumns(_blocks)
@@ -311,6 +341,10 @@ struct BlockList {
 
   auto operator[](uint32_t index) { return _blocks[index]; }
 
+  /**
+   * Dispatches the method each Block. See method definition in the
+   * Block class for details.
+   */
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
     for (const auto& block : _blocks) {
       block->updateColumnNumbers(column_number_map);
@@ -318,14 +352,22 @@ struct BlockList {
     _expected_num_columns = computeExpectedNumColumns(_blocks);
   }
 
-  void prepareForBatch(SingleInputRef& first_sample) {
+  /**
+   * Dispatches the method each Block. See method definition in the
+   * Block class for details.
+   */
+  void prepareForBatch(ColumnarInputBatch& incoming_batch) {
     for (const auto& block : _blocks) {
-      block->prepareForBatch(first_sample);
+      block->prepareForBatch(incoming_batch);
     }
   }
 
+  /**
+   * Dispatches the method each Block. See method definition in the
+   * Block class for details.
+   */
   std::exception_ptr addVectorSegment(
-      SingleInputRef& sample, SegmentedFeatureVector& segmented_vector) {
+      ColumnarInputSample& sample, SegmentedFeatureVector& segmented_vector) {
     for (auto& block : _blocks) {
       if (auto err = block->addVectorSegment(sample, segmented_vector)) {
         return err;
@@ -341,7 +383,7 @@ struct BlockList {
   uint32_t expectedNumColumns() const { return _expected_num_columns; }
 
  private:
-  static bool computeIsDense(const std::vector<BlockPtr>& blocks) {
+  static bool computeAreDense(const std::vector<BlockPtr>& blocks) {
     return std::all_of(
         blocks.begin(), blocks.end(),
         [](const std::shared_ptr<Block>& block) { return block->isDense(); });
@@ -369,7 +411,7 @@ struct BlockList {
     uint32_t max_expected_columns = 0;
     for (const auto& block : blocks) {
       max_expected_columns =
-          std::max(max_expected_columns, block->expectedNumColumns());
+          std::max(max_expected_columns, block->computeExpectedNumColumns());
     }
     return max_expected_columns;
   }

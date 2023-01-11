@@ -6,12 +6,12 @@
 #include "DataTypes.h"
 #include "TemporalContext.h"
 #include "UDTConfig.h"
-#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
+#include <dataset/src/blocks/TabularMetadata.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>

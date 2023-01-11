@@ -10,7 +10,7 @@ SingleBlockDatasetFactoryConfig::createDatasetState(
   dataset::BlockPtr label_block = _label_block->getBlock(
       /* column= */ 0, user_specified_parameters);
 
-  uint32_t data_start_col = label_block->expectedNumColumns();
+  uint32_t data_start_col = label_block->computeExpectedNumColumns();
 
   dataset::BlockPtr data_block = _data_block->getBlock(
       /* column= */ data_start_col, user_specified_parameters);

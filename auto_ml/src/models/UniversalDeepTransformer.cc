@@ -4,7 +4,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/cold_start/ColdStartDataLoader.h>
+#include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/OutputProcessor.h>
@@ -216,7 +216,7 @@ void UniversalDeepTransformer::coldStartPretraining(
 
   auto augmented_data = augmentation.apply(dataset);
 
-  auto data_loader = cold_start::ColdStartDataLoader::make(
+  auto data_source = cold_start::ColdStartDataSource::make(
       /* column_map= */ augmented_data,
       /* text_column_name= */ metadata.text_column_name,
       /* label_column_name= */ dataset_config->target,
@@ -228,7 +228,7 @@ void UniversalDeepTransformer::coldStartPretraining(
       bolt::TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
                                     /* epochs= */ 1);
 
-  train(data_loader, train_config, /* validation= */ std::nullopt,
+  train(data_source, train_config, /* validation= */ std::nullopt,
         /* max_in_memory_batches= */ std::nullopt);
 }
 

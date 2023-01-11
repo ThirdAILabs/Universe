@@ -17,13 +17,14 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
-#include <dataset/src/DataLoader.h>
-#include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
+#include <dataset/src/blocks/InputTypes.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
@@ -40,7 +41,7 @@
 
 namespace thirdai::automl::data {
 
-using dataset::ColumnNumberMapPtr;
+using dataset::ColumnNumberMap;
 class UDTDatasetFactory;
 using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
@@ -50,21 +51,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
                              uint32_t text_pairgram_word_limit,
                              bool contextual_columns = false,
                              std::optional<dataset::RegressionBinningStrategy>
-                                 regression_binning = std::nullopt)
-      : _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
-            config->data_types, config->provided_relationships,
-            config->lookahead)),
-        _config(FeatureComposer::verifyConfigIsValid(std::move(config),
-                                                     _temporal_relationships)),
-        _context(std::make_shared<TemporalContext>()),
-        _parallel(_temporal_relationships.empty() || force_parallel),
-        _text_pairgram_word_limit(text_pairgram_word_limit),
-        _contextual_columns(contextual_columns),
-        _regression_binning(regression_binning),
-        _vectors_map(processAllMetadata()),
-        _labeled_history_updating_processor(makeLabeledUpdatingProcessor()),
-        _unlabeled_non_updating_processor(makeUnlabeledNonUpdatingProcessor()) {
-  }
+                                 regression_binning = std::nullopt);
 
   static std::shared_ptr<UDTDatasetFactory> make(
       UDTConfigPtr config, bool force_parallel,
@@ -76,29 +63,29 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         contextual_columns, regression_binning);
   }
 
-  DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader, bool training) final;
+  dataset::DatasetLoaderPtr getLabeledDatasetLoader(
+      dataset::DataSourcePtr data_source, bool training) final;
 
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
-    dataset::SingleCsvLineInputRef input_ref(input, _config->delimiter);
+    dataset::CsvSampleRef input_ref(input, _config->delimiter);
     return {getProcessor(/* should_update_history= */ false)
                 .makeInputVector(input_ref)};
   }
 
   std::vector<BoltVector> featurizeInput(const MapInput& input) final {
-    dataset::SingleMapInputRef input_ref(input);
+    dataset::MapSampleRef input_ref(input);
     return {getProcessor(/* should_update_history= */ false)
                 .makeInputVector(input_ref)};
   }
 
   std::vector<BoltVector> updateTemporalTrackers(const LineInput& input) {
-    dataset::SingleCsvLineInputRef input_ref(input, _config->delimiter);
+    dataset::CsvSampleRef input_ref(input, _config->delimiter);
     return {getProcessor(/* should_update_history= */ true)
                 .makeInputVector(input_ref)};
   }
 
   std::vector<BoltVector> updateTemporalTrackers(const MapInput& input) {
-    dataset::SingleMapInputRef input_ref(input);
+    dataset::MapSampleRef input_ref(input);
     return {getProcessor(/* should_update_history= */ true)
                 .makeInputVector(input_ref)};
   }
@@ -110,14 +97,12 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> featurizeInputBatch(
       const LineInputBatch& inputs) final {
-    dataset::BatchCsvLineInputRef inputs_ref(inputs, _config->delimiter);
-    return featurizeInputBatchImpl(inputs_ref,
-                                   /* should_update_history= */ false);
+    return getProcessor(/* should_update_history= */ false).createBatch(inputs);
   }
 
   std::vector<BoltBatch> featurizeInputBatch(
       const MapInputBatch& inputs) final {
-    dataset::BatchMapInputRef inputs_ref(inputs);
+    dataset::MapBatchRef inputs_ref(inputs);
     return featurizeInputBatchImpl(inputs_ref,
                                    /* should_update_history= */ false);
   }
@@ -128,14 +113,12 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> batchUpdateTemporalTrackers(
       const LineInputBatch& inputs) {
-    dataset::BatchCsvLineInputRef inputs_ref(inputs, _config->delimiter);
-    return featurizeInputBatchImpl(inputs_ref,
-                                   /* should_update_history= */ true);
+    return getProcessor(/* should_update_history= */ true).createBatch(inputs);
   }
 
   std::vector<BoltBatch> batchUpdateTemporalTrackers(
       const MapInputBatch& inputs) {
-    dataset::BatchMapInputRef inputs_ref(inputs);
+    dataset::MapBatchRef inputs_ref(inputs);
     return featurizeInputBatchImpl(inputs_ref,
                                    /* should_update_history= */ true);
   }
@@ -146,7 +129,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio,
       const LineInput& sample) final {
-    dataset::SingleCsvLineInputRef sample_ref(sample, _config->delimiter);
+    dataset::CsvSampleRef sample_ref(sample, _config->delimiter);
     return bolt::getSignificanceSortedExplanations(
         gradients_indices, gradients_ratio, sample_ref,
         _unlabeled_non_updating_processor);
@@ -155,7 +138,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio, const MapInput& sample) final {
-    dataset::SingleMapInputRef sample_ref(sample);
+    dataset::MapSampleRef sample_ref(sample);
     return bolt::getSignificanceSortedExplanations(
         gradients_indices, gradients_ratio, sample_ref,
         _unlabeled_non_updating_processor);
@@ -192,25 +175,24 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
       const std::string& col_name, const CategoricalDataTypePtr& categorical);
 
-  static ColumnNumberMapPtr makeColumnNumberMapFromHeader(
-      dataset::DataLoader& data_loader, const std::string& delimiter);
+  static ColumnNumberMap makeColumnNumberMapFromHeader(
+      dataset::DataSource& data_source, const std::string& delimiter);
 
   std::vector<dataset::BlockPtr> buildMetadataInputBlocks(
       const CategoricalMetadataConfig& metadata_config) const;
 
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
-      dataset::StreamingGenericDatasetLoader& dataset,
+      dataset::DatasetLoader& dataset_loader,
       dataset::ThreadSafeVocabulary& key_vocab);
 
-  std::vector<BoltBatch> featurizeInputBatchImpl(dataset::BatchInputRef& inputs,
-                                                 bool should_update_history) {
-    auto [input_batch, _] =
-        getProcessor(should_update_history).createBatch(inputs);
+  std::vector<BoltBatch> featurizeInputBatchImpl(
+      dataset::ColumnarInputBatch& inputs, bool should_update_history) {
+    auto batches = getProcessor(should_update_history).createBatch(inputs);
 
     // We cannot use the initializer list because the copy constructor is
     // deleted for BoltBatch.
     std::vector<BoltBatch> batch_list;
-    batch_list.emplace_back(std::move(input_batch));
+    batch_list.emplace_back(std::move(batches.at(0)));
     return batch_list;
   }
 

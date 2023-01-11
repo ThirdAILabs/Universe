@@ -113,9 +113,7 @@ class UserItemHistoryBlock final : public Block {
         _should_update_history(should_update_history),
         _include_current_row(include_current_row),
         _item_col_delimiter(item_col_delimiter),
-        _time_lag(time_lag) {
-    verifyConsistentColumnIdentifiers();
-  }
+        _time_lag(time_lag) {}
 
   uint32_t featureDim() const final {
     return _item_vectors ? _item_vectors->dim : _item_hash_range;
@@ -138,7 +136,7 @@ class UserItemHistoryBlock final : public Block {
   }
 
   Explanation explainIndex(uint32_t index_within_block,
-                           SingleInputRef& input) final {
+                           ColumnarInputSample& input) final {
     if (_item_vectors) {
       // TODO(Geordie): Make more descriptive.
       return {_item_col, "Metadata of previously seen item."};
@@ -160,7 +158,7 @@ class UserItemHistoryBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(SingleInputRef& input,
+  std::exception_ptr buildSegment(ColumnarInputSample& input,
                                   SegmentedFeatureVector& vec) final {
     try {
       auto user_str = std::string(input.column(_user_col));

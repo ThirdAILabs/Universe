@@ -24,7 +24,7 @@ class TextBlock : public Block {
   bool isDense() const final { return false; };
 
   Explanation explainIndex(uint32_t index_within_block,
-                           SingleInputRef& input) final {
+                           ColumnarInputSample& input) final {
     return {_col, getResponsibleWord(index_within_block, input.column(_col))};
   }
 
@@ -32,7 +32,7 @@ class TextBlock : public Block {
       uint32_t index, const std::string_view& text) const = 0;
 
  protected:
-  std::exception_ptr buildSegment(SingleInputRef& input,
+  std::exception_ptr buildSegment(ColumnarInputSample& input,
                                   SegmentedFeatureVector& vec) final {
     return encodeText(input.column(_col), vec);
   }

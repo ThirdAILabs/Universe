@@ -8,6 +8,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
@@ -17,10 +18,11 @@
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
+#include <vector>
 
 namespace thirdai::dataset {
 
-class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
+class GenericBatchProcessor : public BatchProcessor {
  public:
   GenericBatchProcessor(
       std::vector<std::shared_ptr<Block>> input_blocks,
@@ -37,6 +39,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
         _delimiter(std::move(delimiter)),
         _parallel(parallel),
         _hash_range(hash_range),
+        _num_cols_in_header(std::nullopt),
         /**
          * Here we copy input_blocks and label_blocks because when we
          * accept a vector representation of a Python List created by
@@ -60,16 +63,12 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                                   _label_blocks.expectedNumColumns());
   };
 
-  std::tuple<BoltBatch, BoltBatch> createBatch(BatchInputRef& input_batch) {
+  std::vector<BoltBatch> createBatch(ColumnarInputBatch& input_batch) {
     std::vector<BoltVector> batch_inputs(input_batch.size());
     std::vector<BoltVector> batch_labels(input_batch.size());
 
-    auto& first_sample = input_batch.sample(0);
-    if (auto error = first_sample.assertValid(_expected_num_cols)) {
-      std::rethrow_exception(error);
-    }
-    _input_blocks.prepareForBatch(first_sample);
-    _label_blocks.prepareForBatch(first_sample);
+    _input_blocks.prepareForBatch(input_batch);
+    _label_blocks.prepareForBatch(input_batch);
 
     /*
       These variables keep track of the presence of an erroneous input line.
@@ -77,46 +76,42 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
       an error inside an OpenMP structured block has undefined behavior.
     */
     std::exception_ptr featurization_err;
-
 #pragma omp parallel for default(none) shared( \
     input_batch, batch_inputs, batch_labels, featurization_err) if (_parallel)
-    for (size_t i = 0; i < input_batch.size(); ++i) {
-      auto& columnar_sample = input_batch.sample(i);
-      if (auto error = columnar_sample.assertValid(_expected_num_cols)) {
+    for (size_t index_in_batch = 0; index_in_batch < input_batch.size();
+         ++index_in_batch) {
+      if (auto error = featurizeSampleInBatch(index_in_batch, input_batch,
+                                              batch_inputs, batch_labels)) {
 #pragma omp critical
         featurization_err = error;
         continue;
-      }
-
-      if (auto err = makeVectorInPlace(columnar_sample, batch_inputs[i],
-                                       _input_blocks, _hash_range)) {
-#pragma omp critical
-        featurization_err = err;
-      }
-
-      // Never hash labels.
-      if (auto err =
-              makeVectorInPlace(columnar_sample, batch_labels[i], _label_blocks,
-                                /* hash_range= */ std::nullopt)) {
-        featurization_err = err;
       }
     }
     if (featurization_err) {
       std::rethrow_exception(featurization_err);
     }
-    return std::make_tuple(BoltBatch(std::move(batch_inputs)),
-                           BoltBatch(std::move(batch_labels)));
+    return {BoltBatch(std::move(batch_inputs)),
+            BoltBatch(std::move(batch_labels))};
   }
 
-  std::tuple<BoltBatch, BoltBatch> createBatch(
-      const LineInputBatch& input_batch) final {
-    BatchCsvLineInputRef input_batch_ref(input_batch, _delimiter);
+  std::vector<BoltBatch> createBatch(const LineInputBatch& input_batch) final {
+    // If there isn't a header, we are forced to assume that every row will
+    // have exactly as many columns as expected. Otherwise, we can assume that
+    // every row will have the same number of columns as the header
+    uint32_t expected_num_cols_in_batch =
+        _num_cols_in_header.value_or(_expected_num_cols);
+    CsvBatchRef input_batch_ref(input_batch, _delimiter,
+                                expected_num_cols_in_batch);
     return createBatch(input_batch_ref);
   }
 
   bool expectsHeader() const final { return _expects_header; }
 
-  void processHeader(const std::string& header) final { (void)header; }
+  void processHeader(const std::string& header) final {
+    _num_cols_in_header = CsvSampleRef(header, _delimiter,
+                                       /* expected_num_cols= */ std::nullopt)
+                              .size();
+  }
 
   uint32_t getInputDim() const {
     return _hash_range.value_or(_input_blocks.featureDim());
@@ -124,18 +119,37 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
 
   uint32_t getLabelDim() const { return _label_blocks.featureDim(); }
 
-  void setParallelism(bool parallel) { _parallel = parallel; }
-
-  BoltVector makeInputVector(SingleInputRef& sample) {
-    BoltVector vector;
-    if (auto err =
-            makeVectorInPlace(sample, vector, _input_blocks, _hash_range)) {
-      std::rethrow_exception(err);
-    }
-    return vector;
+  std::vector<uint32_t> getDimensions() final {
+    std::vector<uint32_t> dims = {getInputDim(), getLabelDim()};
+    return dims;
   }
 
-  IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(SingleInputRef& input) {
+  void setParallelism(bool parallel) { _parallel = parallel; }
+
+  BoltVector makeInputVector(ColumnarInputSample& sample) {
+    auto segmented_vector =
+        makeSegmentedFeatureVector(_input_blocks.areDense(), _hash_range,
+                                   /* store_segment_feature_map= */ false);
+    if (auto err = _input_blocks.addVectorSegment(sample, *segmented_vector)) {
+      std::rethrow_exception(err);
+    }
+    return segmented_vector->toBoltVector();
+  }
+
+  BoltVector makeLabelVector(ColumnarInputSample& sample) {
+    // Never hash labels
+    auto segmented_vector =
+        makeSegmentedFeatureVector(_input_blocks.areDense(),
+                                   /* hash_range= */ std::nullopt,
+                                   /* store_segment_feature_map= */ false);
+    if (auto err = _label_blocks.addVectorSegment(sample, *segmented_vector)) {
+      std::rethrow_exception(err);
+    }
+    return segmented_vector->toBoltVector();
+  }
+
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(
+      ColumnarInputSample& input) {
     BoltVector vector;
     auto segmented_vector =
         makeSegmentedFeatureVector(_input_blocks.areDense(), _hash_range,
@@ -147,7 +161,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
     return segmented_vector->getIndexToSegmentFeatureMap();
   }
 
-  Explanation explainFeature(SingleInputRef& input,
+  Explanation explainFeature(ColumnarInputSample& input,
                              const SegmentFeature& segment_feature) {
     std::shared_ptr<Block> relevant_block =
         _input_blocks[segment_feature.segment_idx];
@@ -166,17 +180,18 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   }
 
  private:
-  static std::exception_ptr makeVectorInPlace(
-      SingleInputRef& sample, BoltVector& vector, BlockList& blocks,
-      std::optional<uint32_t> hash_range) noexcept {
-    auto segmented_vector =
-        makeSegmentedFeatureVector(blocks.areDense(), hash_range,
-                                   /* store_segment_feature_map= */ false);
-    if (auto err = blocks.addVectorSegment(sample, *segmented_vector)) {
-      return err;
+  std::exception_ptr featurizeSampleInBatch(
+      uint32_t index_in_batch, ColumnarInputBatch& input_batch,
+      std::vector<BoltVector>& batch_inputs,
+      std::vector<BoltVector>& batch_labels) {
+    try {
+      auto& sample = input_batch.sample(index_in_batch);
+      batch_inputs[index_in_batch] = makeInputVector(sample);
+      batch_labels[index_in_batch] = makeLabelVector(sample);
+      return nullptr;
+    } catch (std::exception_ptr& error) {
+      return error;
     }
-    vector = segmented_vector->toBoltVector();
-    return nullptr;
   }
 
   static std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
@@ -201,8 +216,8 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<BatchProcessor>(this), _expects_header,
-            _delimiter, _parallel, _hash_range, _expected_num_cols,
-            _input_blocks, _label_blocks);
+            _delimiter, _parallel, _hash_range, _num_cols_in_header,
+            _expected_num_cols, _input_blocks, _label_blocks);
   }
 
   // Private constructor for cereal.
@@ -212,6 +227,7 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
   std::string _delimiter;
   bool _parallel;
   std::optional<uint32_t> _hash_range;
+  std::optional<uint32_t> _num_cols_in_header;
 
   /**
    * We save a copy of these vectors instead of just references

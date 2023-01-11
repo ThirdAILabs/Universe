@@ -17,6 +17,17 @@ def this_should_require_a_license_search():
     )
 
 
+def this_should_require_a_license_query_reformulation():
+
+    from thirdai import bolt
+
+    bolt.UniversalDeepTransformer(
+        source_column="source_queries",
+        target_column="target_queries",
+        dataset_size="medium",
+    )
+
+
 from pathlib import Path
 
 dir_path = Path(__file__).resolve().parent
@@ -29,9 +40,10 @@ invalid_license_path = dir_path / "invalid_license.serialized"
 def test_with_valid_license():
     import thirdai
 
-    thirdai.set_thirdai_license_path(str(valid_license_path))
+    thirdai.licensing.set_path(str(valid_license_path))
     this_should_require_a_license_search()
     this_should_require_a_license_bolt()
+    this_should_require_a_license_query_reformulation()
 
 
 @pytest.mark.skipif(
@@ -41,11 +53,13 @@ def test_with_valid_license():
 def test_with_expired_license():
     import thirdai
 
-    thirdai.set_thirdai_license_path(str(expired_license_path))
+    thirdai.licensing.set_path(str(expired_license_path))
     with pytest.raises(Exception, match=r".*license file is expired.*"):
         this_should_require_a_license_search()
     with pytest.raises(Exception, match=r".*license file is expired.*"):
         this_should_require_a_license_bolt()
+    with pytest.raises(Exception, match=r".*license file is expired.*"):
+        this_should_require_a_license_query_reformulation()
 
 
 @pytest.mark.skipif(
@@ -55,11 +69,13 @@ def test_with_expired_license():
 def test_with_invalid_license():
     import thirdai
 
-    thirdai.set_thirdai_license_path(str(invalid_license_path))
+    thirdai.licensing.set_path(str(invalid_license_path))
     with pytest.raises(Exception, match=r".*license verification failure.*"):
         this_should_require_a_license_search()
     with pytest.raises(Exception, match=r".*license verification failure.*"):
         this_should_require_a_license_bolt()
+    with pytest.raises(Exception, match=r".*license verification failure.*"):
+        this_should_require_a_license_query_reformulation()
 
 
 # See e.g. https://stackoverflow.com/questions/34931263/how-to-run-specific-code-after-all-tests-are-executed
@@ -70,4 +86,4 @@ def set_license_back_to_valid():
 
     # The yield means that it will run AFTER each test, not before.
     yield
-    thirdai.set_thirdai_license_path(str(valid_license_path))
+    thirdai.licensing.set_path(str(valid_license_path))

@@ -67,7 +67,8 @@ inline std::vector<std::pair<float, uint32_t>> sortGradientsBySignificance(
  */
 inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
     const std::optional<std::vector<uint32_t>>& gradients_indices,
-    const std::vector<float>& gradients_ratio, dataset::SingleInputRef& input,
+    const std::vector<float>& gradients_ratio,
+    dataset::ColumnarInputSample& input,
     const std::shared_ptr<dataset::GenericBatchProcessor>&
         generic_batch_processor) {
   std::vector<std::pair<float, uint32_t>> gradients_ratio_with_indices =

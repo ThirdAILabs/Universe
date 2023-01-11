@@ -5,6 +5,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
+#include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <algorithm>
@@ -25,20 +26,19 @@ class UserCountHistoryBlock final : public Block {
         _timestamp_col(std::move(timestamp_col)),
         _history(std::move(history)),
         _should_update_history(should_update_history),
-        _include_current_row(include_current_row) {
-    verifyConsistentColumnIdentifiers();
-  }
+        _include_current_row(include_current_row) {}
 
   uint32_t featureDim() const final { return _history->historyLength(); }
   bool isDense() const final { return true; }
 
-  void prepareForBatch(SingleInputRef& first_row) final {
+  void prepareForBatch(ColumnarInputBatch& incoming_batch) final {
+    auto& first_row = incoming_batch.sample(0);
     auto time = TimeObject(first_row.column(_timestamp_col));
     _history->checkpoint(/* new_lowest_timestamp= */ time.secondsSinceEpoch());
   }
 
   Explanation explainIndex(uint32_t index_within_block,
-                           SingleInputRef& input) final {
+                           ColumnarInputSample& input) final {
     auto [user, time_seconds, val] = getUserTimeVal(input);
 
     auto counts = indexAndGetCountsFromHistory(
@@ -78,7 +78,7 @@ class UserCountHistoryBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(SingleInputRef& input,
+  std::exception_ptr buildSegment(ColumnarInputSample& input,
                                   SegmentedFeatureVector& vec) final {
     auto [user, time_seconds, val] = getUserTimeVal(input);
 
@@ -98,7 +98,7 @@ class UserCountHistoryBlock final : public Block {
 
  private:
   std::tuple<std::string, int64_t, float> getUserTimeVal(
-      SingleInputRef& input) const {
+      ColumnarInputSample& input) const {
     auto user = std::string(input.column(_user_col));
 
     auto time = TimeObject(input.column(_timestamp_col));

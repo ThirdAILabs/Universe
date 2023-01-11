@@ -4,6 +4,8 @@
 #include <cereal/types/optional.hpp>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <cstdint>
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -13,11 +15,16 @@ struct ColumnIdentifier {
   ColumnIdentifier() {}
 
   // NOLINTNEXTLINE Ignore implicit conversion warning. That is intentional.
-  ColumnIdentifier(uint32_t column_number) : _column_number(column_number) {}
+  ColumnIdentifier(uint32_t column_number)
+      : _column_number(column_number), _column_name(std::nullopt) {}
 
   // NOLINTNEXTLINE Ignore implicit conversion warning. That is intentional.
   ColumnIdentifier(const std::string& column_name)
-      : _column_name(column_name) {}
+      : _column_number(std::nullopt), _column_name(column_name) {}
+
+  bool consistentWith(const ColumnIdentifier& other) const {
+    return hasName() == other.hasName() && hasNumber() == other.hasNumber();
+  }
 
   bool hasName() const { return !!_column_name; }
 
@@ -40,24 +47,18 @@ struct ColumnIdentifier {
   }
 
   void updateColumnNumber(const ColumnNumberMap& column_number_map) {
+    if (!hasName()) {
+      throw std::logic_error(
+          "Cannot update the column number of a ColumnIdentifier that does not "
+          "have a column name.");
+    }
     _column_number = column_number_map.at(name());
   }
 
   friend bool operator==(const ColumnIdentifier& lhs,
                          const ColumnIdentifier& rhs) {
-    if (lhs.hasName() != rhs.hasName()) {
-      return false;
-    }
-    if (lhs.hasName() && lhs.name() != rhs.name()) {
-      return false;
-    }
-    if (lhs.hasNumber() != rhs.hasNumber()) {
-      return false;
-    }
-    if (lhs.hasNumber() && lhs.number() != rhs.number()) {
-      return false;
-    }
-    return true;
+    return lhs._column_name == rhs._column_name &&
+           lhs._column_number == rhs._column_number;
   }
 
  private:

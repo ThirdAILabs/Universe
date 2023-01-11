@@ -52,7 +52,7 @@ class DeploymentConfig {
         _train_test_parameters(train_test_parameters) {}
 
   std::pair<data::DatasetLoaderFactoryPtr, bolt::BoltGraphPtr>
-  createDataLoaderAndModel(UserInputMap user_specified_parameters) const;
+  createDataSourceAndModel(UserInputMap user_specified_parameters) const;
 
   const TrainEvalParameters& train_eval_parameters() const {
     return _train_test_parameters;

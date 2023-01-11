@@ -15,7 +15,7 @@ set(DATASET_TESTS
     GenericBatchProcessorTests
     MlmBatchProcessorTests
     SaveLoadInMemoryDatasetTest
-    StreamingGenericDatasetLoaderTests)
+    DatasetLoaderTests)
 
 include(GoogleTest)
 

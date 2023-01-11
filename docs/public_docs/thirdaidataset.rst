@@ -1,6 +1,6 @@
 thirdai.dataset
 ===================================
 
-.. autoclass:: thirdai.dataset.DataLoader
+.. autoclass:: thirdai.dataset.DataSource
 
-.. autoclass:: thirdai.dataset.CSVDataLoader
+.. autoclass:: thirdai.dataset.CSVDataSource

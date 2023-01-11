@@ -8,8 +8,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
-#include <dataset/src/DataLoader.h>
-#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
+#include <dataset/src/DataSource.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>

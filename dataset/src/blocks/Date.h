@@ -36,7 +36,7 @@ class DateBlock final : public Block {
   bool isDense() const final { return false; };
 
   Explanation explainIndex(uint32_t index_within_block,
-                           SingleInputRef& input) final {
+                           ColumnarInputSample& input) final {
     (void)input;
     std::string reason;
     if (index_within_block >= featureDim()) {
@@ -72,7 +72,7 @@ class DateBlock final : public Block {
   static constexpr uint32_t week_of_month_dim = 5;
   static constexpr uint32_t week_of_year_dim = 53;
 
-  std::exception_ptr buildSegment(SingleInputRef& input,
+  std::exception_ptr buildSegment(ColumnarInputSample& input,
                                   SegmentedFeatureVector& vec) final {
     TimeObject time;
 
