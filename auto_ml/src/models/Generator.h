@@ -6,19 +6,20 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include <bolt/src/utils/ProgressBar.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/MinHash.h>
 #include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
-#include <dataset/src/DataLoader.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/TextEncodingUtils.h>
 #include <exceptions/src/Exceptions.h>
+#include <licensing/src/CheckLicense.h>
 #include <search/src/Flash.h>
 #include <fstream>
 #include <limits>
@@ -206,6 +207,8 @@ class QueryCandidateGenerator {
   static QueryCandidateGenerator buildGeneratorFromDefaultConfig(
       const std::string& source_column_name,
       const std::string& target_column_name, const std::string& dataset_size) {
+    licensing::checkLicense();
+
     auto config = QueryCandidateGeneratorConfig::fromDefault(
         /* source_column_name = */ source_column_name,
         /* target_column_name = */ target_column_name,
@@ -249,6 +252,8 @@ class QueryCandidateGenerator {
    * @param file_name
    */
   void buildFlashIndex(const std::string& file_name) {
+    licensing::verifyAllowedDataset(file_name);
+
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
         /* file_name = */ file_name, /* delimiter = */ ',');
     auto training_batch_processor = constructGenericBatchProcessor(
@@ -282,11 +287,12 @@ class QueryCandidateGenerator {
    *
    * @param queries
    * @param top_k
-   * @return A vector of suggested queries
+   * @return A vector of suggested queries and the corresponding scores.
 
    */
-  std::vector<std::vector<std::string>> queryFromList(
-      const std::vector<std::string>& queries, uint32_t top_k) {
+  std::pair<std::vector<std::vector<std::string>>,
+            std::vector<std::vector<float>>>
+  queryFromList(const std::vector<std::string>& queries, uint32_t top_k) {
     if (!_flash_index) {
       throw exceptions::QueryCandidateGeneratorException(
           "Attempting to Generate Candidate Queries without Training the "
@@ -298,22 +304,22 @@ class QueryCandidateGenerator {
       featurized_queries[query_index] =
           featurizeSingleQuery(queries[query_index]);
     }
-    std::vector<std::vector<uint32_t>> candidate_query_labels =
+    auto [candidate_query_labels, candidate_query_scores] =
         _flash_index->queryBatch(
             /* batch = */ BoltBatch(std::move(featurized_queries)),
             /* top_k = */ top_k,
             /* pad_zeros = */ false);
 
-    std::vector<std::vector<std::string>> outputs;
-    outputs.reserve(queries.size());
+    std::vector<std::vector<std::string>> query_outputs;
+    query_outputs.reserve(queries.size());
 
     for (auto& candidate_query_label_vector : candidate_query_labels) {
       auto top_k_candidates =
           getQueryCandidatesAsStrings(candidate_query_label_vector);
 
-      outputs.emplace_back(std::move(top_k_candidates));
+      query_outputs.emplace_back(std::move(top_k_candidates));
     }
-    return outputs;
+    return {std::move(query_outputs), std::move(candidate_query_scores)};
   }
 
   /**
@@ -322,10 +328,11 @@ class QueryCandidateGenerator {
    *
    * @param file_name: CSV file expected to have correct queries in column 0,
    * and incorrect queries in column 1.
-   * @return Recommended queries
+   * @return Recommended queries and the corresponding scores.
    */
-  std::vector<std::vector<std::string>> evaluateOnFile(
-      const std::string& file_name, uint32_t top_k) {
+  std::pair<std::vector<std::vector<std::string>>,
+            std::vector<std::vector<float>>>
+  evaluateOnFile(const std::string& file_name, uint32_t top_k) {
     if (!_flash_index) {
       throw exceptions::QueryCandidateGeneratorException(
           "Attempting to Evaluate the Generator without Training.");
@@ -338,20 +345,29 @@ class QueryCandidateGenerator {
     auto data =
         loadDatasetInMemory(/* file_name = */ file_name,
                             /* batch_processor = */ eval_batch_processor);
+    ProgressBar bar("evaluate", data->numBatches());
 
     std::vector<std::vector<std::string>> output_queries;
+    std::vector<std::vector<float>> output_scores;
     for (const auto& batch : *data) {
-      std::vector<std::vector<uint32_t>> candidate_query_labels =
+      auto [candidate_query_labels, candidate_query_scores] =
           _flash_index->queryBatch(
               /* batch = */ batch,
               /* top_k = */ top_k,
               /* pad_zeros = */ false);
+      bar.increment();
 
       for (auto& candidate_query_label_vector : candidate_query_labels) {
         auto top_k = getQueryCandidatesAsStrings(candidate_query_label_vector);
         output_queries.push_back(std::move(top_k));
       }
+      for (auto& candidate_query_score_vector : candidate_query_scores) {
+        output_scores.push_back(std::move(candidate_query_score_vector));
+      }
     }
+
+    bar.close(
+        fmt::format("evaluate | batches {} | complete", data->numBatches()));
 
     if (source_column_index != target_column_index) {
       std::vector<std::string> correct_queries =
@@ -363,7 +379,7 @@ class QueryCandidateGenerator {
                        /* generated_queries = */ output_queries,
                        /* K = */ top_k);
     }
-    return output_queries;
+    return {std::move(output_queries), std::move(output_scores)};
   }
 
   std::unordered_map<std::string, uint32_t> getQueriesToLabelsMap() const {
@@ -525,22 +541,21 @@ class QueryCandidateGenerator {
   std::shared_ptr<dataset::BoltDataset> loadDatasetInMemory(
       const std::string& file_name,
       const std::shared_ptr<dataset::GenericBatchProcessor>& batch_processor) {
-    auto file_data_loader = dataset::SimpleFileDataLoader::make(
+    auto file_data_source = dataset::SimpleFileDataSource::make(
         file_name, _query_generator_config->batchSize());
 
-    auto data_loader = std::make_unique<dataset::StreamingGenericDatasetLoader>(
-        file_data_loader, batch_processor);
+    auto data_source = std::make_unique<dataset::DatasetLoader>(
+        file_data_source, batch_processor, /* shuffle = */ false);
 
-    auto [data, _] = data_loader->loadInMemory();
-    return data;
+    return data_source->loadInMemory().first.at(0);
   }
 
   std::tuple<uint32_t, uint32_t> mapColumnNamesToIndices(
       const std::string& file_name, char delimiter) {
-    auto file_data_loader = dataset::SimpleFileDataLoader::make(
+    auto file_data_source = dataset::SimpleFileDataSource::make(
         /* filename = */ file_name,
         /* target_batch_size = */ _query_generator_config->batchSize());
-    auto file_header = file_data_loader->nextLine();
+    auto file_header = file_data_source->nextLine();
 
     if (!file_header) {
       throw std::invalid_argument(
@@ -549,12 +564,19 @@ class QueryCandidateGenerator {
     auto column_number_map =
         std::make_shared<ColumnNumberMap>(*file_header, delimiter);
 
-    uint32_t source_column_index =
-        column_number_map->at(_query_generator_config->sourceColumnName());
     uint32_t target_column_index =
         column_number_map->at(_query_generator_config->targetColumnName());
 
-    return {source_column_index, target_column_index};
+    // If the source column is also specified then return its index, otherwise
+    // just use the target column as the source as well.
+    if (column_number_map->containsColumn(
+            _query_generator_config->sourceColumnName())) {
+      uint32_t source_column_index =
+          column_number_map->at(_query_generator_config->sourceColumnName());
+      return {source_column_index, target_column_index};
+    }
+
+    return {target_column_index, target_column_index};
   }
 
   std::shared_ptr<QueryCandidateGeneratorConfig> _query_generator_config;

@@ -126,6 +126,9 @@ class TrainStateManager:
         self.batch_id_within_epoch = 0
         ray.get([worker.move_to_next_epoch.remote() for worker in self.workers])
 
+    def freeze_hash_tables(self):
+        ray.get([worker.freeze_hash_tables.remote() for worker in self.workers])
+
     def _compute_and_store_next_batch_gradients(self):
         """
         Calls compute_and_store_batch_gradients function on each of the

@@ -1,13 +1,6 @@
 #pragma once
 
-#include <hashing/src/MurmurHash.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
-#include <pybind11/cast.h>
-#include <pybind11/gil.h>
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <memory>
 
@@ -38,35 +31,5 @@ bool denseBoltDatasetIsPermutationOfDenseMatrix(
  * For testing purposes only.
  */
 bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2);
-
-class MLMDatasetLoader {
- public:
-  explicit MLMDatasetLoader(std::shared_ptr<Vocabulary> vocab,
-                            uint32_t pairgram_range)
-      : _batch_processor(std::make_shared<MaskedSentenceBatchProcessor>(
-            std::move(vocab), pairgram_range)) {}
-
-  MLMDatasetLoader(std::shared_ptr<Vocabulary> vocab, uint32_t pairgram_range,
-                   float masked_tokens_percentage)
-      : _batch_processor(std::make_shared<MaskedSentenceBatchProcessor>(
-            std::move(vocab), pairgram_range, masked_tokens_percentage)) {}
-
-  py::tuple load(const std::string& filename, uint32_t batch_size) {
-    auto data_loader =
-        std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
-
-    auto dataset = std::make_shared<
-        dataset::StreamingDataset<BoltBatch, BoltBatch, BoltBatch>>(
-        data_loader, _batch_processor);
-
-    auto [data, masked_indices, labels] = dataset->loadInMemory();
-
-    return py::make_tuple(py::cast(data), py::cast(masked_indices),
-                          py::cast(labels));
-  }
-
- private:
-  std::shared_ptr<MaskedSentenceBatchProcessor> _batch_processor;
-};
 
 }  // namespace thirdai::dataset::python

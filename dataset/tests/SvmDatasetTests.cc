@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <dataset/src/DatasetLoaders.h>
+#include <dataset/src/DatasetLoaderWrappers.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>

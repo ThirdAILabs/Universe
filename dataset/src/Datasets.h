@@ -2,8 +2,8 @@
 
 #include "BatchProcessor.h"
 #include "InMemoryDataset.h"
-#include "StreamingDataset.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/DataSource.h>
 
 namespace thirdai::dataset {
 

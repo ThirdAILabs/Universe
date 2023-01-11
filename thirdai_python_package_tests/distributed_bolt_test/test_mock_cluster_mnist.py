@@ -10,7 +10,7 @@ import sys
 
 import numpy as np
 import pytest
-from cluster_utils import (
+from distributed_utils import (
     check_models_are_same_on_first_two_nodes,
     ray_two_node_cluster_config,
     split_into_2,
@@ -73,7 +73,7 @@ def train_distributed_bolt_check(request, ray_two_node_cluster_config):
     # directory, but the current working directory where we downloaded mnist
     # may be anywhere, we give explicit paths for the mnist filenames
     train_sources = [
-        db.SvmDatasetLoader(
+        db.DistributedSvmDatasetLoader(
             filename,
             batch_size=256,
         )
