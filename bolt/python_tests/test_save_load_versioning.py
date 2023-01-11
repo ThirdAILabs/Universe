@@ -1,10 +1,11 @@
-from thirdai import bolt
-from pathlib import Path
 import os
-import pytest
+from pathlib import Path
 
+import pytest
+from thirdai import bolt
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
+
 
 def save_model(path):
     input_layer = bolt.nn.Input(dim=1)
