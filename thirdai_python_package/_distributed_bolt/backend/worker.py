@@ -75,7 +75,6 @@ class Worker:
                 train_config=train_config,
                 worker_id=id,
             )
-            del primary_model_ref
         end = time()
 
         logging.info(f"func initializing_model | time {(end - start)*1000} ms")
@@ -84,6 +83,7 @@ class Worker:
         self.id = id
         self.primary_worker = primary_worker
         self.communication_type = communication_type
+        self.train_config = train_config
 
         if self.communication_type == "circular":
             self.comm = comm.Circular(
@@ -282,4 +282,4 @@ class Worker:
 
     @timed
     def ping(self):
-        return "pong"
+        return "ping"
