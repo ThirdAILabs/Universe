@@ -430,12 +430,15 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
     case BoltSamplingMode::FrequencyRerankingWithInsertions:
       _hash_table->queryWithFrequencyRanking(
           hashes.data(), active_set, _sparse_dim, /*insert_labels=*/true);
+      break;
     case BoltSamplingMode::FrequencyReranking:
       _hash_table->queryWithFrequencyRanking(
           hashes.data(), active_set, _sparse_dim, /*insert_labels=*/false);
+      break;
     case BoltSamplingMode::FreezeHashTablesWithInsertions:
       _hash_table->queryAndInsertForInference(hashes.data(), active_set,
                                               _sparse_dim);
+      break;
     default:
       _hash_table->queryBySet(hashes.data(), active_set);
   }
