@@ -365,6 +365,7 @@ class QueryCandidateGenerator {
     auto data = loadDatasetInMemory(/* file_name = */ file_name,
                                     /* col_to_hash = */ source_column_index);
     ProgressBar bar("evaluate", data->numBatches());
+    auto eval_start = std::chrono::high_resolution_clock::now();
 
     std::vector<std::vector<std::string>> output_queries;
     std::vector<std::vector<float>> output_scores;
@@ -385,8 +386,10 @@ class QueryCandidateGenerator {
       }
     }
 
-    bar.close(
-        fmt::format("evaluate | batches {} | complete", data->numBatches()));
+    auto eval_end = std::chrono::high_resolution_clock::now();
+    int64_t eval_time =
+        std::chrono::ceil<std::chrono::seconds>(eval_start - eval_end).count();
+    bar.close(fmt::format("evaluate | time {}s | complete", eval_time));
 
     if (source_column_index != target_column_index) {
       std::vector<std::string> correct_queries =
