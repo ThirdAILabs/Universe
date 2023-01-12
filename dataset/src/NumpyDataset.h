@@ -34,10 +34,10 @@ using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
  * increments the reference counter and prevents python from deleting those
  * objects until this object is deleted.
  */
-class WrappedNumpyVectors final : public InMemoryDataset {
+class NumpyInMemoryDataset final : public InMemoryDataset {
  public:
-  WrappedNumpyVectors(std::vector<BoltBatch>&& batches,
-                      std::vector<py::object>&& objects_to_keep_alive)
+  NumpyInMemoryDataset(std::vector<BoltBatch>&& batches,
+                       std::vector<py::object>&& objects_to_keep_alive)
       : InMemoryDataset(std::move(batches)),
         _objects_to_keep_alive(std::move(objects_to_keep_alive)) {}
 
@@ -107,7 +107,7 @@ inline BoltDatasetPtr denseNumpyToBoltVectorDataset(
 
   std::vector<py::object> objects_to_keep_alive = {examples};
 
-  return std::make_shared<WrappedNumpyVectors>(
+  return std::make_shared<NumpyInMemoryDataset>(
       std::move(batches), std::move(objects_to_keep_alive));
 }
 
@@ -152,7 +152,7 @@ inline BoltDatasetPtr numpyTokensToBoltDataset(
   // Since we only do copies we don't need to worry about owning objects
   std::vector<py::object> objects_to_keep_alive = {};
 
-  return std::make_shared<WrappedNumpyVectors>(
+  return std::make_shared<NumpyInMemoryDataset>(
       std::move(batches), std::move(objects_to_keep_alive));
 }
 
@@ -245,7 +245,7 @@ inline BoltDatasetPtr numpyArraysToSparseBoltDataset(
 
   std::vector<py::object> objects_to_keep_alive = {indices, values, offsets};
 
-  return std::make_shared<WrappedNumpyVectors>(
+  return std::make_shared<NumpyInMemoryDataset>(
       std::move(batches), std::move(objects_to_keep_alive));
 }
 
