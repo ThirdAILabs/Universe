@@ -242,16 +242,12 @@ class QueryCandidateGenerator {
 
   /**
    * @brief Builds a Flash index by reading from a CSV file
-   * containing queries.
-   * If the `has_incorrect_queries` flag is set in the
-   * QueryCandidateGeneratorConfig, the input CSV file is expected to contain
-   * both correct (first column) and incorrect queries (second column).
-   * Otherwise, the file is expected to have only correct queries in one
-   * column.
-   *
-   * @param file_name
+   * containing queries. Always does unsupervised training, and will do
+   * supervised training with (source, target) pairs is use_supervised is true
+   * and there is a source column in the passed in filename.
    */
-  void buildFlashIndex(const std::string& filename) {
+  void buildFlashIndex(const std::string& filename,
+                       bool use_supervised = true) {
     licensing::verifyAllowedDataset(filename);
 
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
@@ -264,8 +260,10 @@ class QueryCandidateGenerator {
 
     // If the source and target columns are distinct then we can also train on
     // the target column as supervised data.
+    use_supervised =
+        use_supervised && (source_column_index != target_column_index);
     dataset::BoltDatasetPtr supervised_data = nullptr;
-    if (source_column_index != target_column_index) {
+    if (use_supervised) {
       supervised_data = loadDatasetInMemory(
           /* file_name = */ filename,
           /* col_to_hash = */ target_column_index,
@@ -286,7 +284,7 @@ class QueryCandidateGenerator {
     buildIndexImpl(unsupervised_data, labels, bar);
 
     // Supervised training
-    if (supervised_data != nullptr) {
+    if (use_supervised) {
       buildIndexImpl(supervised_data, labels, bar);
     }
 
@@ -357,11 +355,20 @@ class QueryCandidateGenerator {
   evaluateOnFile(const std::string& file_name, uint32_t top_k) {
     if (!_flash_index) {
       throw exceptions::QueryCandidateGeneratorException(
-          "Attempting to Evaluate the Generator without Training.");
+          "Attempting to evaluate the Generator without having previously "
+          "called train.");
     }
 
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
         /* file_name = */ file_name, /* delimiter = */ ',');
+    if (source_column_index == target_column_index) {
+      throw exceptions::QueryCandidateGeneratorException(
+          "There must be a source column and a target column to "
+          "evaluate the Generator, but we found just a target column. Please "
+          "call predict or predict_batch if you want to do inference without "
+          "labels, or call this method with a source column.");
+    }
+
     auto data = loadDatasetInMemory(/* file_name = */ file_name,
                                     /* col_to_hash = */ source_column_index);
     ProgressBar bar("evaluate", data->numBatches());
@@ -391,16 +398,15 @@ class QueryCandidateGenerator {
         std::chrono::ceil<std::chrono::seconds>(eval_end - eval_start).count();
     bar.close(fmt::format("evaluate | time {}s | complete", eval_time));
 
-    if (source_column_index != target_column_index) {
-      std::vector<std::string> correct_queries =
-          dataset::ProcessorUtils::aggregateSingleColumnCsvRows(
-              file_name, /* column_index = */ target_column_index,
-              /* has_header = */ true);
+    std::vector<std::string> correct_queries =
+        dataset::ProcessorUtils::aggregateSingleColumnCsvRows(
+            file_name, /* column_index = */ target_column_index,
+            /* has_header = */ true);
 
-      computeRecallAtK(/* correct_queries = */ correct_queries,
-                       /* generated_queries = */ output_queries,
-                       /* K = */ top_k);
-    }
+    computeRecallAtK(/* correct_queries = */ correct_queries,
+                     /* generated_queries = */ output_queries,
+                     /* K = */ top_k);
+
     return {std::move(output_queries), std::move(output_scores)};
   }
 
@@ -511,11 +517,6 @@ class QueryCandidateGenerator {
    * us to convert the output of queryBatch() into strings representing
    * correct queries.
    *
-   * @param file_name: File containing queries (Expected to be a CSV file).
-   * @param has_incorrect_queries: Identifies if the input CSV file contains
-   *        pairs of correct and incorrect queries.
-   *
-   * @return Labels for each batch
    */
   std::vector<std::vector<uint32_t>> getQueryLabels(
       const std::string& file_name, uint32_t target_column_index) {
@@ -599,7 +600,7 @@ class QueryCandidateGenerator {
 
     if (!file_header) {
       throw std::invalid_argument(
-          "The Input Dataset File must have a Valid Header with Column Names.");
+          "The input dataset file must have a valid header with column names.");
     }
     auto column_number_map =
         std::make_shared<ColumnNumberMap>(*file_header, delimiter);
