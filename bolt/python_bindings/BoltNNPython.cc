@@ -177,6 +177,9 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
       .def("set_sparsity", &FullyConnectedNode::setSparsity,
            py::arg("sparsity"))
       .def("get_dim", &FullyConnectedNode::outputDim)
+      .def("get_sampling_mode", &FullyConnectedNode::getSamplingMode)
+      .def("set_sampling_mode", &FullyConnectedNode::setSamplingMode,
+           py::arg("sampling_mode"))
       .def_property_readonly(
           "weights",
           [](FullyConnectedNode& node) {

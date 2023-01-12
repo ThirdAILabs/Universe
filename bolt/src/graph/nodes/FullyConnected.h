@@ -78,6 +78,10 @@ class FullyConnectedNode final
 
   std::string type() const final { return "fc"; }
 
+  void setSamplingMode(const std::string& sampling_mode);
+
+  std::string getSamplingMode() const;
+
  private:
   void compileImpl() final;
 

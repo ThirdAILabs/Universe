@@ -25,7 +25,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       // trainable parameter not present in config file
       // TODO(Shubh) : should we add a trainable parameter to the config file?
       _trainable(true),
-
+      _hash_tables_frozen(false),
       _act_func(config.getActFunc()),
       _weights(config.getDim() * prev_dim),
       _biases(config.getDim()),
@@ -426,23 +426,18 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  if (_sampling_mode == BoltSamplingMode::FreezeHashTablesWithInsertions) {
-    /**
-     * QueryBySet just returns a set of the elements in the given buckets of
-     * the hash table.
-     *
-     * QueryAndInsertForInference returns the set of elements in the given
-     * buckets but will also insert the labels (during training only) for the
-     * vector into the buckets the vector maps to if they are not already
-     * present in the buckets. The intuition is that during sparse inference
-     * this will help force the hash tables to map vectors towards buckets
-     * that contain their correct labels. This is specific to the output
-     * layer.
-     */
-    _hash_table->queryAndInsertForInference(hashes.data(), active_set,
-                                            _sparse_dim);
-  } else {
-    _hash_table->queryBySet(hashes.data(), active_set);
+  switch (_sampling_mode) {
+    case BoltSamplingMode::FrequencyRerankingWithInsertions:
+      _hash_table->queryWithFrequencyRanking(
+          hashes.data(), active_set, _sparse_dim, /*insert_labels=*/true);
+    case BoltSamplingMode::FrequencyReranking:
+      _hash_table->queryWithFrequencyRanking(
+          hashes.data(), active_set, _sparse_dim, /*insert_labels=*/false);
+    case BoltSamplingMode::FreezeHashTablesWithInsertions:
+      _hash_table->queryAndInsertForInference(hashes.data(), active_set,
+                                              _sparse_dim);
+    default:
+      _hash_table->queryBySet(hashes.data(), active_set);
   }
 
   if (active_set.size() < _sparse_dim) {

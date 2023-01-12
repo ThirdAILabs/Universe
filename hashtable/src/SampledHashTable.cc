@@ -95,7 +95,7 @@ void SampledHashTable<LABEL_T>::queryBySet(
 template <typename LABEL_T>
 void SampledHashTable<LABEL_T>::queryWithFrequencyRanking(
     uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
-    uint32_t outputsize, bool insertLabels) {
+    uint32_t outputsize, bool insert_labels) {
   using neuron = std::pair<int, uint32_t>;
   std::unordered_set<uint32_t> temp_store;
   std::unordered_map<uint32_t, int> count_map;
@@ -116,7 +116,7 @@ void SampledHashTable<LABEL_T>::queryWithFrequencyRanking(
     }
   }
 
-  size_t number_extra_elements = std::min<size_t>(outputsize - store.size(), 0);
+  size_t number_extra_elements = std::max<size_t>(outputsize - store.size(), 0);
   std::priority_queue<neuron, std::vector<neuron>, std::greater<neuron>> queue;
   for (auto& x : count_map) {
     queue.emplace(x.second, x.first);
@@ -130,7 +130,7 @@ void SampledHashTable<LABEL_T>::queryWithFrequencyRanking(
     queue.pop();
   }
 
-  if (insertLabels) {
+  if (insert_labels) {
     for (auto x : store) {
       if (temp_store.find(x) == temp_store.end()) {
         for (uint32_t table = 0; table < _num_tables; table++) {

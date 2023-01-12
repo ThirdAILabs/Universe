@@ -107,7 +107,7 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 
   void queryWithFrequencyRanking(uint32_t const* hashes,
                                  std::unordered_set<LABEL_T>& store,
-                                 uint32_t outputsize, bool insertLabels);
+                                 uint32_t outputsize, bool insert_labels);
 
   /**
    * Queries the table and returns the counts of elements in the union of the

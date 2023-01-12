@@ -8,9 +8,11 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <utils/StringManipulation.h>
 #include <cstdint>
 #include <optional>
 #include <random>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -22,8 +24,59 @@ enum class BoltSamplingMode {
   LSH,
   FreezeHashTables,
   FreezeHashTablesWithInsertions,
-  RandomSampling
+  RandomSampling,
+  FrequencyReranking,
+  FrequencyRerankingWithInsertions,
 };
+
+static BoltSamplingMode getSamplingModeFromString(
+    const std::string& sampling_mode_string) {
+  std::string lower_name = utils::lower(sampling_mode_string);
+  if (sampling_mode_string == "lsh") {
+    return BoltSamplingMode::LSH;
+  }
+
+  if (sampling_mode_string == "randomsampling") {
+    return BoltSamplingMode::RandomSampling;
+  }
+
+  if (sampling_mode_string == "freezehashtables_with_insertions") {
+    return BoltSamplingMode::FreezeHashTablesWithInsertions;
+  }
+
+  if (sampling_mode_string == "freezehashtables") {
+    return BoltSamplingMode::FreezeHashTables;
+  }
+
+  if (sampling_mode_string == "frequency_reranking") {
+    return BoltSamplingMode::FrequencyReranking;
+  }
+  if (sampling_mode_string == "frequency_reranking_with_insertions") {
+    return BoltSamplingMode::FrequencyRerankingWithInsertions;
+  }
+
+  throw std::invalid_argument("String not found");
+}
+
+static std::string getActivationString(const BoltSamplingMode& sampling_mode) {
+  switch (sampling_mode) {
+    case BoltSamplingMode::LSH:
+      return "lsh";
+    case BoltSamplingMode::RandomSampling:
+      return "random";
+    case BoltSamplingMode::FreezeHashTables:
+      return "freezehashtables";
+    case BoltSamplingMode::FreezeHashTablesWithInsertions:
+      return "freezehashtables_with_insertions";
+    case BoltSamplingMode::FrequencyReranking:
+      return "frequency_reranking";
+    case BoltSamplingMode::FrequencyRerankingWithInsertions:
+      return "frequency_reranking_with_insertions";
+  }
+  throw std::invalid_argument(
+      "String for the sampling mode not found, something wrong with sampling "
+      "bruh");
+}
 
 class FullyConnectedLayer final {
   friend class tests::FullyConnectedLayerTestFixture;
@@ -73,11 +126,15 @@ class FullyConnectedLayer final {
     } else {
       _sampling_mode = BoltSamplingMode::FreezeHashTables;
     }
+
+    _hash_tables_frozen = true;
   }
 
   bool hashTablesFrozen() const {
-    return _sampling_mode == BoltSamplingMode::FreezeHashTables ||
-           _sampling_mode == BoltSamplingMode::FreezeHashTablesWithInsertions;
+    // return _sampling_mode == BoltSamplingMode::FreezeHashTables ||
+    //        _sampling_mode ==
+    //        BoltSamplingMode::FreezeHashTablesWithInsertions;
+    return _hash_tables_frozen;
   }
 
   void buildHashTables();
@@ -128,12 +185,19 @@ class FullyConnectedLayer final {
 
   void initOptimizer();
 
+  void setSamplingMode(const std::string& sampling_mode) {
+    _sampling_mode = getSamplingModeFromString(sampling_mode);
+  }
+
+  std::string getSamplingMode() { return getActivationString(_sampling_mode); }
+
   ~FullyConnectedLayer() = default;
 
  private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
   bool _trainable;
+  bool _hash_tables_frozen;
   ActivationFunction _act_func;
 
   std::vector<float> _weights;

@@ -276,6 +276,14 @@ void FullyConnectedNode::summarizeImpl(std::stringstream& summary,
   _layer->buildLayerSummary(summary, detailed);
 }
 
+void FullyConnectedNode::setSamplingMode(const std::string& sampling_mode) {
+  _layer->setSamplingMode(sampling_mode);
+}
+
+std::string FullyConnectedNode::getSamplingMode() const {
+  return _layer->getSamplingMode();
+}
+
 Node::NodeState FullyConnectedNode::getState() const {
   if (_predecessor == nullptr && _layer == nullptr && !_outputs.has_value()) {
     return NodeState::Constructed;
