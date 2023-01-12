@@ -388,7 +388,7 @@ class QueryCandidateGenerator {
 
     auto eval_end = std::chrono::high_resolution_clock::now();
     int64_t eval_time =
-        std::chrono::ceil<std::chrono::seconds>(eval_start - eval_end).count();
+        std::chrono::ceil<std::chrono::seconds>(eval_end - eval_start).count();
     bar.close(fmt::format("evaluate | time {}s | complete", eval_time));
 
     if (source_column_index != target_column_index) {
