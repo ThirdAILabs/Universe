@@ -1,5 +1,6 @@
 #include "Trainer.h"
 #include <bolt/src/utils/ProgressBar.h>
+#include <utils/Logging.h>
 #include <chrono>
 
 namespace thirdai::bolt::train {
