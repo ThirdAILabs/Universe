@@ -5,6 +5,7 @@
 #include <dataset/src/InMemoryDataset.h>
 #include <licensing/src/CheckLicense.h>
 #include <search/src/Flash.h>
+#include <utils/Logging.h>
 #include <algorithm>
 #include <memory>
 #include <optional>
@@ -64,19 +65,6 @@ void Flash<LABEL_T>::addDataset(const dataset::InMemoryDataset& dataset,
 }
 
 template <typename LABEL_T>
-void Flash<LABEL_T>::addDataset(
-    dataset::StreamingDataset<BoltBatch>& dataset,
-    const std::vector<std::vector<LABEL_T>>& labels) {
-  uint32_t batch_index = 0;
-  while (auto batch_tuple = dataset.nextBatchTuple()) {
-    const auto& batch = std::get<0>(batch_tuple.value());
-
-    addBatch(batch, labels[batch_index]);
-    batch_index++;
-  }
-}
-
-template <typename LABEL_T>
 void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
                               const std::vector<LABEL_T>& labels) {
   if (batch.getBatchSize() != labels.size()) {
@@ -97,32 +85,40 @@ std::vector<uint32_t> Flash<LABEL_T>::hashBatch(const BoltBatch& batch) const {
 }
 
 template <typename LABEL_T>
-std::vector<std::vector<LABEL_T>> Flash<LABEL_T>::queryBatch(
-    const BoltBatch& batch, uint32_t top_k, bool pad_zeros) const {
+std::pair<std::vector<std::vector<LABEL_T>>, std::vector<std::vector<float>>>
+Flash<LABEL_T>::queryBatch(const BoltBatch& batch, uint32_t top_k,
+                           bool pad_zeros) const {
   std::vector<std::vector<LABEL_T>> results(batch.getBatchSize());
+  std::vector<std::vector<float>> scores(batch.getBatchSize());
   auto hashes = hashBatch(batch);
 
 #pragma omp parallel for default(none) \
-    shared(batch, top_k, results, hashes, pad_zeros)
+    shared(batch, top_k, results, scores, hashes, pad_zeros)
   for (uint64_t vec_id = 0; vec_id < batch.getBatchSize(); vec_id++) {
     std::vector<LABEL_T> query_result;
     _hashtable->queryByVector(hashes.data() + vec_id * _num_tables,
                               query_result);
 
-    results.at(vec_id) = getTopKUsingPriorityQueue(query_result, top_k);
+    auto [result, score] = getTopKUsingPriorityQueue(query_result, top_k);
+    results.at(vec_id) = result;
+    scores.at(vec_id) = score;
     if (pad_zeros) {
       while (results.at(vec_id).size() < top_k) {
         results.at(vec_id).push_back(0);
       }
+      while (scores.at(vec_id).size() < top_k) {
+        scores.at(vec_id).push_back(0);
+      }
     }
   }
 
-  return results;
+  return {results, scores};
 }
 
 template <typename LABEL_T>
-std::vector<LABEL_T> Flash<LABEL_T>::getTopKUsingPriorityQueue(
-    std::vector<LABEL_T>& query_result, uint32_t top_k) const {
+std::pair<std::vector<LABEL_T>, std::vector<float>>
+Flash<LABEL_T>::getTopKUsingPriorityQueue(std::vector<LABEL_T>& query_result,
+                                          uint32_t top_k) const {
   // We sort so counting is easy
   std::sort(query_result.begin(), query_result.end());
 
@@ -152,15 +148,18 @@ std::vector<LABEL_T> Flash<LABEL_T>::getTopKUsingPriorityQueue(
     }
   }
 
-  // Create and save results vector
+  // Create and save results, scores vector
+
   std::vector<LABEL_T> result;
+  std::vector<float> scores;
   while (!queue.empty()) {
     result.push_back(queue.top().second);
+    scores.push_back(static_cast<float>(queue.top().first) / _num_tables);
     queue.pop();
   }
   std::reverse(result.begin(), result.end());
-
-  return result;
+  std::reverse(scores.begin(), scores.end());
+  return {result, scores};
 }
 
 template class Flash<uint32_t>;

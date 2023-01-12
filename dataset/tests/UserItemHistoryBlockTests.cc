@@ -103,7 +103,7 @@ auto processSamples(std::vector<std::string>& samples, uint32_t track_last_n,
       /* label_blocks = */ {}, /* has_header= */ false, /* delimiter= */ ',',
       /* parallel= */ parallel);
 
-  auto [batch, _] = processor.createBatch(samples);
+  auto batch = processor.createBatch(samples).at(0);
 
   return std::move(batch);
 }
@@ -247,7 +247,7 @@ TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
       /* delimiter= */ ',',
       /* parallel= */ false);
 
-  auto [batch, _] = processor.createBatch(samples);
+  auto batch = processor.createBatch(samples).at(0);
 
   ASSERT_EQ(batch[0].len, 0);
 
@@ -284,7 +284,7 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
       /* delimiter= */ ',',
       /* parallel= */ false);
 
-  auto [batch, _] = processor.createBatch(samples);
+  auto batch = processor.createBatch(samples).at(0);
 
   // This means the block tracks the last 3 beyond lag.
   ASSERT_EQ(batch[4].len, 3);
@@ -339,8 +339,7 @@ TEST(UserItemHistoryBlockTests, HandlesNoUpdateCaseProperly) {
 
   // Size is updating_samples.size() + 1 because it includes the non-updating
   // sample
-  ASSERT_EQ(std::get<0>(non_updating_batch)[0].len,
-            updating_samples.size() + 1);
+  ASSERT_EQ(non_updating_batch.at(0)[0].len, updating_samples.size() + 1);
 
   std::vector<std::string> final_items_in_history;
   for (const auto& item_struct : history->at("user1")) {

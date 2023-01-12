@@ -55,10 +55,6 @@ class Flash {
   void addDataset(const dataset::InMemoryDataset& dataset,
                   const std::vector<std::vector<LABEL_T>>& labels,
                   bool verbose);
-
-  void addDataset(dataset::StreamingDataset<BoltBatch>& dataset,
-                  const std::vector<std::vector<LABEL_T>>& labels);
-
   /**
    * Insert this batch into the Flash data structure.
    */
@@ -68,11 +64,12 @@ class Flash {
    * Perform a batch query on the Flash structure, for now on a Batch object.
    * If less than k results are found and pad_zeros = true, the results will be
    * padded with 0s to obtain a vector of length k. Otherwise less than k
-   * results will be returned.
+   * results will be returned. Returns the ids of the queries and the
+   * corresponding scores.
    */
-  std::vector<std::vector<LABEL_T>> queryBatch(const BoltBatch& batch,
-                                               uint32_t top_k,
-                                               bool pad_zeros = false) const;
+  std::pair<std::vector<std::vector<LABEL_T>>, std::vector<std::vector<float>>>
+  queryBatch(const BoltBatch& batch, uint32_t top_k,
+             bool pad_zeros = false) const;
 
  private:
   /**
@@ -82,11 +79,12 @@ class Flash {
 
   /**
    * Get the top_k labels that occur most often in the input vector using a
-   * priority queue. The runtime of this method if O(nlogn) if query_result
-   * has length n, because it must be sorted to find the top k. Note that
-   * the input query_result will be modified (it will be sorted).
+   * priority queue and the corresponding scores. The runtime of this method if
+   * O(nlogn) if query_result has length n, because it must be sorted to find
+   * the top k. Note that the input query_result will be modified (it will be
+   * sorted).
    */
-  std::vector<LABEL_T> getTopKUsingPriorityQueue(
+  std::pair<std::vector<LABEL_T>, std::vector<float>> getTopKUsingPriorityQueue(
       std::vector<LABEL_T>& query_result, uint32_t top_k) const;
 
   std::shared_ptr<hashing::HashFunction> _hash_function;

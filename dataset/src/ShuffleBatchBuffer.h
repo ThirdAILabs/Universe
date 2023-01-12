@@ -19,64 +19,111 @@ class ShuffleBatchBuffer {
         _reached_end_of_dataset(false),
         _batch_size(batch_size) {}
 
-  void insertBatch(std::tuple<BoltBatch, BoltBatch>&& batch, bool shuffle) {
-    checkConsistentBatchSize(std::get<0>(batch).getBatchSize(),
-                             std::get<1>(batch).getBatchSize());
+  void insertBatch(std::vector<BoltBatch>&& batches, bool shuffle) {
+    checkConsistentBatchSize(batches);
 
-    _input_batches.push_back(std::move(std::get<0>(batch)));
-    _label_batches.push_back(std::move(std::get<1>(batch)));
+    initializeBuffersIfNeeded(batches);
+
+    for (uint32_t i = 0; i < batches.size(); i++) {
+      _batch_buffers.at(i).push_back(std::move(batches.at(i)));
+    }
 
     if (shuffle) {
-      swapShuffle(_input_batches, _label_batches, _batch_size, _gen);
+      swapShuffle(_batch_buffers, _batch_size, _gen);
     }
   }
 
-  std::optional<std::pair<BoltBatch, BoltBatch>> popBatch() {
-    assert(_input_batches.empty() == _label_batches.empty());
-    if (_input_batches.empty()) {
-      return {};
+  std::optional<std::vector<BoltBatch>> popBatch() {
+    if (empty()) {
+      return std::nullopt;
     }
 
-    auto input_batch = std::move(_input_batches.front());
-    auto label_batch = std::move(_label_batches.front());
-    _input_batches.pop_front();
-    _label_batches.pop_front();
-    return {{std::move(input_batch), std::move(label_batch)}};
+    std::vector<BoltBatch> batches;
+    for (auto& batch_buffer : _batch_buffers) {
+      batches.push_back(std::move(batch_buffer.front()));
+      batch_buffer.pop_front();
+    }
+
+    return batches;
   }
 
-  std::pair<std::vector<BoltBatch>, std::vector<BoltBatch>> exportBuffer() {
+  /**
+   * Exports min(num_batches, size()) batches into a vector of vector of
+   * BoltBatch
+   */
+  std::vector<std::vector<BoltBatch>> exportBuffer(uint64_t num_batches) {
+    uint64_t num_batches_in_result = std::min<uint64_t>(num_batches, size());
     /*
       This doesn't double our memory footprint since the
       batches are moved;
       the amount of memory allocated to the underlying
       vectors remains the same.
     */
-    std::vector<BoltBatch> input_batch_vector(
-        std::make_move_iterator(_input_batches.begin()),
-        std::make_move_iterator(_input_batches.end()));
-    std::vector<BoltBatch> label_batch_vector(
-        std::make_move_iterator(_label_batches.begin()),
-        std::make_move_iterator(_label_batches.end()));
+    std::vector<std::vector<BoltBatch>> exported_batch_lists;
+    for (auto& batch_buffer : _batch_buffers) {
+      std::vector<BoltBatch> batch_list(
+          std::make_move_iterator(batch_buffer.begin()),
+          std::make_move_iterator(batch_buffer.begin() +
+                                  num_batches_in_result));
+      exported_batch_lists.push_back(std::move(batch_list));
+      for (uint32_t i = 0; i < num_batches_in_result; i++) {
+        batch_buffer.pop_front();
+      }
+    }
 
-    _input_batches.clear();
-    _label_batches.clear();
-
-    return {std::move(input_batch_vector), std::move(label_batch_vector)};
+    return exported_batch_lists;
   }
 
-  inline bool empty() const { return _input_batches.empty(); }
+  inline bool empty() const {
+    return _batch_buffers.empty() || _batch_buffers.at(0).empty();
+  }
+
+  size_t size() const {
+    if (empty()) {
+      return 0;
+    }
+    return _batch_buffers.at(0).size();
+  }
+
+  void clear() {
+    _batch_buffers.clear();
+    _reached_end_of_dataset = false;
+  }
 
  private:
-  inline void checkConsistentBatchSize(size_t new_input_batch_size,
-                                       size_t new_label_batch_size) {
-    if (new_input_batch_size != new_label_batch_size) {
+  void initializeBuffersIfNeeded(const std::vector<BoltBatch>& batches) {
+    if (_batch_buffers.empty()) {
+      _batch_buffers = std::vector<std::deque<BoltBatch>>(batches.size());
+    }
+
+    if (_batch_buffers.size() != batches.size()) {
       std::stringstream error_ss;
-      error_ss
-          << "[ShuffleBatchBuffer::insertBatch] Attempted to instert input and "
-             "label batches with different sizes (input batch size = "
-          << new_input_batch_size
-          << ", label batch size = " << new_label_batch_size << ").";
+      error_ss << "[ShuffleBatchBuffer::insertBatch] Attempted to insert "
+                  "a different number of corresponding batches than originally "
+                  "inserted into the buffer (originally inserted "
+               << _batch_buffers.size() << ", trying to insert "
+               << batches.size() << ").";
       throw std::runtime_error(error_ss.str());
+    }
+  }
+
+  inline void checkConsistentBatchSize(const std::vector<BoltBatch>& batches) {
+    if (batches.empty()) {
+      throw std::runtime_error(
+          "[ShuffleBatchBuffer::insertBatch] Expected at least one "
+          "batch to be inserted for shuffling but found 0.");
+    }
+    uint32_t first_data_batch_size = batches.at(0).getBatchSize();
+    for (uint32_t i = 1; i < batches.size(); i++) {
+      if (batches.at(i).getBatchSize() != first_data_batch_size) {
+        std::stringstream error_ss;
+        error_ss << "[ShuffleBatchBuffer::insertBatch] Attempted to insert "
+                    "corresponding batches with different sizes (one size = "
+                 << first_data_batch_size
+                 << ", the other size = " << batches.at(i).getBatchSize()
+                 << ").";
+        throw std::runtime_error(error_ss.str());
+      }
     }
 
     if (_reached_end_of_dataset) {
@@ -85,30 +132,29 @@ class ShuffleBatchBuffer {
           "reaching the end of the dataset.");
     }
 
-    if (new_input_batch_size > _batch_size) {
+    if (first_data_batch_size > _batch_size) {
       std::stringstream error_ss;
       error_ss << "[ShuffleBatchBuffer::insertBatch] Attempted to insert "
                   "batch that is larger than expected (expected size = "
-               << _batch_size << " actual = " << new_input_batch_size << ").";
+               << _batch_size << " actual = " << first_data_batch_size << ").";
       throw std::runtime_error(error_ss.str());
     }
 
-    if (new_input_batch_size < _batch_size) {
+    if (first_data_batch_size < _batch_size) {
       _reached_end_of_dataset = true;
     }
   }
 
-  static inline void swapShuffle(std::deque<BoltBatch>& input_batches,
-                                 std::deque<BoltBatch>& label_batches,
-                                 size_t expected_batch_size,
-                                 std::mt19937& gen) {
-    assert(input_batches.size() > 0);
-    size_t n_old_vecs = (input_batches.size() - 1) * expected_batch_size;
-    size_t n_vecs = n_old_vecs + input_batches.back().getBatchSize();
+  static inline void swapShuffle(
+      std::vector<std::deque<BoltBatch>>& batch_lists,
+      size_t expected_batch_size, std::mt19937& gen) {
+    assert(batch_lists.at(0).size() > 0);
+    size_t n_old_vecs = (batch_lists.at(0).size() - 1) * expected_batch_size;
+    size_t n_vecs = n_old_vecs + batch_lists.at(0).back().getBatchSize();
     std::uniform_int_distribution<> dist(
         0, n_vecs - 1);  // Accepts a closed interval
 
-    for (size_t i = 0; i < input_batches.back().getBatchSize(); i++) {
+    for (size_t i = 0; i < batch_lists.at(0).back().getBatchSize(); i++) {
       size_t swap_with = dist(gen);
       /*
         Only swap with vectors in old batches for two reasons:
@@ -121,10 +167,10 @@ class ShuffleBatchBuffer {
         size_t swap_batch_idx = swap_with / expected_batch_size;
         size_t swap_vec_idx = swap_with % expected_batch_size;
 
-        std::swap(input_batches.at(swap_batch_idx)[swap_vec_idx],
-                  input_batches.back()[i]);
-        std::swap(label_batches.at(swap_batch_idx)[swap_vec_idx],
-                  label_batches.back()[i]);
+        for (auto& batch_list : batch_lists) {
+          std::swap(batch_list.at(swap_batch_idx)[swap_vec_idx],
+                    batch_list.back()[i]);
+        }
       }
     }
   }
@@ -134,8 +180,7 @@ class ShuffleBatchBuffer {
   bool _reached_end_of_dataset;
   size_t _batch_size;
 
-  std::deque<BoltBatch> _input_batches;
-  std::deque<BoltBatch> _label_batches;
+  std::vector<std::deque<BoltBatch>> _batch_buffers;
 };
 
 }  // namespace thirdai::dataset

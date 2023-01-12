@@ -10,7 +10,10 @@ from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
-from thirdai._distributed_bolt.dataset_loaders import DatasetLoader, UDTDatasetLoader
+from thirdai._distributed_bolt.dataset_loaders import (
+    DistributedDatasetLoader,
+    DistributedUDTDatasetLoader,
+)
 from thirdai._thirdai import bolt
 
 from .utils import get_num_cpus, init_logging
@@ -105,7 +108,7 @@ def add_distributed_to_udt():
             model=model,
             train_config=train_config,
             train_sources=[
-                UDTDatasetLoader(
+                DistributedUDTDatasetLoader(
                     train_file=file,
                     batch_size=batch_size,
                     gcp_credentials_path=gcp_credentials_path,
@@ -254,7 +257,7 @@ class DistributedDataParallel:
         cluster_config: RayTrainingClusterConfig,
         model: bolt.nn.Model,
         train_config: bolt.TrainConfig,
-        train_sources: Union[List[DatasetLoader], List[str]],
+        train_sources: Union[List[DistributedDatasetLoader], List[str]],
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
