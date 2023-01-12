@@ -268,7 +268,7 @@ class QueryCandidateGenerator {
     if (source_column_index != target_column_index) {
       supervised_data = loadDatasetInMemory(
           /* file_name = */ filename,
-          /* col_to_hash = */ source_column_index,
+          /* col_to_hash = */ target_column_index,
           /* verbose = */ false);
       progress_bar_size += supervised_data->numBatches();
     }
