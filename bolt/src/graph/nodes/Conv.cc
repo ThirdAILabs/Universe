@@ -71,6 +71,7 @@ std::shared_ptr<ConvNode> ConvNode::addPredecessor(NodePtr node) {
         "addPredecessor cannot be called twice.");
   }
 
+  // TODO(david) should we do multiple inheritance for stuff with 3D output?
   if (!std::dynamic_pointer_cast<ConvNode>(node) &&
       !std::dynamic_pointer_cast<Input3D>(node)) {
     throw std::invalid_argument(
@@ -85,16 +86,14 @@ std::shared_ptr<ConvNode> ConvNode::addPredecessor(NodePtr node) {
 
 uint32_t ConvNode::outputDim() const {
   NodeState node_state = getState();
-  if (node_state == NodeState::Constructed) {
+  if (node_state == NodeState::Constructed ||
+      node_state == NodeState::PredecessorsSet) {
+    // We actually can calculate the output dim of ConvNode once we know the
+    // predecessor but this function is not normally called before compiling and
+    // its simpler not to include logic here that we don't need.
     throw exceptions::NodeStateMachineError(
-        "Cannot calculate output dimension of a ConvNode before setting the "
-        "predecessor.");
-  }
-  if (node_state == NodeState::PredecessorsSet) {
-    auto [prev_height, prev_width, _] = getPredecessorOutputDim();
-    return (prev_height / (*_config).kernel_size.first) *
-           (prev_width / (*_config).kernel_size.second) *
-           (*_config).num_filters;
+        "Cannot calculate output dimension of a ConvNode before creating the "
+        "layer.");
   }
   return _layer->getDim();
 }
@@ -104,6 +103,7 @@ void ConvNode::compileImpl() {
 
   auto [height, width, depth] = getPredecessorOutputDim();
 
+  // TODO(david) should we be able to add input channel sparsity?
   _layer = std::make_shared<ConvLayer>(_config.value(), /* height= */ height,
                                        /* width= */ width, /* depth= */ depth,
                                        /* prev_sparsity= */ 1);
