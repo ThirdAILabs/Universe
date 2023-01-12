@@ -13,5 +13,3 @@ using BoltDatasetPtr = std::shared_ptr<BoltDataset>;
 using BoltDatasetList = std::vector<BoltDatasetPtr>;
 
 }  // namespace thirdai::dataset
-
-#include "StreamingDataset.h"
