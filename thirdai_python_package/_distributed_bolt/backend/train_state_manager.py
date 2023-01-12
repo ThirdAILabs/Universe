@@ -11,7 +11,15 @@ class TrainStateManager:
     expose high level APIs for trainings, predict.
     """
 
-    def __init__(self, workers, primary_worker, logging, communication_type):
+    def __init__(
+        self,
+        workers,
+        primary_worker,
+        logging,
+        communication_type,
+        train_source,
+        train_config,
+    ):
         """
         Initializes the TrainStateManager
 
@@ -48,6 +56,9 @@ class TrainStateManager:
                 ),
                 remote_worker_ids=[0],
             )
+
+        self.train_source = train_source
+        self.train_config = train_config
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0
 
@@ -125,16 +136,48 @@ class TrainStateManager:
 
             time.sleep(1)
             time_waiting += 1
-            self.worker_manager.probe_unhealthy_workers()
+            restored_workers = self.worker_manager.probe_unhealthy_workers()
+            self.logging.info(
+                f"Preparing restored workers for training: {restored_workers}"
+            )
+            for restored_worker_id in restored_workers:
+                if restored_worker_id != 0:
+                    self.worker_manager.foreach_worker(
+                        lambda worker: worker.prepare_for_training(
+                            self.train_source[restored_worker_id],
+                            self.train_config,
+                            bolt_graph=ray.get(self.workers[0].get_model.remote()),
+                        ),
+                        remote_worker_ids=[restored_worker_id],
+                    )
+                else:
+                    self.worker_manager.foreach_worker(
+                        lambda worker: worker.prepare_for_training(
+                            self.train_source[restored_worker_id],
+                            self.train_config,
+                        ),
+                        remote_worker_ids=[restored_worker_id],
+                    )
             if time_waiting >= worker_wait_time_out:
-                ray.kill(self.workers)
                 raise f"Worker is not available, waited for {worker_wait_time_out}"
+
+    def check_models_are_same_on_first_two_nodes(self, model_node_1, model_node_2):
+
+        nodes_1 = model_node_1.nodes()
+        nodes_2 = model_node_2.nodes()
+        for layer_1, layer_2 in zip(nodes_1, nodes_2):
+            if hasattr(layer_1, "weights"):
+                assert np.allclose(layer_1.weights.get(), layer_2.weights.get())
+            if hasattr(layer_1, "biases"):
+                assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
 
     def train_batch(self, epoch):
         """
         Trains the model and returns whether all workers have a next batch.
         """
         self.check_worker_availability()
+        models = [ray.get(w.get_model.remote()) for w in self.workers]
+        self.check_models_are_same_on_first_two_nodes(models[0], models[1])
         all_workers_have_next_batch = self._compute_and_store_next_batch_gradients()
         self._communicate()
         self._update_parameters()

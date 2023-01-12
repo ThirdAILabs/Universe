@@ -34,10 +34,8 @@ class Worker:
     def __init__(
         self,
         num_workers: int,
-        train_source,
         id: int,
         primary_worker,
-        train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
         friend,
@@ -46,48 +44,58 @@ class Worker:
         Initializes the worker, including wrapping the passed in model in a
         DistributedWrapper with the dataset read in.
         """
-        self.train_source = train_source
-
-        if id != 0:
-            chunks_to_skip, batch_to_run = ray.get(
-                primary_worker.get_train_source_pointers.remote()
-            )
-        else:
-            chunks_to_skip, batch_to_run = 0, 0
-
-        self.train_source.load(chunks_to_skip=chunks_to_skip)
 
         logging.setup(
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
 
+        self.num_workers = num_workers
+        self.id = id
+        self.primary_worker = primary_worker
+        self.communication_type = communication_type
+        self.friend = friend
+
+    def apply(
+        self,
+        func,
+        *args,
+        **kwargs,
+    ):
+        return func(self, *args, **kwargs)
+
+    def prepare_for_training(
+        self, train_source, train_config: bolt.TrainConfig, bolt_graph=None
+    ):
+        self.train_source = train_source
+
+        if self.id != 0:
+            chunks_to_skip, batch_to_run = ray.get(
+                self.primary_worker.get_train_source_pointers.remote()
+            )
+        else:
+            chunks_to_skip, batch_to_run = 0, 0
+
+        self.train_source.load(chunks_to_skip=chunks_to_skip)
         start = time()
-        if id == 0:
+        if self.id == 0:
             self.model = bolt.DistributedTrainingWrapper(
                 model=self.wrapped_model,
                 train_config=train_config,
-                worker_id=id,
+                worker_id=self.id,
             )
         else:
-            primary_model_ref = primary_worker.model.remote()
             self.model = bolt.DistributedTrainingWrapper(
-                model=ray.get(primary_model_ref),
+                model=bolt_graph,
                 train_config=train_config,
-                worker_id=id,
+                worker_id=self.id,
             )
         end = time()
 
         logging.info(f"func initializing_model | time {(end - start)*1000} ms")
 
-        self.num_workers = num_workers
-        self.id = id
-        self.primary_worker = primary_worker
-        self.communication_type = communication_type
-        self.train_config = train_config
-
         if self.communication_type == "circular":
             self.comm = comm.Circular(
-                self.model, self.id, self.primary_worker, self.num_workers, friend
+                self.model, self.id, self.primary_worker, self.num_workers, self.friend
             )
         elif self.communication_type == "linear":
             self.comm = comm.Linear(self.model, self.id, self.primary_worker)
@@ -109,14 +117,6 @@ class Worker:
             raise ValueError(
                 "There must be at least one loadable dataset in the passed in data source."
             )
-
-    def apply(
-        self,
-        func,
-        *args,
-        **kwargs,
-    ):
-        return func(self, *args, **kwargs)
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.
@@ -182,6 +182,7 @@ class Worker:
         logging.info(
             f"func compute_and_store_next_batch_gradients | batch {self.batch_id_within_dataset} completed"
         )
+        print(f"Running Worker Id:{self.id}, Batch Id:{self.batch_id_within_dataset}")
         self.batch_id_within_dataset += 1
         if self.batch_id_within_dataset == self.model.num_batches():
             return self._try_load_new_datasets_into_model()
@@ -276,7 +277,8 @@ class Worker:
     def freeze_hash_tables(self):
         self.model.freeze_hash_tables(True)
 
-    def model(self):
+    @timed
+    def get_model(self):
         print("Id: ", self.id, " returning model.")
         return self.model.model
 

@@ -202,25 +202,22 @@ class FaultTolerantWorkerManager:
         *,
         remote_worker_ids: List[int] = None,
         timeout_seconds=None,
-        probing=False,
     ):
-        if probing or self.num_healthy_workers() == self.num_workers():
 
-            remote_worker_ids = remote_worker_ids or list(self.workers.keys())
+        remote_worker_ids = remote_worker_ids or list(self.workers.keys())
 
-            remote_calls = self.call_workers(
-                func=func,
-                remote_worker_ids=remote_worker_ids,
-            )
+        remote_calls = self.call_workers(
+            func=func,
+            remote_worker_ids=remote_worker_ids,
+        )
 
-            _, remote_results = self.fetch_result(
-                remote_worker_ids=remote_worker_ids,
-                remote_calls=remote_calls,
-                timeout_seconds=timeout_seconds,
-            )
+        _, remote_results = self.fetch_result(
+            remote_worker_ids=remote_worker_ids,
+            remote_calls=remote_calls,
+            timeout_seconds=timeout_seconds,
+        )
 
-            return remote_results
-        return RemoteCallResults()
+        return remote_results
 
     def probe_unhealthy_workers(self):
 
@@ -238,7 +235,6 @@ class FaultTolerantWorkerManager:
         remote_results = self.foreach_worker(
             func=lambda worker: worker.ping(),
             remote_worker_ids=unhealthy_worker_ids,
-            probing=True,
         )
 
         self.logging.info("Got remote results")

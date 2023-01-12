@@ -25,8 +25,6 @@ class ReplicaWorker(Worker):
     def __init__(
         self,
         num_workers: int,
-        train_source,
-        train_config: bolt.TrainConfig,
         id: int,
         primary_worker,
         communication_type,
@@ -51,10 +49,8 @@ class ReplicaWorker(Worker):
         """
         super().__init__(
             num_workers=num_workers,
-            train_source=train_source,
             id=id,
             primary_worker=primary_worker,
-            train_config=train_config,
             communication_type=communication_type,
             log_dir=log_dir,
             friend=friend,

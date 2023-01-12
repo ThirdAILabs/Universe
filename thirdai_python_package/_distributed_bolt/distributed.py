@@ -268,6 +268,7 @@ class DistributedDataParallel:
         self.communication_type = cluster_config.communication_type
         self.logging = cluster_config.logging
         self.train_config = train_config
+        self.train_sources = train_sources
 
         if len(train_sources) != cluster_config.num_workers:
             raise ValueError(
@@ -290,10 +291,14 @@ class DistributedDataParallel:
         self.primary_worker = cluster_config.primary_worker_config.remote(
             num_workers=cluster_config.num_workers,
             model_to_wrap=ray_model_ref,
-            train_source=train_sources[0],
-            train_config=train_config,
             communication_type=cluster_config.communication_type,
             log_dir=cluster_config.log_dir,
+        )
+        ray.get(
+            self.primary_worker.prepare_for_training.remote(
+                train_source=train_sources[0],
+                train_config=train_config,
+            )
         )
 
         self.replica_workers = []
@@ -304,8 +309,6 @@ class DistributedDataParallel:
                 self.replica_workers.append(
                     replica_worker_config.remote(
                         num_workers=cluster_config.num_workers,
-                        train_source=train_sources[worker_id],
-                        train_config=train_config,
                         id=worker_id,
                         primary_worker=self.primary_worker,
                         communication_type=cluster_config.communication_type,
@@ -316,8 +319,6 @@ class DistributedDataParallel:
             else:
                 replica_worker = replica_worker_config.remote(
                     num_workers=cluster_config.num_workers,
-                    train_source=train_sources[worker_id],
-                    train_config=train_config,
                     id=worker_id,
                     primary_worker=self.primary_worker,
                     communication_type=cluster_config.communication_type,
@@ -325,6 +326,13 @@ class DistributedDataParallel:
                     friend=self.replica_workers[worker_id - 1],
                 )
                 self.replica_workers.append(replica_worker)
+            ray.get(
+                self.replica_workers[-1].prepare_for_training.remote(
+                    train_source=train_sources[worker_id],
+                    train_config=train_config,
+                    bolt_graph=model,
+                )
+            )
 
         self.workers = [self.primary_worker] + self.replica_workers
 
@@ -363,6 +371,8 @@ class DistributedDataParallel:
             self.primary_worker,
             self.logging,
             self.communication_type,
+            self.train_sources,
+            self.train_config,
         )
 
         starting_epoch = 0
@@ -385,4 +395,4 @@ class DistributedDataParallel:
         }
 
     def get_model(self, worker_id=0):
-        return ray.get(self.workers[worker_id].model.remote())
+        return ray.get(self.workers[worker_id].get_model.remote())

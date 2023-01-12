@@ -23,8 +23,6 @@ class PrimaryWorker(Worker):
         self,
         num_workers: int,
         model_to_wrap: bolt.nn.Model,
-        train_source,
-        train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
     ):
@@ -32,10 +30,8 @@ class PrimaryWorker(Worker):
 
         super().__init__(
             num_workers=num_workers,
-            train_source=train_source,
             id=0,
             primary_worker=self,
-            train_config=train_config,
             communication_type=communication_type,
             log_dir=log_dir,
             friend=None,
