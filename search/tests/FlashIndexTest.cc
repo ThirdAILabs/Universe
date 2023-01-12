@@ -61,7 +61,8 @@ TEST(FlashIndexTest, FlashIndexSerializationTest) {
   std::vector<std::vector<std::vector<uint32_t>>> query_outputs;
 
   for (BoltBatch& batch : query_batches) {
-    auto output_vectors = flash_index.queryBatch(batch, top_k, true);
+    auto [output_vectors, output_scores] =
+        flash_index.queryBatch(batch, top_k, true);
     query_outputs.push_back(output_vectors);
   }
 
@@ -83,7 +84,7 @@ TEST(FlashIndexTest, FlashIndexSerializationTest) {
       deserialized_flash_query_outputs;
 
   for (BoltBatch& batch : query_batches) {
-    auto output_vectors =
+    auto [output_vectors, output_scores] =
         deserialized_flash_index.queryBatch(batch, top_k, true);
     deserialized_flash_query_outputs.push_back(output_vectors);
   }

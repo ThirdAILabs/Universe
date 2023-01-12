@@ -312,7 +312,12 @@ class TrainState {
             train_config.getReconstructHashFunctionsBatchInterval(batch_size,
                                                                   data_len)),
         stop_training(false),
-        train_metric_aggregator(train_config.getMetricAggregator()) {}
+        train_metric_aggregator(train_config.getMetricAggregator()) {
+    auto val_context = train_config.getValidationContext();
+    if (val_context.has_value()) {
+      validation_metric_names = val_context->config().getMetricNames();
+    }
+  }
 
   float learning_rate;
   uint32_t epoch;
@@ -326,6 +331,8 @@ class TrainState {
 
   std::vector<double> epoch_times;
 
+  std::vector<std::string> validation_metric_names;
+
   MetricAggregator& getTrainMetricAggregator() {
     return train_metric_aggregator;
   }
@@ -336,7 +343,8 @@ class TrainState {
     }
   }
 
-  const std::vector<double>& getTrainMetrics(const std::string& metric_name) {
+  const std::vector<double>& getTrainMetricValues(
+      const std::string& metric_name) {
     return train_metric_aggregator.getSingleOutput(metric_name);
   }
 
@@ -344,13 +352,18 @@ class TrainState {
     return train_metric_aggregator.getOutput();
   }
 
-  const std::vector<double>& getValidationMetrics(
+  const std::vector<double>& getValidationMetricValues(
       const std::string& metric_name) {
+    if (validation_metrics.empty()) {
+      throw std::invalid_argument(
+          "No validation metrics found. Remember to specify validation with "
+          "metrics in the TrainConfig.");
+    }
     if (validation_metrics.count(metric_name) != 0) {
       return validation_metrics[metric_name];
     }
     throw std::invalid_argument("Could not find metric name '" + metric_name +
-                                "' in list of computed validation metrics. ");
+                                "' in list of computed validation metrics.");
   }
 
   const auto& getAllValidationMetrics() { return validation_metrics; }

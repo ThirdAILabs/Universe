@@ -88,7 +88,8 @@ def download_criteo():
 
     if not os.path.exists(CRITEO_ZIP):
         print(
-            f"Downloading from {CRITEO_URL}. This can take 20-40 minutes depending on the Criteo server."
+            f"Downloading from {CRITEO_URL}. This can take 20-40 minutes depending on"
+            " the Criteo server."
         )
         os.system(f"wget -t inf -c {CRITEO_URL} -O {CRITEO_ZIP}")
 
@@ -298,7 +299,6 @@ def perturb_query_reformulation_data(dataframe, noise_level, seed=42):
         words_to_transform = math.ceil(noise_level * query_length)
 
         for _ in range(PER_QUERY_COPIES):
-
             incorrect_query_list = correct_query.split(" ")
             transformed_words = 0
             visited_indices = set()
@@ -339,9 +339,11 @@ def perturb_query_reformulation_data(dataframe, noise_level, seed=42):
     )
 
 
+# Supervised Training File has both the target and the source columns, whereas the
+# Unsupervised Training File has only the target column.
 def prepare_query_reformulation_data(seed=42):
-
-    TRAIN_FILE_PATH = "train_file.csv"
+    SUPERVISED_TRAIN_FILE_PATH = "supervised_train_file.csv"
+    UNSUPERVISED_TRAIN_FILE_PATH = "unsupervised_train_file.csv"
     TEST_FILE_PATH = "test_file.csv"
     TRAIN_FILE_DATASET_PERCENTAGE = 0.7
     INFERENCE_BATCH_PERCENTAGE = 0.0001
@@ -375,20 +377,36 @@ def prepare_query_reformulation_data(seed=42):
         noise_level=TEST_NOISE_LEVEL,
     )
 
+    # TODO(Geordie): Fix this when the new CSV parser is in
+    train_data_with_noise = train_data_with_noise.replace(",", "", regex=True)
+    test_data_with_noise = test_data_with_noise.replace(",", "", regex=True)
+
     # Write dataset to CSV
-    train_data_with_noise.to_csv(TRAIN_FILE_PATH, index=False)
+    train_data_with_noise.to_csv(SUPERVISED_TRAIN_FILE_PATH, index=False)
+    train_data_with_noise["target_queries"].to_csv(
+        UNSUPERVISED_TRAIN_FILE_PATH, index=False
+    )
     test_data_with_noise.to_csv(TEST_FILE_PATH, index=False)
 
-    return TRAIN_FILE_PATH, TEST_FILE_PATH, inference_batch
+    return (
+        SUPERVISED_TRAIN_FILE_PATH,
+        UNSUPERVISED_TRAIN_FILE_PATH,
+        TEST_FILE_PATH,
+        inference_batch,
+    )
 
 
-def download_clinc_dataset():
+def download_clinc_dataset(
+    num_training_files=1, clinc_small=False, file_prefix="clinc"
+):
     CLINC_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/00570/clinc150_uci.zip"
     CLINC_ZIP = "./clinc150_uci.zip"
     CLINC_DIR = "./clinc"
     MAIN_FILE = CLINC_DIR + "/clinc150_uci/data_full.json"
-    TRAIN_FILE = "./clinc_train.csv"
-    TEST_FILE = "./clinc_test.csv"
+    SMALL_FILE = CLINC_DIR + "/clinc150_uci/data_small.json"
+    TRAIN_FILE = f"./{file_prefix}_train.csv"
+    TEST_FILE = f"./{file_prefix}_test.csv"
+    TRAIN_FILES = []
 
     _download_dataset(
         url=CLINC_URL,
@@ -397,7 +415,12 @@ def download_clinc_dataset():
         output_dir=CLINC_DIR,
     )
 
-    samples = json.load(open(MAIN_FILE))
+    samples = None
+
+    if clinc_small:
+        samples = json.load(open(SMALL_FILE))
+    else:
+        samples = json.load(open(MAIN_FILE))
 
     train_samples = samples["train"]
     test_samples = samples["test"]
@@ -413,17 +436,34 @@ def download_clinc_dataset():
     test_df["text"] = test_df["text"].apply(lambda x: x.replace(",", ""))
     test_df["category"] = pd.Categorical(test_df["category"]).codes
 
-    # The columns=["category", "text"] is just to force the order of the output
-    # columns which since the model pipeline which uses this function does not
-    # use the header to determine the column ordering.
-    train_df.to_csv(TRAIN_FILE, index=False, columns=["category", "text"])
     test_df.to_csv(TEST_FILE, index=False, columns=["category", "text"])
 
     inference_samples = []
     for _, row in test_df.iterrows():
         inference_samples.append(({"text": row["text"]}, row["category"]))
 
-    return TRAIN_FILE, TEST_FILE, inference_samples
+    # The columns=["category", "text"] is just to force the order of the output
+    # columns which since the model pipeline which uses this function does not
+    # use the header to determine the column ordering.
+    if num_training_files == 1:
+        train_df.to_csv(TRAIN_FILE, index=False, columns=["category", "text"])
+
+        return TRAIN_FILE, TEST_FILE, inference_samples
+    else:
+        training_data_per_file = len(train_df) // num_training_files
+
+        # saving all files with TRAIN_FILE_i(0 indexed)
+        for i in range(num_training_files):
+            l_index, r_index = (
+                i * training_data_per_file,
+                (i + 1) * training_data_per_file,
+            )
+            filename = f"{file_prefix}_train" + f"_{i}.csv"
+            train_df.iloc[l_index:r_index].to_csv(
+                filename, index=False, columns=["category", "text"]
+            )
+            TRAIN_FILES.append(filename)
+        return TRAIN_FILES, TEST_FILE, inference_samples
 
 
 def download_brazilian_houses_dataset():

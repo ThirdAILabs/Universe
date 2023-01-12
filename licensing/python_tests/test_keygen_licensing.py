@@ -26,12 +26,12 @@ NONEXISTENT_KEY = "THIS-IS-A-VERY-NONEXISTENT-KEY"
 
 
 def test_keygen_good_key():
-    thirdai.activate(GOOD_KEY)
+    thirdai.licensing.activate(GOOD_KEY)
     this_should_require_a_license_bolt()
 
 
 def test_expired_key():
-    thirdai.activate(EXPIRED_KEY)
+    thirdai.licensing.activate(EXPIRED_KEY)
     with pytest.raises(
         RuntimeError,
         match=r".*returned the following message: is expired",
@@ -40,7 +40,7 @@ def test_expired_key():
 
 
 def test_suspended_key():
-    thirdai.activate(SUSPENDED_KEY)
+    thirdai.licensing.activate(SUSPENDED_KEY)
     with pytest.raises(
         RuntimeError,
         match=r".*returned the following message: is suspended",
@@ -49,7 +49,7 @@ def test_suspended_key():
 
 
 def test_nonexistent_key():
-    thirdai.activate(NONEXISTENT_KEY)
+    thirdai.licensing.activate(NONEXISTENT_KEY)
     with pytest.raises(
         RuntimeError,
         match=r".*returned the following message: does not exist",
@@ -65,4 +65,4 @@ def set_license_back_to_valid():
     # The yield means that pytest will wait until the test finishes to run
     # the code below it
     yield
-    thirdai.deactivate()
+    thirdai.licensing.deactivate()

@@ -9,16 +9,17 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 namespace py = pybind11;
 
 namespace thirdai::automl::models {
 
-void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
+void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
                           bolt::TrainConfig& train_config,
                           const std::optional<ValidationOptions>& validation,
                           std::optional<uint32_t> max_in_memory_batches) {
-  licensing::verifyAllowedDataset(data_source);
+  licensing::verifyAllowedDataset(data_source->resourceName());
 
   auto start_time = std::chrono::system_clock::now();
 
@@ -42,7 +43,7 @@ void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
     if (validation && !validation->metrics().empty()) {
       std::optional<float> threshold =
           tuneBinaryClassificationPredictionThreshold(
-              /* data_source= */ dataset::SimpleFileDataLoader::make(
+              /* data_source= */ dataset::SimpleFileDataSource::make(
                   validation->filename(), DEFAULT_EVALUATE_BATCH_SIZE),
               /* metric_name= */ validation->metrics().at(0));
 
@@ -67,7 +68,7 @@ void ModelPipeline::train(const dataset::DataLoaderPtr& data_source,
 }
 
 py::object ModelPipeline::evaluate(
-    const dataset::DataLoaderPtr& data_source,
+    const dataset::DataSourcePtr& data_source,
     std::optional<bolt::EvalConfig>& eval_config_opt,
     bool return_predicted_class, bool return_metrics) {
   auto start_time = std::chrono::system_clock::now();
@@ -202,9 +203,9 @@ std::vector<dataset::Explanation> ModelPipeline::explain(
 // We take in the TrainConfig by value to copy it so we can modify the number
 // epochs.
 void ModelPipeline::trainInMemory(
-    data::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+    dataset::DatasetLoaderPtr& dataset_loader, bolt::TrainConfig train_config,
     const std::optional<ValidationOptions>& validation) {
-  auto loaded_data = dataset->loadInMemory(ALL_BATCHES);
+  auto loaded_data = dataset_loader->loadInMemory(ALL_BATCHES);
   if (!loaded_data) {
     throw std::invalid_argument("No data passed to train.");
   }
@@ -212,7 +213,7 @@ void ModelPipeline::trainInMemory(
 
   if (validation) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
-        dataset::SimpleFileDataLoader::make(validation->filename(),
+        dataset::SimpleFileDataSource::make(validation->filename(),
                                             DEFAULT_EVALUATE_BATCH_SIZE),
         /* training= */ false);
 
@@ -242,7 +243,7 @@ void ModelPipeline::trainInMemory(
 // We take in the TrainConfig by value to copy it so we can modify the number
 // epochs.
 void ModelPipeline::trainOnStream(
-    data::DatasetLoaderPtr& dataset, bolt::TrainConfig train_config,
+    dataset::DatasetLoaderPtr& dataset_loader, bolt::TrainConfig train_config,
     uint32_t max_in_memory_batches,
     const std::optional<ValidationOptions>& validation) {
   /**
@@ -260,7 +261,7 @@ void ModelPipeline::trainOnStream(
    */
   if (validation && !_dataset_factory->hasTemporalTracking()) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
-        dataset::SimpleFileDataLoader::make(validation->filename(),
+        dataset::SimpleFileDataSource::make(validation->filename(),
                                             DEFAULT_EVALUATE_BATCH_SIZE),
         /* training= */ false);
 
@@ -283,27 +284,29 @@ void ModelPipeline::trainOnStream(
   train_config.setEpochs(/* new_epochs= */ 1);
 
   if (_train_eval_config.freezeHashTables() && epochs > 1) {
-    trainSingleEpochOnStream(dataset, train_config, max_in_memory_batches);
+    trainSingleEpochOnStream(dataset_loader, train_config,
+                             max_in_memory_batches);
     _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
     --epochs;
   }
 
   for (uint32_t e = 0; e < epochs; e++) {
-    trainSingleEpochOnStream(dataset, train_config, max_in_memory_batches);
+    trainSingleEpochOnStream(dataset_loader, train_config,
+                             max_in_memory_batches);
   }
 }
 
 void ModelPipeline::trainSingleEpochOnStream(
-    data::DatasetLoaderPtr& dataset, const bolt::TrainConfig& train_config,
-    uint32_t max_in_memory_batches) {
-  while (auto datasets = dataset->loadInMemory(max_in_memory_batches)) {
+    dataset::DatasetLoaderPtr& dataset_loader,
+    const bolt::TrainConfig& train_config, uint32_t max_in_memory_batches) {
+  while (auto datasets = dataset_loader->loadInMemory(max_in_memory_batches)) {
     auto& [data, labels] = datasets.value();
 
     _model->train({data}, labels, train_config);
   }
 
-  dataset->restart();
+  dataset_loader->restart();
 }
 
 void ModelPipeline::updateRehashRebuildInTrainConfig(
@@ -320,7 +323,7 @@ void ModelPipeline::updateRehashRebuildInTrainConfig(
 }
 
 std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
-    const dataset::DataLoaderPtr& data_source, const std::string& metric_name) {
+    const dataset::DataSourcePtr& data_source, const std::string& metric_name) {
   uint32_t num_batches =
       MAX_SAMPLES_FOR_THRESHOLD_TUNING / data_source->getMaxBatchSize();
 
@@ -383,6 +386,31 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
   }
 
   return best_threshold;
+}
+
+void ModelPipeline::setModel(bolt::BoltGraphPtr& new_model) {
+  std::vector<bolt::NodePtr> new_model_nodes = new_model->getNodes();
+  std::vector<bolt::NodePtr> old_model_nodes = _model->getNodes();
+
+  if (new_model_nodes.size() != old_model_nodes.size()) {
+    throw std::invalid_argument(
+        "The new model must have the same number of nodes as the old model "
+        "(the old model has " +
+        std::to_string(old_model_nodes.size()) +
+        " layers while the new model "
+        "has " +
+        std::to_string(new_model_nodes.size()) + ". )");
+  }
+
+  for (uint32_t node_id = 0; node_id < new_model_nodes.size(); node_id++) {
+    if (new_model_nodes[node_id]->outputDim() !=
+        old_model_nodes[node_id]->outputDim()) {
+      throw std::invalid_argument(
+          "The new model must have the same layer dimensions as the old model, "
+          "but we found a layer with different dimension.");
+    }
+  }
+  _model = new_model;
 }
 
 }  // namespace thirdai::automl::models

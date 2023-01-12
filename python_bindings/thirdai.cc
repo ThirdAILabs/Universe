@@ -8,6 +8,7 @@
 #include <auto_ml/python_bindings/AutomlPython.h>
 #include <auto_ml/python_bindings/DeploymentPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
+#include <licensing/python_bindings/LicensingPython.h>
 #include <new_dataset/python_bindings/DatasetPython.h>
 #include <new_dataset/python_bindings/FeaturizationPython.h>
 #include <search/python_bindings/DocSearchPython.h>
@@ -20,9 +21,6 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-
-// Licensing wrapper
-#include <licensing/src/CheckLicense.h>
 
 #ifndef __clang__
 #include <omp.h>
@@ -107,22 +105,6 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         "thirdai library.");
 #endif
 
-#if THIRDAI_CHECK_LICENSE
-  m.def("set_thirdai_license_path", &thirdai::licensing::setLicensePath,
-        py::arg("license_path"),
-        "Set a license filepath for any future calls to ThirdAI functions. "
-        "License file verification will be treated as a fallback if activate "
-        "has not been called.");
-
-  m.def("activate", &thirdai::licensing::activate, py::arg("api_key"),
-        "Set a ThirdAI API access key to authenticate future calls to ThirdAI "
-        "functions.");
-
-  m.def("deactivate", &thirdai::licensing::deactivate,
-        "Remove the currently stored ThirdAI access key. Future calls to "
-        "ThirdAI functions may fail.");
-#endif
-
   m.attr("__version__") = thirdai::version();
 
   createLoggingSubmodule(m);
@@ -133,6 +115,11 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // TODO(Josh/Nick): Deprecate this call and change NewDataset/new_dataset to
   // Dataset/dataset everyone in the codebase.
   thirdai::dataset::python::createDatasetSubmodule(m);
+
+  // Licensing Submodule
+#if THIRDAI_CHECK_LICENSE
+  thirdai::licensing::python::createLicensingSubmodule(m);
+#endif
 
   // Telemetry submodule
   thirdai::telemetry::python::createTelemetrySubmodule(m);
