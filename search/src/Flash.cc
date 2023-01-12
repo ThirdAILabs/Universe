@@ -1,4 +1,3 @@
-#include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
@@ -39,16 +38,14 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
 template <typename LABEL_T>
 void Flash<LABEL_T>::addDataset(
     const dataset::InMemoryDataset<BoltBatch>& dataset,
-    const std::vector<std::vector<LABEL_T>>& labels, bool verbose) {
+    const std::vector<std::vector<LABEL_T>>& labels,
+    std::optional<ProgressBar>& bar) {
   if (dataset.numBatches() != labels.size()) {
     throw std::invalid_argument(
         "Number of data and label batches must be same.");
   }
   auto num_batches = dataset.numBatches();
-  std::optional<ProgressBar> bar = ProgressBar::makeOptional(
-      /* verbose = */ verbose,
-      /* description = */ fmt::format("train"),
-      /* max_steps = */ dataset.numBatches());
+
   for (uint64_t batch_index = 0; batch_index < num_batches; batch_index++) {
     const auto& batch = dataset[batch_index];
 
@@ -56,11 +53,6 @@ void Flash<LABEL_T>::addDataset(
     if (bar) {
       bar->increment();
     }
-  }
-  if (bar) {
-    bar->close(
-        /* comment = */ fmt::format("train | batches {} | complete",
-                                    num_batches));
   }
 }
 

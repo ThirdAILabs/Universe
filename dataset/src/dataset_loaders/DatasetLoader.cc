@@ -30,8 +30,9 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
 }
 
 // Loads the entire data source at once
-std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory() {
-  auto datasets = loadInMemory(std::numeric_limits<size_t>::max());
+std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory(
+    bool verbose) {
+  auto datasets = streamInMemory(std::numeric_limits<size_t>::max(), verbose);
   if (!datasets) {
     throw std::invalid_argument(
         "Did not find any data to load from the data source.");
@@ -40,12 +41,14 @@ std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory() {
 }
 
 std::optional<std::pair<InputDatasets, LabelDataset>>
-DatasetLoader::loadInMemory(size_t num_batches) {
+DatasetLoader::streamInMemory(size_t num_batches, bool verbose) {
 #if THIRDAI_EXPOSE_ALL
-  // This is useful internally but we don't want to expose it to keep the
-  // output clear and simple.
-  std::cout << "loading data | source '" << _data_source->resourceName() << "'"
-            << std::endl;
+  if (verbose) {
+    // This is useful internally but we don't want to expose it to keep the
+    // output clear and simple.
+    std::cout << "loading data | source '" << _data_source->resourceName()
+              << "'" << std::endl;
+  }
 #endif
 
   auto start = std::chrono::high_resolution_clock::now();
@@ -71,12 +74,14 @@ DatasetLoader::loadInMemory(size_t num_batches) {
 
   if (batch_lists.at(0).empty()) {
 #if THIRDAI_EXPOSE_ALL
-    // This is to ensure that it always prints complete if it prints that it
-    // has started loading above.
-    std::cout << "loading data | source '" << _data_source->resourceName()
-              << "' | vectors 0 | batches 0 | time " << duration
-              << "s | complete\n"
-              << std::endl;
+    if (verbose) {
+      // This is to ensure that it always prints complete if it prints that it
+      // has started loading above.
+      std::cout << "loading data | source '" << _data_source->resourceName()
+                << "' | vectors 0 | batches 0 | time " << duration
+                << "s | complete\n"
+                << std::endl;
+    }
 #endif
     return std::nullopt;
   }
@@ -91,12 +96,13 @@ DatasetLoader::loadInMemory(size_t num_batches) {
     data.push_back(std::make_shared<BoltDataset>(std::move(batch_lists.at(i))));
   }
 
-  std::cout << "loading data | source '" << _data_source->resourceName()
-            << "' | vectors " << labels->len() << " | batches "
-            << labels->numBatches() << " | time " << duration
-            << "s | complete\n"
-            << std::endl;
-
+  if (verbose) {
+    std::cout << "loaded data | source '" << _data_source->resourceName()
+              << "' | vectors " << labels->len() << " | batches "
+              << labels->numBatches() << " | time " << duration
+              << "s | complete\n"
+              << std::endl;
+  }
   return std::make_pair(data, labels);
 }
 

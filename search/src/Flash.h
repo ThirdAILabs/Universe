@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
+#include <bolt/src/utils/ProgressBar.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/HashTable.h>
 #include <hashtable/src/VectorHashTable.h>
@@ -54,7 +55,7 @@ class Flash {
    */
   void addDataset(const dataset::InMemoryDataset<BoltBatch>& dataset,
                   const std::vector<std::vector<LABEL_T>>& labels,
-                  bool verbose);
+                  std::optional<ProgressBar>& bar);
   /**
    * Insert this batch into the Flash data structure.
    */

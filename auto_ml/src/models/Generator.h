@@ -257,14 +257,47 @@ class QueryCandidateGenerator {
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
         /* file_name = */ filename, /* delimiter = */ ',');
 
-    buildIndexImpl(filename, /* col_to_hash= */ source_column_index,
-                   /* col_to_index= */ target_column_index);
+    dataset::BoltDatasetPtr unsupervised_data = loadDatasetInMemory(
+        /* file_name = */ filename,
+        /* col_to_hash = */ source_column_index);
+    uint64_t progress_bar_size = unsupervised_data->numBatches();
 
+    // If the source and target columns are distinct then we can also train on
+    // the target column as supervised data.
+    dataset::BoltDatasetPtr supervised_data = nullptr;
     if (source_column_index != target_column_index) {
-      // If the source and target columns are distinct then we also hash+index
-      // the target column.
-      buildIndexImpl(filename, /* col_to_hash= */ target_column_index,
-                     /* col_to_index= */ target_column_index);
+      supervised_data = loadDatasetInMemory(
+          /* file_name = */ filename,
+          /* col_to_hash = */ source_column_index,
+          /* verbose = */ false);
+      progress_bar_size += supervised_data->numBatches();
+    }
+
+    auto labels = getQueryLabels(filename, target_column_index);
+
+    std::optional<ProgressBar> bar = ProgressBar::makeOptional(
+        /* verbose = */ true,
+        /* description = */ fmt::format("train"),
+        /* max_steps = */ progress_bar_size);
+
+    auto train_start = std::chrono::high_resolution_clock::now();
+
+    // Unsupervised training
+    buildIndexImpl(unsupervised_data, labels, bar);
+
+    // Supervised training
+    if (supervised_data != nullptr) {
+      buildIndexImpl(supervised_data, labels, bar);
+    }
+
+    auto train_end = std::chrono::high_resolution_clock::now();
+    int64_t train_time =
+        std::chrono::ceil<std::chrono::seconds>(train_end - train_start)
+            .count();
+    if (bar) {
+      bar->close(
+          /* comment = */ fmt::format("train | time {}s | complete",
+                                      train_time));
     }
   }
 
@@ -329,11 +362,8 @@ class QueryCandidateGenerator {
 
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
         /* file_name = */ file_name, /* delimiter = */ ',');
-    auto eval_batch_processor = constructGenericBatchProcessor(
-        /* column_index = */ source_column_index);
-    auto data =
-        loadDatasetInMemory(/* file_name = */ file_name,
-                            /* batch_processor = */ eval_batch_processor);
+    auto data = loadDatasetInMemory(/* file_name = */ file_name,
+                                    /* col_to_hash = */ source_column_index);
     ProgressBar bar("evaluate", data->numBatches());
 
     std::vector<std::vector<std::string>> output_queries;
@@ -390,17 +420,9 @@ class QueryCandidateGenerator {
             /* has_header = */ false, /* delimiter = */ ',');
   }
 
-  void buildIndexImpl(const std::string& filename, uint32_t col_to_hash,
-                      uint32_t col_to_index) {
-    auto training_batch_processor = constructGenericBatchProcessor(
-        /* column_index = */ col_to_hash);
-    auto data =
-        loadDatasetInMemory(/* file_name = */ filename,
-                            /* batch_processor = */ training_batch_processor);
-
-    auto labels =
-        getQueryLabels(filename, /* target_column_index = */ col_to_index);
-
+  void buildIndexImpl(const dataset::BoltDatasetPtr& data,
+                      const std::vector<std::vector<uint32_t>>& labels,
+                      std::optional<ProgressBar>& bar) {
     if (!_flash_index) {
       auto hash_function = _query_generator_config->hashFunction();
       if (_query_generator_config->reservoirSize().has_value()) {
@@ -412,7 +434,7 @@ class QueryCandidateGenerator {
     }
 
     _flash_index->addDataset(/* dataset = */ *data, /* labels = */ labels,
-                             /* verbose = */ true);
+                             /* bar = */ bar);
   }
 
   std::shared_ptr<dataset::GenericBatchProcessor>
@@ -553,15 +575,16 @@ class QueryCandidateGenerator {
   }
 
   std::shared_ptr<dataset::BoltDataset> loadDatasetInMemory(
-      const std::string& file_name,
-      const std::shared_ptr<dataset::GenericBatchProcessor>& batch_processor) {
+      const std::string& file_name, uint32_t col_to_hash, bool verbose = true) {
+    auto batch_processor = constructGenericBatchProcessor(
+        /* column_index = */ col_to_hash);
     auto file_data_source = dataset::SimpleFileDataSource::make(
         file_name, _query_generator_config->batchSize());
 
     auto data_source = std::make_unique<dataset::DatasetLoader>(
         file_data_source, batch_processor, /* shuffle = */ false);
 
-    return data_source->loadInMemory().first.at(0);
+    return data_source->loadInMemory(verbose).first.at(0);
   }
 
   std::tuple<uint32_t, uint32_t> mapColumnNamesToIndices(
