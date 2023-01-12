@@ -19,11 +19,11 @@
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/DataSource.h>
-#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
@@ -58,6 +58,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         _parallel(_temporal_relationships.empty() || force_parallel),
         _text_pairgram_word_limit(text_pairgram_word_limit),
         _contextual_columns(contextual_columns),
+        _normalize_target_categories(false),
         _regression_binning(regression_binning) {
     FeatureComposer::verifyConfigIsValid(*_config, _temporal_relationships);
 
@@ -80,8 +81,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         contextual_columns, regression_binning);
   }
 
-  DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataSource> data_source, bool training) final;
+  dataset::DatasetLoaderPtr getLabeledDatasetLoader(
+      dataset::DataSourcePtr data_source, bool training) final;
 
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
     return featurizeInputImpl(input, /* should_update_history= */ false);
@@ -180,6 +181,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   UDTConfigPtr config() { return _config; }
 
+  void enableTargetCategoryNormalization() {
+    _normalize_target_categories = true;
+  }
+
  private:
   PreprocessedVectorsMap processAllMetadata();
 
@@ -194,7 +199,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const ColumnNumberMap& column_numbers) const;
 
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
-      dataset::StreamingGenericDatasetLoader& dataset,
+      dataset::DatasetLoader& dataset_loader,
       dataset::ThreadSafeVocabulary& key_vocab);
 
   template <typename InputType>
@@ -222,13 +227,14 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   std::vector<BoltBatch> featurizeInputBatchImpl(const LineInputBatch& inputs,
                                                  bool should_update_history) {
     verifyProcessorsAreInitialized();
-    auto [input_batch, _] =
-        getProcessor(should_update_history).createBatch(inputs);
+    auto batches = getProcessor(should_update_history).createBatch(inputs);
+
+    // TODO(any): This assumes we will have just one input batch
 
     // We cannot use the initializer list because the copy constructor is
     // deleted for BoltBatch.
     std::vector<BoltBatch> batch_list;
-    batch_list.emplace_back(std::move(input_batch));
+    batch_list.emplace_back(std::move(batches.at(0)));
     return batch_list;
   }
 
@@ -373,6 +379,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   bool _parallel;
   uint32_t _text_pairgram_word_limit;
   bool _contextual_columns;
+  bool _normalize_target_categories;
 
   std::optional<dataset::RegressionBinningStrategy> _regression_binning;
 
@@ -388,7 +395,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
             _column_number_to_name, _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _metadata_processors, _input_dim,
             _label_dim, _parallel, _text_pairgram_word_limit,
-            _contextual_columns, _regression_binning);
+            _contextual_columns, _normalize_target_categories,
+            _regression_binning);
   }
 };
 
