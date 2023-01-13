@@ -2,8 +2,11 @@
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
+#include <limits>
 
 namespace thirdai::automl::python {
 
@@ -39,7 +42,9 @@ void defineAutomlInModule(py::module_& module) {
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
            py::arg("source_column"), py::arg("target_column"),
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
-
+      .def("__new__", &UDTFactory::buildUDTGeneratorWrapperTargetOnly,
+           py::arg("target_column"), py::arg("dataset_size"),
+           docs::UDT_GENERATOR_INIT)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 }
@@ -57,16 +62,16 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("parameters") = py::dict(),
            docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG,
            bolt::python::OutputRedirect())
-      .def("train_with_loader", &ModelPipeline::train, py::arg("data_source"),
+      .def("train_with_source", &ModelPipeline::train, py::arg("data_source"),
            py::arg("train_config"), py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
-           docs::MODEL_PIPELINE_TRAIN_DATA_LOADER,
+           docs::MODEL_PIPELINE_TRAIN_DATA_SOURCE,
            bolt::python::OutputRedirect())
-      .def("evaluate_with_loader", &ModelPipeline::evaluate,
+      .def("evaluate_with_source", &ModelPipeline::evaluate,
            py::arg("data_source"), py::arg("eval_config") = std::nullopt,
            py::arg("return_predicted_class") = false,
            py::arg("return_metrics") = false,
-           docs::MODEL_PIPELINE_EVALUATE_DATA_LOADER,
+           docs::MODEL_PIPELINE_EVALUATE_DATA_SOURCE,
            bolt::python::OutputRedirect())
       .def("predict",
            py::overload_cast<const LineInput&, bool, bool>(
@@ -92,6 +97,8 @@ void createModelsSubmodule(py::module_& module) {
                   docs::MODEL_PIPELINE_LOAD)
       .def("get_data_processor", &ModelPipeline::getDataProcessor,
            docs::MODEL_PIPELINE_GET_DATA_PROCESSOR)
+      .def("_get_model", &ModelPipeline::getModel)
+      .def("_set_model", &ModelPipeline::setModel, py::arg("trained_model"))
       .def_property_readonly("default_train_batch_size",
                              &ModelPipeline::defaultBatchSize)
       .def_property_readonly_static(
@@ -101,6 +108,9 @@ void createModelsSubmodule(py::module_& module) {
 
   py::class_<data::UDTDatasetFactory, data::UDTDatasetFactoryPtr>(
       models_submodule, "TemporalContext")
+      .def("get_dataset_loader",
+           &data::UDTDatasetFactory::getLabeledDatasetLoader,
+           py::arg("data_source"), py::arg("training"))
       .def("reset", &data::UDTDatasetFactory::resetTemporalTrackers,
            docs::TEMPORAL_CONTEXT_RESET)
       .def("update_temporal_trackers",
@@ -110,7 +120,10 @@ void createModelsSubmodule(py::module_& module) {
       .def("batch_update_temporal_trackers",
            py::overload_cast<const LineInputBatch&>(
                &data::UDTDatasetFactory::batchUpdateTemporalTrackers),
-           py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH);
+           py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH)
+      .def("verify_can_distribute",
+           &data::UDTDatasetFactory::verifyCanDistribute)
+      .def(bolt::python::getPickleFunction<data::UDTDatasetFactory>());
 
   py::class_<data::UDTConfig, data::UDTConfigPtr>(models_submodule, "UDTConfig")
       .def(py::init<data::ColumnDataTypes,
@@ -201,18 +214,40 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
       .def("train", &QueryCandidateGenerator::buildFlashIndex,
            py::arg("filename"), docs::UDT_GENERATOR_TRAIN)
-      .def("evaluate", &QueryCandidateGenerator::evaluateOnFile,
-           py::arg("filename"), py::arg("top_k"), docs::UDT_GENERATOR_EVALUATE)
+      .def(
+          "evaluate",
+          [](QueryCandidateGenerator& udt_generator_model,
+             const std::string& filename, uint32_t top_k, bool return_scores) {
+            auto [reformulated_queries, scores] =
+                udt_generator_model.evaluateOnFile(filename, top_k);
+            return UDTFactory::makeGeneratorInferenceTuple(
+                reformulated_queries, scores, return_scores);
+          },
+          py::arg("filename"), py::arg("top_k"),
+          py::arg("return_scores") = false, docs::UDT_GENERATOR_EVALUATE)
       .def(
           "predict",
           [](QueryCandidateGenerator& udt_generator_model,
-             const std::string& sample, uint32_t top_k) {
-            return udt_generator_model.queryFromList({sample}, top_k);
+             const std::string& sample, uint32_t top_k, bool return_scores) {
+            auto [reformulated_queries, scores] =
+                udt_generator_model.queryFromList({sample}, top_k);
+            return UDTFactory::makeGeneratorInferenceTuple(
+                reformulated_queries, scores, return_scores);
           },
-          py::arg("query"), py::arg("top_k"), docs::UDT_GENERATOR_PREDICT)
-      .def("predict_batch", &QueryCandidateGenerator::queryFromList,
-           py::arg("queries"), py::arg("top_k"),
-           docs::UDT_GENERATOR_PREDICT_BATCH)
+          py::arg("query"), py::arg("top_k"), py::arg("return_scores") = false,
+          docs::UDT_GENERATOR_PREDICT)
+      .def(
+          "predict_batch",
+          [](QueryCandidateGenerator& udt_generator_model,
+             const std::vector<std::string>& queries, uint32_t top_k,
+             bool return_scores) {
+            auto [reformulated_queries, scores] =
+                udt_generator_model.queryFromList(queries, top_k);
+            return UDTFactory::makeGeneratorInferenceTuple(
+                reformulated_queries, scores, return_scores);
+          },
+          py::arg("queries"), py::arg("top_k"),
+          py::arg("return_scores") = false, docs::UDT_GENERATOR_PREDICT_BATCH)
       .def("save", &UDTFactory::save_generator, py::arg("filename"),
            docs::UDT_GENERATOR_SAVE);
 }
@@ -353,6 +388,16 @@ QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapper(
       /* dataset_size = */ dataset_size);
 }
 
+QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapperTargetOnly(
+    py::object& obj, const std::string& target_column,
+    const std::string& dataset_size) {
+  (void)obj;
+  return QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
+      /* source_column_name = */ target_column,
+      /* target_column_name = */ target_column,
+      /* dataset_size = */ dataset_size);
+}
+
 UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
     py::object& obj, data::ColumnDataTypes data_types,
     data::UserProvidedTemporalRelationships temporal_tracking_relationships,
@@ -407,5 +452,4 @@ py::object UDTFactory::load(const std::string& filename) {
 
   throw std::invalid_argument("Found an invalid header byte in the saved file");
 }
-
 }  // namespace thirdai::automl::python

@@ -42,6 +42,10 @@ class UDTFactory {
       py::object& obj, const std::string& source_column,
       const std::string& target_column, const std::string& dataset_size);
 
+  static QueryCandidateGenerator buildUDTGeneratorWrapperTargetOnly(
+      py::object& obj, const std::string& target_column,
+      const std::string& dataset_size);
+
   static UniversalDeepTransformer buildUDTClassifierWrapper(
       py::object& obj, data::ColumnDataTypes data_types,
       data::UserProvidedTemporalRelationships temporal_tracking_relationships,
@@ -60,6 +64,15 @@ class UDTFactory {
 
   static void save_generator(const QueryCandidateGenerator& generator,
                              const std::string& filename);
+
+  static py::object makeGeneratorInferenceTuple(
+      std::vector<std::vector<std::string>> queries,
+      std::vector<std::vector<float>> scores, bool return_scores) {
+    if (return_scores) {
+      return py::make_tuple(std::move(queries), std::move(scores));
+    }
+    return py::make_tuple(std::move(queries));
+  }
 
   static py::object load(const std::string& filename);
 };

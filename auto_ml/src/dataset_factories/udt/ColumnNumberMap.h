@@ -46,6 +46,10 @@ class ColumnNumberMap {
     return _name_to_num.at(col_name);
   }
 
+  bool containsColumn(const std::string& col_name) const {
+    return _name_to_num.count(col_name);
+  }
+
   bool equals(const ColumnNumberMap& other) {
     return other._name_to_num == _name_to_num;
   }

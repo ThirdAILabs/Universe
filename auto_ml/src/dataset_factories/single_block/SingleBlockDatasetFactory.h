@@ -4,12 +4,13 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
-#include "DatasetFactory.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <utils/StringManipulation.h>
 #include <exception>
 #include <optional>
@@ -38,10 +39,10 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
         _shuffle(shuffle),
         _delimiter(delimiter) {}
 
-  DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader, bool training) final {
-    return std::make_unique<GenericDatasetLoader>(
-        data_loader, _labeled_batch_processor, _shuffle && training);
+  dataset::DatasetLoaderPtr getLabeledDatasetLoader(
+      std::shared_ptr<dataset::DataSource> data_source, bool training) final {
+    return std::make_unique<dataset::DatasetLoader>(
+        data_source, _labeled_batch_processor, _shuffle && training);
   }
 
   std::vector<BoltVector> featurizeInput(const std::string& input) final;

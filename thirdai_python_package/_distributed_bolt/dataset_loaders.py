@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Callable, List, Optional, Tuple, Union
 
-from thirdai import data, dataset, deployment
+from thirdai import data, dataset
+from thirdai.bolt.udt_modifications import _create_data_source
 
 
-class DatasetLoader(ABC):
+class DistributedDatasetLoader(ABC):
     @abstractmethod
     def next() -> Optional[
         Tuple[
@@ -12,14 +13,80 @@ class DatasetLoader(ABC):
             dataset.BoltDataset,
         ]
     ]:
+        """
+        This function returns training data and labels if there is training data left for
+        ingestion for a epoch else, will return NULL.
+
+        Returns:
+            Optional[ Tuple[ Union[dataset.BoltDataset, List[dataset.BoltDataset]], dataset.BoltDataset, ] ]:
+                It either returns tuple of training data and training labels or None.
+        """
         pass
 
     @abstractmethod
     def restart() -> None:
+        """
+        This function is needed to be called before every epoch other than 1st epoch. It moves
+        the training data pointer to the front to restart ingestion of training data again.
+        """
+        pass
+
+    @abstractmethod
+    def load() -> None:
+        """
+        This function is called only once before the first epoch. As this function is called
+        independently inside each worker, it can be used for multiple purposes which includes
+        initializing construct for data sources which cannot be pickled across workers(ex. ifstream),
+        and if some initialization which needed to done independently for each workers.
+        """
         pass
 
 
-class GenericInMemoryDatasetLoader(DatasetLoader):
+class DistributedUDTDatasetLoader(DistributedDatasetLoader):
+    def __init__(
+        self,
+        train_file: str,
+        batch_size: int,
+        gcp_credentials_path: str,
+        max_in_memory_batches: int,
+        data_processor,
+    ):
+        self.generator = None
+        self.data_processor = data_processor
+        self.train_file = train_file
+        self.batch_size = batch_size
+        self.gcp_credentials_path = gcp_credentials_path
+        self.max_in_memory_batches = max_in_memory_batches
+        self.dataset_finished = False
+
+    def load(self):
+        self.generator = self.data_processor.get_dataset_loader(
+            _create_data_source(
+                self.train_file,
+                batch_size=self.batch_size,
+                gcp_credentials_path=self.gcp_credentials_path,
+            ),
+            training=True,
+        )
+
+    def next(self):
+        if self.dataset_finished:
+            return None
+
+        if self.max_in_memory_batches == None:
+            load = self.generator.load_in_memory()
+            self.dataset_finished = True
+        else:
+            load = self.generator.load_in_memory(self.max_in_memory_batches)
+
+        return load
+
+    def restart(self):
+        self.dataset_finished = False
+        self.generator.restart()
+
+
+class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
     """
     Wraps a generator function that returns a single pair of training and label
     datasets into an in memory data generator ready to pass into the distributed
@@ -41,6 +108,9 @@ class GenericInMemoryDatasetLoader(DatasetLoader):
         self.current_labels = None
         self.generated_for_this_epoch = False
 
+    def load(self):
+        pass
+
     def next(self):
         if self.generated_for_this_epoch:
             return None
@@ -58,7 +128,7 @@ class GenericInMemoryDatasetLoader(DatasetLoader):
         self.generated_for_this_epoch = False
 
 
-class SvmDatasetLoader(GenericInMemoryDatasetLoader):
+class DistributedSvmDatasetLoader(DistributedGenericInMemoryDatasetLoader):
     """
     Returns a simple in memory data generator ready to pass into the distributed
     API that will read in the given file name with the given batch_size. The
@@ -75,7 +145,7 @@ class SvmDatasetLoader(GenericInMemoryDatasetLoader):
         )
 
 
-class TabularDatasetLoader(DatasetLoader):
+class DistributedTabularDatasetLoader(DistributedDatasetLoader):
     def __init__(
         self,
         column_map_generator: data.ColumnMapGenerator,
@@ -91,6 +161,9 @@ class TabularDatasetLoader(DatasetLoader):
         self.x_cols = x_cols
         self.y_col = y_col
         self.batch_size = batch_size
+
+    def load(self):
+        pass
 
     def next(self):
         load = self.column_map_generator.next()

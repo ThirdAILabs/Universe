@@ -113,7 +113,7 @@ TEST(ThreadSafeVocabularyTests, InBlock) {
 
   GenericBatchProcessor processor(/* input_blocks = */ {lookup_block},
                                   /* label_blocks = */ {});
-  auto [batch, _] = processor.createBatch(strings);
+  auto batch = processor.createBatch(strings).at(0);
 
   auto uids = getUidsFromBatch(batch);
   auto reverted_strings = backToStrings(*vocab, uids);
@@ -135,7 +135,7 @@ TEST(ThreadSafeVocabularyTests, InMultipleBlocks) {
   GenericBatchProcessor processor(
       /* input_blocks = */ {lookup_block_1, lookup_block_2, lookup_block_3},
       /* label_blocks = */ {});
-  auto [batch, _] = processor.createBatch(strings);
+  auto batch = processor.createBatch(strings).at(0);
 
   uint32_t lookup_block_dim = lookup_block_1->featureDim();
   auto block_1_uids =
