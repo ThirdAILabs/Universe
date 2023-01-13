@@ -35,7 +35,7 @@ def test_too_many_cols_in_train():
 
     with pytest.raises(
         ValueError,
-        match=".*Expected 3 columns delimited by ',' in each row of the dataset. Found row '1,1,1,1' with number of columns = 4.",
+        match='Expected 3 columns in each row of the dataset. Found row with 4 columns: "1" "1" "1" "1"',
     ):
         model.train("too_many_cols", epochs=100)
 
@@ -64,7 +64,7 @@ def test_too_few_cols_in_train():
 
     with pytest.raises(
         ValueError,
-        match=".*Expected 3 columns delimited by ',' in each row of the dataset. Found row '1,1' with number of columns = 2.",
+        match='Expected 3 columns in each row of the dataset. Found row with 2 columns: "1" "1"',
     ):
         model.train("too_few_cols", epochs=100)
 
