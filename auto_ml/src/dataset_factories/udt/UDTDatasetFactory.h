@@ -49,7 +49,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
                              uint32_t text_pairgram_word_limit,
                              bool contextual_columns = false,
                              std::optional<dataset::RegressionBinningStrategy>
-                                 regression_binning = std::nullopt)
+                                 regression_binning = std::nullopt,
+                             uint32_t prediction_depth = 1)
       : _config(std::move(config)),
         _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
             _config->data_types, _config->provided_relationships,
@@ -59,7 +60,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         _text_pairgram_word_limit(text_pairgram_word_limit),
         _contextual_columns(contextual_columns),
         _normalize_target_categories(false),
-        _regression_binning(regression_binning) {
+        _regression_binning(regression_binning),
+        _prediction_depth(prediction_depth) {
     FeatureComposer::verifyConfigIsValid(*_config, _temporal_relationships);
 
     _vectors_map = processAllMetadata();
@@ -382,6 +384,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   bool _normalize_target_categories;
 
   std::optional<dataset::RegressionBinningStrategy> _regression_binning;
+  uint32_t _prediction_depth;
 
   // Private constructor for cereal.
   UDTDatasetFactory() {}

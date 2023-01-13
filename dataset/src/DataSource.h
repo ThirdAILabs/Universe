@@ -84,4 +84,18 @@ class SimpleFileDataSource final : public DataSource {
   std::string _filename;
 };
 
+class Seq2SeqSource final : public DataSource {
+ public:
+  Seq2SeqSource(const std::string& filename, uint32_t target_batch_size)
+      : DataSource(target_batch_size), _filename(filename) {}
+
+  static std::shared_ptr<Seq2SeqSource> make(const std::string& filename,
+                                             uint32_t target_batch_size) {
+    return std::make_shared<Seq2SeqSource>(filename, target_batch_size);
+  }
+
+ private:
+  std::string _filename;
+};
+
 }  // namespace thirdai::dataset
