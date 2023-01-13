@@ -363,8 +363,8 @@ class QueryCandidateGenerator {
     if (source_column_index != target_column_index) {
       std::vector<std::string> correct_queries =
           dataset::ProcessorUtils::aggregateSingleColumnCsvRows(
-              file_name, /* column_index = */ target_column_index, _query_generator_config->delimiter(),
-              /* has_header = */ true);
+              file_name, /* column_index = */ target_column_index,
+              /* has_header = */ true, /* delimiter= */ _query_generator_config->delimiter());
 
       computeRecallAtK(/* correct_queries = */ correct_queries,
                        /* generated_queries = */ output_queries,

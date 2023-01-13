@@ -50,8 +50,8 @@ class ProcessorUtils {
   }
 
   static std::vector<std::string> aggregateSingleColumnCsvRows(
-      const std::string& file_name, uint32_t column_index, char delimiter = ',',
-      bool has_header = false) {
+      const std::string& file_name, uint32_t column_index,
+      bool has_header = false, char delimiter = ',') {
     std::vector<std::string> aggregated_rows;
 
     std::ifstream input_file_stream =
