@@ -6,7 +6,7 @@
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/MurmurHash.h>
-#include <dataset/src/utils/TextEncodingUtils.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>

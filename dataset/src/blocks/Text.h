@@ -4,7 +4,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
-#include <dataset/src/utils/TextEncodingUtils.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <utils/StringManipulation.h>
 #include <memory>
 #include <stdexcept>

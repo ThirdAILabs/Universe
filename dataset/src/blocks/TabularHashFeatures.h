@@ -2,12 +2,16 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <cereal/types/utility.hpp>
+#include <cereal/types/vector.hpp>
 #include "BlockInterface.h"
 #include <hashing/src/UniversalHash.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
-#include <dataset/src/utils/TextEncodingUtils.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <cstdlib>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -29,6 +33,7 @@ struct TabularColumn {
     tabular_column.type = TabularDataType::Numeric;
     tabular_column.range = range;
     tabular_column.num_bins = num_bins;
+    tabular_column.bin_size = (range.second - range.first) / num_bins;
     return tabular_column;
   }
 
@@ -39,18 +44,20 @@ struct TabularColumn {
     return tabular_column;
   }
 
-  double binSize() const { return (range->second - range->first) / *num_bins; }
+  double binSize() const { return *bin_size; }
 
   ColumnIdentifier identifier;
   TabularDataType type;
   std::optional<std::pair<double, double>> range = std::nullopt;
   std::optional<uint32_t> num_bins = std::nullopt;
+  std::optional<double> bin_size = std::nullopt;
 
+ private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(identifier, type, range, num_bins);
+    archive(identifier, type, range, num_bins, bin_size);
   }
 };
 

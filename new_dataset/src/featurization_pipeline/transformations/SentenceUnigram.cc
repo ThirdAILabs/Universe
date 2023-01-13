@@ -39,7 +39,7 @@ columns::SparseArrayColumnPtr SentenceUnigram::deduplicatedUnigramColumn(
 
     std::vector<std::pair<uint32_t, float>> deduplicated_unigrams;
     // TODO(any): make TextEncodingUtils more usable
-    dataset::TextEncoding::sumRepeatedIndices(
+    dataset::TokenEncoding::sumRepeatedIndices(
         unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
           deduplicated_unigrams.push_back(std::make_pair(unigram, value));
         });
@@ -69,10 +69,10 @@ std::vector<uint32_t> SentenceUnigram::computeUnigrams(
     const std::string& text) {
   std::vector<uint32_t> unigrams;
   if (_output_range) {
-    unigrams = dataset::TextEncoding::computeRawUnigramsWithRange(
+    unigrams = dataset::TokenEncoding::computeRawUnigramsWithRange(
         text, *_output_range);
   } else {
-    unigrams = dataset::TextEncoding::computeRawUnigrams(text);
+    unigrams = dataset::TokenEncoding::computeRawUnigrams(text);
   }
   return unigrams;
 }

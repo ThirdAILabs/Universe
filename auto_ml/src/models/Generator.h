@@ -16,7 +16,7 @@
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
-#include <dataset/src/utils/TextEncodingUtils.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
 #include <search/src/Flash.h>

@@ -18,7 +18,7 @@
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
-#include <dataset/src/utils/TextEncodingUtils.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>

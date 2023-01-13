@@ -1,6 +1,7 @@
+#include <cereal/archives/binary.hpp>
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
-#include <dataset/src/utils/TextEncodingUtils.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <cstdlib>
 #include <stdexcept>
 #include <string_view>
@@ -164,7 +165,7 @@ uint32_t TabularHashFeatures::computeBin(const TabularColumn& column,
   if (value < column.range->first) {
     return 0;
   }
-  if (value > column.range->second) {
+  if (value >= column.range->second) {
     return column.num_bins.value() - 1;
   }
 

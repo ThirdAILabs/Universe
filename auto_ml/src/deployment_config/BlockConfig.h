@@ -9,7 +9,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
-#include <dataset/src/utils/TextEncodingUtils.h>
+#include <dataset/src/utils/TokenEncoding.h>
 
 namespace thirdai::automl::deployment {
 
@@ -88,7 +88,7 @@ class TextBlockConfig final : public BlockConfig {
   explicit TextBlockConfig(bool use_pairgrams)
       : _use_pairgrams(use_pairgrams),
         _range(ConstantParameter<uint32_t>::make(
-            dataset::TextEncoding::DEFAULT_TEXT_ENCODING_DIM)) {}
+            dataset::TokenEncoding::DEFAULT_TEXT_ENCODING_DIM)) {}
 
   dataset::BlockPtr getBlock(
       uint32_t column,
