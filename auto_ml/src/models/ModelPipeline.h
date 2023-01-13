@@ -258,8 +258,6 @@ class ModelPipeline {
   }
 
  protected:
-  static constexpr uint32_t ALL_BATCHES = std::numeric_limits<uint32_t>::max();
-
   data::DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
   OutputProcessorPtr _output_processor;

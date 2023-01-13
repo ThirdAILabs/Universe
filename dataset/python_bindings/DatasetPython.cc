@@ -287,9 +287,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_label_dim", &DatasetLoader::getLabelDim)
       .def("load_in_memory", &DatasetLoader::loadInMemory,
            py::arg("verbose") = true)
-      .def("load_in_memory", &dataset::DatasetLoader::streamInMemory,
-           py::arg("num_batches") = std::numeric_limits<uint32_t>::max(),
-           py::arg("verbose") = true)
+      .def("stream_in_memory", &dataset::DatasetLoader::streamInMemory,
+           py::arg("num_batches"), py::arg("verbose") = true)
       .def("restart", &dataset::DatasetLoader::restart);
 
   py::class_<GenericBatchProcessor, BatchProcessor, GenericBatchProcessorPtr>(

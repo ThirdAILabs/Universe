@@ -49,14 +49,6 @@ class Flash {
   Flash(const Flash& flash_index) = delete;
 
   /**
-   * Insert all batches in the dataset the Flash data structure.
-   * loadNextBatches on the dataset should not have been called yet, and this
-   * will run through the entire dataset.
-   */
-  void addDataset(const dataset::InMemoryDataset<BoltBatch>& dataset,
-                  const std::vector<std::vector<LABEL_T>>& labels,
-                  std::optional<ProgressBar>& bar);
-  /**
    * Insert this batch into the Flash data structure.
    */
   void addBatch(const BoltBatch& batch, const std::vector<LABEL_T>& labels);

@@ -241,13 +241,13 @@ class QueryCandidateGenerator {
   }
 
   /**
-   * @brief Builds a Flash index by reading from a CSV file
-   * containing queries. Always does unsupervised training, and will do
-   * supervised training with (source, target) pairs is use_supervised is true
+   * @brief Builds a Generator index by reading from a CSV file
+   * containing target queries and optionally mistypes source queries. Always
+   * does unsupervised training on the target column, and will do supervised
+   * training with (source, target) pairs if use_supervised is true
    * and there is a source column in the passed in filename.
    */
-  void buildFlashIndex(const std::string& filename,
-                       bool use_supervised = true) {
+  void train(const std::string& filename, bool use_supervised = true) {
     licensing::verifyAllowedDataset(filename);
 
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
@@ -281,11 +281,11 @@ class QueryCandidateGenerator {
     auto train_start = std::chrono::high_resolution_clock::now();
 
     // Unsupervised training
-    buildIndexImpl(unsupervised_data, labels, bar);
+    addDatasetToIndex(unsupervised_data, labels, bar);
 
     // Supervised training
     if (use_supervised) {
-      buildIndexImpl(supervised_data, labels, bar);
+      addDatasetToIndex(supervised_data, labels, bar);
     }
 
     auto train_end = std::chrono::high_resolution_clock::now();
@@ -342,6 +342,8 @@ class QueryCandidateGenerator {
     return {std::move(query_outputs), std::move(candidate_query_scores)};
   }
 
+  // TODO(Blaise/Josh): Because of our current flash implementation, this
+  // function doesn't always return k items per vector, but it should.
   /**
    * @brief Returns a list of recommended queries and Computes Recall at K
    * (R1@K).
@@ -361,13 +363,6 @@ class QueryCandidateGenerator {
 
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
         /* file_name = */ file_name, /* delimiter = */ ',');
-    if (source_column_index == target_column_index) {
-      throw exceptions::QueryCandidateGeneratorException(
-          "There must be a source column and a target column to "
-          "evaluate the Generator, but we found just a target column. Please "
-          "call predict or predict_batch if you want to do inference without "
-          "labels, or call this method with a source column.");
-    }
 
     auto data = loadDatasetInMemory(/* file_name = */ file_name,
                                     /* col_to_hash = */ source_column_index);
@@ -396,16 +391,23 @@ class QueryCandidateGenerator {
     auto eval_end = std::chrono::high_resolution_clock::now();
     int64_t eval_time =
         std::chrono::ceil<std::chrono::seconds>(eval_end - eval_start).count();
-    bar.close(fmt::format("evaluate | time {}s | complete", eval_time));
 
-    std::vector<std::string> correct_queries =
-        dataset::ProcessorUtils::aggregateSingleColumnCsvRows(
-            file_name, /* column_index = */ target_column_index,
-            /* has_header = */ true);
+    std::string recall_string;
+    if (source_column_index != target_column_index) {
+      std::vector<std::string> correct_queries =
+          dataset::ProcessorUtils::aggregateSingleColumnCsvRows(
+              file_name, /* column_index = */ target_column_index,
+              /* has_header = */ true);
 
-    computeRecallAtK(/* correct_queries = */ correct_queries,
-                     /* generated_queries = */ output_queries,
-                     /* K = */ top_k);
+      double recall = computeRecall(/* correct_queries = */ correct_queries,
+                                    /* generated_queries = */ output_queries);
+
+      recall_string =
+          fmt::format("Recall@{}: {:.3f}", top_k, recall);
+    }
+
+    bar.close(fmt::format(
+        "evaluate | {{" + recall_string + "}} | time {}s | complete", eval_time));
 
     return {std::move(output_queries), std::move(output_scores)};
   }
@@ -429,9 +431,9 @@ class QueryCandidateGenerator {
             /* has_header = */ false, /* delimiter = */ ',');
   }
 
-  void buildIndexImpl(const dataset::BoltDatasetPtr& data,
-                      const std::vector<std::vector<uint32_t>>& labels,
-                      std::optional<ProgressBar>& bar) {
+  void addDatasetToIndex(const dataset::BoltDatasetPtr& data,
+                         const std::vector<std::vector<uint32_t>>& labels,
+                         std::optional<ProgressBar>& bar) {
     if (!_flash_index) {
       auto hash_function = _query_generator_config->hashFunction();
       if (_query_generator_config->reservoirSize().has_value()) {
@@ -442,8 +444,13 @@ class QueryCandidateGenerator {
       }
     }
 
-    _flash_index->addDataset(/* dataset = */ *data, /* labels = */ labels,
-                             /* bar = */ bar);
+    for (uint32_t batch_id = 0; batch_id < data->numBatches(); batch_id++) {
+      _flash_index->addBatch(/* batch = */ data->at(batch_id),
+                             /* labels = */ labels.at(batch_id));
+      if (bar) {
+        bar->increment();
+      }
+    }
   }
 
   std::shared_ptr<dataset::GenericBatchProcessor>
@@ -484,17 +491,12 @@ class QueryCandidateGenerator {
   }
 
   /**
-   * @brief computes recall at K (R1@K)
-   *
-   * @param correct_queries: Vector of correct queries of size n.
-   * @param generated_queries: Vector of generated queries by the flash index.
-   * This is expected to be of size n and each element in the vector is also a
-   * vector of size k.
-   * @return recall
+   * Computes the average recall for the each correct_query in each
+   * generated_query
    */
-  static void computeRecallAtK(
+  static double computeRecall(
       const std::vector<std::string>& correct_queries,
-      const std::vector<std::vector<std::string>>& generated_queries, int K) {
+      const std::vector<std::vector<std::string>>& generated_queries) {
     assert(correct_queries.size() == generated_queries.size());
     uint64_t correct_results = 0;
 
@@ -509,7 +511,7 @@ class QueryCandidateGenerator {
     }
     auto recall = (correct_results * 1.0) / correct_queries.size();
 
-    std::cout << "Recall@" << K << " = " << recall << std::endl;
+    return recall;
   }
 
   /**

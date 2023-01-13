@@ -178,19 +178,10 @@ def test_udt_generator_source_not_specified(prepared_datasets):
 
 def test_udt_generator_eval_no_source(prepared_datasets):
     model = train_udt_query_reformulation_model(TRAIN_TARGET_ONLY_FILE)
-    with pytest.raises(
-        RuntimeError,
-        match=".*There must be a source query column and a target query column to evaluate the Generator.*",
-    ):
-        model.evaluate(filename=TRAIN_TARGET_ONLY_FILE, top_k=5)
+    result = model.evaluate(filename=TRAIN_TARGET_ONLY_FILE, top_k=5)
 
-    model = train_udt_query_reformulation_model(TRAIN_SOURCE_TARGET_FILE)
-    with pytest.raises(
-        RuntimeError,
-        match=".*There must be a source query column and a target query column to evaluate the Generator.*",
-    ):
-        model.evaluate(filename=TRAIN_TARGET_ONLY_FILE, top_k=5)
-
+    # This assertion ensures that the result is in the format we expect
+    assert(len(result) == 1 and len(result[0]) > 0)
 
 # This test is for a query reformulation model that was created with only the
 # target column specified, and trained on a dataset which doesn't contain
