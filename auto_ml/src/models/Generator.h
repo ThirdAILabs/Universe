@@ -9,7 +9,6 @@
 #include <bolt/src/utils/ProgressBar.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/MinHash.h>
-#include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
@@ -34,8 +33,8 @@
 
 namespace thirdai::automl::models {
 
-using data::ColumnNumberMap;
-using data::ColumnNumberMapPtr;
+using dataset::ColumnNumberMap;
+using dataset::ColumnNumberMapPtr;
 using search::Flash;
 
 class QueryCandidateGeneratorConfig {
@@ -402,12 +401,12 @@ class QueryCandidateGenerator {
       double recall = computeRecall(/* correct_queries = */ correct_queries,
                                     /* generated_queries = */ output_queries);
 
-      recall_string =
-          fmt::format("Recall@{}: {:.3f}", top_k, recall);
+      recall_string = fmt::format("Recall@{}: {:.3f}", top_k, recall);
     }
 
     bar.close(fmt::format(
-        "evaluate | {{" + recall_string + "}} | time {}s | complete", eval_time));
+        "evaluate | {{" + recall_string + "}} | time {}s | complete",
+        eval_time));
 
     return {std::move(output_queries), std::move(output_scores)};
   }
@@ -570,14 +569,10 @@ class QueryCandidateGenerator {
   }
 
   BoltVector featurizeSingleQuery(const std::string& query) const {
-    BoltVector output_vector;
     std::vector<std::string_view> input_vector{
         std::string_view(query.data(), query.length())};
-    if (auto exception = _inference_batch_processor->makeInputVector(
-            input_vector, output_vector)) {
-      std::rethrow_exception(exception);
-    }
-    return output_vector;
+    dataset::RowSampleRef input_vector_ref(input_vector);
+    return _inference_batch_processor->makeInputVector(input_vector_ref);
   }
 
   std::shared_ptr<dataset::BoltDataset> loadDatasetInMemory(
@@ -587,10 +582,10 @@ class QueryCandidateGenerator {
     auto file_data_source = dataset::SimpleFileDataSource::make(
         file_name, _query_generator_config->batchSize());
 
-    auto data_source = std::make_unique<dataset::DatasetLoader>(
+    auto dataset_loader = std::make_unique<dataset::DatasetLoader>(
         file_data_source, batch_processor, /* shuffle = */ false);
 
-    return data_source->loadInMemory(verbose).first.at(0);
+    return dataset_loader->loadInMemory(verbose).first.at(0);
   }
 
   std::tuple<uint32_t, uint32_t> mapColumnNamesToIndices(
