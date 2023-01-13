@@ -67,7 +67,8 @@ struct UDTConfig {
         lookahead(lookahead),
         delimiter(delimiter) {
     if (!data_types.count(target)) {
-      throw std::invalid_argument("Target column provided was not found in data_types.");
+      throw std::invalid_argument(
+          "Target column provided was not found in data_types.");
     }
   }
 
