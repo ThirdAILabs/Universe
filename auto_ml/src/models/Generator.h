@@ -400,7 +400,7 @@ class QueryCandidateGenerator {
         loadDatasetInMemory(/* file_name = */ filename,
                             /* batch_processor = */ training_batch_processor);
     auto labels =
-        getQueryLabels(filename, /* target_column_index = */ col_to_index, _query_generator_config->delimiter());
+        getQueryLabels(filename, /* target_column_index = */ col_to_index);
     if (!_flash_index) {
       auto hash_function = _query_generator_config->hashFunction();
       if (_query_generator_config->reservoirSize().has_value()) {
@@ -493,7 +493,7 @@ class QueryCandidateGenerator {
    * @return Labels for each batch
    */
   std::vector<std::vector<uint32_t>> getQueryLabels(
-      const std::string& file_name, uint32_t target_column_index, char delimiter = ',') {
+      const std::string& file_name, uint32_t target_column_index) {
     std::vector<std::vector<uint32_t>> labels;
 
     try {
@@ -509,7 +509,7 @@ class QueryCandidateGenerator {
       while (std::getline(input_file_stream, row)) {
         std::string correct_query =
             std::string(dataset::ProcessorUtils::parseCsvRow(
-                row, delimiter)[target_column_index]);
+                row, _query_generator_config->delimiter())[target_column_index]);
 
         if (!_queries_to_labels_map.count(correct_query)) {
           _queries_to_labels_map[correct_query] = _labels_to_queries_map.size();
