@@ -241,7 +241,7 @@ class QueryCandidateGenerator {
 
   /**
    * @brief Builds a Generator index by reading from a CSV file
-   * containing target queries and optionally mistypes source queries. Always
+   * containing target queries and optionally mistyped source queries. Always
    * does unsupervised training on the target column, and will do supervised
    * training with (source, target) pairs if use_supervised is true
    * and there is a source column in the passed in filename.
@@ -490,8 +490,7 @@ class QueryCandidateGenerator {
   }
 
   /**
-   * Computes the average recall for the each correct_query in each
-   * generated_query
+   * Computes the average recall for each correct_query in each generated_query
    */
   static double computeRecall(
       const std::vector<std::string>& correct_queries,
