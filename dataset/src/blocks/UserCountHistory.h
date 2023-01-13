@@ -32,7 +32,7 @@ class UserCountHistoryBlock final : public Block {
   bool isDense() const final { return true; }
 
   void prepareForBatch(ColumnarInputBatch& incoming_batch) final {
-    auto& first_row = incoming_batch.sample(0);
+    auto& first_row = incoming_batch.at(0);
     auto time = TimeObject(first_row.column(_timestamp_col));
     _history->checkpoint(/* new_lowest_timestamp= */ time.secondsSinceEpoch());
   }
@@ -92,7 +92,7 @@ class UserCountHistoryBlock final : public Block {
     return nullptr;
   }
 
-  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+  std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
     return {&_user_col, &_count_col, &_timestamp_col};
   }
 

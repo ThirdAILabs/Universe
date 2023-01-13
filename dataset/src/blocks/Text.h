@@ -40,7 +40,7 @@ class TextBlock : public Block {
   virtual std::exception_ptr encodeText(std::string_view text,
                                         SegmentedFeatureVector& vec) = 0;
 
-  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+  std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
     return {&_col};
   };
 

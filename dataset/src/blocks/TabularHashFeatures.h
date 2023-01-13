@@ -150,8 +150,8 @@ class TabularHashFeatures final : public Block {
     return nullptr;
   }
 
-  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
-    auto& identifiers = _metadata->getColumnIdentifiers();
+  std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
+    auto& identifiers = _metadata->concreteBlockColumnIdentifiers();
     std::vector<ColumnIdentifier*> identifier_ptrs;
     identifier_ptrs.reserve(identifiers.size());
     for (auto& identifier : identifiers) {

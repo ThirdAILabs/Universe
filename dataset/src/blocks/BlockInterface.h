@@ -205,7 +205,7 @@ class Block {
    * dataset.
    */
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
-    for (auto* column_identifier : getConsistentColumnIdentifiers()) {
+    for (auto* column_identifier : getColumnIdentifiers()) {
       column_identifier->updateColumnNumber(column_number_map);
     }
   }
@@ -215,7 +215,7 @@ class Block {
    * number, returns false otherwise.
    */
   bool hasColumnNumbers() {
-    auto column_identifiers = getConsistentColumnIdentifiers();
+    auto column_identifiers = getColumnIdentifiers();
     if (column_identifiers.empty()) {
       return false;
     }
@@ -243,7 +243,7 @@ class Block {
       return 0;
     }
     uint32_t expected_num_columns = 0;
-    for (auto* column_identifier : getConsistentColumnIdentifiers()) {
+    for (auto* column_identifier : getColumnIdentifiers()) {
       expected_num_columns =
           std::max(expected_num_columns, column_identifier->number() + 1);
     }
@@ -253,7 +253,13 @@ class Block {
   /**
    * DO NOT CALL IN A PARALLEL REGION
    * Allows blocks to prepare for the incoming batch without being affected by
-   * parallelism. Avoid if possible since this can be slow.
+   * parallelism.
+   *
+   * One place where this is used is the UserCountHistoryBlock. There, we use
+   * this method to determine whether it is safe to discard old counts.
+   *
+   * Avoid if possible, or minimize the amount of processing that happens here
+   * since it may incur an overhead.
    */
   virtual void prepareForBatch(ColumnarInputBatch& incoming_batch) {
     (void)incoming_batch;
@@ -290,7 +296,10 @@ class Block {
   virtual std::exception_ptr buildSegment(ColumnarInputSample& input_row,
                                           SegmentedFeatureVector& vec) = 0;
 
-  virtual std::vector<ColumnIdentifier*> getColumnIdentifiers() = 0;
+  /**
+   * Gets all column identifiers used by the current block.
+   */
+  virtual std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() = 0;
 
  private:
   /**
@@ -298,8 +307,8 @@ class Block {
    * name or all initialized with a number. Must be called by blocks during
    * construction to throw an error if this condition is not fulfilled.
    */
-  std::vector<ColumnIdentifier*> getConsistentColumnIdentifiers() {
-    auto column_identifiers = getColumnIdentifiers();
+  std::vector<ColumnIdentifier*> getColumnIdentifiers() {
+    auto column_identifiers = concreteBlockColumnIdentifiers();
     if (column_identifiers.empty()) {
       return column_identifiers;
     }
@@ -330,7 +339,7 @@ class Block {
  */
 struct BlockList {
   explicit BlockList(std::vector<BlockPtr>&& blocks)
-      : _blocks(blocks),
+      : _blocks(std::move(blocks)),
         _are_dense(computeAreDense(_blocks)),
         _feature_dim(computeFeatureDim(_blocks)),
         _expected_num_columns(allBlocksHaveColumnNumbers(_blocks)
@@ -366,7 +375,7 @@ struct BlockList {
    * Dispatches the method each Block. See method definition in the
    * Block class for details.
    */
-  std::exception_ptr addVectorSegment(
+  std::exception_ptr addVectorSegments(
       ColumnarInputSample& sample, SegmentedFeatureVector& segmented_vector) {
     for (auto& block : _blocks) {
       if (auto err = block->addVectorSegment(sample, segmented_vector)) {
@@ -384,9 +393,10 @@ struct BlockList {
 
  private:
   static bool computeAreDense(const std::vector<BlockPtr>& blocks) {
-    return std::all_of(
+    auto are_dense = std::all_of(
         blocks.begin(), blocks.end(),
         [](const std::shared_ptr<Block>& block) { return block->isDense(); });
+    return are_dense;
   }
 
   static bool allBlocksHaveColumnNumbers(const std::vector<BlockPtr>& blocks) {

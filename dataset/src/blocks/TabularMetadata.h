@@ -75,7 +75,7 @@ class TabularMetadata {
     }
   }
 
-  std::vector<ColumnIdentifier>& getColumnIdentifiers() {
+  std::vector<ColumnIdentifier>& concreteBlockColumnIdentifiers() {
     return _column_identifiers;
   }
 

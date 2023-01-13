@@ -22,6 +22,7 @@
 
 namespace thirdai::dataset {
 
+// TODO(Geordie / David): Rename to BatchFeaturizer?
 class GenericBatchProcessor : public BatchProcessor {
  public:
   GenericBatchProcessor(
@@ -59,7 +60,7 @@ class GenericBatchProcessor : public BatchProcessor {
     _label_blocks.updateColumnNumbers(column_number_map);
     _expected_num_cols = std::max(_input_blocks.expectedNumColumns(),
                                   _label_blocks.expectedNumColumns());
-  };
+  }
 
   std::vector<BoltBatch> createBatch(ColumnarInputBatch& input_batch) {
     std::vector<BoltVector> batch_inputs(input_batch.size());
@@ -128,7 +129,7 @@ class GenericBatchProcessor : public BatchProcessor {
     auto segmented_vector =
         makeSegmentedFeatureVector(_input_blocks.areDense(), _hash_range,
                                    /* store_segment_feature_map= */ false);
-    if (auto err = _input_blocks.addVectorSegment(sample, *segmented_vector)) {
+    if (auto err = _input_blocks.addVectorSegments(sample, *segmented_vector)) {
       std::rethrow_exception(err);
     }
     return segmented_vector->toBoltVector();
@@ -137,15 +138,23 @@ class GenericBatchProcessor : public BatchProcessor {
   BoltVector makeLabelVector(ColumnarInputSample& sample) {
     // Never hash labels
     auto segmented_vector =
-        makeSegmentedFeatureVector(_input_blocks.areDense(),
+        makeSegmentedFeatureVector(_label_blocks.areDense(),
                                    /* hash_range= */ std::nullopt,
                                    /* store_segment_feature_map= */ false);
-    if (auto err = _label_blocks.addVectorSegment(sample, *segmented_vector)) {
+    if (auto err = _label_blocks.addVectorSegments(sample, *segmented_vector)) {
       std::rethrow_exception(err);
     }
     return segmented_vector->toBoltVector();
   }
 
+  /**
+   * This function is used in RCA.
+   * The Generic batch processor creates input vectors by dispatching an input
+   * sample through featurization blocks and combining these features using a
+   * SegmentedFeatureVector. This function identifies the blocks that are
+   * responsible for each feature in an input vector and maps them back to the
+   * features produced by the blocks before they are combined.
+   */
   IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(
       ColumnarInputSample& input) {
     BoltVector vector;
@@ -153,7 +162,7 @@ class GenericBatchProcessor : public BatchProcessor {
         makeSegmentedFeatureVector(_input_blocks.areDense(), _hash_range,
                                    /* store_segment_feature_map= */ true);
 
-    if (auto err = _input_blocks.addVectorSegment(input, *segmented_vector)) {
+    if (auto err = _input_blocks.addVectorSegments(input, *segmented_vector)) {
       std::rethrow_exception(err);
     }
     return segmented_vector->getIndexToSegmentFeatureMap();
@@ -183,7 +192,7 @@ class GenericBatchProcessor : public BatchProcessor {
       std::vector<BoltVector>& batch_inputs,
       std::vector<BoltVector>& batch_labels) {
     try {
-      auto& sample = input_batch.sample(index_in_batch);
+      auto& sample = input_batch.at(index_in_batch);
       batch_inputs[index_in_batch] = makeInputVector(sample);
       batch_labels[index_in_batch] = makeLabelVector(sample);
       return nullptr;

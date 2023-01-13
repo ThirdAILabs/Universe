@@ -134,7 +134,7 @@ class ColumnarInputBatch {
   /**
    * Gets a reference to the index-th sample in the batch.
    */
-  virtual ColumnarInputSample& sample(uint32_t index) = 0;
+  virtual ColumnarInputSample& at(uint32_t index) = 0;
   /**
    * Returns the size of the batch.
    */
@@ -161,9 +161,7 @@ class MapBatchRef final : public ColumnarInputBatch {
     }
   }
 
-  ColumnarInputSample& sample(uint32_t index) final {
-    return _ref_batch.at(index);
-  }
+  ColumnarInputSample& at(uint32_t index) final { return _ref_batch.at(index); }
 
   uint32_t size() final { return _batch.size(); }
 
@@ -188,7 +186,7 @@ class CsvBatchRef final : public ColumnarInputBatch {
         _delimiter(delimiter),
         _expected_num_columns(expected_num_columns) {}
 
-  ColumnarInputSample& sample(uint32_t index) final {
+  ColumnarInputSample& at(uint32_t index) final {
     /*
       Constructing CsvSampleRef also parses the CSV string. This is an
       expensive operation, so we delay it until the caller demands the sample

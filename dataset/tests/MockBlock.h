@@ -27,7 +27,7 @@ class MockBlock final : public Block {
         "Explain feature is not yet implemented in mock block!");
   }
 
-  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+  std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
     return {&_column};
   }
 

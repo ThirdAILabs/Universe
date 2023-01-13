@@ -77,7 +77,7 @@ class CategoricalBlock : public Block {
                                             uint32_t num_categories_in_sample,
                                             SegmentedFeatureVector& vec) = 0;
 
-  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+  std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
     return {&_col};
   }
 
