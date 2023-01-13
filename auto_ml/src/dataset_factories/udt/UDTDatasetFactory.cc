@@ -8,8 +8,8 @@
 namespace thirdai::automl::data {
 
 UDTDatasetFactory::UDTDatasetFactory(
-    UDTConfigPtr config, bool force_parallel, uint32_t text_pairgram_word_limit,
-    bool contextual_columns,
+    const UDTConfigPtr& config, bool force_parallel,
+    uint32_t text_pairgram_word_limit, bool contextual_columns,
     std::optional<dataset::RegressionBinningStrategy> regression_binning)
     : _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
           config->data_types, config->provided_relationships,
