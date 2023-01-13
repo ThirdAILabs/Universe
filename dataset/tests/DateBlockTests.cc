@@ -12,7 +12,7 @@ class DateBlockTests : public testing::Test {
     GenericBatchProcessor processor(
         /* input_blocks = */ {std::make_shared<DateBlock>(/* col = */ 0)},
         /* label_blocks = */ {});
-    return std::get<0>(processor.createBatch(input_rows));
+    return processor.createBatch(input_rows).at(0);
   }
 
   static std::optional<uint32_t> dayOfWeek(const BoltVector& vector) {

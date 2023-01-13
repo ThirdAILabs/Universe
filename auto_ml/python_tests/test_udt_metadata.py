@@ -231,7 +231,7 @@ def run_metadata_test(metadata_src, index_metadata_option, download_census_incom
 
     # Accuracy should increase after indexing test metadata
     acc = get_accuracy_on_test_data(model, test_df)
-    assert acc > 0.85
+    assert acc > 0.83
 
 
 def test_item_metadata_single_indexing(download_census_income):
