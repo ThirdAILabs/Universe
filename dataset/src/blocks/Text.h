@@ -69,11 +69,11 @@ class PairGramTextBlock final : public TextBlock {
  public:
   explicit PairGramTextBlock(
       ColumnIdentifier col,
-      uint32_t dim = TextEncoding::DEFAULT_TEXT_ENCODING_DIM)
+      uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM)
       : TextBlock(std::move(col), dim) {}
 
   static auto make(ColumnIdentifier col,
-                   uint32_t dim = TextEncoding::DEFAULT_TEXT_ENCODING_DIM) {
+                   uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<PairGramTextBlock>(std::move(col), dim);
   }
 
@@ -89,9 +89,9 @@ class PairGramTextBlock final : public TextBlock {
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> pairgrams =
-        TextEncoding::computeRawPairgrams(text, _dim);
+        TokenEncoding::computeRawPairgrams(text, _dim);
 
-    TextEncoding::sumRepeatedIndices(
+    TokenEncoding::sumRepeatedIndices(
         pairgrams, /* base_value= */ 1.0, [&](uint32_t pairgram, float value) {
           vec.addSparseFeatureToSegment(pairgram, value);
         });
@@ -119,12 +119,12 @@ class UniGramTextBlock final : public TextBlock {
  public:
   explicit UniGramTextBlock(
       ColumnIdentifier col,
-      uint32_t dim = TextEncoding::DEFAULT_TEXT_ENCODING_DIM,
+      uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
       char delimiter = ' ')
       : TextBlock(std::move(col), dim), _delimiter(delimiter) {}
 
   static auto make(ColumnIdentifier col,
-                   uint32_t dim = TextEncoding::DEFAULT_TEXT_ENCODING_DIM,
+                   uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
                    char delimiter = ' ') {
     return std::make_shared<UniGramTextBlock>(std::move(col), dim, delimiter);
   }
@@ -132,7 +132,7 @@ class UniGramTextBlock final : public TextBlock {
   std::string getResponsibleWord(uint32_t index,
                                  const std::string_view& text) const final {
     std::unordered_map<uint32_t, std::string> index_to_word_map =
-        TextEncoding::buildUnigramHashToWordMap(text, _dim, _delimiter);
+        TokenEncoding::buildUnigramHashToWordMap(text, _dim, _delimiter);
     return index_to_word_map.at(index);
   }
 
@@ -140,9 +140,9 @@ class UniGramTextBlock final : public TextBlock {
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> unigrams =
-        TextEncoding::computeRawUnigramsWithRange(text, _dim, _delimiter);
+        TokenEncoding::computeRawUnigramsWithRange(text, _dim, _delimiter);
 
-    TextEncoding::sumRepeatedIndices(
+    TokenEncoding::sumRepeatedIndices(
         unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
           vec.addSparseFeatureToSegment(unigram, value);
         });
@@ -171,11 +171,11 @@ using UniGramTextBlockPtr = std::shared_ptr<UniGramTextBlock>;
 class CharKGramTextBlock final : public TextBlock {
  public:
   CharKGramTextBlock(ColumnIdentifier col, uint32_t k,
-                     uint32_t dim = TextEncoding::DEFAULT_TEXT_ENCODING_DIM)
+                     uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM)
       : TextBlock(std::move(col), dim), _k(k) {}
 
   static auto make(ColumnIdentifier col, uint32_t k,
-                   uint32_t dim = TextEncoding::DEFAULT_TEXT_ENCODING_DIM) {
+                   uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<CharKGramTextBlock>(std::move(col), k, dim);
   }
 
@@ -200,7 +200,7 @@ class CharKGramTextBlock final : public TextBlock {
     size_t n_kgrams = text.size() >= _k ? text.size() - (_k - 1) : 1;
     size_t len = std::min(text.size(), static_cast<size_t>(_k));
     for (uint32_t offset = 0; offset < n_kgrams; offset++) {
-      uint32_t k_gram_hash = TextEncoding::computeUnigram(
+      uint32_t k_gram_hash = TokenEncoding::computeUnigram(
                                  /* key= */ &lower_case_text.at(offset), len) %
                              _dim;
       char_k_grams.push_back(k_gram_hash);
@@ -211,7 +211,7 @@ class CharKGramTextBlock final : public TextBlock {
       number of entries in the sparse vector, which can in turn make BOLT
       run faster.
     */
-    TextEncoding::sumRepeatedIndices(
+    TokenEncoding::sumRepeatedIndices(
         /* indices = */ char_k_grams,
         /* base_value = */ 1.0, [&](uint32_t index, float value) {
           vec.addSparseFeatureToSegment(index, value);

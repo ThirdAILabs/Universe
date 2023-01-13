@@ -38,13 +38,14 @@ Explanation TabularHashFeatures::explainIndex(uint32_t index_within_block,
 std::exception_ptr TabularHashFeatures::buildSegment(
     ColumnarInputSample& input, SegmentedFeatureVector& vec) {
   std::vector<uint32_t> tokens;
-  if (auto e = forEachOutputToken(
-          input, [&](const Token& token) { tokens.push_back(token.token); })) {
+  if (auto e = forEachOutputToken(input, [&tokens](const Token& token) {
+        tokens.push_back(token.token);
+      })) {
     return e;
   };
 
-  TextEncoding::sumRepeatedIndices(
-      tokens, /* base_value = */ 1.0, [&](uint32_t pairgram, float value) {
+  TokenEncoding::sumRepeatedIndices(
+      tokens, /* base_value = */ 1.0, [&vec](uint32_t pairgram, float value) {
         vec.addSparseFeatureToSegment(pairgram, value);
       });
 
@@ -81,7 +82,7 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
         break;
       }
       case TabularDataType::Categorical: {
-        unigram = TextEncoding::computeUnigram(str_val.data(), str_val.size());
+        unigram = TokenEncoding::computeUnigram(str_val.data(), str_val.size());
         break;
       }
     }
@@ -94,8 +95,8 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
 
   std::vector<uint32_t> hashes;
   if (_with_pairgrams) {
-    TextEncoding::forEachPairgramFromUnigram(
-        unigram_hashes, _output_range, [&](TextEncoding::PairGram pairgram) {
+    TokenEncoding::forEachPairgramFromUnigram(
+        unigram_hashes, _output_range, [&](TokenEncoding::PairGram pairgram) {
           auto token =
               Token::fromPairgram(pairgram, unigram_to_column_identifier);
           token_processor(token);

@@ -82,7 +82,7 @@ class TabularHashFeatures final : public Block {
     }
 
     static Token fromPairgram(
-        TextEncoding::PairGram pairgram,
+        TokenEncoding::PairGram pairgram,
         const UnigramToColumnIdentifier& to_column_identifier) {
       Token token;
       token.token = pairgram.pairgram;

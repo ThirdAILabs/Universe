@@ -39,7 +39,7 @@ class TabularHashedFeatures : public Transformation {
     std::vector<uint32_t> column_name_hashes;
     for (const auto& col_name : _input_column_names) {
       columns.push_back(column_map.getTokenColumn(col_name));
-      column_name_hashes.push_back(dataset::TextEncoding::computeUnigram(
+      column_name_hashes.push_back(dataset::TokenEncoding::computeUnigram(
           /* key = */ col_name.c_str(), /* len = */ col_name.size()));
     }
 
@@ -57,7 +57,7 @@ class TabularHashedFeatures : public Transformation {
         const char* val_to_hash =
             reinterpret_cast<const char*>(&((*column)[row_idx]));
         uint32_t hashed_col_val =
-            dataset::TextEncoding::computeUnigram(val_to_hash, /* len = */ 4);
+            dataset::TokenEncoding::computeUnigram(val_to_hash, /* len = */ 4);
         // to avoid two identical values in different columns from having the
         // same hash value we combine the with the hash of the column name of
         // origin
@@ -70,7 +70,7 @@ class TabularHashedFeatures : public Transformation {
         // we don't deduplicate pairgrams since we ensure unique hash values
         // above, thus reducing the chance of duplicates.
         std::vector<uint32_t> row_pairgrams =
-            dataset::TextEncoding::computeRawPairgramsFromUnigrams(
+            dataset::TokenEncoding::computeRawPairgramsFromUnigrams(
                 salted_unigrams, _output_range);
         tabular_hash_values[row_idx] = row_pairgrams;
       } else {
