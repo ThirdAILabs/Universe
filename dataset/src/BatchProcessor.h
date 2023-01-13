@@ -77,42 +77,6 @@ class UnaryBoltBatchProcessor : public BatchProcessor {
   }
 };
 
-/**
- * This BatchProcessor provides an interface to compute metadata about a dataset
- * in a streaming fashion without creating BoltVectors
- */
-class ComputeBatchProcessor : public BatchProcessor {
- public:
-  std::vector<BoltBatch> createBatch(
-      const std::vector<std::string>& rows) final {
-    // TODO(david) enable parallel by making metadata calculation thread safe
-    // #pragma omp parallel for default(none) shared(rows)
-    for (const std::string& row : rows) {
-      processRow(row);
-    }
-
-    return {BoltBatch(), BoltBatch()};
-  }
-
-  std::vector<uint32_t> getDimensions() final { return {}; }
-
- protected:
-  virtual void processRow(const std::string& row) = 0;
-
-  // Default constructor for cereal.
-  ComputeBatchProcessor() {}
-
- private:
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<BatchProcessor>(this));
-  }
-};
-
 }  // namespace thirdai::dataset
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::UnaryBoltBatchProcessor)
-CEREAL_REGISTER_TYPE(thirdai::dataset::ComputeBatchProcessor)
