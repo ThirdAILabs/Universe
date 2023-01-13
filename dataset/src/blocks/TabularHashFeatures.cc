@@ -10,6 +10,34 @@
 
 namespace thirdai::dataset {
 
+using UnigramToColumnIdentifier =
+    std::unordered_map<uint32_t, ColumnIdentifier>;
+
+struct Token {
+  static Token fromUnigram(
+      uint32_t unigram, const UnigramToColumnIdentifier& to_column_identifier) {
+    Token token;
+    token.token = unigram;
+    token.first_column = to_column_identifier.at(unigram);
+    token.second_column = token.first_column;
+    return token;
+  }
+
+  static Token fromPairgram(
+      TokenEncoding::PairGram pairgram,
+      const UnigramToColumnIdentifier& to_column_identifier) {
+    Token token;
+    token.token = pairgram.pairgram;
+    token.first_column = to_column_identifier.at(pairgram.first_token);
+    token.second_column = to_column_identifier.at(pairgram.second_token);
+    return token;
+  }
+
+  uint32_t token;
+  ColumnIdentifier first_column;
+  ColumnIdentifier second_column;
+};
+
 Explanation TabularHashFeatures::explainIndex(uint32_t index_within_block,
                                               ColumnarInputSample& input) {
   ColumnIdentifier first_column;
