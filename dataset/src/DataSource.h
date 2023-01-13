@@ -87,15 +87,59 @@ class SimpleFileDataSource final : public DataSource {
 class Seq2SeqSource final : public DataSource {
  public:
   Seq2SeqSource(const std::string& filename, uint32_t target_batch_size)
-      : DataSource(target_batch_size), _filename(filename) {}
+      : DataSource(target_batch_size),
+        _filename(filename),
+        _file(SafeFileIO::ifstream(filename)) {}
 
   static std::shared_ptr<Seq2SeqSource> make(const std::string& filename,
                                              uint32_t target_batch_size) {
     return std::make_shared<Seq2SeqSource>(filename, target_batch_size);
   }
 
+  // No clue what this is supposed to do
+  std::optional<std::string> nextLine() final {
+    std::string line;
+    if (std::getline(_file, line)) {
+      return line;
+    }
+    return std::nullopt;
+  }
+
+  std::string resourceName() const final { return _filename; }
+
+  std::optional<std::vector<std::string>> nextBatch() final {
+    if (_file.eof()) {
+      return std::nullopt;
+    }
+
+    std::vector<std::string> lines;
+    std::string line;
+
+    // Can I try taking a line and projecting it into a batch?
+    // How do I even manipulate the string here, I have no idea which ones the
+    // rows/columns are.
+
+    while (lines.size() < _target_batch_size && std::getline(_file, line)) {
+      if (!line.empty()) {
+        lines.push_back(std::move(line));
+      }
+    }
+
+    if (lines.empty()) {
+      return std::nullopt;
+    }
+
+    return std::make_optional(std::move(lines));
+  }
+
+  void restart() final {
+    _file.clear();
+    _file.seekg(0, std::ios::beg);
+  }
+
  private:
   std::string _filename;
+  std::ifstream _file;
 };
 
 }  // namespace thirdai::dataset
