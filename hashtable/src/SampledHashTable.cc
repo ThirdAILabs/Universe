@@ -2,7 +2,6 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
-#include <_types/_uint32_t.h>
 #include <cassert>
 #include <queue>
 #include <random>
