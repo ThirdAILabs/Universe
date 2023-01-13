@@ -38,8 +38,7 @@ class Input final : public Node {
   }
 
   // This class does not own this memory, but we pass it in as a pointer that
-  // will be stored as a field so it can be used in future method calls. It is
-  // only valid until the next time cleanupAfterBatchProcessing is called.
+  // will be stored as a field so it can be used in future method calls.
   void setInputs(BoltBatch* inputs);
 
   uint32_t expectedInputDim() const { return _expected_input_dim; }
@@ -90,8 +89,6 @@ class Input final : public Node {
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
     return (*_input_batch)[vec_index];
   }
-
-  void cleanupAfterBatchProcessingImpl() final { _input_batch = nullptr; }
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final;
 

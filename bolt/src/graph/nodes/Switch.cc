@@ -124,12 +124,6 @@ BoltVector& SwitchNode::getOutputVectorImpl(uint32_t vec_index) {
   return _layers.at(active_layer)->getOutputVector(vec_index);
 }
 
-void SwitchNode::cleanupAfterBatchProcessingImpl() {
-  for (auto& layer : _layers) {
-    layer->cleanupAfterBatchProcessing();
-  }
-}
-
 void SwitchNode::summarizeImpl(std::stringstream& summary,
                                bool detailed) const {
   summary << _layers.at(0)->getPredecessorsImpl().at(0)->name();
