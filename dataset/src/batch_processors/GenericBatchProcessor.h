@@ -126,25 +126,11 @@ class GenericBatchProcessor : public BatchProcessor {
   void setParallelism(bool parallel) { _parallel = parallel; }
 
   BoltVector makeInputVector(ColumnarInputSample& sample) {
-    auto segmented_vector =
-        makeSegmentedFeatureVector(_input_blocks.areDense(), _hash_range,
-                                   /* store_segment_feature_map= */ false);
-    if (auto err = _input_blocks.addVectorSegments(sample, *segmented_vector)) {
+    BoltVector vector;
+    if (auto err = buildVector(vector, _input_blocks, sample, _hash_range)) {
       std::rethrow_exception(err);
     }
-    return segmented_vector->toBoltVector();
-  }
-
-  BoltVector makeLabelVector(ColumnarInputSample& sample) {
-    // Never hash labels
-    auto segmented_vector =
-        makeSegmentedFeatureVector(_label_blocks.areDense(),
-                                   /* hash_range= */ std::nullopt,
-                                   /* store_segment_feature_map= */ false);
-    if (auto err = _label_blocks.addVectorSegments(sample, *segmented_vector)) {
-      std::rethrow_exception(err);
-    }
-    return segmented_vector->toBoltVector();
+    return vector;
   }
 
   /**
@@ -191,14 +177,37 @@ class GenericBatchProcessor : public BatchProcessor {
       uint32_t index_in_batch, ColumnarInputBatch& input_batch,
       std::vector<BoltVector>& batch_inputs,
       std::vector<BoltVector>& batch_labels) {
+    /*
+      Try-catch block is for capturing invalid argument exceptions from
+      input_batch.at(). Since we don't know the concrete type of the object
+      returned by input_batch.at(), we can't take it out of the scope of the
+      block. Thus, buildVector() also needs to be in this try-catch block.
+    */
     try {
       auto& sample = input_batch.at(index_in_batch);
-      batch_inputs[index_in_batch] = makeInputVector(sample);
-      batch_labels[index_in_batch] = makeLabelVector(sample);
-      return nullptr;
-    } catch (std::exception_ptr& error) {
-      return error;
+      if (auto err = buildVector(batch_inputs[index_in_batch], _input_blocks,
+                                 sample, _hash_range)) {
+        return err;
+      }
+      return buildVector(batch_labels[index_in_batch], _label_blocks, sample,
+                         // Label is never hashed.
+                         /* hash_range= */ std::nullopt);
+    } catch (std::invalid_argument& error) {
+      return std::make_exception_ptr(error);
     }
+  }
+
+  static std::exception_ptr buildVector(BoltVector& vector, BlockList& blocks,
+                                        ColumnarInputSample& sample,
+                                        std::optional<uint32_t> hash_range) {
+    auto segmented_vector =
+        makeSegmentedFeatureVector(blocks.areDense(), hash_range,
+                                   /* store_segment_feature_map= */ false);
+    if (auto err = blocks.addVectorSegments(sample, *segmented_vector)) {
+      return err;
+    }
+    vector = segmented_vector->toBoltVector();
+    return nullptr;
   }
 
   static std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
