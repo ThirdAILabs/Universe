@@ -1,6 +1,6 @@
+import os
 import platform
 
-import os
 import pytest
 from thirdai import bolt, deployment
 
