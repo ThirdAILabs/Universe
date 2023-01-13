@@ -11,7 +11,6 @@
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
-#include <dataset/src/blocks/TabularMetadata.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/blocks/UserItemHistory.h>
@@ -94,10 +93,6 @@ class FeatureComposer {
       const std::unordered_map<uint32_t, std::pair<double, double>>& col_ranges,
       const std::vector<std::string>& column_names, bool contextual_columns,
       std::unordered_map<uint32_t, uint32_t> col_num_bins);
-
-  static dataset::ThreadSafeVocabularyPtr& vocabForColumn(
-      ColumnVocabularies& column_vocabs, const std::string& column_name,
-      uint32_t vocab_size);
 };
 
 }  // namespace thirdai::automl::data
