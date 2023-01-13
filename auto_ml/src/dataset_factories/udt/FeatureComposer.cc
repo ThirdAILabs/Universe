@@ -4,7 +4,7 @@
 namespace thirdai::automl::data {
 
 UDTConfigPtr FeatureComposer::verifyConfigIsValid(
-    UDTConfigPtr&& config,
+    const UDTConfigPtr& config,
     const TemporalRelationships& temporal_relationships) {
   if (temporal_relationships.count(config->target)) {
     throw std::invalid_argument(
