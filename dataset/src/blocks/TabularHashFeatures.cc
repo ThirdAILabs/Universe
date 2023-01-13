@@ -2,6 +2,7 @@
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <cmath>
 #include <cstdlib>
 #include <stdexcept>
 #include <string_view>
