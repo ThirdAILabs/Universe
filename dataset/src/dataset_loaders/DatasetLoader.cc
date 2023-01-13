@@ -115,7 +115,6 @@ void DatasetLoader::restart() {
 }
 
 void DatasetLoader::fillShuffleBuffer(size_t fill_size) {
-  std::cout << fill_size << std::endl;
   while (_buffer.size() <= fill_size) {
     auto rows = _data_source->nextBatch();
     if (!rows) {

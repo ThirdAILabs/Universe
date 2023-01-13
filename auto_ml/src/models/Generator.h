@@ -250,32 +250,21 @@ class QueryCandidateGenerator {
    *
    * @param file_name
    */
-  void buildFlashIndex(const std::string& file_name) {
-    licensing::verifyAllowedDataset(file_name);
+  void buildFlashIndex(const std::string& filename) {
+    licensing::verifyAllowedDataset(filename);
 
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
-        /* file_name = */ file_name, /* delimiter = */ ',');
-    auto training_batch_processor = constructGenericBatchProcessor(
-        /* column_index = */ source_column_index);
-    auto data =
-        loadDatasetInMemory(/* file_name = */ file_name,
-                            /* batch_processor = */ training_batch_processor);
+        /* file_name = */ filename, /* delimiter = */ ',');
 
-    auto labels = getQueryLabels(
-        file_name, /* target_column_index = */ target_column_index);
+    buildIndexImpl(filename, /* col_to_hash= */ source_column_index,
+                   /* col_to_index= */ target_column_index);
 
-    if (!_flash_index) {
-      auto hash_function = _query_generator_config->hashFunction();
-      if (_query_generator_config->reservoirSize().has_value()) {
-        _flash_index = std::make_unique<Flash<uint32_t>>(
-            hash_function, _query_generator_config->reservoirSize().value());
-      } else {
-        _flash_index = std::make_unique<Flash<uint32_t>>(hash_function);
-      }
+    if (source_column_index != target_column_index) {
+      // If the source and target columns are distinct then we also hash+index
+      // the target column.
+      buildIndexImpl(filename, /* col_to_hash= */ target_column_index,
+                     /* col_to_index= */ target_column_index);
     }
-
-    _flash_index->addDataset(/* dataset = */ *data, /* labels = */ labels,
-                             /* verbose = */ true);
   }
 
   /**
@@ -398,6 +387,31 @@ class QueryCandidateGenerator {
             /* input_blocks = */ inference_input_blocks,
             /* labels_blocks = */ std::vector<dataset::BlockPtr>{},
             /* has_header = */ false, /* delimiter = */ ',');
+  }
+
+  void buildIndexImpl(const std::string& filename, uint32_t col_to_hash,
+                      uint32_t col_to_index) {
+    auto training_batch_processor = constructGenericBatchProcessor(
+        /* column_index = */ col_to_hash);
+    auto data =
+        loadDatasetInMemory(/* file_name = */ filename,
+                            /* batch_processor = */ training_batch_processor);
+
+    auto labels =
+        getQueryLabels(filename, /* target_column_index = */ col_to_index);
+
+    if (!_flash_index) {
+      auto hash_function = _query_generator_config->hashFunction();
+      if (_query_generator_config->reservoirSize().has_value()) {
+        _flash_index = std::make_unique<Flash<uint32_t>>(
+            hash_function, _query_generator_config->reservoirSize().value());
+      } else {
+        _flash_index = std::make_unique<Flash<uint32_t>>(hash_function);
+      }
+    }
+
+    _flash_index->addDataset(/* dataset = */ *data, /* labels = */ labels,
+                             /* verbose = */ true);
   }
 
   std::shared_ptr<dataset::GenericBatchProcessor>
