@@ -68,7 +68,7 @@ class DenseArrayBlock final : public Block {
     return nullptr;
   }
 
-  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+  std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
     return {&_start_col};
   }
 

@@ -116,7 +116,7 @@ class TabularHashFeatures final : public Block {
   std::exception_ptr forEachOutputToken(ColumnarInputSample& input,
                                         TOKEN_PROCESSOR_T token_processor);
 
-  std::vector<ColumnIdentifier*> getColumnIdentifiers() final;
+  std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final;
 
  private:
   /**

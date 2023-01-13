@@ -20,6 +20,7 @@ UDTDatasetFactory::UDTDatasetFactory(
       _parallel(_temporal_relationships.empty() || force_parallel),
       _text_pairgram_word_limit(text_pairgram_word_limit),
       _contextual_columns(contextual_columns),
+      _normalize_target_categories(false),
       _regression_binning(regression_binning),
       _vectors_map(processAllMetadata()),
       _labeled_history_updating_processor(makeLabeledUpdatingProcessor()),
@@ -251,7 +252,8 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock() {
       return dataset::NumericalCategoricalBlock::make(
           /* col= */ _config->target,
           /* n_classes= */ _config->n_target_classes.value(),
-          /* delimiter= */ target_config->delimiter);
+          /* delimiter= */ target_config->delimiter,
+          /* normalize_categories= */ _normalize_target_categories);
     }
     if (!_vocabs.count(_config->target)) {
       _vocabs[_config->target] = dataset::ThreadSafeVocabulary::make(
@@ -259,7 +261,8 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock() {
     }
     return dataset::StringLookupCategoricalBlock::make(
         /* col= */ _config->target, /* vocab= */ _vocabs.at(_config->target),
-        /* delimiter= */ target_config->delimiter);
+        /* delimiter= */ target_config->delimiter,
+        /* normalize_categories= */ _normalize_target_categories);
   }
   if (asNumerical(target_type)) {
     if (!_regression_binning) {

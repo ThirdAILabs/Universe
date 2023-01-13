@@ -110,7 +110,8 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
   return nullptr;
 }
 
-std::vector<ColumnIdentifier*> TabularHashFeatures::getColumnIdentifiers() {
+std::vector<ColumnIdentifier*>
+TabularHashFeatures::concreteBlockColumnIdentifiers() {
   std::vector<ColumnIdentifier*> identifier_ptrs;
   identifier_ptrs.reserve(_columns.size());
   for (auto& column : _columns) {

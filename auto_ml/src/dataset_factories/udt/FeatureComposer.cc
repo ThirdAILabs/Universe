@@ -295,14 +295,4 @@ dataset::BlockPtr FeatureComposer::makeTemporalNumericalBlock(
       /* should_update_history= */ should_update_history,
       /* include_current_row= */ temporal_meta.include_current_row);
 }
-
-dataset::ThreadSafeVocabularyPtr& FeatureComposer::vocabForColumn(
-    ColumnVocabularies& column_vocabs, const std::string& column_name,
-    uint32_t vocab_size) {
-  if (!column_vocabs.count(column_name)) {
-    column_vocabs[column_name] =
-        dataset::ThreadSafeVocabulary::make(vocab_size);
-  }
-  return column_vocabs.at(column_name);
-}
 }  // namespace thirdai::automl::data

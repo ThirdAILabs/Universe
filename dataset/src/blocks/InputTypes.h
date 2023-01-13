@@ -2,6 +2,8 @@
 
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <optional>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -77,6 +79,16 @@ class RowSampleRef final : public ColumnarInputSample {
   explicit RowSampleRef(const RowInput& columns) : _columns(columns) {}
 
   std::string_view column(const ColumnIdentifier& column) final {
+    if (column.number() >= _columns.size()) {
+      std::stringstream error;
+      error << "Tried to access " << column.number()
+            << "-th column but this row only has " << _columns.size()
+            << " columns:" << std::endl;
+      for (auto column : _columns) {
+        error << " \"" << column << "\"";
+      }
+      throw std::invalid_argument(error.str());
+    }
     return _columns.at(column.number());
   }
 
@@ -98,23 +110,26 @@ class CsvSampleRef final : public ColumnarInputSample {
   CsvSampleRef(const LineInput& line, char delimiter,
                std::optional<uint32_t> expected_num_cols = std::nullopt)
       : _columns(ProcessorUtils::parseCsvRow(line, delimiter)) {
-    if (expected_num_cols && expected_num_cols != _columns->size()) {
-      std::stringstream error_ss;
-      error_ss << "Expected " << *expected_num_cols
-               << " columns in each row of the dataset. Found row with "
-               << _columns->size() << " columns:";
-      throw std::invalid_argument(error_ss.str());
+    if (expected_num_cols && expected_num_cols != _columns.size()) {
+      std::stringstream error;
+      error << "Expected " << *expected_num_cols
+            << " columns in each row of the dataset. Found row with "
+            << _columns.size() << " columns:";
+      for (auto column : _columns) {
+        error << " \"" << column << "\"";
+      }
+      throw std::invalid_argument(error.str());
     }
   }
 
   std::string_view column(const ColumnIdentifier& column) final {
-    return RowSampleRef(*_columns).column(column);
+    return RowSampleRef(_columns).column(column);
   }
 
-  uint32_t size() final { return _columns->size(); }
+  uint32_t size() final { return _columns.size(); }
 
  private:
-  std::optional<RowInput> _columns;
+  RowInput _columns;
 };
 
 /**
@@ -134,12 +149,23 @@ class ColumnarInputBatch {
   /**
    * Gets a reference to the index-th sample in the batch.
    */
-  virtual ColumnarInputSample& sample(uint32_t index) = 0;
+  virtual ColumnarInputSample& at(uint32_t index) = 0;
   /**
    * Returns the size of the batch.
    */
-  virtual uint32_t size() = 0;
+  virtual uint32_t size() const = 0;
   virtual ~ColumnarInputBatch() = default;
+
+ protected:
+  void assertIndexInRange(uint32_t index) const {
+    if (size() <= index) {
+      std::stringstream error;
+      error << "Attempted to access " << index
+            << "-th sample but this batch only contains " << size()
+            << " samples.";
+      throw std::invalid_argument(error.str());
+    }
+  }
 };
 
 /**
@@ -161,11 +187,12 @@ class MapBatchRef final : public ColumnarInputBatch {
     }
   }
 
-  ColumnarInputSample& sample(uint32_t index) final {
+  ColumnarInputSample& at(uint32_t index) final {
+    assertIndexInRange(index);
     return _ref_batch.at(index);
   }
 
-  uint32_t size() final { return _batch.size(); }
+  uint32_t size() const final { return _batch.size(); }
 
  private:
   const MapInputBatch& _batch;
@@ -188,7 +215,8 @@ class CsvBatchRef final : public ColumnarInputBatch {
         _delimiter(delimiter),
         _expected_num_columns(expected_num_columns) {}
 
-  ColumnarInputSample& sample(uint32_t index) final {
+  ColumnarInputSample& at(uint32_t index) final {
+    assertIndexInRange(index);
     /*
       Constructing CsvSampleRef also parses the CSV string. This is an
       expensive operation, so we delay it until the caller demands the sample
@@ -202,7 +230,7 @@ class CsvBatchRef final : public ColumnarInputBatch {
     return *_ref_batch.at(index);
   }
 
-  uint32_t size() final { return _batch.size(); }
+  uint32_t size() const final { return _batch.size(); }
 
  private:
   const LineInputBatch& _batch;

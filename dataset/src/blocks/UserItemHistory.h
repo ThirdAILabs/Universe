@@ -196,7 +196,7 @@ class UserItemHistoryBlock final : public Block {
     return nullptr;
   }
 
-  std::vector<ColumnIdentifier*> getColumnIdentifiers() final {
+  std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
     return {&_user_col, &_item_col, &_timestamp_col};
   }
 

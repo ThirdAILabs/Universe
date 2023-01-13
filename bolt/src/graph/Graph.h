@@ -112,6 +112,8 @@ class BoltGraph {
 
   std::vector<NodePtr> getNodes() { return _nodes; }
 
+  NodePtr output() { return _output; }
+
  private:
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::checkLicense(); }

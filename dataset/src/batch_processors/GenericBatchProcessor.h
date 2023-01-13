@@ -22,6 +22,7 @@
 
 namespace thirdai::dataset {
 
+// TODO(Geordie / David): Rename to BatchFeaturizer?
 class GenericBatchProcessor : public BatchProcessor {
  public:
   GenericBatchProcessor(
@@ -59,7 +60,7 @@ class GenericBatchProcessor : public BatchProcessor {
     _label_blocks.updateColumnNumbers(column_number_map);
     _expected_num_cols = std::max(_input_blocks.expectedNumColumns(),
                                   _label_blocks.expectedNumColumns());
-  };
+  }
 
   std::vector<BoltBatch> createBatch(ColumnarInputBatch& input_batch) {
     std::vector<BoltVector> batch_inputs(input_batch.size());
@@ -125,27 +126,21 @@ class GenericBatchProcessor : public BatchProcessor {
   void setParallelism(bool parallel) { _parallel = parallel; }
 
   BoltVector makeInputVector(ColumnarInputSample& sample) {
-    auto segmented_vector =
-        makeSegmentedFeatureVector(_input_blocks.areDense(), _hash_range,
-                                   /* store_segment_feature_map= */ false);
-    if (auto err = _input_blocks.addVectorSegment(sample, *segmented_vector)) {
+    BoltVector vector;
+    if (auto err = buildVector(vector, _input_blocks, sample, _hash_range)) {
       std::rethrow_exception(err);
     }
-    return segmented_vector->toBoltVector();
+    return vector;
   }
 
-  BoltVector makeLabelVector(ColumnarInputSample& sample) {
-    // Never hash labels
-    auto segmented_vector =
-        makeSegmentedFeatureVector(_input_blocks.areDense(),
-                                   /* hash_range= */ std::nullopt,
-                                   /* store_segment_feature_map= */ false);
-    if (auto err = _label_blocks.addVectorSegment(sample, *segmented_vector)) {
-      std::rethrow_exception(err);
-    }
-    return segmented_vector->toBoltVector();
-  }
-
+  /**
+   * This function is used in RCA.
+   * The Generic batch processor creates input vectors by dispatching an input
+   * sample through featurization blocks and combining these features using a
+   * SegmentedFeatureVector. This function identifies the blocks that are
+   * responsible for each feature in an input vector and maps them back to the
+   * features produced by the blocks before they are combined.
+   */
   IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(
       ColumnarInputSample& input) {
     BoltVector vector;
@@ -153,7 +148,7 @@ class GenericBatchProcessor : public BatchProcessor {
         makeSegmentedFeatureVector(_input_blocks.areDense(), _hash_range,
                                    /* store_segment_feature_map= */ true);
 
-    if (auto err = _input_blocks.addVectorSegment(input, *segmented_vector)) {
+    if (auto err = _input_blocks.addVectorSegments(input, *segmented_vector)) {
       std::rethrow_exception(err);
     }
     return segmented_vector->getIndexToSegmentFeatureMap();
@@ -182,14 +177,37 @@ class GenericBatchProcessor : public BatchProcessor {
       uint32_t index_in_batch, ColumnarInputBatch& input_batch,
       std::vector<BoltVector>& batch_inputs,
       std::vector<BoltVector>& batch_labels) {
+    /*
+      Try-catch block is for capturing invalid argument exceptions from
+      input_batch.at(). Since we don't know the concrete type of the object
+      returned by input_batch.at(), we can't take it out of the scope of the
+      block. Thus, buildVector() also needs to be in this try-catch block.
+    */
     try {
-      auto& sample = input_batch.sample(index_in_batch);
-      batch_inputs[index_in_batch] = makeInputVector(sample);
-      batch_labels[index_in_batch] = makeLabelVector(sample);
-      return nullptr;
-    } catch (std::exception_ptr& error) {
-      return error;
+      auto& sample = input_batch.at(index_in_batch);
+      if (auto err = buildVector(batch_inputs[index_in_batch], _input_blocks,
+                                 sample, _hash_range)) {
+        return err;
+      }
+      return buildVector(batch_labels[index_in_batch], _label_blocks, sample,
+                         // Label is never hashed.
+                         /* hash_range= */ std::nullopt);
+    } catch (std::invalid_argument& error) {
+      return std::make_exception_ptr(error);
     }
+  }
+
+  static std::exception_ptr buildVector(BoltVector& vector, BlockList& blocks,
+                                        ColumnarInputSample& sample,
+                                        std::optional<uint32_t> hash_range) {
+    auto segmented_vector =
+        makeSegmentedFeatureVector(blocks.areDense(), hash_range,
+                                   /* store_segment_feature_map= */ false);
+    if (auto err = blocks.addVectorSegments(sample, *segmented_vector)) {
+      return err;
+    }
+    vector = segmented_vector->toBoltVector();
+    return nullptr;
   }
 
   static std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
