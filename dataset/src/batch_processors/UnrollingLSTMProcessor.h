@@ -1,0 +1,310 @@
+#include "ProcessorUtils.h"
+#include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/BatchProcessor.h>
+#include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/utils/SegmentedFeatureVector.h>
+#include <string>
+
+namespace thirdai::dataset {
+
+class UnrollingLSTMProcessor : public BatchProcessor {
+ public:
+  UnrollingLSTMProcessor(
+      std::vector<std::shared_ptr<Block>> input_blocks,
+      std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
+      char delimiter = ',', bool parallel = true,
+      /*
+        If hash_range has a value, then features from different blocks
+        will be aggregated by hashing them to the same range but with
+        different hash salts. Otherwise, the features will be treated
+        as sparse vectors, which are then concatenated.
+      */
+      std::optional<uint32_t> hash_range = std::nullopt)
+      : _expects_header(has_header),
+        _delimiter(delimiter),
+        _parallel(parallel),
+        _hash_range(hash_range),
+        _num_cols_in_header(std::nullopt),
+        _expected_num_cols(0),
+        _input_blocks_dense(
+            std::all_of(input_blocks.begin(), input_blocks.end(),
+                        [](const std::shared_ptr<Block>& block) {
+                          return block->isDense();
+                        })),
+        _label_blocks_dense(
+            std::all_of(label_blocks.begin(), label_blocks.end(),
+                        [](const std::shared_ptr<Block>& block) {
+                          return block->isDense();
+                        })),
+        /**
+         * Here we copy input_blocks and label_blocks because when we
+         * accept a vector representation of a Python List created by
+         * PyBind11, the vector does not persist beyond this function
+         * call, which results in segfaults later down the line.
+         * It is therefore safest to just copy these vectors.
+         * Furthermore, these vectors are cheap to copy since they contain a
+         * small number of elements and each element is a pointer.
+         */
+        _input_blocks(std::move(input_blocks)),
+        _label_blocks(std::move(label_blocks)) {
+    for (const auto& block : _input_blocks) {
+      _expected_num_cols =
+          std::max(block->expectedNumColumns(), _expected_num_cols);
+    }
+    for (const auto& block : _label_blocks) {
+      _expected_num_cols =
+          std::max(block->expectedNumColumns(), _expected_num_cols);
+    }
+  }
+
+  std::vector<BoltBatch> createBatch(
+      const std::vector<std::string>& rows) final {
+    uint32_t batch_size = rows.size();
+
+    using BoltVectors = std::vector<BoltVector>;
+    using Batches = std::vector<BoltVectors>;
+    Batches batch_inputs;
+    Batches batch_labels;
+
+    auto first_row = ProcessorUtils::parseCsvRow(rows.at(0), _delimiter);
+    prepareInputBlocksForBatch(first_row);
+    for (auto& block : _label_blocks) {
+      block->prepareForBatch(first_row);
+    }
+
+    /*
+      These variables keep track of the presence of an erroneous input line.
+      We do this instead of throwing an error directly because throwing
+      an error inside an OpenMP structured block has undefined behavior.
+    */
+    std::exception_ptr num_columns_error;
+    std::exception_ptr block_err;
+
+    // If there isn't a header, we are forced to assume that every row will
+    // have exactly as many columns as expected. Otherwise, we can assume that
+    // every row will have the same number of columns as the header
+    uint32_t expected_num_cols_in_batch =
+        _num_cols_in_header.value_or(_expected_num_cols);
+
+    uint32_t current_sample_count = 0;
+#pragma omp parallel for default(none)                                     \
+    shared(rows, batch_inputs, batch_labels, num_columns_error, block_err, \
+           current_sample_count, batch_size,                               \
+           expected_num_cols_in_batch) if (_parallel)
+    for (size_t i = 0; i < rows.size(); ++i) {
+      auto columns = ProcessorUtils::parseCsvRow(rows[i], _delimiter);
+      if (columns.size() != expected_num_cols_in_batch) {
+        std::stringstream error_ss;
+        error_ss << "[ProcessorUtils::parseCsvRow] Expected "
+                 << _expected_num_cols << " columns delimited by '"
+                 << _delimiter << "' in each row of the dataset. Found row '"
+                 << rows[i] << "' with number of columns = " << columns.size()
+                 << ".";
+#pragma omp critical
+        num_columns_error =
+            std::make_exception_ptr(std::invalid_argument(error_ss.str()));
+        continue;
+      }
+      // Specialization
+      std::string_view source_column = columns[0];
+      std::string_view target_column = columns[1];
+      for (size_t j = 0; j < target_column.size(); j++) {
+        // We specialize here.
+        std::string source(source_column);
+        std::string target(target_column);
+
+        source += target.substr(0, j);
+        target = target.substr(j, std::string::npos);
+        std::vector<std::string_view> modified_columns = {
+            std::string_view(source.data(), source.size()),
+            std::string_view(target.data(), target.size())};
+
+        if (auto err =
+                makeInputVector(modified_columns, batch_inputs.back()[i])) {
+#pragma omp critical
+          block_err = err;
+        }
+        if (auto err =
+                makeLabelVector(modified_columns, batch_labels.back()[i])) {
+#pragma omp critical
+          block_err = err;
+        }
+
+#pragma omp critical
+        {
+          // Knock knock, who's there? Race condition.
+          if (current_sample_count % batch_size == 0) {
+            batch_inputs.push_back({});
+            batch_labels.push_back({});
+          }
+          ++current_sample_count;
+        }
+      }
+    }
+
+    if (block_err) {
+      std::rethrow_exception(block_err);
+    }
+    if (num_columns_error) {
+      std::rethrow_exception(num_columns_error);
+    }
+
+    // Hack, since we have an std::vector<BoltBatch> we're going to do this
+    // horror.
+    std::vector<BoltBatch> result;
+    for (size_t i = 0; i < batch_inputs.size(); i++) {
+      result.emplace_back(std::move(batch_inputs[i]));
+      result.emplace_back(std::move(batch_labels[i]));
+    }
+
+    return result;
+  }
+
+  bool expectsHeader() const final { return _expects_header; }
+
+  void processHeader(const std::string& header) final {
+    _num_cols_in_header =
+        ProcessorUtils::parseCsvRow(header, _delimiter).size();
+  }
+
+  uint32_t getInputDim() const {
+    return _hash_range.value_or(sumBlockDims(_input_blocks));
+  }
+
+  uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
+
+  std::vector<uint32_t> getDimensions() final {
+    std::vector<uint32_t> dims = {getInputDim(), getLabelDim()};
+    return dims;
+  }
+
+  void setParallelism(bool parallel) { _parallel = parallel; }
+
+  void prepareInputBlocksForBatch(std::vector<std::string_view>& sample) {
+    for (auto& block : _input_blocks) {
+      block->prepareForBatch(sample);
+    }
+  }
+
+  std::exception_ptr makeInputVector(std::vector<std::string_view>& sample,
+                                     BoltVector& vector) {
+    return makeVector(sample, vector, _input_blocks, _input_blocks_dense,
+                      /* hash_range= */ _hash_range);
+  }
+
+  std::exception_ptr makeLabelVector(std::vector<std::string_view>& sample,
+                                     BoltVector& vector) {
+    // Never hash labels.
+    return makeVector(sample, vector, _label_blocks, _label_blocks_dense,
+                      /* hash_range= */ std::nullopt);
+  }
+
+  static std::exception_ptr makeVector(std::vector<std::string_view>& sample,
+                                       BoltVector& vector,
+                                       std::vector<BlockPtr>& blocks,
+                                       bool blocks_dense,
+                                       std::optional<uint32_t> hash_range) {
+    auto segmented_vector =
+        makeSegmentedFeatureVector(blocks_dense, hash_range,
+                                   /* store_segment_feature_map= */ false);
+    if (auto err =
+            addFeaturesToSegmentedVector(sample, *segmented_vector, blocks)) {
+      return err;
+    }
+    vector = segmented_vector->toBoltVector();
+    return nullptr;
+  }
+
+  IndexToSegmentFeatureMap getIndexToSegmentFeatureMap(
+      const std::vector<std::string_view>& input_row) {
+    BoltVector vector;
+    auto segmented_vector =
+        makeSegmentedFeatureVector(_input_blocks_dense, _hash_range,
+                                   /* store_segment_feature_map= */ true);
+    if (auto err = addFeaturesToSegmentedVector(input_row, *segmented_vector,
+                                                _input_blocks)) {
+      std::rethrow_exception(err);
+    }
+    return segmented_vector->getIndexToSegmentFeatureMap();
+  }
+
+  Explanation explainFeature(const std::vector<std::string_view>& input_row,
+                             const SegmentFeature& segment_feature) {
+    std::shared_ptr<Block> relevant_block =
+        _input_blocks[segment_feature.segment_idx];
+    return relevant_block->explainIndex(segment_feature.feature_idx, input_row);
+  }
+
+  static std::shared_ptr<UnrollingLSTMProcessor> make(
+      std::vector<std::shared_ptr<Block>> input_blocks,
+      std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
+      char delimiter = ',', bool parallel = true,
+      std::optional<uint32_t> hash_range = std::nullopt) {
+    return std::make_shared<UnrollingLSTMProcessor>(input_blocks, label_blocks,
+                                                    has_header, delimiter,
+                                                    parallel, hash_range);
+  }
+
+  static std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
+      bool blocks_dense, std::optional<uint32_t> hash_range,
+      bool store_segment_feature_map) {
+    if (hash_range) {
+      return std::make_shared<HashedSegmentedFeatureVector>(
+          *hash_range, store_segment_feature_map);
+    }
+    // Dense vector if all blocks produce dense features, sparse vector
+    // otherwise.
+    if (blocks_dense) {
+      return std::make_shared<SegmentedDenseFeatureVector>(
+          store_segment_feature_map);
+    }
+    return std::make_shared<SegmentedSparseFeatureVector>(
+        store_segment_feature_map);
+  }
+
+  static std::exception_ptr addFeaturesToSegmentedVector(
+      const std::vector<std::string_view>& sample,
+      SegmentedFeatureVector& segmented_vector,
+      std::vector<std::shared_ptr<Block>>& blocks) {
+    for (auto& block : blocks) {
+      if (auto err = block->addVectorSegment(sample, segmented_vector)) {
+        return err;
+      }
+    }
+    return nullptr;
+  }
+
+  static uint32_t sumBlockDims(
+      const std::vector<std::shared_ptr<Block>>& blocks) {
+    uint32_t dim = 0;
+    for (const auto& block : blocks) {
+      dim += block->featureDim();
+    }
+    return dim;
+  }
+
+ private:
+  bool _expects_header;
+  char _delimiter;
+  bool _parallel;
+  std::optional<uint32_t> _hash_range;
+  std::optional<uint32_t> _num_cols_in_header;
+
+  uint32_t _expected_num_cols;
+  bool _input_blocks_dense;
+  bool _label_blocks_dense;
+  /**
+   * We save a copy of these vectors instead of just references
+   * because using references will cause errors when given Python
+   * lists through PyBind11. This is because while the PyBind11 creates
+   * an std::vector representation of a Python list when passing it to
+   * a C++ function, the vector does not persist beyond the function
+   * call, so future references to the vector will cause a segfault.
+   * Furthermore, these vectors are cheap to copy since they contain a
+   * small number of elements and each element is a pointer.
+   */
+  std::vector<std::shared_ptr<Block>> _input_blocks;
+  std::vector<std::shared_ptr<Block>> _label_blocks;
+};
+
+}  // namespace thirdai::dataset
