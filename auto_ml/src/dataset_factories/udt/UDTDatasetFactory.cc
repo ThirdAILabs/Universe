@@ -14,7 +14,7 @@ UDTDatasetFactory::UDTDatasetFactory(
     : _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
           config->data_types, config->provided_relationships,
           config->lookahead)),
-      _config(FeatureComposer::verifyConfigIsValid(std::move(config),
+      _config(FeatureComposer::verifyConfigIsValid(config,
                                                    _temporal_relationships)),
       _context(std::make_shared<TemporalContext>()),
       _parallel(_temporal_relationships.empty() || force_parallel),
