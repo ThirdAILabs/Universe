@@ -47,7 +47,7 @@ using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
 class UDTDatasetFactory final : public DatasetLoaderFactory {
  public:
-  explicit UDTDatasetFactory(UDTConfigPtr config, bool force_parallel,
+  explicit UDTDatasetFactory(const UDTConfigPtr& config, bool force_parallel,
                              uint32_t text_pairgram_word_limit,
                              bool contextual_columns = false,
                              std::optional<dataset::RegressionBinningStrategy>
