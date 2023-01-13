@@ -93,3 +93,18 @@ def test_header_missing_cols():
         model.train("header_missing_cols", epochs=100)
 
     os.remove("header_missing_cols")
+
+
+def test_target_not_in_data_types():
+    with pytest.raises(
+        ValueError,
+        match="Target column provided was not found in data_types.",
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={
+                "text_col": bolt.types.text(),
+                "some_random_name": bolt.types.categorical(),
+            },
+            target="target",
+            n_target_classes=2,
+        )
