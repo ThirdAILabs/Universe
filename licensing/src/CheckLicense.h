@@ -9,10 +9,9 @@ namespace thirdai::licensing {
 // exception otherwise. If licensing checking is disabled, this is a NOOP.
 void checkLicense();
 
-// If license checking is enabled, verifies that the file corresponding to the
-// passed in data source is authorized under the license. If license checking is
-// disabled, this is a NOOP.
-void verifyAllowedDataset(const dataset::DataSourcePtr& data_source);
+// If license checking is enabled, verifies that the file is authorized under
+// the license. If license checking is disabled, this is a NOOP.
+void verifyAllowedDataset(const std::string& filename);
 
 // License verification method 1: Keygen api key
 void activate(const std::string& api_key);

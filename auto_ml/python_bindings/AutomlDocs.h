@@ -549,11 +549,13 @@ Args:
     filename (str): Path to the dataset file 
     top_k (int): The number of candidate query reformulations suggested by the UDT model.
         The default value for k is 5.
+    return_scores (bool): Whether or not to return the scores for the reformulations.
 
 Returns:
-    List[List[str]]
-    Returns a list of k reformulations for each incorrect query to be reformulated in the 
-    input dataset. 
+    Tuple(List[List[str]]) or Tuple(List[List[str]], List[List[str]])
+    Returns a tuple of list of k reformulations for each incorrect query to be 
+    reformulated in the input dataset. If return_scores is True, also returns 
+    the corresponding scores for the reformulations.
 
 Notes:
     - If the input dataset file contains pairs of correct and incorrect queries, this 
@@ -633,11 +635,13 @@ Args:
     input_query (str): The input query as a string. 
     top_k (int): The number of candidate query reformulations suggested by the UDT model
         for this input. The default value for k is 5. 
+    return_scores (bool): Whether or not to return the scores for the reformulations.
 
 Returns:
-    List[str]
-    Returns a list of k reformulations suggested by the UDT model for the given input
-    sample.
+    Tuple(List[List[str]]) or Tuple(List[List[str]], List[List[str]])
+    Returns a tuple of list of k reformulations for each incorrect query to be 
+    reformulated in the input dataset. If return_scores is True, also returns 
+    the corresponding scores for the reformulations.
 
 Example:
     >>> model = bolt.UniversalDeepTransformer(
@@ -704,11 +708,13 @@ Args:
     input_queries (List[str]): A list of target queries to be reformulated. 
     top_k (int): The number of candidate query reformulations suggested by the UDT model
         for this input batch. The default value for k is 5. 
+    return_scores (bool): Whether or not to return the scores for the reformulations.
 
 Returns:
-    List[List[str]]
-    Returns a list of k reformulations suggested by the UDT model for each of the given 
-    input samples.
+    Tuple(List[List[str]]) or Tuple(List[List[str]], List[List[str]])
+    Returns a tuple of list of k reformulations for each incorrect query to be 
+    reformulated in the input dataset. If return_scores is True, also returns 
+    the corresponding scores for the reformulations.
 
 Example:
     >>> input_queries = # An arbitrary list of incorrect queries. 
