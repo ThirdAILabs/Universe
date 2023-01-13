@@ -41,7 +41,7 @@ void defineAutomlInModule(py::module_& module) {
            bolt::python::OutputRedirect())
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
            py::arg("source_column"), py::arg("target_column"),
-           py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
+           py::arg("dataset_size"), py::arg("delimiter") = ',', docs::UDT_GENERATOR_INIT)
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapperTargetOnly,
            py::arg("target_column"), py::arg("dataset_size"),
            docs::UDT_GENERATOR_INIT)
@@ -211,7 +211,7 @@ void createModelsSubmodule(py::module_& module) {
       models_submodule, "UDTGenerator")
       .def(py::init(&QueryCandidateGenerator::buildGeneratorFromDefaultConfig),
            py::arg("source_column"), py::arg("target_column"),
-           py::arg("dataset_size"), docs::UDT_GENERATOR_INIT)
+           py::arg("dataset_size"), py::arg("delimiter")=',', docs::UDT_GENERATOR_INIT)
       .def("train", &QueryCandidateGenerator::buildFlashIndex,
            py::arg("filename"), docs::UDT_GENERATOR_TRAIN)
       .def(
@@ -380,12 +380,13 @@ py::object predictTokensWrapper(ModelPipeline& model,
 
 QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapper(
     py::object& obj, const std::string& source_column,
-    const std::string& target_column, const std::string& dataset_size) {
+    const std::string& target_column, const std::string& dataset_size, char delimiter = ',') {
   (void)obj;
   return QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
       /* source_column_name = */ source_column,
       /* target_column_name = */ target_column,
-      /* dataset_size = */ dataset_size);
+      /* dataset_size = */ dataset_size,
+      /* delimeter = */ delimiter);
 }
 
 QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapperTargetOnly(
