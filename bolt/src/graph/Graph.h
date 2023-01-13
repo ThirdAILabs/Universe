@@ -59,6 +59,19 @@ class BoltGraph {
                    const dataset::BoltDatasetPtr& train_labels,
                    const TrainConfig& train_config);
 
+  double trainOnBatch(std::vector<BoltBatch>& inputs, const BoltBatch& labels,
+                      float learning_rate,
+                      const std::shared_ptr<Metric>& metric);
+
+  double trainOnBatch(BoltBatch&& input, const BoltBatch& labels,
+                      float learning_rate,
+                      const std::shared_ptr<Metric>& metric) {
+    std::vector<BoltBatch> inputs;
+    inputs.emplace_back(std::move(input));
+
+    return trainOnBatch(inputs, labels, learning_rate, metric);
+  }
+
   InferenceResult evaluate(
       const std::vector<dataset::BoltDatasetPtr>& test_data,
       const dataset::BoltDatasetPtr& test_labels,

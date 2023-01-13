@@ -195,4 +195,31 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
   ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }
 
+TEST(FullyConnectedDagTest, TrainOnBatch) {
+  auto model = getMultiLayerModel("relu", "softmax");
+
+  std::vector<uint32_t> batch_sizes = {10, 20, 30, 20, 30};
+
+  for (uint32_t batch_size_i : batch_sizes) {
+    auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+        /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+        /* batch_size= */ batch_size_i, /* noisy_dataset= */ false);
+
+    for (uint32_t i = 0; i < data->numBatches(); i++) {
+      model.trainOnBatch(std::move(data->at(i)), labels->at(i), 0.001,
+                         std::make_shared<CategoricalCrossEntropy>());
+    }
+  }
+
+  auto [test_data, test_labels] =
+      TestDatasetGenerators::generateSimpleVectorDataset(
+          /* n_classes= */ n_classes, /* n_batches= */ 20,
+          /* batch_size= */ batch_size, /* noisy_dataset= */ false);
+
+  auto test_metrics = model.evaluate(/* test_data= */ {test_data}, test_labels,
+                                     getEvalConfig());
+  std::cout << test_metrics.first["categorical_accuracy"] << std::endl;
+  ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.95);
+}
+
 }  // namespace thirdai::bolt::tests

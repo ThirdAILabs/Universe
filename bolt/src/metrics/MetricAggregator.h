@@ -22,6 +22,9 @@ class MetricAggregator {
     }
   }
 
+  explicit MetricAggregator(std::shared_ptr<Metric> metric)
+      : _metrics({std::move(metric)}) {}
+
   void processSample(const BoltVector& output, const BoltVector& labels) {
     for (auto& metric : _metrics) {
       metric->record(output, labels);
