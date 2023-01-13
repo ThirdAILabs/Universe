@@ -2,45 +2,47 @@
 
 namespace thirdai::automl::data {
 
-void FeatureComposer::verifyConfigIsValid(
-    const UDTConfig& config,
+UDTConfigPtr FeatureComposer::verifyConfigIsValid(
+    UDTConfigPtr&& config,
     const TemporalRelationships& temporal_relationships) {
-  if (temporal_relationships.count(config.target)) {
+  if (temporal_relationships.count(config->target)) {
     throw std::invalid_argument(
         "The target column cannot be a temporal tracking key.");
   }
 
   for (const auto& [tracking_key_col_name, temporal_configs] :
        temporal_relationships) {
-    if (!config.data_types.count(tracking_key_col_name)) {
+    if (!config->data_types.count(tracking_key_col_name)) {
       throw std::invalid_argument("The tracking key '" + tracking_key_col_name +
                                   "' is not found in data_types.");
     }
 
-    if (!asCategorical(config.data_types.at(tracking_key_col_name))) {
+    if (!asCategorical(config->data_types.at(tracking_key_col_name))) {
       throw std::invalid_argument("Tracking keys must be categorical.");
     }
 
-    if (asCategorical(config.data_types.at(tracking_key_col_name))->delimiter) {
+    if (asCategorical(config->data_types.at(tracking_key_col_name))
+            ->delimiter) {
       throw std::invalid_argument(
           "Tracking keys cannot have a delimiter; columns containing "
           "tracking keys must only have one value per row.");
     }
 
     for (const auto& temporal_config : temporal_configs) {
-      if (!config.data_types.count(temporal_config.columnName())) {
+      if (!config->data_types.count(temporal_config.columnName())) {
         throw std::invalid_argument("The tracked column '" +
                                     temporal_config.columnName() +
                                     "' is not found in data_types.");
       }
     }
   }
+
+  return config;
 }
 
 std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
     const UDTConfig& config,
     const TemporalRelationships& temporal_relationships,
-    const ColumnNumberMap& column_numbers,
     const PreprocessedVectorsMap& vectors_map,
     uint32_t text_pairgrams_word_limit, bool contextual_columns) {
   std::vector<dataset::BlockPtr> blocks;
@@ -48,8 +50,8 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
   auto non_temporal_columns =
       getNonTemporalColumns(config.data_types, temporal_relationships);
 
-  std::vector<dataset::TabularDataType> tabular_datatypes(
-      column_numbers.numCols(), dataset::TabularDataType::Ignore);
+  std::vector<dataset::TabularDataType> tabular_datatypes;
+  std::vector<std::string> tabular_column_names;
 
   std::unordered_map<uint32_t, std::pair<double, double>> tabular_col_ranges;
   std::unordered_map<uint32_t, uint32_t> tabular_col_bins;
@@ -64,13 +66,11 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
       continue;
     }
 
-    uint32_t col_num = column_numbers.at(col_name);
-
     if (auto categorical = asCategorical(data_type)) {
       // if part of metadata
       if (vectors_map.count(col_name) && categorical->metadata_config) {
         blocks.push_back(dataset::MetadataCategoricalBlock::make(
-            col_num, vectors_map.at(col_name), categorical->delimiter));
+            col_name, vectors_map.at(col_name), categorical->delimiter));
       }
       if (categorical->delimiter) {
         // 1. we treat multicategorical as a text block since all we really
@@ -78,17 +78,21 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
         // 2. text hash range of MAXINT is fine since features are later
         // hashed into a range. In fact it may reduce hash collisions.
         blocks.push_back(dataset::UniGramTextBlock::make(
-            col_num, /* dim= */ std::numeric_limits<uint32_t>::max(),
+            col_name, /* dim= */ std::numeric_limits<uint32_t>::max(),
             *categorical->delimiter));
       } else {
-        tabular_datatypes[col_num] = dataset::TabularDataType::Categorical;
+        tabular_datatypes.push_back(dataset::TabularDataType::Categorical);
+        tabular_column_names.push_back(col_name);
       }
     }
 
     if (auto numerical = asNumerical(data_type)) {
-      tabular_col_ranges[col_num] = numerical->range;
-      tabular_col_bins[col_num] = getNumberOfBins(numerical->granularity);
-      tabular_datatypes[col_num] = dataset::TabularDataType::Numeric;
+      // tabular_datatypes.size() is the index of the next tabular data type.
+      tabular_col_ranges[tabular_datatypes.size()] = numerical->range;
+      tabular_col_bins[tabular_datatypes.size()] =
+          getNumberOfBins(numerical->granularity);
+      tabular_datatypes.push_back(dataset::TabularDataType::Numeric);
+      tabular_column_names.push_back(col_name);
     }
 
     if (auto text_meta = asText(data_type)) {
@@ -98,15 +102,15 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
         // text hash range of MAXINT is fine since features are later
         // hashed into a range. In fact it may reduce hash collisions.
         blocks.push_back(dataset::PairGramTextBlock::make(
-            col_num, /* dim= */ std::numeric_limits<uint32_t>::max()));
+            col_name, /* dim= */ std::numeric_limits<uint32_t>::max()));
       } else {
         blocks.push_back(dataset::UniGramTextBlock::make(
-            col_num, /* dim= */ std::numeric_limits<uint32_t>::max()));
+            col_name, /* dim= */ std::numeric_limits<uint32_t>::max()));
       }
     }
 
     if (asDate(data_type)) {
-      blocks.push_back(dataset::DateBlock::make(col_num));
+      blocks.push_back(dataset::DateBlock::make(col_name));
     }
   }
 
@@ -116,10 +120,9 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
   // TODO(Geordie): This is redundant, remove this later.
   // we always use tabular unigrams but add pairgrams on top of it if the
   // contextual_columns flag is true
-  blocks.push_back(
-      makeTabularHashFeaturesBlock(tabular_datatypes, tabular_col_ranges,
-                                   column_numbers.getColumnNumToColNameMap(),
-                                   contextual_columns, tabular_col_bins));
+  blocks.push_back(makeTabularHashFeaturesBlock(
+      tabular_datatypes, tabular_col_ranges, tabular_column_names,
+      contextual_columns, tabular_col_bins));
 
   return blocks;
 }
@@ -127,7 +130,6 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
 std::vector<dataset::BlockPtr> FeatureComposer::makeTemporalFeatureBlocks(
     const UDTConfig& config,
     const TemporalRelationships& temporal_relationships,
-    const ColumnNumberMap& column_numbers,
     const PreprocessedVectorsMap& vectors_map, TemporalContext& context,
     bool should_update_history) {
   std::vector<dataset::BlockPtr> blocks;
@@ -145,25 +147,22 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeTemporalFeatureBlocks(
     for (const auto& temporal_config : temporal_configs) {
       if (temporal_config.isCategorical()) {
         blocks.push_back(makeTemporalCategoricalBlock(
-            temporal_relationship_id, config, context, column_numbers,
-            temporal_config, tracking_key_col_name, timestamp_col_name,
-            should_update_history,
+            temporal_relationship_id, config, context, temporal_config,
+            tracking_key_col_name, timestamp_col_name, should_update_history,
             /* vectors= */ nullptr));
         if (vectors_map.count(temporal_config.columnName()) &&
             temporal_config.asCategorical().use_metadata) {
           blocks.push_back(makeTemporalCategoricalBlock(
-              temporal_relationship_id, config, context, column_numbers,
-              temporal_config, tracking_key_col_name, timestamp_col_name,
-              should_update_history,
+              temporal_relationship_id, config, context, temporal_config,
+              tracking_key_col_name, timestamp_col_name, should_update_history,
               vectors_map.at(temporal_config.columnName())));
         }
       }
 
       if (temporal_config.isNumerical()) {
         blocks.push_back(makeTemporalNumericalBlock(
-            temporal_relationship_id, config, context, column_numbers,
-            temporal_config, tracking_key_col_name, timestamp_col_name,
-            should_update_history));
+            temporal_relationship_id, config, context, temporal_config,
+            tracking_key_col_name, timestamp_col_name, should_update_history));
       }
 
       temporal_relationship_id++;
@@ -238,10 +237,9 @@ std::string FeatureComposer::getTimestampColumnName(const UDTConfig& config) {
 
 dataset::BlockPtr FeatureComposer::makeTemporalCategoricalBlock(
     uint32_t temporal_relationship_id, const UDTConfig& config,
-    TemporalContext& context, const ColumnNumberMap& column_numbers,
-    const TemporalConfig& temporal_config, const std::string& key_column,
-    const std::string& timestamp_column, bool should_update_history,
-    dataset::PreprocessedVectorsPtr vectors) {
+    TemporalContext& context, const TemporalConfig& temporal_config,
+    const std::string& key_column, const std::string& timestamp_column,
+    bool should_update_history, dataset::PreprocessedVectorsPtr vectors) {
   const auto& tracked_column = temporal_config.columnName();
 
   if (!asCategorical(config.data_types.at(tracked_column))) {
@@ -258,9 +256,9 @@ dataset::BlockPtr FeatureComposer::makeTemporalCategoricalBlock(
       config.time_granularity);
 
   return dataset::UserItemHistoryBlock::make(
-      /* user_col= */ column_numbers.at(key_column),
-      /* item_col= */ column_numbers.at(tracked_column),
-      /* timestamp_col= */ column_numbers.at(timestamp_column),
+      /* user_col= */ key_column,
+      /* item_col= */ tracked_column,
+      /* timestamp_col= */ timestamp_column,
       /* records= */
       context.categoricalHistoryForId(temporal_relationship_id),
       /* track_last_n= */ temporal_meta.track_last_n,
@@ -275,9 +273,9 @@ dataset::BlockPtr FeatureComposer::makeTemporalCategoricalBlock(
 
 dataset::BlockPtr FeatureComposer::makeTemporalNumericalBlock(
     uint32_t temporal_relationship_id, const UDTConfig& config,
-    TemporalContext& context, const ColumnNumberMap& column_numbers,
-    const TemporalConfig& temporal_config, const std::string& key_column,
-    const std::string& timestamp_column, bool should_update_history) {
+    TemporalContext& context, const TemporalConfig& temporal_config,
+    const std::string& key_column, const std::string& timestamp_column,
+    bool should_update_history) {
   const auto& tracked_column = temporal_config.columnName();
 
   if (!asNumerical(config.data_types.at(tracked_column))) {
@@ -294,9 +292,9 @@ dataset::BlockPtr FeatureComposer::makeTemporalNumericalBlock(
       /* time_granularity= */ config.time_granularity);
 
   return dataset::UserCountHistoryBlock::make(
-      /* user_col= */ column_numbers.at(key_column),
-      /* count_col= */ column_numbers.at(tracked_column),
-      /* timestamp_col= */ column_numbers.at(timestamp_column),
+      /* user_col= */ key_column,
+      /* count_col= */ tracked_column,
+      /* timestamp_col= */ timestamp_column,
       /* history= */ numerical_history,
       /* should_update_history= */ should_update_history,
       /* include_current_row= */ temporal_meta.include_current_row);
@@ -305,11 +303,11 @@ dataset::BlockPtr FeatureComposer::makeTemporalNumericalBlock(
 dataset::TabularHashFeaturesPtr FeatureComposer::makeTabularHashFeaturesBlock(
     const std::vector<dataset::TabularDataType>& tabular_datatypes,
     const std::unordered_map<uint32_t, std::pair<double, double>>& col_ranges,
-    const std::vector<std::string>& num_to_name, bool contextual_columns,
+    const std::vector<std::string>& column_names, bool contextual_columns,
     std::unordered_map<uint32_t, uint32_t> col_num_bins) {
   auto tabular_metadata = std::make_shared<dataset::TabularMetadata>(
       tabular_datatypes, col_ranges, /* class_name_to_id= */ nullptr,
-      /* column_names= */ num_to_name, /* col_to_num_bins= */ col_num_bins);
+      /* column_names= */ column_names, /* col_to_num_bins= */ col_num_bins);
 
   // output range of MAXINT is fine since features are later
   // hashed into a range. In fact it may reduce hash collisions.
