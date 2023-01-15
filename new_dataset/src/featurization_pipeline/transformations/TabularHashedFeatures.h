@@ -70,8 +70,8 @@ class TabularHashedFeatures : public Transformation {
         // we don't deduplicate pairgrams since we ensure unique hash values
         // above, thus reducing the chance of duplicates.
         std::vector<uint32_t> row_pairgrams =
-            dataset::TokenEncoding::computeRawPairgramsFromUnigrams(
-                salted_unigrams, _output_range);
+            dataset::TokenEncoding::computePairGrams(salted_unigrams);
+        dataset::TokenEncoding::mod(row_pairgrams, _output_range);
         tabular_hash_values[row_idx] = row_pairgrams;
       } else {
         for (uint32_t i = 0; i < salted_unigrams.size(); i++) {

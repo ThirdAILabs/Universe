@@ -9,6 +9,13 @@
 
 // TODO(Geordie): This file is due for major refactoring
 
+// todo profile new strategy
+// todo unit tests
+// todo split into .h and .cc
+// todo explainability
+// todo replace existing code
+// todo make into namespace instead of a class
+
 namespace thirdai::dataset {
 
 /**
@@ -20,39 +27,154 @@ class TokenEncoding {
   static constexpr uint32_t HASH_SEED = 341;
   static constexpr uint32_t DEFAULT_TEXT_ENCODING_DIM = 100000;
 
+  // NEW FUNCTIONS
+
+  static std::vector<uint32_t> computeNGrams(std::string_view sentence,
+                                             uint32_t n, char delimiter = ' ') {
+    auto words = splitIntoWords(sentence, delimiter);
+    uint32_t num_words = words.size();
+
+    std::vector<uint32_t> n_gram_tokens;
+
+    // - We compute unigrams first because it makes the loop below more simple
+    // and makes computing just unigrams faster
+    // - We include unigrams in all n-gram computations so bolt always can
+    // identify keywords
+    for (const auto& word : words) {
+      n_gram_tokens.push_back(computeUnigram(word.data(), word.size()));
+    }
+
+    // if we have to do more than unigrams and there are enough words to N-gram
+    if (n > 1 && n <= num_words) {
+      for (uint32_t start_word_idx = 0; start_word_idx <= num_words - n;
+           start_word_idx++) {
+        std::string_view word = words[start_word_idx];
+        uint32_t n_gram_token = computeUnigram(word.data(), word.size());
+
+        for (uint32_t i = 1; i < n; i++) {
+          word = words[start_word_idx + i];
+          n_gram_token = hashing::HashUtils::combineHashes(
+              n_gram_token, computeUnigram(word.data(), word.size()));
+        }
+        n_gram_tokens.push_back(n_gram_token);
+      }
+    }
+
+    return n_gram_tokens;
+  }
+
+  static std::vector<uint32_t> computeUnigrams(std::string_view sentence,
+                                               char delimiter = ' ') {
+    return computeNGrams(sentence, /* n= */ 1, delimiter);
+  }
+
+  static std::vector<uint32_t> computePairGrams(
+      const std::string_view sentence) {
+    std::vector<uint32_t> unigrams = computeNGrams(sentence, /* n= */ 1);
+
+    return computePairGrams(unigrams);
+  }
+
+  static std::vector<uint32_t> computePairGrams(
+      const std::vector<uint32_t>& unigrams) {
+    std::vector<uint32_t> pairgrams;
+    for (uint32_t token = 0; token < unigrams.size(); token++) {
+      for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
+        pairgrams.push_back(hashing::HashUtils::combineHashes(
+            unigrams[prev_token], unigrams[token]));
+      }
+    }
+
+    return pairgrams;
+  }
+
+  static void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
+    for (uint32_t& token : tokens) {
+      token %= dim;
+    }
+  }
+
+  static std::vector<std::string_view> splitIntoWords(std::string_view sentence,
+                                                      char delimiter = ' ') {
+    std::vector<std::string_view> words;
+
+    bool prev_is_delim = true;
+    uint32_t start_of_word_offset;
+    for (uint32_t i = 0; i < sentence.size(); i++) {
+      if (prev_is_delim && sentence[i] != delimiter) {
+        // If we go from a space to a non-space character then we are at the
+        // start of a word.
+        start_of_word_offset = i;
+        prev_is_delim = false;
+      }
+      if (!prev_is_delim && sentence[i] == delimiter) {
+        // If we go from a non-space character to a space then we are at the end
+        // of a word.
+        uint32_t len = i - start_of_word_offset;
+
+        std::string_view word_view(sentence.data() + start_of_word_offset, len);
+
+        words.push_back(word_view);
+        prev_is_delim = true;
+      }
+    }
+    if (!prev_is_delim) {
+      // If we don't find a space at the end of the sentence, then there's a
+      // last word we need to hash.
+      uint32_t len = sentence.size() - start_of_word_offset;
+
+      std::string_view word_view(sentence.data() + start_of_word_offset, len);
+
+      words.push_back(word_view);
+    }
+
+    return words;
+  }
+
+  static std::vector<std::pair<uint32_t, float>> sumRepeatedIndices(
+      std::vector<uint32_t>& indices, float base_value = 1.0) {
+    if (indices.empty()) {
+      return {};
+    }
+
+    std::sort(indices.begin(), indices.end());
+
+    std::vector<std::pair<uint32_t, float>> index_value_pairs;
+
+    /**
+     * If current index is the same as the next index, keep accumulating
+     * summed_val. Otherwise, add sparse feature at the current index with the
+     * accumulated base_value and reset summed_val.
+     */
+    float summed_val = 0.0;
+    uint32_t i = 0;
+    for (; i < indices.size() - 1; ++i) {
+      uint32_t idx = indices[i];
+      uint32_t next_idx = indices[i + 1];
+      summed_val += base_value;
+
+      if (idx != next_idx) {
+        index_value_pairs.push_back(std::make_pair(idx, summed_val));
+        summed_val = 0.0;  // Reset summed_val since next idx is different.
+      }
+    }
+
+    /**
+     * If we're looking at the last element, the next element is clearly
+     * "different", so we add a sparse feature accordingly.
+     */
+    if (i == indices.size() - 1) {
+      summed_val += base_value;
+      index_value_pairs.push_back(std::make_pair(indices.back(), summed_val));
+    }
+
+    return index_value_pairs;
+  }
+
+  // END NEW FUNCTIONS
+
   static uint32_t computeUnigram(const char* key, uint32_t len) {
     return hashing::MurmurHash(key, len, HASH_SEED);
-  }
-
-  /**
-   * Unigrams in a vector with possible repeated indices
-   */
-  static std::vector<uint32_t> computeRawUnigrams(
-      const std::string_view sentence) {
-    std::vector<uint32_t> unigrams;
-    forEachWordHash(sentence,
-                    [&](uint32_t word_hash, const std::string_view& word) {
-                      (void)word;
-                      unigrams.push_back(word_hash);
-                    });
-    return unigrams;
-  }
-
-  /**
-   * Unigrams in a vector with possible repeated indices (modded to a range)
-   */
-  static std::vector<uint32_t> computeRawUnigramsWithRange(
-      const std::string_view sentence, uint32_t output_range,
-      char delimiter = ' ') {
-    std::vector<uint32_t> unigrams;
-    forEachWordHash(
-        sentence,
-        [&](uint32_t word_hash, const std::string_view& word) {
-          (void)word;
-          unigrams.push_back(word_hash % output_range);
-        },
-        delimiter);
-    return unigrams;
   }
 
   /**
@@ -71,26 +193,6 @@ class TokenEncoding {
         },
         delimiter);
     return index_to_word;
-  }
-
-  /**
-   * Unigrams in a BoltVector with possible repeated indices summed up
-   */
-  static BoltVector computeUnigrams(const std::string_view sentence,
-                                    uint32_t output_range) {
-    std::vector<uint32_t> unigrams =
-        computeRawUnigramsWithRange(sentence, output_range);
-
-    std::vector<uint32_t> indices;
-    std::vector<float> values;
-
-    sumRepeatedIndices(unigrams, /* base_value= */ 1.0,
-                       [&](uint32_t unigram, float value) {
-                         indices.push_back(unigram);
-                         values.push_back(value);
-                       });
-
-    return BoltVector::makeSparseVector(indices, values);
   }
 
   struct PairGram {
@@ -115,165 +217,6 @@ class TokenEncoding {
                             /* first_token= */ unigram_hashes[prev_token],
                             /* second_token= */ unigram_hashes[token]});
       }
-    }
-  }
-
-  /**
-   * Pairgrams in a vector with possible repeated indices
-   */
-  static std::vector<uint32_t> computeRawPairgramsFromUnigrams(
-      const std::vector<uint32_t>& unigram_hashes, uint32_t output_range) {
-    std::vector<uint32_t> pairgram_hashes;
-
-    forEachPairgramFromUnigram(unigram_hashes, output_range,
-                               [&](PairGram pairgram) {
-                                 pairgram_hashes.push_back(pairgram.pairgram);
-                               });
-    return pairgram_hashes;
-  }
-
-  /**
-   * Pairgrams in a vector with possible repeated indices
-   */
-  static std::vector<uint32_t> computeRawPairgrams(std::string_view sentence,
-                                                   uint32_t output_range) {
-    std::vector<uint32_t> unigram_hashes = computeRawUnigrams(sentence);
-
-    return computeRawPairgramsFromUnigrams(unigram_hashes, output_range);
-  }
-
-  /**
-   * Pairgrams in a BoltVector with possible repeated indices summed up
-   */
-  static BoltVector computePairgrams(std::string_view sentence,
-                                     uint32_t output_range) {
-    std::vector<uint32_t> pairgrams =
-        computeRawPairgrams(sentence, output_range);
-
-    std::vector<uint32_t> indices;
-    std::vector<float> values;
-
-    sumRepeatedIndices(pairgrams, /* base_value= */ 1.0,
-                       [&](uint32_t pairgram, float value) {
-                         indices.push_back(pairgram);
-                         values.push_back(value);
-                       });
-
-    return BoltVector::makeSparseVector(indices, values);
-  }
-
-  /**
-   * Pairgrams in a BoltVector with possible repeated indices summed up
-   */
-  static BoltVector computePairgramsFromUnigrams(
-      std::vector<uint32_t>& unigrams, uint32_t output_range) {
-    std::vector<uint32_t> pairgrams =
-        computeRawPairgramsFromUnigrams(unigrams, output_range);
-
-    std::vector<uint32_t> indices;
-    std::vector<float> values;
-
-    sumRepeatedIndices(pairgrams, /* base_value= */ 1.0,
-                       [&](uint32_t pairgram, float value) {
-                         indices.push_back(pairgram);
-                         values.push_back(value);
-                       });
-
-    return BoltVector::makeSparseVector(indices, values);
-  }
-
-  /**
-   * Parses through a sentence and applies a function to the hash of each
-   * word.
-   */
-  template <typename WORD_PROCESSOR_T>
-  inline static void forEachWordHash(const std::string_view sentence,
-                                     WORD_PROCESSOR_T word_processor,
-                                     char delimiter = ' ') {
-    static_assert(std::is_convertible<
-                  WORD_PROCESSOR_T,
-                  std::function<void(uint32_t, std::string_view)>>::value);
-
-    bool prev_is_delim = true;
-    uint32_t start_of_word_offset;
-    for (uint32_t i = 0; i < sentence.size(); i++) {
-      if (prev_is_delim && sentence[i] != delimiter) {
-        // If we go from a space to a non-space character then we are at the
-        // start of a word.
-        start_of_word_offset = i;
-        prev_is_delim = false;
-      }
-      if (!prev_is_delim && sentence[i] == delimiter) {
-        // If we go from a non-space character to a space then we are at the end
-        // of a word.
-        uint32_t len = i - start_of_word_offset;
-
-        std::string_view word_view(sentence.data() + start_of_word_offset, len);
-
-        // Hash the word using the recorded start offset and the current index.
-        uint32_t word_hash =
-            computeUnigram(sentence.data() + start_of_word_offset, len);
-        word_processor(word_hash, word_view);
-        prev_is_delim = true;
-      }
-    }
-    if (!prev_is_delim) {
-      // If we don't find a space at the end of the sentence, then there's a
-      // last word we need to hash.
-      uint32_t len = sentence.size() - start_of_word_offset;
-
-      std::string_view word_view(sentence.data() + start_of_word_offset, len);
-
-      uint32_t word_hash =
-          computeUnigram(sentence.data() + start_of_word_offset, len);
-      word_processor(word_hash, word_view);
-    }
-  }
-
-  /**
-   * Sorts the given indices and deduplicates them by adding base_value for each
-   * instance of that index. Applies a lambda to the resulting idx, summed_value
-   * pair.
-   */
-  template <typename INDEX_VAL_PROCESSOR>
-  static void sumRepeatedIndices(std::vector<uint32_t>& indices,
-                                 float base_value,
-                                 INDEX_VAL_PROCESSOR idx_val_processor) {
-    static_assert(
-        std::is_convertible<INDEX_VAL_PROCESSOR,
-                            std::function<void(uint32_t, float)>>::value);
-
-    if (indices.empty()) {
-      return;
-    }
-
-    std::sort(indices.begin(), indices.end());
-
-    /**
-     * If current index is the same as the next index, keep accumulating
-     * summed_val. Otherwise, add sparse feature at the current index with the
-     * accumulated base_value and reset summed_val.
-     */
-    float summed_val = 0.0;
-    uint32_t i = 0;
-    for (; i < indices.size() - 1; ++i) {
-      uint32_t idx = indices[i];
-      uint32_t next_idx = indices[i + 1];
-      summed_val += base_value;
-
-      if (idx != next_idx) {
-        idx_val_processor(idx, summed_val);
-        summed_val = 0.0;  // Reset summed_val since next idx is different.
-      }
-    }
-
-    /**
-     * If we're looking at the last element, the next element is clearly
-     * "different", so we add a sparse feature accordingly.
-     */
-    if (i == indices.size() - 1) {
-      summed_val += base_value;
-      idx_val_processor(indices.back(), summed_val);
     }
   }
 };

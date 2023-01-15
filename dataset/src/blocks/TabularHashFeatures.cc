@@ -74,10 +74,9 @@ std::exception_ptr TabularHashFeatures::buildSegment(
     return e;
   };
 
-  TokenEncoding::sumRepeatedIndices(
-      tokens, /* base_value = */ 1.0, [&vec](uint32_t pairgram, float value) {
-        vec.addSparseFeatureToSegment(pairgram, value);
-      });
+  for (auto& [index, value] : TokenEncoding::sumRepeatedIndices(tokens)) {
+    vec.addSparseFeatureToSegment(index, value);
+  }
 
   return nullptr;
 }

@@ -88,13 +88,11 @@ class PairGramTextBlock final : public TextBlock {
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
-    std::vector<uint32_t> pairgrams =
-        TokenEncoding::computeRawPairgrams(text, _dim);
-
-    TokenEncoding::sumRepeatedIndices(
-        pairgrams, /* base_value= */ 1.0, [&](uint32_t pairgram, float value) {
-          vec.addSparseFeatureToSegment(pairgram, value);
-        });
+    std::vector<uint32_t> pairgrams = TokenEncoding::computePairGrams(text);
+    TokenEncoding::mod(pairgrams, _dim);
+    for (auto& [index, value] : TokenEncoding::sumRepeatedIndices(pairgrams)) {
+      vec.addSparseFeatureToSegment(index, value);
+    }
 
     return nullptr;
   }
@@ -140,12 +138,12 @@ class UniGramTextBlock final : public TextBlock {
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> unigrams =
-        TokenEncoding::computeRawUnigramsWithRange(text, _dim, _delimiter);
+        TokenEncoding::computeUnigrams(text, _delimiter);
+    TokenEncoding::mod(unigrams, _dim);
 
-    TokenEncoding::sumRepeatedIndices(
-        unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
-          vec.addSparseFeatureToSegment(unigram, value);
-        });
+    for (auto& [index, value] : TokenEncoding::sumRepeatedIndices(unigrams)) {
+      vec.addSparseFeatureToSegment(index, value);
+    }
 
     return nullptr;
   }
@@ -211,11 +209,10 @@ class CharKGramTextBlock final : public TextBlock {
       number of entries in the sparse vector, which can in turn make BOLT
       run faster.
     */
-    TokenEncoding::sumRepeatedIndices(
-        /* indices = */ char_k_grams,
-        /* base_value = */ 1.0, [&](uint32_t index, float value) {
-          vec.addSparseFeatureToSegment(index, value);
-        });
+    for (auto& [index, value] :
+         TokenEncoding::sumRepeatedIndices(char_k_grams)) {
+      vec.addSparseFeatureToSegment(index, value);
+    }
 
     return nullptr;
   }
