@@ -52,7 +52,7 @@ class Flash {
    * loadNextBatches on the dataset should not have been called yet, and this
    * will run through the entire dataset.
    */
-  void addDataset(const dataset::InMemoryDataset<BoltBatch>& dataset,
+  void addDataset(const dataset::InMemoryDataset& dataset,
                   const std::vector<std::vector<LABEL_T>>& labels,
                   bool verbose);
   /**

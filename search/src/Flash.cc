@@ -37,9 +37,9 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
 }
 
 template <typename LABEL_T>
-void Flash<LABEL_T>::addDataset(
-    const dataset::InMemoryDataset<BoltBatch>& dataset,
-    const std::vector<std::vector<LABEL_T>>& labels, bool verbose) {
+void Flash<LABEL_T>::addDataset(const dataset::InMemoryDataset& dataset,
+                                const std::vector<std::vector<LABEL_T>>& labels,
+                                bool verbose) {
   if (dataset.numBatches() != labels.size()) {
     throw std::invalid_argument(
         "Number of data and label batches must be same.");
