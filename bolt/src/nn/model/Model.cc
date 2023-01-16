@@ -193,11 +193,30 @@ void Model::trainOnBatchImpl(uint32_t input_batch_size,
   _allocation_manager.reallocateForBatch(input_batch_size,
                                          /* use_sparsity= */ true);
 
-#pragma omp parallel for default(none) shared(input_batch_size)
-  for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
-       index_in_batch++) {
-    forwardVector(index_in_batch, /* training= */ true);
-    backpropagateVector(index_in_batch);
+  for (auto& tensor : _activation_tensor_computation_order) {
+#pragma omp parallel for default(none) shared(input_batch_size, tensor)
+    for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
+         index_in_batch++) {
+      tensor->forward(index_in_batch, true);
+      tensor->getVector(index_in_batch).zeroOutGradients();
+    }
+  }
+
+  for (auto& loss : _losses) {
+#pragma omp parallel for default(none) shared(input_batch_size, loss)
+    for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
+         index_in_batch++) {
+      loss->gradients(index_in_batch, _allocation_manager.currentBatchSize());
+    }
+  }
+
+  for (auto tensor = _activation_tensor_computation_order.rbegin();
+       tensor != _activation_tensor_computation_order.rend(); ++tensor) {
+#pragma omp parallel for default(none) shared(input_batch_size, tensor)
+    for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
+         index_in_batch++) {
+      (*tensor)->backpropagate(index_in_batch);
+    }
   }
 }
 
@@ -372,7 +391,8 @@ void Model::checkAllOutputsAreUsedInLosses() const {
             "Only outputs can be used in losses and outputs cannot be reused "
             "in multiple losses. Found tensor '" +
             output->name() +
-            "' which is either not an output or or has already been used in a "
+            "' which is either not an output or or has already been used in "
+            "a "
             "loss function.");
       }
 
