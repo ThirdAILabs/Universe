@@ -1,0 +1,498 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1hashtable_1_1_vector_hash_table" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::hashtable::VectorHashTable</compoundname>
+    <basecompoundref refid="classthirdai_1_1hashtable_1_1_hash_table" prot="public" virt="non-virtual">thirdai::hashtable::HashTable&lt; LABEL_T &gt;</basecompoundref>
+    <templateparamlist>
+      <param>
+        <type>typename LABEL_T</type>
+      </param>
+      <param>
+        <type>bool</type>
+        <declname>USE_RESERVOIR</declname>
+        <defname>USE_RESERVOIR</defname>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1af6548608cfb658202b05a08bd1e05750" prot="private" static="no" mutable="no">
+        <type>const uint32_t</type>
+        <definition>const uint32_t thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::_num_tables</definition>
+        <argsstring></argsstring>
+        <name>_num_tables</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::_num_tables</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="79" column="18" bodyfile="hashtable/src/VectorHashTable.h" bodystart="79" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a82c3d5afc0675d87e0b5180b77d72335" prot="private" static="no" mutable="no">
+        <type>const uint64_t</type>
+        <definition>const uint64_t thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::_table_range</definition>
+        <argsstring></argsstring>
+        <name>_table_range</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::_table_range</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="80" column="18" bodyfile="hashtable/src/VectorHashTable.h" bodystart="80" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a77e7537fc9f51503903672905a3c5dc2" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::vector&lt; LABEL_T &gt; &gt;</type>
+        <definition>std::vector&lt;std::vector&lt;LABEL_T&gt; &gt; thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::_buckets</definition>
+        <argsstring></argsstring>
+        <name>_buckets</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::_buckets</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="81" column="15" bodyfile="hashtable/src/VectorHashTable.h" bodystart="81" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a8e6ed712e51e72b8d2be8f573af4c7f1" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt;uint32_t&gt; thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::_generated_rand_nums</definition>
+        <argsstring></argsstring>
+        <name>_generated_rand_nums</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::_generated_rand_nums</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="84" column="15" bodyfile="hashtable/src/VectorHashTable.h" bodystart="84" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a12d4bc7392cac4185756635e1fbd9042" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt;uint32_t&gt; thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::_num_elements_tried_insert_into_bucket</definition>
+        <argsstring></argsstring>
+        <name>_num_elements_tried_insert_into_bucket</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::_num_elements_tried_insert_into_bucket</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="85" column="15" bodyfile="hashtable/src/VectorHashTable.h" bodystart="85" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a4a112e34c06c02c48ada6907b01ad7a0" prot="private" static="no" mutable="no">
+        <type>const uint64_t</type>
+        <definition>const uint64_t thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::_max_reservoir_size</definition>
+        <argsstring></argsstring>
+        <name>_max_reservoir_size</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::_max_reservoir_size</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="86" column="18" bodyfile="hashtable/src/VectorHashTable.h" bodystart="86" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a79ece8d05eb7d7a3a5a5856df9f6fd96" prot="private" static="no" mutable="no">
+        <type>std::atomic&lt; uint32_t &gt;</type>
+        <definition>std::atomic&lt;uint32_t&gt; thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::counter</definition>
+        <argsstring></argsstring>
+        <name>counter</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::counter</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="87" column="15" bodyfile="hashtable/src/VectorHashTable.h" bodystart="87" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a23f2de3eecc649b623f835fe258d61ac" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>bool</type>
+            <declname>b</declname>
+            <defname>b</defname>
+            <defval>USE_RESERVOIR</defval>
+          </param>
+          <param>
+            <type>std::enable_if_t&lt;!b &gt; *</type>
+            <defval>nullptr</defval>
+          </param>
+        </templateparamlist>
+        <type></type>
+        <definition>thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::VectorHashTable</definition>
+        <argsstring>(uint32_t num_tables, uint64_t table_range)</argsstring>
+        <name>VectorHashTable</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::VectorHashTable</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>num_tables</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>table_range</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="21" column="3" bodyfile="hashtable/src/VectorHashTable.h" bodystart="21" bodyend="27"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a571f17b7a460284c7568d23ae3af1a4d" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>bool</type>
+            <declname>b</declname>
+            <defname>b</defname>
+            <defval>USE_RESERVOIR</defval>
+          </param>
+          <param>
+            <type>std::enable_if_t&lt; b &gt; *</type>
+            <defval>nullptr</defval>
+          </param>
+        </templateparamlist>
+        <type></type>
+        <definition>thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::VectorHashTable</definition>
+        <argsstring>(uint32_t num_tables, uint64_t max_reservoir_size, uint64_t table_range, uint64_t seed=time(nullptr), uint64_t max_rand=HashTable&lt; LABEL_T &gt;::DEFAULT_MAX_RAND)</argsstring>
+        <name>VectorHashTable</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::VectorHashTable</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>num_tables</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>max_reservoir_size</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>table_range</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>seed</declname>
+          <defval>time(nullptr)</defval>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>max_rand</declname>
+          <defval><ref refid="classthirdai_1_1hashtable_1_1_hash_table" kindref="compound">HashTable</ref>&lt; LABEL_T &gt;<ref refid="classthirdai_1_1hashtable_1_1_hash_table_1adaff6d5fd3c18382448d34c65f95249d" kindref="member">::DEFAULT_MAX_RAND</ref></defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="31" column="3" bodyfile="hashtable/src/VectorHashTable.h" bodystart="31" bodyend="44"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a480a8bff172519a7a560ee7f82520fd1" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::insert</definition>
+        <argsstring>(uint64_t n, LABEL_T const *labels, uint32_t const *hashes) override</argsstring>
+        <name>insert</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::insert</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1a9a7d8614318e4035807d13b1076cfdf3">insert</reimplements>
+        <param>
+          <type>uint64_t</type>
+          <declname>n</declname>
+        </param>
+        <param>
+          <type>LABEL_T const *</type>
+          <declname>labels</declname>
+        </param>
+        <param>
+          <type>uint32_t const *</type>
+          <declname>hashes</declname>
+        </param>
+        <briefdescription>
+<para>Do a parallel insertion of n elements. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>The hashes should be in hash major order, i.e. as returned by the <ref refid="_hash_function_8h_source" kindref="compound">HashFunction.h</ref> class, the ith hash of the jth vector should be in position num_tables * i + j. The label of the ith vector to insert into the hash table should be labels[i]. All hashes should be less than the hash table range, and there should be exactly num_tables * n number of them. This will not be checked and will cause segfaults if it is not followed. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="46" column="8" bodyfile="hashtable/src/VectorHashTable.cc" bodystart="9" bodyend="20"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a8a1026d1fefa89928f5a37fb6ba313bf" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::insertSequential</definition>
+        <argsstring>(uint64_t n, LABEL_T start, uint32_t const *hashes) override</argsstring>
+        <name>insertSequential</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::insertSequential</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1a0f5e5a1d64a9d0dd4293adadd7da937e">insertSequential</reimplements>
+        <param>
+          <type>uint64_t</type>
+          <declname>n</declname>
+        </param>
+        <param>
+          <type>LABEL_T</type>
+          <declname>start</declname>
+        </param>
+        <param>
+          <type>uint32_t const *</type>
+          <declname>hashes</declname>
+        </param>
+        <briefdescription>
+<para>Same as the insert method, except the ith vector will be inserted with the label start + i. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="49" column="8" bodyfile="hashtable/src/VectorHashTable.cc" bodystart="23" bodyend="33"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1aceefb06de7c841b313171c83298043b3" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::queryBySet</definition>
+        <argsstring>(uint32_t const *hashes, std::unordered_set&lt; LABEL_T &gt; &amp;store) const override</argsstring>
+        <name>queryBySet</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::queryBySet</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1a8493d373a764c72a7d1e0604d4844401">queryBySet</reimplements>
+        <param>
+          <type>uint32_t const *</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>std::unordered_set&lt; LABEL_T &gt; &amp;</type>
+          <declname>store</declname>
+        </param>
+        <briefdescription>
+<para>The hashes array should have length equal to the number of tables, and the ith entry should be a bucket index into the ith table. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>This query adds to the store set all labels that are in any of the hashed to buckets across all tables. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="52" column="8" bodyfile="hashtable/src/VectorHashTable.cc" bodystart="55" bodyend="63"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1abf6470c7daf45d12d2e29fd4db08629b" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::queryByCount</definition>
+        <argsstring>(uint32_t const *hashes, std::vector&lt; uint32_t &gt; &amp;counts) const override</argsstring>
+        <name>queryByCount</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::queryByCount</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1ad16f0cfcd1af69fbb030e89e7953dcc2">queryByCount</reimplements>
+        <param>
+          <type>uint32_t const *</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>counts</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="55" column="8" bodyfile="hashtable/src/VectorHashTable.cc" bodystart="66" bodyend="74"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a9f85e1ecea2bf7312727f64639b21853" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::queryByVector</definition>
+        <argsstring>(uint32_t const *hashes, std::vector&lt; LABEL_T &gt; &amp;results) const override</argsstring>
+        <name>queryByVector</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::queryByVector</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1a5d9f4bbeeb994e4c95a32179b9b61366">queryByVector</reimplements>
+        <param>
+          <type>uint32_t const *</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; LABEL_T &gt; &amp;</type>
+          <declname>results</declname>
+        </param>
+        <briefdescription>
+<para>Same as queryBySet, except adds to the results vector all labels that are in any of the hashed to buckets. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>A label can appear twice in the results vector if it was in multiple buckets. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="58" column="8" bodyfile="hashtable/src/VectorHashTable.cc" bodystart="77" bodyend="85"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a0a9176b54dd3874205b4d646c1517cd4" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::clearTables</definition>
+        <argsstring>() override</argsstring>
+        <name>clearTables</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::clearTables</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1a5b1cae616f6eeaa53fcf8bbbc86c0d51">clearTables</reimplements>
+        <briefdescription>
+<para>Removes all elements from all tables. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="61" column="8" bodyfile="hashtable/src/VectorHashTable.cc" bodystart="88" bodyend="92"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1ab64d69146bb759ee01fd1f9a597a0fa5" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::numTables</definition>
+        <argsstring>() const override</argsstring>
+        <name>numTables</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::numTables</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1ac9acc44cca78fc831b047bcf0f80d727">numTables</reimplements>
+        <briefdescription>
+<para>Returns the total number of tables. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="63" column="12" bodyfile="hashtable/src/VectorHashTable.h" bodystart="63" bodyend="63"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a0849ea1d0044c2f470520bb12abf3e65" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>uint64_t</type>
+        <definition>uint64_t thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::tableRange</definition>
+        <argsstring>() const override</argsstring>
+        <name>tableRange</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::tableRange</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1ab44d9352b51b00bc51577dc542d6732e">tableRange</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="65" column="12" bodyfile="hashtable/src/VectorHashTable.h" bodystart="65" bodyend="65"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a98f40f6373e8b2dd455835746c2fdd8e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::sortBuckets</definition>
+        <argsstring>()</argsstring>
+        <name>sortBuckets</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::sortBuckets</qualifiedname>
+        <briefdescription>
+<para>Sorts the contents of each bucket. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="68" column="8" bodyfile="hashtable/src/VectorHashTable.cc" bodystart="95" bodyend="99"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1a6a36e892484730361f31dbc8a5e4246f" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::insertIntoTable</definition>
+        <argsstring>(LABEL_T label, uint32_t hash, uint32_t table)</argsstring>
+        <name>insertIntoTable</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::insertIntoTable</qualifiedname>
+        <param>
+          <type>LABEL_T</type>
+          <declname>label</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>hash</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>table</declname>
+        </param>
+        <briefdescription>
+<para>Insert a label into a hashtable, including reservoir sampling if enabled. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="73" column="15" bodyfile="hashtable/src/VectorHashTable.cc" bodystart="36" bodyend="52"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_vector_hash_table_1af0b0f3624494505d4feb06c5f32b2f76" prot="private" static="no" constexpr="yes" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>constexpr uint64_t</type>
+        <definition>constexpr uint64_t thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;::getBucketIndex</definition>
+        <argsstring>(uint64_t table, uint64_t hash) const</argsstring>
+        <name>getBucketIndex</name>
+        <qualifiedname>thirdai::hashtable::VectorHashTable::getBucketIndex</qualifiedname>
+        <param>
+          <type>uint64_t</type>
+          <declname>table</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>hash</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/VectorHashTable.h" line="75" column="22" bodyfile="hashtable/src/VectorHashTable.h" bodystart="75" bodyend="77"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::hashtable::HashTable&lt; LABEL_T &gt;</label>
+        <link refid="classthirdai_1_1hashtable_1_1_hash_table"/>
+      </node>
+      <node id="1">
+        <label>thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;</label>
+        <link refid="classthirdai_1_1hashtable_1_1_vector_hash_table"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>thirdai::hashtable::HashTable&lt; LABEL_T &gt;</label>
+        <link refid="classthirdai_1_1hashtable_1_1_hash_table"/>
+      </node>
+      <node id="1">
+        <label>thirdai::hashtable::VectorHashTable&lt; LABEL_T, USE_RESERVOIR &gt;</label>
+        <link refid="classthirdai_1_1hashtable_1_1_vector_hash_table"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="hashtable/src/VectorHashTable.h" line="12" column="1" bodyfile="hashtable/src/VectorHashTable.h" bodystart="12" bodyend="88"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a77e7537fc9f51503903672905a3c5dc2" prot="private" virt="non-virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>_buckets</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a8e6ed712e51e72b8d2be8f573af4c7f1" prot="private" virt="non-virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>_generated_rand_nums</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a4a112e34c06c02c48ada6907b01ad7a0" prot="private" virt="non-virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>_max_reservoir_size</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a12d4bc7392cac4185756635e1fbd9042" prot="private" virt="non-virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>_num_elements_tried_insert_into_bucket</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1af6548608cfb658202b05a08bd1e05750" prot="private" virt="non-virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>_num_tables</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a82c3d5afc0675d87e0b5180b77d72335" prot="private" virt="non-virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>_table_range</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a0a9176b54dd3874205b4d646c1517cd4" prot="public" virt="virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>clearTables</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a79ece8d05eb7d7a3a5a5856df9f6fd96" prot="private" virt="non-virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>counter</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_hash_table_1adaff6d5fd3c18382448d34c65f95249d" prot="protected" virt="non-virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>DEFAULT_MAX_RAND</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1af0b0f3624494505d4feb06c5f32b2f76" prot="private" virt="non-virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>getBucketIndex</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a480a8bff172519a7a560ee7f82520fd1" prot="public" virt="virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>insert</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a6a36e892484730361f31dbc8a5e4246f" prot="private" virt="non-virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>insertIntoTable</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a8a1026d1fefa89928f5a37fb6ba313bf" prot="public" virt="virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>insertSequential</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1ab64d69146bb759ee01fd1f9a597a0fa5" prot="public" virt="virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>numTables</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1abf6470c7daf45d12d2e29fd4db08629b" prot="public" virt="virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>queryByCount</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1aceefb06de7c841b313171c83298043b3" prot="public" virt="virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>queryBySet</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a9f85e1ecea2bf7312727f64639b21853" prot="public" virt="virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>queryByVector</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a98f40f6373e8b2dd455835746c2fdd8e" prot="public" virt="non-virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>sortBuckets</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a0849ea1d0044c2f470520bb12abf3e65" prot="public" virt="virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>tableRange</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a23f2de3eecc649b623f835fe258d61ac" prot="public" virt="non-virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>VectorHashTable</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a571f17b7a460284c7568d23ae3af1a4d" prot="public" virt="non-virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>VectorHashTable</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_hash_table_1ae07e848e80f02d6b0bb3052a48c7a6eb" prot="public" virt="virtual"><scope>thirdai::hashtable::VectorHashTable</scope><name>~HashTable</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

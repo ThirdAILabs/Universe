@@ -1,0 +1,222 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_callback_8h" kind="file" language="C++">
+    <compoundname>Callback.h</compoundname>
+    <includes local="no">memory</includes>
+    <includes local="no">vector</includes>
+    <includedby refid="_distributed_training_wrapper_8h" local="no">bolt/src/graph/DistributedTrainingWrapper.h</includedby>
+    <includedby refid="_execution_config_8h" local="no">bolt/src/graph/ExecutionConfig.h</includedby>
+    <includedby refid="_graph_8cc" local="no">bolt/src/graph/Graph.cc</includedby>
+    <includedby refid="_early_stop_checkpoint_8h" local="yes">bolt/src/graph/callbacks/EarlyStopCheckpoint.h</includedby>
+    <includedby refid="_learning_rate_scheduler_8h" local="yes">bolt/src/graph/callbacks/LearningRateScheduler.h</includedby>
+    <includedby refid="_root_cause_analysis_8h" local="no">bolt/src/root_cause_analysis/RootCauseAnalysis.h</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>bolt/src/graph/callbacks/Callback.h</label>
+        <link refid="_callback_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>memory</label>
+      </node>
+      <node id="3">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="5">
+        <label>bolt/src/auto_classifiers/AutoClassifierBase.h</label>
+        <link refid="_auto_classifier_base_8h_source"/>
+      </node>
+      <node id="6">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h</label>
+        <link refid="_sequential_classifier_8h_source"/>
+      </node>
+      <node id="7">
+        <label>bolt/src/graph/CommonNetworks.h</label>
+        <link refid="_common_networks_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>bolt/src/graph/DistributedTrainingWrapper.h</label>
+        <link refid="_distributed_training_wrapper_8h_source"/>
+      </node>
+      <node id="3">
+        <label>bolt/src/graph/ExecutionConfig.h</label>
+        <link refid="_execution_config_8h_source"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>bolt/src/graph/Graph.h</label>
+        <link refid="_graph_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>bolt/src/graph/callbacks/Callback.h</label>
+        <link refid="_callback_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>bolt/src/graph/callbacks/EarlyStopCheckpoint.h</label>
+        <link refid="_early_stop_checkpoint_8h_source"/>
+      </node>
+      <node id="9">
+        <label>bolt/src/graph/callbacks/LearningRateScheduler.h</label>
+        <link refid="_learning_rate_scheduler_8h_source"/>
+      </node>
+      <node id="10">
+        <label>bolt/src/root_cause_analysis/RootCauseAnalysis.h</label>
+        <link refid="_root_cause_analysis_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classthirdai_1_1bolt_1_1_callback" prot="public">thirdai::bolt::Callback</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_callback_list" prot="public">thirdai::bolt::CallbackList</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1bolt">thirdai::bolt</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;memory&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;vector&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::bolt<sp/>{</highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">BoltGraph;</highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">BoltGraphPtr<sp/>=<sp/>std::shared_ptr&lt;BoltGraph&gt;;</highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">TrainState;</highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight></codeline>
+<codeline lineno="24" refid="classthirdai_1_1bolt_1_1_callback" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1bolt_1_1_callback" kindref="compound">Callback</ref><sp/>{</highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1bolt_1_1_callback" kindref="compound">Callback</ref>()<sp/>{}</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"></highlight></codeline>
+<codeline lineno="28"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>instead<sp/>of<sp/>passing<sp/>in<sp/>a<sp/>model<sp/>we<sp/>could<sp/>have<sp/>a<sp/>model<sp/>be<sp/>set<sp/>in</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>the<sp/>constructor.<sp/>This<sp/>would<sp/>require<sp/>some<sp/>sort<sp/>of<sp/>lambda/factory</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>constructor.<sp/>We<sp/>can<sp/>think<sp/>about<sp/>this<sp/>later.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onTrainBegin(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/>{</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)model;</highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)train_state;</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"></highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onTrainEnd(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/>{</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)model;</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)train_state;</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"></highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onEpochBegin(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/>{</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)model;</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)train_state;</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"></highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onEpochEnd(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/>{</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)model;</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)train_state;</highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"></highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>currently<sp/>predict/train<sp/>is<sp/>not<sp/>supported<sp/>for<sp/>onbatch..<sp/>functions.<sp/>this</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="52"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>would<sp/>require<sp/>refactoring<sp/>of<sp/>the<sp/>graph<sp/>api<sp/>thus<sp/>is<sp/>saved<sp/>for<sp/>a<sp/>future</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>change.<sp/>Currently<sp/>throws<sp/>a<sp/>supported<sp/>error<sp/>message.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onBatchBegin(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/>{</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)model;</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)train_state;</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"></highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onBatchEnd(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/>{</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)model;</highlight></codeline>
+<codeline lineno="61"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)train_state;</highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"></highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_callback" kindref="compound">~Callback</ref>()<sp/>=<sp/></highlight><highlight class="keywordflow">default</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="65"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"></highlight></codeline>
+<codeline lineno="67"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">CallbackPtr<sp/>=<sp/>std::shared_ptr&lt;Callback&gt;;</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"></highlight></codeline>
+<codeline lineno="73" refid="classthirdai_1_1bolt_1_1_callback_list" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1bolt_1_1_callback_list" kindref="compound">CallbackList</ref><sp/>{</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_callback_list" kindref="compound">CallbackList</ref>(std::vector&lt;CallbackPtr&gt;<sp/>callbacks)</highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>_callbacks(std::move(callbacks))<sp/>{}</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"></highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onTrainBegin(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/>{</highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal">&amp;<sp/>callback<sp/>:<sp/>_callbacks)<sp/>{</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>callback-&gt;onTrainBegin(model,<sp/>train_state);</highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"></highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onTrainEnd(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/>{</highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal">&amp;<sp/>callback<sp/>:<sp/>_callbacks)<sp/>{</highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>callback-&gt;onTrainEnd(model,<sp/>train_state);</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"></highlight></codeline>
+<codeline lineno="90"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onEpochBegin(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/>{</highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal">&amp;<sp/>callback<sp/>:<sp/>_callbacks)<sp/>{</highlight></codeline>
+<codeline lineno="92"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>callback-&gt;onEpochBegin(model,<sp/>train_state);</highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="94"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="95"><highlight class="normal"></highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onEpochEnd(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/>{</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal">&amp;<sp/>callback<sp/>:<sp/>_callbacks)<sp/>{</highlight></codeline>
+<codeline lineno="98"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>callback-&gt;onEpochEnd(model,<sp/>train_state);</highlight></codeline>
+<codeline lineno="99"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="100"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="101"><highlight class="normal"></highlight></codeline>
+<codeline lineno="102"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onBatchBegin(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/>{</highlight></codeline>
+<codeline lineno="103"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal">&amp;<sp/>callback<sp/>:<sp/>_callbacks)<sp/>{</highlight></codeline>
+<codeline lineno="104"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>callback-&gt;onBatchBegin(model,<sp/>train_state);</highlight></codeline>
+<codeline lineno="105"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="106"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="107"><highlight class="normal"></highlight></codeline>
+<codeline lineno="108"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onBatchEnd(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/>{</highlight></codeline>
+<codeline lineno="109"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal">&amp;<sp/>callback<sp/>:<sp/>_callbacks)<sp/>{</highlight></codeline>
+<codeline lineno="110"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>callback-&gt;onBatchEnd(model,<sp/>train_state);</highlight></codeline>
+<codeline lineno="111"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="112"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="113"><highlight class="normal"></highlight></codeline>
+<codeline lineno="114"><highlight class="normal"><sp/><sp/>uint64_t<sp/>numCallbacks()</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_callbacks.size();<sp/>}</highlight></codeline>
+<codeline lineno="115"><highlight class="normal"></highlight></codeline>
+<codeline lineno="116"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="117"><highlight class="normal"><sp/><sp/>std::vector&lt;CallbackPtr&gt;<sp/>_callbacks;</highlight></codeline>
+<codeline lineno="118"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="119"><highlight class="normal"></highlight></codeline>
+<codeline lineno="120"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::bolt</highlight></codeline>
+    </programlisting>
+    <location file="bolt/src/graph/callbacks/Callback.h"/>
+  </compounddef>
+</doxygen>

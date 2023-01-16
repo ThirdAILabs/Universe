@@ -1,0 +1,99 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1compression_1_1serializer_1_1_binary_input_helper" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::compression::serializer::BinaryInputHelper</compoundname>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1compression_1_1serializer_1_1_binary_input_helper_1a7d117a777da6f42356de401b907b1263" prot="private" static="no" mutable="no">
+        <type>const char *</type>
+        <definition>const char* thirdai::compression::serializer::BinaryInputHelper::_ptr</definition>
+        <argsstring></argsstring>
+        <name>_ptr</name>
+        <qualifiedname>thirdai::compression::serializer::BinaryInputHelper::_ptr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/Serializer.h" line="50" column="14" bodyfile="compression/src/Serializer.h" bodystart="50" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1serializer_1_1_binary_input_helper_1adc907f045143f3d41bfd99c468677e34" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::compression::serializer::BinaryInputHelper::BinaryInputHelper</definition>
+        <argsstring>(const char *data)</argsstring>
+        <name>BinaryInputHelper</name>
+        <qualifiedname>thirdai::compression::serializer::BinaryInputHelper::BinaryInputHelper</qualifiedname>
+        <param>
+          <type>const char *</type>
+          <declname>data</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/Serializer.h" line="31" column="12" bodyfile="compression/src/Serializer.h" bodystart="31" bodyend="31"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1serializer_1_1_binary_input_helper_1ae71f5ecbeb07f584f6e1af96b3aa13df" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class T</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::compression::serializer::BinaryInputHelper::read</definition>
+        <argsstring>(T *data)</argsstring>
+        <name>read</name>
+        <qualifiedname>thirdai::compression::serializer::BinaryInputHelper::read</qualifiedname>
+        <param>
+          <type>T *</type>
+          <declname>data</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/Serializer.h" line="34" column="8" bodyfile="compression/src/Serializer.h" bodystart="34" bodyend="37"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1serializer_1_1_binary_input_helper_1a7c0a36715f36eec71bcc3ed790ebaf7e" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class T</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::compression::serializer::BinaryInputHelper::readVector</definition>
+        <argsstring>(std::vector&lt; T &gt; &amp;vector)</argsstring>
+        <name>readVector</name>
+        <qualifiedname>thirdai::compression::serializer::BinaryInputHelper::readVector</qualifiedname>
+        <param>
+          <type>std::vector&lt; T &gt; &amp;</type>
+          <declname>vector</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/Serializer.h" line="40" column="8" bodyfile="compression/src/Serializer.h" bodystart="40" bodyend="47"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="compression/src/Serializer.h" line="29" column="1" bodyfile="compression/src/Serializer.h" bodystart="29" bodyend="51"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1compression_1_1serializer_1_1_binary_input_helper_1a7d117a777da6f42356de401b907b1263" prot="private" virt="non-virtual"><scope>thirdai::compression::serializer::BinaryInputHelper</scope><name>_ptr</name></member>
+      <member refid="classthirdai_1_1compression_1_1serializer_1_1_binary_input_helper_1adc907f045143f3d41bfd99c468677e34" prot="public" virt="non-virtual"><scope>thirdai::compression::serializer::BinaryInputHelper</scope><name>BinaryInputHelper</name></member>
+      <member refid="classthirdai_1_1compression_1_1serializer_1_1_binary_input_helper_1ae71f5ecbeb07f584f6e1af96b3aa13df" prot="public" virt="non-virtual"><scope>thirdai::compression::serializer::BinaryInputHelper</scope><name>read</name></member>
+      <member refid="classthirdai_1_1compression_1_1serializer_1_1_binary_input_helper_1a7c0a36715f36eec71bcc3ed790ebaf7e" prot="public" virt="non-virtual"><scope>thirdai::compression::serializer::BinaryInputHelper</scope><name>readVector</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

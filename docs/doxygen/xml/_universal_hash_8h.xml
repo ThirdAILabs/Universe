@@ -1,0 +1,162 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_universal_hash_8h" kind="file" language="C++">
+    <compoundname>UniversalHash.h</compoundname>
+    <includes local="no">cereal/access.hpp</includes>
+    <includes local="no">cereal/types/array.hpp</includes>
+    <includes local="no">array</includes>
+    <includes local="no">cstdint</includes>
+    <includes local="no">string</includes>
+    <includedby refid="_embedding_layer_8h" local="no">bolt/src/layers/EmbeddingLayer.h</includedby>
+    <includedby refid="_compression_utils_8h" local="no">compression/src/CompressionUtils.h</includedby>
+    <includedby refid="_count_sketch_8cc" local="no">compression/src/CountSketch.cc</includedby>
+    <includedby refid="_count_sketch_8h" local="no">compression/src/CountSketch.h</includedby>
+    <includedby refid="_dragon_vector_8cc" local="no">compression/src/DragonVector.cc</includedby>
+    <includedby refid="_universal_hash_8cc" local="yes">hashing/src/UniversalHash.cc</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>hashing/src/UniversalHash.h</label>
+        <link refid="_universal_hash_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>array</label>
+      </node>
+      <node id="2">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="3">
+        <label>cereal/types/array.hpp</label>
+      </node>
+      <node id="5">
+        <label>cstdint</label>
+      </node>
+      <node id="6">
+        <label>string</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="4">
+        <label>bolt/src/graph/nodes/DlrmAttention.h</label>
+        <link refid="_dlrm_attention_8h_source"/>
+      </node>
+      <node id="3">
+        <label>bolt/src/graph/nodes/Embedding.h</label>
+        <link refid="_embedding_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>bolt/src/layers/EmbeddingLayer.h</label>
+        <link refid="_embedding_layer_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="6">
+        <label>compression/src/CompressedVector.h</label>
+        <link refid="_compressed_vector_8h_source"/>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>compression/src/CompressionFactory.h</label>
+        <link refid="_compression_factory_8h_source"/>
+      </node>
+      <node id="5">
+        <label>compression/src/CompressionUtils.h</label>
+        <link refid="_compression_utils_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>compression/src/CountSketch.h</label>
+        <link refid="_count_sketch_8h_source"/>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>compression/src/DragonVector.h</label>
+        <link refid="_dragon_vector_8h_source"/>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>hashing/src/UniversalHash.h</label>
+        <link refid="_universal_hash_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classthirdai_1_1hashing_1_1_universal_hash" prot="public">thirdai::hashing::UniversalHash</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1hashing">thirdai::hashing</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/access.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/types/array.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;array&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cstdint&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::hashing<sp/>{</highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="comment">/*</highlight></codeline>
+<codeline lineno="12"><highlight class="comment"><sp/>*<sp/>Cheaper<sp/>Hash<sp/>functions,<sp/>if<sp/>you<sp/>need<sp/>64<sp/>bit<sp/>hash<sp/>use<sp/>murmurhash<sp/>or<sp/>xxhash.</highlight></codeline>
+<codeline lineno="13"><highlight class="comment"><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14" refid="classthirdai_1_1hashing_1_1_universal_hash" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1hashing_1_1_universal_hash" kindref="compound">UniversalHash</ref><sp/>{</highlight></codeline>
+<codeline lineno="15"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="16"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1hashing_1_1_universal_hash" kindref="compound">UniversalHash</ref>(uint32_t<sp/><ref refid="classthirdai_1_1hashing_1_1_universal_hash_1a695d19159fb8a96c3b8fb253b387cf13" kindref="member">seed</ref>);</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight></codeline>
+<codeline lineno="21"><highlight class="normal"><sp/><sp/>uint32_t<sp/><ref refid="classthirdai_1_1hashing_1_1_universal_hash_1ac2db5418a5d52da282150d59cc0024ab" kindref="member">gethash</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>key)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"></highlight></codeline>
+<codeline lineno="26"><highlight class="normal"><sp/><sp/>uint32_t<sp/><ref refid="classthirdai_1_1hashing_1_1_universal_hash_1ac2db5418a5d52da282150d59cc0024ab" kindref="member">gethash</ref>(uint64_t<sp/>key)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"></highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/>uint32_t<sp/><ref refid="classthirdai_1_1hashing_1_1_universal_hash_1a695d19159fb8a96c3b8fb253b387cf13" kindref="member">seed</ref>()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"></highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Private<sp/>constructor<sp/>for<sp/>cereal.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1hashing_1_1_universal_hash" kindref="compound">UniversalHash</ref>()<sp/>{}</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"></highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">friend</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">cereal::access;</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">class</highlight><highlight class="normal"><sp/>Archive&gt;</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>serialize(Archive&amp;<sp/>archive)<sp/>{</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/><sp/><sp/>archive(_seed,<sp/>T);</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"></highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/>uint32_t<sp/>_seed;</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/>std::array&lt;std::array&lt;uint32_t,<sp/>256&gt;,<sp/>8&gt;<sp/>T;</highlight></codeline>
+<codeline lineno="45"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"></highlight></codeline>
+<codeline lineno="47"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::hashing</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="hashing/src/UniversalHash.h"/>
+  </compounddef>
+</doxygen>

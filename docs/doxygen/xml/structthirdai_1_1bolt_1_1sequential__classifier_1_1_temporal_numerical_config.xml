@@ -1,0 +1,60 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_temporal_numerical_config" kind="struct" language="C++" prot="public">
+    <compoundname>thirdai::bolt::sequential_classifier::TemporalNumericalConfig</compoundname>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_temporal_numerical_config_1a9f588ed50c798fc8797f9d274894519c" prot="public" static="no" mutable="no">
+        <type>const std::string &amp;</type>
+        <definition>const std::string&amp; thirdai::bolt::sequential_classifier::TemporalNumericalConfig::column_name</definition>
+        <argsstring></argsstring>
+        <name>column_name</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::TemporalNumericalConfig::column_name</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" line="119" column="21" bodyfile="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" bodystart="119" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_temporal_numerical_config_1a65a16bcf4fc6fdec23d6c7c834867cdb" prot="public" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::sequential_classifier::TemporalNumericalConfig::history_length</definition>
+        <argsstring></argsstring>
+        <name>history_length</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::TemporalNumericalConfig::history_length</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" line="120" column="12" bodyfile="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" bodystart="120" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_temporal_numerical_config_1ab3d22c036433b9a69c87c989ea3b43b0" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::sequential_classifier::TemporalNumericalConfig::include_current_row</definition>
+        <argsstring></argsstring>
+        <name>include_current_row</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::TemporalNumericalConfig::include_current_row</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" line="121" column="8" bodyfile="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" bodystart="121" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" line="118" column="1" bodyfile="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" bodystart="118" bodyend="122"/>
+    <listofallmembers>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_temporal_numerical_config_1a9f588ed50c798fc8797f9d274894519c" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::TemporalNumericalConfig</scope><name>column_name</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_temporal_numerical_config_1a65a16bcf4fc6fdec23d6c7c834867cdb" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::TemporalNumericalConfig</scope><name>history_length</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_temporal_numerical_config_1ab3d22c036433b9a69c87c989ea3b43b0" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::TemporalNumericalConfig</scope><name>include_current_row</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

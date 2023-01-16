@@ -1,0 +1,629 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_input" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::bolt::Input</compoundname>
+    <basecompoundref refid="classthirdai_1_1bolt_1_1_node" prot="public" virt="non-virtual">thirdai::bolt::Node</basecompoundref>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1bolt_1_1_input_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::bolt::Input::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="174" column="16" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="174" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_input_1a80e0099ad9b969d8a801cfb13e209829" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::Input::_compiled</definition>
+        <argsstring></argsstring>
+        <name>_compiled</name>
+        <qualifiedname>thirdai::bolt::Input::_compiled</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="180" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="180" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_input_1af45f99c5af50466b72c1568603a89ee6" prot="private" static="no" mutable="no">
+        <type><ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> *</type>
+        <definition>BoltBatch* thirdai::bolt::Input::_input_batch</definition>
+        <argsstring></argsstring>
+        <name>_input_batch</name>
+        <qualifiedname>thirdai::bolt::Input::_input_batch</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="181" column="13" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="181" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_input_1a7c8d4da75c917e0058f3880765bffa7d" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::Input::_expected_input_dim</definition>
+        <argsstring></argsstring>
+        <name>_expected_input_dim</name>
+        <qualifiedname>thirdai::bolt::Input::_expected_input_dim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="182" column="12" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="182" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_input_1a900cc694430b44c3baec02bf0697a27d" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; std::pair&lt; uint32_t, uint32_t &gt; &gt;</type>
+        <definition>std::optional&lt;std::pair&lt;uint32_t, uint32_t&gt; &gt; thirdai::bolt::Input::_num_nonzeros_range</definition>
+        <argsstring></argsstring>
+        <name>_num_nonzeros_range</name>
+        <qualifiedname>thirdai::bolt::Input::_num_nonzeros_range</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="183" column="17" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="183" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a6749b2a6e5ad4eb7a286f9c4b216bbdc" prot="private" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::Input::Input</definition>
+        <argsstring>(uint32_t expected_input_dim, std::optional&lt; std::pair&lt; uint32_t, uint32_t &gt; &gt; num_nonzeros_range=std::nullopt)</argsstring>
+        <name>Input</name>
+        <qualifiedname>thirdai::bolt::Input::Input</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>expected_input_dim</declname>
+        </param>
+        <param>
+          <type>std::optional&lt; std::pair&lt; uint32_t, uint32_t &gt; &gt;</type>
+          <declname>num_nonzeros_range</declname>
+          <defval>std::nullopt</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="25" column="12" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="25" bodyend="31"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1ad85f88e4c87e01565155447e2c9f6e8c" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Input::compileImpl</definition>
+        <argsstring>() final</argsstring>
+        <name>compileImpl</name>
+        <qualifiedname>thirdai::bolt::Input::compileImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a8aca1832ebdf9fb5fbeeb08a8a50e10c">compileImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="75" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="75" bodyend="81"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a9e5717de09278703c2e1bdd2526b3a74" prot="private" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_fully_connected_layer" kindref="compound">FullyConnectedLayer</ref> &gt; &gt;</type>
+        <definition>std::vector&lt; std::shared_ptr&lt; FullyConnectedLayer &gt; &gt; thirdai::bolt::Input::getInternalFullyConnectedLayersImpl</definition>
+        <argsstring>() const final</argsstring>
+        <name>getInternalFullyConnectedLayersImpl</name>
+        <qualifiedname>thirdai::bolt::Input::getInternalFullyConnectedLayersImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a52d8bb7dd818868f7a3c8e852f3fe8f9">getInternalFullyConnectedLayersImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="84" column="3" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="84" bodyend="86"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1af5f15caf2d6687fb6030c50ad8d7a647" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Input::prepareForBatchProcessingImpl</definition>
+        <argsstring>(uint32_t batch_size, bool use_sparsity) final</argsstring>
+        <name>prepareForBatchProcessingImpl</name>
+        <qualifiedname>thirdai::bolt::Input::prepareForBatchProcessingImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a13dff58075ba5d505616b644873e99ee">prepareForBatchProcessingImpl</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>use_sparsity</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="88" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="88" bodyend="95"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1ab80d5eb65ae73ec5baad09b068308ef9" prot="private" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::Input::numNonzerosInOutputImpl</definition>
+        <argsstring>() const final</argsstring>
+        <name>numNonzerosInOutputImpl</name>
+        <qualifiedname>thirdai::bolt::Input::numNonzerosInOutputImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1ae89f7fcdc1719e4cd2a5cfe9f3133a54">numNonzerosInOutputImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="97" column="12" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="97" bodyend="101"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a815c9cf2c7166d059d66f72d0e710837" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Input::forwardImpl</definition>
+        <argsstring>(uint32_t vec_index, const BoltVector *labels) final</argsstring>
+        <name>forwardImpl</name>
+        <qualifiedname>thirdai::bolt::Input::forwardImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a7126a97a87f143d8d6755fd71c331f46">forwardImpl</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> *</type>
+          <declname>labels</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="103" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="103" bodyend="106"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1adad440af042b606a0751fe0acd8fa26d" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Input::backpropagateImpl</definition>
+        <argsstring>(uint32_t vec_index) final</argsstring>
+        <name>backpropagateImpl</name>
+        <qualifiedname>thirdai::bolt::Input::backpropagateImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a44d73b3a2d6344aba16f8a1dc3b87919">backpropagateImpl</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="108" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="108" bodyend="108"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a5fde75cdae53d6b90b6947818687d847" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Input::updateParametersImpl</definition>
+        <argsstring>(float learning_rate, uint32_t batch_cnt) final</argsstring>
+        <name>updateParametersImpl</name>
+        <qualifiedname>thirdai::bolt::Input::updateParametersImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a2934c0002c454d3e6dbb232b7f05cc8d">updateParametersImpl</reimplements>
+        <param>
+          <type>float</type>
+          <declname>learning_rate</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_cnt</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="110" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="110" bodyend="113"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1ab6246bc8ac8537c2ed2011d825416d6f" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+        <definition>BoltVector &amp; thirdai::bolt::Input::getOutputVectorImpl</definition>
+        <argsstring>(uint32_t vec_index) final</argsstring>
+        <name>getOutputVectorImpl</name>
+        <qualifiedname>thirdai::bolt::Input::getOutputVectorImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a482129276694ef878d2c95712d552bad">getOutputVectorImpl</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="115" column="14" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="115" bodyend="117"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1afd04ef043e18f66e9200c8204feb5ef0" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Input::cleanupAfterBatchProcessingImpl</definition>
+        <argsstring>() final</argsstring>
+        <name>cleanupAfterBatchProcessingImpl</name>
+        <qualifiedname>thirdai::bolt::Input::cleanupAfterBatchProcessingImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1affb1e25aa5a2f485d49d9eb899b6a44e">cleanupAfterBatchProcessingImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="119" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="119" bodyend="119"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a43f95b6498918f913af726f78576af0c" prot="private" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Input::summarizeImpl</definition>
+        <argsstring>(std::stringstream &amp;summary, bool detailed) const final</argsstring>
+        <name>summarizeImpl</name>
+        <qualifiedname>thirdai::bolt::Input::summarizeImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1af76c56573f2f09f88d131a6b7de90a74">summarizeImpl</reimplements>
+        <param>
+          <type>std::stringstream &amp;</type>
+          <declname>summary</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>detailed</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="121" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="121" bodyend="129"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a2049ef424f97bf4ea9b48f218f1f51c1" prot="private" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::bolt::Input::type</definition>
+        <argsstring>() const final</argsstring>
+        <name>type</name>
+        <qualifiedname>thirdai::bolt::Input::type</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a6286ebeb923a53cb6ac293d3ac894949">type</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="131" column="15" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="131" bodyend="131"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a21d2d606efb6d7d92868c8c80242bbf2" prot="private" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::vector&lt; NodePtr &gt;</type>
+        <definition>std::vector&lt; NodePtr &gt; thirdai::bolt::Input::getPredecessorsImpl</definition>
+        <argsstring>() const final</argsstring>
+        <name>getPredecessorsImpl</name>
+        <qualifiedname>thirdai::bolt::Input::getPredecessorsImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1abf8a46cda935b2ee6b8869fa1c0ffa9f">getPredecessorsImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="133" column="15" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="133" bodyend="133"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1aff8c43b17e7913e72e8214fc436194b4" prot="private" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>NodeState</type>
+        <definition>NodeState thirdai::bolt::Input::getState</definition>
+        <argsstring>() const final</argsstring>
+        <name>getState</name>
+        <qualifiedname>thirdai::bolt::Input::getState</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1ab86e7912c6dbccaa402ad257b1512e7c">getState</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="135" column="13" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="135" bodyend="147"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a84d917d21dffa69287dfaf5a604bd3b6" prot="private" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Input::checkDimForInput</definition>
+        <argsstring>(const BoltVector &amp;vec) const</argsstring>
+        <name>checkDimForInput</name>
+        <qualifiedname>thirdai::bolt::Input::checkDimForInput</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>vec</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="149" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="149" bodyend="169"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a7325d61b6ecee96dfcc58d6385f664c0" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::Input::Input</definition>
+        <argsstring>()</argsstring>
+        <name>Input</name>
+        <qualifiedname>thirdai::bolt::Input::Input</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="172" column="3" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="172" bodyend="172"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a98623c5646863d9e2b12ac096bce4175" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::bolt::Input::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::bolt::Input::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="176" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="176" bodyend="178"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a1a6dd02f9fa92cf29782be5e8d3eb6da" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_input" kindref="compound">Input</ref> &gt;</type>
+        <definition>static std::shared_ptr&lt; Input &gt; thirdai::bolt::Input::make</definition>
+        <argsstring>(uint32_t expected_dim)</argsstring>
+        <name>make</name>
+        <qualifiedname>thirdai::bolt::Input::make</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>expected_dim</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="34" column="26" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="34" bodyend="36"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a2c7e8837ec6e7b0d6ee9a85b87063b2e" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_input" kindref="compound">Input</ref> &gt;</type>
+        <definition>static std::shared_ptr&lt; Input &gt; thirdai::bolt::Input::makeTokenInput</definition>
+        <argsstring>(uint32_t expected_dim, std::pair&lt; uint32_t, uint32_t &gt; num_tokens_range)</argsstring>
+        <name>makeTokenInput</name>
+        <qualifiedname>thirdai::bolt::Input::makeTokenInput</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>expected_dim</declname>
+        </param>
+        <param>
+          <type>std::pair&lt; uint32_t, uint32_t &gt;</type>
+          <declname>num_tokens_range</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="38" column="26" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="38" bodyend="41"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a04acea969d6d6749c0f43286c375c144" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Input::setInputs</definition>
+        <argsstring>(BoltBatch *inputs)</argsstring>
+        <name>setInputs</name>
+        <qualifiedname>thirdai::bolt::Input::setInputs</qualifiedname>
+        <param>
+          <type><ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> *</type>
+          <declname>inputs</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="46" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="46" bodyend="54"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a51c9ac665e604a45c7d7478253815933" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::Input::expectedInputDim</definition>
+        <argsstring>() const</argsstring>
+        <name>expectedInputDim</name>
+        <qualifiedname>thirdai::bolt::Input::expectedInputDim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="56" column="12" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="56" bodyend="56"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1ab8f93391a42c3b13024ebe950ef9eedf" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::optional&lt; std::pair&lt; uint32_t, uint32_t &gt; &gt;</type>
+        <definition>std::optional&lt; std::pair&lt; uint32_t, uint32_t &gt; &gt; thirdai::bolt::Input::numNonZerosRange</definition>
+        <argsstring>() const</argsstring>
+        <name>numNonZerosRange</name>
+        <qualifiedname>thirdai::bolt::Input::numNonZerosRange</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="58" column="17" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="58" bodyend="60"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a42baf5aa72c9e50e3b19bf67833019b7" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::Input::outputDim</definition>
+        <argsstring>() const final</argsstring>
+        <name>outputDim</name>
+        <qualifiedname>thirdai::bolt::Input::outputDim</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1adf765696d9f7fdc8bbc1ca098ed461e9">outputDim</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="62" column="12" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="62" bodyend="62"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a215beaccdc88a34b5c8b8e1cb62f9133" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::Input::isInputNode</definition>
+        <argsstring>() const final</argsstring>
+        <name>isInputNode</name>
+        <qualifiedname>thirdai::bolt::Input::isInputNode</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a4bc5d54043015e5c9cbb28a85160a8f6">isInputNode</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="64" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="64" bodyend="64"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1a6aba47711f6686ee329710c24c53f1a1" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Input::initOptimizer</definition>
+        <argsstring>() final</argsstring>
+        <name>initOptimizer</name>
+        <qualifiedname>thirdai::bolt::Input::initOptimizer</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1ad2ab6e06fa8587077a17e3f9c4ec1e78">initOptimizer</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="66" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="66" bodyend="68"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_input_1aa3b23f229229e0e79fdd71cd8efcd49b" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Input::enableDistributedTraining</definition>
+        <argsstring>() final</argsstring>
+        <name>enableDistributedTraining</name>
+        <qualifiedname>thirdai::bolt::Input::enableDistributedTraining</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1aa8c63e99fd4a0ba21bc2170590e3513d">enableDistributedTraining</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="70" column="8" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="70" bodyend="72"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="1">
+        <label>thirdai::bolt::Input</label>
+        <link refid="classthirdai_1_1bolt_1_1_input"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::bolt::Node</label>
+        <link refid="classthirdai_1_1bolt_1_1_node"/>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="1">
+        <label>thirdai::bolt::Input</label>
+        <link refid="classthirdai_1_1bolt_1_1_input"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::bolt::Node</label>
+        <link refid="classthirdai_1_1bolt_1_1_node"/>
+      </node>
+    </collaborationgraph>
+    <location file="bolt/src/graph/nodes/Input.h" line="23" column="1" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="23" bodyend="184"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a80e0099ad9b969d8a801cfb13e209829" prot="private" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>_compiled</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a7c8d4da75c917e0058f3880765bffa7d" prot="private" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>_expected_input_dim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1af45f99c5af50466b72c1568603a89ee6" prot="private" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>_input_batch</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a900cc694430b44c3baec02bf0697a27d" prot="private" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>_num_nonzeros_range</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1aa9d48aad3e5bbcd047c944ae58f84580" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>backpropagate</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1adad440af042b606a0751fe0acd8fa26d" prot="private" virt="virtual"><scope>thirdai::bolt::Input</scope><name>backpropagateImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a84d917d21dffa69287dfaf5a604bd3b6" prot="private" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>checkDimForInput</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1ac69895a5802ff7c3b730338b3b4e90b4" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>cleanupAfterBatchProcessing</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1afd04ef043e18f66e9200c8204feb5ef0" prot="private" virt="virtual"><scope>thirdai::bolt::Input</scope><name>cleanupAfterBatchProcessingImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a88291233b0764978b7ceea7513aae3ba" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>compile</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16a7eee318133bed45ed926a12048d99963" prot="protected" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>Compiled</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1ad85f88e4c87e01565155447e2c9f6e8c" prot="private" virt="virtual"><scope>thirdai::bolt::Input</scope><name>compileImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16afb4121016cc30a007bc314bd81845d1e" prot="protected" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>Constructed</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1aa3b23f229229e0e79fdd71cd8efcd49b" prot="public" virt="virtual"><scope>thirdai::bolt::Input</scope><name>enableDistributedTraining</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a51c9ac665e604a45c7d7478253815933" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>expectedInputDim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a1d3c6a15ac7543b63b8785cc5e18e3c4" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>forward</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a815c9cf2c7166d059d66f72d0e710837" prot="private" virt="virtual"><scope>thirdai::bolt::Input</scope><name>forwardImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a99399aa3e00c2b91fdda85cab1c0f158" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>getInternalFullyConnectedLayers</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a9e5717de09278703c2e1bdd2526b3a74" prot="private" virt="virtual"><scope>thirdai::bolt::Input</scope><name>getInternalFullyConnectedLayersImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a7f77cde6a66c0958b83e452e87e20756" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>getOutputVector</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1ab6246bc8ac8537c2ed2011d825416d6f" prot="private" virt="virtual"><scope>thirdai::bolt::Input</scope><name>getOutputVectorImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1aa64a67e500699d0d1ff48c7359276b8e" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>getPredecessors</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a21d2d606efb6d7d92868c8c80242bbf2" prot="private" virt="virtual"><scope>thirdai::bolt::Input</scope><name>getPredecessorsImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1aff8c43b17e7913e72e8214fc436194b4" prot="private" virt="virtual"><scope>thirdai::bolt::Input</scope><name>getState</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a6aba47711f6686ee329710c24c53f1a1" prot="public" virt="virtual"><scope>thirdai::bolt::Input</scope><name>initOptimizer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a6749b2a6e5ad4eb7a286f9c4b216bbdc" prot="private" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>Input</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a7325d61b6ecee96dfcc58d6385f664c0" prot="private" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>Input</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a215beaccdc88a34b5c8b8e1cb62f9133" prot="public" virt="virtual"><scope>thirdai::bolt::Input</scope><name>isInputNode</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a1a6dd02f9fa92cf29782be5e8d3eb6da" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>make</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a2c7e8837ec6e7b0d6ee9a85b87063b2e" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>makeTokenInput</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1ab01d717ae0cd7ce683bbb353c020063b" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>name</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16" prot="protected" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>NodeState</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a5ded5aa10ce21f479ba8b2afb2af3257" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>numNonzerosInOutput</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1ab80d5eb65ae73ec5baad09b068308ef9" prot="private" virt="virtual"><scope>thirdai::bolt::Input</scope><name>numNonzerosInOutputImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1ab8f93391a42c3b13024ebe950ef9eedf" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>numNonZerosRange</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a42baf5aa72c9e50e3b19bf67833019b7" prot="public" virt="virtual"><scope>thirdai::bolt::Input</scope><name>outputDim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16a73e48da570b3b13d772c47dcee4ae6a6" prot="protected" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>PredecessorsSet</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16ac172e0a909bdf0ccf05dbf8954c54fad" prot="protected" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>PreparedForBatchProcessing</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1aa8da3afebd36fa6536768ba5f58ec3c8" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>prepareForBatchProcessing</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1af5f15caf2d6687fb6030c50ad8d7a647" prot="private" virt="virtual"><scope>thirdai::bolt::Input</scope><name>prepareForBatchProcessingImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a98623c5646863d9e2b12ac096bce4175" prot="private" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a04acea969d6d6749c0f43286c375c144" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>setInputs</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1acb9da57dbfe1c24bfc7e7f9376077609" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>summarize</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a43f95b6498918f913af726f78576af0c" prot="private" virt="virtual"><scope>thirdai::bolt::Input</scope><name>summarizeImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a2049ef424f97bf4ea9b48f218f1f51c1" prot="private" virt="virtual"><scope>thirdai::bolt::Input</scope><name>type</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a14827669d25336d30ce66fc00dedaba4" prot="public" virt="non-virtual"><scope>thirdai::bolt::Input</scope><name>updateParameters</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_input_1a5fde75cdae53d6b90b6947818687d847" prot="private" virt="virtual"><scope>thirdai::bolt::Input</scope><name>updateParametersImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a1e977ed40e3903aaef3dde767bdeb322" prot="public" virt="virtual"><scope>thirdai::bolt::Input</scope><name>~Node</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

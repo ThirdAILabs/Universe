@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_layer_name_manager" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::bolt::LayerNameManager</compoundname>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_layer_name_manager_1a87fa99d3ad3e27e4bb4d45eaeacecd5e" prot="private" static="no" mutable="no">
+        <type>std::unordered_map&lt; std::string, uint32_t &gt;</type>
+        <definition>std::unordered_map&lt;std::string, uint32_t&gt; thirdai::bolt::LayerNameManager::type_to_count</definition>
+        <argsstring></argsstring>
+        <name>type_to_count</name>
+        <qualifiedname>thirdai::bolt::LayerNameManager::type_to_count</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="39" column="22" bodyfile="bolt/src/graph/Node.h" bodystart="39" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_layer_name_manager_1aa1f07a58c7b8a259ead1286b32a2be0e" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::bolt::LayerNameManager::registerNodeAndGetName</definition>
+        <argsstring>(const std::string &amp;node_type)</argsstring>
+        <name>registerNodeAndGetName</name>
+        <qualifiedname>thirdai::bolt::LayerNameManager::registerNodeAndGetName</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>node_type</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="31" column="15" bodyfile="bolt/src/graph/Node.h" bodystart="31" bodyend="36"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/graph/Node.h" line="21" column="1" bodyfile="bolt/src/graph/Node.h" bodystart="21" bodyend="40"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_layer_name_manager_1aa1f07a58c7b8a259ead1286b32a2be0e" prot="public" virt="non-virtual"><scope>thirdai::bolt::LayerNameManager</scope><name>registerNodeAndGetName</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_layer_name_manager_1a87fa99d3ad3e27e4bb4d45eaeacecd5e" prot="private" virt="non-virtual"><scope>thirdai::bolt::LayerNameManager</scope><name>type_to_count</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

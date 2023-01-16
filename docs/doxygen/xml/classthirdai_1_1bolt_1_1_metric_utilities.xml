@@ -1,0 +1,126 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_metric_utilities" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::bolt::MetricUtilities</compoundname>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_utilities_1a8b97d64a142083d365f05328ac54dd8c" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::bolt::MetricUtilities::incrementAtomicFloat</definition>
+        <argsstring>(std::atomic&lt; float &gt; &amp;atomic_float, float increment)</argsstring>
+        <name>incrementAtomicFloat</name>
+        <qualifiedname>thirdai::bolt::MetricUtilities::incrementAtomicFloat</qualifiedname>
+        <param>
+          <type>std::atomic&lt; float &gt; &amp;</type>
+          <declname>atomic_float</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>increment</declname>
+        </param>
+        <briefdescription>
+<para>Helper function for incrementing an atomic float. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>This is because there is no specialization for atomic floats prior to C++20 and we were using C++17 at the time that this function was written. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/MetricHelpers.h" line="20" column="15" bodyfile="bolt/src/metrics/MetricHelpers.h" bodystart="20" bodyend="26"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_utilities_1a6fe5f8f308a252b8b1e994ca6f4e5a6b" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename PROCESS_ELEM_PAIR_LAMBDA_T</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>static void thirdai::bolt::MetricUtilities::visitActiveNeurons</definition>
+        <argsstring>(const BoltVector &amp;output, const BoltVector &amp;labels, PROCESS_ELEM_PAIR_LAMBDA_T process_elem_pair_lambda)</argsstring>
+        <name>visitActiveNeurons</name>
+        <qualifiedname>thirdai::bolt::MetricUtilities::visitActiveNeurons</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>labels</declname>
+        </param>
+        <param>
+          <type>PROCESS_ELEM_PAIR_LAMBDA_T</type>
+          <declname>process_elem_pair_lambda</declname>
+        </param>
+        <briefdescription>
+<para>Helper function that iterates through all nonzero values in the output or label vectors and applies a lambda to the corresponding pair of (value_in_label_vector, value_in_output_vector). </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Since this lambda takes in the values of vector entries, it accepts two floats and does not return anything.</para>
+<para>This is particularly useful for calculating regression metrics.</para>
+<para>Implementation details:<itemizedlist>
+<listitem><para>It redirects to the appropriate templated implementation.</para>
+</listitem><listitem><para>Lambda type is templated because this helps the compiler inline the lambda call. <ulink url="https://stackoverflow.com/questions/13722426/why-can-lambdas-be-better-optimized-by-the-compiler-than-plain-functions">https://stackoverflow.com/questions/13722426/why-can-lambdas-be-better-optimized-by-the-compiler-than-plain-functions</ulink> </para>
+</listitem></itemizedlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/MetricHelpers.h" line="44" column="15" bodyfile="bolt/src/metrics/MetricHelpers.h" bodystart="44" bodyend="64"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_utilities_1abd95d342ab434249ee7926874c1dbad1" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>bool</type>
+            <declname>OUTPUT_DENSE</declname>
+            <defname>OUTPUT_DENSE</defname>
+          </param>
+          <param>
+            <type>bool</type>
+            <declname>LABEL_DENSE</declname>
+            <defname>LABEL_DENSE</defname>
+          </param>
+          <param>
+            <type>typename PROCESS_ELEM_PAIR_LAMBDA_T</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>static void thirdai::bolt::MetricUtilities::visitActiveNeuronsImpl</definition>
+        <argsstring>(const BoltVector &amp;output, const BoltVector &amp;labels, PROCESS_ELEM_PAIR_LAMBDA_T process_elem_pair)</argsstring>
+        <name>visitActiveNeuronsImpl</name>
+        <qualifiedname>thirdai::bolt::MetricUtilities::visitActiveNeuronsImpl</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>labels</declname>
+        </param>
+        <param>
+          <type>PROCESS_ELEM_PAIR_LAMBDA_T</type>
+          <declname>process_elem_pair</declname>
+        </param>
+        <briefdescription>
+<para>Implementation of the helper function above that will be compiled for any combination of sparse and dense vectors to minimize boolean checking. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>The lambda takes in two floats and does not return anything. Lambda type is templated because this helps the compiler inline the lambda call. <ulink url="https://stackoverflow.com/questions/13722426/why-can-lambdas-be-better-optimized-by-the-compiler-than-plain-functions">https://stackoverflow.com/questions/13722426/why-can-lambdas-be-better-optimized-by-the-compiler-than-plain-functions</ulink> </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/MetricHelpers.h" line="78" column="15" bodyfile="bolt/src/metrics/MetricHelpers.h" bodystart="78" bodyend="110"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/metrics/MetricHelpers.h" line="13" column="1" bodyfile="bolt/src/metrics/MetricHelpers.h" bodystart="13" bodyend="111"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_metric_utilities_1a8b97d64a142083d365f05328ac54dd8c" prot="public" virt="non-virtual"><scope>thirdai::bolt::MetricUtilities</scope><name>incrementAtomicFloat</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_utilities_1a6fe5f8f308a252b8b1e994ca6f4e5a6b" prot="public" virt="non-virtual"><scope>thirdai::bolt::MetricUtilities</scope><name>visitActiveNeurons</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_utilities_1abd95d342ab434249ee7926874c1dbad1" prot="private" virt="non-virtual"><scope>thirdai::bolt::MetricUtilities</scope><name>visitActiveNeuronsImpl</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

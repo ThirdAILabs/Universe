@@ -1,0 +1,132 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_murmur_hash_8h" kind="file" language="C++">
+    <compoundname>MurmurHash.h</compoundname>
+    <includes local="no">cstdint</includes>
+    <includedby refid="_embedding_layer_8cc" local="no">bolt/src/layers/EmbeddingLayer.cc</includedby>
+    <includedby refid="_masked_sentence_batch_processor_8h" local="no">dataset/src/batch_processors/MaskedSentenceBatchProcessor.h</includedby>
+    <includedby refid="_count_min_sketch_8h" local="no">dataset/src/utils/CountMinSketch.h</includedby>
+    <includedby refid="_text_encoding_utils_8h" local="no">dataset/src/utils/TextEncodingUtils.h</includedby>
+    <includedby refid="_densified_min_hash_8h" local="yes">hashing/src/DensifiedMinHash.h</includedby>
+    <includedby refid="_murmur_hash_8cc" local="yes">hashing/src/MurmurHash.cc</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>hashing/src/MurmurHash.h</label>
+        <link refid="_murmur_hash_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>cstdint</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="5">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h</label>
+        <link refid="_sequential_classifier_8h_source"/>
+      </node>
+      <node id="6">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialClassifierConfig.h</label>
+        <link refid="_sequential_classifier_config_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h</label>
+        <link refid="_sequential_utils_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>dataset/src/batch_processors/MaskedSentenceBatchProcessor.h</label>
+        <link refid="_masked_sentence_batch_processor_8h_source"/>
+      </node>
+      <node id="10">
+        <label>dataset/src/batch_processors/TabularMetadataProcessor.h</label>
+        <link refid="_tabular_metadata_processor_8h_source"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+      </node>
+      <node id="11">
+        <label>dataset/src/blocks/TabularPairGram.h</label>
+        <link refid="_tabular_pair_gram_8h_source"/>
+      </node>
+      <node id="12">
+        <label>dataset/src/blocks/Text.h</label>
+        <link refid="_text_8h_source"/>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>dataset/src/blocks/UserCountHistory.h</label>
+        <link refid="_user_count_history_8h_source"/>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>dataset/src/utils/CountMinSketch.h</label>
+        <link refid="_count_min_sketch_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>dataset/src/utils/QuantityHistoryTracker.h</label>
+        <link refid="_quantity_history_tracker_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>dataset/src/utils/TextEncodingUtils.h</label>
+        <link refid="_text_encoding_utils_8h_source"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+      </node>
+      <node id="13">
+        <label>hashing/src/DensifiedMinHash.h</label>
+        <link refid="_densified_min_hash_8h_source"/>
+      </node>
+      <node id="1">
+        <label>hashing/src/MurmurHash.h</label>
+        <link refid="_murmur_hash_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1hashing">thirdai::hashing</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cstdint&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::hashing<sp/>{</highlight></codeline>
+<codeline lineno="10"><highlight class="normal">uint32_t<sp/>MurmurHash(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">char</highlight><highlight class="normal">*<sp/>key,<sp/>uint32_t<sp/>len,<sp/>uint32_t<sp/>seed);</highlight></codeline>
+<codeline lineno="11"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::hashing</highlight></codeline>
+    </programlisting>
+    <location file="hashing/src/MurmurHash.h"/>
+  </compounddef>
+</doxygen>

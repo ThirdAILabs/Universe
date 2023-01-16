@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="dir_b4e42179075faf8c2e7f0d3f85ce9509" kind="dir">
+    <compoundname>bolt/experiments</compoundname>
+    <innerfile refid="tabular__classifier_8py">tabular_classifier.py</innerfile>
+    <innerfile refid="_try_conv_8py">TryConv.py</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/experiments/"/>
+  </compounddef>
+</doxygen>

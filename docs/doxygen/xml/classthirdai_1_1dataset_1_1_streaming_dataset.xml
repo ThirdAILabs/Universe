@@ -1,0 +1,202 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_streaming_dataset" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::dataset::StreamingDataset</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename...</type>
+        <declname>BATCH_Ts</declname>
+        <defname>BATCH_Ts</defname>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="protected-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_streaming_dataset_1a9f119a5b978d1eda4ac71af8d7f04545" prot="protected" static="no" mutable="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_data_loader" kindref="compound">DataLoader</ref> &gt;</type>
+        <definition>std::shared_ptr&lt;DataLoader&gt; thirdai::dataset::StreamingDataset&lt; BATCH_Ts &gt;::_data_loader</definition>
+        <argsstring></argsstring>
+        <name>_data_loader</name>
+        <qualifiedname>thirdai::dataset::StreamingDataset::_data_loader</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingDataset.h" line="137" column="19" bodyfile="dataset/src/StreamingDataset.h" bodystart="137" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_streaming_dataset_1ac21cce9c0ae5c1db9ec3d231d2b3e98b" prot="private" static="no" mutable="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_batch_processor" kindref="compound">BatchProcessor</ref>&lt; BATCH_Ts... &gt; &gt;</type>
+        <definition>std::shared_ptr&lt;BatchProcessor&lt;BATCH_Ts...&gt; &gt; thirdai::dataset::StreamingDataset&lt; BATCH_Ts &gt;::_batch_processor</definition>
+        <argsstring></argsstring>
+        <name>_batch_processor</name>
+        <qualifiedname>thirdai::dataset::StreamingDataset::_batch_processor</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingDataset.h" line="140" column="19" bodyfile="dataset/src/StreamingDataset.h" bodystart="140" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_streaming_dataset_1aeb761d5352100f5a6ee8637a0fc2b171" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::StreamingDataset&lt; BATCH_Ts &gt;::StreamingDataset</definition>
+        <argsstring>(std::shared_ptr&lt; DataLoader &gt; data_loader, std::shared_ptr&lt; BatchProcessor&lt; BATCH_Ts... &gt; &gt; batch_processor)</argsstring>
+        <name>StreamingDataset</name>
+        <qualifiedname>thirdai::dataset::StreamingDataset::StreamingDataset</qualifiedname>
+        <param>
+          <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_data_loader" kindref="compound">DataLoader</ref> &gt;</type>
+          <declname>data_loader</declname>
+        </param>
+        <param>
+          <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_batch_processor" kindref="compound">BatchProcessor</ref>&lt; BATCH_Ts... &gt; &gt;</type>
+          <declname>batch_processor</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingDataset.h" line="20" column="3" bodyfile="dataset/src/StreamingDataset.h" bodystart="20" bodyend="35"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_streaming_dataset_1a70552ed12bc1db2df5e70f41aab7adba" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>std::optional&lt; std::tuple&lt; BATCH_Ts... &gt; &gt;</type>
+        <definition>virtual std::optional&lt; std::tuple&lt; BATCH_Ts... &gt; &gt; thirdai::dataset::StreamingDataset&lt; BATCH_Ts &gt;::nextBatchTuple</definition>
+        <argsstring>()</argsstring>
+        <name>nextBatchTuple</name>
+        <qualifiedname>thirdai::dataset::StreamingDataset::nextBatchTuple</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_streaming_generic_dataset_loader_1ada1b3f7b47eb68280d2873e5ee862ca6">nextBatchTuple</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingDataset.h" line="37" column="25" bodyfile="dataset/src/StreamingDataset.h" bodystart="37" bodyend="44"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_streaming_dataset_1aa62d00cba70fe489a65b021345952ed2" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>std::tuple&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_in_memory_dataset" kindref="compound">InMemoryDataset</ref>&lt; BATCH_Ts &gt; &gt;... &gt;</type>
+        <definition>virtual std::tuple&lt; std::shared_ptr&lt; InMemoryDataset&lt; BATCH_Ts &gt; &gt;... &gt; thirdai::dataset::StreamingDataset&lt; BATCH_Ts &gt;::loadInMemory</definition>
+        <argsstring>()</argsstring>
+        <name>loadInMemory</name>
+        <qualifiedname>thirdai::dataset::StreamingDataset::loadInMemory</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_streaming_generic_dataset_loader_1a49352818bc75065c30ffe091a7b92f16">loadInMemory</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingDataset.h" line="47" column="3" bodyfile="dataset/src/StreamingDataset.h" bodystart="47" bodyend="54"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_streaming_dataset_1a555fc240eac6a593a697396e9c394bf1" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::optional&lt; std::tuple&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_in_memory_dataset" kindref="compound">InMemoryDataset</ref>&lt; BATCH_Ts &gt; &gt;... &gt; &gt;</type>
+        <definition>std::optional&lt; std::tuple&lt; std::shared_ptr&lt; InMemoryDataset&lt; BATCH_Ts &gt; &gt;... &gt; &gt; thirdai::dataset::StreamingDataset&lt; BATCH_Ts &gt;::loadInMemory</definition>
+        <argsstring>(uint64_t max_batches)</argsstring>
+        <name>loadInMemory</name>
+        <qualifiedname>thirdai::dataset::StreamingDataset::loadInMemory</qualifiedname>
+        <param>
+          <type>uint64_t</type>
+          <declname>max_batches</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+<para>std::apply allows for a tuple to be applied to function that accepts a variadic template argument. We use this here to pass the tuple of vectors that we accumulate the batches in along with the tuple containing the next batches into a variadic template function that calls vector.push_back(...).</para>
+<para>Helpful stack overflow post about doing this: <ulink url="https://stackoverflow.com/questions/53305395/how-to-create-a-tuple-of-vectors-of-type-deduced-from-a-variadic-template-in-c">https://stackoverflow.com/questions/53305395/how-to-create-a-tuple-of-vectors-of-type-deduced-from-a-variadic-template-in-c</ulink></para>
+        </inbodydescription>
+        <location file="dataset/src/StreamingDataset.h" line="60" column="3" bodyfile="dataset/src/StreamingDataset.h" bodystart="60" bodyend="119"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_streaming_dataset_1a94c9680f376cb9b076965714b3c4b122" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::StreamingDataset&lt; BATCH_Ts &gt;::getMaxBatchSize</definition>
+        <argsstring>() const</argsstring>
+        <name>getMaxBatchSize</name>
+        <qualifiedname>thirdai::dataset::StreamingDataset::getMaxBatchSize</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingDataset.h" line="121" column="12" bodyfile="dataset/src/StreamingDataset.h" bodystart="121" bodyend="121"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_streaming_dataset_1a3504471b12e2ca6f2bf904f0abc89737" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::StreamingDataset&lt; BATCH_Ts &gt;::restart</definition>
+        <argsstring>()</argsstring>
+        <name>restart</name>
+        <qualifiedname>thirdai::dataset::StreamingDataset::restart</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingDataset.h" line="123" column="8" bodyfile="dataset/src/StreamingDataset.h" bodystart="123" bodyend="123"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_streaming_dataset_1a53f9a9437e3df8eba8103f9a8e9cfea0" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type></type>
+        <definition>virtual thirdai::dataset::StreamingDataset&lt; BATCH_Ts &gt;::~StreamingDataset</definition>
+        <argsstring>()=default</argsstring>
+        <name>~StreamingDataset</name>
+        <qualifiedname>thirdai::dataset::StreamingDataset::~StreamingDataset</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingDataset.h" line="134" column="11"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_streaming_dataset_1acef5fc8c83b60584f2482a3a9ced21c3" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_streaming_dataset" kindref="compound">StreamingDataset</ref>&lt; BATCH_Ts... &gt; &gt;</type>
+        <definition>static std::shared_ptr&lt; StreamingDataset&lt; BATCH_Ts... &gt; &gt; thirdai::dataset::StreamingDataset&lt; BATCH_Ts &gt;::loadDataset</definition>
+        <argsstring>(std::shared_ptr&lt; DataLoader &gt; data_loader, std::shared_ptr&lt; BatchProcessor&lt; BATCH_Ts... &gt; &gt; batch_processor)</argsstring>
+        <name>loadDataset</name>
+        <qualifiedname>thirdai::dataset::StreamingDataset::loadDataset</qualifiedname>
+        <param>
+          <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_data_loader" kindref="compound">DataLoader</ref> &gt;</type>
+          <declname>data_loader</declname>
+        </param>
+        <param>
+          <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_batch_processor" kindref="compound">BatchProcessor</ref>&lt; BATCH_Ts... &gt; &gt;</type>
+          <declname>batch_processor</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingDataset.h" line="125" column="26" bodyfile="dataset/src/StreamingDataset.h" bodystart="125" bodyend="132"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="dataset/src/StreamingDataset.h" line="18" column="1" bodyfile="dataset/src/StreamingDataset.h" bodystart="18" bodyend="141"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_streaming_dataset_1ac21cce9c0ae5c1db9ec3d231d2b3e98b" prot="private" virt="non-virtual"><scope>thirdai::dataset::StreamingDataset</scope><name>_batch_processor</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_streaming_dataset_1a9f119a5b978d1eda4ac71af8d7f04545" prot="protected" virt="non-virtual"><scope>thirdai::dataset::StreamingDataset</scope><name>_data_loader</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_streaming_dataset_1a94c9680f376cb9b076965714b3c4b122" prot="public" virt="non-virtual"><scope>thirdai::dataset::StreamingDataset</scope><name>getMaxBatchSize</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_streaming_dataset_1acef5fc8c83b60584f2482a3a9ced21c3" prot="public" virt="non-virtual"><scope>thirdai::dataset::StreamingDataset</scope><name>loadDataset</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_streaming_dataset_1aa62d00cba70fe489a65b021345952ed2" prot="public" virt="virtual"><scope>thirdai::dataset::StreamingDataset</scope><name>loadInMemory</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_streaming_dataset_1a555fc240eac6a593a697396e9c394bf1" prot="public" virt="non-virtual"><scope>thirdai::dataset::StreamingDataset</scope><name>loadInMemory</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_streaming_dataset_1a70552ed12bc1db2df5e70f41aab7adba" prot="public" virt="virtual"><scope>thirdai::dataset::StreamingDataset</scope><name>nextBatchTuple</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_streaming_dataset_1a3504471b12e2ca6f2bf904f0abc89737" prot="public" virt="non-virtual"><scope>thirdai::dataset::StreamingDataset</scope><name>restart</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_streaming_dataset_1aeb761d5352100f5a6ee8637a0fc2b171" prot="public" virt="non-virtual"><scope>thirdai::dataset::StreamingDataset</scope><name>StreamingDataset</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_streaming_dataset_1a53f9a9437e3df8eba8103f9a8e9cfea0" prot="public" virt="virtual"><scope>thirdai::dataset::StreamingDataset</scope><name>~StreamingDataset</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,289 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1hashtable_1_1_tiny_table" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::hashtable::TinyTable</compoundname>
+    <includes refid="_tiny_table_8h" local="no">TinyTable.h</includes>
+    <templateparamlist>
+      <param>
+        <type>typename LABEL_T</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1hashtable_1_1_tiny_table_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="91" column="16" bodyfile="hashtable/src/TinyTable.h" bodystart="91" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_tiny_table_1a19cbd8973bfb7d89f771c259033a662d" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashtable::TinyTable&lt; LABEL_T &gt;::_hash_range</definition>
+        <argsstring></argsstring>
+        <name>_hash_range</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::_hash_range</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="101" column="12" bodyfile="hashtable/src/TinyTable.h" bodystart="101" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_tiny_table_1a5794250105132e67708ebe20fd7c2bde" prot="private" static="no" mutable="no">
+        <type>LABEL_T</type>
+        <definition>LABEL_T thirdai::hashtable::TinyTable&lt; LABEL_T &gt;::_num_elements</definition>
+        <argsstring></argsstring>
+        <name>_num_elements</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::_num_elements</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="102" column="11" bodyfile="hashtable/src/TinyTable.h" bodystart="102" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_tiny_table_1a0f9a2a0971f5145f28876ea701faeb73" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashtable::TinyTable&lt; LABEL_T &gt;::_num_tables</definition>
+        <argsstring></argsstring>
+        <name>_num_tables</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::_num_tables</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="103" column="12" bodyfile="hashtable/src/TinyTable.h" bodystart="103" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_tiny_table_1a2a84f47bdec514192263c89d3dc9afe9" prot="private" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t thirdai::hashtable::TinyTable&lt; LABEL_T &gt;::_table_start</definition>
+        <argsstring></argsstring>
+        <name>_table_start</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::_table_start</qualifiedname>
+        <initializer>=
+      static_cast&lt;uint64_t&gt;(_num_tables) * (_hash_range + 1)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="104" column="12" bodyfile="hashtable/src/TinyTable.h" bodystart="104" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_tiny_table_1a2b3d33909780a5aacd3edb0549c8151a" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; LABEL_T &gt;</type>
+        <definition>std::vector&lt;LABEL_T&gt; thirdai::hashtable::TinyTable&lt; LABEL_T &gt;::_index</definition>
+        <argsstring></argsstring>
+        <name>_index</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::_index</qualifiedname>
+        <briefdescription>
+<para>_index is a compact representation of a multitable hashtable. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Each of the hash table repetitions are conceptually split into two parts: a list of offsets and a list of hashes. The hashes are the concatenated contents of the buckets of the table with no space in between (so the hash list is some permutation of 0 through _num_elements - 1). Thus we need a way to tell where one bucket ends and the next begins. To do this, the ith entry in the offset list is the index of the start of the ith hash bucket, and the i+1th entry is the end of the ith hash bucket. Thus the offset list for each table is of length _hash_range + 1 (the +1 comes from the fact that we need both the beginning of the first bucket and the end of the last, though technically we could get away without both of those and just use if statements in the code, since they will always be 0 and _num_elements + 1, respectively). The layout in memory of _index is simple: the first _hash_range elements + 1 are offsets into the first table, the second array second _hash_range + 1 elements are offsets into the second table, and so on repeated _num_tables times. After this (starting at _table_start), the next _num_elements are the elements in the first table, the next _num_elements are the elements in the second table, and so on for _num_tables times. Finally, we note that all of the offsets and ids can be safely be stored as LABEL_Ts. Thus the total size of this vector (including it&apos;s length, which is 8 bytes on a 64 bit machine) in bytes is 8 + sizeof(LABEL_T) * _num_tables * (_hash_range + 1 + _num_elements). </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="129" column="15" bodyfile="hashtable/src/TinyTable.h" bodystart="129" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_tiny_table_1a4bbc3accea3d53ebd0e5f1cbd4441ccf" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::hashtable::TinyTable&lt; LABEL_T &gt;::TinyTable</definition>
+        <argsstring>(uint32_t num_tables, uint32_t range, LABEL_T num_elements, const std::vector&lt; uint32_t &gt; &amp;hashes)</argsstring>
+        <name>TinyTable</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::TinyTable</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>num_tables</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>range</declname>
+        </param>
+        <param>
+          <type>LABEL_T</type>
+          <declname>num_elements</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>hashes</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="30" column="3" bodyfile="hashtable/src/TinyTable.h" bodystart="30" bodyend="64"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_tiny_table_1a47b1fe63479b6947d0915cf4c6892caa" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::TinyTable&lt; LABEL_T &gt;::queryByCount</definition>
+        <argsstring>(const std::vector&lt; uint32_t &gt; &amp;hashes, uint32_t hash_offset, std::vector&lt; uint32_t &gt; &amp;counts) const</argsstring>
+        <name>queryByCount</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::queryByCount</qualifiedname>
+        <param>
+          <type>const std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>hash_offset</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>counts</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="66" column="8" bodyfile="hashtable/src/TinyTable.h" bodystart="66" bodyend="79"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_tiny_table_1a1da16c7356417319c322200b979b85c0" prot="public" static="no" constexpr="yes" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>constexpr uint32_t</type>
+        <definition>constexpr uint32_t thirdai::hashtable::TinyTable&lt; LABEL_T &gt;::numTables</definition>
+        <argsstring>() const</argsstring>
+        <name>numTables</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::numTables</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="81" column="22" bodyfile="hashtable/src/TinyTable.h" bodystart="81" bodyend="81"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_tiny_table_1a25359855e913d002db4dad4f835f4bf4" prot="public" static="no" constexpr="yes" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>constexpr LABEL_T</type>
+        <definition>constexpr LABEL_T thirdai::hashtable::TinyTable&lt; LABEL_T &gt;::numElements</definition>
+        <argsstring>() const</argsstring>
+        <name>numElements</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::numElements</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="83" column="21" bodyfile="hashtable/src/TinyTable.h" bodystart="83" bodyend="83"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_tiny_table_1ad7e15275959ac0b0891d1e3349017485" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::hashtable::TinyTable&lt; LABEL_T &gt;::TinyTable</definition>
+        <argsstring>(const TinyTable &amp;)=delete</argsstring>
+        <name>TinyTable</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::TinyTable</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1hashtable_1_1_tiny_table" kindref="compound">TinyTable</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="86" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_tiny_table_1a2597c827e8d56f5b534c71eb89323d2a" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1hashtable_1_1_tiny_table" kindref="compound">TinyTable</ref> &amp;</type>
+        <definition>TinyTable &amp; thirdai::hashtable::TinyTable&lt; LABEL_T &gt;::operator=</definition>
+        <argsstring>(const TinyTable &amp;)=delete</argsstring>
+        <name>operator=</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::operator=</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1hashtable_1_1_tiny_table" kindref="compound">TinyTable</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="87" column="13"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_tiny_table_1afeaa884e9fd2d78e2e96daeec221ebf2" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::hashtable::TinyTable&lt; LABEL_T &gt;::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="93" column="8" bodyfile="hashtable/src/TinyTable.h" bodystart="93" bodyend="95"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_tiny_table_1a502ab34587996aaa137fa790a18e2bd7" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::hashtable::TinyTable&lt; LABEL_T &gt;::TinyTable</definition>
+        <argsstring>()</argsstring>
+        <name>TinyTable</name>
+        <qualifiedname>thirdai::hashtable::TinyTable::TinyTable</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/TinyTable.h" line="93" column="8" bodyfile="hashtable/src/TinyTable.h" bodystart="97" bodyend="97"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>The goal of this class is to be a REALLY tiny hashtable. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Needless to say, you need to know the number of elements and all hashes when you construct this table. By my estimate, current size is 24 + sizeof(LABEL_T) * ((_hash_range + 1) * _num_tables + _num_elements * _num_tables). As an example, if you are storing 200 elements in 32 tables with a hash range of 64, this class will use less than 10 KB of memory. LABEL_T should be an unsigned integer type, one of uint8_t, uint16_t, and uint32_t. It should be the minimum size neccesary to fit the number of elements in the table. Note that this class will give the first item id 1, the second id 2, and so on. </para>
+    </detaileddescription>
+    <location file="hashtable/src/TinyTable.h" line="28" column="1" bodyfile="hashtable/src/TinyTable.h" bodystart="28" bodyend="130"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1a19cbd8973bfb7d89f771c259033a662d" prot="private" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>_hash_range</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1a2b3d33909780a5aacd3edb0549c8151a" prot="private" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>_index</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1a5794250105132e67708ebe20fd7c2bde" prot="private" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>_num_elements</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1a0f9a2a0971f5145f28876ea701faeb73" prot="private" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>_num_tables</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1a2a84f47bdec514192263c89d3dc9afe9" prot="private" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>_table_start</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1a25359855e913d002db4dad4f835f4bf4" prot="public" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>numElements</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1a1da16c7356417319c322200b979b85c0" prot="public" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>numTables</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1a2597c827e8d56f5b534c71eb89323d2a" prot="public" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>operator=</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1a47b1fe63479b6947d0915cf4c6892caa" prot="public" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>queryByCount</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1afeaa884e9fd2d78e2e96daeec221ebf2" prot="private" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1a4bbc3accea3d53ebd0e5f1cbd4441ccf" prot="public" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>TinyTable</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1ad7e15275959ac0b0891d1e3349017485" prot="public" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>TinyTable</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_tiny_table_1a502ab34587996aaa137fa790a18e2bd7" prot="private" virt="non-virtual"><scope>thirdai::hashtable::TinyTable</scope><name>TinyTable</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,240 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1hashing_1_1_densified_min_hash" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::hashing::DensifiedMinHash</compoundname>
+    <basecompoundref refid="classthirdai_1_1hashing_1_1_hash_function" prot="public" virt="non-virtual">thirdai::hashing::HashFunction</basecompoundref>
+    <includes refid="_densified_min_hash_8h" local="no">DensifiedMinHash.h</includes>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_densified_min_hash_1a87a25c6f55a3990a92197bfd83b63385" prot="private" static="no" mutable="no">
+        <type>const uint32_t</type>
+        <definition>const uint32_t thirdai::hashing::DensifiedMinHash::_hashes_per_table</definition>
+        <argsstring></argsstring>
+        <name>_hashes_per_table</name>
+        <qualifiedname>thirdai::hashing::DensifiedMinHash::_hashes_per_table</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DensifiedMinHash.h" line="32" column="18" bodyfile="hashing/src/DensifiedMinHash.h" bodystart="32" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_densified_min_hash_1a4929f8d919c1ac73eb98c05d85a5c0ae" prot="private" static="no" mutable="no">
+        <type>const uint32_t</type>
+        <definition>const uint32_t thirdai::hashing::DensifiedMinHash::_total_num_hashes</definition>
+        <argsstring></argsstring>
+        <name>_total_num_hashes</name>
+        <qualifiedname>thirdai::hashing::DensifiedMinHash::_total_num_hashes</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DensifiedMinHash.h" line="32" column="36" bodyfile="hashing/src/DensifiedMinHash.h" bodystart="32" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_densified_min_hash_1aea1dec012e367016a7573074dff360f3" prot="private" static="no" mutable="no">
+        <type>const uint32_t</type>
+        <definition>const uint32_t thirdai::hashing::DensifiedMinHash::_binsize</definition>
+        <argsstring></argsstring>
+        <name>_binsize</name>
+        <qualifiedname>thirdai::hashing::DensifiedMinHash::_binsize</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DensifiedMinHash.h" line="32" column="54" bodyfile="hashing/src/DensifiedMinHash.h" bodystart="32" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_densified_min_hash_1a8a4228f2b4a6cfc7c234628f56b992b2" prot="private" static="no" mutable="no">
+        <type>const uint32_t</type>
+        <definition>const uint32_t thirdai::hashing::DensifiedMinHash::_seed</definition>
+        <argsstring></argsstring>
+        <name>_seed</name>
+        <qualifiedname>thirdai::hashing::DensifiedMinHash::_seed</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DensifiedMinHash.h" line="32" column="63" bodyfile="hashing/src/DensifiedMinHash.h" bodystart="32" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_densified_min_hash_1a675c8ab2c2cbdc1f244dec91aa054645" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::hashing::DensifiedMinHash::DensifiedMinHash</definition>
+        <argsstring>(uint32_t hashes_per_table, uint32_t num_tables, uint32_t range, uint32_t seed=time(nullptr))</argsstring>
+        <name>DensifiedMinHash</name>
+        <qualifiedname>thirdai::hashing::DensifiedMinHash::DensifiedMinHash</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>hashes_per_table</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>num_tables</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>range</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>seed</declname>
+          <defval>time(nullptr)</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DensifiedMinHash.h" line="13" column="3" bodyfile="hashing/src/DensifiedMinHash.cc" bodystart="15" bodyend="22"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_densified_min_hash_1ac5b8f98915702da0d8b9c6d3dec87f74" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashing::DensifiedMinHash::hashSingleSparse</definition>
+        <argsstring>(const uint32_t *indices, const float *values, uint32_t length, uint32_t *output) const override</argsstring>
+        <name>hashSingleSparse</name>
+        <qualifiedname>thirdai::hashing::DensifiedMinHash::hashSingleSparse</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashing_1_1_hash_function_1a75a19fad0fc9c31bdcef6739e45f46f8">hashSingleSparse</reimplements>
+        <param>
+          <type>const uint32_t *</type>
+          <declname>indices</declname>
+        </param>
+        <param>
+          <type>const float *</type>
+          <declname>values</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>length</declname>
+        </param>
+        <param>
+          <type>uint32_t *</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DensifiedMinHash.h" line="16" column="8" bodyfile="hashing/src/DensifiedMinHash.cc" bodystart="33" bodyend="60"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_densified_min_hash_1a97868d9007db944dd7188fd67103eee0" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashing::DensifiedMinHash::hashSingleDense</definition>
+        <argsstring>(const float *values, uint32_t dim, uint32_t *output) const override</argsstring>
+        <name>hashSingleDense</name>
+        <qualifiedname>thirdai::hashing::DensifiedMinHash::hashSingleDense</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashing_1_1_hash_function_1af69c3a64e040b146ff95912c1716e9ba">hashSingleDense</reimplements>
+        <param>
+          <type>const float *</type>
+          <declname>values</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>dim</declname>
+        </param>
+        <param>
+          <type>uint32_t *</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DensifiedMinHash.h" line="19" column="8" bodyfile="hashing/src/DensifiedMinHash.cc" bodystart="24" bodyend="31"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_densified_min_hash_1acaec1f827921151065957bfcaa1fdcf8" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::unique_ptr&lt; <ref refid="classthirdai_1_1hashing_1_1_hash_function" kindref="compound">HashFunction</ref> &gt;</type>
+        <definition>std::unique_ptr&lt; HashFunction &gt; thirdai::hashing::DensifiedMinHash::copyWithNewSeeds</definition>
+        <argsstring>() const final</argsstring>
+        <name>copyWithNewSeeds</name>
+        <qualifiedname>thirdai::hashing::DensifiedMinHash::copyWithNewSeeds</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashing_1_1_hash_function_1a387426f72f1671f670180af8245b6689">copyWithNewSeeds</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DensifiedMinHash.h" line="22" column="19" bodyfile="hashing/src/DensifiedMinHash.h" bodystart="22" bodyend="27"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_densified_min_hash_1a9db89e4ca500f8e69e1c567ff8f8470f" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::hashing::DensifiedMinHash::getName</definition>
+        <argsstring>() const final</argsstring>
+        <name>getName</name>
+        <qualifiedname>thirdai::hashing::DensifiedMinHash::getName</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashing_1_1_hash_function_1abfeed87fcfdbe7a52a82c72b650a2374">getName</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DensifiedMinHash.h" line="29" column="15" bodyfile="hashing/src/DensifiedMinHash.h" bodystart="29" bodyend="29"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>Based off of the paper <ulink url="https://arxiv.org/pdf/1703.04664.pdf">https://arxiv.org/pdf/1703.04664.pdf</ulink>. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="1">
+        <label>thirdai::hashing::DensifiedMinHash</label>
+        <link refid="classthirdai_1_1hashing_1_1_densified_min_hash"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::hashing::HashFunction</label>
+        <link refid="classthirdai_1_1hashing_1_1_hash_function"/>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="1">
+        <label>thirdai::hashing::DensifiedMinHash</label>
+        <link refid="classthirdai_1_1hashing_1_1_densified_min_hash"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::hashing::HashFunction</label>
+        <link refid="classthirdai_1_1hashing_1_1_hash_function"/>
+      </node>
+    </collaborationgraph>
+    <location file="hashing/src/DensifiedMinHash.h" line="10" column="1" bodyfile="hashing/src/DensifiedMinHash.h" bodystart="10" bodyend="33"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1hashing_1_1_densified_min_hash_1aea1dec012e367016a7573074dff360f3" prot="private" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>_binsize</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_densified_min_hash_1a87a25c6f55a3990a92197bfd83b63385" prot="private" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>_hashes_per_table</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a57826915b34c6c12fa284f66b97bb7fa" prot="protected" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>_num_tables</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a0c52fac590ae2b63ba0c8bc7bd26f9d2" prot="protected" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>_range</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_densified_min_hash_1a8a4228f2b4a6cfc7c234628f56b992b2" prot="private" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>_seed</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_densified_min_hash_1a4929f8d919c1ac73eb98c05d85a5c0ae" prot="private" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>_total_num_hashes</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_densified_min_hash_1acaec1f827921151065957bfcaa1fdcf8" prot="public" virt="virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>copyWithNewSeeds</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_densified_min_hash_1a675c8ab2c2cbdc1f244dec91aa054645" prot="public" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>DensifiedMinHash</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_densified_min_hash_1a9db89e4ca500f8e69e1c567ff8f8470f" prot="public" virt="virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>getName</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a53b6aa78cf43f40af59c112261013624" prot="public" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>hashBatchParallel</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a9cd2b24706d35c03f6ac35c70ae325d1" prot="public" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>hashBatchParallel</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a6a05c22dab98b257e9b0cb22dad67c1d" prot="public" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>hashDenseParallel</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1ad2da319156cadf0f575fbeaa1f7964e7" prot="public" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>hashDenseSerial</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a6833c66f4e3044d7fd1283c11bbeb173" prot="public" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>HashFunction</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_densified_min_hash_1a97868d9007db944dd7188fd67103eee0" prot="public" virt="virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>hashSingleDense</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_densified_min_hash_1ac5b8f98915702da0d8b9c6d3dec87f74" prot="public" virt="virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>hashSingleSparse</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1aaff56129188ac9376f2647ab86a10f82" prot="public" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>hashSparseParallel</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a8e6128e70a2d684fa9f9220a43496dee" prot="public" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>hashSparseSerial</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1ad0dcbafbd5d0736c4bf4f3d57768cf85" prot="public" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>numTables</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a7a529c90222792d0a5965871320d80f6" prot="public" virt="non-virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>range</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a12a8cd7e754bcfaef171a37f4ab45332" prot="public" virt="virtual"><scope>thirdai::hashing::DensifiedMinHash</scope><name>~HashFunction</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

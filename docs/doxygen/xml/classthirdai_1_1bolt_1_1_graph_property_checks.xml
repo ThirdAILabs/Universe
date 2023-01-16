@@ -1,0 +1,80 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_graph_property_checks" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::bolt::GraphPropertyChecks</compoundname>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_graph_property_checks_1aed9057597bbdd147b81bef56197d502b" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::bolt::GraphPropertyChecks::verifyOutputLayerIsValid</definition>
+        <argsstring>(const NodePtr &amp;output)</argsstring>
+        <name>verifyOutputLayerIsValid</name>
+        <qualifiedname>thirdai::bolt::GraphPropertyChecks::verifyOutputLayerIsValid</qualifiedname>
+        <param>
+          <type>const NodePtr &amp;</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/GraphPropertyChecks.h" line="14" column="15" bodyfile="bolt/src/graph/GraphPropertyChecks.h" bodystart="14" bodyend="34"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_graph_property_checks_1a2c00d6891eb5ef1673f43094ce4f27cb" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::bolt::GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy</definition>
+        <argsstring>(const NodePtr &amp;output, const std::shared_ptr&lt; LossFunction &gt; &amp;loss)</argsstring>
+        <name>verifySoftmaxIsUsedWithCategoricalCrossEntropy</name>
+        <qualifiedname>thirdai::bolt::GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy</qualifiedname>
+        <param>
+          <type>const NodePtr &amp;</type>
+          <declname>output</declname>
+        </param>
+        <param>
+          <type>const std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_loss_function" kindref="compound">LossFunction</ref> &gt; &amp;</type>
+          <declname>loss</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/GraphPropertyChecks.h" line="36" column="15" bodyfile="bolt/src/graph/GraphPropertyChecks.h" bodystart="36" bodyend="53"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_graph_property_checks_1a7fe38e9853a6b5450cd0777d1e8eaba2" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::bolt::GraphPropertyChecks::verifySigmoidIsUsedWithBinaryCrossEntropy</definition>
+        <argsstring>(const NodePtr &amp;output, const std::shared_ptr&lt; LossFunction &gt; &amp;loss)</argsstring>
+        <name>verifySigmoidIsUsedWithBinaryCrossEntropy</name>
+        <qualifiedname>thirdai::bolt::GraphPropertyChecks::verifySigmoidIsUsedWithBinaryCrossEntropy</qualifiedname>
+        <param>
+          <type>const NodePtr &amp;</type>
+          <declname>output</declname>
+        </param>
+        <param>
+          <type>const std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_loss_function" kindref="compound">LossFunction</ref> &gt; &amp;</type>
+          <declname>loss</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/GraphPropertyChecks.h" line="55" column="15" bodyfile="bolt/src/graph/GraphPropertyChecks.h" bodystart="55" bodyend="71"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/graph/GraphPropertyChecks.h" line="12" column="1" bodyfile="bolt/src/graph/GraphPropertyChecks.h" bodystart="12" bodyend="72"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_graph_property_checks_1aed9057597bbdd147b81bef56197d502b" prot="public" virt="non-virtual"><scope>thirdai::bolt::GraphPropertyChecks</scope><name>verifyOutputLayerIsValid</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_graph_property_checks_1a7fe38e9853a6b5450cd0777d1e8eaba2" prot="public" virt="non-virtual"><scope>thirdai::bolt::GraphPropertyChecks</scope><name>verifySigmoidIsUsedWithBinaryCrossEntropy</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_graph_property_checks_1a2c00d6891eb5ef1673f43094ce4f27cb" prot="public" virt="non-virtual"><scope>thirdai::bolt::GraphPropertyChecks</scope><name>verifySoftmaxIsUsedWithCategoricalCrossEntropy</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

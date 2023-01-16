@@ -1,0 +1,127 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="namespacethirdai" kind="namespace" language="C++">
+    <compoundname>thirdai</compoundname>
+    <innerclass refid="classthirdai_1_1_bolt_batch" prot="public">thirdai::BoltBatch</innerclass>
+    <innerclass refid="structthirdai_1_1_bolt_vector" prot="public">thirdai::BoltVector</innerclass>
+    <innerclass refid="classthirdai_1_1_bolt_vector_norm" prot="public">thirdai::BoltVectorNorm</innerclass>
+    <innerclass refid="structthirdai_1_1_found_active_neuron" prot="public">thirdai::FoundActiveNeuron</innerclass>
+    <innernamespace refid="namespacethirdai_1_1bolt">thirdai::bolt</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1compression">thirdai::compression</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1dataset">thirdai::dataset</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1hashing">thirdai::hashing</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1hashtable">thirdai::hashtable</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1licensing">thirdai::licensing</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1logging">thirdai::logging</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1search">thirdai::search</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1utils">thirdai::utils</innernamespace>
+      <sectiondef kind="enum">
+      <memberdef kind="enum" id="_bolt_vector_norm_8h_1a18076ec72c050212ecba23a4156321e6" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>LPNorm</name>
+        <qualifiedname>thirdai::LPNorm</qualifiedname>
+        <enumvalue id="_bolt_vector_norm_8h_1a18076ec72c050212ecba23a4156321e6a9ec4c0afd450ceac7adb81c3bcfc9732" prot="public">
+          <name>L1</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_bolt_vector_norm_8h_1a18076ec72c050212ecba23a4156321e6a3e43207685247008d9e1ae53ecf8cab3" prot="public">
+          <name>Euclidean</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_bolt_vector_norm_8h_1a18076ec72c050212ecba23a4156321e6a7640ce7b435b3992b199d4c2e30c4a53" prot="public">
+          <name>LInfinity</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt_vector/src/BoltVectorNorm.h" line="12" column="1" bodyfile="bolt_vector/src/BoltVectorNorm.h" bodystart="12" bodyend="16"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="typedef">
+      <memberdef kind="typedef" id="_bolt_vector_8h_1a532faf07898bb5f515d007da101ded22" prot="public" static="no">
+        <type>std::pair&lt; float, uint32_t &gt;</type>
+        <definition>using thirdai::ValueIndexPair = typedef std::pair&lt;float, uint32_t&gt;</definition>
+        <argsstring></argsstring>
+        <name>ValueIndexPair</name>
+        <qualifiedname>thirdai::ValueIndexPair</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt_vector/src/BoltVector.h" line="21" column="1" bodyfile="bolt_vector/src/BoltVector.h" bodystart="21" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_bolt_vector_8h_1a29985bc21577949f61eac911ae944671" prot="public" static="no">
+        <type>std::priority_queue&lt; ValueIndexPair, std::vector&lt; ValueIndexPair &gt;, std::greater&lt; ValueIndexPair &gt; &gt;</type>
+        <definition>using thirdai::TopKActivationsQueue = typedef std::priority_queue&lt;ValueIndexPair, std::vector&lt;ValueIndexPair&gt;, std::greater&lt;ValueIndexPair&gt; &gt;</definition>
+        <argsstring></argsstring>
+        <name>TopKActivationsQueue</name>
+        <qualifiedname>thirdai::TopKActivationsQueue</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt_vector/src/BoltVector.h" line="24" column="1" bodyfile="bolt_vector/src/BoltVector.h" bodystart="26" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="_bolt_vector_norm_8h_1aa8b5355c710d232da7b659ff0a48dd59" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::string</type>
+        <definition>static std::string thirdai::LPNormToStr</definition>
+        <argsstring>(LPNorm norm)</argsstring>
+        <name>LPNormToStr</name>
+        <qualifiedname>thirdai::LPNormToStr</qualifiedname>
+        <param>
+          <type>LPNorm</type>
+          <declname>norm</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt_vector/src/BoltVectorNorm.h" line="18" column="20" bodyfile="bolt_vector/src/BoltVectorNorm.h" bodystart="18" bodyend="29"/>
+      </memberdef>
+      <memberdef kind="function" id="_bolt_vector_norm_8h_1a382b874378a604830644b4b4c84bbf14" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>LPNorm</type>
+        <definition>static LPNorm thirdai::getNorm</definition>
+        <argsstring>(const std::string &amp;norm_order)</argsstring>
+        <name>getNorm</name>
+        <qualifiedname>thirdai::getNorm</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>norm_order</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt_vector/src/BoltVectorNorm.h" line="31" column="15" bodyfile="bolt_vector/src/BoltVectorNorm.h" bodystart="31" bodyend="45"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/auto_classifiers/AutoClassifierBase.cc" line="16" column="1"/>
+  </compounddef>
+</doxygen>

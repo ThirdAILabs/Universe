@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="dir_e8849d2c5fc51b725085a6fcb139ef41" kind="dir">
+    <compoundname>bolt/src/graph</compoundname>
+    <innerdir refid="dir_2263b1fc25e0a193c72daaa892a06b55">bolt/src/graph/callbacks</innerdir>
+    <innerdir refid="dir_409e3d728f6512ddb23751143914ea48">bolt/src/graph/nodes</innerdir>
+    <innerfile refid="_common_networks_8h">CommonNetworks.h</innerfile>
+    <innerfile refid="_dataset_context_8h">DatasetContext.h</innerfile>
+    <innerfile refid="_distributed_training_wrapper_8h">DistributedTrainingWrapper.h</innerfile>
+    <innerfile refid="_execution_config_8h">ExecutionConfig.h</innerfile>
+    <innerfile refid="_graph_8cc">Graph.cc</innerfile>
+    <innerfile refid="_graph_8h">Graph.h</innerfile>
+    <innerfile refid="_graph_property_checks_8h">GraphPropertyChecks.h</innerfile>
+    <innerfile refid="_inference_output_tracker_8h">InferenceOutputTracker.h</innerfile>
+    <innerfile refid="_node_8h">Node.h</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/graph/"/>
+  </compounddef>
+</doxygen>

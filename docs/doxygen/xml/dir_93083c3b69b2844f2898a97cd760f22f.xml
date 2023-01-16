@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="dir_93083c3b69b2844f2898a97cd760f22f" kind="dir">
+    <compoundname>bolt/src/networks</compoundname>
+    <innerfile refid="_distributed_model_8h">DistributedModel.h</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/networks/"/>
+  </compounddef>
+</doxygen>

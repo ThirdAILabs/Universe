@@ -1,0 +1,812 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="namespacethirdai_1_1bolt" kind="namespace" language="C++">
+    <compoundname>thirdai::bolt</compoundname>
+    <innerclass refid="structthirdai_1_1bolt_1_1_adam_optimizer" prot="public">thirdai::bolt::AdamOptimizer</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_auto_classifier_base" prot="public">thirdai::bolt::AutoClassifierBase</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_binary_cross_entropy_loss" prot="public">thirdai::bolt::BinaryCrossEntropyLoss</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_bolt_graph" prot="public">thirdai::bolt::BoltGraph</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_callback" prot="public">thirdai::bolt::Callback</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_callback_list" prot="public">thirdai::bolt::CallbackList</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_categorical_accuracy" prot="public">thirdai::bolt::CategoricalAccuracy</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy" prot="public">thirdai::bolt::CategoricalCrossEntropy</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy_loss" prot="public">thirdai::bolt::CategoricalCrossEntropyLoss</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_common_networks" prot="public">thirdai::bolt::CommonNetworks</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_concatenate_node" prot="public">thirdai::bolt::ConcatenateNode</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_conv_layer" prot="public">thirdai::bolt::ConvLayer</innerclass>
+    <innerclass refid="structthirdai_1_1bolt_1_1_conv_layer_config" prot="public">thirdai::bolt::ConvLayerConfig</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_dataset_context" prot="public">thirdai::bolt::DatasetContext</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_dataset_context_base" prot="public">thirdai::bolt::DatasetContextBase</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper" prot="public">thirdai::bolt::DistributedTrainingWrapper</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_dlrm_attention_node" prot="public">thirdai::bolt::DlrmAttentionNode</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_d_w_t_a_sampling_config" prot="public">thirdai::bolt::DWTASamplingConfig</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint" prot="public">thirdai::bolt::EarlyStopCheckpoint</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_embedding_layer" prot="public">thirdai::bolt::EmbeddingLayer</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_embedding_layer_config" prot="public">thirdai::bolt::EmbeddingLayerConfig</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_embedding_node" prot="public">thirdai::bolt::EmbeddingNode</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_exponential_l_r" prot="public">thirdai::bolt::ExponentialLR</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_fast_s_r_p_sampling_config" prot="public">thirdai::bolt::FastSRPSamplingConfig</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_f_measure" prot="public">thirdai::bolt::FMeasure</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_fully_connected_layer" prot="public">thirdai::bolt::FullyConnectedLayer</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_fully_connected_layer_config" prot="public">thirdai::bolt::FullyConnectedLayerConfig</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_fully_connected_node" prot="public">thirdai::bolt::FullyConnectedNode</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_graph_property_checks" prot="public">thirdai::bolt::GraphPropertyChecks</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_inference_output_tracker" prot="public">thirdai::bolt::InferenceOutputTracker</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_input" prot="public">thirdai::bolt::Input</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_lambda_schedule" prot="public">thirdai::bolt::LambdaSchedule</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_layer_name_manager" prot="public">thirdai::bolt::LayerNameManager</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_layer_norm_node" prot="public">thirdai::bolt::LayerNormNode</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_learning_rate_scheduler" prot="public">thirdai::bolt::LearningRateScheduler</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_loss_function" prot="public">thirdai::bolt::LossFunction</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_l_r_schedule" prot="public">thirdai::bolt::LRSchedule</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_mean_squared_error" prot="public">thirdai::bolt::MeanSquaredError</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_mean_squared_error_metric" prot="public">thirdai::bolt::MeanSquaredErrorMetric</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_metric" prot="public">thirdai::bolt::Metric</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_metric_aggregator" prot="public">thirdai::bolt::MetricAggregator</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_metric_utilities" prot="public">thirdai::bolt::MetricUtilities</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_multiplicative_l_r" prot="public">thirdai::bolt::MultiplicativeLR</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_multi_step_l_r" prot="public">thirdai::bolt::MultiStepLR</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_node" prot="public">thirdai::bolt::Node</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_normalization_layer_config" prot="public">thirdai::bolt::NormalizationLayerConfig</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_predict_config" prot="public">thirdai::bolt::PredictConfig</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_random_sampling_config" prot="public">thirdai::bolt::RandomSamplingConfig</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_recall_at_k" prot="public">thirdai::bolt::RecallAtK</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_sampling_config" prot="public">thirdai::bolt::SamplingConfig</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_sequential_layer" prot="public">thirdai::bolt::SequentialLayer</innerclass>
+    <innerclass refid="structthirdai_1_1bolt_1_1_sequential_layer_config" prot="public">thirdai::bolt::SequentialLayerConfig</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_single_batch_dataset_context" prot="public">thirdai::bolt::SingleBatchDatasetContext</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_switch_node" prot="public">thirdai::bolt::SwitchNode</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_train_config" prot="public">thirdai::bolt::TrainConfig</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_train_state" prot="public">thirdai::bolt::TrainState</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_validation_context" prot="public">thirdai::bolt::ValidationContext</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error" prot="public">thirdai::bolt::WeightedMeanAbsolutePercentageError</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error_loss" prot="public">thirdai::bolt::WeightedMeanAbsolutePercentageErrorLoss</innerclass>
+    <innernamespace refid="namespacethirdai_1_1bolt_1_1sequential__classifier">thirdai::bolt::sequential_classifier</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1bolt_1_1tests">thirdai::bolt::tests</innernamespace>
+      <sectiondef kind="enum">
+      <memberdef kind="enum" id="_fully_connected_layer_8h_1a10c0ca3064e7ef6f55990a56fb73b5d0" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>BoltSamplingMode</name>
+        <qualifiedname>thirdai::bolt::BoltSamplingMode</qualifiedname>
+        <enumvalue id="_fully_connected_layer_8h_1a10c0ca3064e7ef6f55990a56fb73b5d0aa13b72fa49b5f0aff77753f7dc8e8bb6" prot="public">
+          <name>LSH</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_fully_connected_layer_8h_1a10c0ca3064e7ef6f55990a56fb73b5d0a8a91df24f2eed289b11bcb7f8cd17f32" prot="public">
+          <name>FreezeHashTables</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_fully_connected_layer_8h_1a10c0ca3064e7ef6f55990a56fb73b5d0a8016928ccd67d21fcb533ae7d67d1e4b" prot="public">
+          <name>FreezeHashTablesWithInsertions</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_fully_connected_layer_8h_1a10c0ca3064e7ef6f55990a56fb73b5d0a646d884bfe2da6c585cc1db66cd272aa" prot="public">
+          <name>RandomSampling</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/FullyConnectedLayer.h" line="21" column="1" bodyfile="bolt/src/layers/FullyConnectedLayer.h" bodystart="21" bodyend="26"/>
+      </memberdef>
+      <memberdef kind="enum" id="_layer_config_8h_1a2e8d99bdea8e7b70a739d9d42f60c94d" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>EmbeddingReductionType</name>
+        <qualifiedname>thirdai::bolt::EmbeddingReductionType</qualifiedname>
+        <enumvalue id="_layer_config_8h_1a2e8d99bdea8e7b70a739d9d42f60c94da6970bdc2201030b9c03fbdcf3973858a" prot="public">
+          <name>SUM</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_layer_config_8h_1a2e8d99bdea8e7b70a739d9d42f60c94da09642f40460f8aa951d4527ae0886d9f" prot="public">
+          <name>CONCATENATION</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="174" column="1" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="174" bodyend="177"/>
+      </memberdef>
+      <memberdef kind="enum" id="_layer_utils_8h_1ad5ce6e15a0fdf37522a81b5b8b51cb32" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>ActivationFunction</name>
+        <qualifiedname>thirdai::bolt::ActivationFunction</qualifiedname>
+        <enumvalue id="_layer_utils_8h_1ad5ce6e15a0fdf37522a81b5b8b51cb32add10d919fa85cf27fc78c0e06fe0b378" prot="public">
+          <name>ReLU</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_layer_utils_8h_1ad5ce6e15a0fdf37522a81b5b8b51cb32a31d953b9d49a6b4378f45097047976d0" prot="public">
+          <name>Softmax</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_layer_utils_8h_1ad5ce6e15a0fdf37522a81b5b8b51cb32a32a843da6ea40ab3b17a3421ccdf671b" prot="public">
+          <name>Linear</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_layer_utils_8h_1ad5ce6e15a0fdf37522a81b5b8b51cb32acc132a41cab5676334f353a22a0aa5c5" prot="public">
+          <name>Tanh</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_layer_utils_8h_1ad5ce6e15a0fdf37522a81b5b8b51cb32a21eebb164e4b8b9bcf64fdb4d8d5dff4" prot="public">
+          <name>Sigmoid</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerUtils.h" line="19" column="1" bodyfile="bolt/src/layers/LayerUtils.h" bodystart="19" bodyend="19"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="typedef">
+      <memberdef kind="typedef" id="_sequential_classifier_8h_1aa37b7eabcf02cbf394dbb56a4fef135c" prot="public" static="no">
+        <type><ref refid="classthirdai_1_1bolt_1_1sequential__classifier_1_1_sequential_classifier" kindref="compound">sequential_classifier::SequentialClassifier</ref></type>
+        <definition>using thirdai::bolt::SequentialClassifier = typedef sequential_classifier::SequentialClassifier</definition>
+        <argsstring></argsstring>
+        <name>SequentialClassifier</name>
+        <qualifiedname>thirdai::bolt::SequentialClassifier</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h" line="354" column="1" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h" bodystart="354" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_callback_8h_1ad2f61841c0b67862bcfba275d9ac565a" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref> &gt;</type>
+        <definition>typedef std::shared_ptr&lt; BoltGraph &gt; thirdai::bolt::BoltGraphPtr</definition>
+        <argsstring></argsstring>
+        <name>BoltGraphPtr</name>
+        <qualifiedname>thirdai::bolt::BoltGraphPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/Callback.h" line="9" column="1" bodyfile="bolt/src/graph/callbacks/Callback.h" bodystart="9" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_callback_8h_1ad699ab41c6b30f70a6be9d4dbc29131c" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_callback" kindref="compound">Callback</ref> &gt;</type>
+        <definition>using thirdai::bolt::CallbackPtr = typedef std::shared_ptr&lt;Callback&gt;</definition>
+        <argsstring></argsstring>
+        <name>CallbackPtr</name>
+        <qualifiedname>thirdai::bolt::CallbackPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/Callback.h" line="67" column="1" bodyfile="bolt/src/graph/callbacks/Callback.h" bodystart="67" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_early_stop_checkpoint_8h_1a942a9ba3eb90b12bf901c9ddab052b7b" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint" kindref="compound">EarlyStopCheckpoint</ref> &gt;</type>
+        <definition>using thirdai::bolt::EarlyStopCheckpointPtr = typedef std::shared_ptr&lt;EarlyStopCheckpoint&gt;</definition>
+        <argsstring></argsstring>
+        <name>EarlyStopCheckpointPtr</name>
+        <qualifiedname>thirdai::bolt::EarlyStopCheckpointPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="92" column="1" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="92" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_learning_rate_scheduler_8h_1aaf8d8485d5eb8f8bf61475c0223cf72e" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_l_r_schedule" kindref="compound">LRSchedule</ref> &gt;</type>
+        <definition>using thirdai::bolt::LRSchedulePtr = typedef std::shared_ptr&lt;LRSchedule&gt;</definition>
+        <argsstring></argsstring>
+        <name>LRSchedulePtr</name>
+        <qualifiedname>thirdai::bolt::LRSchedulePtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="20" column="1" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="20" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_learning_rate_scheduler_8h_1ad2bd4f43b438daa4c4be655616b2e2d0" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_multi_step_l_r" kindref="compound">MultiStepLR</ref> &gt;</type>
+        <definition>using thirdai::bolt::MultiStepLRPtr = typedef std::shared_ptr&lt;MultiStepLR&gt;</definition>
+        <argsstring></argsstring>
+        <name>MultiStepLRPtr</name>
+        <qualifiedname>thirdai::bolt::MultiStepLRPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="49" column="1" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="49" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_learning_rate_scheduler_8h_1a41cb35bd629e83de07ca9cdb76310ac7" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_multiplicative_l_r" kindref="compound">MultiplicativeLR</ref> &gt;</type>
+        <definition>using thirdai::bolt::MultiplicativeLRPtr = typedef std::shared_ptr&lt;MultiplicativeLR&gt;</definition>
+        <argsstring></argsstring>
+        <name>MultiplicativeLRPtr</name>
+        <qualifiedname>thirdai::bolt::MultiplicativeLRPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="67" column="1" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="67" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_learning_rate_scheduler_8h_1a232847f3410efe9f3d0005f465026c19" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_exponential_l_r" kindref="compound">ExponentialLR</ref> &gt;</type>
+        <definition>using thirdai::bolt::ExponentialLRPtr = typedef std::shared_ptr&lt;ExponentialLR&gt;</definition>
+        <argsstring></argsstring>
+        <name>ExponentialLRPtr</name>
+        <qualifiedname>thirdai::bolt::ExponentialLRPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="85" column="1" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="85" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_learning_rate_scheduler_8h_1a58adfc1ba93337e42e5783f377145e4f" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_lambda_schedule" kindref="compound">LambdaSchedule</ref> &gt;</type>
+        <definition>using thirdai::bolt::LambdaSchedulePtr = typedef std::shared_ptr&lt;LambdaSchedule&gt;</definition>
+        <argsstring></argsstring>
+        <name>LambdaSchedulePtr</name>
+        <qualifiedname>thirdai::bolt::LambdaSchedulePtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="105" column="1" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="105" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_learning_rate_scheduler_8h_1a64fa8fba5205c7793d3bb8463a6bcab4" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_learning_rate_scheduler" kindref="compound">LearningRateScheduler</ref> &gt;</type>
+        <definition>using thirdai::bolt::LearningRateSchedulerPtr = typedef std::shared_ptr&lt;LearningRateScheduler&gt;</definition>
+        <argsstring></argsstring>
+        <name>LearningRateSchedulerPtr</name>
+        <qualifiedname>thirdai::bolt::LearningRateSchedulerPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="143" column="1" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="143" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_execution_config_8h_1aa9d913567141d0d078ec1fd020cdf00d" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_train_config" kindref="compound">TrainConfig</ref> &gt;</type>
+        <definition>using thirdai::bolt::TrainConfigPtr = typedef std::shared_ptr&lt;TrainConfig&gt;</definition>
+        <argsstring></argsstring>
+        <name>TrainConfigPtr</name>
+        <qualifiedname>thirdai::bolt::TrainConfigPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="100" column="1" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="100" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_inference_output_tracker_8h_1abfd4634a760f32b4d0cd48431f1b43fc" prot="public" static="no">
+        <type>std::pair&lt; InferenceMetricData, <ref refid="classthirdai_1_1bolt_1_1_inference_output_tracker" kindref="compound">InferenceOutputTracker</ref> &gt;</type>
+        <definition>using thirdai::bolt::InferenceResult = typedef std::pair&lt;InferenceMetricData, InferenceOutputTracker&gt;</definition>
+        <argsstring></argsstring>
+        <name>InferenceResult</name>
+        <qualifiedname>thirdai::bolt::InferenceResult</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/InferenceOutputTracker.h" line="124" column="1" bodyfile="bolt/src/graph/InferenceOutputTracker.h" bodystart="124" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_node_8h_1af4bd55b4ea2a06c7f88390d3eb04c8ea" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_node" kindref="compound">Node</ref> &gt;</type>
+        <definition>using thirdai::bolt::NodePtr = typedef std::shared_ptr&lt;Node&gt;</definition>
+        <argsstring></argsstring>
+        <name>NodePtr</name>
+        <qualifiedname>thirdai::bolt::NodePtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="17" column="1" bodyfile="bolt/src/graph/Node.h" bodystart="17" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_dlrm_attention_8h_1a669522869178ac67cc4ce8c796ae4142" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_dlrm_attention_node" kindref="compound">DlrmAttentionNode</ref> &gt;</type>
+        <definition>using thirdai::bolt::DlrmAttentionNodePtr = typedef std::shared_ptr&lt;DlrmAttentionNode&gt;</definition>
+        <argsstring></argsstring>
+        <name>DlrmAttentionNodePtr</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNodePtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="311" column="1" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="311" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_embedding_8h_1a5abcd28b52dbb1d26f1a88f450683c53" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_embedding_node" kindref="compound">EmbeddingNode</ref> &gt;</type>
+        <definition>using thirdai::bolt::EmbeddingNodePtr = typedef std::shared_ptr&lt;EmbeddingNode&gt;</definition>
+        <argsstring></argsstring>
+        <name>EmbeddingNodePtr</name>
+        <qualifiedname>thirdai::bolt::EmbeddingNodePtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Embedding.h" line="191" column="1" bodyfile="bolt/src/graph/nodes/Embedding.h" bodystart="191" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_fully_connected_8h_1a36a4c29971022191366dfc9beb3d0363" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_fully_connected_node" kindref="compound">FullyConnectedNode</ref> &gt;</type>
+        <definition>using thirdai::bolt::FullyConnectedNodePtr = typedef std::shared_ptr&lt;FullyConnectedNode&gt;</definition>
+        <argsstring></argsstring>
+        <name>FullyConnectedNodePtr</name>
+        <qualifiedname>thirdai::bolt::FullyConnectedNodePtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/FullyConnected.h" line="329" column="1" bodyfile="bolt/src/graph/nodes/FullyConnected.h" bodystart="329" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_input_8h_1a5ea4f5f2a5572ae0c3467d50a39fa694" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_input" kindref="compound">Input</ref> &gt;</type>
+        <definition>using thirdai::bolt::InputPtr = typedef std::shared_ptr&lt;Input&gt;</definition>
+        <argsstring></argsstring>
+        <name>InputPtr</name>
+        <qualifiedname>thirdai::bolt::InputPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Input.h" line="186" column="1" bodyfile="bolt/src/graph/nodes/Input.h" bodystart="186" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_layer_config_8h_1a200001bc3240a0fc9b5bb969be13f4b8" prot="public" static="no">
+        <type>std::vector&lt; std::shared_ptr&lt; <ref refid="structthirdai_1_1bolt_1_1_sequential_layer_config" kindref="compound">bolt::SequentialLayerConfig</ref> &gt; &gt;</type>
+        <definition>using thirdai::bolt::SequentialConfigList = typedef std::vector&lt;std::shared_ptr&lt;bolt::SequentialLayerConfig&gt; &gt;</definition>
+        <argsstring></argsstring>
+        <name>SequentialConfigList</name>
+        <qualifiedname>thirdai::bolt::SequentialConfigList</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="43" column="1" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="44" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_sampling_config_8h_1a20858e595b2c01e5c211054f9cbbf96e" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_sampling_config" kindref="compound">SamplingConfig</ref> &gt;</type>
+        <definition>using thirdai::bolt::SamplingConfigPtr = typedef std::shared_ptr&lt;SamplingConfig&gt;</definition>
+        <argsstring></argsstring>
+        <name>SamplingConfigPtr</name>
+        <qualifiedname>thirdai::bolt::SamplingConfigPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SamplingConfig.h" line="50" column="1" bodyfile="bolt/src/layers/SamplingConfig.h" bodystart="50" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_metric_8h_1a30563b8551ac10d1d1367e7276425915" prot="public" static="no">
+        <type>std::unordered_map&lt; std::string, std::vector&lt; double &gt; &gt;</type>
+        <definition>typedef std::unordered_map&lt; std::string, std::vector&lt; double &gt; &gt; thirdai::bolt::MetricData</definition>
+        <argsstring></argsstring>
+        <name>MetricData</name>
+        <qualifiedname>thirdai::bolt::MetricData</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="588" column="1" bodyfile="bolt/src/metrics/Metric.h" bodystart="588" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_metric_8h_1a3f53f0b8e35436365075fc53f1cb4e74" prot="public" static="no">
+        <type>std::unordered_map&lt; std::string, double &gt;</type>
+        <definition>typedef std::unordered_map&lt; std::string, double &gt; thirdai::bolt::InferenceMetricData</definition>
+        <argsstring></argsstring>
+        <name>InferenceMetricData</name>
+        <qualifiedname>thirdai::bolt::InferenceMetricData</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="589" column="1" bodyfile="bolt/src/metrics/Metric.h" bodystart="589" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_root_cause_analysis_8h_1af930582c04535a352fdbb1b0a989d389" prot="public" static="no">
+        <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">dataset::Block</ref> &gt; &gt;</type>
+        <definition>using thirdai::bolt::Blocks = typedef std::vector&lt;std::shared_ptr&lt;dataset::Block&gt; &gt;</definition>
+        <argsstring></argsstring>
+        <name>Blocks</name>
+        <qualifiedname>thirdai::bolt::Blocks</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/root_cause_analysis/RootCauseAnalysis.h" line="11" column="1" bodyfile="bolt/src/root_cause_analysis/RootCauseAnalysis.h" bodystart="11" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="var">
+      <memberdef kind="variable" id="_auto_classifier_base_8cc_1a520c72607359b55e045817ce452e4fc7" prot="public" static="no" constexpr="yes" mutable="no">
+        <type>constexpr uint64_t</type>
+        <definition>constexpr uint64_t thirdai::bolt::ONE_GB</definition>
+        <argsstring></argsstring>
+        <name>ONE_GB</name>
+        <qualifiedname>thirdai::bolt::ONE_GB</qualifiedname>
+        <initializer>= 1 &lt;&lt; 30</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/AutoClassifierBase.cc" line="180" column="20" bodyfile="bolt/src/auto_classifiers/AutoClassifierBase.cc" bodystart="180" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="_layer_norm_8h_1ac35fb24d175442f34ea843b05a37c6d1" prot="public" static="no" constexpr="yes" mutable="no">
+        <type>constexpr float</type>
+        <definition>constexpr float thirdai::bolt::DIV_BY_ZERO_GUARD</definition>
+        <argsstring></argsstring>
+        <name>DIV_BY_ZERO_GUARD</name>
+        <qualifiedname>thirdai::bolt::DIV_BY_ZERO_GUARD</qualifiedname>
+        <initializer>= 0.00000001</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/LayerNorm.h" line="32" column="17" bodyfile="bolt/src/graph/nodes/LayerNorm.h" bodystart="32" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="_layer_utils_8h_1a4bc26ad8d0b21d96f733fcc489a32c7e" prot="public" static="no" constexpr="yes" mutable="no">
+        <type>constexpr float</type>
+        <definition>constexpr float thirdai::bolt::BETA1</definition>
+        <argsstring></argsstring>
+        <name>BETA1</name>
+        <qualifiedname>thirdai::bolt::BETA1</qualifiedname>
+        <initializer>= 0.9</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerUtils.h" line="15" column="17" bodyfile="bolt/src/layers/LayerUtils.h" bodystart="15" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="_layer_utils_8h_1a32029c0e2f438b55d9ebd6ca9124a7a3" prot="public" static="no" constexpr="yes" mutable="no">
+        <type>constexpr float</type>
+        <definition>constexpr float thirdai::bolt::BETA2</definition>
+        <argsstring></argsstring>
+        <name>BETA2</name>
+        <qualifiedname>thirdai::bolt::BETA2</qualifiedname>
+        <initializer>= 0.999</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerUtils.h" line="16" column="17" bodyfile="bolt/src/layers/LayerUtils.h" bodystart="16" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="_layer_utils_8h_1aa8cf2a49916473b5f8caf95b5d4c0382" prot="public" static="no" constexpr="yes" mutable="no">
+        <type>constexpr float</type>
+        <definition>constexpr float thirdai::bolt::EPS</definition>
+        <argsstring></argsstring>
+        <name>EPS</name>
+        <qualifiedname>thirdai::bolt::EPS</qualifiedname>
+        <initializer>= 0.0000001</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerUtils.h" line="17" column="17" bodyfile="bolt/src/layers/LayerUtils.h" bodystart="17" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="_fully_connected_layer_8cc_1a69f1742eb61ed8d1ad5763aa4c233294" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::bolt::eigenSoftmax</definition>
+        <argsstring>(Eigen::Map&lt; Eigen::VectorXf &gt; &amp;outputs)</argsstring>
+        <name>eigenSoftmax</name>
+        <qualifiedname>thirdai::bolt::eigenSoftmax</qualifiedname>
+        <param>
+          <type>Eigen::Map&lt; Eigen::VectorXf &gt; &amp;</type>
+          <declname>outputs</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/FullyConnectedLayer.cc" line="208" column="13" bodyfile="bolt/src/layers/FullyConnectedLayer.cc" bodystart="208" bodyend="213"/>
+      </memberdef>
+      <memberdef kind="function" id="_fully_connected_layer_8cc_1a4b88ca6e0d664732acd870b93814e68e" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::bolt::wrapAroundCopy</definition>
+        <argsstring>(const uint32_t *const src, uint64_t src_len, uint32_t *const dest, uint64_t copy_size, uint64_t starting_offset)</argsstring>
+        <name>wrapAroundCopy</name>
+        <qualifiedname>thirdai::bolt::wrapAroundCopy</qualifiedname>
+        <param>
+          <type>const uint32_t *const</type>
+          <declname>src</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>src_len</declname>
+        </param>
+        <param>
+          <type>uint32_t *const</type>
+          <declname>dest</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>copy_size</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>starting_offset</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/FullyConnectedLayer.cc" line="402" column="13" bodyfile="bolt/src/layers/FullyConnectedLayer.cc" bodystart="402" bodyend="414"/>
+      </memberdef>
+      <memberdef kind="function" id="_layer_utils_8h_1aab01a22d671995090bdd953e9f498110" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::string</type>
+        <definition>static std::string thirdai::bolt::activationFunctionToStr</definition>
+        <argsstring>(ActivationFunction act_func)</argsstring>
+        <name>activationFunctionToStr</name>
+        <qualifiedname>thirdai::bolt::activationFunctionToStr</qualifiedname>
+        <param>
+          <type>ActivationFunction</type>
+          <declname>act_func</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerUtils.h" line="21" column="20" bodyfile="bolt/src/layers/LayerUtils.h" bodystart="21" bodyend="36"/>
+      </memberdef>
+      <memberdef kind="function" id="_layer_utils_8h_1a9578e2ef279c49a7946ca26bd6696334" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>ActivationFunction</type>
+        <definition>static ActivationFunction thirdai::bolt::getActivationFunction</definition>
+        <argsstring>(const std::string &amp;act_func_name)</argsstring>
+        <name>getActivationFunction</name>
+        <qualifiedname>thirdai::bolt::getActivationFunction</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>act_func_name</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerUtils.h" line="38" column="27" bodyfile="bolt/src/layers/LayerUtils.h" bodystart="38" bodyend="60"/>
+      </memberdef>
+      <memberdef kind="function" id="_layer_utils_8h_1ac71bf37dd2c124802f849d087b7e6d80" prot="public" static="no" constexpr="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>constexpr float</type>
+        <definition>constexpr float thirdai::bolt::actFuncDerivative</definition>
+        <argsstring>(float activation, ActivationFunction act_func)</argsstring>
+        <name>actFuncDerivative</name>
+        <qualifiedname>thirdai::bolt::actFuncDerivative</qualifiedname>
+        <param>
+          <type>float</type>
+          <declname>activation</declname>
+        </param>
+        <param>
+          <type>ActivationFunction</type>
+          <declname>act_func</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerUtils.h" line="62" column="17" bodyfile="bolt/src/layers/LayerUtils.h" bodystart="62" bodyend="85"/>
+      </memberdef>
+      <memberdef kind="function" id="_loss_functions_8h_1ae63b3c17ac90c1ae6b173e0a0639e0cb" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_loss_function" kindref="compound">LossFunction</ref> &gt;</type>
+        <definition>static std::shared_ptr&lt; LossFunction &gt; thirdai::bolt::getLossFunction</definition>
+        <argsstring>(const std::string &amp;name)</argsstring>
+        <name>getLossFunction</name>
+        <qualifiedname>thirdai::bolt::getLossFunction</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>name</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/loss_functions/LossFunctions.h" line="191" column="24" bodyfile="bolt/src/loss_functions/LossFunctions.h" bodystart="191" bodyend="213"/>
+      </memberdef>
+      <memberdef kind="function" id="_metric_8h_1ab9abe6407e2bd5b8988c32b78649f355" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_metric" kindref="compound">Metric</ref> &gt;</type>
+        <definition>static std::shared_ptr&lt; Metric &gt; thirdai::bolt::makeMetric</definition>
+        <argsstring>(const std::string &amp;name)</argsstring>
+        <name>makeMetric</name>
+        <qualifiedname>thirdai::bolt::makeMetric</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>name</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="566" column="24" bodyfile="bolt/src/metrics/Metric.h" bodystart="566" bodyend="586"/>
+      </memberdef>
+      <memberdef kind="function" id="_root_cause_analysis_8h_1a39617544ccc46575b51d68870bc90770" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; std::pair&lt; float, uint32_t &gt; &gt;</type>
+        <definition>std::vector&lt; std::pair&lt; float, uint32_t &gt; &gt; thirdai::bolt::sortGradientsBySignificance</definition>
+        <argsstring>(std::vector&lt; float &gt; gradients_ratio, std::optional&lt; std::vector&lt; uint32_t &gt; &gt; gradients_indices)</argsstring>
+        <name>sortGradientsBySignificance</name>
+        <qualifiedname>thirdai::bolt::sortGradientsBySignificance</qualifiedname>
+        <param>
+          <type>std::vector&lt; float &gt;</type>
+          <declname>gradients_ratio</declname>
+        </param>
+        <param>
+          <type>std::optional&lt; std::vector&lt; uint32_t &gt; &gt;</type>
+          <declname>gradients_indices</declname>
+        </param>
+        <briefdescription>
+<para>Given the gradients ratios and indices, sort the gradients retaining the indices. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><simplesect kind="return"><para>Returns vector of pairs(gradients ratios and indices) sorted in the descending order of absolute values. </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/root_cause_analysis/RootCauseAnalysis.h" line="20" column="20" bodyfile="bolt/src/root_cause_analysis/RootCauseAnalysis.h" bodystart="20" bodyend="41"/>
+      </memberdef>
+      <memberdef kind="function" id="_root_cause_analysis_8h_1aca2626df463c0a0cb5e68df14093c319" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; <ref refid="structthirdai_1_1dataset_1_1_explanation" kindref="compound">dataset::Explanation</ref> &gt;</type>
+        <definition>std::vector&lt; dataset::Explanation &gt; thirdai::bolt::getSignificanceSortedExplanations</definition>
+        <argsstring>(const BoltGraphPtr &amp;model, const BoltVector &amp;input_vector, const std::vector&lt; std::string_view &gt; &amp;input_row, const std::shared_ptr&lt; dataset::GenericBatchProcessor &gt; &amp;generic_batch_processor, std::optional&lt; uint32_t &gt; neuron_to_explain=std::nullopt)</argsstring>
+        <name>getSignificanceSortedExplanations</name>
+        <qualifiedname>thirdai::bolt::getSignificanceSortedExplanations</qualifiedname>
+        <param>
+          <type>const BoltGraphPtr &amp;</type>
+          <declname>model</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>input_vector</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>input_row</declname>
+        </param>
+        <param>
+          <type>const std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_generic_batch_processor" kindref="compound">dataset::GenericBatchProcessor</ref> &gt; &amp;</type>
+          <declname>generic_batch_processor</declname>
+        </param>
+        <param>
+          <type>std::optional&lt; uint32_t &gt;</type>
+          <declname>neuron_to_explain</declname>
+          <defval>std::nullopt</defval>
+        </param>
+        <briefdescription>
+<para>Get the gradients information from the model with respect to given input vector and sort the gradients ratios with maintaining the indices and for each gradient value with index pair, get corresponding column number and key word from the batch processor given. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>model</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>The model to use for RCA.</para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>input_row</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>The string view of input which can be used for getting the exact key words responsible from blocks when user calls explain method, rather than overloading buildsegment method which might affect the threadsafety.</para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>generic_batch_processor</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>The batchprocessor from which we can get column number and keyword responsible for the given index.</para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+<simplesect kind="return"><para>vector of Explanation structs, sorted in descending order of their significance percentages. </para>
+</simplesect>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/root_cause_analysis/RootCauseAnalysis.h" line="62" column="20" bodyfile="bolt/src/root_cause_analysis/RootCauseAnalysis.h" bodystart="62" bodyend="89"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/auto_classifiers/AutoClassifierBase.cc" line="16" column="1"/>
+  </compounddef>
+</doxygen>

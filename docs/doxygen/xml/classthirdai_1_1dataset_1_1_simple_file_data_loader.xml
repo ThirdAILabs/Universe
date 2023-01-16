@@ -1,0 +1,163 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_simple_file_data_loader" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::dataset::SimpleFileDataLoader</compoundname>
+    <basecompoundref refid="classthirdai_1_1dataset_1_1_data_loader" prot="public" virt="non-virtual">thirdai::dataset::DataLoader</basecompoundref>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_simple_file_data_loader_1a54795eaf1e10370ff7e523cda7a3fe53" prot="private" static="no" mutable="no">
+        <type>std::ifstream</type>
+        <definition>std::ifstream thirdai::dataset::SimpleFileDataLoader::_file</definition>
+        <argsstring></argsstring>
+        <name>_file</name>
+        <qualifiedname>thirdai::dataset::SimpleFileDataLoader::_file</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/DataLoader.h" line="75" column="17" bodyfile="dataset/src/DataLoader.h" bodystart="75" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_simple_file_data_loader_1a6ac327893a2ea538452cef8588ee31b0" prot="private" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string thirdai::dataset::SimpleFileDataLoader::_filename</definition>
+        <argsstring></argsstring>
+        <name>_filename</name>
+        <qualifiedname>thirdai::dataset::SimpleFileDataLoader::_filename</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/DataLoader.h" line="76" column="15" bodyfile="dataset/src/DataLoader.h" bodystart="76" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_simple_file_data_loader_1a2114e212a1dd8e2c1767ee9a96109c80" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::SimpleFileDataLoader::SimpleFileDataLoader</definition>
+        <argsstring>(const std::string &amp;filename, uint32_t target_batch_size)</argsstring>
+        <name>SimpleFileDataLoader</name>
+        <qualifiedname>thirdai::dataset::SimpleFileDataLoader::SimpleFileDataLoader</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>target_batch_size</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/DataLoader.h" line="34" column="3" bodyfile="dataset/src/DataLoader.h" bodystart="34" bodyend="37"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_simple_file_data_loader_1aeb450c07c255e4ec70fd5e570aaa1d9a" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::optional&lt; std::vector&lt; std::string &gt; &gt;</type>
+        <definition>std::optional&lt; std::vector&lt; std::string &gt; &gt; thirdai::dataset::SimpleFileDataLoader::nextBatch</definition>
+        <argsstring>() final</argsstring>
+        <name>nextBatch</name>
+        <qualifiedname>thirdai::dataset::SimpleFileDataLoader::nextBatch</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_data_loader_1a1071831b91446b926d135f162e6f89d6">nextBatch</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/DataLoader.h" line="39" column="17" bodyfile="dataset/src/DataLoader.h" bodystart="39" bodyend="57"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_simple_file_data_loader_1a9ef68dd4a9ce3e68de892459e42dd3bf" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::optional&lt; std::string &gt;</type>
+        <definition>std::optional&lt; std::string &gt; thirdai::dataset::SimpleFileDataLoader::nextLine</definition>
+        <argsstring>() final</argsstring>
+        <name>nextLine</name>
+        <qualifiedname>thirdai::dataset::SimpleFileDataLoader::nextLine</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_data_loader_1ab038733a8aecea7a4a7c6fed7a3690fc">nextLine</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/DataLoader.h" line="59" column="17" bodyfile="dataset/src/DataLoader.h" bodystart="59" bodyend="65"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_simple_file_data_loader_1a80b19f8b9ec2d06888fa55b380b9a8ac" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::SimpleFileDataLoader::restart</definition>
+        <argsstring>() final</argsstring>
+        <name>restart</name>
+        <qualifiedname>thirdai::dataset::SimpleFileDataLoader::restart</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_data_loader_1a35dd1c6ad9c98b414fa73521e0e17284">restart</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/DataLoader.h" line="67" column="8" bodyfile="dataset/src/DataLoader.h" bodystart="67" bodyend="70"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_simple_file_data_loader_1a0a4d04163b443c6e2ff32eb5c1c336c0" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::dataset::SimpleFileDataLoader::resourceName</definition>
+        <argsstring>() const final</argsstring>
+        <name>resourceName</name>
+        <qualifiedname>thirdai::dataset::SimpleFileDataLoader::resourceName</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_data_loader_1a692e0020e5fc56fc2609d8f1613fa50e">resourceName</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/DataLoader.h" line="72" column="15" bodyfile="dataset/src/DataLoader.h" bodystart="72" bodyend="72"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::dataset::DataLoader</label>
+        <link refid="classthirdai_1_1dataset_1_1_data_loader"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::SimpleFileDataLoader</label>
+        <link refid="classthirdai_1_1dataset_1_1_simple_file_data_loader"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>thirdai::dataset::DataLoader</label>
+        <link refid="classthirdai_1_1dataset_1_1_data_loader"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::SimpleFileDataLoader</label>
+        <link refid="classthirdai_1_1dataset_1_1_simple_file_data_loader"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="dataset/src/DataLoader.h" line="32" column="1" bodyfile="dataset/src/DataLoader.h" bodystart="32" bodyend="77"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_simple_file_data_loader_1a54795eaf1e10370ff7e523cda7a3fe53" prot="private" virt="non-virtual"><scope>thirdai::dataset::SimpleFileDataLoader</scope><name>_file</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_simple_file_data_loader_1a6ac327893a2ea538452cef8588ee31b0" prot="private" virt="non-virtual"><scope>thirdai::dataset::SimpleFileDataLoader</scope><name>_filename</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_data_loader_1ad65e25ef20892d474c6ff3f60b0d0a7e" prot="protected" virt="non-virtual"><scope>thirdai::dataset::SimpleFileDataLoader</scope><name>_target_batch_size</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_data_loader_1a477694064ee55aa5f9b2af8e798a6e91" prot="public" virt="non-virtual"><scope>thirdai::dataset::SimpleFileDataLoader</scope><name>DataLoader</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_data_loader_1a95bc5f59c4ecbf3bddf7e6470ccdbaed" prot="public" virt="non-virtual"><scope>thirdai::dataset::SimpleFileDataLoader</scope><name>getMaxBatchSize</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_simple_file_data_loader_1aeb450c07c255e4ec70fd5e570aaa1d9a" prot="public" virt="virtual"><scope>thirdai::dataset::SimpleFileDataLoader</scope><name>nextBatch</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_simple_file_data_loader_1a9ef68dd4a9ce3e68de892459e42dd3bf" prot="public" virt="virtual"><scope>thirdai::dataset::SimpleFileDataLoader</scope><name>nextLine</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_simple_file_data_loader_1a0a4d04163b443c6e2ff32eb5c1c336c0" prot="public" virt="virtual"><scope>thirdai::dataset::SimpleFileDataLoader</scope><name>resourceName</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_simple_file_data_loader_1a80b19f8b9ec2d06888fa55b380b9a8ac" prot="public" virt="virtual"><scope>thirdai::dataset::SimpleFileDataLoader</scope><name>restart</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_simple_file_data_loader_1a2114e212a1dd8e2c1767ee9a96109c80" prot="public" virt="non-virtual"><scope>thirdai::dataset::SimpleFileDataLoader</scope><name>SimpleFileDataLoader</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_data_loader_1acc490c100d3d5e6bb664e9f99a23c105" prot="public" virt="virtual"><scope>thirdai::dataset::SimpleFileDataLoader</scope><name>~DataLoader</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

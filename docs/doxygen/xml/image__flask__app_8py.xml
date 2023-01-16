@@ -1,0 +1,142 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="image__flask__app_8py" kind="file" language="Python">
+    <compoundname>image_flask_app.py</compoundname>
+    <innernamespace refid="namespaceimage__flask__app">image_flask_app</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="comment">#<sp/>This<sp/>script<sp/>starts<sp/>a<sp/>very<sp/>simple<sp/>flask<sp/>application<sp/>that<sp/>indexes<sp/>ImageNet</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight><highlight class="comment">#<sp/>using<sp/>the<sp/>penultimate<sp/>layer<sp/>of<sp/>VGG16<sp/>as<sp/>image<sp/>embeddings<sp/>and<sp/>then<sp/>exposes</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="comment">#<sp/>a<sp/>REST<sp/>API<sp/>to<sp/>perform<sp/>ANN<sp/>search.<sp/>You<sp/>will<sp/>need<sp/>to<sp/>change<sp/>the<sp/>variables</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="comment">#<sp/>below<sp/>the<sp/>import<sp/>statement<sp/>for<sp/>the<sp/>script<sp/>to<sp/>work<sp/>on<sp/>your<sp/>system.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/>tensorflow<sp/></highlight><highlight class="keyword">as</highlight><highlight class="normal"><sp/>tf</highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/>numpy<sp/></highlight><highlight class="keyword">as</highlight><highlight class="normal"><sp/>np</highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="keyword">from</highlight><highlight class="normal"><sp/>tensorflow<sp/></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/>keras</highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="keyword">from</highlight><highlight class="normal"><sp/>tensorflow.keras.preprocessing.image<sp/></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/>load_img</highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="keyword">from</highlight><highlight class="normal"><sp/>tensorflow.keras.preprocessing.image<sp/></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/>img_to_array</highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="keyword">from</highlight><highlight class="normal"><sp/>tensorflow.keras.applications.imagenet_utils<sp/></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/>decode_predictions</highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/>tensorflow<sp/></highlight><highlight class="keyword">as</highlight><highlight class="normal"><sp/>tf</highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/>time</highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/>thirdai</highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight><highlight class="keyword">from</highlight><highlight class="normal"><sp/>flask<sp/></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/>Flask,<sp/>flash,<sp/>request,<sp/>send_file,<sp/>abort,<sp/>redirect</highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight><highlight class="keyword">from</highlight><highlight class="normal"><sp/>PIL<sp/></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/>Image</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/>io</highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal">chunk_path<sp/>=<sp/></highlight><highlight class="stringliteral">&quot;/Users/josh/IndexChunks/&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="20"><highlight class="normal">max_chunk_num_exclusive<sp/>=<sp/>129</highlight></codeline>
+<codeline lineno="21"><highlight class="normal">file_name_index_path<sp/>=<sp/></highlight><highlight class="stringliteral">&quot;/Users/josh/IndexChunks/all_files.npy&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="22"><highlight class="normal">average_vector_path<sp/>=<sp/></highlight><highlight class="stringliteral">&quot;/Users/josh/IndexChunks/avg.npy&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="23"><highlight class="normal">max_image_size_bytes<sp/>=<sp/>16000000</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"></highlight></codeline>
+<codeline lineno="25"><highlight class="normal">reservoir_size<sp/>=<sp/>500</highlight></codeline>
+<codeline lineno="26"><highlight class="normal">num_tables<sp/>=<sp/>500</highlight></codeline>
+<codeline lineno="27"><highlight class="normal">hashes_per_table<sp/>=<sp/>12</highlight></codeline>
+<codeline lineno="28"><highlight class="normal">hf<sp/>=<sp/>thirdai.hashing.SignedRandomProjection(</highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/><sp/><sp/>input_dim=4096,<sp/>hashes_per_table=hashes_per_table,<sp/>num_tables=num_tables</highlight></codeline>
+<codeline lineno="30"><highlight class="normal">)</highlight></codeline>
+<codeline lineno="31"><highlight class="normal"></highlight></codeline>
+<codeline lineno="32"><highlight class="normal">mag_search_index<sp/>=<sp/>thirdai.search.MagSearch(hf,<sp/>reservoir_size=reservoir_size)</highlight></codeline>
+<codeline lineno="33"><highlight class="normal">num_vectors<sp/>=<sp/>0</highlight></codeline>
+<codeline lineno="34"><highlight class="normal">start<sp/>=<sp/>time.perf_counter()</highlight></codeline>
+<codeline lineno="35"><highlight class="normal">num_bytes<sp/>=<sp/>0</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>chunk_num<sp/></highlight><highlight class="keywordflow">in</highlight><highlight class="normal"><sp/>range(0,<sp/>max_chunk_num_exclusive):</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/><sp/><sp/>batch<sp/>=<sp/>np.load(</highlight><highlight class="stringliteral">&quot;%schunk-ave%d.npy&quot;</highlight><highlight class="normal"><sp/>%<sp/>(chunk_path,<sp/>chunk_num))</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/><sp/><sp/>num_bytes<sp/>+=<sp/>batch.nbytes</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/><sp/><sp/>mag_search_index.add(dense_data=batch,<sp/>starting_index=num_vectors)</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/><sp/><sp/>num_vectors<sp/>+=<sp/>len(batch)</highlight></codeline>
+<codeline lineno="41"><highlight class="normal">end<sp/>=<sp/>time.perf_counter()</highlight></codeline>
+<codeline lineno="42"><highlight class="normal">print(</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/>f</highlight><highlight class="stringliteral">&quot;Loading<sp/>and<sp/>indexing<sp/>{num_vectors}<sp/>vectors<sp/>({num_bytes//1000000000}GB)<sp/>took<sp/>{end<sp/>-<sp/>start}s&quot;</highlight><highlight class="normal">,</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/>flush=</highlight><highlight class="keyword">True</highlight><highlight class="normal">,</highlight></codeline>
+<codeline lineno="45"><highlight class="normal">)</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"></highlight></codeline>
+<codeline lineno="47"><highlight class="normal"></highlight></codeline>
+<codeline lineno="48"><highlight class="normal">raw_model<sp/>=<sp/>tf.keras.applications.VGG16(weights=</highlight><highlight class="stringliteral">&quot;imagenet&quot;</highlight><highlight class="normal">)</highlight></codeline>
+<codeline lineno="49"><highlight class="normal">final_model<sp/>=<sp/>tf.keras.Model(</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/><sp/><sp/>inputs=raw_model.input,<sp/>outputs=raw_model.get_layer(</highlight><highlight class="stringliteral">&quot;fc2&quot;</highlight><highlight class="normal">).output</highlight></codeline>
+<codeline lineno="51"><highlight class="normal">)</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"></highlight></codeline>
+<codeline lineno="53"><highlight class="normal">file_name_index<sp/>=<sp/>np.load(file_name_index_path)</highlight></codeline>
+<codeline lineno="54"><highlight class="normal">average_vector<sp/>=<sp/>np.load(average_vector_path)</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"></highlight></codeline>
+<codeline lineno="56"><highlight class="normal">app<sp/>=<sp/>Flask(__name__)</highlight></codeline>
+<codeline lineno="57"><highlight class="normal">app.config[</highlight><highlight class="stringliteral">&quot;MAX_CONTENT_LENGTH&quot;</highlight><highlight class="normal">]<sp/>=<sp/>max_image_size_bytes</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"></highlight></codeline>
+<codeline lineno="59"><highlight class="normal">allowed_extensions<sp/>=<sp/>{</highlight><highlight class="stringliteral">&quot;jpg&quot;</highlight><highlight class="normal">,<sp/></highlight><highlight class="stringliteral">&quot;jpeg&quot;</highlight><highlight class="normal">}</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"></highlight></codeline>
+<codeline lineno="61"><highlight class="normal"></highlight></codeline>
+<codeline lineno="62"><highlight class="normal"></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal">allowed_file(filename):</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="stringliteral">&quot;.&quot;</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordflow">in</highlight><highlight class="normal"><sp/>filename<sp/></highlight><highlight class="keywordflow">and</highlight><highlight class="normal"><sp/>filename.rsplit(</highlight><highlight class="stringliteral">&quot;.&quot;</highlight><highlight class="normal">,<sp/>1)[1].lower()<sp/></highlight><highlight class="keywordflow">in</highlight><highlight class="normal"><sp/>allowed_extensions</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"></highlight></codeline>
+<codeline lineno="65"><highlight class="normal"></highlight></codeline>
+<codeline lineno="66"><highlight class="normal">image_ask_html<sp/>=<sp/></highlight><highlight class="stringliteral">&quot;&quot;&quot;</highlight></codeline>
+<codeline lineno="67"><highlight class="stringliteral"><sp/><sp/><sp/><sp/>&lt;!doctype<sp/>html&gt;</highlight></codeline>
+<codeline lineno="68"><highlight class="stringliteral"><sp/><sp/><sp/><sp/>&lt;title&gt;MagSearch<sp/>Demo&lt;/title&gt;</highlight></codeline>
+<codeline lineno="69"><highlight class="stringliteral"><sp/><sp/><sp/><sp/>&lt;h1&gt;MagSearch<sp/>demo:<sp/>upload<sp/>a<sp/>jpg<sp/>image<sp/></highlight><highlight class="keywordflow">and</highlight><highlight class="normal"><sp/>get<sp/>semantically<sp/>similar<sp/>images!&lt;/h1&gt;</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/><sp/><sp/>&lt;form<sp/>method=post<sp/>enctype=multipart/form-data&gt;</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>&lt;input<sp/>type=file<sp/>name=file&gt;</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>&lt;input<sp/>type=submit<sp/>value=Upload&gt;</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/><sp/><sp/>&lt;/form&gt;</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&quot;&quot;</highlight></codeline>
+<codeline lineno="75"><highlight class="stringliteral"></highlight></codeline>
+<codeline lineno="76"><highlight class="stringliteral"></highlight></codeline>
+<codeline lineno="77"><highlight class="stringliteral">@app.route(&quot;/&quot;,<sp/>methods=[&quot;GET&quot;,<sp/>&quot;POST&quot;])</highlight></codeline>
+<codeline lineno="78"><highlight class="stringliteral">def<sp/>do_ann():</highlight></codeline>
+<codeline lineno="79"><highlight class="stringliteral"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>request.method<sp/>==<sp/></highlight><highlight class="stringliteral">&quot;POST&quot;</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/></highlight><highlight class="stringliteral">&quot;file&quot;</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordflow">not</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordflow">in</highlight><highlight class="normal"><sp/>request.files:</highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>flash(</highlight><highlight class="stringliteral">&quot;No<sp/>file<sp/>submitted.&quot;</highlight><highlight class="normal">)</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>redirect(request.url)</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>file<sp/>=<sp/>request.files[</highlight><highlight class="stringliteral">&quot;file&quot;</highlight><highlight class="normal">]</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordflow">not</highlight><highlight class="normal"><sp/>file<sp/></highlight><highlight class="keywordflow">or</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordflow">not</highlight><highlight class="normal"><sp/>allowed_file(file.filename):</highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>flash(</highlight><highlight class="stringliteral">&quot;Invalid<sp/>file<sp/>submitted.&quot;</highlight><highlight class="normal">)</highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>redirect(request.url)</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"></highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">try</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>image_bytes<sp/>=<sp/>file.read()</highlight></codeline>
+<codeline lineno="90"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>image_raw<sp/>=<sp/>Image.open(io.BytesIO(image_bytes))</highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>image_resized<sp/>=<sp/>image_raw.resize((224,<sp/>224))</highlight></codeline>
+<codeline lineno="92"><highlight class="normal"></highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>image_numpy<sp/>=<sp/>img_to_array(image_resized)</highlight></codeline>
+<codeline lineno="94"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>image_batch<sp/>=<sp/>np.expand_dims(image_numpy,<sp/>axis=0)</highlight></codeline>
+<codeline lineno="95"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>image_batch_processed<sp/>=<sp/>tf.keras.applications.vgg16.preprocess_input(</highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>image_batch.copy()</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>)</highlight></codeline>
+<codeline lineno="98"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>query_batch<sp/>=<sp/>final_model.predict(image_batch_processed)<sp/>-<sp/>average_vector</highlight></codeline>
+<codeline lineno="99"><highlight class="normal"></highlight></codeline>
+<codeline lineno="100"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>results<sp/>=<sp/>mag_search_index.query(query_batch,<sp/>top_k=5)</highlight></codeline>
+<codeline lineno="101"><highlight class="normal"></highlight></codeline>
+<codeline lineno="102"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>(</highlight></codeline>
+<codeline lineno="103"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>image_ask_html</highlight></codeline>
+<codeline lineno="104"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>+<sp/>f</highlight><highlight class="stringliteral">&quot;&quot;&quot;</highlight></codeline>
+<codeline lineno="105"><highlight class="stringliteral"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;br&gt;&lt;/br&gt;</highlight></codeline>
+<codeline lineno="106"><highlight class="stringliteral"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;img<sp/>src=&quot;{request.url}/get_image?index={results[0][0]}&quot;</highlight><highlight class="normal"><sp/>height=</highlight><highlight class="stringliteral">&quot;250&quot;</highlight><highlight class="normal">&gt;</highlight></codeline>
+<codeline lineno="107"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;img<sp/>src=</highlight><highlight class="stringliteral">&quot;{request.url}/get_image?index={results[0][1]}&quot;</highlight><highlight class="normal"><sp/>height=</highlight><highlight class="stringliteral">&quot;250&quot;</highlight><highlight class="normal">&gt;</highlight></codeline>
+<codeline lineno="108"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;img<sp/>src=</highlight><highlight class="stringliteral">&quot;{request.url}/get_image?index={results[0][2]}&quot;</highlight><highlight class="normal"><sp/>height=</highlight><highlight class="stringliteral">&quot;250&quot;</highlight><highlight class="normal">&gt;</highlight></codeline>
+<codeline lineno="109"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;img<sp/>src=</highlight><highlight class="stringliteral">&quot;{request.url}/get_image?index={results[0][3]}&quot;</highlight><highlight class="normal"><sp/>height=</highlight><highlight class="stringliteral">&quot;250&quot;</highlight><highlight class="normal">&gt;</highlight></codeline>
+<codeline lineno="110"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;img<sp/>src=</highlight><highlight class="stringliteral">&quot;{request.url}/get_image?index={results[0][4]}&quot;</highlight><highlight class="normal"><sp/>height=</highlight><highlight class="stringliteral">&quot;250&quot;</highlight><highlight class="normal">&gt;</highlight></codeline>
+<codeline lineno="111"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&quot;&quot;</highlight></codeline>
+<codeline lineno="112"><highlight class="stringliteral"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>)</highlight></codeline>
+<codeline lineno="113"><highlight class="stringliteral"></highlight></codeline>
+<codeline lineno="114"><highlight class="stringliteral"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">except</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="115"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>flash(</highlight><highlight class="stringliteral">&quot;Internal<sp/>server<sp/>error,<sp/>possibly<sp/>corrupted<sp/>image.&quot;</highlight><highlight class="normal">)</highlight></codeline>
+<codeline lineno="116"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>redirect(request.url)</highlight></codeline>
+<codeline lineno="117"><highlight class="normal"></highlight></codeline>
+<codeline lineno="118"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>image_ask_html</highlight></codeline>
+<codeline lineno="119"><highlight class="normal"></highlight></codeline>
+<codeline lineno="120"><highlight class="normal"></highlight></codeline>
+<codeline lineno="121"><highlight class="normal"></highlight><highlight class="preprocessor">@app.route(&quot;/get_image&quot;)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="122"><highlight class="normal"></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal">get_image():</highlight></codeline>
+<codeline lineno="123"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/></highlight><highlight class="stringliteral">&quot;index&quot;</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordflow">not</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordflow">in</highlight><highlight class="normal"><sp/>request.args:</highlight></codeline>
+<codeline lineno="124"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>abort(400)</highlight></codeline>
+<codeline lineno="125"><highlight class="normal"><sp/><sp/><sp/><sp/>file_id<sp/>=<sp/>int(request.args.get(</highlight><highlight class="stringliteral">&quot;index&quot;</highlight><highlight class="normal">))</highlight></codeline>
+<codeline lineno="126"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>file_id<sp/>&lt;<sp/>0<sp/></highlight><highlight class="keywordflow">or</highlight><highlight class="normal"><sp/>file_id<sp/>&gt;=<sp/>len(file_name_index):</highlight></codeline>
+<codeline lineno="127"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>abort(400)</highlight></codeline>
+<codeline lineno="128"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>send_file(file_name_index[file_id],<sp/>mimetype=</highlight><highlight class="stringliteral">&quot;image/jpeg&quot;</highlight><highlight class="normal">)</highlight></codeline>
+    </programlisting>
+    <location file="search/experimental/image_flask_app.py"/>
+  </compounddef>
+</doxygen>

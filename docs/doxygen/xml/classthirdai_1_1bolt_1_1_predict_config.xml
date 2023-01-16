@@ -1,0 +1,299 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_predict_config" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::bolt::PredictConfig</compoundname>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_predict_config_1abe64f607f903e158a82ae83b243e57c5" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt;std::string&gt; thirdai::bolt::PredictConfig::_metric_names</definition>
+        <argsstring></argsstring>
+        <name>_metric_names</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::_metric_names</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="68" column="15" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="68" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_predict_config_1adb8cf4a7ebdaff064923d3bbd3010891" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::PredictConfig::_use_sparse_inference</definition>
+        <argsstring></argsstring>
+        <name>_use_sparse_inference</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::_use_sparse_inference</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="69" column="8" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="69" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_predict_config_1af94963a2cc952f89d2823178ebfa4f84" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::PredictConfig::_verbose</definition>
+        <argsstring></argsstring>
+        <name>_verbose</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::_verbose</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="69" column="30" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="69" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_predict_config_1a7cfb7d6e47cb919889347462e626de30" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::PredictConfig::_return_activations</definition>
+        <argsstring></argsstring>
+        <name>_return_activations</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::_return_activations</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="69" column="39" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="69" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_predict_config_1af47761dfcc385bd594445450bf273870" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; std::function&lt; void(const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;)&gt; &gt;</type>
+        <definition>std::optional&lt;std::function&lt;void(const BoltVector&amp;)&gt; &gt; thirdai::bolt::PredictConfig::_output_callback</definition>
+        <argsstring></argsstring>
+        <name>_output_callback</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::_output_callback</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="70" column="17" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="70" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_predict_config_1a233d5f789085589254a3d692f7a6f254" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1bolt_1_1_predict_config" kindref="compound">PredictConfig</ref></type>
+        <definition>static PredictConfig thirdai::bolt::PredictConfig::makeConfig</definition>
+        <argsstring>()</argsstring>
+        <name>makeConfig</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::makeConfig</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="18" column="24" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="18" bodyend="18"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_predict_config_1abcccb5a941a8c4d79eb0a382f5dc9126" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1bolt_1_1_predict_config" kindref="compound">PredictConfig</ref> &amp;</type>
+        <definition>PredictConfig &amp; thirdai::bolt::PredictConfig::enableSparseInference</definition>
+        <argsstring>()</argsstring>
+        <name>enableSparseInference</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::enableSparseInference</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="20" column="17" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="20" bodyend="23"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_predict_config_1a4095411a198376667208a221e4ff4885" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1bolt_1_1_predict_config" kindref="compound">PredictConfig</ref> &amp;</type>
+        <definition>PredictConfig &amp; thirdai::bolt::PredictConfig::withMetrics</definition>
+        <argsstring>(std::vector&lt; std::string &gt; metric_names)</argsstring>
+        <name>withMetrics</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::withMetrics</qualifiedname>
+        <param>
+          <type>std::vector&lt; std::string &gt;</type>
+          <declname>metric_names</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="25" column="17" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="25" bodyend="28"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_predict_config_1a4d1826b6e916f0ab67ab5699ebcb651c" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1bolt_1_1_predict_config" kindref="compound">PredictConfig</ref> &amp;</type>
+        <definition>PredictConfig &amp; thirdai::bolt::PredictConfig::returnActivations</definition>
+        <argsstring>()</argsstring>
+        <name>returnActivations</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::returnActivations</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="30" column="17" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="30" bodyend="33"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_predict_config_1a771f4c891af4386d4669361a88567247" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1bolt_1_1_predict_config" kindref="compound">PredictConfig</ref> &amp;</type>
+        <definition>PredictConfig &amp; thirdai::bolt::PredictConfig::silence</definition>
+        <argsstring>()</argsstring>
+        <name>silence</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::silence</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="35" column="17" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="35" bodyend="38"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_predict_config_1a29f49353a9a7414d5844bbb101a403dd" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1bolt_1_1_predict_config" kindref="compound">PredictConfig</ref> &amp;</type>
+        <definition>PredictConfig &amp; thirdai::bolt::PredictConfig::withOutputCallback</definition>
+        <argsstring>(const std::function&lt; void(const BoltVector &amp;)&gt; &amp;output_callback)</argsstring>
+        <name>withOutputCallback</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::withOutputCallback</qualifiedname>
+        <param>
+          <type>const std::function&lt; void(const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;)&gt; &amp;</type>
+          <declname>output_callback</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="40" column="17" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="40" bodyend="44"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_predict_config_1aa687fa02349c5d12a185dacb5a8a26dc" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::PredictConfig::sparseInferenceEnabled</definition>
+        <argsstring>() const</argsstring>
+        <name>sparseInferenceEnabled</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::sparseInferenceEnabled</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="46" column="8" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="46" bodyend="46"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_predict_config_1ace918708ab5aead211e0c2013c3b4fbf" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1bolt_1_1_metric_aggregator" kindref="compound">MetricAggregator</ref></type>
+        <definition>MetricAggregator thirdai::bolt::PredictConfig::getMetricAggregator</definition>
+        <argsstring>() const</argsstring>
+        <name>getMetricAggregator</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::getMetricAggregator</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="48" column="20" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="48" bodyend="50"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_predict_config_1a547e0cd47066b6ff6e429529c1be2b6a" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt; std::string &gt; thirdai::bolt::PredictConfig::getMetricNames</definition>
+        <argsstring>() const</argsstring>
+        <name>getMetricNames</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::getMetricNames</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="52" column="15" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="52" bodyend="52"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_predict_config_1aae721db0b9ed7a76859f150a05eb4ed6" prot="public" static="no" constexpr="yes" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>constexpr bool</type>
+        <definition>constexpr bool thirdai::bolt::PredictConfig::verbose</definition>
+        <argsstring>() const</argsstring>
+        <name>verbose</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::verbose</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="54" column="18" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="54" bodyend="54"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_predict_config_1ae8e446f8c4ec7d419a98d77bfaa27e49" prot="public" static="no" constexpr="yes" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>constexpr bool</type>
+        <definition>constexpr bool thirdai::bolt::PredictConfig::shouldReturnActivations</definition>
+        <argsstring>() const</argsstring>
+        <name>shouldReturnActivations</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::shouldReturnActivations</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="56" column="18" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="56" bodyend="56"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_predict_config_1add76d47784c08ec4a267fd154e859fab" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>auto</type>
+        <definition>auto thirdai::bolt::PredictConfig::outputCallback</definition>
+        <argsstring>() const</argsstring>
+        <name>outputCallback</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::outputCallback</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="58" column="8" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="58" bodyend="58"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_predict_config_1aaeef80d0d4c9387fadf4508b1ed47f38" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::PredictConfig::PredictConfig</definition>
+        <argsstring>()</argsstring>
+        <name>PredictConfig</name>
+        <qualifiedname>thirdai::bolt::PredictConfig::PredictConfig</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="61" column="3" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="61" bodyend="66"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/graph/ExecutionConfig.h" line="16" column="1" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="16" bodyend="71"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1abe64f607f903e158a82ae83b243e57c5" prot="private" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>_metric_names</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1af47761dfcc385bd594445450bf273870" prot="private" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>_output_callback</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1a7cfb7d6e47cb919889347462e626de30" prot="private" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>_return_activations</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1adb8cf4a7ebdaff064923d3bbd3010891" prot="private" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>_use_sparse_inference</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1af94963a2cc952f89d2823178ebfa4f84" prot="private" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>_verbose</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1abcccb5a941a8c4d79eb0a382f5dc9126" prot="public" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>enableSparseInference</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1ace918708ab5aead211e0c2013c3b4fbf" prot="public" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>getMetricAggregator</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1a547e0cd47066b6ff6e429529c1be2b6a" prot="public" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>getMetricNames</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1a233d5f789085589254a3d692f7a6f254" prot="public" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>makeConfig</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1add76d47784c08ec4a267fd154e859fab" prot="public" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>outputCallback</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1aaeef80d0d4c9387fadf4508b1ed47f38" prot="private" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>PredictConfig</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1a4d1826b6e916f0ab67ab5699ebcb651c" prot="public" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>returnActivations</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1ae8e446f8c4ec7d419a98d77bfaa27e49" prot="public" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>shouldReturnActivations</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1a771f4c891af4386d4669361a88567247" prot="public" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>silence</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1aa687fa02349c5d12a185dacb5a8a26dc" prot="public" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>sparseInferenceEnabled</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1aae721db0b9ed7a76859f150a05eb4ed6" prot="public" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>verbose</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1a4095411a198376667208a221e4ff4885" prot="public" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>withMetrics</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_predict_config_1a29f49353a9a7414d5844bbb101a403dd" prot="public" virt="non-virtual"><scope>thirdai::bolt::PredictConfig</scope><name>withOutputCallback</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

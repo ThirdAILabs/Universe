@@ -1,0 +1,260 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema" kind="struct" language="C++" prot="public">
+    <compoundname>thirdai::bolt::sequential_classifier::Schema</compoundname>
+    <includes refid="_sequential_utils_8h" local="no">SequentialUtils.h</includes>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a825ab08241fa11b82749a16b9badc5e6" prot="public" static="no" mutable="no">
+        <type>CategoricalPair</type>
+        <definition>CategoricalPair thirdai::bolt::sequential_classifier::Schema::user</definition>
+        <argsstring></argsstring>
+        <name>user</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::user</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="62" column="19" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="62" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a0829b81ae3ce3d800734fb50505ae920" prot="public" static="no" mutable="no">
+        <type>CategoricalPair</type>
+        <definition>CategoricalPair thirdai::bolt::sequential_classifier::Schema::label</definition>
+        <argsstring></argsstring>
+        <name>label</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::label</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="63" column="19" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="63" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a14ee27ef076fc779e18f9b347aac0307" prot="public" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string thirdai::bolt::sequential_classifier::Schema::timestamp_col_name</definition>
+        <argsstring></argsstring>
+        <name>timestamp_col_name</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::timestamp_col_name</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="64" column="15" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="64" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a0414438207e82bcc6f36924801bedeab" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt;std::string&gt; thirdai::bolt::sequential_classifier::Schema::static_text_col_names</definition>
+        <argsstring></argsstring>
+        <name>static_text_col_names</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::static_text_col_names</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="65" column="15" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="65" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1add842f01661e5c3caf3e45df10d71601" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; CategoricalPair &gt;</type>
+        <definition>std::vector&lt;CategoricalPair&gt; thirdai::bolt::sequential_classifier::Schema::static_category</definition>
+        <argsstring></argsstring>
+        <name>static_category</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::static_category</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="66" column="15" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="66" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1aa2427b7a756f0a5eb9ae751015ae9eb4" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; SequentialTriplet &gt;</type>
+        <definition>std::vector&lt;SequentialTriplet&gt; thirdai::bolt::sequential_classifier::Schema::track_categories</definition>
+        <argsstring></argsstring>
+        <name>track_categories</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::track_categories</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="67" column="15" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="67" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1ab10fdc8ba4909c437fc02316380c4f37" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt;std::string&gt; thirdai::bolt::sequential_classifier::Schema::track_quantities</definition>
+        <argsstring></argsstring>
+        <name>track_quantities</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::track_quantities</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="68" column="15" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="68" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a17006856d341edd9f88a68128efc7a53" prot="public" static="no" mutable="no">
+        <type>std::optional&lt; char &gt;</type>
+        <definition>std::optional&lt;char&gt; thirdai::bolt::sequential_classifier::Schema::multi_class_delim</definition>
+        <argsstring></argsstring>
+        <name>multi_class_delim</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::multi_class_delim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="69" column="17" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="69" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1aaa8de803a209c014df77021bb71b9af1" prot="public" static="no" mutable="no">
+        <type>std::optional&lt; uint32_t &gt;</type>
+        <definition>std::optional&lt;uint32_t&gt; thirdai::bolt::sequential_classifier::Schema::time_to_predict_ahead</definition>
+        <argsstring></argsstring>
+        <name>time_to_predict_ahead</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::time_to_predict_ahead</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="70" column="17" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="70" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1adfc9c50e8acf2a99c1417bde2e1edf13" prot="public" static="no" mutable="no">
+        <type>std::optional&lt; uint32_t &gt;</type>
+        <definition>std::optional&lt;uint32_t&gt; thirdai::bolt::sequential_classifier::Schema::history_length_for_inference</definition>
+        <argsstring></argsstring>
+        <name>history_length_for_inference</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::history_length_for_inference</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="71" column="17" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="71" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1ab9ad60a1b741076f815416af5e5069fb" prot="public" static="no" mutable="no">
+        <type>dataset::QuantityTrackingGranularity</type>
+        <definition>dataset::QuantityTrackingGranularity thirdai::bolt::sequential_classifier::Schema::time_granularity</definition>
+        <argsstring></argsstring>
+        <name>time_granularity</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::time_granularity</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="72" column="40" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="72" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="98" column="16" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="98" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a3531e0d9f38b4d8608983b801b337539" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::sequential_classifier::Schema::Schema</definition>
+        <argsstring>()</argsstring>
+        <name>Schema</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::Schema</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="74" column="3" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="74" bodyend="74"/>
+      </memberdef>
+      <memberdef kind="function" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1af0d1fe9252c9f768b7a623c0a6062a7a" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::unordered_set&lt; std::string &gt;</type>
+        <definition>std::unordered_set&lt; std::string &gt; thirdai::bolt::sequential_classifier::Schema::allColumnNames</definition>
+        <argsstring>() const</argsstring>
+        <name>allColumnNames</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::allColumnNames</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="76" column="22" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="76" bodyend="94"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a3d4bc39809af87723594a4d356972bc3" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::bolt::sequential_classifier::Schema::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Schema::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="100" column="8" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="100" bodyend="105"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>Stores the dataset configuration. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="61" column="1" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="61" bodyend="106"/>
+    <listofallmembers>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1af0d1fe9252c9f768b7a623c0a6062a7a" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>allColumnNames</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>cereal::access</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1adfc9c50e8acf2a99c1417bde2e1edf13" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>history_length_for_inference</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a0829b81ae3ce3d800734fb50505ae920" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>label</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a17006856d341edd9f88a68128efc7a53" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>multi_class_delim</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a3531e0d9f38b4d8608983b801b337539" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>Schema</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a3d4bc39809af87723594a4d356972bc3" prot="private" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>serialize</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1add842f01661e5c3caf3e45df10d71601" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>static_category</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a0414438207e82bcc6f36924801bedeab" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>static_text_col_names</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1ab9ad60a1b741076f815416af5e5069fb" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>time_granularity</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1aaa8de803a209c014df77021bb71b9af1" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>time_to_predict_ahead</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a14ee27ef076fc779e18f9b347aac0307" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>timestamp_col_name</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1aa2427b7a756f0a5eb9ae751015ae9eb4" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>track_categories</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1ab10fdc8ba4909c437fc02316380c4f37" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>track_quantities</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema_1a825ab08241fa11b82749a16b9badc5e6" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Schema</scope><name>user</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

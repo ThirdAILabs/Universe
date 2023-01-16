@@ -1,0 +1,270 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_block_batch_processor" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::dataset::BlockBatchProcessor</compoundname>
+    <includes refid="_block_batch_processor_8h" local="no">BlockBatchProcessor.h</includes>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_block_batch_processor_1a1725958b636396852cf1654bca77f9e0" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::BlockBatchProcessor::_batch_size</definition>
+        <argsstring></argsstring>
+        <name>_batch_size</name>
+        <qualifiedname>thirdai::dataset::BlockBatchProcessor::_batch_size</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/core/BlockBatchProcessor.h" line="53" column="12" bodyfile="dataset/src/core/BlockBatchProcessor.h" bodystart="53" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_block_batch_processor_1a677c5edadfa3d988d91e9fa6673aad90" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::BlockBatchProcessor::_input_blocks_dense</definition>
+        <argsstring></argsstring>
+        <name>_input_blocks_dense</name>
+        <qualifiedname>thirdai::dataset::BlockBatchProcessor::_input_blocks_dense</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/core/BlockBatchProcessor.h" line="54" column="8" bodyfile="dataset/src/core/BlockBatchProcessor.h" bodystart="54" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_block_batch_processor_1a48bb754783717880658049bf024b57c1" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::BlockBatchProcessor::_target_blocks_dense</definition>
+        <argsstring></argsstring>
+        <name>_target_blocks_dense</name>
+        <qualifiedname>thirdai::dataset::BlockBatchProcessor::_target_blocks_dense</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/core/BlockBatchProcessor.h" line="55" column="8" bodyfile="dataset/src/core/BlockBatchProcessor.h" bodystart="55" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_block_batch_processor_1ac6b5bd4e166d58f0c917654a3fe26843" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &gt;</type>
+        <definition>std::vector&lt;BoltVector&gt; thirdai::dataset::BlockBatchProcessor::_input_vectors</definition>
+        <argsstring></argsstring>
+        <name>_input_vectors</name>
+        <qualifiedname>thirdai::dataset::BlockBatchProcessor::_input_vectors</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/core/BlockBatchProcessor.h" line="56" column="15" bodyfile="dataset/src/core/BlockBatchProcessor.h" bodystart="56" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_block_batch_processor_1af750647f075ae7f0ed22cba9aaf60388" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; std::vector&lt; <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &gt; &gt;</type>
+        <definition>std::optional&lt;std::vector&lt;BoltVector&gt; &gt; thirdai::dataset::BlockBatchProcessor::_target_vectors</definition>
+        <argsstring></argsstring>
+        <name>_target_vectors</name>
+        <qualifiedname>thirdai::dataset::BlockBatchProcessor::_target_vectors</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/core/BlockBatchProcessor.h" line="57" column="17" bodyfile="dataset/src/core/BlockBatchProcessor.h" bodystart="57" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_block_batch_processor_1afbbaca9841fb2bd7c476f1669c26dccc" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt; &gt;</type>
+        <definition>std::vector&lt;std::shared_ptr&lt;Block&gt; &gt; thirdai::dataset::BlockBatchProcessor::_input_blocks</definition>
+        <argsstring></argsstring>
+        <name>_input_blocks</name>
+        <qualifiedname>thirdai::dataset::BlockBatchProcessor::_input_blocks</qualifiedname>
+        <briefdescription>
+<para>We save a copy of these vectors instead of just references because using references will cause errors when given Python lists through PyBind11. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>This is because while the PyBind11 creates an std::vector representation of a Python list when passing it to a C++ function, the vector does not persist beyond the function call, so future references to the vector will cause a segfault. Furthermore, these vectors are cheap to copy since they contain a small number of elements and each element is a pointer. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/core/BlockBatchProcessor.h" line="68" column="15" bodyfile="dataset/src/core/BlockBatchProcessor.h" bodystart="68" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_block_batch_processor_1afdb6f17a927f4f6836ebfc1ae727c982" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt; &gt;</type>
+        <definition>std::vector&lt;std::shared_ptr&lt;Block&gt; &gt; thirdai::dataset::BlockBatchProcessor::_target_blocks</definition>
+        <argsstring></argsstring>
+        <name>_target_blocks</name>
+        <qualifiedname>thirdai::dataset::BlockBatchProcessor::_target_blocks</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/core/BlockBatchProcessor.h" line="69" column="15" bodyfile="dataset/src/core/BlockBatchProcessor.h" bodystart="69" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_block_batch_processor_1a8b68ecf264374327c41820d08e693b3c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::BlockBatchProcessor::BlockBatchProcessor</definition>
+        <argsstring>(std::vector&lt; std::shared_ptr&lt; Block &gt; &gt; input_blocks, std::vector&lt; std::shared_ptr&lt; Block &gt; &gt; target_blocks, uint32_t output_batch_size, size_t est_num_elems=0)</argsstring>
+        <name>BlockBatchProcessor</name>
+        <qualifiedname>thirdai::dataset::BlockBatchProcessor::BlockBatchProcessor</qualifiedname>
+        <param>
+          <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt; &gt;</type>
+          <declname>input_blocks</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt; &gt;</type>
+          <declname>target_blocks</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>output_batch_size</declname>
+        </param>
+        <param>
+          <type>size_t</type>
+          <declname>est_num_elems</declname>
+          <defval>0</defval>
+        </param>
+        <briefdescription>
+<para>Here we copy input_blocks and target_blocks because when we accept a vector representation of a Python List created by PyBind11, the vector does not persist beyond this function call, which results in segfaults later down the line. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>It is therefore safest to just copy these vectors. Furthermore, these vectors are cheap to copy since they contain a small number of elements and each element is a pointer. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/core/BlockBatchProcessor.h" line="18" column="3" bodyfile="dataset/src/core/BlockBatchProcessor.cc" bodystart="16" bodyend="46"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_block_batch_processor_1aa0f825429397f54cee07d0b485062306" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::BlockBatchProcessor::processBatch</definition>
+        <argsstring>(std::vector&lt; std::vector&lt; std::string &gt; &gt; &amp;batch)</argsstring>
+        <name>processBatch</name>
+        <qualifiedname>thirdai::dataset::BlockBatchProcessor::processBatch</qualifiedname>
+        <param>
+          <type>std::vector&lt; std::vector&lt; std::string &gt; &gt; &amp;</type>
+          <declname>batch</declname>
+        </param>
+        <briefdescription>
+<para>Consumes a batch of input samples and encodes them as vectors. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/core/BlockBatchProcessor.h" line="26" column="8" bodyfile="dataset/src/core/BlockBatchProcessor.cc" bodystart="48" bodyend="84"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_block_batch_processor_1a4d38b9681705a2f891c13068df975a86" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::pair&lt; BoltDatasetPtr, BoltDatasetPtr &gt;</type>
+        <definition>std::pair&lt; BoltDatasetPtr, BoltDatasetPtr &gt; thirdai::dataset::BlockBatchProcessor::exportInMemoryDataset</definition>
+        <argsstring>(bool shuffle=false, uint32_t shuffle_seed=std::rand())</argsstring>
+        <name>exportInMemoryDataset</name>
+        <qualifiedname>thirdai::dataset::BlockBatchProcessor::exportInMemoryDataset</qualifiedname>
+        <param>
+          <type>bool</type>
+          <declname>shuffle</declname>
+          <defval>false</defval>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>shuffle_seed</declname>
+          <defval>std::rand()</defval>
+        </param>
+        <briefdescription>
+<para>Produces an DatasetWithLabels containing the vectors processed so far. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>This method can optionally produce a shuffled dataset. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/core/BlockBatchProcessor.h" line="33" column="13" bodyfile="dataset/src/core/BlockBatchProcessor.cc" bodystart="87" bodyend="143"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-static-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_block_batch_processor_1aff9c1dd385a99686ffaa1160e055b45b" prot="private" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt; uint32_t &gt; thirdai::dataset::BlockBatchProcessor::makeFinalPositions</definition>
+        <argsstring>(uint32_t n_exported, bool shuffle, uint32_t shuffle_seed)</argsstring>
+        <name>makeFinalPositions</name>
+        <qualifiedname>thirdai::dataset::BlockBatchProcessor::makeFinalPositions</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_exported</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>shuffle</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>shuffle_seed</declname>
+        </param>
+        <briefdescription>
+<para>Produces a mapping from the final position of a vector in the exported dataset to its original position based on the shuffle and shuffle_seed arguments. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/core/BlockBatchProcessor.h" line="42" column="22" bodyfile="dataset/src/core/BlockBatchProcessor.cc" bodystart="145" bodyend="159"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_block_batch_processor_1a163dbc69ec23be52a923fa82d375cb7d" prot="private" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::exception_ptr</type>
+        <definition>std::exception_ptr thirdai::dataset::BlockBatchProcessor::makeVector</definition>
+        <argsstring>(std::vector&lt; std::string &gt; &amp;sample, BoltVector &amp;vector, std::vector&lt; std::shared_ptr&lt; Block &gt; &gt; &amp;blocks, bool blocks_dense)</argsstring>
+        <name>makeVector</name>
+        <qualifiedname>thirdai::dataset::BlockBatchProcessor::makeVector</qualifiedname>
+        <param>
+          <type>std::vector&lt; std::string &gt; &amp;</type>
+          <declname>sample</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>vector</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt; &gt; &amp;</type>
+          <declname>blocks</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>blocks_dense</declname>
+        </param>
+        <briefdescription>
+<para>Encodes a sample as a <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> according to the given blocks. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/core/BlockBatchProcessor.h" line="49" column="29" bodyfile="dataset/src/core/BlockBatchProcessor.cc" bodystart="161" bodyend="187"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>Encodes input samples – each represented by a sequence of strings – as input and target BoltVectors according to the given blocks. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>It processes these sequences in batches. </para>
+    </detaileddescription>
+    <location file="dataset/src/core/BlockBatchProcessor.h" line="16" column="1" bodyfile="dataset/src/core/BlockBatchProcessor.h" bodystart="16" bodyend="70"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_block_batch_processor_1a1725958b636396852cf1654bca77f9e0" prot="private" virt="non-virtual"><scope>thirdai::dataset::BlockBatchProcessor</scope><name>_batch_size</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_batch_processor_1afbbaca9841fb2bd7c476f1669c26dccc" prot="private" virt="non-virtual"><scope>thirdai::dataset::BlockBatchProcessor</scope><name>_input_blocks</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_batch_processor_1a677c5edadfa3d988d91e9fa6673aad90" prot="private" virt="non-virtual"><scope>thirdai::dataset::BlockBatchProcessor</scope><name>_input_blocks_dense</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_batch_processor_1ac6b5bd4e166d58f0c917654a3fe26843" prot="private" virt="non-virtual"><scope>thirdai::dataset::BlockBatchProcessor</scope><name>_input_vectors</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_batch_processor_1afdb6f17a927f4f6836ebfc1ae727c982" prot="private" virt="non-virtual"><scope>thirdai::dataset::BlockBatchProcessor</scope><name>_target_blocks</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_batch_processor_1a48bb754783717880658049bf024b57c1" prot="private" virt="non-virtual"><scope>thirdai::dataset::BlockBatchProcessor</scope><name>_target_blocks_dense</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_batch_processor_1af750647f075ae7f0ed22cba9aaf60388" prot="private" virt="non-virtual"><scope>thirdai::dataset::BlockBatchProcessor</scope><name>_target_vectors</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_batch_processor_1a8b68ecf264374327c41820d08e693b3c" prot="public" virt="non-virtual"><scope>thirdai::dataset::BlockBatchProcessor</scope><name>BlockBatchProcessor</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_batch_processor_1a4d38b9681705a2f891c13068df975a86" prot="public" virt="non-virtual"><scope>thirdai::dataset::BlockBatchProcessor</scope><name>exportInMemoryDataset</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_batch_processor_1aff9c1dd385a99686ffaa1160e055b45b" prot="private" virt="non-virtual"><scope>thirdai::dataset::BlockBatchProcessor</scope><name>makeFinalPositions</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_batch_processor_1a163dbc69ec23be52a923fa82d375cb7d" prot="private" virt="non-virtual"><scope>thirdai::dataset::BlockBatchProcessor</scope><name>makeVector</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_batch_processor_1aa0f825429397f54cee07d0b485062306" prot="public" virt="non-virtual"><scope>thirdai::dataset::BlockBatchProcessor</scope><name>processBatch</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

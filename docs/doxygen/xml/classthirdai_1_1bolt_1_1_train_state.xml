@@ -1,0 +1,298 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_train_state" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::bolt::TrainState</compoundname>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_train_state_1a8adec5c69088ac8b842b564def49b523" prot="public" static="no" mutable="no">
+        <type>float</type>
+        <definition>float thirdai::bolt::TrainState::learning_rate</definition>
+        <argsstring></argsstring>
+        <name>learning_rate</name>
+        <qualifiedname>thirdai::bolt::TrainState::learning_rate</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="308" column="9" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="308" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_train_state_1aefb7d92f4230d9e58881f6ebab8615a2" prot="public" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::TrainState::epoch</definition>
+        <argsstring></argsstring>
+        <name>epoch</name>
+        <qualifiedname>thirdai::bolt::TrainState::epoch</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="309" column="12" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="309" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_train_state_1a25a697708980dc77a0a22671f08390e8" prot="public" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t thirdai::bolt::TrainState::batch_cnt</definition>
+        <argsstring></argsstring>
+        <name>batch_cnt</name>
+        <qualifiedname>thirdai::bolt::TrainState::batch_cnt</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="310" column="12" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="310" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_train_state_1a021a5c2469c246932f17c5edb669e7fe" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::TrainState::verbose</definition>
+        <argsstring></argsstring>
+        <name>verbose</name>
+        <qualifiedname>thirdai::bolt::TrainState::verbose</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="311" column="8" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="311" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_train_state_1a10699ecdfce3a63a4ee9b8fc6b4e630e" prot="public" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::TrainState::rebuild_hash_tables_batch</definition>
+        <argsstring></argsstring>
+        <name>rebuild_hash_tables_batch</name>
+        <qualifiedname>thirdai::bolt::TrainState::rebuild_hash_tables_batch</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="313" column="12" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="313" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_train_state_1aecf4a114f7e1a2c43c7110fc551f8342" prot="public" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::TrainState::reconstruct_hash_functions_batch</definition>
+        <argsstring></argsstring>
+        <name>reconstruct_hash_functions_batch</name>
+        <qualifiedname>thirdai::bolt::TrainState::reconstruct_hash_functions_batch</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="314" column="12" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="314" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_train_state_1a44d80185e65b0713c47ea79d739171bd" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::TrainState::stop_training</definition>
+        <argsstring></argsstring>
+        <name>stop_training</name>
+        <qualifiedname>thirdai::bolt::TrainState::stop_training</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="316" column="8" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="316" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_train_state_1ac2b272fb40640272afa8392482c8c76d" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; double &gt;</type>
+        <definition>std::vector&lt;double&gt; thirdai::bolt::TrainState::epoch_times</definition>
+        <argsstring></argsstring>
+        <name>epoch_times</name>
+        <qualifiedname>thirdai::bolt::TrainState::epoch_times</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="318" column="15" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="318" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_train_state_1adc5a51d7fe78ffbe9480c44cfa2d48e5" prot="private" static="no" mutable="no">
+        <type><ref refid="classthirdai_1_1bolt_1_1_metric_aggregator" kindref="compound">MetricAggregator</ref></type>
+        <definition>MetricAggregator thirdai::bolt::TrainState::train_metric_aggregator</definition>
+        <argsstring></argsstring>
+        <name>train_metric_aggregator</name>
+        <qualifiedname>thirdai::bolt::TrainState::train_metric_aggregator</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="350" column="20" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="350" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_train_state_1a2fa1790e46985cb54f8c2a73f859fcbd" prot="private" static="no" mutable="no">
+        <type>std::unordered_map&lt; std::string, std::vector&lt; double &gt; &gt;</type>
+        <definition>std::unordered_map&lt;std::string, std::vector&lt;double&gt; &gt; thirdai::bolt::TrainState::validation_metrics</definition>
+        <argsstring></argsstring>
+        <name>validation_metrics</name>
+        <qualifiedname>thirdai::bolt::TrainState::validation_metrics</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="351" column="22" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="351" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_train_state_1a2aa0987eca3963a8182acadf7acf280d" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::TrainState::TrainState</definition>
+        <argsstring>(const TrainConfig &amp;train_config, uint32_t batch_size, uint32_t data_len)</argsstring>
+        <name>TrainState</name>
+        <qualifiedname>thirdai::bolt::TrainState::TrainState</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1bolt_1_1_train_config" kindref="compound">TrainConfig</ref> &amp;</type>
+          <declname>train_config</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>data_len</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="293" column="3" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="293" bodyend="306"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_train_state_1a2889c42958cb4d99ddd9d31c989cd0f6" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1bolt_1_1_metric_aggregator" kindref="compound">MetricAggregator</ref> &amp;</type>
+        <definition>MetricAggregator &amp; thirdai::bolt::TrainState::getTrainMetricAggregator</definition>
+        <argsstring>()</argsstring>
+        <name>getTrainMetricAggregator</name>
+        <qualifiedname>thirdai::bolt::TrainState::getTrainMetricAggregator</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="320" column="20" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="320" bodyend="322"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_train_state_1ad3f8a145dbf574ee0959ecfd66892edc" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::TrainState::updateValidationMetrics</definition>
+        <argsstring>(const InferenceMetricData &amp;metric_data)</argsstring>
+        <name>updateValidationMetrics</name>
+        <qualifiedname>thirdai::bolt::TrainState::updateValidationMetrics</qualifiedname>
+        <param>
+          <type>const InferenceMetricData &amp;</type>
+          <declname>metric_data</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="324" column="8" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="324" bodyend="328"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_train_state_1af437cce790bfdad85e5dfd6284b2b840" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>const std::vector&lt; double &gt; &amp;</type>
+        <definition>const std::vector&lt; double &gt; &amp; thirdai::bolt::TrainState::getTrainMetrics</definition>
+        <argsstring>(const std::string &amp;metric_name)</argsstring>
+        <name>getTrainMetrics</name>
+        <qualifiedname>thirdai::bolt::TrainState::getTrainMetrics</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>metric_name</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="330" column="21" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="330" bodyend="332"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_train_state_1a2ee28ff3c1b8a5452a55d2fc1d5b6209" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>MetricData</type>
+        <definition>MetricData thirdai::bolt::TrainState::getAllTrainMetrics</definition>
+        <argsstring>()</argsstring>
+        <name>getAllTrainMetrics</name>
+        <qualifiedname>thirdai::bolt::TrainState::getAllTrainMetrics</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="334" column="14" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="334" bodyend="336"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_train_state_1af418f4978b286d626bd44bb47089a8c7" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>const std::vector&lt; double &gt; &amp;</type>
+        <definition>const std::vector&lt; double &gt; &amp; thirdai::bolt::TrainState::getValidationMetrics</definition>
+        <argsstring>(const std::string &amp;metric_name)</argsstring>
+        <name>getValidationMetrics</name>
+        <qualifiedname>thirdai::bolt::TrainState::getValidationMetrics</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>metric_name</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="338" column="21" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="338" bodyend="345"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_train_state_1aa5ef7f62f4ee0f6250ff032956345f97" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>const auto &amp;</type>
+        <definition>const auto &amp; thirdai::bolt::TrainState::getAllValidationMetrics</definition>
+        <argsstring>()</argsstring>
+        <name>getAllValidationMetrics</name>
+        <qualifiedname>thirdai::bolt::TrainState::getAllValidationMetrics</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/ExecutionConfig.h" line="347" column="14" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="347" bodyend="347"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/graph/ExecutionConfig.h" line="291" column="1" bodyfile="bolt/src/graph/ExecutionConfig.h" bodystart="291" bodyend="352"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1a25a697708980dc77a0a22671f08390e8" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>batch_cnt</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1aefb7d92f4230d9e58881f6ebab8615a2" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>epoch</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1ac2b272fb40640272afa8392482c8c76d" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>epoch_times</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1a2ee28ff3c1b8a5452a55d2fc1d5b6209" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>getAllTrainMetrics</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1aa5ef7f62f4ee0f6250ff032956345f97" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>getAllValidationMetrics</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1a2889c42958cb4d99ddd9d31c989cd0f6" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>getTrainMetricAggregator</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1af437cce790bfdad85e5dfd6284b2b840" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>getTrainMetrics</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1af418f4978b286d626bd44bb47089a8c7" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>getValidationMetrics</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1a8adec5c69088ac8b842b564def49b523" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>learning_rate</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1a10699ecdfce3a63a4ee9b8fc6b4e630e" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>rebuild_hash_tables_batch</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1aecf4a114f7e1a2c43c7110fc551f8342" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>reconstruct_hash_functions_batch</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1a44d80185e65b0713c47ea79d739171bd" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>stop_training</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1adc5a51d7fe78ffbe9480c44cfa2d48e5" prot="private" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>train_metric_aggregator</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1a2aa0987eca3963a8182acadf7acf280d" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>TrainState</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1ad3f8a145dbf574ee0959ecfd66892edc" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>updateValidationMetrics</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1a2fa1790e46985cb54f8c2a73f859fcbd" prot="private" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>validation_metrics</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_train_state_1a021a5c2469c246932f17c5edb669e7fe" prot="public" virt="non-virtual"><scope>thirdai::bolt::TrainState</scope><name>verbose</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

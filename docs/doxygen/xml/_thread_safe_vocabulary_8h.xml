@@ -1,0 +1,295 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_thread_safe_vocabulary_8h" kind="file" language="C++">
+    <compoundname>ThreadSafeVocabulary.h</compoundname>
+    <includes local="no">cereal/archives/binary.hpp</includes>
+    <includes local="no">cereal/types/unordered_map.hpp</includes>
+    <includes local="no">cereal/types/vector.hpp</includes>
+    <includes local="no">memory</includes>
+    <includes local="no">optional</includes>
+    <includes local="no">sstream</includes>
+    <includes local="no">stdexcept</includes>
+    <includes local="no">string</includes>
+    <includes local="no">unordered_map</includes>
+    <includes local="no">vector</includes>
+    <includedby refid="_sequential_utils_8h" local="no">bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h</includedby>
+    <includedby refid="_tabular_metadata_processor_8h" local="no">dataset/src/batch_processors/TabularMetadataProcessor.h</includedby>
+    <includedby refid="_categorical_8h" local="no">dataset/src/blocks/Categorical.h</includedby>
+    <includedby refid="_user_item_history_8h" local="no">dataset/src/blocks/UserItemHistory.h</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>dataset/src/utils/ThreadSafeVocabulary.h</label>
+        <link refid="_thread_safe_vocabulary_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>cereal/archives/binary.hpp</label>
+      </node>
+      <node id="3">
+        <label>cereal/types/unordered_map.hpp</label>
+      </node>
+      <node id="4">
+        <label>cereal/types/vector.hpp</label>
+      </node>
+      <node id="5">
+        <label>memory</label>
+      </node>
+      <node id="6">
+        <label>optional</label>
+      </node>
+      <node id="7">
+        <label>sstream</label>
+      </node>
+      <node id="8">
+        <label>stdexcept</label>
+      </node>
+      <node id="9">
+        <label>string</label>
+      </node>
+      <node id="10">
+        <label>unordered_map</label>
+      </node>
+      <node id="11">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="3">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h</label>
+        <link refid="_sequential_classifier_8h_source"/>
+      </node>
+      <node id="2">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h</label>
+        <link refid="_sequential_utils_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>dataset/src/batch_processors/TabularMetadataProcessor.h</label>
+        <link refid="_tabular_metadata_processor_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="6">
+        <label>dataset/src/blocks/Categorical.h</label>
+        <link refid="_categorical_8h_source"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>dataset/src/blocks/TabularPairGram.h</label>
+        <link refid="_tabular_pair_gram_8h_source"/>
+      </node>
+      <node id="7">
+        <label>dataset/src/blocks/UserItemHistory.h</label>
+        <link refid="_user_item_history_8h_source"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>dataset/src/utils/ThreadSafeVocabulary.h</label>
+        <link refid="_thread_safe_vocabulary_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classthirdai_1_1dataset_1_1_thread_safe_vocabulary" prot="public">thirdai::dataset::ThreadSafeVocabulary</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1dataset">thirdai::dataset</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/archives/binary.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/types/unordered_map.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/types/vector.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;memory&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;optional&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;sstream&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;stdexcept&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;unordered_map&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;vector&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::dataset<sp/>{</highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight></codeline>
+<codeline lineno="31" refid="classthirdai_1_1dataset_1_1_thread_safe_vocabulary" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1dataset_1_1_thread_safe_vocabulary" kindref="compound">ThreadSafeVocabulary</ref><sp/>{</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_thread_safe_vocabulary" kindref="compound">ThreadSafeVocabulary</ref>(uint32_t<sp/>vocab_size)</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>_fixed(</highlight><highlight class="keyword">false</highlight><highlight class="normal">),<sp/>_vocab_size(vocab_size)<sp/>{</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/>_string_to_uid.reserve(vocab_size);</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/><sp/><sp/><sp/>_uid_to_string.reserve(vocab_size);</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"></highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_thread_safe_vocabulary" kindref="compound">ThreadSafeVocabulary</ref>(</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::unordered_map&lt;std::string,<sp/>uint32_t&gt;&amp;&amp;<sp/>string_to_uid_map,<sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>fixed,</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::optional&lt;uint32_t&gt;<sp/>max_vocab_size<sp/>=<sp/>std::nullopt)</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>_fixed(fixed),<sp/>_string_to_uid(std::move(string_to_uid_map))<sp/>{</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(_fixed)<sp/>{</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_vocab_size<sp/>=<sp/>_string_to_uid.size();</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!max_vocab_size)<sp/>{</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;[ThreadSafeVocabulary]<sp/>max_vocab_size<sp/>must<sp/>be<sp/>supplied<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;if<sp/>fixed<sp/>=<sp/>false.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(max_vocab_size.value()<sp/>&lt;<sp/>_string_to_uid.size())<sp/>{</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::stringstream<sp/>error_ss;</highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>error_ss<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;[ThreadSafeVocabulary]<sp/>Invoked<sp/>unfixed<sp/>vocabulary<sp/>with<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;string_to_uid_map<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;with<sp/>more<sp/>elements<sp/>than<sp/>max_vocab_size<sp/>(&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;&lt;<sp/>_string_to_uid.size()<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;<sp/>vs.<sp/>&quot;</highlight><highlight class="normal"><sp/>&lt;&lt;<sp/>max_vocab_size.value()</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;).&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(error_ss.str());</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_vocab_size<sp/>=<sp/>max_vocab_size.value();</highlight></codeline>
+<codeline lineno="61"><highlight class="normal"></highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>we<sp/>reserve<sp/>here<sp/>to<sp/>preallocate<sp/>enough<sp/>memory<sp/>for<sp/>max_vocab_size<sp/>since</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>the<sp/>map<sp/>is<sp/>not<sp/>fixed<sp/>and<sp/>we<sp/>might<sp/>have<sp/>more<sp/>elements</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_string_to_uid.reserve(_vocab_size);</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_uid_to_string.reserve(_vocab_size);</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="67"><highlight class="normal"></highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>resize<sp/>here<sp/>so<sp/>we<sp/>can<sp/>access<sp/>0<sp/>to<sp/>map.size()<sp/>-<sp/>1<sp/>uids<sp/>with<sp/>[]<sp/>syntax</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="69"><highlight class="normal"><sp/><sp/><sp/><sp/>_uid_to_string.resize(_string_to_uid.size());</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">auto</highlight><highlight class="normal">&amp;<sp/>[</highlight><highlight class="keywordtype">string</highlight><highlight class="normal">,<sp/>uid]<sp/>:<sp/>_string_to_uid)<sp/>{</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(uid<sp/>&gt;=<sp/>_vocab_size)<sp/>{</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;[ThreadSafeVocabulary]<sp/>The<sp/>provided<sp/>string_to_uid_map<sp/>contains<sp/>a<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;uid<sp/>out<sp/>of<sp/>the<sp/>valid<sp/>range.<sp/>Provided<sp/>uid:<sp/>&quot;</highlight><highlight class="normal"><sp/>+</highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::to_string(uid)<sp/>+<sp/></highlight><highlight class="stringliteral">&quot;<sp/>but<sp/>expected<sp/>a<sp/>uid<sp/>in<sp/>the<sp/>range<sp/>0<sp/>to<sp/>&quot;</highlight><highlight class="normal"><sp/>+</highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::to_string(_vocab_size)<sp/>+<sp/></highlight><highlight class="stringliteral">&quot;<sp/>-<sp/>1&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_uid_to_string[uid]<sp/>=<sp/>string;</highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="81"><highlight class="normal"></highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/>uint32_t<sp/>getUid(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/></highlight><highlight class="keywordtype">string</highlight><highlight class="normal">)<sp/>{</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(_fixed)<sp/>{</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>getExistingUid(</highlight><highlight class="keywordtype">string</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>getUidInCriticalSection(</highlight><highlight class="keywordtype">string</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="88"><highlight class="normal"></highlight></codeline>
+<codeline lineno="89"><highlight class="normal"><sp/><sp/>std::string<sp/>getString(uint32_t<sp/>uid,</highlight></codeline>
+<codeline lineno="90"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>unseen_string<sp/>=<sp/></highlight><highlight class="stringliteral">&quot;[UNSEEN<sp/>CLASS]&quot;</highlight><highlight class="normal">)<sp/>{</highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(uid<sp/>&gt;=<sp/>_vocab_size)<sp/>{</highlight></codeline>
+<codeline lineno="92"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::stringstream<sp/>error_ss;</highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>error_ss<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;[ThreadSafeVocabulary]<sp/>getString()<sp/>is<sp/>called<sp/>with<sp/>an<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="94"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;invalid<sp/>uid<sp/>&apos;&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="95"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;&lt;<sp/>uid<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;&apos;;<sp/>uid<sp/>&gt;=<sp/>vocab_size<sp/>(&quot;</highlight><highlight class="normal"><sp/>&lt;&lt;<sp/>_vocab_size<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;).&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(error_ss.str());</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="98"><highlight class="normal"></highlight></codeline>
+<codeline lineno="99"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(uid<sp/>&gt;=<sp/>_uid_to_string.size())<sp/>{</highlight></codeline>
+<codeline lineno="100"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>unseen_string;</highlight></codeline>
+<codeline lineno="101"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="102"><highlight class="normal"></highlight></codeline>
+<codeline lineno="103"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_uid_to_string.at(uid);</highlight></codeline>
+<codeline lineno="104"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="105"><highlight class="normal"></highlight></codeline>
+<codeline lineno="106"><highlight class="normal"><sp/><sp/>uint32_t<sp/>vocabSize()</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_vocab_size;<sp/>}</highlight></codeline>
+<codeline lineno="107"><highlight class="normal"></highlight></codeline>
+<codeline lineno="108"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>fixVocab()<sp/>{<sp/>_fixed<sp/>=<sp/></highlight><highlight class="keyword">true</highlight><highlight class="normal">;<sp/>};</highlight></codeline>
+<codeline lineno="109"><highlight class="normal"></highlight></codeline>
+<codeline lineno="110"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>isVocabFixed()</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_fixed;<sp/>}</highlight></codeline>
+<codeline lineno="111"><highlight class="normal"></highlight></codeline>
+<codeline lineno="112"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;ThreadSafeVocabulary&gt;<sp/>make(uint32_t<sp/>vocab_size)<sp/>{</highlight></codeline>
+<codeline lineno="113"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;ThreadSafeVocabulary&gt;(vocab_size);</highlight></codeline>
+<codeline lineno="114"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="115"><highlight class="normal"></highlight></codeline>
+<codeline lineno="116"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;ThreadSafeVocabulary&gt;<sp/>make(</highlight></codeline>
+<codeline lineno="117"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::unordered_map&lt;std::string,<sp/>uint32_t&gt;&amp;&amp;<sp/>string_to_uid_map,<sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>fixed,</highlight></codeline>
+<codeline lineno="118"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::optional&lt;uint32_t&gt;<sp/>vocab_size<sp/>=<sp/>std::nullopt)<sp/>{</highlight></codeline>
+<codeline lineno="119"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;ThreadSafeVocabulary&gt;(std::move(string_to_uid_map),</highlight></codeline>
+<codeline lineno="120"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>fixed,<sp/>vocab_size);</highlight></codeline>
+<codeline lineno="121"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="122"><highlight class="normal"></highlight></codeline>
+<codeline lineno="123"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="124"><highlight class="normal"><sp/><sp/>uint32_t<sp/>getExistingUid(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/></highlight><highlight class="keywordtype">string</highlight><highlight class="normal">)<sp/>{</highlight></codeline>
+<codeline lineno="125"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(_fixed);</highlight></codeline>
+<codeline lineno="126"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!_string_to_uid.count(</highlight><highlight class="keywordtype">string</highlight><highlight class="normal">))<sp/>{</highlight></codeline>
+<codeline lineno="127"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::stringstream<sp/>error_ss;</highlight></codeline>
+<codeline lineno="128"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>error_ss<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;[ThreadSafeVocabulary]<sp/>Seeing<sp/>a<sp/>new<sp/>string<sp/>&apos;&quot;</highlight><highlight class="normal"><sp/>&lt;&lt;<sp/></highlight><highlight class="keywordtype">string</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="129"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;&apos;<sp/>after<sp/>calling<sp/>declareSeenAllStrings().&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="130"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(error_ss.str());</highlight></codeline>
+<codeline lineno="131"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="132"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_string_to_uid.at(</highlight><highlight class="keywordtype">string</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="133"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="134"><highlight class="normal"></highlight></codeline>
+<codeline lineno="135"><highlight class="normal"><sp/><sp/>uint32_t<sp/>getUidInCriticalSection(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/></highlight><highlight class="keywordtype">string</highlight><highlight class="normal">)<sp/>{</highlight></codeline>
+<codeline lineno="136"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(!_fixed);</highlight></codeline>
+<codeline lineno="137"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>uid;</highlight></codeline>
+<codeline lineno="138"><highlight class="normal"></highlight><highlight class="preprocessor">#pragma<sp/>omp<sp/>critical(streaming_string_lookup)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="139"><highlight class="normal"><sp/><sp/><sp/><sp/>{</highlight></codeline>
+<codeline lineno="140"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(_string_to_uid.count(</highlight><highlight class="keywordtype">string</highlight><highlight class="normal">))<sp/>{</highlight></codeline>
+<codeline lineno="141"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uid<sp/>=<sp/>_string_to_uid.at(</highlight><highlight class="keywordtype">string</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="142"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="143"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uid<sp/>=<sp/>_string_to_uid.size();</highlight></codeline>
+<codeline lineno="144"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(uid<sp/>&lt;<sp/>_vocab_size)<sp/>{</highlight></codeline>
+<codeline lineno="145"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_string_to_uid[string]<sp/>=<sp/>uid;</highlight></codeline>
+<codeline lineno="146"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_uid_to_string.push_back(</highlight><highlight class="keywordtype">string</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="147"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="148"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="149"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="150"><highlight class="normal"></highlight></codeline>
+<codeline lineno="151"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(uid<sp/>&gt;=<sp/>_vocab_size)<sp/>{</highlight></codeline>
+<codeline lineno="152"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight><highlight class="stringliteral">&quot;[ThreadSafeVocabulary]<sp/>Expected<sp/>&quot;</highlight><highlight class="normal"><sp/>+</highlight></codeline>
+<codeline lineno="153"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::to_string(_vocab_size)<sp/>+</highlight></codeline>
+<codeline lineno="154"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;<sp/>unique<sp/>strings<sp/>but<sp/>found<sp/>more.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="155"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="156"><highlight class="normal"></highlight></codeline>
+<codeline lineno="157"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>uid;</highlight></codeline>
+<codeline lineno="158"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="159"><highlight class="normal"></highlight></codeline>
+<codeline lineno="160"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>_fixed;</highlight></codeline>
+<codeline lineno="161"><highlight class="normal"><sp/><sp/>uint32_t<sp/>_vocab_size;</highlight></codeline>
+<codeline lineno="162"><highlight class="normal"><sp/><sp/>std::unordered_map&lt;std::string,<sp/>uint32_t&gt;<sp/>_string_to_uid;</highlight></codeline>
+<codeline lineno="163"><highlight class="normal"><sp/><sp/>std::vector&lt;std::string&gt;<sp/>_uid_to_string;</highlight></codeline>
+<codeline lineno="164"><highlight class="normal"></highlight></codeline>
+<codeline lineno="165"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Private<sp/>constructor<sp/>for<sp/>Cereal.<sp/>See<sp/>https://uscilab.github.io/cereal/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="166"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_thread_safe_vocabulary" kindref="compound">ThreadSafeVocabulary</ref>()<sp/>{}</highlight></codeline>
+<codeline lineno="167"><highlight class="normal"></highlight></codeline>
+<codeline lineno="168"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Tell<sp/>Cereal<sp/>what<sp/>to<sp/>serialize.<sp/>See<sp/>https://uscilab.github.io/cereal/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="169"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">friend</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">cereal::access;</highlight></codeline>
+<codeline lineno="170"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">class</highlight><highlight class="normal"><sp/>Archive&gt;</highlight></codeline>
+<codeline lineno="171"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>serialize(Archive&amp;<sp/>archive)<sp/>{</highlight></codeline>
+<codeline lineno="172"><highlight class="normal"><sp/><sp/><sp/><sp/>archive(_string_to_uid,<sp/>_uid_to_string,<sp/>_fixed,<sp/>_vocab_size);</highlight></codeline>
+<codeline lineno="173"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="174"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="175"><highlight class="normal"></highlight></codeline>
+<codeline lineno="176"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">ThreadSafeVocabularyPtr<sp/>=<sp/>std::shared_ptr&lt;ThreadSafeVocabulary&gt;;</highlight></codeline>
+<codeline lineno="177"><highlight class="normal"></highlight></codeline>
+<codeline lineno="178"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::dataset</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="dataset/src/utils/ThreadSafeVocabulary.h"/>
+  </compounddef>
+</doxygen>

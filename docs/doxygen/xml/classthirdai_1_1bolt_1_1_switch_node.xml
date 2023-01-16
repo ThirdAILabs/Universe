@@ -1,0 +1,707 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_switch_node" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::bolt::SwitchNode</compoundname>
+    <basecompoundref refid="classthirdai_1_1bolt_1_1_node" prot="public" virt="non-virtual">thirdai::bolt::Node</basecompoundref>
+    <basecompoundref prot="public" virt="non-virtual">std::enable_shared_from_this&lt; SwitchNode &gt;</basecompoundref>
+    <includes refid="_switch_8h" local="no">Switch.h</includes>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1bolt_1_1_switch_node_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="214" column="16" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="214" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_switch_node_1adb916dff5084a2a5df62de64d3159ceb" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_fully_connected_node" kindref="compound">FullyConnectedNode</ref> &gt; &gt;</type>
+        <definition>std::vector&lt;std::shared_ptr&lt;FullyConnectedNode&gt; &gt; thirdai::bolt::SwitchNode::_layers</definition>
+        <argsstring></argsstring>
+        <name>_layers</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::_layers</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="221" column="15" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="221" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_switch_node_1aa038298feee812b15b881795985c118b" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; bool &gt;</type>
+        <definition>std::vector&lt;bool&gt; thirdai::bolt::SwitchNode::_layers_used</definition>
+        <argsstring></argsstring>
+        <name>_layers_used</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::_layers_used</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="222" column="15" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="222" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_switch_node_1a6386f28a67c7ef3be08740924411fc21" prot="private" static="no" mutable="no">
+        <type>InputPtr</type>
+        <definition>InputPtr thirdai::bolt::SwitchNode::_token_input</definition>
+        <argsstring></argsstring>
+        <name>_token_input</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::_token_input</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="223" column="12" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="223" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a1bb1fa186a5dcda63336b645917517d6" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::SwitchNode::SwitchNode</definition>
+        <argsstring>(uint32_t dim, const std::string &amp;activation, uint32_t n_layers)</argsstring>
+        <name>SwitchNode</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::SwitchNode</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>dim</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>activation</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_layers</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="26" column="3" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="26" bodyend="31"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a05008cf513b305e66bc460d5d2662063" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::SwitchNode::SwitchNode</definition>
+        <argsstring>(uint32_t dim, float sparsity, const std::string &amp;activation, uint32_t n_layers)</argsstring>
+        <name>SwitchNode</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::SwitchNode</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>dim</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>sparsity</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>activation</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_layers</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="33" column="3" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="33" bodyend="40"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a741dc2953290d58cd7ef9a8c80613be6" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::SwitchNode::SwitchNode</definition>
+        <argsstring>(uint32_t dim, float sparsity, const std::string &amp;activation, const SamplingConfigPtr &amp;sampling_config, uint32_t n_layers)</argsstring>
+        <name>SwitchNode</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::SwitchNode</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>dim</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>sparsity</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>activation</declname>
+        </param>
+        <param>
+          <type>const SamplingConfigPtr &amp;</type>
+          <declname>sampling_config</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_layers</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="42" column="3" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="42" bodyend="49"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a508695f16e8ae3803007c9168b3ef805" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::SwitchNode::compileImpl</definition>
+        <argsstring>() final</argsstring>
+        <name>compileImpl</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::compileImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a8aca1832ebdf9fb5fbeeb08a8a50e10c">compileImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="123" column="8" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="123" bodyend="130"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1ad83351b33327d2c50dd24f7452b14ed0" prot="private" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_fully_connected_layer" kindref="compound">FullyConnectedLayer</ref> &gt; &gt;</type>
+        <definition>std::vector&lt; std::shared_ptr&lt; FullyConnectedLayer &gt; &gt; thirdai::bolt::SwitchNode::getInternalFullyConnectedLayersImpl</definition>
+        <argsstring>() const final</argsstring>
+        <name>getInternalFullyConnectedLayersImpl</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::getInternalFullyConnectedLayersImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a52d8bb7dd818868f7a3c8e852f3fe8f9">getInternalFullyConnectedLayersImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="133" column="3" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="133" bodyend="140"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a9741b88b5c604c99cad029d2455591ad" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::SwitchNode::prepareForBatchProcessingImpl</definition>
+        <argsstring>(uint32_t batch_size, bool use_sparsity) final</argsstring>
+        <name>prepareForBatchProcessingImpl</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::prepareForBatchProcessingImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a13dff58075ba5d505616b644873e99ee">prepareForBatchProcessingImpl</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>use_sparsity</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="142" column="8" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="142" bodyend="147"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a90191a69199bbc23b066f1fa9400b336" prot="private" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::SwitchNode::numNonzerosInOutputImpl</definition>
+        <argsstring>() const final</argsstring>
+        <name>numNonzerosInOutputImpl</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::numNonzerosInOutputImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1ae89f7fcdc1719e4cd2a5cfe9f3133a54">numNonzerosInOutputImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="149" column="12" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="149" bodyend="152"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a81645cdc8604a02c53d258ba932acc9f" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::SwitchNode::forwardImpl</definition>
+        <argsstring>(uint32_t vec_index, const BoltVector *labels) final</argsstring>
+        <name>forwardImpl</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::forwardImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a7126a97a87f143d8d6755fd71c331f46">forwardImpl</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> *</type>
+          <declname>labels</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="154" column="8" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="154" bodyend="157"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a73a60d9c6a74761f87357753bb05ef94" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::SwitchNode::backpropagateImpl</definition>
+        <argsstring>(uint32_t vec_index) final</argsstring>
+        <name>backpropagateImpl</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::backpropagateImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a44d73b3a2d6344aba16f8a1dc3b87919">backpropagateImpl</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="159" column="8" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="159" bodyend="163"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1aab2a304f44d7f148cf6ba39165ae1da7" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::SwitchNode::updateParametersImpl</definition>
+        <argsstring>(float learning_rate, uint32_t batch_cnt) final</argsstring>
+        <name>updateParametersImpl</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::updateParametersImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a2934c0002c454d3e6dbb232b7f05cc8d">updateParametersImpl</reimplements>
+        <param>
+          <type>float</type>
+          <declname>learning_rate</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_cnt</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="165" column="8" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="165" bodyend="172"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a2d1f6c5273a9581b9066e237fb046ea9" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+        <definition>BoltVector &amp; thirdai::bolt::SwitchNode::getOutputVectorImpl</definition>
+        <argsstring>(uint32_t vec_index) final</argsstring>
+        <name>getOutputVectorImpl</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::getOutputVectorImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a482129276694ef878d2c95712d552bad">getOutputVectorImpl</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="174" column="14" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="174" bodyend="177"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1adc0e5fa3504b4513d68666c69a9f39d0" prot="private" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::SwitchNode::cleanupAfterBatchProcessingImpl</definition>
+        <argsstring>() final</argsstring>
+        <name>cleanupAfterBatchProcessingImpl</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::cleanupAfterBatchProcessingImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1affb1e25aa5a2f485d49d9eb899b6a44e">cleanupAfterBatchProcessingImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="179" column="8" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="179" bodyend="183"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a959dcaece0dcdded9238b7b03a1fe375" prot="private" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::SwitchNode::summarizeImpl</definition>
+        <argsstring>(std::stringstream &amp;summary, bool detailed) const final</argsstring>
+        <name>summarizeImpl</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::summarizeImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1af76c56573f2f09f88d131a6b7de90a74">summarizeImpl</reimplements>
+        <param>
+          <type>std::stringstream &amp;</type>
+          <declname>summary</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>detailed</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="185" column="8" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="185" bodyend="191"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a3fdd9badb70ddb4ec535fef1867b12c4" prot="private" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::bolt::SwitchNode::type</definition>
+        <argsstring>() const final</argsstring>
+        <name>type</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::type</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a6286ebeb923a53cb6ac293d3ac894949">type</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="193" column="15" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="193" bodyend="193"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1ab16dd4bbd8ad4e7cfb7dd6c5308de899" prot="private" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::vector&lt; NodePtr &gt;</type>
+        <definition>std::vector&lt; NodePtr &gt; thirdai::bolt::SwitchNode::getPredecessorsImpl</definition>
+        <argsstring>() const final</argsstring>
+        <name>getPredecessorsImpl</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::getPredecessorsImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1abf8a46cda935b2ee6b8869fa1c0ffa9f">getPredecessorsImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="195" column="15" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="195" bodyend="200"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1acd6cc04e9c85445af9addf2afad4c56c" prot="private" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>NodeState</type>
+        <definition>NodeState thirdai::bolt::SwitchNode::getState</definition>
+        <argsstring>() const final</argsstring>
+        <name>getState</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::getState</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1ab86e7912c6dbccaa402ad257b1512e7c">getState</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="202" column="13" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="202" bodyend="206"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1ab17ad5cd46cb6c3176888319dc9c0c20" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::SwitchNode::getActiveLayer</definition>
+        <argsstring>(uint32_t vec_index)</argsstring>
+        <name>getActiveLayer</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::getActiveLayer</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="208" column="12" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="208" bodyend="212"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a8f39d9ea1ea32792c499a9f5e05a3d62" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::bolt::SwitchNode::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="216" column="8" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="216" bodyend="219"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a8ca2e804c7ab1d83be521322dbff153d" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_switch_node" kindref="compound">SwitchNode</ref> &gt;</type>
+        <definition>static std::shared_ptr&lt; SwitchNode &gt; thirdai::bolt::SwitchNode::makeDense</definition>
+        <argsstring>(uint32_t dim, const std::string &amp;activation, uint32_t n_layers)</argsstring>
+        <name>makeDense</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::makeDense</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>dim</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>activation</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_layers</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="52" column="26" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="52" bodyend="57"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1aee1ded3df4bec4e18dd54966f39d88b6" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_switch_node" kindref="compound">SwitchNode</ref> &gt;</type>
+        <definition>static std::shared_ptr&lt; SwitchNode &gt; thirdai::bolt::SwitchNode::makeAutotuned</definition>
+        <argsstring>(uint32_t dim, float sparsity, const std::string &amp;activation, uint32_t n_layers)</argsstring>
+        <name>makeAutotuned</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::makeAutotuned</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>dim</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>sparsity</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>activation</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_layers</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="59" column="26" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="59" bodyend="64"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1adeaf01229f8f6a24c3ddf8f5c2519e68" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_switch_node" kindref="compound">SwitchNode</ref> &gt;</type>
+        <definition>static std::shared_ptr&lt; SwitchNode &gt; thirdai::bolt::SwitchNode::make</definition>
+        <argsstring>(uint32_t dim, float sparsity, const std::string &amp;activation, const SamplingConfigPtr &amp;sampling_config, uint32_t n_layers)</argsstring>
+        <name>make</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::make</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>dim</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>sparsity</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>activation</declname>
+        </param>
+        <param>
+          <type>const SamplingConfigPtr &amp;</type>
+          <declname>sampling_config</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_layers</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="66" column="26" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="66" bodyend="71"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a1b5a7c6f6f8c13d0fabfa7628d69f1e6" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::SwitchNode::outputDim</definition>
+        <argsstring>() const final</argsstring>
+        <name>outputDim</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::outputDim</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1adf765696d9f7fdc8bbc1ca098ed461e9">outputDim</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="73" column="12" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="73" bodyend="76"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a21d71bd0d5396bbd1081a34e520866d9" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::SwitchNode::isInputNode</definition>
+        <argsstring>() const final</argsstring>
+        <name>isInputNode</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::isInputNode</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a4bc5d54043015e5c9cbb28a85160a8f6">isInputNode</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="78" column="8" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="78" bodyend="78"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a933dd64f6e68235458a33e2c144c86ec" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::SwitchNode::initOptimizer</definition>
+        <argsstring>() final</argsstring>
+        <name>initOptimizer</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::initOptimizer</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1ad2ab6e06fa8587077a17e3f9c4ec1e78">initOptimizer</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="80" column="8" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="80" bodyend="84"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a4262cb99adaa1d820d2aa73f66857ccf" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_switch_node" kindref="compound">SwitchNode</ref> &gt;</type>
+        <definition>std::shared_ptr&lt; SwitchNode &gt; thirdai::bolt::SwitchNode::addPredecessors</definition>
+        <argsstring>(NodePtr predecessor, InputPtr token_input)</argsstring>
+        <name>addPredecessors</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::addPredecessors</qualifiedname>
+        <param>
+          <type>NodePtr</type>
+          <declname>predecessor</declname>
+        </param>
+        <param>
+          <type>InputPtr</type>
+          <declname>token_input</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="86" column="19" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="86" bodyend="114"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_switch_node_1a0ad9c15becdd4cfdbb03826dd314d300" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::SwitchNode::enableDistributedTraining</definition>
+        <argsstring>() final</argsstring>
+        <name>enableDistributedTraining</name>
+        <qualifiedname>thirdai::bolt::SwitchNode::enableDistributedTraining</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1aa8c63e99fd4a0ba21bc2170590e3513d">enableDistributedTraining</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Switch.h" line="116" column="8" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="116" bodyend="120"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>This class is used in MLM experiments. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>This node stores N fully connected layers, and takes in a regular bolt vector input as well as a token. For each input there should be only a single token in the range [0,N) that indicates which of the fully connected layers to use for the input. For instance in a MLM model this was used where the number of layers was equal to the maximum number of tokens in the sentence and for each input the layer at the index of the masked token was used. The idea being that it would learn a slightly different representation for each token in the sentence. </para>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="3">
+        <label>std::enable_shared_from_this&lt; SwitchNode &gt;</label>
+      </node>
+      <node id="2">
+        <label>thirdai::bolt::Node</label>
+        <link refid="classthirdai_1_1bolt_1_1_node"/>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::SwitchNode</label>
+        <link refid="classthirdai_1_1bolt_1_1_switch_node"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="3">
+        <label>std::enable_shared_from_this&lt; SwitchNode &gt;</label>
+      </node>
+      <node id="2">
+        <label>thirdai::bolt::Node</label>
+        <link refid="classthirdai_1_1bolt_1_1_node"/>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::SwitchNode</label>
+        <link refid="classthirdai_1_1bolt_1_1_switch_node"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="bolt/src/graph/nodes/Switch.h" line="23" column="1" bodyfile="bolt/src/graph/nodes/Switch.h" bodystart="24" bodyend="224"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1adb916dff5084a2a5df62de64d3159ceb" prot="private" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>_layers</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1aa038298feee812b15b881795985c118b" prot="private" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>_layers_used</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a6386f28a67c7ef3be08740924411fc21" prot="private" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>_token_input</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a4262cb99adaa1d820d2aa73f66857ccf" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>addPredecessors</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1aa9d48aad3e5bbcd047c944ae58f84580" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>backpropagate</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a73a60d9c6a74761f87357753bb05ef94" prot="private" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>backpropagateImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1ac69895a5802ff7c3b730338b3b4e90b4" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>cleanupAfterBatchProcessing</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1adc0e5fa3504b4513d68666c69a9f39d0" prot="private" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>cleanupAfterBatchProcessingImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a88291233b0764978b7ceea7513aae3ba" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>compile</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16a7eee318133bed45ed926a12048d99963" prot="protected" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>Compiled</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a508695f16e8ae3803007c9168b3ef805" prot="private" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>compileImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16afb4121016cc30a007bc314bd81845d1e" prot="protected" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>Constructed</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a0ad9c15becdd4cfdbb03826dd314d300" prot="public" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>enableDistributedTraining</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a1d3c6a15ac7543b63b8785cc5e18e3c4" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>forward</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a81645cdc8604a02c53d258ba932acc9f" prot="private" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>forwardImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1ab17ad5cd46cb6c3176888319dc9c0c20" prot="private" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>getActiveLayer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a99399aa3e00c2b91fdda85cab1c0f158" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>getInternalFullyConnectedLayers</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1ad83351b33327d2c50dd24f7452b14ed0" prot="private" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>getInternalFullyConnectedLayersImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a7f77cde6a66c0958b83e452e87e20756" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>getOutputVector</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a2d1f6c5273a9581b9066e237fb046ea9" prot="private" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>getOutputVectorImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1aa64a67e500699d0d1ff48c7359276b8e" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>getPredecessors</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1ab16dd4bbd8ad4e7cfb7dd6c5308de899" prot="private" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>getPredecessorsImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1acd6cc04e9c85445af9addf2afad4c56c" prot="private" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>getState</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a933dd64f6e68235458a33e2c144c86ec" prot="public" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>initOptimizer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a21d71bd0d5396bbd1081a34e520866d9" prot="public" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>isInputNode</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1adeaf01229f8f6a24c3ddf8f5c2519e68" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>make</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1aee1ded3df4bec4e18dd54966f39d88b6" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>makeAutotuned</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a8ca2e804c7ab1d83be521322dbff153d" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>makeDense</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1ab01d717ae0cd7ce683bbb353c020063b" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>name</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16" prot="protected" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>NodeState</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a5ded5aa10ce21f479ba8b2afb2af3257" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>numNonzerosInOutput</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a90191a69199bbc23b066f1fa9400b336" prot="private" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>numNonzerosInOutputImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a1b5a7c6f6f8c13d0fabfa7628d69f1e6" prot="public" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>outputDim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16a73e48da570b3b13d772c47dcee4ae6a6" prot="protected" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>PredecessorsSet</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16ac172e0a909bdf0ccf05dbf8954c54fad" prot="protected" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>PreparedForBatchProcessing</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1aa8da3afebd36fa6536768ba5f58ec3c8" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>prepareForBatchProcessing</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a9741b88b5c604c99cad029d2455591ad" prot="private" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>prepareForBatchProcessingImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a8f39d9ea1ea32792c499a9f5e05a3d62" prot="private" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1acb9da57dbfe1c24bfc7e7f9376077609" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>summarize</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a959dcaece0dcdded9238b7b03a1fe375" prot="private" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>summarizeImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a1bb1fa186a5dcda63336b645917517d6" prot="private" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>SwitchNode</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a05008cf513b305e66bc460d5d2662063" prot="private" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>SwitchNode</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a741dc2953290d58cd7ef9a8c80613be6" prot="private" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>SwitchNode</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1a3fdd9badb70ddb4ec535fef1867b12c4" prot="private" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>type</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a14827669d25336d30ce66fc00dedaba4" prot="public" virt="non-virtual"><scope>thirdai::bolt::SwitchNode</scope><name>updateParameters</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_switch_node_1aab2a304f44d7f148cf6ba39165ae1da7" prot="private" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>updateParametersImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a1e977ed40e3903aaef3dde767bdeb322" prot="public" virt="virtual"><scope>thirdai::bolt::SwitchNode</scope><name>~Node</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

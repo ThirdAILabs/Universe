@@ -1,0 +1,569 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_numpy_dataset_8h" kind="file" language="C++">
+    <compoundname>NumpyDataset.h</compoundname>
+    <includes refid="_in_memory_dataset_8h" local="yes">InMemoryDataset.h</includes>
+    <includes refid="_bolt_vector_8h" local="no">bolt_vector/src/BoltVector.h</includes>
+    <includes refid="_datasets_8h" local="no">dataset/src/Datasets.h</includes>
+    <includes local="no">pybind11/buffer_info.h</includes>
+    <includes local="no">pybind11/cast.h</includes>
+    <includes local="no">pybind11/numpy.h</includes>
+    <includes local="no">pybind11/pybind11.h</includes>
+    <includes local="no">pybind11/stl.h</includes>
+    <includes local="no">memory.h</includes>
+    <includes local="no">memory</includes>
+    <includes local="no">stdexcept</includes>
+    <includes local="no">type_traits</includes>
+    <incdepgraph>
+      <node id="10">
+        <label>bolt_vector/src/BoltVector.h</label>
+        <link refid="_bolt_vector_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+      </node>
+      <node id="27">
+        <label>BatchProcessor.h</label>
+        <link refid="_batch_processor_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+      </node>
+      <node id="29">
+        <label>DataLoader.h</label>
+        <link refid="_data_loader_8h_source"/>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+      </node>
+      <node id="26">
+        <label>dataset/src/Datasets.h</label>
+        <link refid="_datasets_8h_source"/>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>InMemoryDataset.h</label>
+        <link refid="_in_memory_dataset_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>dataset/src/NumpyDataset.h</label>
+        <link refid="_numpy_dataset_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+        <childnode refid="35" relation="include">
+        </childnode>
+        <childnode refid="36" relation="include">
+        </childnode>
+        <childnode refid="37" relation="include">
+        </childnode>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="39" relation="include">
+        </childnode>
+      </node>
+      <node id="28">
+        <label>StreamingDataset.h</label>
+        <link refid="_streaming_dataset_8h_source"/>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>utils/SafeFileIO.h</label>
+        <link refid="_safe_file_i_o_8h_source"/>
+        <childnode refid="9" relation="include">
+        </childnode>
+      </node>
+      <node id="30">
+        <label>utils/Logging.h</label>
+        <link refid="_logging_8h_source"/>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+      </node>
+      <node id="12">
+        <label>algorithm</label>
+      </node>
+      <node id="13">
+        <label>cassert</label>
+      </node>
+      <node id="3">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="4">
+        <label>cereal/archives/binary.hpp</label>
+      </node>
+      <node id="11">
+        <label>cereal/cereal.hpp</label>
+      </node>
+      <node id="5">
+        <label>cereal/types/base_class.hpp</label>
+      </node>
+      <node id="6">
+        <label>cereal/types/polymorphic.hpp</label>
+      </node>
+      <node id="7">
+        <label>cereal/types/vector.hpp</label>
+      </node>
+      <node id="32">
+        <label>chrono</label>
+      </node>
+      <node id="14">
+        <label>cstdint</label>
+      </node>
+      <node id="9">
+        <label>fstream</label>
+      </node>
+      <node id="15">
+        <label>iostream</label>
+      </node>
+      <node id="16">
+        <label>limits</label>
+      </node>
+      <node id="25">
+        <label>memory</label>
+      </node>
+      <node id="38">
+        <label>memory.h</label>
+      </node>
+      <node id="17">
+        <label>numeric</label>
+      </node>
+      <node id="18">
+        <label>optional</label>
+      </node>
+      <node id="33">
+        <label>pybind11/buffer_info.h</label>
+      </node>
+      <node id="34">
+        <label>pybind11/cast.h</label>
+      </node>
+      <node id="35">
+        <label>pybind11/numpy.h</label>
+      </node>
+      <node id="36">
+        <label>pybind11/pybind11.h</label>
+      </node>
+      <node id="37">
+        <label>pybind11/stl.h</label>
+      </node>
+      <node id="19">
+        <label>queue</label>
+      </node>
+      <node id="31">
+        <label>spdlog/spdlog.h</label>
+      </node>
+      <node id="20">
+        <label>sstream</label>
+      </node>
+      <node id="21">
+        <label>stdexcept</label>
+      </node>
+      <node id="22">
+        <label>string</label>
+      </node>
+      <node id="39">
+        <label>type_traits</label>
+      </node>
+      <node id="23">
+        <label>utility</label>
+      </node>
+      <node id="24">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <innerclass refid="classthirdai_1_1dataset_1_1numpy_1_1_numpy_dataset" prot="public">thirdai::dataset::numpy::NumpyDataset</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1dataset">thirdai::dataset</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1dataset_1_1numpy">thirdai::dataset::numpy</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;InMemoryDataset.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt_vector/src/BoltVector.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;dataset/src/Datasets.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;pybind11/buffer_info.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;pybind11/cast.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;pybind11/numpy.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;pybind11/pybind11.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;pybind11/stl.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;memory.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;memory&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;stdexcept&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;type_traits&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::dataset::numpy<sp/>{</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">py<sp/>=<sp/>pybind11;</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight></codeline>
+<codeline lineno="20"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">typename</highlight><highlight class="normal"><sp/>BATCH_T&gt;</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">NumpyDataset;</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"></highlight></codeline>
+<codeline lineno="23"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">WrappedNumpyVectors<sp/>=<sp/>NumpyDataset&lt;BoltBatch&gt;;</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"></highlight></codeline>
+<codeline lineno="25"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">typename</highlight><highlight class="normal"><sp/>T&gt;</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">NumpyArray<sp/>=<sp/>py::array_t&lt;T,<sp/>py::array::c_style<sp/>|<sp/>py::array::forcecast&gt;;</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"></highlight></codeline>
+<codeline lineno="37"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">typename</highlight><highlight class="normal"><sp/>BATCH_T&gt;</highlight></codeline>
+<codeline lineno="38" refid="classthirdai_1_1dataset_1_1numpy_1_1_numpy_dataset" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1dataset_1_1numpy_1_1_numpy_dataset" kindref="compound">NumpyDataset</ref><sp/>final<sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_in_memory_dataset" kindref="compound">InMemoryDataset</ref>&lt;BATCH_T&gt;<sp/>{</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1numpy_1_1_numpy_dataset" kindref="compound">NumpyDataset</ref>(std::vector&lt;BATCH_T&gt;&amp;&amp;<sp/>batches,</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::vector&lt;py::object&gt;&amp;&amp;<sp/>objects_to_keep_alive)</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/><ref refid="classthirdai_1_1dataset_1_1_in_memory_dataset" kindref="compound">InMemoryDataset&lt;BATCH_T&gt;</ref>(std::move(batches)),</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_objects_to_keep_alive(std::move(objects_to_keep_alive))<sp/>{}</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"></highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/>std::vector&lt;py::object&gt;<sp/>_objects_to_keep_alive;</highlight></codeline>
+<codeline lineno="47"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"></highlight></codeline>
+<codeline lineno="49"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>isTuple(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>py::object&amp;<sp/>obj)<sp/>{</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>py::str(obj.get_type()).equal(py::str(</highlight><highlight class="stringliteral">&quot;&lt;class<sp/>&apos;tuple&apos;&gt;&quot;</highlight><highlight class="normal">));</highlight></codeline>
+<codeline lineno="51"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"></highlight></codeline>
+<codeline lineno="53"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>isNumpyArray(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>py::object&amp;<sp/>obj)<sp/>{</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>py::str(obj.get_type()).equal(py::str(</highlight><highlight class="stringliteral">&quot;&lt;class<sp/>&apos;numpy.ndarray&apos;&gt;&quot;</highlight><highlight class="normal">));</highlight></codeline>
+<codeline lineno="55"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"></highlight></codeline>
+<codeline lineno="57"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>py::str<sp/>getNumpyDtype(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>py::object&amp;<sp/>obj)<sp/>{</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>py::str(obj.attr(</highlight><highlight class="stringliteral">&quot;dtype&quot;</highlight><highlight class="normal">));</highlight></codeline>
+<codeline lineno="59"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"></highlight></codeline>
+<codeline lineno="61"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>checkNumpyDtype(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>py::object&amp;<sp/>obj,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>type)<sp/>{</highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>getNumpyDtype(obj).equal(py::str(type));</highlight></codeline>
+<codeline lineno="63"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"></highlight></codeline>
+<codeline lineno="65"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>isNumpyUint32(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>py::object&amp;<sp/>obj)<sp/>{</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>checkNumpyDtype(obj,<sp/></highlight><highlight class="stringliteral">&quot;uint32&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="67"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"></highlight></codeline>
+<codeline lineno="69"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>isNumpyFloat32(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>py::object&amp;<sp/>obj)<sp/>{</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>checkNumpyDtype(obj,<sp/></highlight><highlight class="stringliteral">&quot;float32&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="71"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"></highlight></codeline>
+<codeline lineno="73"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>BoltDatasetPtr<sp/>denseNumpyToBoltVectorDataset(</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumpyArray&lt;float&gt;&amp;<sp/>examples,<sp/>uint32_t<sp/>batch_size)<sp/>{</highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Get<sp/>information<sp/>from<sp/>examples</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>py::buffer_info<sp/>examples_buf<sp/>=<sp/>examples.request();</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(examples_buf.shape.size()<sp/>&gt;<sp/>2)<sp/>{</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;For<sp/>now,<sp/>Numpy<sp/>dense<sp/>data<sp/>must<sp/>be<sp/>2D<sp/>(each<sp/>row<sp/>is<sp/>a<sp/>dense<sp/>data<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="80"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;vector)<sp/>or<sp/>1D<sp/>(each<sp/>element<sp/>is<sp/>treated<sp/>as<sp/>a<sp/>row).&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"></highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/>uint64_t<sp/>num_examples<sp/>=<sp/></highlight><highlight class="keyword">static_cast&lt;</highlight><highlight class="normal">uint64_t</highlight><highlight class="keyword">&gt;</highlight><highlight class="normal">(examples_buf.shape.at(0));</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"></highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>If<sp/>it<sp/>is<sp/>a<sp/>1D<sp/>array<sp/>then<sp/>we<sp/>know<sp/>the<sp/>dimension<sp/>is<sp/>1.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/>uint64_t<sp/>dimension<sp/>=<sp/>examples_buf.shape.size()<sp/>==<sp/>2</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>?<sp/></highlight><highlight class="keyword">static_cast&lt;</highlight><highlight class="normal">uint64_t</highlight><highlight class="keyword">&gt;</highlight><highlight class="normal">(examples_buf.shape.at(1))</highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>1;</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>examples_raw_data<sp/>=<sp/></highlight><highlight class="keyword">static_cast&lt;</highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*</highlight><highlight class="keyword">&gt;</highlight><highlight class="normal">(examples_buf.ptr);</highlight></codeline>
+<codeline lineno="90"><highlight class="normal"></highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Build<sp/>batches</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="92"><highlight class="normal"></highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/>uint64_t<sp/>num_batches<sp/>=<sp/>(num_examples<sp/>+<sp/>batch_size<sp/>-<sp/>1)<sp/>/<sp/>batch_size;</highlight></codeline>
+<codeline lineno="94"><highlight class="normal"><sp/><sp/>std::vector&lt;BoltBatch&gt;<sp/>batches;</highlight></codeline>
+<codeline lineno="95"><highlight class="normal"></highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>batch_idx<sp/>=<sp/>0;<sp/>batch_idx<sp/>&lt;<sp/>num_batches;<sp/>++batch_idx)<sp/>{</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"><sp/><sp/><sp/><sp/>std::vector&lt;BoltVector&gt;<sp/>batch_vectors;</highlight></codeline>
+<codeline lineno="98"><highlight class="normal"></highlight></codeline>
+<codeline lineno="99"><highlight class="normal"><sp/><sp/><sp/><sp/>uint64_t<sp/>start_vec_idx<sp/>=<sp/>batch_idx<sp/>*<sp/>batch_size;</highlight></codeline>
+<codeline lineno="100"><highlight class="normal"><sp/><sp/><sp/><sp/>uint64_t<sp/>end_vec_idx<sp/>=<sp/>std::min(start_vec_idx<sp/>+<sp/>batch_size,<sp/>num_examples);</highlight></codeline>
+<codeline lineno="101"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>vec_idx<sp/>=<sp/>start_vec_idx;<sp/>vec_idx<sp/>&lt;<sp/>end_vec_idx;<sp/>++vec_idx)<sp/>{</highlight></codeline>
+<codeline lineno="102"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>batch_vectors.emplace_back(</highlight></codeline>
+<codeline lineno="103"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">,<sp/>examples_raw_data<sp/>+<sp/>dimension<sp/>*<sp/>vec_idx,<sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">,<sp/>dimension);</highlight></codeline>
+<codeline lineno="104"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="105"><highlight class="normal"></highlight></codeline>
+<codeline lineno="106"><highlight class="normal"><sp/><sp/><sp/><sp/>batches.emplace_back(std::move(batch_vectors));</highlight></codeline>
+<codeline lineno="107"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="108"><highlight class="normal"></highlight></codeline>
+<codeline lineno="109"><highlight class="normal"><sp/><sp/>std::vector&lt;py::object&gt;<sp/>objects_to_keep_alive<sp/>=<sp/>{examples};</highlight></codeline>
+<codeline lineno="110"><highlight class="normal"></highlight></codeline>
+<codeline lineno="111"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;WrappedNumpyVectors&gt;(</highlight></codeline>
+<codeline lineno="112"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::move(batches),<sp/>std::move(objects_to_keep_alive));</highlight></codeline>
+<codeline lineno="113"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="114"><highlight class="normal"></highlight></codeline>
+<codeline lineno="115"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>BoltDatasetPtr<sp/>numpyTokensToBoltDataset(</highlight></codeline>
+<codeline lineno="116"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumpyArray&lt;uint32_t&gt;&amp;<sp/>tokens,<sp/>uint64_t<sp/>batch_size)<sp/>{</highlight></codeline>
+<codeline lineno="117"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>py::buffer_info<sp/>tokens_buf<sp/>=<sp/>tokens.request();</highlight></codeline>
+<codeline lineno="118"><highlight class="normal"></highlight></codeline>
+<codeline lineno="119"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(tokens.ndim()<sp/>!=<sp/>1<sp/>&amp;&amp;<sp/>tokens.ndim()<sp/>!=<sp/>2)<sp/>{</highlight></codeline>
+<codeline lineno="120"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight><highlight class="stringliteral">&quot;Expected<sp/>1D<sp/>or<sp/>2D<sp/>array<sp/>of<sp/>tokens.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="121"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="122"><highlight class="normal"></highlight></codeline>
+<codeline lineno="123"><highlight class="normal"><sp/><sp/>uint64_t<sp/>tokens_per_vector<sp/>=<sp/>tokens.ndim()<sp/>==<sp/>1<sp/>?<sp/>1<sp/>:<sp/>tokens.shape(1);</highlight></codeline>
+<codeline lineno="124"><highlight class="normal"><sp/><sp/>uint64_t<sp/>num_vectors<sp/>=<sp/>tokens.shape(0);</highlight></codeline>
+<codeline lineno="125"><highlight class="normal"></highlight></codeline>
+<codeline lineno="126"><highlight class="normal"><sp/><sp/>uint64_t<sp/>num_batches<sp/>=<sp/>(num_vectors<sp/>+<sp/>batch_size<sp/>-<sp/>1)<sp/>/<sp/>batch_size;</highlight></codeline>
+<codeline lineno="127"><highlight class="normal"></highlight></codeline>
+<codeline lineno="128"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>uint32_t*<sp/>token_raw_data<sp/>=<sp/></highlight><highlight class="keyword">static_cast&lt;</highlight><highlight class="keyword">const<sp/></highlight><highlight class="normal">uint32_t*</highlight><highlight class="keyword">&gt;</highlight><highlight class="normal">(tokens_buf.ptr);</highlight></codeline>
+<codeline lineno="129"><highlight class="normal"></highlight></codeline>
+<codeline lineno="130"><highlight class="normal"><sp/><sp/>std::vector&lt;BoltBatch&gt;<sp/>batches;</highlight></codeline>
+<codeline lineno="131"><highlight class="normal"></highlight></codeline>
+<codeline lineno="132"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>batch_idx<sp/>=<sp/>0;<sp/>batch_idx<sp/>&lt;<sp/>num_batches;<sp/>++batch_idx)<sp/>{</highlight></codeline>
+<codeline lineno="133"><highlight class="normal"><sp/><sp/><sp/><sp/>std::vector&lt;BoltVector&gt;<sp/>current_token_batch;</highlight></codeline>
+<codeline lineno="134"><highlight class="normal"></highlight></codeline>
+<codeline lineno="135"><highlight class="normal"><sp/><sp/><sp/><sp/>uint64_t<sp/>start_vector<sp/>=<sp/>batch_idx<sp/>*<sp/>batch_size;</highlight></codeline>
+<codeline lineno="136"><highlight class="normal"><sp/><sp/><sp/><sp/>uint64_t<sp/>end_vector<sp/>=</highlight></codeline>
+<codeline lineno="137"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::min&lt;uint64_t&gt;(num_vectors,<sp/>start_vector<sp/>+<sp/>batch_size);</highlight></codeline>
+<codeline lineno="138"><highlight class="normal"></highlight></codeline>
+<codeline lineno="139"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>vector_id<sp/>=<sp/>start_vector;<sp/>vector_id<sp/>&lt;<sp/>end_vector;</highlight></codeline>
+<codeline lineno="140"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>vector_id++)<sp/>{</highlight></codeline>
+<codeline lineno="141"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::vector&lt;uint32_t&gt;<sp/>vec_tokens(</highlight></codeline>
+<codeline lineno="142"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&amp;token_raw_data[vector_id<sp/>*<sp/>tokens_per_vector],</highlight></codeline>
+<codeline lineno="143"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&amp;token_raw_data[(vector_id<sp/>+<sp/>1)<sp/>*<sp/>tokens_per_vector]);</highlight></codeline>
+<codeline lineno="144"><highlight class="normal"></highlight></codeline>
+<codeline lineno="145"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::vector&lt;float&gt;<sp/>vec_activations(tokens_per_vector,<sp/>1.0);</highlight></codeline>
+<codeline lineno="146"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>current_token_batch.push_back(</highlight></codeline>
+<codeline lineno="147"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>BoltVector::makeSparseVector(vec_tokens,<sp/>vec_activations));</highlight></codeline>
+<codeline lineno="148"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="149"><highlight class="normal"></highlight></codeline>
+<codeline lineno="150"><highlight class="normal"><sp/><sp/><sp/><sp/>batches.emplace_back(std::move(current_token_batch));</highlight></codeline>
+<codeline lineno="151"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="152"><highlight class="normal"></highlight></codeline>
+<codeline lineno="153"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Since<sp/>we<sp/>only<sp/>do<sp/>copies<sp/>we<sp/>don&apos;t<sp/>need<sp/>to<sp/>worry<sp/>about<sp/>owning<sp/>objects</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="154"><highlight class="normal"><sp/><sp/>std::vector&lt;py::object&gt;<sp/>objects_to_keep_alive<sp/>=<sp/>{};</highlight></codeline>
+<codeline lineno="155"><highlight class="normal"></highlight></codeline>
+<codeline lineno="156"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;WrappedNumpyVectors&gt;(</highlight></codeline>
+<codeline lineno="157"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::move(batches),<sp/>std::move(objects_to_keep_alive));</highlight></codeline>
+<codeline lineno="158"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="159"><highlight class="normal"></highlight></codeline>
+<codeline lineno="160"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>verifySparseNumpyTuple(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>py::tuple&amp;<sp/>tup)<sp/>{</highlight></codeline>
+<codeline lineno="161"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(tup.size()<sp/>!=<sp/>3)<sp/>{</highlight></codeline>
+<codeline lineno="162"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="163"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;If<sp/>passing<sp/>in<sp/>a<sp/>tuple<sp/>to<sp/>specify<sp/>a<sp/>sparse<sp/>dataset,<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="164"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;you<sp/>must<sp/>pass<sp/>in<sp/>a<sp/>tuple<sp/>of<sp/>3<sp/>arrays<sp/>(indices,<sp/>values,<sp/>offsets),<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="165"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;but<sp/>you<sp/>passed<sp/>in<sp/>a<sp/>tuple<sp/>of<sp/>length:<sp/>&quot;</highlight><highlight class="normal"><sp/>+</highlight></codeline>
+<codeline lineno="166"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::to_string(tup.size()));</highlight></codeline>
+<codeline lineno="167"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="168"><highlight class="normal"></highlight></codeline>
+<codeline lineno="169"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!isNumpyArray(tup[0])<sp/>||<sp/>!isNumpyArray(tup[1])<sp/>||<sp/>!isNumpyArray(tup[2]))<sp/>{</highlight></codeline>
+<codeline lineno="170"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="171"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;If<sp/>passing<sp/>in<sp/>a<sp/>tuple<sp/>to<sp/>specify<sp/>a<sp/>sparse<sp/>dataset,<sp/>the<sp/>tuple<sp/>must<sp/>be<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="172"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;of<sp/>3<sp/>numpy<sp/>arrays<sp/>(indices,<sp/>values,<sp/>offsets),<sp/>but<sp/>you<sp/>passed<sp/>in<sp/>a<sp/>non<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="173"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;numpy<sp/>array<sp/>for<sp/>one<sp/>of<sp/>the<sp/>tuple<sp/>elements.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="174"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="175"><highlight class="normal"></highlight></codeline>
+<codeline lineno="176"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!isNumpyUint32(tup[0]))<sp/>{</highlight></codeline>
+<codeline lineno="177"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="178"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;The<sp/>first<sp/>element<sp/>of<sp/>a<sp/>tuple<sp/>for<sp/>conversion<sp/>must<sp/>be<sp/>a<sp/>uint32<sp/>numpy<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="179"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;array&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="180"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="181"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!isNumpyFloat32(tup[1]))<sp/>{</highlight></codeline>
+<codeline lineno="182"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="183"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;The<sp/>second<sp/>element<sp/>of<sp/>a<sp/>tuple<sp/>for<sp/>conversion<sp/>must<sp/>be<sp/>a<sp/>float32<sp/>numpy<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="184"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;array&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="185"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="186"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!isNumpyUint32(tup[2]))<sp/>{</highlight></codeline>
+<codeline lineno="187"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="188"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;The<sp/>third<sp/>element<sp/>of<sp/>a<sp/>tuple<sp/>for<sp/>conversion<sp/>must<sp/>be<sp/>a<sp/>uint32<sp/>numpy<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="189"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;array&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="190"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="191"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="192"><highlight class="normal"></highlight></codeline>
+<codeline lineno="193"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>BoltDatasetPtr<sp/>numpyArraysToSparseBoltDataset(</highlight></codeline>
+<codeline lineno="194"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumpyArray&lt;uint32_t&gt;&amp;<sp/>indices,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumpyArray&lt;float&gt;&amp;<sp/>values,</highlight></codeline>
+<codeline lineno="195"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumpyArray&lt;uint32_t&gt;&amp;<sp/>offsets,<sp/>uint64_t<sp/>batch_size)<sp/>{</highlight></codeline>
+<codeline lineno="196"><highlight class="normal"><sp/><sp/>uint64_t<sp/>num_examples<sp/>=<sp/></highlight><highlight class="keyword">static_cast&lt;</highlight><highlight class="normal">uint64_t</highlight><highlight class="keyword">&gt;</highlight><highlight class="normal">(offsets.shape(0)<sp/>-<sp/>1);</highlight></codeline>
+<codeline lineno="197"><highlight class="normal"></highlight></codeline>
+<codeline lineno="198"><highlight class="normal"><sp/><sp/>uint32_t*<sp/>indices_raw_data<sp/>=<sp/></highlight><highlight class="keyword">const_cast&lt;</highlight><highlight class="normal">uint32_t*</highlight><highlight class="keyword">&gt;</highlight><highlight class="normal">(indices.data());</highlight></codeline>
+<codeline lineno="199"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>values_raw_data<sp/>=<sp/></highlight><highlight class="keyword">const_cast&lt;</highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*</highlight><highlight class="keyword">&gt;</highlight><highlight class="normal">(values.data());</highlight></codeline>
+<codeline lineno="200"><highlight class="normal"><sp/><sp/>uint32_t*<sp/>offsets_raw_data<sp/>=<sp/></highlight><highlight class="keyword">const_cast&lt;</highlight><highlight class="normal">uint32_t*</highlight><highlight class="keyword">&gt;</highlight><highlight class="normal">(offsets.data());</highlight></codeline>
+<codeline lineno="201"><highlight class="normal"></highlight></codeline>
+<codeline lineno="202"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Build<sp/>batches</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="203"><highlight class="normal"></highlight></codeline>
+<codeline lineno="204"><highlight class="normal"><sp/><sp/>uint64_t<sp/>num_batches<sp/>=<sp/>(num_examples<sp/>+<sp/>batch_size<sp/>-<sp/>1)<sp/>/<sp/>batch_size;</highlight></codeline>
+<codeline lineno="205"><highlight class="normal"><sp/><sp/>std::vector&lt;BoltBatch&gt;<sp/>batches;</highlight></codeline>
+<codeline lineno="206"><highlight class="normal"></highlight></codeline>
+<codeline lineno="207"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>batch_idx<sp/>=<sp/>0;<sp/>batch_idx<sp/>&lt;<sp/>num_batches;<sp/>++batch_idx)<sp/>{</highlight></codeline>
+<codeline lineno="208"><highlight class="normal"><sp/><sp/><sp/><sp/>std::vector&lt;BoltVector&gt;<sp/>batch_vectors;</highlight></codeline>
+<codeline lineno="209"><highlight class="normal"></highlight></codeline>
+<codeline lineno="210"><highlight class="normal"><sp/><sp/><sp/><sp/>uint64_t<sp/>start_vec_idx<sp/>=<sp/>batch_idx<sp/>*<sp/>batch_size;</highlight></codeline>
+<codeline lineno="211"><highlight class="normal"><sp/><sp/><sp/><sp/>uint64_t<sp/>end_vec_idx<sp/>=<sp/>std::min(start_vec_idx<sp/>+<sp/>batch_size,<sp/>num_examples);</highlight></codeline>
+<codeline lineno="212"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>vec_idx<sp/>=<sp/>start_vec_idx;<sp/>vec_idx<sp/>&lt;<sp/>end_vec_idx;<sp/>++vec_idx)<sp/>{</highlight></codeline>
+<codeline lineno="213"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>owns_data<sp/>=<sp/>false<sp/>because<sp/>we<sp/>don&apos;t<sp/>want<sp/>the<sp/>numpy<sp/>array<sp/>to<sp/>be<sp/>deleted</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="214"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>if<sp/>this<sp/>batch<sp/>(and<sp/>thus<sp/>the<sp/>underlying<sp/>vectors)<sp/>get<sp/>deleted</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="215"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>vector_length<sp/>=</highlight></codeline>
+<codeline lineno="216"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>offsets_raw_data[vec_idx<sp/>+<sp/>1]<sp/>-<sp/>offsets_raw_data[vec_idx];</highlight></codeline>
+<codeline lineno="217"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>batch_vectors.emplace_back(indices_raw_data<sp/>+<sp/>offsets_raw_data[vec_idx],</highlight></codeline>
+<codeline lineno="218"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>values_raw_data<sp/>+<sp/>offsets_raw_data[vec_idx],</highlight></codeline>
+<codeline lineno="219"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">,<sp/>vector_length);</highlight></codeline>
+<codeline lineno="220"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="221"><highlight class="normal"></highlight></codeline>
+<codeline lineno="222"><highlight class="normal"><sp/><sp/><sp/><sp/>batches.emplace_back(std::move(batch_vectors));</highlight></codeline>
+<codeline lineno="223"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="224"><highlight class="normal"></highlight></codeline>
+<codeline lineno="225"><highlight class="normal"><sp/><sp/>std::vector&lt;py::object&gt;<sp/>objects_to_keep_alive<sp/>=<sp/>{indices,<sp/>values,<sp/>offsets};</highlight></codeline>
+<codeline lineno="226"><highlight class="normal"></highlight></codeline>
+<codeline lineno="227"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;WrappedNumpyVectors&gt;(</highlight></codeline>
+<codeline lineno="228"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::move(batches),<sp/>std::move(objects_to_keep_alive));</highlight></codeline>
+<codeline lineno="229"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="230"><highlight class="normal"></highlight></codeline>
+<codeline lineno="231"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>BoltDatasetPtr<sp/>tupleToSparseBoltDataset(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>py::object&amp;<sp/>obj,</highlight></codeline>
+<codeline lineno="232"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint64_t<sp/>batch_size)<sp/>{</highlight></codeline>
+<codeline lineno="233"><highlight class="normal"><sp/><sp/>py::tuple<sp/>tup<sp/>=<sp/>obj.cast&lt;py::tuple&gt;();</highlight></codeline>
+<codeline lineno="234"><highlight class="normal"><sp/><sp/>verifySparseNumpyTuple(tup);</highlight></codeline>
+<codeline lineno="235"><highlight class="normal"></highlight></codeline>
+<codeline lineno="236"><highlight class="normal"><sp/><sp/>NumpyArray&lt;uint32_t&gt;<sp/>indices<sp/>=<sp/>tup[0].cast&lt;NumpyArray&lt;uint32_t&gt;&gt;();</highlight></codeline>
+<codeline lineno="237"><highlight class="normal"><sp/><sp/>NumpyArray&lt;float&gt;<sp/>values<sp/>=<sp/>tup[1].cast&lt;NumpyArray&lt;float&gt;&gt;();</highlight></codeline>
+<codeline lineno="238"><highlight class="normal"><sp/><sp/>NumpyArray&lt;uint32_t&gt;<sp/>offsets<sp/>=<sp/>tup[2].cast&lt;NumpyArray&lt;uint32_t&gt;&gt;();</highlight></codeline>
+<codeline lineno="239"><highlight class="normal"></highlight></codeline>
+<codeline lineno="240"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>numpyArraysToSparseBoltDataset(indices,<sp/>values,<sp/>offsets,<sp/>batch_size);</highlight></codeline>
+<codeline lineno="241"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="242"><highlight class="normal"></highlight></codeline>
+<codeline lineno="243"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>verifyBatchSize(uint64_t<sp/>batch_size)<sp/>{</highlight></codeline>
+<codeline lineno="244"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(batch_size<sp/>==<sp/>0)<sp/>{</highlight></codeline>
+<codeline lineno="245"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="246"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;Passed<sp/>in<sp/>batch<sp/>size<sp/>was<sp/>0,<sp/>but<sp/>must<sp/>be<sp/>greater<sp/>than<sp/>0&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="247"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="248"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="249"><highlight class="normal"></highlight></codeline>
+<codeline lineno="250"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>BoltDatasetPtr<sp/>numpyToBoltVectorDataset(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>py::object&amp;<sp/>data,</highlight></codeline>
+<codeline lineno="251"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint64_t<sp/>batch_size)<sp/>{</highlight></codeline>
+<codeline lineno="252"><highlight class="normal"><sp/><sp/>verifyBatchSize(batch_size);</highlight></codeline>
+<codeline lineno="253"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(isNumpyArray(data))<sp/>{</highlight></codeline>
+<codeline lineno="254"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(isNumpyFloat32(data))<sp/>{</highlight></codeline>
+<codeline lineno="255"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>denseNumpyToBoltVectorDataset(data.cast&lt;NumpyArray&lt;float&gt;&gt;(),</highlight></codeline>
+<codeline lineno="256"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>batch_size);</highlight></codeline>
+<codeline lineno="257"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="258"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(isNumpyUint32(data))<sp/>{</highlight></codeline>
+<codeline lineno="259"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>numpyTokensToBoltDataset(data.cast&lt;NumpyArray&lt;uint32_t&gt;&gt;(),</highlight></codeline>
+<codeline lineno="260"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>batch_size);</highlight></codeline>
+<codeline lineno="261"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="262"><highlight class="normal"></highlight></codeline>
+<codeline lineno="263"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="264"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;Expected<sp/>a<sp/>numpy<sp/>array<sp/>of<sp/>type<sp/>uint32<sp/>or<sp/>float32<sp/>but<sp/>instead<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="265"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;recieved<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="266"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;a<sp/>numpy<sp/>array<sp/>of<sp/>type<sp/>&quot;</highlight><highlight class="normal"><sp/>+</highlight></codeline>
+<codeline lineno="267"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>getNumpyDtype(data).cast&lt;std::string&gt;());</highlight></codeline>
+<codeline lineno="268"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="269"><highlight class="normal"></highlight></codeline>
+<codeline lineno="270"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(isTuple(data))<sp/>{</highlight></codeline>
+<codeline lineno="271"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>tupleToSparseBoltDataset(data,<sp/>batch_size);</highlight></codeline>
+<codeline lineno="272"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="273"><highlight class="normal"></highlight></codeline>
+<codeline lineno="274"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="275"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;Expected<sp/>a<sp/>numpy<sp/>array<sp/>or<sp/>a<sp/>tuple<sp/>of<sp/>numpy<sp/>arrays,<sp/>but<sp/>instead<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="276"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;received<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="277"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;an<sp/>object<sp/>of<sp/>type<sp/>&quot;</highlight><highlight class="normal"><sp/>+</highlight></codeline>
+<codeline lineno="278"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>py::str(data.get_type()).cast&lt;std::string&gt;());</highlight></codeline>
+<codeline lineno="279"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="280"><highlight class="normal"></highlight></codeline>
+<codeline lineno="281"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::dataset::numpy</highlight></codeline>
+    </programlisting>
+    <location file="dataset/src/NumpyDataset.h"/>
+  </compounddef>
+</doxygen>

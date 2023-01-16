@@ -1,0 +1,459 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_user_count_history_block" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::dataset::UserCountHistoryBlock</compoundname>
+    <basecompoundref refid="classthirdai_1_1dataset_1_1_block" prot="public" virt="non-virtual">thirdai::dataset::Block</basecompoundref>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_count_history_block_1ae85ebbaa73cca5a8c758ec7ecf3d44aa" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::UserCountHistoryBlock::_user_col</definition>
+        <argsstring></argsstring>
+        <name>_user_col</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::_user_col</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="171" column="12" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="171" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a84e3e769af0e376a088b51578f384373" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::UserCountHistoryBlock::_count_col</definition>
+        <argsstring></argsstring>
+        <name>_count_col</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::_count_col</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="172" column="12" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="172" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_count_history_block_1aea86e7781c226cd80ea1db5a2ba7fc8a" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::UserCountHistoryBlock::_timestamp_col</definition>
+        <argsstring></argsstring>
+        <name>_timestamp_col</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::_timestamp_col</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="173" column="12" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="173" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a42cbfc2bbdae16d9666f766234c2790c" prot="private" static="no" mutable="no">
+        <type>QuantityHistoryTrackerPtr</type>
+        <definition>QuantityHistoryTrackerPtr thirdai::dataset::UserCountHistoryBlock::_history</definition>
+        <argsstring></argsstring>
+        <name>_history</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::_history</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="174" column="29" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="174" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a709568f3583cb298daedbb5b55d666e7" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::UserCountHistoryBlock::_should_update_history</definition>
+        <argsstring></argsstring>
+        <name>_should_update_history</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::_should_update_history</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="176" column="8" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="176" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a75023dfd1177cc42d6c4e0e51888e7ef" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::UserCountHistoryBlock::_include_current_row</definition>
+        <argsstring></argsstring>
+        <name>_include_current_row</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::_include_current_row</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="177" column="8" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="177" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a3c9416b43a6d620772cd7460e0fb0058" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::UserCountHistoryBlock::UserCountHistoryBlock</definition>
+        <argsstring>(uint32_t user_col, uint32_t count_col, uint32_t timestamp_col, QuantityHistoryTrackerPtr history, bool should_update_history=true, bool include_current_row=false)</argsstring>
+        <name>UserCountHistoryBlock</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::UserCountHistoryBlock</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>user_col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>count_col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>timestamp_col</declname>
+        </param>
+        <param>
+          <type>QuantityHistoryTrackerPtr</type>
+          <declname>history</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>should_update_history</declname>
+          <defval>true</defval>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>include_current_row</declname>
+          <defval>false</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="13" column="3" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="13" bodyend="23"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a8a26508a7ba652de81a9381bba3ce133" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::UserCountHistoryBlock::featureDim</definition>
+        <argsstring>() const final</argsstring>
+        <name>featureDim</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::featureDim</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a5859698b5d80c130f745e66be3173eac">featureDim</reimplements>
+        <briefdescription>
+<para>Returns the dimension of the vector encoding. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="25" column="12" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="25" bodyend="25"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a9128c38fe9f5d02132c442bcebc297ee" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::UserCountHistoryBlock::isDense</definition>
+        <argsstring>() const final</argsstring>
+        <name>isDense</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::isDense</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a9fc5f3b16e9044149d90dfa61e2506e6">isDense</reimplements>
+        <briefdescription>
+<para>True if the block produces dense features, False otherwise. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="26" column="8" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="26" bodyend="26"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a57b52d47f7ee49dd06bf4488a1c04659" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::UserCountHistoryBlock::expectedNumColumns</definition>
+        <argsstring>() const final</argsstring>
+        <name>expectedNumColumns</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::expectedNumColumns</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a58bc2809a20117b3d8c9ca59ef5c3757">expectedNumColumns</reimplements>
+        <briefdescription>
+<para>Returns the minimum number of columns that the block expects to see in each row of the dataset. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="28" column="12" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="28" bodyend="30"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a6d66e1c4866dfee95f1b11a2911035a8" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::UserCountHistoryBlock::prepareForBatch</definition>
+        <argsstring>(const std::vector&lt; std::string_view &gt; &amp;first_row) final</argsstring>
+        <name>prepareForBatch</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::prepareForBatch</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a9411d9a3c22f805810489c4b29bbb0bc">prepareForBatch</reimplements>
+        <param>
+          <type>const std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>first_row</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="32" column="8" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="32" bodyend="35"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_count_history_block_1ae4ade2fe7abc9aff81f32447f5f398d7" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type><ref refid="structthirdai_1_1dataset_1_1_explanation" kindref="compound">Explanation</ref></type>
+        <definition>Explanation thirdai::dataset::UserCountHistoryBlock::explainIndex</definition>
+        <argsstring>(uint32_t index_within_block, const std::vector&lt; std::string_view &gt; &amp;input_row) final</argsstring>
+        <name>explainIndex</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::explainIndex</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a74f791cba8e885b30ae102124ab237d3">explainIndex</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>index_within_block</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>input_row</declname>
+        </param>
+        <briefdescription>
+<para>For a given index, get the keyword which falls in that index when building the segmented feature vector. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Arguments: index_within_block : index within the block so that we can get exact keyword responsible. input_row: the string_view of input string so that we process the keywords when we call explainIndex method rather than storing that in buildsegment , which may affect thread safety.</para>
+<para>Returns: column number and keyword responsible for the given index from that column. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="37" column="15" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="37" bodyend="66"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a24ec70b48393f3438d77b21fd4af57e1" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>auto</type>
+        <definition>static auto thirdai::dataset::UserCountHistoryBlock::make</definition>
+        <argsstring>(size_t user_col, size_t count_col, size_t timestamp_col, QuantityHistoryTrackerPtr history, bool should_update_history=true, bool include_current_row=false)</argsstring>
+        <name>make</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::make</qualifiedname>
+        <param>
+          <type>size_t</type>
+          <declname>user_col</declname>
+        </param>
+        <param>
+          <type>size_t</type>
+          <declname>count_col</declname>
+        </param>
+        <param>
+          <type>size_t</type>
+          <declname>timestamp_col</declname>
+        </param>
+        <param>
+          <type>QuantityHistoryTrackerPtr</type>
+          <declname>history</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>should_update_history</declname>
+          <defval>true</defval>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>include_current_row</declname>
+          <defval>false</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="68" column="15" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="68" bodyend="75"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a6a429a74d4db332a9c75e5df9f7e82d6" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::exception_ptr</type>
+        <definition>std::exception_ptr thirdai::dataset::UserCountHistoryBlock::buildSegment</definition>
+        <argsstring>(const std::vector&lt; std::string_view &gt; &amp;input_row, SegmentedFeatureVector &amp;vec) final</argsstring>
+        <name>buildSegment</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::buildSegment</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1af8e3d79b348482e033852b415a4dfaad">buildSegment</reimplements>
+        <param>
+          <type>const std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>input_row</declname>
+        </param>
+        <param>
+          <type><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref> &amp;</type>
+          <declname>vec</declname>
+        </param>
+        <briefdescription>
+<para>Derived class-specific implementation of how input rows get encoded (and what ends up in the vector segment). </para>
+        </briefdescription>
+        <detaileddescription>
+<para>WARNING: This function may be called in many threads simultaneously, so it should be thread-safe or robust to data races. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="78" column="22" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="78" bodyend="91"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a5ab357c352802eac47af45036e78d916" prot="private" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::tuple&lt; std::string, int64_t, float &gt;</type>
+        <definition>std::tuple&lt; std::string, int64_t, float &gt; thirdai::dataset::UserCountHistoryBlock::getUserTimeVal</definition>
+        <argsstring>(const std::vector&lt; std::string_view &gt; &amp;input_row) const</argsstring>
+        <name>getUserTimeVal</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::getUserTimeVal</qualifiedname>
+        <param>
+          <type>const std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>input_row</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="94" column="14" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="94" bodyend="113"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a4dc6a4bddbe7842cde09b4d2d8080b65" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; float &gt;</type>
+        <definition>std::vector&lt; float &gt; thirdai::dataset::UserCountHistoryBlock::indexAndGetCountsFromHistory</definition>
+        <argsstring>(const std::string &amp;user, int64_t timestamp_seconds, float val, bool restore_after_getting_history_counts)</argsstring>
+        <name>indexAndGetCountsFromHistory</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::indexAndGetCountsFromHistory</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>user</declname>
+        </param>
+        <param>
+          <type>int64_t</type>
+          <declname>timestamp_seconds</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>val</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>restore_after_getting_history_counts</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="115" column="15" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="115" bodyend="133"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_count_history_block_1aca23fb6270b9c3fcfa1666810f5a4518" prot="private" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; float &gt;</type>
+        <definition>std::vector&lt; float &gt; thirdai::dataset::UserCountHistoryBlock::getNormalizedRecentCountHistory</definition>
+        <argsstring>(const std::string &amp;user, int64_t timestamp_seconds) const</argsstring>
+        <name>getNormalizedRecentCountHistory</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::getNormalizedRecentCountHistory</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>user</declname>
+        </param>
+        <param>
+          <type>int64_t</type>
+          <declname>timestamp_seconds</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="135" column="15" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="135" bodyend="144"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-static-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a9b8c033e53033379dc57c36820835b1e" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::dataset::UserCountHistoryBlock::center</definition>
+        <argsstring>(std::vector&lt; float &gt; &amp;counts)</argsstring>
+        <name>center</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::center</qualifiedname>
+        <param>
+          <type>std::vector&lt; float &gt; &amp;</type>
+          <declname>counts</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="146" column="15" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="146" bodyend="155"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_count_history_block_1a3e17803dc6ca75b957793a2793aefc70" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::dataset::UserCountHistoryBlock::l2normalize</definition>
+        <argsstring>(std::vector&lt; float &gt; &amp;counts)</argsstring>
+        <name>l2normalize</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlock::l2normalize</qualifiedname>
+        <param>
+          <type>std::vector&lt; float &gt; &amp;</type>
+          <declname>counts</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="157" column="15" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="157" bodyend="169"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::dataset::Block</label>
+        <link refid="classthirdai_1_1dataset_1_1_block"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::UserCountHistoryBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_user_count_history_block"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>thirdai::dataset::Block</label>
+        <link refid="classthirdai_1_1dataset_1_1_block"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::UserCountHistoryBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_user_count_history_block"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="dataset/src/blocks/UserCountHistory.h" line="11" column="1" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="11" bodyend="178"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a84e3e769af0e376a088b51578f384373" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>_count_col</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a42cbfc2bbdae16d9666f766234c2790c" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>_history</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a75023dfd1177cc42d6c4e0e51888e7ef" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>_include_current_row</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a709568f3583cb298daedbb5b55d666e7" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>_should_update_history</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1aea86e7781c226cd80ea1db5a2ba7fc8a" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>_timestamp_col</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1ae85ebbaa73cca5a8c758ec7ecf3d44aa" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>_user_col</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1a67f4a42a2c11c4a403e0adeff8e5be3b" prot="public" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>addVectorSegment</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a6a429a74d4db332a9c75e5df9f7e82d6" prot="protected" virt="virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>buildSegment</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a9b8c033e53033379dc57c36820835b1e" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>center</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a57b52d47f7ee49dd06bf4488a1c04659" prot="public" virt="virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>expectedNumColumns</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1ae4ade2fe7abc9aff81f32447f5f398d7" prot="public" virt="virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>explainIndex</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a8a26508a7ba652de81a9381bba3ce133" prot="public" virt="virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>featureDim</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1aca23fb6270b9c3fcfa1666810f5a4518" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>getNormalizedRecentCountHistory</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a5ab357c352802eac47af45036e78d916" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>getUserTimeVal</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a4dc6a4bddbe7842cde09b4d2d8080b65" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>indexAndGetCountsFromHistory</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a9128c38fe9f5d02132c442bcebc297ee" prot="public" virt="virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>isDense</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a3e17803dc6ca75b957793a2793aefc70" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>l2normalize</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a24ec70b48393f3438d77b21fd4af57e1" prot="public" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>make</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a6d66e1c4866dfee95f1b11a2911035a8" prot="public" virt="virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>prepareForBatch</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_count_history_block_1a3c9416b43a6d620772cd7460e0fb0058" prot="public" virt="non-virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>UserCountHistoryBlock</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1aa63fcaa97e225720801526fb1b7799b3" prot="public" virt="virtual"><scope>thirdai::dataset::UserCountHistoryBlock</scope><name>~Block</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

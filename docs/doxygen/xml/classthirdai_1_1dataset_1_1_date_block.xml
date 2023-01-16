@@ -1,0 +1,290 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_date_block" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::dataset::DateBlock</compoundname>
+    <basecompoundref refid="classthirdai_1_1dataset_1_1_block" prot="public" virt="non-virtual">thirdai::dataset::Block</basecompoundref>
+    <includes refid="_date_8h" local="no">Date.h</includes>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_date_block_1a31f1ba975e84032e73538214c61fab79" prot="private" static="no" mutable="no">
+        <type>friend</type>
+        <definition>friend thirdai::dataset::DateBlock::DateBlockTests</definition>
+        <argsstring></argsstring>
+        <name>DateBlockTests</name>
+        <qualifiedname>thirdai::dataset::DateBlock::DateBlockTests</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Date.h" line="23" column="10" bodyfile="dataset/src/blocks/Date.h" bodystart="23" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_date_block_1a14090cdea8e06a4acc060b7ad878e079" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::DateBlock::_col</definition>
+        <argsstring></argsstring>
+        <name>_col</name>
+        <qualifiedname>thirdai::dataset::DateBlock::_col</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Date.h" line="102" column="12" bodyfile="dataset/src/blocks/Date.h" bodystart="102" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-static-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_date_block_1a53332647d4f308ae11a8a4e2175fefcb" prot="protected" static="yes" constexpr="yes" mutable="no">
+        <type>constexpr uint32_t</type>
+        <definition>constexpr uint32_t thirdai::dataset::DateBlock::day_of_week_dim</definition>
+        <argsstring></argsstring>
+        <name>day_of_week_dim</name>
+        <qualifiedname>thirdai::dataset::DateBlock::day_of_week_dim</qualifiedname>
+        <initializer>= 7</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Date.h" line="65" column="29" bodyfile="dataset/src/blocks/Date.h" bodystart="65" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_date_block_1aaac6eb13c8ceeb8ef748a37cf10668c3" prot="protected" static="yes" constexpr="yes" mutable="no">
+        <type>constexpr uint32_t</type>
+        <definition>constexpr uint32_t thirdai::dataset::DateBlock::month_of_year_dim</definition>
+        <argsstring></argsstring>
+        <name>month_of_year_dim</name>
+        <qualifiedname>thirdai::dataset::DateBlock::month_of_year_dim</qualifiedname>
+        <initializer>= 12</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Date.h" line="66" column="29" bodyfile="dataset/src/blocks/Date.h" bodystart="66" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_date_block_1a77eba1315b829ff8afdd13c877fcf5e2" prot="protected" static="yes" constexpr="yes" mutable="no">
+        <type>constexpr uint32_t</type>
+        <definition>constexpr uint32_t thirdai::dataset::DateBlock::week_of_month_dim</definition>
+        <argsstring></argsstring>
+        <name>week_of_month_dim</name>
+        <qualifiedname>thirdai::dataset::DateBlock::week_of_month_dim</qualifiedname>
+        <initializer>= 5</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Date.h" line="67" column="29" bodyfile="dataset/src/blocks/Date.h" bodystart="67" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_date_block_1aecf0a9a0b7f07a97a66f60902e125024" prot="protected" static="yes" constexpr="yes" mutable="no">
+        <type>constexpr uint32_t</type>
+        <definition>constexpr uint32_t thirdai::dataset::DateBlock::week_of_year_dim</definition>
+        <argsstring></argsstring>
+        <name>week_of_year_dim</name>
+        <qualifiedname>thirdai::dataset::DateBlock::week_of_year_dim</qualifiedname>
+        <initializer>= 53</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Date.h" line="68" column="29" bodyfile="dataset/src/blocks/Date.h" bodystart="68" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_date_block_1ad0a042aa5e8e1772adb40d59401a061e" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::DateBlock::DateBlock</definition>
+        <argsstring>(uint32_t col)</argsstring>
+        <name>DateBlock</name>
+        <qualifiedname>thirdai::dataset::DateBlock::DateBlock</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Date.h" line="26" column="12" bodyfile="dataset/src/blocks/Date.h" bodystart="26" bodyend="26"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_date_block_1a68b9f0688d5154e283863df5d0181cf9" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::DateBlock::featureDim</definition>
+        <argsstring>() const final</argsstring>
+        <name>featureDim</name>
+        <qualifiedname>thirdai::dataset::DateBlock::featureDim</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a5859698b5d80c130f745e66be3173eac">featureDim</reimplements>
+        <briefdescription>
+<para>Returns the dimension of the vector encoding. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Date.h" line="28" column="12" bodyfile="dataset/src/blocks/Date.h" bodystart="28" bodyend="31"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_date_block_1a6f7bb7f6c1942e8f9f7574fce8e2bba7" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::DateBlock::isDense</definition>
+        <argsstring>() const final</argsstring>
+        <name>isDense</name>
+        <qualifiedname>thirdai::dataset::DateBlock::isDense</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a9fc5f3b16e9044149d90dfa61e2506e6">isDense</reimplements>
+        <briefdescription>
+<para>True if the block produces dense features, False otherwise. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Date.h" line="33" column="8" bodyfile="dataset/src/blocks/Date.h" bodystart="33" bodyend="33"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_date_block_1acb1a8f4633fc99f1e0ab0dd4458b009b" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::DateBlock::expectedNumColumns</definition>
+        <argsstring>() const final</argsstring>
+        <name>expectedNumColumns</name>
+        <qualifiedname>thirdai::dataset::DateBlock::expectedNumColumns</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a58bc2809a20117b3d8c9ca59ef5c3757">expectedNumColumns</reimplements>
+        <briefdescription>
+<para>Returns the minimum number of columns that the block expects to see in each row of the dataset. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Date.h" line="35" column="12" bodyfile="dataset/src/blocks/Date.h" bodystart="35" bodyend="39"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_date_block_1a18f3f7d55f5b2830e5103e8339fd8ed4" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type><ref refid="structthirdai_1_1dataset_1_1_explanation" kindref="compound">Explanation</ref></type>
+        <definition>Explanation thirdai::dataset::DateBlock::explainIndex</definition>
+        <argsstring>(uint32_t index_within_block, const std::vector&lt; std::string_view &gt; &amp;input_row) final</argsstring>
+        <name>explainIndex</name>
+        <qualifiedname>thirdai::dataset::DateBlock::explainIndex</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a74f791cba8e885b30ae102124ab237d3">explainIndex</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>index_within_block</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>input_row</declname>
+        </param>
+        <briefdescription>
+<para>For a given index, get the keyword which falls in that index when building the segmented feature vector. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Arguments: index_within_block : index within the block so that we can get exact keyword responsible. input_row: the string_view of input string so that we process the keywords when we call explainIndex method rather than storing that in buildsegment , which may affect thread safety.</para>
+<para>Returns: column number and keyword responsible for the given index from that column. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Date.h" line="41" column="15" bodyfile="dataset/src/blocks/Date.h" bodystart="41" bodyend="60"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_date_block_1af61f2678a4ed171388b78bb78ebca7fe" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>auto</type>
+        <definition>static auto thirdai::dataset::DateBlock::make</definition>
+        <argsstring>(uint32_t col)</argsstring>
+        <name>make</name>
+        <qualifiedname>thirdai::dataset::DateBlock::make</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Date.h" line="62" column="15" bodyfile="dataset/src/blocks/Date.h" bodystart="62" bodyend="62"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_date_block_1aa8892d29020816829e940d702b7ba925" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::exception_ptr</type>
+        <definition>std::exception_ptr thirdai::dataset::DateBlock::buildSegment</definition>
+        <argsstring>(const std::vector&lt; std::string_view &gt; &amp;input_row, SegmentedFeatureVector &amp;vec) final</argsstring>
+        <name>buildSegment</name>
+        <qualifiedname>thirdai::dataset::DateBlock::buildSegment</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1af8e3d79b348482e033852b415a4dfaad">buildSegment</reimplements>
+        <param>
+          <type>const std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>input_row</declname>
+        </param>
+        <param>
+          <type><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref> &amp;</type>
+          <declname>vec</declname>
+        </param>
+        <briefdescription>
+<para>Derived class-specific implementation of how input rows get encoded (and what ends up in the vector segment). </para>
+        </briefdescription>
+        <detaileddescription>
+<para>WARNING: This function may be called in many threads simultaneously, so it should be thread-safe or robust to data races. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Date.h" line="70" column="22" bodyfile="dataset/src/blocks/Date.h" bodystart="70" bodyend="99"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>Parses a date string in &quot;YYYY-MM-DD&quot; format and encodes in a vector the day of the week, the month of the year, the week of the month, and the week of the year, each one-hot encoded in a separate segment of the vector. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>TODO(Geordie): try out other features such as day of month, day of year, year, etc. </para>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::dataset::Block</label>
+        <link refid="classthirdai_1_1dataset_1_1_block"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::DateBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_date_block"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>thirdai::dataset::Block</label>
+        <link refid="classthirdai_1_1dataset_1_1_block"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::DateBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_date_block"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="dataset/src/blocks/Date.h" line="22" column="1" bodyfile="dataset/src/blocks/Date.h" bodystart="22" bodyend="103"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_date_block_1a14090cdea8e06a4acc060b7ad878e079" prot="private" virt="non-virtual"><scope>thirdai::dataset::DateBlock</scope><name>_col</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1a67f4a42a2c11c4a403e0adeff8e5be3b" prot="public" virt="non-virtual"><scope>thirdai::dataset::DateBlock</scope><name>addVectorSegment</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_date_block_1aa8892d29020816829e940d702b7ba925" prot="protected" virt="virtual"><scope>thirdai::dataset::DateBlock</scope><name>buildSegment</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_date_block_1ad0a042aa5e8e1772adb40d59401a061e" prot="public" virt="non-virtual"><scope>thirdai::dataset::DateBlock</scope><name>DateBlock</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_date_block_1a31f1ba975e84032e73538214c61fab79" prot="private" virt="non-virtual"><scope>thirdai::dataset::DateBlock</scope><name>DateBlockTests</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_date_block_1a53332647d4f308ae11a8a4e2175fefcb" prot="protected" virt="non-virtual"><scope>thirdai::dataset::DateBlock</scope><name>day_of_week_dim</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_date_block_1acb1a8f4633fc99f1e0ab0dd4458b009b" prot="public" virt="virtual"><scope>thirdai::dataset::DateBlock</scope><name>expectedNumColumns</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_date_block_1a18f3f7d55f5b2830e5103e8339fd8ed4" prot="public" virt="virtual"><scope>thirdai::dataset::DateBlock</scope><name>explainIndex</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_date_block_1a68b9f0688d5154e283863df5d0181cf9" prot="public" virt="virtual"><scope>thirdai::dataset::DateBlock</scope><name>featureDim</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_date_block_1a6f7bb7f6c1942e8f9f7574fce8e2bba7" prot="public" virt="virtual"><scope>thirdai::dataset::DateBlock</scope><name>isDense</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_date_block_1af61f2678a4ed171388b78bb78ebca7fe" prot="public" virt="non-virtual"><scope>thirdai::dataset::DateBlock</scope><name>make</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_date_block_1aaac6eb13c8ceeb8ef748a37cf10668c3" prot="protected" virt="non-virtual"><scope>thirdai::dataset::DateBlock</scope><name>month_of_year_dim</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1a9411d9a3c22f805810489c4b29bbb0bc" prot="public" virt="virtual"><scope>thirdai::dataset::DateBlock</scope><name>prepareForBatch</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_date_block_1a77eba1315b829ff8afdd13c877fcf5e2" prot="protected" virt="non-virtual"><scope>thirdai::dataset::DateBlock</scope><name>week_of_month_dim</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_date_block_1aecf0a9a0b7f07a97a66f60902e125024" prot="protected" virt="non-virtual"><scope>thirdai::dataset::DateBlock</scope><name>week_of_year_dim</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1aa63fcaa97e225720801526fb1b7799b3" prot="public" virt="virtual"><scope>thirdai::dataset::DateBlock</scope><name>~Block</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

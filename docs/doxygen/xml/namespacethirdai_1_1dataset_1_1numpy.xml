@@ -1,0 +1,315 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="namespacethirdai_1_1dataset_1_1numpy" kind="namespace" language="C++">
+    <compoundname>thirdai::dataset::numpy</compoundname>
+    <innerclass refid="classthirdai_1_1dataset_1_1numpy_1_1_numpy_dataset" prot="public">thirdai::dataset::numpy::NumpyDataset</innerclass>
+      <sectiondef kind="typedef">
+      <memberdef kind="typedef" id="_numpy_dataset_8h_1ab21defb3406a99db85474763d98d7e01" prot="public" static="no">
+        <type><ref refid="classthirdai_1_1dataset_1_1numpy_1_1_numpy_dataset" kindref="compound">NumpyDataset</ref>&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt;</type>
+        <definition>using thirdai::dataset::numpy::WrappedNumpyVectors = typedef NumpyDataset&lt;BoltBatch&gt;</definition>
+        <argsstring></argsstring>
+        <name>WrappedNumpyVectors</name>
+        <qualifiedname>thirdai::dataset::numpy::WrappedNumpyVectors</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="23" column="1" bodyfile="dataset/src/NumpyDataset.h" bodystart="23" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_numpy_dataset_8h_1af211089e8a82b023285c0ee79b69a247" prot="public" static="no">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type>py::array_t&lt; T, py::array::c_style|py::array::forcecast &gt;</type>
+        <definition>using thirdai::dataset::numpy::NumpyArray = typedef py::array_t&lt;T, py::array::c_style | py::array::forcecast&gt;</definition>
+        <argsstring></argsstring>
+        <name>NumpyArray</name>
+        <qualifiedname>thirdai::dataset::numpy::NumpyArray</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="26" column="1" bodyfile="dataset/src/NumpyDataset.h" bodystart="26" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="_numpy_dataset_8h_1aed0a4cf8721b823b46a1e33430cf31d3" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::numpy::isTuple</definition>
+        <argsstring>(const py::object &amp;obj)</argsstring>
+        <name>isTuple</name>
+        <qualifiedname>thirdai::dataset::numpy::isTuple</qualifiedname>
+        <param>
+          <type>const py::object &amp;</type>
+          <declname>obj</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="49" column="13" bodyfile="dataset/src/NumpyDataset.h" bodystart="49" bodyend="51"/>
+      </memberdef>
+      <memberdef kind="function" id="_numpy_dataset_8h_1ae3c7f593659098a41c53924c9daf7a94" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::numpy::isNumpyArray</definition>
+        <argsstring>(const py::object &amp;obj)</argsstring>
+        <name>isNumpyArray</name>
+        <qualifiedname>thirdai::dataset::numpy::isNumpyArray</qualifiedname>
+        <param>
+          <type>const py::object &amp;</type>
+          <declname>obj</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="53" column="13" bodyfile="dataset/src/NumpyDataset.h" bodystart="53" bodyend="55"/>
+      </memberdef>
+      <memberdef kind="function" id="_numpy_dataset_8h_1aca94e99aa64cc3e043f8fce6bb337b75" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>py::str</type>
+        <definition>py::str thirdai::dataset::numpy::getNumpyDtype</definition>
+        <argsstring>(const py::object &amp;obj)</argsstring>
+        <name>getNumpyDtype</name>
+        <qualifiedname>thirdai::dataset::numpy::getNumpyDtype</qualifiedname>
+        <param>
+          <type>const py::object &amp;</type>
+          <declname>obj</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="57" column="16" bodyfile="dataset/src/NumpyDataset.h" bodystart="57" bodyend="59"/>
+      </memberdef>
+      <memberdef kind="function" id="_numpy_dataset_8h_1a1a967a26ed7e45354034054d76566576" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::numpy::checkNumpyDtype</definition>
+        <argsstring>(const py::object &amp;obj, const std::string &amp;type)</argsstring>
+        <name>checkNumpyDtype</name>
+        <qualifiedname>thirdai::dataset::numpy::checkNumpyDtype</qualifiedname>
+        <param>
+          <type>const py::object &amp;</type>
+          <declname>obj</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>type</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="61" column="13" bodyfile="dataset/src/NumpyDataset.h" bodystart="61" bodyend="63"/>
+      </memberdef>
+      <memberdef kind="function" id="_numpy_dataset_8h_1aa40543c9710aebd5f110511e36641219" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::numpy::isNumpyUint32</definition>
+        <argsstring>(const py::object &amp;obj)</argsstring>
+        <name>isNumpyUint32</name>
+        <qualifiedname>thirdai::dataset::numpy::isNumpyUint32</qualifiedname>
+        <param>
+          <type>const py::object &amp;</type>
+          <declname>obj</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="65" column="13" bodyfile="dataset/src/NumpyDataset.h" bodystart="65" bodyend="67"/>
+      </memberdef>
+      <memberdef kind="function" id="_numpy_dataset_8h_1a19a905b71182de56f5d4082f0f0b4ef6" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::numpy::isNumpyFloat32</definition>
+        <argsstring>(const py::object &amp;obj)</argsstring>
+        <name>isNumpyFloat32</name>
+        <qualifiedname>thirdai::dataset::numpy::isNumpyFloat32</qualifiedname>
+        <param>
+          <type>const py::object &amp;</type>
+          <declname>obj</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="69" column="13" bodyfile="dataset/src/NumpyDataset.h" bodystart="69" bodyend="71"/>
+      </memberdef>
+      <memberdef kind="function" id="_numpy_dataset_8h_1ad087e6a2afcd177e89b4e1cc743a9ebe" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>BoltDatasetPtr</type>
+        <definition>BoltDatasetPtr thirdai::dataset::numpy::denseNumpyToBoltVectorDataset</definition>
+        <argsstring>(const NumpyArray&lt; float &gt; &amp;examples, uint32_t batch_size)</argsstring>
+        <name>denseNumpyToBoltVectorDataset</name>
+        <qualifiedname>thirdai::dataset::numpy::denseNumpyToBoltVectorDataset</qualifiedname>
+        <param>
+          <type>const NumpyArray&lt; float &gt; &amp;</type>
+          <declname>examples</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="73" column="23" bodyfile="dataset/src/NumpyDataset.h" bodystart="73" bodyend="113"/>
+      </memberdef>
+      <memberdef kind="function" id="_numpy_dataset_8h_1a33ac22aa0a82c4ba7779688c40ebcaef" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>BoltDatasetPtr</type>
+        <definition>BoltDatasetPtr thirdai::dataset::numpy::numpyTokensToBoltDataset</definition>
+        <argsstring>(const NumpyArray&lt; uint32_t &gt; &amp;tokens, uint64_t batch_size)</argsstring>
+        <name>numpyTokensToBoltDataset</name>
+        <qualifiedname>thirdai::dataset::numpy::numpyTokensToBoltDataset</qualifiedname>
+        <param>
+          <type>const NumpyArray&lt; uint32_t &gt; &amp;</type>
+          <declname>tokens</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="115" column="23" bodyfile="dataset/src/NumpyDataset.h" bodystart="115" bodyend="158"/>
+      </memberdef>
+      <memberdef kind="function" id="_numpy_dataset_8h_1a400bab360f8f3f63a449c78f23d4790b" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::numpy::verifySparseNumpyTuple</definition>
+        <argsstring>(const py::tuple &amp;tup)</argsstring>
+        <name>verifySparseNumpyTuple</name>
+        <qualifiedname>thirdai::dataset::numpy::verifySparseNumpyTuple</qualifiedname>
+        <param>
+          <type>const py::tuple &amp;</type>
+          <declname>tup</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="160" column="13" bodyfile="dataset/src/NumpyDataset.h" bodystart="160" bodyend="191"/>
+      </memberdef>
+      <memberdef kind="function" id="_numpy_dataset_8h_1a24d228ea533a895bfb5601cc10d92f79" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>BoltDatasetPtr</type>
+        <definition>BoltDatasetPtr thirdai::dataset::numpy::numpyArraysToSparseBoltDataset</definition>
+        <argsstring>(const NumpyArray&lt; uint32_t &gt; &amp;indices, const NumpyArray&lt; float &gt; &amp;values, const NumpyArray&lt; uint32_t &gt; &amp;offsets, uint64_t batch_size)</argsstring>
+        <name>numpyArraysToSparseBoltDataset</name>
+        <qualifiedname>thirdai::dataset::numpy::numpyArraysToSparseBoltDataset</qualifiedname>
+        <param>
+          <type>const NumpyArray&lt; uint32_t &gt; &amp;</type>
+          <declname>indices</declname>
+        </param>
+        <param>
+          <type>const NumpyArray&lt; float &gt; &amp;</type>
+          <declname>values</declname>
+        </param>
+        <param>
+          <type>const NumpyArray&lt; uint32_t &gt; &amp;</type>
+          <declname>offsets</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="193" column="23" bodyfile="dataset/src/NumpyDataset.h" bodystart="193" bodyend="229"/>
+      </memberdef>
+      <memberdef kind="function" id="_numpy_dataset_8h_1a3617be9c9c0f291e3450c8527e2d437e" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>BoltDatasetPtr</type>
+        <definition>BoltDatasetPtr thirdai::dataset::numpy::tupleToSparseBoltDataset</definition>
+        <argsstring>(const py::object &amp;obj, uint64_t batch_size)</argsstring>
+        <name>tupleToSparseBoltDataset</name>
+        <qualifiedname>thirdai::dataset::numpy::tupleToSparseBoltDataset</qualifiedname>
+        <param>
+          <type>const py::object &amp;</type>
+          <declname>obj</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="231" column="23" bodyfile="dataset/src/NumpyDataset.h" bodystart="231" bodyend="241"/>
+      </memberdef>
+      <memberdef kind="function" id="_numpy_dataset_8h_1aee65779221369b0b0948736fea515f22" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::numpy::verifyBatchSize</definition>
+        <argsstring>(uint64_t batch_size)</argsstring>
+        <name>verifyBatchSize</name>
+        <qualifiedname>thirdai::dataset::numpy::verifyBatchSize</qualifiedname>
+        <param>
+          <type>uint64_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="243" column="13" bodyfile="dataset/src/NumpyDataset.h" bodystart="243" bodyend="248"/>
+      </memberdef>
+      <memberdef kind="function" id="_numpy_dataset_8h_1a943bb25d7bccc87ddc1c37a9e3ca2279" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>BoltDatasetPtr</type>
+        <definition>BoltDatasetPtr thirdai::dataset::numpy::numpyToBoltVectorDataset</definition>
+        <argsstring>(const py::object &amp;data, uint64_t batch_size)</argsstring>
+        <name>numpyToBoltVectorDataset</name>
+        <qualifiedname>thirdai::dataset::numpy::numpyToBoltVectorDataset</qualifiedname>
+        <param>
+          <type>const py::object &amp;</type>
+          <declname>data</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="250" column="23" bodyfile="dataset/src/NumpyDataset.h" bodystart="250" bodyend="279"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="dataset/src/NumpyDataset.h" line="16" column="1"/>
+  </compounddef>
+</doxygen>

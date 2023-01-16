@@ -1,0 +1,641 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_dlrm_attention_node" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::bolt::DlrmAttentionNode</compoundname>
+    <basecompoundref refid="classthirdai_1_1bolt_1_1_node" prot="public" virt="non-virtual">thirdai::bolt::Node</basecompoundref>
+    <basecompoundref prot="public" virt="non-virtual">std::enable_shared_from_this&lt; DlrmAttentionNode &gt;</basecompoundref>
+    <includes refid="_dlrm_attention_8h" local="no">DlrmAttention.h</includes>
+    <innerclass refid="structthirdai_1_1bolt_1_1_dlrm_attention_node_1_1_compiled_state" prot="private">thirdai::bolt::DlrmAttentionNode::CompiledState</innerclass>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a7603a8678b8729e2a90b3ede9cd8de65" prot="private" static="no" mutable="no">
+        <type>FullyConnectedNodePtr</type>
+        <definition>FullyConnectedNodePtr thirdai::bolt::DlrmAttentionNode::_fully_connected_node</definition>
+        <argsstring></argsstring>
+        <name>_fully_connected_node</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::_fully_connected_node</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="291" column="25" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="291" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a911120adbb30c7b5ef75f679a1db9d37" prot="private" static="no" mutable="no">
+        <type>EmbeddingNodePtr</type>
+        <definition>EmbeddingNodePtr thirdai::bolt::DlrmAttentionNode::_embedding_node</definition>
+        <argsstring></argsstring>
+        <name>_embedding_node</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::_embedding_node</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="292" column="20" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="292" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ad454e7c5bd7d1059d45c9d2a3578f073" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; CompiledState &gt;</type>
+        <definition>std::optional&lt;CompiledState&gt; thirdai::bolt::DlrmAttentionNode::_compiled_state</definition>
+        <argsstring></argsstring>
+        <name>_compiled_state</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::_compiled_state</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="305" column="17" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="305" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a21e85d3c035dde13062e0bc7896c0a6e" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::DlrmAttentionNode::_compiled</definition>
+        <argsstring></argsstring>
+        <name>_compiled</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::_compiled</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="307" column="8" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="307" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ab059b4291acfda31534c4069f87c2eab" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt;</type>
+        <definition>std::optional&lt;BoltBatch&gt; thirdai::bolt::DlrmAttentionNode::_outputs</definition>
+        <argsstring></argsstring>
+        <name>_outputs</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::_outputs</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="308" column="17" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="308" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a7709a275759e1e7cc03439661e6d8e35" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::DlrmAttentionNode::DlrmAttentionNode</definition>
+        <argsstring>()</argsstring>
+        <name>DlrmAttentionNode</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::DlrmAttentionNode</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="36" column="3" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="36" bodyend="36"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a1276f417d45374b536ccb5822e2affad" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::DlrmAttentionNode::outputDim</definition>
+        <argsstring>() const final</argsstring>
+        <name>outputDim</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::outputDim</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1adf765696d9f7fdc8bbc1ca098ed461e9">outputDim</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="38" column="12" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="38" bodyend="46"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1af75efcf1ac1dce99115208c7fe2be328" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::DlrmAttentionNode::isInputNode</definition>
+        <argsstring>() const final</argsstring>
+        <name>isInputNode</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::isInputNode</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a4bc5d54043015e5c9cbb28a85160a8f6">isInputNode</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="48" column="8" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="48" bodyend="48"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a141bd6e4a4cf7bf16d4abdf19a270207" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_dlrm_attention_node" kindref="compound">DlrmAttentionNode</ref> &gt;</type>
+        <definition>std::shared_ptr&lt; DlrmAttentionNode &gt; thirdai::bolt::DlrmAttentionNode::setPredecessors</definition>
+        <argsstring>(FullyConnectedNodePtr fully_connected_node, EmbeddingNodePtr embedding_node)</argsstring>
+        <name>setPredecessors</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::setPredecessors</qualifiedname>
+        <param>
+          <type>FullyConnectedNodePtr</type>
+          <declname>fully_connected_node</declname>
+        </param>
+        <param>
+          <type>EmbeddingNodePtr</type>
+          <declname>embedding_node</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="50" column="19" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="50" bodyend="77"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1aa1f9dcb586416d86180f510bb156ed00" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::DlrmAttentionNode::compileImpl</definition>
+        <argsstring>() final</argsstring>
+        <name>compileImpl</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::compileImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a8aca1832ebdf9fb5fbeeb08a8a50e10c">compileImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="80" column="8" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="80" bodyend="80"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1af5d54a99021c099e55827be8770df5c6" prot="protected" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_fully_connected_layer" kindref="compound">FullyConnectedLayer</ref> &gt; &gt;</type>
+        <definition>std::vector&lt; std::shared_ptr&lt; FullyConnectedLayer &gt; &gt; thirdai::bolt::DlrmAttentionNode::getInternalFullyConnectedLayersImpl</definition>
+        <argsstring>() const final</argsstring>
+        <name>getInternalFullyConnectedLayersImpl</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::getInternalFullyConnectedLayersImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a52d8bb7dd818868f7a3c8e852f3fe8f9">getInternalFullyConnectedLayersImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="83" column="3" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="83" bodyend="85"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a7f1c17ac2142cf1d529fbd44dde83b0b" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::DlrmAttentionNode::prepareForBatchProcessingImpl</definition>
+        <argsstring>(uint32_t batch_size, bool use_sparsity) final</argsstring>
+        <name>prepareForBatchProcessingImpl</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::prepareForBatchProcessingImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a13dff58075ba5d505616b644873e99ee">prepareForBatchProcessingImpl</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>use_sparsity</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="87" column="8" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="87" bodyend="93"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ac91efe1efa321706ff33e731a69c416a" prot="protected" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::DlrmAttentionNode::numNonzerosInOutputImpl</definition>
+        <argsstring>() const final</argsstring>
+        <name>numNonzerosInOutputImpl</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::numNonzerosInOutputImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1ae89f7fcdc1719e4cd2a5cfe9f3133a54">numNonzerosInOutputImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="95" column="12" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="95" bodyend="95"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a9aa6165fd01f6b09e10a7fc55ef4c3c5" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::DlrmAttentionNode::forwardImpl</definition>
+        <argsstring>(uint32_t vec_index, const BoltVector *labels) final</argsstring>
+        <name>forwardImpl</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::forwardImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a7126a97a87f143d8d6755fd71c331f46">forwardImpl</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> *</type>
+          <declname>labels</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="97" column="8" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="97" bodyend="143"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1acdf054a3ee246176d726a41ea50a0638" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::DlrmAttentionNode::backpropagateImpl</definition>
+        <argsstring>(uint32_t vec_index) final</argsstring>
+        <name>backpropagateImpl</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::backpropagateImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a44d73b3a2d6344aba16f8a1dc3b87919">backpropagateImpl</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="145" column="8" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="145" bodyend="190"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a4ccb9b14c0662429bb72a00be1ca846d" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::DlrmAttentionNode::initOptimizer</definition>
+        <argsstring>() final</argsstring>
+        <name>initOptimizer</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::initOptimizer</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1ad2ab6e06fa8587077a17e3f9c4ec1e78">initOptimizer</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="192" column="8" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="192" bodyend="192"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a5d77a680c4c122f56ec7e0d5864ef2d1" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::DlrmAttentionNode::updateParametersImpl</definition>
+        <argsstring>(float learning_rate, uint32_t batch_cnt) final</argsstring>
+        <name>updateParametersImpl</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::updateParametersImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a2934c0002c454d3e6dbb232b7f05cc8d">updateParametersImpl</reimplements>
+        <param>
+          <type>float</type>
+          <declname>learning_rate</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_cnt</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="194" column="8" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="194" bodyend="197"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ae8b3b76702b1620361b9946825dc2cbd" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+        <definition>BoltVector &amp; thirdai::bolt::DlrmAttentionNode::getOutputVectorImpl</definition>
+        <argsstring>(uint32_t vec_index) final</argsstring>
+        <name>getOutputVectorImpl</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::getOutputVectorImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a482129276694ef878d2c95712d552bad">getOutputVectorImpl</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="199" column="14" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="199" bodyend="201"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1afed63f01ae93dc0d9e7b74cb86d040fe" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::DlrmAttentionNode::cleanupAfterBatchProcessingImpl</definition>
+        <argsstring>() final</argsstring>
+        <name>cleanupAfterBatchProcessingImpl</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::cleanupAfterBatchProcessingImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1affb1e25aa5a2f485d49d9eb899b6a44e">cleanupAfterBatchProcessingImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="203" column="8" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="203" bodyend="203"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1aedb423e1b36043726cf27bb5573d3fdd" prot="protected" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::vector&lt; NodePtr &gt;</type>
+        <definition>std::vector&lt; NodePtr &gt; thirdai::bolt::DlrmAttentionNode::getPredecessorsImpl</definition>
+        <argsstring>() const final</argsstring>
+        <name>getPredecessorsImpl</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::getPredecessorsImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1abf8a46cda935b2ee6b8869fa1c0ffa9f">getPredecessorsImpl</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="205" column="15" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="205" bodyend="207"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ae4c197dfa0c3e31d1abc8fb218617ee0" prot="protected" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::DlrmAttentionNode::summarizeImpl</definition>
+        <argsstring>(std::stringstream &amp;summary, bool detailed) const final</argsstring>
+        <name>summarizeImpl</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::summarizeImpl</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1af76c56573f2f09f88d131a6b7de90a74">summarizeImpl</reimplements>
+        <param>
+          <type>std::stringstream &amp;</type>
+          <declname>summary</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>detailed</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="209" column="8" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="209" bodyend="216"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a7e61a3ea5eb14d2d24511a28cb0c1473" prot="protected" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::bolt::DlrmAttentionNode::type</definition>
+        <argsstring>() const final</argsstring>
+        <name>type</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::type</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1a6286ebeb923a53cb6ac293d3ac894949">type</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="220" column="15" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="220" bodyend="220"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ae69122cdbac1fe078c8c200308ec3b14" prot="protected" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>NodeState</type>
+        <definition>NodeState thirdai::bolt::DlrmAttentionNode::getState</definition>
+        <argsstring>() const final</argsstring>
+        <name>getState</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::getState</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1ab86e7912c6dbccaa402ad257b1512e7c">getState</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="222" column="13" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="222" bodyend="238"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ac0d0a3272174f9f2cfd7a6bdab2fd0f5" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::DlrmAttentionNode::enableDistributedTraining</definition>
+        <argsstring>() final</argsstring>
+        <name>enableDistributedTraining</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::enableDistributedTraining</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_node_1aa8c63e99fd4a0ba21bc2170590e3513d">enableDistributedTraining</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="240" column="8" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="240" bodyend="242"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1afe7bc46904fe804cb7397e3904c6029c" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>bool</type>
+            <declname>FC_OUTPUT_DENSE</declname>
+            <defname>FC_OUTPUT_DENSE</defname>
+          </param>
+        </templateparamlist>
+        <type>float</type>
+        <definition>static float thirdai::bolt::DlrmAttentionNode::fcOutputEmbeddingDotProduct</definition>
+        <argsstring>(const BoltVector &amp;fc_output, const float *const embedding)</argsstring>
+        <name>fcOutputEmbeddingDotProduct</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::fcOutputEmbeddingDotProduct</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>fc_output</declname>
+        </param>
+        <param>
+          <type>const float *const</type>
+          <declname>embedding</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="246" column="16" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="246" bodyend="254"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a1891a8cd759dfd7b4b2443c601c14584" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>bool</type>
+            <declname>FC_OUTPUT_DENSE</declname>
+            <defname>FC_OUTPUT_DENSE</defname>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>static void thirdai::bolt::DlrmAttentionNode::fcOutputEmbeddingDotProductBackward</definition>
+        <argsstring>(float dot_product_gradient, const BoltVector &amp;fc_output, const float *const embedding, float *const emb_gradient)</argsstring>
+        <name>fcOutputEmbeddingDotProductBackward</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::fcOutputEmbeddingDotProductBackward</qualifiedname>
+        <param>
+          <type>float</type>
+          <declname>dot_product_gradient</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>fc_output</declname>
+        </param>
+        <param>
+          <type>const float *const</type>
+          <declname>embedding</declname>
+        </param>
+        <param>
+          <type>float *const</type>
+          <declname>emb_gradient</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="257" column="15" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="257" bodyend="268"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a16291c8f983cbe99f55b60e438025b72" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>float</type>
+        <definition>static float thirdai::bolt::DlrmAttentionNode::embeddingDotProduct</definition>
+        <argsstring>(const float *const emb_1, const float *const emb_2, uint32_t dim)</argsstring>
+        <name>embeddingDotProduct</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::embeddingDotProduct</qualifiedname>
+        <param>
+          <type>const float *const</type>
+          <declname>emb_1</declname>
+        </param>
+        <param>
+          <type>const float *const</type>
+          <declname>emb_2</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>dim</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="270" column="16" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="270" bodyend="277"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a3bf6394676cc2aa9d664d75777f2ad61" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::bolt::DlrmAttentionNode::embeddingDotProductBackward</definition>
+        <argsstring>(float dot_product_gradient, const float *const emb_1, float *const emb_1_grad, const float *const emb_2, float *const emb_2_grad, uint32_t dim)</argsstring>
+        <name>embeddingDotProductBackward</name>
+        <qualifiedname>thirdai::bolt::DlrmAttentionNode::embeddingDotProductBackward</qualifiedname>
+        <param>
+          <type>float</type>
+          <declname>dot_product_gradient</declname>
+        </param>
+        <param>
+          <type>const float *const</type>
+          <declname>emb_1</declname>
+        </param>
+        <param>
+          <type>float *const</type>
+          <declname>emb_1_grad</declname>
+        </param>
+        <param>
+          <type>const float *const</type>
+          <declname>emb_2</declname>
+        </param>
+        <param>
+          <type>float *const</type>
+          <declname>emb_2_grad</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>dim</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/DlrmAttention.h" line="279" column="15" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="279" bodyend="289"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>This layer computes the pairwise dot products between the output of a fully connected layers and an embedding. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>The embedding is broken into chunks of dimension the same as the fuly connected output. Then the following dot products are computed. <verbatim>       | fc_output | emb_1 | emb_2 | ... | emb_n
+</verbatim> fc_output | X X X X emb_1 | X X X emb_2 | X X ... X emb_n |</para>
+<para>If the embedding layer uses concatenation then ideally the fully connected layer will have a dimension that is the same as the dimension of the embedding for each token.</para>
+<para>The the number of pairwise combinations of interest is (n+1)n/2, meaning the output of the layer is (n+1)n/2. </para>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="3">
+        <label>std::enable_shared_from_this&lt; DlrmAttentionNode &gt;</label>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::DlrmAttentionNode</label>
+        <link refid="classthirdai_1_1bolt_1_1_dlrm_attention_node"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::bolt::Node</label>
+        <link refid="classthirdai_1_1bolt_1_1_node"/>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="3">
+        <label>std::enable_shared_from_this&lt; DlrmAttentionNode &gt;</label>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::DlrmAttentionNode</label>
+        <link refid="classthirdai_1_1bolt_1_1_dlrm_attention_node"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::bolt::Node</label>
+        <link refid="classthirdai_1_1bolt_1_1_node"/>
+      </node>
+    </collaborationgraph>
+    <location file="bolt/src/graph/nodes/DlrmAttention.h" line="32" column="1" bodyfile="bolt/src/graph/nodes/DlrmAttention.h" bodystart="34" bodyend="309"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a21e85d3c035dde13062e0bc7896c0a6e" prot="private" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>_compiled</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ad454e7c5bd7d1059d45c9d2a3578f073" prot="private" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>_compiled_state</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a911120adbb30c7b5ef75f679a1db9d37" prot="private" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>_embedding_node</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a7603a8678b8729e2a90b3ede9cd8de65" prot="private" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>_fully_connected_node</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ab059b4291acfda31534c4069f87c2eab" prot="private" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>_outputs</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1aa9d48aad3e5bbcd047c944ae58f84580" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>backpropagate</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1acdf054a3ee246176d726a41ea50a0638" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>backpropagateImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1ac69895a5802ff7c3b730338b3b4e90b4" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>cleanupAfterBatchProcessing</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1afed63f01ae93dc0d9e7b74cb86d040fe" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>cleanupAfterBatchProcessingImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a88291233b0764978b7ceea7513aae3ba" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>compile</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16a7eee318133bed45ed926a12048d99963" prot="protected" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>Compiled</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1aa1f9dcb586416d86180f510bb156ed00" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>compileImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16afb4121016cc30a007bc314bd81845d1e" prot="protected" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>Constructed</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a7709a275759e1e7cc03439661e6d8e35" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>DlrmAttentionNode</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a16291c8f983cbe99f55b60e438025b72" prot="private" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>embeddingDotProduct</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a3bf6394676cc2aa9d664d75777f2ad61" prot="private" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>embeddingDotProductBackward</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ac0d0a3272174f9f2cfd7a6bdab2fd0f5" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>enableDistributedTraining</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1afe7bc46904fe804cb7397e3904c6029c" prot="private" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>fcOutputEmbeddingDotProduct</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a1891a8cd759dfd7b4b2443c601c14584" prot="private" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>fcOutputEmbeddingDotProductBackward</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a1d3c6a15ac7543b63b8785cc5e18e3c4" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>forward</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a9aa6165fd01f6b09e10a7fc55ef4c3c5" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>forwardImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a99399aa3e00c2b91fdda85cab1c0f158" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>getInternalFullyConnectedLayers</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1af5d54a99021c099e55827be8770df5c6" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>getInternalFullyConnectedLayersImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a7f77cde6a66c0958b83e452e87e20756" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>getOutputVector</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ae8b3b76702b1620361b9946825dc2cbd" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>getOutputVectorImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1aa64a67e500699d0d1ff48c7359276b8e" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>getPredecessors</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1aedb423e1b36043726cf27bb5573d3fdd" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>getPredecessorsImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ae69122cdbac1fe078c8c200308ec3b14" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>getState</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a4ccb9b14c0662429bb72a00be1ca846d" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>initOptimizer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1af75efcf1ac1dce99115208c7fe2be328" prot="public" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>isInputNode</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1ab01d717ae0cd7ce683bbb353c020063b" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>name</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16" prot="protected" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>NodeState</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a5ded5aa10ce21f479ba8b2afb2af3257" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>numNonzerosInOutput</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ac91efe1efa321706ff33e731a69c416a" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>numNonzerosInOutputImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a1276f417d45374b536ccb5822e2affad" prot="public" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>outputDim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16a73e48da570b3b13d772c47dcee4ae6a6" prot="protected" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>PredecessorsSet</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16ac172e0a909bdf0ccf05dbf8954c54fad" prot="protected" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>PreparedForBatchProcessing</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1aa8da3afebd36fa6536768ba5f58ec3c8" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>prepareForBatchProcessing</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a7f1c17ac2142cf1d529fbd44dde83b0b" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>prepareForBatchProcessingImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a141bd6e4a4cf7bf16d4abdf19a270207" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>setPredecessors</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1acb9da57dbfe1c24bfc7e7f9376077609" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>summarize</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ae4c197dfa0c3e31d1abc8fb218617ee0" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>summarizeImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a7e61a3ea5eb14d2d24511a28cb0c1473" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>type</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a14827669d25336d30ce66fc00dedaba4" prot="public" virt="non-virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>updateParameters</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a5d77a680c4c122f56ec7e0d5864ef2d1" prot="protected" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>updateParametersImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a1e977ed40e3903aaef3dde767bdeb322" prot="public" virt="virtual"><scope>thirdai::bolt::DlrmAttentionNode</scope><name>~Node</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

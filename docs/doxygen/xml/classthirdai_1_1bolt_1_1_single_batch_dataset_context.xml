@@ -1,0 +1,153 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_single_batch_dataset_context" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::bolt::SingleBatchDatasetContext</compoundname>
+    <basecompoundref refid="classthirdai_1_1bolt_1_1_dataset_context_base" prot="public" virt="non-virtual">thirdai::bolt::DatasetContextBase</basecompoundref>
+    <includes refid="_dataset_context_8h" local="no">DatasetContext.h</includes>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_single_batch_dataset_context_1aa1a560447ca720ad9847cee6718c9042" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt;</type>
+        <definition>std::vector&lt;BoltBatch&gt; thirdai::bolt::SingleBatchDatasetContext::_data</definition>
+        <argsstring></argsstring>
+        <name>_data</name>
+        <qualifiedname>thirdai::bolt::SingleBatchDatasetContext::_data</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DatasetContext.h" line="149" column="15" bodyfile="bolt/src/graph/DatasetContext.h" bodystart="149" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_single_batch_dataset_context_1a88f84d5cb3a3d10d52f1d0f5b7c4e7e1" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::SingleBatchDatasetContext::SingleBatchDatasetContext</definition>
+        <argsstring>(std::vector&lt; BoltVector &gt; &amp;&amp;data)</argsstring>
+        <name>SingleBatchDatasetContext</name>
+        <qualifiedname>thirdai::bolt::SingleBatchDatasetContext::SingleBatchDatasetContext</qualifiedname>
+        <param>
+          <type>std::vector&lt; <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &gt; &amp;&amp;</type>
+          <declname>data</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DatasetContext.h" line="117" column="12" bodyfile="bolt/src/graph/DatasetContext.h" bodystart="117" bodyend="121"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_single_batch_dataset_context_1a1cffaf1c3d2f78f237e815fe7d859d88" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::SingleBatchDatasetContext::SingleBatchDatasetContext</definition>
+        <argsstring>(std::vector&lt; BoltBatch &gt; &amp;&amp;batches)</argsstring>
+        <name>SingleBatchDatasetContext</name>
+        <qualifiedname>thirdai::bolt::SingleBatchDatasetContext::SingleBatchDatasetContext</qualifiedname>
+        <param>
+          <type>std::vector&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt; &amp;&amp;</type>
+          <declname>batches</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DatasetContext.h" line="123" column="12" bodyfile="bolt/src/graph/DatasetContext.h" bodystart="123" bodyend="135"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_single_batch_dataset_context_1ab44f735367aadcdb8075ce41ce0b7bb9" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::SingleBatchDatasetContext::setInputs</definition>
+        <argsstring>(uint64_t batch_idx, const std::vector&lt; InputPtr &gt; &amp;inputs) override</argsstring>
+        <name>setInputs</name>
+        <qualifiedname>thirdai::bolt::SingleBatchDatasetContext::setInputs</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_dataset_context_base_1a79d2824e80e601970867b07b33c224cc">setInputs</reimplements>
+        <param>
+          <type>uint64_t</type>
+          <declname>batch_idx</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; InputPtr &gt; &amp;</type>
+          <declname>inputs</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DatasetContext.h" line="137" column="8" bodyfile="bolt/src/graph/DatasetContext.h" bodystart="137" bodyend="143"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_single_batch_dataset_context_1aae6f135d214025d907ce533cf8019338" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>uint64_t</type>
+        <definition>uint64_t thirdai::bolt::SingleBatchDatasetContext::numVectorDatasets</definition>
+        <argsstring>() const override</argsstring>
+        <name>numVectorDatasets</name>
+        <qualifiedname>thirdai::bolt::SingleBatchDatasetContext::numVectorDatasets</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_dataset_context_base_1a6cdecbf794c1a49086211b1919c6c7e2">numVectorDatasets</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DatasetContext.h" line="145" column="12" bodyfile="bolt/src/graph/DatasetContext.h" bodystart="145" bodyend="145"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_single_batch_dataset_context_1a7d49c84a894ed9a15b953d824471555c" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::SingleBatchDatasetContext::batchSize</definition>
+        <argsstring>() const</argsstring>
+        <name>batchSize</name>
+        <qualifiedname>thirdai::bolt::SingleBatchDatasetContext::batchSize</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DatasetContext.h" line="147" column="12" bodyfile="bolt/src/graph/DatasetContext.h" bodystart="147" bodyend="147"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>This class provides the interface from <ref refid="classthirdai_1_1bolt_1_1_dataset_context_base" kindref="compound">DatasetContextBase</ref> but is constructed assuming a single sample input for inference. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::bolt::DatasetContextBase</label>
+        <link refid="classthirdai_1_1bolt_1_1_dataset_context_base"/>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::SingleBatchDatasetContext</label>
+        <link refid="classthirdai_1_1bolt_1_1_single_batch_dataset_context"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>thirdai::bolt::DatasetContextBase</label>
+        <link refid="classthirdai_1_1bolt_1_1_dataset_context_base"/>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::SingleBatchDatasetContext</label>
+        <link refid="classthirdai_1_1bolt_1_1_single_batch_dataset_context"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="bolt/src/graph/DatasetContext.h" line="115" column="1" bodyfile="bolt/src/graph/DatasetContext.h" bodystart="115" bodyend="150"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_single_batch_dataset_context_1aa1a560447ca720ad9847cee6718c9042" prot="public" virt="non-virtual"><scope>thirdai::bolt::SingleBatchDatasetContext</scope><name>_data</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_single_batch_dataset_context_1a7d49c84a894ed9a15b953d824471555c" prot="public" virt="non-virtual"><scope>thirdai::bolt::SingleBatchDatasetContext</scope><name>batchSize</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_single_batch_dataset_context_1aae6f135d214025d907ce533cf8019338" prot="public" virt="virtual"><scope>thirdai::bolt::SingleBatchDatasetContext</scope><name>numVectorDatasets</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_single_batch_dataset_context_1ab44f735367aadcdb8075ce41ce0b7bb9" prot="public" virt="virtual"><scope>thirdai::bolt::SingleBatchDatasetContext</scope><name>setInputs</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_single_batch_dataset_context_1a88f84d5cb3a3d10d52f1d0f5b7c4e7e1" prot="public" virt="non-virtual"><scope>thirdai::bolt::SingleBatchDatasetContext</scope><name>SingleBatchDatasetContext</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_single_batch_dataset_context_1a1cffaf1c3d2f78f237e815fe7d859d88" prot="public" virt="non-virtual"><scope>thirdai::bolt::SingleBatchDatasetContext</scope><name>SingleBatchDatasetContext</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_dataset_context_base_1aae8321c06f1ec9e700be9a794859b169" prot="public" virt="virtual"><scope>thirdai::bolt::SingleBatchDatasetContext</scope><name>~DatasetContextBase</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,311 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1hashing_1_1_hash_utils" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::hashing::HashUtils</compoundname>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_hash_utils_1a64f2961ca341c05152d9376241dfef81" prot="public" static="yes" constexpr="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>constexpr uint32_t</type>
+        <definition>static constexpr uint32_t thirdai::hashing::HashUtils::randDoubleHash</definition>
+        <argsstring>(uint32_t n1, uint32_t n2, uint32_t rand_double_hash_seed, uint32_t bit_range)</argsstring>
+        <name>randDoubleHash</name>
+        <qualifiedname>thirdai::hashing::HashUtils::randDoubleHash</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>n1</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n2</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>rand_double_hash_seed</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>bit_range</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/HashUtils.h" line="17" column="29" bodyfile="hashing/src/HashUtils.h" bodystart="17" bodyend="22"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_hash_utils_1a3bbb87d472d16bdf621e7181ee94bae7" prot="public" static="yes" constexpr="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>constexpr uint32_t</type>
+        <definition>static constexpr uint32_t thirdai::hashing::HashUtils::fastDoubleHash</definition>
+        <argsstring>(uint32_t n1, uint32_t n2, uint32_t bit_range)</argsstring>
+        <name>fastDoubleHash</name>
+        <qualifiedname>thirdai::hashing::HashUtils::fastDoubleHash</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>n1</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n2</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>bit_range</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/HashUtils.h" line="29" column="29" bodyfile="hashing/src/HashUtils.h" bodystart="29" bodyend="34"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_hash_utils_1a87e36aa661bd29689a1b3d484b997b05" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::hashing::HashUtils::defaultCompactHashesMethod</definition>
+        <argsstring>(const uint32_t *hashes, uint32_t *output_hashes, uint32_t length_output, uint32_t hashes_per_output_value)</argsstring>
+        <name>defaultCompactHashesMethod</name>
+        <qualifiedname>thirdai::hashing::HashUtils::defaultCompactHashesMethod</qualifiedname>
+        <param>
+          <type>const uint32_t *</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>uint32_t *</type>
+          <declname>output_hashes</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>length_output</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>hashes_per_output_value</declname>
+        </param>
+        <briefdescription>
+<para>Performs a default hash compaction by assigning hashes_per_output_value hashes to each of the length_output output hashes. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>If length_output * hashes_per_output_value &gt;= len(hashes), this will segfault, so don&apos;t do that. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/HashUtils.h" line="42" column="15" bodyfile="hashing/src/HashUtils.h" bodystart="42" bodyend="54"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_hash_utils_1abfa16f5cc5aa80d8d397c47bde767a7b" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::hashing::HashUtils::defaultCompactHashes</definition>
+        <argsstring>(const uint32_t *hashes, uint32_t *output_hashes, uint32_t length_output, uint32_t hashes_per_output_value)</argsstring>
+        <name>defaultCompactHashes</name>
+        <qualifiedname>thirdai::hashing::HashUtils::defaultCompactHashes</qualifiedname>
+        <param>
+          <type>const uint32_t *</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>uint32_t *</type>
+          <declname>output_hashes</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>length_output</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>hashes_per_output_value</declname>
+        </param>
+        <briefdescription>
+<para>Performas a default hash compaction by compacting hashes into each of the output bins. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>If length_output * hashes_per_output_value &gt;= len(hashes), this will segfault, so don&apos;t do that. The range of this is UINT32_MAX. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/HashUtils.h" line="61" column="15" bodyfile="hashing/src/HashUtils.h" bodystart="61" bodyend="77"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_hash_utils_1a969818e0101904cffcabf5607b820174" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::hashing::HashUtils::compactHashBits</definition>
+        <argsstring>(const uint32_t *hashes, uint32_t *output_hashes, uint32_t length_output, uint32_t hashes_per_output_value)</argsstring>
+        <name>compactHashBits</name>
+        <qualifiedname>thirdai::hashing::HashUtils::compactHashBits</qualifiedname>
+        <param>
+          <type>const uint32_t *</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>uint32_t *</type>
+          <declname>output_hashes</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>length_output</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>hashes_per_output_value</declname>
+        </param>
+        <briefdescription>
+<para>Performas a default hash compaction by assigning hashes_per_output_value hash bits to each of the length_output output hashes. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Assumes that the input hashes are all either 0 or 1. If length_output * hashes_per_output_value &gt;= len(hashes), this will segfault, so don&apos;t do that. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/HashUtils.h" line="86" column="15" bodyfile="hashing/src/HashUtils.h" bodystart="86" bodyend="97"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_hash_utils_1a45fb223b3f2a33fb8a552f69a876ae10" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>static uint32_t thirdai::hashing::HashUtils::log_2_floor</definition>
+        <argsstring>(uint32_t input)</argsstring>
+        <name>log_2_floor</name>
+        <qualifiedname>thirdai::hashing::HashUtils::log_2_floor</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>input</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/HashUtils.h" line="99" column="19" bodyfile="hashing/src/HashUtils.h" bodystart="99" bodyend="109"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_hash_utils_1a641a65eb0e88094cb536be9be36bb5e0" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::hashing::HashUtils::densifyHashes</definition>
+        <argsstring>(uint32_t *hashes, uint32_t num_hashes, uint32_t max_path_length=100, uint32_t unset_hash_value=0)</argsstring>
+        <name>densifyHashes</name>
+        <qualifiedname>thirdai::hashing::HashUtils::densifyHashes</qualifiedname>
+        <param>
+          <type>uint32_t *</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>num_hashes</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>max_path_length</declname>
+          <defval>100</defval>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>unset_hash_value</declname>
+          <defval>0</defval>
+        </param>
+        <briefdescription>
+<para>Does an in place densification of hashes, as described in the DOPH paper. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Currently unset hashes should be represented by UINT32_MAX. For a given unset hash, if we don&apos;t find a set hash within max_path_length number of jumps, we set it to unset_hash_value. First performs a densification of the largest 2^x number of hashes less than the number of hashes, then densifies the rest. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/HashUtils.h" line="119" column="15" bodyfile="hashing/src/HashUtils.h" bodystart="119" bodyend="140"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_hash_utils_1a50cafee33d07ab9d18b610167eb067ea" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>static uint32_t thirdai::hashing::HashUtils::combineHashes</definition>
+        <argsstring>(uint32_t lhs, uint32_t rhs)</argsstring>
+        <name>combineHashes</name>
+        <qualifiedname>thirdai::hashing::HashUtils::combineHashes</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>lhs</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>rhs</declname>
+        </param>
+        <briefdescription>
+<para>Combines two hashes into one unique hash. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Based on boost::hash_combine Reference: <ulink url="https://stackoverflow.com/questions/5889238/why-is-xor-the-default-way-to-combine-hashes">https://stackoverflow.com/questions/5889238/why-is-xor-the-default-way-to-combine-hashes</ulink> </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/HashUtils.h" line="148" column="19" bodyfile="hashing/src/HashUtils.h" bodystart="148" bodyend="151"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_hash_utils_1a0076bf4d88a38ed74584a0bfc09711eb" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>static uint32_t thirdai::hashing::HashUtils::simpleIntegerHash</definition>
+        <argsstring>(uint32_t val)</argsstring>
+        <name>simpleIntegerHash</name>
+        <qualifiedname>thirdai::hashing::HashUtils::simpleIntegerHash</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>val</declname>
+        </param>
+        <briefdescription>
+<para>Computes a cheap and simple hash of an integer. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><ulink url="https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key">https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key</ulink> </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/HashUtils.h" line="157" column="19" bodyfile="hashing/src/HashUtils.h" bodystart="157" bodyend="162"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-static-func">
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_hash_utils_1a56fa8cd55dee814da6e9d0ab29fd0918" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::hashing::HashUtils::densifyHashesPowerOf2</definition>
+        <argsstring>(uint32_t *hashes, uint32_t log_num_hashes, uint32_t starting_offset, uint32_t max_path_length, uint32_t unset_hash_value)</argsstring>
+        <name>densifyHashesPowerOf2</name>
+        <qualifiedname>thirdai::hashing::HashUtils::densifyHashesPowerOf2</qualifiedname>
+        <param>
+          <type>uint32_t *</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>log_num_hashes</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>starting_offset</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>max_path_length</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>unset_hash_value</declname>
+        </param>
+        <briefdescription>
+<para>Does an in place densification of a power of 2 number of hashes. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Starts at an optional offset in case we already know that some of the hashes are filled. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/HashUtils.h" line="170" column="15" bodyfile="hashing/src/HashUtils.h" bodystart="170" bodyend="192"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="hashing/src/HashUtils.h" line="11" column="1" bodyfile="hashing/src/HashUtils.h" bodystart="11" bodyend="193"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1hashing_1_1_hash_utils_1a50cafee33d07ab9d18b610167eb067ea" prot="public" virt="non-virtual"><scope>thirdai::hashing::HashUtils</scope><name>combineHashes</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_utils_1a969818e0101904cffcabf5607b820174" prot="public" virt="non-virtual"><scope>thirdai::hashing::HashUtils</scope><name>compactHashBits</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_utils_1abfa16f5cc5aa80d8d397c47bde767a7b" prot="public" virt="non-virtual"><scope>thirdai::hashing::HashUtils</scope><name>defaultCompactHashes</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_utils_1a87e36aa661bd29689a1b3d484b997b05" prot="public" virt="non-virtual"><scope>thirdai::hashing::HashUtils</scope><name>defaultCompactHashesMethod</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_utils_1a641a65eb0e88094cb536be9be36bb5e0" prot="public" virt="non-virtual"><scope>thirdai::hashing::HashUtils</scope><name>densifyHashes</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_utils_1a56fa8cd55dee814da6e9d0ab29fd0918" prot="private" virt="non-virtual"><scope>thirdai::hashing::HashUtils</scope><name>densifyHashesPowerOf2</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_utils_1a3bbb87d472d16bdf621e7181ee94bae7" prot="public" virt="non-virtual"><scope>thirdai::hashing::HashUtils</scope><name>fastDoubleHash</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_utils_1a45fb223b3f2a33fb8a552f69a876ae10" prot="public" virt="non-virtual"><scope>thirdai::hashing::HashUtils</scope><name>log_2_floor</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_utils_1a64f2961ca341c05152d9376241dfef81" prot="public" virt="non-virtual"><scope>thirdai::hashing::HashUtils</scope><name>randDoubleHash</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_utils_1a0076bf4d88a38ed74584a0bfc09711eb" prot="public" virt="non-virtual"><scope>thirdai::hashing::HashUtils</scope><name>simpleIntegerHash</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

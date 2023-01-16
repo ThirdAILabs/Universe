@@ -1,0 +1,259 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_string_lookup_categorical_block" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::dataset::StringLookupCategoricalBlock</compoundname>
+    <basecompoundref refid="classthirdai_1_1dataset_1_1_categorical_block" prot="public" virt="non-virtual">thirdai::dataset::CategoricalBlock</basecompoundref>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1a020a58c6b9ba640d85d586d55ba7e17f" prot="private" static="no" mutable="no">
+        <type>ThreadSafeVocabularyPtr</type>
+        <definition>ThreadSafeVocabularyPtr thirdai::dataset::StringLookupCategoricalBlock::_vocab</definition>
+        <argsstring></argsstring>
+        <name>_vocab</name>
+        <qualifiedname>thirdai::dataset::StringLookupCategoricalBlock::_vocab</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="166" column="27" bodyfile="dataset/src/blocks/Categorical.h" bodystart="166" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1ad5edd18709339b16920c487277bd8b1d" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::StringLookupCategoricalBlock::StringLookupCategoricalBlock</definition>
+        <argsstring>(uint32_t col, ThreadSafeVocabularyPtr vocab, std::optional&lt; char &gt; delimiter=std::nullopt)</argsstring>
+        <name>StringLookupCategoricalBlock</name>
+        <qualifiedname>thirdai::dataset::StringLookupCategoricalBlock::StringLookupCategoricalBlock</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <param>
+          <type>ThreadSafeVocabularyPtr</type>
+          <declname>vocab</declname>
+        </param>
+        <param>
+          <type>std::optional&lt; char &gt;</type>
+          <declname>delimiter</declname>
+          <defval>std::nullopt</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="119" column="3" bodyfile="dataset/src/blocks/Categorical.h" bodystart="119" bodyend="122"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1a4e744c25f27605491244ea7c48b4ce71" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::StringLookupCategoricalBlock::StringLookupCategoricalBlock</definition>
+        <argsstring>(uint32_t col, uint32_t n_classes, std::optional&lt; char &gt; delimiter=std::nullopt)</argsstring>
+        <name>StringLookupCategoricalBlock</name>
+        <qualifiedname>thirdai::dataset::StringLookupCategoricalBlock::StringLookupCategoricalBlock</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_classes</declname>
+        </param>
+        <param>
+          <type>std::optional&lt; char &gt;</type>
+          <declname>delimiter</declname>
+          <defval>std::nullopt</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="124" column="3" bodyfile="dataset/src/blocks/Categorical.h" bodystart="124" bodyend="127"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1a74424d5a4d9214128eadac720cbeeef3" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>ThreadSafeVocabularyPtr</type>
+        <definition>ThreadSafeVocabularyPtr thirdai::dataset::StringLookupCategoricalBlock::getVocabulary</definition>
+        <argsstring>() const</argsstring>
+        <name>getVocabulary</name>
+        <qualifiedname>thirdai::dataset::StringLookupCategoricalBlock::getVocabulary</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="141" column="27" bodyfile="dataset/src/blocks/Categorical.h" bodystart="141" bodyend="141"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1a3866f470cfc8c699e34974e13bc6a2c9" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::dataset::StringLookupCategoricalBlock::getResponsibleCategory</definition>
+        <argsstring>(uint32_t index, const std::string_view &amp;category_value) const final</argsstring>
+        <name>getResponsibleCategory</name>
+        <qualifiedname>thirdai::dataset::StringLookupCategoricalBlock::getResponsibleCategory</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_categorical_block_1af713acd5e86b5d87e5ff2f34b04da435">getResponsibleCategory</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>index</declname>
+        </param>
+        <param>
+          <type>const std::string_view &amp;</type>
+          <declname>category_value</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="143" column="15" bodyfile="dataset/src/blocks/Categorical.h" bodystart="143" bodyend="147"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1a759a93aef40bd8149f662b12f41d5919" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>auto</type>
+        <definition>static auto thirdai::dataset::StringLookupCategoricalBlock::make</definition>
+        <argsstring>(uint32_t col, ThreadSafeVocabularyPtr vocab, std::optional&lt; char &gt; delimiter=std::nullopt)</argsstring>
+        <name>make</name>
+        <qualifiedname>thirdai::dataset::StringLookupCategoricalBlock::make</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <param>
+          <type>ThreadSafeVocabularyPtr</type>
+          <declname>vocab</declname>
+        </param>
+        <param>
+          <type>std::optional&lt; char &gt;</type>
+          <declname>delimiter</declname>
+          <defval>std::nullopt</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="129" column="15" bodyfile="dataset/src/blocks/Categorical.h" bodystart="129" bodyend="133"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1ac2976dbe68b7aa58cc5bb6625aa47acb" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>auto</type>
+        <definition>static auto thirdai::dataset::StringLookupCategoricalBlock::make</definition>
+        <argsstring>(uint32_t col, uint32_t n_classes, std::optional&lt; char &gt; delimiter=std::nullopt)</argsstring>
+        <name>make</name>
+        <qualifiedname>thirdai::dataset::StringLookupCategoricalBlock::make</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_classes</declname>
+        </param>
+        <param>
+          <type>std::optional&lt; char &gt;</type>
+          <declname>delimiter</declname>
+          <defval>std::nullopt</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="135" column="15" bodyfile="dataset/src/blocks/Categorical.h" bodystart="135" bodyend="139"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1ae0f46b51f0022e216a54c40d58f28c4b" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::exception_ptr</type>
+        <definition>std::exception_ptr thirdai::dataset::StringLookupCategoricalBlock::encodeCategory</definition>
+        <argsstring>(std::string_view category, SegmentedFeatureVector &amp;vec) final</argsstring>
+        <name>encodeCategory</name>
+        <qualifiedname>thirdai::dataset::StringLookupCategoricalBlock::encodeCategory</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_categorical_block_1a08523c85a1759eb00d49a1554dbdd645">encodeCategory</reimplements>
+        <param>
+          <type>std::string_view</type>
+          <declname>category</declname>
+        </param>
+        <param>
+          <type><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref> &amp;</type>
+          <declname>vec</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="150" column="22" bodyfile="dataset/src/blocks/Categorical.h" bodystart="150" bodyend="163"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="3">
+        <label>thirdai::dataset::Block</label>
+        <link refid="classthirdai_1_1dataset_1_1_block"/>
+      </node>
+      <node id="2">
+        <label>thirdai::dataset::CategoricalBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_categorical_block"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::StringLookupCategoricalBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="3">
+        <label>thirdai::dataset::Block</label>
+        <link refid="classthirdai_1_1dataset_1_1_block"/>
+      </node>
+      <node id="2">
+        <label>thirdai::dataset::CategoricalBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_categorical_block"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::StringLookupCategoricalBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="dataset/src/blocks/Categorical.h" line="117" column="1" bodyfile="dataset/src/blocks/Categorical.h" bodystart="117" bodyend="167"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a22a14506c33b4b904029bdd85c388598" prot="protected" virt="non-virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>_n_classes</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1a020a58c6b9ba640d85d586d55ba7e17f" prot="private" virt="non-virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>_vocab</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1a67f4a42a2c11c4a403e0adeff8e5be3b" prot="public" virt="non-virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>addVectorSegment</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a9e130f6029370db99ea56e26900bd3d4" prot="protected" virt="virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>buildSegment</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a60f569a3fb4ad91442ec9780e2c714b5" prot="public" virt="non-virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>CategoricalBlock</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a88644bfb9ce7bff3ad2ea7fd344a7343" prot="public" virt="non-virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>CategoricalBlockTest</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1ae0f46b51f0022e216a54c40d58f28c4b" prot="protected" virt="virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>encodeCategory</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1ad6f2bba282be5220f90ea156fe291879" prot="public" virt="virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>expectedNumColumns</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a9223a7dd8b74b614e93a6be9234b10b2" prot="public" virt="virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>explainIndex</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a21cff869aa317945641b9b0e5c9ae2b9" prot="public" virt="virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>featureDim</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1a3866f470cfc8c699e34974e13bc6a2c9" prot="public" virt="virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>getResponsibleCategory</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1a74424d5a4d9214128eadac720cbeeef3" prot="public" virt="non-virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>getVocabulary</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1ab348bb0c80ed9b57f2aeb230bd009892" prot="public" virt="virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>isDense</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1a759a93aef40bd8149f662b12f41d5919" prot="public" virt="non-virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>make</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1ac2976dbe68b7aa58cc5bb6625aa47acb" prot="public" virt="non-virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>make</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1a9411d9a3c22f805810489c4b29bbb0bc" prot="public" virt="virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>prepareForBatch</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1ad5edd18709339b16920c487277bd8b1d" prot="public" virt="non-virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>StringLookupCategoricalBlock</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1a4e744c25f27605491244ea7c48b4ce71" prot="public" virt="non-virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>StringLookupCategoricalBlock</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1aa63fcaa97e225720801526fb1b7799b3" prot="public" virt="virtual"><scope>thirdai::dataset::StringLookupCategoricalBlock</scope><name>~Block</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,686 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_layer_norm_8h" kind="file" language="C++">
+    <compoundname>LayerNorm.h</compoundname>
+    <includes local="no">cereal/archives/binary.hpp</includes>
+    <includes local="no">cereal/types/base_class.hpp</includes>
+    <includes local="no">cereal/types/memory.hpp</includes>
+    <includes local="no">cereal/types/optional.hpp</includes>
+    <includes refid="_node_8h" local="no">bolt/src/graph/Node.h</includes>
+    <includes refid="_layer_config_8h" local="no">bolt/src/layers/LayerConfig.h</includes>
+    <includes refid="_bolt_vector_8h" local="no">bolt_vector/src/BoltVector.h</includes>
+    <includes local="no">exceptions/src/Exceptions.h</includes>
+    <includes local="no">cmath</includes>
+    <includes local="no">memory</includes>
+    <includes local="no">optional</includes>
+    <includes local="no">stdexcept</includes>
+    <includes local="no">utility</includes>
+    <includedby refid="_graph_property_checks_8h" local="no">bolt/src/graph/GraphPropertyChecks.h</includedby>
+    <incdepgraph>
+      <node id="6">
+        <label>bolt/src/graph/Node.h</label>
+        <link refid="_node_8h_source"/>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>bolt/src/graph/nodes/LayerNorm.h</label>
+        <link refid="_layer_norm_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="40" relation="include">
+        </childnode>
+        <childnode refid="41" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>bolt/src/layers/FullyConnectedLayer.h</label>
+        <link refid="_fully_connected_layer_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="43" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="37" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="44" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>LayerConfig.h</label>
+        <link refid="_layer_config_8h_source"/>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="36" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+        <childnode refid="40" relation="include">
+        </childnode>
+        <childnode refid="42" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+      </node>
+      <node id="11">
+        <label>LayerUtils.h</label>
+        <link refid="_layer_utils_8h_source"/>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+        <childnode refid="35" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+      </node>
+      <node id="43">
+        <label>bolt/src/layers/Optimizer.h</label>
+        <link refid="_optimizer_8h_source"/>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+      </node>
+      <node id="36">
+        <label>SamplingConfig.h</label>
+        <link refid="_sampling_config_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="37" relation="include">
+        </childnode>
+        <childnode refid="40" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="41" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+      </node>
+      <node id="17">
+        <label>bolt_vector/src/BoltVector.h</label>
+        <link refid="_bolt_vector_8h_source"/>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+      </node>
+      <node id="12">
+        <label>hashing/src/DWTA.h</label>
+        <link refid="_d_w_t_a_8h_source"/>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+      </node>
+      <node id="31">
+        <label>hashing/src/FastSRP.h</label>
+        <link refid="_fast_s_r_p_8h_source"/>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+      </node>
+      <node id="14">
+        <label>HashFunction.h</label>
+        <link refid="_hash_function_8h_source"/>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+      </node>
+      <node id="15">
+        <label>HashUtils.h</label>
+        <link refid="_hash_utils_8h_source"/>
+        <childnode refid="16" relation="include">
+        </childnode>
+      </node>
+      <node id="32">
+        <label>hashing/src/SRP.h</label>
+        <link refid="_s_r_p_8h_source"/>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+      </node>
+      <node id="38">
+        <label>HashTable.h</label>
+        <link refid="_hash_table_8h_source"/>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="39" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+      </node>
+      <node id="37">
+        <label>hashtable/src/SampledHashTable.h</label>
+        <link refid="_sampled_hash_table_8h_source"/>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="39" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+      </node>
+      <node id="33">
+        <label>utils/StringManipulation.h</label>
+        <link refid="_string_manipulation_8h_source"/>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="19">
+        <label>algorithm</label>
+      </node>
+      <node id="20">
+        <label>cassert</label>
+      </node>
+      <node id="35">
+        <label>cctype</label>
+      </node>
+      <node id="10">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="2">
+        <label>cereal/archives/binary.hpp</label>
+      </node>
+      <node id="18">
+        <label>cereal/cereal.hpp</label>
+      </node>
+      <node id="3">
+        <label>cereal/types/base_class.hpp</label>
+      </node>
+      <node id="4">
+        <label>cereal/types/memory.hpp</label>
+      </node>
+      <node id="5">
+        <label>cereal/types/optional.hpp</label>
+      </node>
+      <node id="13">
+        <label>cereal/types/polymorphic.hpp</label>
+      </node>
+      <node id="8">
+        <label>cereal/types/vector.hpp</label>
+      </node>
+      <node id="40">
+        <label>cmath</label>
+      </node>
+      <node id="16">
+        <label>cstdint</label>
+      </node>
+      <node id="42">
+        <label>exception</label>
+      </node>
+      <node id="45">
+        <label>exceptions/src/Exceptions.h</label>
+      </node>
+      <node id="21">
+        <label>iostream</label>
+      </node>
+      <node id="22">
+        <label>limits</label>
+      </node>
+      <node id="41">
+        <label>memory</label>
+      </node>
+      <node id="23">
+        <label>numeric</label>
+      </node>
+      <node id="24">
+        <label>optional</label>
+      </node>
+      <node id="25">
+        <label>queue</label>
+      </node>
+      <node id="44">
+        <label>random</label>
+      </node>
+      <node id="26">
+        <label>sstream</label>
+      </node>
+      <node id="27">
+        <label>stdexcept</label>
+      </node>
+      <node id="28">
+        <label>string</label>
+      </node>
+      <node id="34">
+        <label>string_view</label>
+      </node>
+      <node id="46">
+        <label>unordered_map</label>
+      </node>
+      <node id="39">
+        <label>unordered_set</label>
+      </node>
+      <node id="29">
+        <label>utility</label>
+      </node>
+      <node id="30">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="2">
+        <label>bolt/src/graph/GraphPropertyChecks.h</label>
+        <link refid="_graph_property_checks_8h_source"/>
+      </node>
+      <node id="1">
+        <label>bolt/src/graph/nodes/LayerNorm.h</label>
+        <link refid="_layer_norm_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classthirdai_1_1bolt_1_1_layer_norm_node" prot="public">thirdai::bolt::LayerNormNode</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1bolt">thirdai::bolt</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/archives/binary.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/types/base_class.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/types/memory.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/types/optional.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt/src/graph/Node.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt/src/layers/LayerConfig.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt_vector/src/BoltVector.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;exceptions/src/Exceptions.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cmath&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;memory&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;optional&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;stdexcept&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;utility&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::bolt<sp/>{</highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight><highlight class="comment">/*</highlight></codeline>
+<codeline lineno="20"><highlight class="comment"><sp/><sp/>This<sp/>class<sp/>normalizes<sp/>the<sp/>activations<sp/>of<sp/>the<sp/>previous<sp/>layer<sp/>for<sp/>each<sp/>sample</highlight></codeline>
+<codeline lineno="21"><highlight class="comment"><sp/><sp/>independently<sp/>rather<sp/>than<sp/>applying<sp/>a<sp/>normalization<sp/>across<sp/>a<sp/>batch<sp/>of<sp/>samples.</highlight></codeline>
+<codeline lineno="22"><highlight class="comment"><sp/><sp/>The<sp/>transformation<sp/>sets<sp/>the<sp/>activations&apos;<sp/>means<sp/>and<sp/>variances<sp/>close<sp/>to<sp/>0<sp/>and</highlight></codeline>
+<codeline lineno="23"><highlight class="comment"><sp/><sp/>1<sp/>respectively.</highlight></codeline>
+<codeline lineno="24"><highlight class="comment"><sp/><sp/>If<sp/>the<sp/>`scale`<sp/>and<sp/>`center`<sp/>parameters<sp/>are<sp/>set,<sp/>the<sp/>corresponding<sp/>z-scores</highlight></codeline>
+<codeline lineno="25"><highlight class="comment"><sp/><sp/>are<sp/>linearly<sp/>transformed<sp/>according<sp/>to<sp/>the<sp/>parameters<sp/>specified<sp/>by<sp/>the<sp/>beta<sp/>and</highlight></codeline>
+<codeline lineno="26"><highlight class="comment"><sp/><sp/>gamma<sp/>regularizers.</highlight></codeline>
+<codeline lineno="27"><highlight class="comment"><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="28"><highlight class="normal"></highlight></codeline>
+<codeline lineno="29"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Fixed<sp/>constant<sp/>to<sp/>guard<sp/>against<sp/>dividing<sp/>by<sp/>zero<sp/>in<sp/>the</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="30"><highlight class="normal"></highlight><highlight class="comment">//<sp/>gradient<sp/>computation<sp/>in<sp/>the<sp/>rare<sp/>cases<sp/>when<sp/>the<sp/>standard<sp/>deviation</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="31"><highlight class="normal"></highlight><highlight class="comment">//<sp/>evaluates<sp/>to<sp/>zero.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="32"><highlight class="normal"></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>DIV_BY_ZERO_GUARD<sp/>=<sp/>0.00000001;</highlight></codeline>
+<codeline lineno="33"><highlight class="normal"></highlight></codeline>
+<codeline lineno="34" refid="classthirdai_1_1bolt_1_1_layer_norm_node" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1bolt_1_1_layer_norm_node" kindref="compound">LayerNormNode</ref><sp/>final<sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_node" kindref="compound">Node</ref>,</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/>std::enable_shared_from_this&lt;LayerNormNode&gt;<sp/>{</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1bolt_1_1_layer_norm_node" kindref="compound">LayerNormNode</ref>()</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>_config(std::make_shared&lt;NormalizationLayerConfig&gt;()),</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_batch(std::nullopt),</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_node_to_normalize(</highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">),</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_compiled(</highlight><highlight class="keyword">false</highlight><highlight class="normal">)<sp/>{}</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"></highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_layer_norm_node" kindref="compound">LayerNormNode</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_normalization_layer_config" kindref="compound">NormalizationLayerConfig</ref>&amp;<sp/>config)</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>_config(std::make_shared&lt;NormalizationLayerConfig&gt;(config)),</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_batch(std::nullopt),</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_node_to_normalize(</highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">),</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_compiled(</highlight><highlight class="keyword">false</highlight><highlight class="normal">)<sp/>{}</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"></highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;LayerNormNode&gt;<sp/>make()<sp/>{</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;LayerNormNode&gt;(</highlight><highlight class="keyword">new</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_layer_norm_node" kindref="compound">LayerNormNode</ref>());</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="53"><highlight class="normal"></highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;LayerNormNode&gt;<sp/>makeWithConfig(</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_normalization_layer_config" kindref="compound">NormalizationLayerConfig</ref>&amp;<sp/>config)<sp/>{</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;LayerNormNode&gt;(</highlight><highlight class="keyword">new</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_layer_norm_node" kindref="compound">LayerNormNode</ref>(config));</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"></highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/>std::shared_ptr&lt;LayerNormNode&gt;<sp/>addPredecessor(NodePtr<sp/>node)<sp/>{</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(getState()<sp/>!=<sp/>NodeState::Constructed)<sp/>{</highlight></codeline>
+<codeline lineno="61"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>exceptions::NodeStateMachineError(</highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;Predecessor<sp/>Node<sp/>has<sp/>already<sp/>been<sp/>set<sp/>for<sp/>this<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;Normalization<sp/>Layer.<sp/>&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(!node-&gt;isInputNode());</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"></highlight></codeline>
+<codeline lineno="67"><highlight class="normal"><sp/><sp/><sp/><sp/>_node_to_normalize<sp/>=<sp/>std::move(node);</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"></highlight></codeline>
+<codeline lineno="69"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>shared_from_this();</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"></highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/>uint32_t<sp/>outputDim()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_node_to_normalize-&gt;outputDim();<sp/>}</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"></highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>isInputNode()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>This<sp/>should<sp/>not<sp/>be<sp/>an<sp/>input<sp/>node</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"></highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>initOptimizer()<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{}</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"></highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>enableDistributedTraining()<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>NOOP<sp/>since<sp/>the<sp/>LayerNorm<sp/>node<sp/>doesn&apos;t<sp/>have<sp/>any<sp/>paramters</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"></highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>compileImpl()<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{<sp/>_compiled<sp/>=<sp/></highlight><highlight class="keyword">true</highlight><highlight class="normal">;<sp/>}</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"></highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/>std::vector&lt;std::shared_ptr&lt;FullyConnectedLayer&gt;&gt;</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"><sp/><sp/>getInternalFullyConnectedLayersImpl()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="90"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>{};</highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="92"><highlight class="normal"></highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>prepareForBatchProcessingImpl(uint32_t<sp/>batch_size,</highlight></codeline>
+<codeline lineno="94"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>use_sparsity)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="95"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)use_sparsity;</highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>is_dense<sp/>=<sp/>_node_to_normalize-&gt;numNonzerosInOutput()<sp/>==</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_node_to_normalize-&gt;outputDim();</highlight></codeline>
+<codeline lineno="98"><highlight class="normal"></highlight></codeline>
+<codeline lineno="99"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>dim<sp/>=<sp/>_node_to_normalize-&gt;numNonzerosInOutput();</highlight></codeline>
+<codeline lineno="100"><highlight class="normal"></highlight></codeline>
+<codeline lineno="101"><highlight class="normal"><sp/><sp/><sp/><sp/>_batch<sp/>=<sp/><ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref>(</highlight><highlight class="comment">/*<sp/>dim=*/</highlight><highlight class="normal">dim,<sp/></highlight><highlight class="comment">/*<sp/>batch_size=<sp/>*/</highlight><highlight class="normal"><sp/>batch_size,</highlight></codeline>
+<codeline lineno="102"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>is_dense=<sp/>*/</highlight><highlight class="normal"><sp/>is_dense);</highlight></codeline>
+<codeline lineno="103"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="104"><highlight class="normal"></highlight></codeline>
+<codeline lineno="105"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Computes<sp/>the<sp/>first<sp/>and<sp/>second<sp/>moments<sp/>{mean,<sp/>variance}<sp/>required</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="106"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>to<sp/>normalize<sp/>the<sp/>input<sp/>to<sp/>this<sp/>layer.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="107"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::tuple&lt;float,<sp/>float&gt;<sp/>computeNormalizationMoments(</highlight></codeline>
+<codeline lineno="108"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>&amp;<sp/>bolt_vector)<sp/>{</highlight></codeline>
+<codeline lineno="109"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>len<sp/>=<sp/>bolt_vector.len;</highlight></codeline>
+<codeline lineno="110"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>mean<sp/>=<sp/>0,<sp/>variance<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="111"><highlight class="normal"></highlight></codeline>
+<codeline lineno="112"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>neuron_index<sp/>=<sp/>0;<sp/>neuron_index<sp/>&lt;<sp/>len;<sp/>neuron_index++)<sp/>{</highlight></codeline>
+<codeline lineno="113"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>mean<sp/>+=<sp/>bolt_vector.activations[neuron_index];</highlight></codeline>
+<codeline lineno="114"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="115"><highlight class="normal"><sp/><sp/><sp/><sp/>mean<sp/>/=<sp/>len;</highlight></codeline>
+<codeline lineno="116"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>neuron_index<sp/>=<sp/>0;<sp/>neuron_index<sp/>&lt;<sp/>len;<sp/>neuron_index++)<sp/>{</highlight></codeline>
+<codeline lineno="117"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>activation<sp/>=<sp/>bolt_vector.activations[neuron_index];</highlight></codeline>
+<codeline lineno="118"><highlight class="normal"></highlight></codeline>
+<codeline lineno="119"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>variance<sp/>+=<sp/>(activation<sp/>-<sp/>mean)<sp/>*<sp/>(activation<sp/>-<sp/>mean);</highlight></codeline>
+<codeline lineno="120"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="121"><highlight class="normal"><sp/><sp/><sp/><sp/>variance<sp/>/=<sp/>len;</highlight></codeline>
+<codeline lineno="122"><highlight class="normal"></highlight></codeline>
+<codeline lineno="123"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>{mean,<sp/>variance};</highlight></codeline>
+<codeline lineno="124"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="125"><highlight class="normal"></highlight></codeline>
+<codeline lineno="126"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>forwardImpl(uint32_t<sp/>vec_index,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>*<sp/>labels)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="127"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)labels;</highlight></codeline>
+<codeline lineno="128"><highlight class="normal"></highlight></codeline>
+<codeline lineno="129"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>&amp;<sp/>input_vector<sp/>=</highlight></codeline>
+<codeline lineno="130"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_node_to_normalize-&gt;getOutputVector(vec_index);</highlight></codeline>
+<codeline lineno="131"><highlight class="normal"></highlight></codeline>
+<codeline lineno="132"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>output<sp/>=<sp/>getOutputVectorImpl(vec_index);</highlight></codeline>
+<codeline lineno="133"><highlight class="normal"></highlight></codeline>
+<codeline lineno="134"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>[mean,<sp/>variance]<sp/>=<sp/>computeNormalizationMoments(input_vector);</highlight></codeline>
+<codeline lineno="135"><highlight class="normal"></highlight></codeline>
+<codeline lineno="136"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(!std::isnan(mean));</highlight></codeline>
+<codeline lineno="137"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(!std::isnan(variance));</highlight></codeline>
+<codeline lineno="138"><highlight class="normal"></highlight></codeline>
+<codeline lineno="139"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>neuron_index<sp/>=<sp/>0;<sp/>neuron_index<sp/>&lt;<sp/>input_vector.len;</highlight></codeline>
+<codeline lineno="140"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>neuron_index++)<sp/>{</highlight></codeline>
+<codeline lineno="141"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>activation<sp/>=<sp/>input_vector.activations[neuron_index];</highlight></codeline>
+<codeline lineno="142"><highlight class="normal"></highlight></codeline>
+<codeline lineno="143"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>The<sp/>epsilon<sp/>factor<sp/>is<sp/>to<sp/>guard<sp/>against<sp/>division<sp/>by<sp/>zero.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="144"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>z_score<sp/>=</highlight></codeline>
+<codeline lineno="145"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(activation<sp/>-<sp/>mean)<sp/>/<sp/>(sqrt(variance)<sp/>+<sp/>_config-&gt;epsilon());</highlight></codeline>
+<codeline lineno="146"><highlight class="normal"></highlight></codeline>
+<codeline lineno="147"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>apply<sp/>a<sp/>linear<sp/>transformation<sp/>to<sp/>the<sp/>z_score<sp/>using<sp/>gamma<sp/>and<sp/>beta</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="148"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>regularizers.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="149"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>z_score<sp/>+=<sp/>_config-&gt;beta();</highlight></codeline>
+<codeline lineno="150"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>z_score<sp/>*=<sp/>_config-&gt;gamma();</highlight></codeline>
+<codeline lineno="151"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>(*_batch)[vec_index].activations[neuron_index]<sp/>=<sp/>z_score;</highlight></codeline>
+<codeline lineno="152"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="153"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="154"><highlight class="normal"></highlight></codeline>
+<codeline lineno="155"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Computes<sp/>the<sp/>derivative<sp/>of<sp/>the<sp/>normalization<sp/>function</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="156"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>For<sp/>activation<sp/>x,<sp/>the<sp/>normalization<sp/>is<sp/>given<sp/>by</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="157"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>f(x)<sp/>=<sp/>[(x<sp/>-<sp/>mu)/(sigma<sp/>+<sp/>epsilon)]<sp/>*<sp/>gamma<sp/>+<sp/>beta</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="158"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>For<sp/>a<sp/>layer<sp/>with<sp/>n<sp/>activations,<sp/>the<sp/>expression<sp/>for<sp/>the<sp/>partial<sp/>derivative</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="159"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>can<sp/>be<sp/>found<sp/>here</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="160"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>https://www.notion.so/Bolt-DAG-API-Proposal-8d2d72d13df94f64b7829f80ab080def#0d4ec531c9f64e83a460bd56dfe04320</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="161"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>normDerivative(</highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>activation,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>mean,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>variance,</highlight></codeline>
+<codeline lineno="162"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>vec_length)<sp/>{</highlight></codeline>
+<codeline lineno="163"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(getState()<sp/>==<sp/>NodeState::PreparedForBatchProcessing);</highlight></codeline>
+<codeline lineno="164"><highlight class="normal"></highlight></codeline>
+<codeline lineno="165"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>centered_activation<sp/>=<sp/>(activation<sp/>-<sp/>mean)<sp/>*<sp/>(activation<sp/>-<sp/>mean);</highlight></codeline>
+<codeline lineno="166"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>std_deviation<sp/>=<sp/>sqrt(variance);</highlight></codeline>
+<codeline lineno="167"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>denominator<sp/>=<sp/>(vec_length<sp/>*<sp/>vec_length)<sp/>*<sp/>std_deviation<sp/>*</highlight></codeline>
+<codeline lineno="168"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(std_deviation<sp/>+<sp/>_config-&gt;epsilon())<sp/>*</highlight></codeline>
+<codeline lineno="169"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(std_deviation<sp/>+<sp/>_config-&gt;epsilon());</highlight></codeline>
+<codeline lineno="170"><highlight class="normal"></highlight></codeline>
+<codeline lineno="171"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>additive<sp/>term<sp/>to<sp/>avoid<sp/>division<sp/>by<sp/>zero</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="172"><highlight class="normal"><sp/><sp/><sp/><sp/>denominator<sp/>+=<sp/>DIV_BY_ZERO_GUARD;</highlight></codeline>
+<codeline lineno="173"><highlight class="normal"></highlight></codeline>
+<codeline lineno="174"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>gradient<sp/>=</highlight></codeline>
+<codeline lineno="175"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>vec_length<sp/>*<sp/>std_deviation<sp/>*<sp/>(std_deviation<sp/>+<sp/>_config-&gt;epsilon())<sp/>-</highlight></codeline>
+<codeline lineno="176"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>centered_activation;</highlight></codeline>
+<codeline lineno="177"><highlight class="normal"><sp/><sp/><sp/><sp/>gradient<sp/>/=<sp/>denominator;</highlight></codeline>
+<codeline lineno="178"><highlight class="normal"><sp/><sp/><sp/><sp/>gradient<sp/>*=<sp/>_config-&gt;gamma()<sp/>*<sp/>(vec_length<sp/>-<sp/>1);</highlight></codeline>
+<codeline lineno="179"><highlight class="normal"></highlight></codeline>
+<codeline lineno="180"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>gradient;</highlight></codeline>
+<codeline lineno="181"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="182"><highlight class="normal"></highlight></codeline>
+<codeline lineno="183"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>backpropagateImpl(uint32_t<sp/>vec_index)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="184"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>&amp;<sp/>input_vector<sp/>=<sp/>_node_to_normalize-&gt;getOutputVector(vec_index);</highlight></codeline>
+<codeline lineno="185"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>&amp;<sp/>output_vector<sp/>=<sp/>getOutputVectorImpl(vec_index);</highlight></codeline>
+<codeline lineno="186"><highlight class="normal"></highlight></codeline>
+<codeline lineno="187"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>[mean,<sp/>variance]<sp/>=<sp/>computeNormalizationMoments(input_vector);</highlight></codeline>
+<codeline lineno="188"><highlight class="normal"></highlight></codeline>
+<codeline lineno="189"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>len<sp/>=<sp/>input_vector.len;</highlight></codeline>
+<codeline lineno="190"><highlight class="normal"></highlight></codeline>
+<codeline lineno="191"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>neuron_index<sp/>=<sp/>0;<sp/>neuron_index<sp/>&lt;<sp/>input_vector.len;</highlight></codeline>
+<codeline lineno="192"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>neuron_index++)<sp/>{</highlight></codeline>
+<codeline lineno="193"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>grad<sp/>=<sp/>normDerivative(input_vector.activations[neuron_index],<sp/>mean,</highlight></codeline>
+<codeline lineno="194"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>variance,<sp/>len);</highlight></codeline>
+<codeline lineno="195"><highlight class="normal"></highlight></codeline>
+<codeline lineno="196"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>assert(!std::isnan(grad));</highlight></codeline>
+<codeline lineno="197"><highlight class="normal"></highlight></codeline>
+<codeline lineno="198"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>assert(!std::isnan(output_vector.gradients[neuron_index]));</highlight></codeline>
+<codeline lineno="199"><highlight class="normal"></highlight></codeline>
+<codeline lineno="200"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(grad<sp/>==<sp/>0.0<sp/>||<sp/>output_vector.gradients[neuron_index]<sp/>==<sp/>0)<sp/>{</highlight></codeline>
+<codeline lineno="201"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">continue</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="202"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="203"><highlight class="normal"></highlight></codeline>
+<codeline lineno="204"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>input_vector.gradients[neuron_index]<sp/>+=</highlight></codeline>
+<codeline lineno="205"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>output_vector.gradients[neuron_index]<sp/>*<sp/>grad;</highlight></codeline>
+<codeline lineno="206"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="207"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="208"><highlight class="normal"></highlight></codeline>
+<codeline lineno="209"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>updateParametersImpl(</highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>learning_rate,<sp/>uint32_t<sp/>batch_cnt)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="210"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>TODO(blaise):<sp/>Since<sp/>_gamma_regularizer<sp/>and<sp/>_beta_regularizer<sp/>are</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="211"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>trainable<sp/>parameters,<sp/>we<sp/>should<sp/>add<sp/>an<sp/>implementation<sp/>for<sp/>updating<sp/>these</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="212"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>parameters</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="213"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)learning_rate;</highlight></codeline>
+<codeline lineno="214"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)batch_cnt;</highlight></codeline>
+<codeline lineno="215"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="216"><highlight class="normal"></highlight></codeline>
+<codeline lineno="217"><highlight class="normal"><sp/><sp/><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>&amp;<sp/>getOutputVectorImpl(uint32_t<sp/>vec_index)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="218"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>(*_batch)[vec_index];</highlight></codeline>
+<codeline lineno="219"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="220"><highlight class="normal"></highlight></codeline>
+<codeline lineno="221"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>cleanupAfterBatchProcessingImpl()<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{<sp/>_batch<sp/>=<sp/>std::nullopt;<sp/>}</highlight></codeline>
+<codeline lineno="222"><highlight class="normal"></highlight></codeline>
+<codeline lineno="223"><highlight class="normal"><sp/><sp/>uint32_t<sp/>numNonzerosInOutputImpl()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="224"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_node_to_normalize-&gt;numNonzerosInOutput();</highlight></codeline>
+<codeline lineno="225"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="226"><highlight class="normal"></highlight></codeline>
+<codeline lineno="227"><highlight class="normal"><sp/><sp/>std::vector&lt;NodePtr&gt;<sp/>getPredecessorsImpl()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="228"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>{_node_to_normalize};</highlight></codeline>
+<codeline lineno="229"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="230"><highlight class="normal"></highlight></codeline>
+<codeline lineno="231"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>summarizeImpl(std::stringstream&amp;<sp/>summary,<sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>detailed)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="232"><highlight class="normal"><sp/><sp/><sp/><sp/>summary<sp/>&lt;&lt;<sp/>_node_to_normalize-&gt;name()<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;<sp/>-&gt;<sp/>&quot;</highlight><highlight class="normal"><sp/>&lt;&lt;<sp/>name()</highlight></codeline>
+<codeline lineno="233"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;<sp/>(LayerNorm)<sp/>&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="234"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(detailed)<sp/>{</highlight></codeline>
+<codeline lineno="235"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>summary<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;,<sp/>epsilon=&quot;</highlight><highlight class="normal"><sp/>&lt;&lt;<sp/>_config-&gt;epsilon()</highlight></codeline>
+<codeline lineno="236"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;,<sp/>beta_regularizer=&quot;</highlight><highlight class="normal"><sp/>&lt;&lt;<sp/>_config-&gt;beta();</highlight></codeline>
+<codeline lineno="237"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>summary<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;,<sp/>gamma_regularizer=&quot;</highlight><highlight class="normal"><sp/>&lt;&lt;<sp/>_config-&gt;gamma();</highlight></codeline>
+<codeline lineno="238"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>summary<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;)&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="239"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="240"><highlight class="normal"><sp/><sp/><sp/><sp/>summary<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;\n&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="241"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="242"><highlight class="normal"></highlight></codeline>
+<codeline lineno="243"><highlight class="normal"><sp/><sp/>std::string<sp/>type()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::string(</highlight><highlight class="stringliteral">&quot;layer_norm&quot;</highlight><highlight class="normal">);<sp/>}</highlight></codeline>
+<codeline lineno="244"><highlight class="normal"></highlight></codeline>
+<codeline lineno="245"><highlight class="normal"><sp/><sp/>NodeState<sp/>getState()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="246"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!_node_to_normalize<sp/>&amp;&amp;<sp/>!_compiled<sp/>&amp;&amp;<sp/>!_batch)<sp/>{</highlight></codeline>
+<codeline lineno="247"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>NodeState::Constructed;</highlight></codeline>
+<codeline lineno="248"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="249"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(_node_to_normalize<sp/>&amp;&amp;<sp/>!_compiled<sp/>&amp;&amp;<sp/>!_batch)<sp/>{</highlight></codeline>
+<codeline lineno="250"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>NodeState::PredecessorsSet;</highlight></codeline>
+<codeline lineno="251"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="252"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(_node_to_normalize<sp/>&amp;&amp;<sp/>_compiled<sp/>&amp;&amp;<sp/>!_batch)<sp/>{</highlight></codeline>
+<codeline lineno="253"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>NodeState::Compiled;</highlight></codeline>
+<codeline lineno="254"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="255"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(_node_to_normalize<sp/>&amp;&amp;<sp/>_compiled<sp/>&amp;&amp;<sp/>_batch)<sp/>{</highlight></codeline>
+<codeline lineno="256"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>NodeState::PreparedForBatchProcessing;</highlight></codeline>
+<codeline lineno="257"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="258"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>exceptions::NodeStateMachineError(</highlight></codeline>
+<codeline lineno="259"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;LayerNormNode<sp/>is<sp/>in<sp/>an<sp/>invalid<sp/>internal<sp/>state&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="260"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="261"><highlight class="normal"></highlight></codeline>
+<codeline lineno="262"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">friend</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">cereal::access;</highlight></codeline>
+<codeline lineno="263"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">class</highlight><highlight class="normal"><sp/>Archive&gt;</highlight></codeline>
+<codeline lineno="264"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>serialize(Archive&amp;<sp/>archive)<sp/>{</highlight></codeline>
+<codeline lineno="265"><highlight class="normal"><sp/><sp/><sp/><sp/>archive(cereal::base_class&lt;Node&gt;(</highlight><highlight class="keyword">this</highlight><highlight class="normal">),<sp/>_config,<sp/>_node_to_normalize,</highlight></codeline>
+<codeline lineno="266"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_compiled);</highlight></codeline>
+<codeline lineno="267"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="268"><highlight class="normal"></highlight></codeline>
+<codeline lineno="269"><highlight class="normal"><sp/><sp/>std::shared_ptr&lt;NormalizationLayerConfig&gt;<sp/>_config;</highlight></codeline>
+<codeline lineno="270"><highlight class="normal"></highlight></codeline>
+<codeline lineno="271"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>This<sp/>private<sp/>field<sp/>is<sp/>std::nullopt<sp/>until<sp/>after<sp/>the<sp/>node<sp/>enters<sp/>the</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="272"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>prepared<sp/>for<sp/>batch<sp/>processing<sp/>state</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="273"><highlight class="normal"><sp/><sp/>std::optional&lt;BoltBatch&gt;<sp/>_batch;</highlight></codeline>
+<codeline lineno="274"><highlight class="normal"><sp/><sp/>NodePtr<sp/>_node_to_normalize;</highlight></codeline>
+<codeline lineno="275"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>_compiled;</highlight></codeline>
+<codeline lineno="276"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="277"><highlight class="normal"></highlight></codeline>
+<codeline lineno="278"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::bolt</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="279"><highlight class="normal"></highlight></codeline>
+<codeline lineno="280"><highlight class="normal">CEREAL_REGISTER_TYPE(<ref refid="classthirdai_1_1bolt_1_1_layer_norm_node" kindref="compound">thirdai::bolt::LayerNormNode</ref>)</highlight></codeline>
+    </programlisting>
+    <location file="bolt/src/graph/nodes/LayerNorm.h"/>
+  </compounddef>
+</doxygen>

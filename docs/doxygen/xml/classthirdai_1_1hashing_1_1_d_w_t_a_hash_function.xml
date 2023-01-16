@@ -1,0 +1,416 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::hashing::DWTAHashFunction</compoundname>
+    <basecompoundref refid="classthirdai_1_1hashing_1_1_hash_function" prot="public" virt="non-virtual">thirdai::hashing::HashFunction</basecompoundref>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a9101be9850f9426086d37889ceb377f3" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashing::DWTAHashFunction::_hashes_per_table</definition>
+        <argsstring></argsstring>
+        <name>_hashes_per_table</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::_hashes_per_table</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="12" column="12" bodyfile="hashing/src/DWTA.h" bodystart="12" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a3713ed6cf0e0c6aadad32d7524b9302b" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashing::DWTAHashFunction::_num_hashes</definition>
+        <argsstring></argsstring>
+        <name>_num_hashes</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::_num_hashes</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="12" column="30" bodyfile="hashing/src/DWTA.h" bodystart="12" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a3317cbc04b3d4583f8f4c6283e141875" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashing::DWTAHashFunction::_dim</definition>
+        <argsstring></argsstring>
+        <name>_dim</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::_dim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="12" column="42" bodyfile="hashing/src/DWTA.h" bodystart="12" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a309a2282d0e36619882e9e1fdb2970f0" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashing::DWTAHashFunction::_binsize</definition>
+        <argsstring></argsstring>
+        <name>_binsize</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::_binsize</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="12" column="47" bodyfile="hashing/src/DWTA.h" bodystart="12" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1ad76939b92d021e7344a80d55d34e5306" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashing::DWTAHashFunction::_log_binsize</definition>
+        <argsstring></argsstring>
+        <name>_log_binsize</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::_log_binsize</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="12" column="56" bodyfile="hashing/src/DWTA.h" bodystart="12" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a3a40fbaec9c2c520c3d9d889687ef255" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashing::DWTAHashFunction::_permute</definition>
+        <argsstring></argsstring>
+        <name>_permute</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::_permute</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="13" column="7" bodyfile="hashing/src/DWTA.h" bodystart="13" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1ab6695f9aa79370bc970298f2bfe7c970" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt;uint32_t&gt; thirdai::hashing::DWTAHashFunction::_bin_map</definition>
+        <argsstring></argsstring>
+        <name>_bin_map</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::_bin_map</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="14" column="15" bodyfile="hashing/src/DWTA.h" bodystart="14" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1aab36cd039feadacefef1b18608258b6c" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt;uint32_t&gt; thirdai::hashing::DWTAHashFunction::_positions</definition>
+        <argsstring></argsstring>
+        <name>_positions</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::_positions</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="15" column="15" bodyfile="hashing/src/DWTA.h" bodystart="15" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1aef5bacf073c636dd77b210710619e71c" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashing::DWTAHashFunction::_rand_double_hash_seed</definition>
+        <argsstring></argsstring>
+        <name>_rand_double_hash_seed</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::_rand_double_hash_seed</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="16" column="12" bodyfile="hashing/src/DWTA.h" bodystart="16" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="21" column="16" bodyfile="hashing/src/DWTA.h" bodystart="21" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a139ed451e66a6f74b11d47a2facbb3c7" prot="private" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::hashing::DWTAHashFunction::compactHashes</definition>
+        <argsstring>(const uint32_t *hashes, uint32_t *final_hashes) const</argsstring>
+        <name>compactHashes</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::compactHashes</qualifiedname>
+        <param>
+          <type>const uint32_t *</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>uint32_t *</type>
+          <declname>final_hashes</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="18" column="8" bodyfile="hashing/src/DWTA.cc" bodystart="102" bodyend="114"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a1c949b639b416b140b528d1dfacff1b3" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::hashing::DWTAHashFunction::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="23" column="8" bodyfile="hashing/src/DWTA.h" bodystart="23" bodyend="27"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1aaccb6ce1e83c80d52994ce8b5281016e" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::hashing::DWTAHashFunction::DWTAHashFunction</definition>
+        <argsstring>()</argsstring>
+        <name>DWTAHashFunction</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::DWTAHashFunction</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="29" column="3" bodyfile="hashing/src/DWTA.h" bodystart="29" bodyend="29"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a6c63d5d2c21bcd81b90cfe25f7109ede" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::hashing::DWTAHashFunction::DWTAHashFunction</definition>
+        <argsstring>(uint32_t input_dim, uint32_t _hashes_per_table, uint32_t _num_tables, uint32_t range_pow, uint32_t seed=time(nullptr))</argsstring>
+        <name>DWTAHashFunction</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::DWTAHashFunction</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>input_dim</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>_hashes_per_table</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>_num_tables</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>range_pow</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>seed</declname>
+          <defval>time(nullptr)</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="32" column="3" bodyfile="hashing/src/DWTA.cc" bodystart="10" bodyend="43"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1ae0bc679f9592b69676f6e79f17e1ca6b" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashing::DWTAHashFunction::hashSingleSparse</definition>
+        <argsstring>(const uint32_t *indices, const float *values, uint32_t length, uint32_t *output) const override</argsstring>
+        <name>hashSingleSparse</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::hashSingleSparse</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashing_1_1_hash_function_1a75a19fad0fc9c31bdcef6739e45f46f8">hashSingleSparse</reimplements>
+        <param>
+          <type>const uint32_t *</type>
+          <declname>indices</declname>
+        </param>
+        <param>
+          <type>const float *</type>
+          <declname>values</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>length</declname>
+        </param>
+        <param>
+          <type>uint32_t *</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="36" column="8" bodyfile="hashing/src/DWTA.cc" bodystart="73" bodyend="100"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1aed549fb4e15a68d9b5a01b6e2ea75145" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashing::DWTAHashFunction::hashSingleDense</definition>
+        <argsstring>(const float *values, uint32_t dim, uint32_t *output) const override</argsstring>
+        <name>hashSingleDense</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::hashSingleDense</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashing_1_1_hash_function_1af69c3a64e040b146ff95912c1716e9ba">hashSingleDense</reimplements>
+        <param>
+          <type>const float *</type>
+          <declname>values</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>dim</declname>
+        </param>
+        <param>
+          <type>uint32_t *</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="39" column="8" bodyfile="hashing/src/DWTA.cc" bodystart="45" bodyend="71"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a8d5da1495bf1a065f84417b37eadd8fa" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::unique_ptr&lt; <ref refid="classthirdai_1_1hashing_1_1_hash_function" kindref="compound">HashFunction</ref> &gt;</type>
+        <definition>std::unique_ptr&lt; HashFunction &gt; thirdai::hashing::DWTAHashFunction::copyWithNewSeeds</definition>
+        <argsstring>() const final</argsstring>
+        <name>copyWithNewSeeds</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::copyWithNewSeeds</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashing_1_1_hash_function_1a387426f72f1671f670180af8245b6689">copyWithNewSeeds</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="42" column="19" bodyfile="hashing/src/DWTA.h" bodystart="42" bodyend="47"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a691d61e2c9d42090e258af5fd9b2f524" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::hashing::DWTAHashFunction::getName</definition>
+        <argsstring>() const final</argsstring>
+        <name>getName</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::getName</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashing_1_1_hash_function_1abfeed87fcfdbe7a52a82c72b650a2374">getName</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="49" column="15" bodyfile="hashing/src/DWTA.h" bodystart="49" bodyend="49"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a1baa2cd5175998c6a0caa1a265388e5a" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::hashing::DWTAHashFunction::~DWTAHashFunction</definition>
+        <argsstring>()=default</argsstring>
+        <name>~DWTAHashFunction</name>
+        <qualifiedname>thirdai::hashing::DWTAHashFunction::~DWTAHashFunction</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.h" line="51" column="3"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="1">
+        <label>thirdai::hashing::DWTAHashFunction</label>
+        <link refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::hashing::HashFunction</label>
+        <link refid="classthirdai_1_1hashing_1_1_hash_function"/>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="1">
+        <label>thirdai::hashing::DWTAHashFunction</label>
+        <link refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::hashing::HashFunction</label>
+        <link refid="classthirdai_1_1hashing_1_1_hash_function"/>
+      </node>
+    </collaborationgraph>
+    <location file="hashing/src/DWTA.h" line="10" column="1" bodyfile="hashing/src/DWTA.h" bodystart="10" bodyend="52"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1ab6695f9aa79370bc970298f2bfe7c970" prot="private" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>_bin_map</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a309a2282d0e36619882e9e1fdb2970f0" prot="private" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>_binsize</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a3317cbc04b3d4583f8f4c6283e141875" prot="private" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>_dim</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a9101be9850f9426086d37889ceb377f3" prot="private" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>_hashes_per_table</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1ad76939b92d021e7344a80d55d34e5306" prot="private" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>_log_binsize</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a3713ed6cf0e0c6aadad32d7524b9302b" prot="private" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>_num_hashes</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a57826915b34c6c12fa284f66b97bb7fa" prot="protected" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>_num_tables</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a3a40fbaec9c2c520c3d9d889687ef255" prot="private" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>_permute</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1aab36cd039feadacefef1b18608258b6c" prot="private" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>_positions</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1aef5bacf073c636dd77b210710619e71c" prot="private" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>_rand_double_hash_seed</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a0c52fac590ae2b63ba0c8bc7bd26f9d2" prot="protected" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>_range</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a139ed451e66a6f74b11d47a2facbb3c7" prot="private" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>compactHashes</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a8d5da1495bf1a065f84417b37eadd8fa" prot="public" virt="virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>copyWithNewSeeds</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1aaccb6ce1e83c80d52994ce8b5281016e" prot="private" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>DWTAHashFunction</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a6c63d5d2c21bcd81b90cfe25f7109ede" prot="public" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>DWTAHashFunction</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a691d61e2c9d42090e258af5fd9b2f524" prot="public" virt="virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>getName</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a53b6aa78cf43f40af59c112261013624" prot="public" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>hashBatchParallel</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a9cd2b24706d35c03f6ac35c70ae325d1" prot="public" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>hashBatchParallel</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a6a05c22dab98b257e9b0cb22dad67c1d" prot="public" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>hashDenseParallel</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1ad2da319156cadf0f575fbeaa1f7964e7" prot="public" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>hashDenseSerial</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a6833c66f4e3044d7fd1283c11bbeb173" prot="public" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>HashFunction</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1aed549fb4e15a68d9b5a01b6e2ea75145" prot="public" virt="virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>hashSingleDense</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1ae0bc679f9592b69676f6e79f17e1ca6b" prot="public" virt="virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>hashSingleSparse</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1aaff56129188ac9376f2647ab86a10f82" prot="public" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>hashSparseParallel</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a8e6128e70a2d684fa9f9220a43496dee" prot="public" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>hashSparseSerial</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1ad0dcbafbd5d0736c4bf4f3d57768cf85" prot="public" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>numTables</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a7a529c90222792d0a5965871320d80f6" prot="public" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>range</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a1c949b639b416b140b528d1dfacff1b3" prot="private" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function_1a1baa2cd5175998c6a0caa1a265388e5a" prot="public" virt="non-virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>~DWTAHashFunction</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_hash_function_1a12a8cd7e754bcfaef171a37f4ab45332" prot="public" virt="virtual"><scope>thirdai::hashing::DWTAHashFunction</scope><name>~HashFunction</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

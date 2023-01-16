@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>thirdai.distributed_bolt &mdash; thirdai  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="thirdai.logging" href="thirdailog.html" />
+    <link rel="prev" title="thirdai.dataset.blocks" href="thirdaidatasetblocks.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> thirdai
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../distributed_tutorial.html">Distributed training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../deployment_config_example.html">Using the DeploymentConfig and ModelPipeline</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Python API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="thirdaibase.html">thirdai</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolt.html">thirdai.bolt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttypes.html">thirdai.bolt.types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaibolttemporal.html">thirdai.bolt.temporal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnn.html">thirdai.bolt.nn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltnnlosses.html">thirdai.bolt.nn.losses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaiboltcallbacks.html">thirdai.bolt.callbacks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidataset.html">thirdai.dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaidatasetblocks.html">thirdai.dataset.blocks</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">thirdai.distributed_bolt</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.distributed_bolt.DistributedDataParallel"><code class="docutils literal notranslate"><span class="pre">DistributedDataParallel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.distributed_bolt.DistributedDataParallel.__init__"><code class="docutils literal notranslate"><span class="pre">DistributedDataParallel.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.distributed_bolt.DistributedDataParallel.get_model"><code class="docutils literal notranslate"><span class="pre">DistributedDataParallel.get_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.distributed_bolt.DistributedDataParallel.train"><code class="docutils literal notranslate"><span class="pre">DistributedDataParallel.train()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.distributed_bolt.PandasColumnMapGenerator"><code class="docutils literal notranslate"><span class="pre">PandasColumnMapGenerator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.distributed_bolt.PandasColumnMapGenerator.__init__"><code class="docutils literal notranslate"><span class="pre">PandasColumnMapGenerator.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.distributed_bolt.PandasColumnMapGenerator.next"><code class="docutils literal notranslate"><span class="pre">PandasColumnMapGenerator.next()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.distributed_bolt.PandasColumnMapGenerator.restart"><code class="docutils literal notranslate"><span class="pre">PandasColumnMapGenerator.restart()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.distributed_bolt.RayTrainingClusterConfig"><code class="docutils literal notranslate"><span class="pre">RayTrainingClusterConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.distributed_bolt.RayTrainingClusterConfig.__init__"><code class="docutils literal notranslate"><span class="pre">RayTrainingClusterConfig.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.distributed_bolt.SvmDatasetLoader"><code class="docutils literal notranslate"><span class="pre">SvmDatasetLoader</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.distributed_bolt.SvmDatasetLoader.__init__"><code class="docutils literal notranslate"><span class="pre">SvmDatasetLoader.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.distributed_bolt.SvmDatasetLoader.next"><code class="docutils literal notranslate"><span class="pre">SvmDatasetLoader.next()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.distributed_bolt.SvmDatasetLoader.restart"><code class="docutils literal notranslate"><span class="pre">SvmDatasetLoader.restart()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#thirdai.distributed_bolt.TabularDatasetLoader"><code class="docutils literal notranslate"><span class="pre">TabularDatasetLoader</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.distributed_bolt.TabularDatasetLoader.__init__"><code class="docutils literal notranslate"><span class="pre">TabularDatasetLoader.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.distributed_bolt.TabularDatasetLoader.next"><code class="docutils literal notranslate"><span class="pre">TabularDatasetLoader.next()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#thirdai.distributed_bolt.TabularDatasetLoader.restart"><code class="docutils literal notranslate"><span class="pre">TabularDatasetLoader.restart()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="thirdailog.html">thirdai.logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaideployment.html">thirdai.deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaihashing.html">thirdai.hashing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thirdaisearch.html">thirdai.search</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">thirdai</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Python API</a> &raquo;</li>
+      <li>thirdai.distributed_bolt</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/python_api/thirdaidistributed.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-thirdai.distributed_bolt">
+<span id="thirdai-distributed-bolt"></span><h1>thirdai.distributed_bolt<a class="headerlink" href="#module-thirdai.distributed_bolt" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.DistributedDataParallel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.distributed_bolt.</span></span><span class="sig-name descname"><span class="pre">DistributedDataParallel</span></span><a class="headerlink" href="#thirdai.distributed_bolt.DistributedDataParallel" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class implements the public facing APIs for a distributed data parallel
+model.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.DistributedDataParallel.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cluster_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#thirdai.distributed_bolt.RayTrainingClusterConfig" title="thirdai._distributed_bolt.distributed.RayTrainingClusterConfig"><span class="pre">RayTrainingClusterConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="thirdaiboltnn.html#thirdai.bolt.nn.Model" title="thirdai.bolt.nn.Model"><span class="pre">Model</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="thirdaibolt.html#thirdai.bolt.TrainConfig" title="thirdai.bolt.TrainConfig"><span class="pre">TrainConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_sources</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">DatasetLoader</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.distributed_bolt.DistributedDataParallel.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>This constructor returns a new DistributedDataParallel object that can
+be used to train the given model in a distributed fashion on the cluster
+corresponding to the passed in cluster_config. This constructor also
+passes the given model, the training config, and the corresponding
+training file name to each node in the cluster, thereby ensuring that
+each node is ready for training. After this constructor returns, the
+user can simply call train to train the model on the cluster.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.DistributedDataParallel.get_model">
+<span class="sig-name descname"><span class="pre">get_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">worker_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.distributed_bolt.DistributedDataParallel.get_model" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.DistributedDataParallel.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#thirdai.distributed_bolt.DistributedDataParallel.train" title="Permalink to this definition"></a></dt>
+<dd><p>Runs distributed training on the passed in Bolt model on the passed in
+Ray cluster.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A dictionary with some statistics about training, including
+total batches trained and total real time.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.PandasColumnMapGenerator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.distributed_bolt.</span></span><span class="sig-name descname"><span class="pre">PandasColumnMapGenerator</span></span><a class="headerlink" href="#thirdai.distributed_bolt.PandasColumnMapGenerator" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ColumnMapGenerator</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.PandasColumnMapGenerator.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lines_per_load</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dense_int_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">int_col_dims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.distributed_bolt.PandasColumnMapGenerator.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.PandasColumnMapGenerator.next">
+<span class="sig-name descname"><span class="pre">next</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.distributed_bolt.PandasColumnMapGenerator.next" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.PandasColumnMapGenerator.restart">
+<span class="sig-name descname"><span class="pre">restart</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.distributed_bolt.PandasColumnMapGenerator.restart" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.RayTrainingClusterConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.distributed_bolt.</span></span><span class="sig-name descname"><span class="pre">RayTrainingClusterConfig</span></span><a class="headerlink" href="#thirdai.distributed_bolt.RayTrainingClusterConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The RayTrainingClusterConfig object represents an initialized Ray cluster
+that we know will work for training (worker and head nodes initialized,
+logging initialized, etc.).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.RayTrainingClusterConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_workers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">requested_cpus_per_node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">communication_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'circular'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster_address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runtime_env</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_reinit_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'/var/folders/td/lf2j67t539v9tc9rh4mb_3y80000gn/T/thirdai'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.distributed_bolt.RayTrainingClusterConfig.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>This constructor connects to an already existing Ray cluster,
+starts Ray workers on each node, initializes logging, and creates
+Ray primary and replica worker configs. It computes and stores a
+a number of useful fields, including num_workers, communication_type,
+logging, primary_worker_config, and replica_worker_configs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>runtime_env</strong> – Environment variables, package dependencies, working</p></li>
+<li><p><strong>directory</strong> – </p></li>
+<li><p><strong>environment</strong> (<em>and other dependencies a worker needs in its</em>) – </p></li>
+<li><p><strong>See</strong> (<em>to run.</em>) – </p></li>
+<li><p><strong>https</strong> – //docs.ray.io/en/latest/ray-core/handling-dependencies.html#:~:text=A%20runtime%20environment%20describes%20the,on%20the%20cluster%20at%20runtime</p></li>
+<li><p><strong>ignore_reinit_error</strong> – Whether to supress the error that a cluster</p></li>
+<li><p><strong>If</strong> (<em>already exists when this method tries to create a Ray cluster.</em>) – </p></li>
+<li><p><strong>exists</strong> (<em>this is true and a cluster</em>) – </p></li>
+<li><p><strong>just</strong> (<em>this constructor will</em>) – </p></li>
+<li><p><strong>cluster.</strong> (<em>connect to that</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.SvmDatasetLoader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.distributed_bolt.</span></span><span class="sig-name descname"><span class="pre">SvmDatasetLoader</span></span><a class="headerlink" href="#thirdai.distributed_bolt.SvmDatasetLoader" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">GenericInMemoryDatasetLoader</span></code></p>
+<p>Returns a simple in memory data generator ready to pass into the distributed
+API that will read in the given file name with the given batch_size. The
+file name only needs to be present on the target worker, not neccesarily
+this machine.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.SvmDatasetLoader.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.distributed_bolt.SvmDatasetLoader.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.SvmDatasetLoader.next">
+<span class="sig-name descname"><span class="pre">next</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.distributed_bolt.SvmDatasetLoader.next" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.SvmDatasetLoader.restart">
+<span class="sig-name descname"><span class="pre">restart</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.distributed_bolt.SvmDatasetLoader.restart" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.TabularDatasetLoader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">thirdai.distributed_bolt.</span></span><span class="sig-name descname"><span class="pre">TabularDatasetLoader</span></span><a class="headerlink" href="#thirdai.distributed_bolt.TabularDatasetLoader" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoader</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.TabularDatasetLoader.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column_map_generator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ColumnMapGenerator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_featurizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FeaturizationPipeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_featurizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FeaturizationPipeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.distributed_bolt.TabularDatasetLoader.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.TabularDatasetLoader.next">
+<span class="sig-name descname"><span class="pre">next</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.distributed_bolt.TabularDatasetLoader.next" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="thirdai.distributed_bolt.TabularDatasetLoader.restart">
+<span class="sig-name descname"><span class="pre">restart</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#thirdai.distributed_bolt.TabularDatasetLoader.restart" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="thirdaidatasetblocks.html" class="btn btn-neutral float-left" title="thirdai.dataset.blocks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="thirdailog.html" class="btn btn-neutral float-right" title="thirdai.logging" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, t.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

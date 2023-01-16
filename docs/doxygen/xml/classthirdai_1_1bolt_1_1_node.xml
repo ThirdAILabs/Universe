@@ -1,0 +1,835 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_node" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>thirdai::bolt::Node</compoundname>
+    <derivedcompoundref refid="classthirdai_1_1bolt_1_1_concatenate_node" prot="public" virt="non-virtual">thirdai::bolt::ConcatenateNode</derivedcompoundref>
+    <derivedcompoundref refid="classthirdai_1_1bolt_1_1_dlrm_attention_node" prot="public" virt="non-virtual">thirdai::bolt::DlrmAttentionNode</derivedcompoundref>
+    <derivedcompoundref refid="classthirdai_1_1bolt_1_1_embedding_node" prot="public" virt="non-virtual">thirdai::bolt::EmbeddingNode</derivedcompoundref>
+    <derivedcompoundref refid="classthirdai_1_1bolt_1_1_fully_connected_node" prot="public" virt="non-virtual">thirdai::bolt::FullyConnectedNode</derivedcompoundref>
+    <derivedcompoundref refid="classthirdai_1_1bolt_1_1_input" prot="public" virt="non-virtual">thirdai::bolt::Input</derivedcompoundref>
+    <derivedcompoundref refid="classthirdai_1_1bolt_1_1_layer_norm_node" prot="public" virt="non-virtual">thirdai::bolt::LayerNormNode</derivedcompoundref>
+    <derivedcompoundref refid="classthirdai_1_1bolt_1_1_switch_node" prot="public" virt="non-virtual">thirdai::bolt::SwitchNode</derivedcompoundref>
+      <sectiondef kind="protected-type">
+      <memberdef kind="enum" id="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16" prot="protected" static="no" strong="no">
+        <type></type>
+        <name>NodeState</name>
+        <qualifiedname>thirdai::bolt::Node::NodeState</qualifiedname>
+        <enumvalue id="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16afb4121016cc30a007bc314bd81845d1e" prot="protected">
+          <name>Constructed</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16a73e48da570b3b13d772c47dcee4ae6a6" prot="protected">
+          <name>PredecessorsSet</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16a7eee318133bed45ed926a12048d99963" prot="protected">
+          <name>Compiled</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16ac172e0a909bdf0ccf05dbf8954c54fad" prot="protected">
+          <name>PreparedForBatchProcessing</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="275" column="3" bodyfile="bolt/src/graph/Node.h" bodystart="275" bodyend="280"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1bolt_1_1_node_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::bolt::Node::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="285" column="16" bodyfile="bolt/src/graph/Node.h" bodystart="285" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_node_1ab8fc90a562ca9ac02a2f1dc80da30700" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; std::string &gt;</type>
+        <definition>std::optional&lt;std::string&gt; thirdai::bolt::Node::_name</definition>
+        <argsstring></argsstring>
+        <name>_name</name>
+        <qualifiedname>thirdai::bolt::Node::_name</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="291" column="17" bodyfile="bolt/src/graph/Node.h" bodystart="291" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a88291233b0764978b7ceea7513aae3ba" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Node::compile</definition>
+        <argsstring>(LayerNameManager &amp;name_manager)</argsstring>
+        <name>compile</name>
+        <qualifiedname>thirdai::bolt::Node::compile</qualifiedname>
+        <param>
+          <type><ref refid="classthirdai_1_1bolt_1_1_layer_name_manager" kindref="compound">LayerNameManager</ref> &amp;</type>
+          <declname>name_manager</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="69" column="8" bodyfile="bolt/src/graph/Node.h" bodystart="69" bodyend="80"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a1d3c6a15ac7543b63b8785cc5e18e3c4" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Node::forward</definition>
+        <argsstring>(uint32_t vec_index, const BoltVector *labels)</argsstring>
+        <name>forward</name>
+        <qualifiedname>thirdai::bolt::Node::forward</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> *</type>
+          <declname>labels</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="91" column="15" bodyfile="bolt/src/graph/Node.h" bodystart="91" bodyend="94"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1aa9d48aad3e5bbcd047c944ae58f84580" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Node::backpropagate</definition>
+        <argsstring>(uint32_t vec_index)</argsstring>
+        <name>backpropagate</name>
+        <qualifiedname>thirdai::bolt::Node::backpropagate</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="97" column="15" bodyfile="bolt/src/graph/Node.h" bodystart="97" bodyend="100"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a14827669d25336d30ce66fc00dedaba4" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Node::updateParameters</definition>
+        <argsstring>(float learning_rate, uint32_t batch_cnt)</argsstring>
+        <name>updateParameters</name>
+        <qualifiedname>thirdai::bolt::Node::updateParameters</qualifiedname>
+        <param>
+          <type>float</type>
+          <declname>learning_rate</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_cnt</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="103" column="15" bodyfile="bolt/src/graph/Node.h" bodystart="103" bodyend="106"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a7f77cde6a66c0958b83e452e87e20756" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+        <definition>BoltVector &amp; thirdai::bolt::Node::getOutputVector</definition>
+        <argsstring>(uint32_t vec_index)</argsstring>
+        <name>getOutputVector</name>
+        <qualifiedname>thirdai::bolt::Node::getOutputVector</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="109" column="21" bodyfile="bolt/src/graph/Node.h" bodystart="109" bodyend="112"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1adf765696d9f7fdc8bbc1ca098ed461e9" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>uint32_t</type>
+        <definition>virtual uint32_t thirdai::bolt::Node::outputDim</definition>
+        <argsstring>() const =0</argsstring>
+        <name>outputDim</name>
+        <qualifiedname>thirdai::bolt::Node::outputDim</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1a93c8dacb795b0ebf2061e26751e054d3">outputDim</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a1276f417d45374b536ccb5822e2affad">outputDim</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1a807362955a7aafeedc33039f123c5c9e">outputDim</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a0ddb2899948e5f08ec241e95885717d7">outputDim</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1a42baf5aa72c9e50e3b19bf67833019b7">outputDim</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1ab9686792ebd778aba773700c000277b0">outputDim</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1a1b5a7c6f6f8c13d0fabfa7628d69f1e6">outputDim</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="116" column="20"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a5ded5aa10ce21f479ba8b2afb2af3257" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::Node::numNonzerosInOutput</definition>
+        <argsstring>() const</argsstring>
+        <name>numNonzerosInOutput</name>
+        <qualifiedname>thirdai::bolt::Node::numNonzerosInOutput</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="128" column="12" bodyfile="bolt/src/graph/Node.h" bodystart="128" bodyend="136"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1aa8da3afebd36fa6536768ba5f58ec3c8" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Node::prepareForBatchProcessing</definition>
+        <argsstring>(uint32_t batch_size, bool use_sparsity)</argsstring>
+        <name>prepareForBatchProcessing</name>
+        <qualifiedname>thirdai::bolt::Node::prepareForBatchProcessing</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>use_sparsity</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="148" column="8" bodyfile="bolt/src/graph/Node.h" bodystart="148" bodyend="162"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1ac69895a5802ff7c3b730338b3b4e90b4" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Node::cleanupAfterBatchProcessing</definition>
+        <argsstring>()</argsstring>
+        <name>cleanupAfterBatchProcessing</name>
+        <qualifiedname>thirdai::bolt::Node::cleanupAfterBatchProcessing</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="169" column="8" bodyfile="bolt/src/graph/Node.h" bodystart="169" bodyend="177"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1aa64a67e500699d0d1ff48c7359276b8e" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; NodePtr &gt;</type>
+        <definition>std::vector&lt; NodePtr &gt; thirdai::bolt::Node::getPredecessors</definition>
+        <argsstring>() const</argsstring>
+        <name>getPredecessors</name>
+        <qualifiedname>thirdai::bolt::Node::getPredecessors</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="181" column="15" bodyfile="bolt/src/graph/Node.h" bodystart="181" bodyend="188"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a99399aa3e00c2b91fdda85cab1c0f158" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_fully_connected_layer" kindref="compound">FullyConnectedLayer</ref> &gt; &gt;</type>
+        <definition>std::vector&lt; std::shared_ptr&lt; FullyConnectedLayer &gt; &gt; thirdai::bolt::Node::getInternalFullyConnectedLayers</definition>
+        <argsstring>()</argsstring>
+        <name>getInternalFullyConnectedLayers</name>
+        <qualifiedname>thirdai::bolt::Node::getInternalFullyConnectedLayers</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="197" column="3" bodyfile="bolt/src/graph/Node.h" bodystart="197" bodyend="205"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a4bc5d54043015e5c9cbb28a85160a8f6" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>bool</type>
+        <definition>virtual bool thirdai::bolt::Node::isInputNode</definition>
+        <argsstring>() const =0</argsstring>
+        <name>isInputNode</name>
+        <qualifiedname>thirdai::bolt::Node::isInputNode</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1ac718bde411f82fa99b89ad2a16d0c2de">isInputNode</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1af75efcf1ac1dce99115208c7fe2be328">isInputNode</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1a4b1080fd40052c4003ae4a2c7ff69794">isInputNode</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1ada7ad6d63a8a10e06f42e2bab884862e">isInputNode</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1a215beaccdc88a34b5c8b8e1cb62f9133">isInputNode</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1a16921ef87a655d25f27ce4ae53160f6e">isInputNode</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1a21d71bd0d5396bbd1081a34e520866d9">isInputNode</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="208" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1ad2ab6e06fa8587077a17e3f9c4ec1e78" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::Node::initOptimizer</definition>
+        <argsstring>()=0</argsstring>
+        <name>initOptimizer</name>
+        <qualifiedname>thirdai::bolt::Node::initOptimizer</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1a21e76a05305c95c103c50639c5f651ba">initOptimizer</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a4ccb9b14c0662429bb72a00be1ca846d">initOptimizer</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1a718543f64ab1d1c8b72b2b8b752c3eda">initOptimizer</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a1f96ad344d94082a2c0c1cba8d0efa1f">initOptimizer</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1a6aba47711f6686ee329710c24c53f1a1">initOptimizer</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1a4045fed9fc3c2e77f2fb96d4a9d1827a">initOptimizer</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1a933dd64f6e68235458a33e2c144c86ec">initOptimizer</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="210" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1acb9da57dbfe1c24bfc7e7f9376077609" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::Node::summarize</definition>
+        <argsstring>(std::stringstream &amp;summary, bool detailed) const</argsstring>
+        <name>summarize</name>
+        <qualifiedname>thirdai::bolt::Node::summarize</qualifiedname>
+        <param>
+          <type>std::stringstream &amp;</type>
+          <declname>summary</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>detailed</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="214" column="8" bodyfile="bolt/src/graph/Node.h" bodystart="214" bodyend="221"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1ab01d717ae0cd7ce683bbb353c020063b" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>const std::string &amp;</type>
+        <definition>const std::string &amp; thirdai::bolt::Node::name</definition>
+        <argsstring>() const</argsstring>
+        <name>name</name>
+        <qualifiedname>thirdai::bolt::Node::name</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="225" column="21" bodyfile="bolt/src/graph/Node.h" bodystart="225" bodyend="232"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1aa8c63e99fd4a0ba21bc2170590e3513d" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::Node::enableDistributedTraining</definition>
+        <argsstring>()=0</argsstring>
+        <name>enableDistributedTraining</name>
+        <qualifiedname>thirdai::bolt::Node::enableDistributedTraining</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1adf6b122319edfb1127f4835541b2ffd0">enableDistributedTraining</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ac0d0a3272174f9f2cfd7a6bdab2fd0f5">enableDistributedTraining</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1a8f26b78c736dcc4e00069f0fecf7f6d0">enableDistributedTraining</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a9a1ea86b4d1c5e811ddf9cfa289552d5">enableDistributedTraining</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1aa3b23f229229e0e79fdd71cd8efcd49b">enableDistributedTraining</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1a821a5e0a2135eabc2544fb8ec84c3cee">enableDistributedTraining</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1a0ad9c15becdd4cfdbb03826dd314d300">enableDistributedTraining</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="240" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a1e977ed40e3903aaef3dde767bdeb322" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type></type>
+        <definition>virtual thirdai::bolt::Node::~Node</definition>
+        <argsstring>()=default</argsstring>
+        <name>~Node</name>
+        <qualifiedname>thirdai::bolt::Node::~Node</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="242" column="11"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a8aca1832ebdf9fb5fbeeb08a8a50e10c" prot="protected" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::Node::compileImpl</definition>
+        <argsstring>()=0</argsstring>
+        <name>compileImpl</name>
+        <qualifiedname>thirdai::bolt::Node::compileImpl</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1a627c26ac294fd3bb5481ba3110cbf4cf">compileImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1aa1f9dcb586416d86180f510bb156ed00">compileImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1adea4a322dd22745494fe73fc7b103289">compileImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a662a3fdfea10efe49304f04313a27909">compileImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1ad85f88e4c87e01565155447e2c9f6e8c">compileImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1ac5eba471a319ac93f34e6586557007b7">compileImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1a508695f16e8ae3803007c9168b3ef805">compileImpl</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="245" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a52d8bb7dd818868f7a3c8e852f3fe8f9" prot="protected" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_fully_connected_layer" kindref="compound">FullyConnectedLayer</ref> &gt; &gt;</type>
+        <definition>virtual std::vector&lt; std::shared_ptr&lt; FullyConnectedLayer &gt; &gt; thirdai::bolt::Node::getInternalFullyConnectedLayersImpl</definition>
+        <argsstring>() const =0</argsstring>
+        <name>getInternalFullyConnectedLayersImpl</name>
+        <qualifiedname>thirdai::bolt::Node::getInternalFullyConnectedLayersImpl</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1ad7580c8741291604d865335d74744c47">getInternalFullyConnectedLayersImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1af5d54a99021c099e55827be8770df5c6">getInternalFullyConnectedLayersImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1a88ce8e08bb155eeaee75de8907e3d2a5">getInternalFullyConnectedLayersImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a231d5a68ddd70c0e687545873df9758a">getInternalFullyConnectedLayersImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1a9e5717de09278703c2e1bdd2526b3a74">getInternalFullyConnectedLayersImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1a5b3cbe90323893ab1daa6b4a4aea4115">getInternalFullyConnectedLayersImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1ad83351b33327d2c50dd24f7452b14ed0">getInternalFullyConnectedLayersImpl</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="248" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a13dff58075ba5d505616b644873e99ee" prot="protected" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::Node::prepareForBatchProcessingImpl</definition>
+        <argsstring>(uint32_t batch_size, bool use_sparsity)=0</argsstring>
+        <name>prepareForBatchProcessingImpl</name>
+        <qualifiedname>thirdai::bolt::Node::prepareForBatchProcessingImpl</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1a721fd3e07e5d63e7bd12d19d51773ce4">prepareForBatchProcessingImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a7f1c17ac2142cf1d529fbd44dde83b0b">prepareForBatchProcessingImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1ad93dc81d60c201620649b9bc19274da2">prepareForBatchProcessingImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a522754e17663c07ccb1bb4d0ab2c191b">prepareForBatchProcessingImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1af5f15caf2d6687fb6030c50ad8d7a647">prepareForBatchProcessingImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1afd71ffd3059872a094ee62ae19de2527">prepareForBatchProcessingImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1a9741b88b5c604c99cad029d2455591ad">prepareForBatchProcessingImpl</reimplementedby>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>use_sparsity</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="250" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1ae89f7fcdc1719e4cd2a5cfe9f3133a54" prot="protected" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>uint32_t</type>
+        <definition>virtual uint32_t thirdai::bolt::Node::numNonzerosInOutputImpl</definition>
+        <argsstring>() const =0</argsstring>
+        <name>numNonzerosInOutputImpl</name>
+        <qualifiedname>thirdai::bolt::Node::numNonzerosInOutputImpl</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1a270cd991b8f2bcc669a39eff844a8eaa">numNonzerosInOutputImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ac91efe1efa321706ff33e731a69c416a">numNonzerosInOutputImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1a2aa4231ba7e370107fb8b336491669da">numNonzerosInOutputImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a85d704be2ab864a27c0ee5a28c55e8e5">numNonzerosInOutputImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1ab80d5eb65ae73ec5baad09b068308ef9">numNonzerosInOutputImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1ad03dc23b7f407fd8384f1e7f939bf76b">numNonzerosInOutputImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1a90191a69199bbc23b066f1fa9400b336">numNonzerosInOutputImpl</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="253" column="20"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a7126a97a87f143d8d6755fd71c331f46" prot="protected" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::Node::forwardImpl</definition>
+        <argsstring>(uint32_t vec_index, const BoltVector *labels)=0</argsstring>
+        <name>forwardImpl</name>
+        <qualifiedname>thirdai::bolt::Node::forwardImpl</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1af075b3400f540e5050d581904bc46e0b">forwardImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a9aa6165fd01f6b09e10a7fc55ef4c3c5">forwardImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1ab712f5552fda8912aeb15fff5eebc7a1">forwardImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a33cca2821249c137fef4838bc703067c">forwardImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1a815c9cf2c7166d059d66f72d0e710837">forwardImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1a2f8fe20677248febbedc877296bfdf9d">forwardImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1a81645cdc8604a02c53d258ba932acc9f">forwardImpl</reimplementedby>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> *</type>
+          <declname>labels</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="255" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a44d73b3a2d6344aba16f8a1dc3b87919" prot="protected" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::Node::backpropagateImpl</definition>
+        <argsstring>(uint32_t vec_index)=0</argsstring>
+        <name>backpropagateImpl</name>
+        <qualifiedname>thirdai::bolt::Node::backpropagateImpl</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1a89467dfca59e80d318ae61768888a7ae">backpropagateImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1acdf054a3ee246176d726a41ea50a0638">backpropagateImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1adb27b1d3ce121c499e30c61bd3feb025">backpropagateImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a830ed953f543271bdb805ac2c0821bd3">backpropagateImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1adad440af042b606a0751fe0acd8fa26d">backpropagateImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1aa209247f854629033cb2dbff6ad3083a">backpropagateImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1a73a60d9c6a74761f87357753bb05ef94">backpropagateImpl</reimplementedby>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="257" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a2934c0002c454d3e6dbb232b7f05cc8d" prot="protected" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::Node::updateParametersImpl</definition>
+        <argsstring>(float learning_rate, uint32_t batch_cnt)=0</argsstring>
+        <name>updateParametersImpl</name>
+        <qualifiedname>thirdai::bolt::Node::updateParametersImpl</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1aac8fa81a1f5427ed22d1756f663af966">updateParametersImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a5d77a680c4c122f56ec7e0d5864ef2d1">updateParametersImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1a2aeeadb3c205f8e6fb54058174a7969a">updateParametersImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a43ed522c749fb6fd17904838b6249353">updateParametersImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1a5fde75cdae53d6b90b6947818687d847">updateParametersImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1a51760d7a72257b9ea04d32c8648b9bb6">updateParametersImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1aab2a304f44d7f148cf6ba39165ae1da7">updateParametersImpl</reimplementedby>
+        <param>
+          <type>float</type>
+          <declname>learning_rate</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_cnt</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="259" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a482129276694ef878d2c95712d552bad" prot="protected" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+        <definition>virtual BoltVector &amp; thirdai::bolt::Node::getOutputVectorImpl</definition>
+        <argsstring>(uint32_t vec_index)=0</argsstring>
+        <name>getOutputVectorImpl</name>
+        <qualifiedname>thirdai::bolt::Node::getOutputVectorImpl</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1a3c39c9a74b73fb6a488ccd34be418e5f">getOutputVectorImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ae8b3b76702b1620361b9946825dc2cbd">getOutputVectorImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1afa023e26f4d6eb432fba31e053d23c5a">getOutputVectorImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a8c3b710a8296ce4c3d43dc2c91b27586">getOutputVectorImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1ab6246bc8ac8537c2ed2011d825416d6f">getOutputVectorImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1a677efad8a0733c4c7ee0c1fc467afa76">getOutputVectorImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1a2d1f6c5273a9581b9066e237fb046ea9">getOutputVectorImpl</reimplementedby>
+        <param>
+          <type>uint32_t</type>
+          <declname>vec_index</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="262" column="22"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1affb1e25aa5a2f485d49d9eb899b6a44e" prot="protected" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::Node::cleanupAfterBatchProcessingImpl</definition>
+        <argsstring>()=0</argsstring>
+        <name>cleanupAfterBatchProcessingImpl</name>
+        <qualifiedname>thirdai::bolt::Node::cleanupAfterBatchProcessingImpl</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1a8412a35b1b948c20e1da992be845a899">cleanupAfterBatchProcessingImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1afed63f01ae93dc0d9e7b74cb86d040fe">cleanupAfterBatchProcessingImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1aa13a1331abafef0adc9066a44974f2c3">cleanupAfterBatchProcessingImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a0bc77fe4b5084dc7ef2b36c2af1b182b">cleanupAfterBatchProcessingImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1afd04ef043e18f66e9200c8204feb5ef0">cleanupAfterBatchProcessingImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1abd89ad72663d90693627b8f1f773396b">cleanupAfterBatchProcessingImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1adc0e5fa3504b4513d68666c69a9f39d0">cleanupAfterBatchProcessingImpl</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="264" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1abf8a46cda935b2ee6b8869fa1c0ffa9f" prot="protected" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>std::vector&lt; NodePtr &gt;</type>
+        <definition>virtual std::vector&lt; NodePtr &gt; thirdai::bolt::Node::getPredecessorsImpl</definition>
+        <argsstring>() const =0</argsstring>
+        <name>getPredecessorsImpl</name>
+        <qualifiedname>thirdai::bolt::Node::getPredecessorsImpl</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1af2b50463797919e916a81cd5ee6ecda3">getPredecessorsImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1aedb423e1b36043726cf27bb5573d3fdd">getPredecessorsImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1a98d34c8c94a898316b242370b8f2c6ee">getPredecessorsImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1aed686b950c8024e270e26f7ada35801f">getPredecessorsImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1a21d2d606efb6d7d92868c8c80242bbf2">getPredecessorsImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1a71d36329c5d505342cb6aef7b93ff630">getPredecessorsImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1ab16dd4bbd8ad4e7cfb7dd6c5308de899">getPredecessorsImpl</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="266" column="23"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1af76c56573f2f09f88d131a6b7de90a74" prot="protected" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::Node::summarizeImpl</definition>
+        <argsstring>(std::stringstream &amp;summary, bool detailed) const =0</argsstring>
+        <name>summarizeImpl</name>
+        <qualifiedname>thirdai::bolt::Node::summarizeImpl</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1adac834cad2bdbd205fc6bb028988c38e">summarizeImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ae4c197dfa0c3e31d1abc8fb218617ee0">summarizeImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1a374be1e7d21bab9ea26a4c2b008623c8">summarizeImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a08f0601477fb1d3b7a8a773c07b394fe">summarizeImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1a43f95b6498918f913af726f78576af0c">summarizeImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1ac54eb5aa0e0564ae16f8700657ba443a">summarizeImpl</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1a959dcaece0dcdded9238b7b03a1fe375">summarizeImpl</reimplementedby>
+        <param>
+          <type>std::stringstream &amp;</type>
+          <declname>summary</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>detailed</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="268" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a6286ebeb923a53cb6ac293d3ac894949" prot="protected" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>std::string</type>
+        <definition>virtual std::string thirdai::bolt::Node::type</definition>
+        <argsstring>() const =0</argsstring>
+        <name>type</name>
+        <qualifiedname>thirdai::bolt::Node::type</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1a18caa1054df129e7f789136808b1ac77">type</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1a7e61a3ea5eb14d2d24511a28cb0c1473">type</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1a0ff5afce38d9a3a0c9cd9c47b15f7bdf">type</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a9bcb7a0c83bd20e8237cd1aa20b7a299">type</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1a2049ef424f97bf4ea9b48f218f1f51c1">type</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1a19ec904554523edead48696d58d9ee7c">type</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1a3fdd9badb70ddb4ec535fef1867b12c4">type</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="273" column="23"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1ab86e7912c6dbccaa402ad257b1512e7c" prot="protected" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>NodeState</type>
+        <definition>virtual NodeState thirdai::bolt::Node::getState</definition>
+        <argsstring>() const =0</argsstring>
+        <name>getState</name>
+        <qualifiedname>thirdai::bolt::Node::getState</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_concatenate_node_1a6ce0e59349c3ae624d868b1276f5e3e5">getState</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_dlrm_attention_node_1ae69122cdbac1fe078c8c200308ec3b14">getState</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_embedding_node_1acfaf715c8c4e5f795207a98ee4cebffb">getState</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_fully_connected_node_1a7cc40abb7ca025d438509ae77ffc1264">getState</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_input_1aff8c43b17e7913e72e8214fc436194b4">getState</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_layer_norm_node_1a6b5098d39d00b37ce8f2a008bb1ca962">getState</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_switch_node_1acd6cc04e9c85445af9addf2afad4c56c">getState</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="282" column="21"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_node_1a19338e5aff29163c95ff7db3487a3ed4" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::bolt::Node::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::bolt::Node::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/Node.h" line="287" column="8" bodyfile="bolt/src/graph/Node.h" bodystart="287" bodyend="289"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::bolt::ConcatenateNode</label>
+        <link refid="classthirdai_1_1bolt_1_1_concatenate_node"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>thirdai::bolt::DlrmAttentionNode</label>
+        <link refid="classthirdai_1_1bolt_1_1_dlrm_attention_node"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>thirdai::bolt::EmbeddingNode</label>
+        <link refid="classthirdai_1_1bolt_1_1_embedding_node"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>thirdai::bolt::FullyConnectedNode</label>
+        <link refid="classthirdai_1_1bolt_1_1_fully_connected_node"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="6">
+        <label>thirdai::bolt::Input</label>
+        <link refid="classthirdai_1_1bolt_1_1_input"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>thirdai::bolt::LayerNormNode</label>
+        <link refid="classthirdai_1_1bolt_1_1_layer_norm_node"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::Node</label>
+        <link refid="classthirdai_1_1bolt_1_1_node"/>
+      </node>
+      <node id="8">
+        <label>thirdai::bolt::SwitchNode</label>
+        <link refid="classthirdai_1_1bolt_1_1_switch_node"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <location file="bolt/src/graph/Node.h" line="62" column="1" bodyfile="bolt/src/graph/Node.h" bodystart="62" bodyend="292"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_node_1ab8fc90a562ca9ac02a2f1dc80da30700" prot="private" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>_name</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1aa9d48aad3e5bbcd047c944ae58f84580" prot="public" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>backpropagate</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a44d73b3a2d6344aba16f8a1dc3b87919" prot="protected" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>backpropagateImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1ac69895a5802ff7c3b730338b3b4e90b4" prot="public" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>cleanupAfterBatchProcessing</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1affb1e25aa5a2f485d49d9eb899b6a44e" prot="protected" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>cleanupAfterBatchProcessingImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a88291233b0764978b7ceea7513aae3ba" prot="public" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>compile</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16a7eee318133bed45ed926a12048d99963" prot="protected" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>Compiled</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a8aca1832ebdf9fb5fbeeb08a8a50e10c" prot="protected" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>compileImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16afb4121016cc30a007bc314bd81845d1e" prot="protected" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>Constructed</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1aa8c63e99fd4a0ba21bc2170590e3513d" prot="public" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>enableDistributedTraining</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a1d3c6a15ac7543b63b8785cc5e18e3c4" prot="public" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>forward</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a7126a97a87f143d8d6755fd71c331f46" prot="protected" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>forwardImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a99399aa3e00c2b91fdda85cab1c0f158" prot="public" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>getInternalFullyConnectedLayers</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a52d8bb7dd818868f7a3c8e852f3fe8f9" prot="protected" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>getInternalFullyConnectedLayersImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a7f77cde6a66c0958b83e452e87e20756" prot="public" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>getOutputVector</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a482129276694ef878d2c95712d552bad" prot="protected" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>getOutputVectorImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1aa64a67e500699d0d1ff48c7359276b8e" prot="public" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>getPredecessors</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1abf8a46cda935b2ee6b8869fa1c0ffa9f" prot="protected" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>getPredecessorsImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1ab86e7912c6dbccaa402ad257b1512e7c" prot="protected" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>getState</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1ad2ab6e06fa8587077a17e3f9c4ec1e78" prot="public" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>initOptimizer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4bc5d54043015e5c9cbb28a85160a8f6" prot="public" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>isInputNode</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1ab01d717ae0cd7ce683bbb353c020063b" prot="public" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>name</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16" prot="protected" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>NodeState</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a5ded5aa10ce21f479ba8b2afb2af3257" prot="public" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>numNonzerosInOutput</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1ae89f7fcdc1719e4cd2a5cfe9f3133a54" prot="protected" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>numNonzerosInOutputImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1adf765696d9f7fdc8bbc1ca098ed461e9" prot="public" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>outputDim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16a73e48da570b3b13d772c47dcee4ae6a6" prot="protected" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>PredecessorsSet</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a4725e03b5e1a1974487dff7d2b9a6d16ac172e0a909bdf0ccf05dbf8954c54fad" prot="protected" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>PreparedForBatchProcessing</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1aa8da3afebd36fa6536768ba5f58ec3c8" prot="public" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>prepareForBatchProcessing</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a13dff58075ba5d505616b644873e99ee" prot="protected" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>prepareForBatchProcessingImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a19338e5aff29163c95ff7db3487a3ed4" prot="private" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1acb9da57dbfe1c24bfc7e7f9376077609" prot="public" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>summarize</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1af76c56573f2f09f88d131a6b7de90a74" prot="protected" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>summarizeImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a6286ebeb923a53cb6ac293d3ac894949" prot="protected" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>type</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a14827669d25336d30ce66fc00dedaba4" prot="public" virt="non-virtual"><scope>thirdai::bolt::Node</scope><name>updateParameters</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a2934c0002c454d3e6dbb232b7f05cc8d" prot="protected" virt="pure-virtual"><scope>thirdai::bolt::Node</scope><name>updateParametersImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_node_1a1e977ed40e3903aaef3dde767bdeb322" prot="public" virt="virtual"><scope>thirdai::bolt::Node</scope><name>~Node</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1compression_1_1_decompress_visitor" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::compression::DecompressVisitor</compoundname>
+    <templateparamlist>
+      <param>
+        <type>class T</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_decompress_visitor_1a615bd67874f4abc83772bf763e7990e3" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; T &gt;</type>
+        <definition>std::vector&lt; T &gt; thirdai::compression::DecompressVisitor&lt; T &gt;::operator()</definition>
+        <argsstring>(const DragonVector&lt; T &gt; &amp;dragon_vector)</argsstring>
+        <name>operator()</name>
+        <qualifiedname>thirdai::compression::DecompressVisitor::operator()</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1compression_1_1_dragon_vector" kindref="compound">DragonVector</ref>&lt; T &gt; &amp;</type>
+          <declname>dragon_vector</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressionFactory.h" line="52" column="15" bodyfile="compression/src/CompressionFactory.h" bodystart="52" bodyend="54"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_decompress_visitor_1a3454886bc60f92b2c2084956fabfbe04" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; T &gt;</type>
+        <definition>std::vector&lt; T &gt; thirdai::compression::DecompressVisitor&lt; T &gt;::operator()</definition>
+        <argsstring>(const CountSketch&lt; T &gt; &amp;count_sketch)</argsstring>
+        <name>operator()</name>
+        <qualifiedname>thirdai::compression::DecompressVisitor::operator()</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1compression_1_1_count_sketch" kindref="compound">CountSketch</ref>&lt; T &gt; &amp;</type>
+          <declname>count_sketch</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressionFactory.h" line="55" column="15" bodyfile="compression/src/CompressionFactory.h" bodystart="55" bodyend="57"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="compression/src/CompressionFactory.h" line="50" column="1" bodyfile="compression/src/CompressionFactory.h" bodystart="50" bodyend="58"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1compression_1_1_decompress_visitor_1a615bd67874f4abc83772bf763e7990e3" prot="public" virt="non-virtual"><scope>thirdai::compression::DecompressVisitor</scope><name>operator()</name></member>
+      <member refid="classthirdai_1_1compression_1_1_decompress_visitor_1a3454886bc60f92b2c2084956fabfbe04" prot="public" virt="non-virtual"><scope>thirdai::compression::DecompressVisitor</scope><name>operator()</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,116 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1numpy_1_1_numpy_dataset" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::dataset::numpy::NumpyDataset</compoundname>
+    <basecompoundref refid="classthirdai_1_1dataset_1_1_in_memory_dataset" prot="public" virt="non-virtual">thirdai::dataset::InMemoryDataset&lt; BATCH_T &gt;</basecompoundref>
+    <includes refid="_numpy_dataset_8h" local="no">NumpyDataset.h</includes>
+    <templateparamlist>
+      <param>
+        <type>typename BATCH_T</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1numpy_1_1_numpy_dataset_1aa0b56e52e4c54a944f9ac9939c5ddd1c" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; py::object &gt;</type>
+        <definition>std::vector&lt;py::object&gt; thirdai::dataset::numpy::NumpyDataset&lt; BATCH_T &gt;::_objects_to_keep_alive</definition>
+        <argsstring></argsstring>
+        <name>_objects_to_keep_alive</name>
+        <qualifiedname>thirdai::dataset::numpy::NumpyDataset::_objects_to_keep_alive</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="46" column="15" bodyfile="dataset/src/NumpyDataset.h" bodystart="46" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1numpy_1_1_numpy_dataset_1a064c5caa7bdae16eebdfdbcbd92fce9d" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::numpy::NumpyDataset&lt; BATCH_T &gt;::NumpyDataset</definition>
+        <argsstring>(std::vector&lt; BATCH_T &gt; &amp;&amp;batches, std::vector&lt; py::object &gt; &amp;&amp;objects_to_keep_alive)</argsstring>
+        <name>NumpyDataset</name>
+        <qualifiedname>thirdai::dataset::numpy::NumpyDataset::NumpyDataset</qualifiedname>
+        <param>
+          <type>std::vector&lt; BATCH_T &gt; &amp;&amp;</type>
+          <declname>batches</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; py::object &gt; &amp;&amp;</type>
+          <declname>objects_to_keep_alive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/NumpyDataset.h" line="40" column="3" bodyfile="dataset/src/NumpyDataset.h" bodystart="40" bodyend="43"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>This class is an <ref refid="classthirdai_1_1dataset_1_1_in_memory_dataset" kindref="compound">InMemoryDataset</ref> that is backed by numpy arrays. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>The batches that are passed into the constructor are assumed to be shallow objects on top of memory owned by the py::objects in the vector objects_to_keep_alive. This class does NOT manager the memory of those py::objects manually. Instead, merely having a copy of the py::objects increments the reference counter and prevents python from deleting those objects until this object is deleted. </para>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="3">
+        <label>thirdai::dataset::DatasetBase</label>
+        <link refid="classthirdai_1_1dataset_1_1_dataset_base"/>
+      </node>
+      <node id="2">
+        <label>thirdai::dataset::InMemoryDataset&lt; BATCH_T &gt;</label>
+        <link refid="classthirdai_1_1dataset_1_1_in_memory_dataset"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::numpy::NumpyDataset&lt; BATCH_T &gt;</label>
+        <link refid="classthirdai_1_1dataset_1_1numpy_1_1_numpy_dataset"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="3">
+        <label>thirdai::dataset::DatasetBase</label>
+        <link refid="classthirdai_1_1dataset_1_1_dataset_base"/>
+      </node>
+      <node id="2">
+        <label>thirdai::dataset::InMemoryDataset&lt; BATCH_T &gt;</label>
+        <link refid="classthirdai_1_1dataset_1_1_in_memory_dataset"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::numpy::NumpyDataset&lt; BATCH_T &gt;</label>
+        <link refid="classthirdai_1_1dataset_1_1numpy_1_1_numpy_dataset"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="dataset/src/NumpyDataset.h" line="38" column="1" bodyfile="dataset/src/NumpyDataset.h" bodystart="38" bodyend="47"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1numpy_1_1_numpy_dataset_1aa0b56e52e4c54a944f9ac9939c5ddd1c" prot="private" virt="non-virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>_objects_to_keep_alive</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1a90a5601437236a830fc4f34851542a76" prot="public" virt="non-virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>at</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1a5e7f7345992e092993cdaa544f3d4117" prot="public" virt="non-virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>at</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1ab4b2aeb0657e3ceae7c9caf35262f76d" prot="public" virt="virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>batchSize</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1a05698934f5a7ffa8d96a535240eb20d2" prot="public" virt="virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>batchSize</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1a9cbaefa1323ee647f9c5016343eb7324" prot="public" virt="non-virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>begin</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_dataset_base_1a8c402e8ed81c2aebf1ef248fe8880219" prot="public" virt="non-virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>DatasetBase</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1ac47079acb6c2af87ecb212686d6621a5" prot="public" virt="non-virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>end</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1ad457e7c56fa0268ef4231ec44a7b1773" prot="public" virt="non-virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>InMemoryDataset</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1aa780430c186dfdc58fb85771071670fd" prot="public" virt="non-virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>InMemoryDataset</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1ae29edb480efe89f8cb424d16e73870b3" prot="public" virt="virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>len</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1a17301a74db205bb765934a5e9782f027" prot="public" virt="non-virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>load</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1a8256c9936950e1a92b6174a4336b1819" prot="public" virt="virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>numBatches</name></member>
+      <member refid="classthirdai_1_1dataset_1_1numpy_1_1_numpy_dataset_1a064c5caa7bdae16eebdfdbcbd92fce9d" prot="public" virt="non-virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>NumpyDataset</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1a1b76a119f6db5da92d4f0adfd4e39fb2" prot="public" virt="non-virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>operator[]</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1aa599a861a0177b348835e81797498e78" prot="public" virt="non-virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>operator[]</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_in_memory_dataset_1a8b684be6fffbfa7ec44d871b76a0fa1f" prot="public" virt="non-virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>save</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_dataset_base_1a7d800f395b15655a93c0c947072fc0f0" prot="public" virt="virtual"><scope>thirdai::dataset::numpy::NumpyDataset</scope><name>~DatasetBase</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

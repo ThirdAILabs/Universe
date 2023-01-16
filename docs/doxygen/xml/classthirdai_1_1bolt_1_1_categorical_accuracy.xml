@@ -1,0 +1,212 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_categorical_accuracy" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::bolt::CategoricalAccuracy</compoundname>
+    <basecompoundref refid="classthirdai_1_1bolt_1_1_metric" prot="public" virt="non-virtual">thirdai::bolt::Metric</basecompoundref>
+    <includes refid="_metric_8h" local="no">Metric.h</includes>
+      <sectiondef kind="public-static-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_categorical_accuracy_1ab46cc39fe29d2bb4c9800c74816adcf9" prot="public" static="yes" constexpr="yes" mutable="no">
+        <type>constexpr const char *</type>
+        <definition>constexpr const char* thirdai::bolt::CategoricalAccuracy::NAME</definition>
+        <argsstring></argsstring>
+        <name>NAME</name>
+        <qualifiedname>thirdai::bolt::CategoricalAccuracy::NAME</qualifiedname>
+        <initializer>= &quot;categorical_accuracy&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="108" column="31" bodyfile="bolt/src/metrics/Metric.h" bodystart="108" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_categorical_accuracy_1ab2b2290591e7a7f29e4f279d5b72685c" prot="private" static="no" mutable="no">
+        <type>std::atomic&lt; uint32_t &gt;</type>
+        <definition>std::atomic&lt;uint32_t&gt; thirdai::bolt::CategoricalAccuracy::_correct</definition>
+        <argsstring></argsstring>
+        <name>_correct</name>
+        <qualifiedname>thirdai::bolt::CategoricalAccuracy::_correct</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="121" column="15" bodyfile="bolt/src/metrics/Metric.h" bodystart="121" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_categorical_accuracy_1ac3e70ff827ab18242264da6dadd6c0a3" prot="private" static="no" mutable="no">
+        <type>std::atomic&lt; uint32_t &gt;</type>
+        <definition>std::atomic&lt;uint32_t&gt; thirdai::bolt::CategoricalAccuracy::_num_samples</definition>
+        <argsstring></argsstring>
+        <name>_num_samples</name>
+        <qualifiedname>thirdai::bolt::CategoricalAccuracy::_num_samples</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="122" column="15" bodyfile="bolt/src/metrics/Metric.h" bodystart="122" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_categorical_accuracy_1a30799bc0d478a8870ed591cb46425cfa" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::CategoricalAccuracy::CategoricalAccuracy</definition>
+        <argsstring>()</argsstring>
+        <name>CategoricalAccuracy</name>
+        <qualifiedname>thirdai::bolt::CategoricalAccuracy::CategoricalAccuracy</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="58" column="3" bodyfile="bolt/src/metrics/Metric.h" bodystart="58" bodyend="58"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_categorical_accuracy_1a6c516570f5a9d0424607d739be16d572" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::CategoricalAccuracy::record</definition>
+        <argsstring>(const BoltVector &amp;output, const BoltVector &amp;labels) final</argsstring>
+        <name>record</name>
+        <qualifiedname>thirdai::bolt::CategoricalAccuracy::record</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_metric_1afac01d5227e7a54ab3e97a43b84ba505">record</reimplements>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>labels</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="60" column="8" bodyfile="bolt/src/metrics/Metric.h" bodystart="60" bodyend="96"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_categorical_accuracy_1a0b51644cb9cc40bda18ff0e7f6bfe857" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>double</type>
+        <definition>double thirdai::bolt::CategoricalAccuracy::value</definition>
+        <argsstring>() final</argsstring>
+        <name>value</name>
+        <qualifiedname>thirdai::bolt::CategoricalAccuracy::value</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_metric_1a7cc18ba1410d086d505d3dd145262c40">value</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="98" column="10" bodyfile="bolt/src/metrics/Metric.h" bodystart="98" bodyend="101"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_categorical_accuracy_1aff6ad0169aef0418498b26c2481c6c94" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::CategoricalAccuracy::reset</definition>
+        <argsstring>() final</argsstring>
+        <name>reset</name>
+        <qualifiedname>thirdai::bolt::CategoricalAccuracy::reset</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_metric_1a9bf72bdd3547abc390e035936bc5ad82">reset</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="103" column="8" bodyfile="bolt/src/metrics/Metric.h" bodystart="103" bodyend="106"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_categorical_accuracy_1aa0a5f89425486aa98230fc2f6441be7b" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::bolt::CategoricalAccuracy::name</definition>
+        <argsstring>() final</argsstring>
+        <name>name</name>
+        <qualifiedname>thirdai::bolt::CategoricalAccuracy::name</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_metric_1afbd365875c1a09115e794f3bb5d5aff0">name</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="110" column="15" bodyfile="bolt/src/metrics/Metric.h" bodystart="110" bodyend="110"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_categorical_accuracy_1af0c6350c85e9a7bff0d491868f3b8727" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::bolt::CategoricalAccuracy::summary</definition>
+        <argsstring>() final</argsstring>
+        <name>summary</name>
+        <qualifiedname>thirdai::bolt::CategoricalAccuracy::summary</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_metric_1a41432cee6f375a3203923ad64144d981">summary</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="112" column="15" bodyfile="bolt/src/metrics/Metric.h" bodystart="112" bodyend="116"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_categorical_accuracy_1ae3b6ad79026099f644b5d73d132615d2" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::CategoricalAccuracy::smallerIsBetter</definition>
+        <argsstring>() const final</argsstring>
+        <name>smallerIsBetter</name>
+        <qualifiedname>thirdai::bolt::CategoricalAccuracy::smallerIsBetter</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_metric_1a669e36d863f3f143a60aef059c4adffa">smallerIsBetter</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="118" column="8" bodyfile="bolt/src/metrics/Metric.h" bodystart="118" bodyend="118"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>The categorical accuracy is the accuracy @1 which measures for what fraction of the samples the neuron with the highest activation is in the labels. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="1">
+        <label>thirdai::bolt::CategoricalAccuracy</label>
+        <link refid="classthirdai_1_1bolt_1_1_categorical_accuracy"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::bolt::Metric</label>
+        <link refid="classthirdai_1_1bolt_1_1_metric"/>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="1">
+        <label>thirdai::bolt::CategoricalAccuracy</label>
+        <link refid="classthirdai_1_1bolt_1_1_categorical_accuracy"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::bolt::Metric</label>
+        <link refid="classthirdai_1_1bolt_1_1_metric"/>
+      </node>
+    </collaborationgraph>
+    <location file="bolt/src/metrics/Metric.h" line="56" column="1" bodyfile="bolt/src/metrics/Metric.h" bodystart="56" bodyend="123"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1ab2b2290591e7a7f29e4f279d5b72685c" prot="private" virt="non-virtual"><scope>thirdai::bolt::CategoricalAccuracy</scope><name>_correct</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1ac3e70ff827ab18242264da6dadd6c0a3" prot="private" virt="non-virtual"><scope>thirdai::bolt::CategoricalAccuracy</scope><name>_num_samples</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1a30799bc0d478a8870ed591cb46425cfa" prot="public" virt="non-virtual"><scope>thirdai::bolt::CategoricalAccuracy</scope><name>CategoricalAccuracy</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1ab46cc39fe29d2bb4c9800c74816adcf9" prot="public" virt="non-virtual"><scope>thirdai::bolt::CategoricalAccuracy</scope><name>NAME</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1aa0a5f89425486aa98230fc2f6441be7b" prot="public" virt="virtual"><scope>thirdai::bolt::CategoricalAccuracy</scope><name>name</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1a6c516570f5a9d0424607d739be16d572" prot="public" virt="virtual"><scope>thirdai::bolt::CategoricalAccuracy</scope><name>record</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1aff6ad0169aef0418498b26c2481c6c94" prot="public" virt="virtual"><scope>thirdai::bolt::CategoricalAccuracy</scope><name>reset</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1ae3b6ad79026099f644b5d73d132615d2" prot="public" virt="virtual"><scope>thirdai::bolt::CategoricalAccuracy</scope><name>smallerIsBetter</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1af0c6350c85e9a7bff0d491868f3b8727" prot="public" virt="virtual"><scope>thirdai::bolt::CategoricalAccuracy</scope><name>summary</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1a0b51644cb9cc40bda18ff0e7f6bfe857" prot="public" virt="virtual"><scope>thirdai::bolt::CategoricalAccuracy</scope><name>value</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_1a44b6ac1083c99ac6ffa9e2f095e0d151" prot="public" virt="virtual"><scope>thirdai::bolt::CategoricalAccuracy</scope><name>~Metric</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

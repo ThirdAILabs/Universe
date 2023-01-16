@@ -1,0 +1,249 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::dataset::SegmentedSparseFeatureVector</compoundname>
+    <basecompoundref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" prot="public" virt="non-virtual">thirdai::dataset::SegmentedFeatureVector</basecompoundref>
+    <includes refid="_segmented_feature_vector_8h" local="no">SegmentedFeatureVector.h</includes>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a1be56e4492f3103b07f46d7ae0c7802e" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::SegmentedSparseFeatureVector::_added_sparse</definition>
+        <argsstring></argsstring>
+        <name>_added_sparse</name>
+        <qualifiedname>thirdai::dataset::SegmentedSparseFeatureVector::_added_sparse</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/SegmentedFeatureVector.h" line="84" column="8" bodyfile="dataset/src/utils/SegmentedFeatureVector.h" bodystart="84" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a35528122ad0cef90f1759143aa25c3e8" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::SegmentedSparseFeatureVector::_n_dense_added</definition>
+        <argsstring></argsstring>
+        <name>_n_dense_added</name>
+        <qualifiedname>thirdai::dataset::SegmentedSparseFeatureVector::_n_dense_added</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/SegmentedFeatureVector.h" line="85" column="12" bodyfile="dataset/src/utils/SegmentedFeatureVector.h" bodystart="85" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1ac6066a8d140a06104daf70945c6b4093" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::SegmentedSparseFeatureVector::_current_dim</definition>
+        <argsstring></argsstring>
+        <name>_current_dim</name>
+        <qualifiedname>thirdai::dataset::SegmentedSparseFeatureVector::_current_dim</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/SegmentedFeatureVector.h" line="86" column="12" bodyfile="dataset/src/utils/SegmentedFeatureVector.h" bodystart="86" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a4a7671e86aba9bf1a86418b4d49ab085" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::SegmentedSparseFeatureVector::_prev_dim</definition>
+        <argsstring></argsstring>
+        <name>_prev_dim</name>
+        <qualifiedname>thirdai::dataset::SegmentedSparseFeatureVector::_prev_dim</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/SegmentedFeatureVector.h" line="87" column="12" bodyfile="dataset/src/utils/SegmentedFeatureVector.h" bodystart="87" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a98e58d4e6176dd5b6c88b7950d89125f" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt;uint32_t&gt; thirdai::dataset::SegmentedSparseFeatureVector::_indices</definition>
+        <argsstring></argsstring>
+        <name>_indices</name>
+        <qualifiedname>thirdai::dataset::SegmentedSparseFeatureVector::_indices</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/SegmentedFeatureVector.h" line="88" column="15" bodyfile="dataset/src/utils/SegmentedFeatureVector.h" bodystart="88" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a3afe817e2b38f417a05910a9d376dcce" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; float &gt;</type>
+        <definition>std::vector&lt;float&gt; thirdai::dataset::SegmentedSparseFeatureVector::_values</definition>
+        <argsstring></argsstring>
+        <name>_values</name>
+        <qualifiedname>thirdai::dataset::SegmentedSparseFeatureVector::_values</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/SegmentedFeatureVector.h" line="89" column="15" bodyfile="dataset/src/utils/SegmentedFeatureVector.h" bodystart="89" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a0a3f2a272ae46751c7d1b46256aac3f4" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::SegmentedSparseFeatureVector::addSparseFeatureToSegment</definition>
+        <argsstring>(uint32_t index, float value) final</argsstring>
+        <name>addSparseFeatureToSegment</name>
+        <qualifiedname>thirdai::dataset::SegmentedSparseFeatureVector::addSparseFeatureToSegment</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1af9322f2281aa25b47ba941bf0e174ba5">addSparseFeatureToSegment</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>index</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>value</declname>
+        </param>
+        <briefdescription>
+<para>Increments the feature at the given index of the current vector segment by a value. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/SegmentedFeatureVector.h" line="14" column="8" bodyfile="dataset/src/utils/SegmentedFeatureVector.h" bodystart="14" bodyend="39"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a256d7f3fbfc8a68a42b59c9fa90770d4" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::SegmentedSparseFeatureVector::addDenseFeatureToSegment</definition>
+        <argsstring>(float value) final</argsstring>
+        <name>addDenseFeatureToSegment</name>
+        <qualifiedname>thirdai::dataset::SegmentedSparseFeatureVector::addDenseFeatureToSegment</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1aae4282a5423ab7d0acd60b41f23d739d">addDenseFeatureToSegment</reimplements>
+        <param>
+          <type>float</type>
+          <declname>value</declname>
+        </param>
+        <briefdescription>
+<para>Sets the next element of the dense vector segment to the given value. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/SegmentedFeatureVector.h" line="41" column="8" bodyfile="dataset/src/utils/SegmentedFeatureVector.h" bodystart="41" bodyend="61"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a08128b231826a38bcf42a103173204f5" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref></type>
+        <definition>BoltVector thirdai::dataset::SegmentedSparseFeatureVector::toBoltVector</definition>
+        <argsstring>() final</argsstring>
+        <name>toBoltVector</name>
+        <qualifiedname>thirdai::dataset::SegmentedSparseFeatureVector::toBoltVector</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1a820e2ae4fe77307076a4cd098f2bf3db">toBoltVector</reimplements>
+        <briefdescription>
+<para>Converts this vector to a <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/SegmentedFeatureVector.h" line="63" column="14" bodyfile="dataset/src/utils/SegmentedFeatureVector.h" bodystart="63" bodyend="65"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a0e45351919fc53813eaa590dfe42fa7d" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::SegmentedSparseFeatureVector::addFeatureSegment</definition>
+        <argsstring>(uint32_t dim) final</argsstring>
+        <name>addFeatureSegment</name>
+        <qualifiedname>thirdai::dataset::SegmentedSparseFeatureVector::addFeatureSegment</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1a78efb4959242a8e8633e663a15dbff04">addFeatureSegment</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>dim</declname>
+        </param>
+        <briefdescription>
+<para>Adds a segment with the given dimension to the current vector. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>This method is used by feature blocks to add feature segments to a vector. Internally, this method notifies the vector data structure to do any relevant bookkeeping.</para>
+<para>This method must be called exactly once per sample per block, so to prevent erroneous use, we restrict access by making it a protected method. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/SegmentedFeatureVector.h" line="68" column="8" bodyfile="dataset/src/utils/SegmentedFeatureVector.h" bodystart="68" bodyend="73"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a502620fe3b221c82bc477c82af920ca1" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::unordered_map&lt; uint32_t, float &gt;</type>
+        <definition>std::unordered_map&lt; uint32_t, float &gt; thirdai::dataset::SegmentedSparseFeatureVector::entries</definition>
+        <argsstring>() final</argsstring>
+        <name>entries</name>
+        <qualifiedname>thirdai::dataset::SegmentedSparseFeatureVector::entries</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1a070f0026717ffc75d64d47952a147dc1">entries</reimplements>
+        <briefdescription>
+<para>Returns a mapping of all of the vector&apos;s idx-value pairs. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Only used for testing as this can be very expensive in dense vectors, so we restrict access by making it a protected method. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/SegmentedFeatureVector.h" line="75" column="22" bodyfile="dataset/src/utils/SegmentedFeatureVector.h" bodystart="75" bodyend="81"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>A concrete implementation of <ref refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector" kindref="compound">SegmentedSparseFeatureVector</ref> for sparse vectors. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::dataset::SegmentedFeatureVector</label>
+        <link refid="classthirdai_1_1dataset_1_1_segmented_feature_vector"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::SegmentedSparseFeatureVector</label>
+        <link refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>thirdai::dataset::SegmentedFeatureVector</label>
+        <link refid="classthirdai_1_1dataset_1_1_segmented_feature_vector"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::SegmentedSparseFeatureVector</label>
+        <link refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="dataset/src/utils/SegmentedFeatureVector.h" line="12" column="1" bodyfile="dataset/src/utils/SegmentedFeatureVector.h" bodystart="12" bodyend="90"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a1be56e4492f3103b07f46d7ae0c7802e" prot="private" virt="non-virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>_added_sparse</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1ac6066a8d140a06104daf70945c6b4093" prot="private" virt="non-virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>_current_dim</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a98e58d4e6176dd5b6c88b7950d89125f" prot="private" virt="non-virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>_indices</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a35528122ad0cef90f1759143aa25c3e8" prot="private" virt="non-virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>_n_dense_added</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a4a7671e86aba9bf1a86418b4d49ab085" prot="private" virt="non-virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>_prev_dim</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a3afe817e2b38f417a05910a9d376dcce" prot="private" virt="non-virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>_values</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a256d7f3fbfc8a68a42b59c9fa90770d4" prot="public" virt="virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>addDenseFeatureToSegment</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a0e45351919fc53813eaa590dfe42fa7d" prot="protected" virt="virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>addFeatureSegment</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a0a3f2a272ae46751c7d1b46256aac3f4" prot="public" virt="virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>addSparseFeatureToSegment</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1a85d97089a57b2491785491598b5a8f1b" prot="public" virt="non-virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>Block</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1a62020626c741ff0b0b58ca2164a8a552" prot="public" virt="non-virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>CategoricalBlockTest</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a502620fe3b221c82bc477c82af920ca1" prot="protected" virt="virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>entries</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1a6d92f750390bf181c335cc74918bfe30" prot="public" virt="non-virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>SegmentedFeatureVectorTest</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1af1f9e1b346e6d7f3da4b3c32a462c644" prot="public" virt="non-virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>TextBlockTest</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector_1a08128b231826a38bcf42a103173204f5" prot="public" virt="virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>toBoltVector</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1ad1059f26440f2353f5f7449c6b512002" prot="public" virt="virtual"><scope>thirdai::dataset::SegmentedSparseFeatureVector</scope><name>~SegmentedFeatureVector</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

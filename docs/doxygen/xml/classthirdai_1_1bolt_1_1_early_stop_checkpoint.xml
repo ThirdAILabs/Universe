@@ -1,0 +1,307 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_early_stop_checkpoint" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::bolt::EarlyStopCheckpoint</compoundname>
+    <basecompoundref refid="classthirdai_1_1bolt_1_1_callback" prot="public" virt="non-virtual">thirdai::bolt::Callback</basecompoundref>
+    <includes refid="_early_stop_checkpoint_8h" local="no">EarlyStopCheckpoint.h</includes>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1ae57ec5d675da6c9ce8a714247f021d37" prot="private" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string thirdai::bolt::EarlyStopCheckpoint::_monitored_metric</definition>
+        <argsstring></argsstring>
+        <name>_monitored_metric</name>
+        <qualifiedname>thirdai::bolt::EarlyStopCheckpoint::_monitored_metric</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="80" column="15" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="80" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1a48f15e6b25b7154dced1e9aa9e6620bd" prot="private" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string thirdai::bolt::EarlyStopCheckpoint::_model_save_path</definition>
+        <argsstring></argsstring>
+        <name>_model_save_path</name>
+        <qualifiedname>thirdai::bolt::EarlyStopCheckpoint::_model_save_path</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="81" column="15" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="81" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1a5c11bf7fb1833d7c8d7e3d88f9895eb5" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::EarlyStopCheckpoint::_patience</definition>
+        <argsstring></argsstring>
+        <name>_patience</name>
+        <qualifiedname>thirdai::bolt::EarlyStopCheckpoint::_patience</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="82" column="12" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="82" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1a6562912bd68d99b0628075ec97dedca9" prot="private" static="no" mutable="no">
+        <type>double</type>
+        <definition>double thirdai::bolt::EarlyStopCheckpoint::_min_delta</definition>
+        <argsstring></argsstring>
+        <name>_min_delta</name>
+        <qualifiedname>thirdai::bolt::EarlyStopCheckpoint::_min_delta</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="83" column="10" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="83" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1ae01170e4a1ff91ca30fe95948f65bf43" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::EarlyStopCheckpoint::_epochs_since_best</definition>
+        <argsstring></argsstring>
+        <name>_epochs_since_best</name>
+        <qualifiedname>thirdai::bolt::EarlyStopCheckpoint::_epochs_since_best</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="87" column="12" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="87" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1ae8f6cc99e168c2a3478ab19c5dd0ae0c" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::EarlyStopCheckpoint::_should_minimize</definition>
+        <argsstring></argsstring>
+        <name>_should_minimize</name>
+        <qualifiedname>thirdai::bolt::EarlyStopCheckpoint::_should_minimize</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="88" column="8" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="88" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1a8b2a5e2cff24b97820894a389727407a" prot="private" static="no" mutable="no">
+        <type>double</type>
+        <definition>double thirdai::bolt::EarlyStopCheckpoint::_best_validation_score</definition>
+        <argsstring></argsstring>
+        <name>_best_validation_score</name>
+        <qualifiedname>thirdai::bolt::EarlyStopCheckpoint::_best_validation_score</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="89" column="10" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="89" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1a7464d7476fb1158ca75f6b2a04fa6934" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::EarlyStopCheckpoint::EarlyStopCheckpoint</definition>
+        <argsstring>(std::string monitored_metric, std::string model_save_path, uint32_t patience=2, double min_delta=0)</argsstring>
+        <name>EarlyStopCheckpoint</name>
+        <qualifiedname>thirdai::bolt::EarlyStopCheckpoint::EarlyStopCheckpoint</qualifiedname>
+        <param>
+          <type>std::string</type>
+          <declname>monitored_metric</declname>
+        </param>
+        <param>
+          <type>std::string</type>
+          <declname>model_save_path</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>patience</declname>
+          <defval>2</defval>
+        </param>
+        <param>
+          <type>double</type>
+          <declname>min_delta</declname>
+          <defval>0</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="31" column="3" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="31" bodyend="38"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1a52041a094a38b032fc73fff60a23fece" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::EarlyStopCheckpoint::onTrainBegin</definition>
+        <argsstring>(BoltGraph &amp;model, TrainState &amp;train_state) final</argsstring>
+        <name>onTrainBegin</name>
+        <qualifiedname>thirdai::bolt::EarlyStopCheckpoint::onTrainBegin</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_callback_1adefc33fba65888bf05b15f77fcf18edd">onTrainBegin</reimplements>
+        <param>
+          <type><ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref> &amp;</type>
+          <declname>model</declname>
+        </param>
+        <param>
+          <type><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref> &amp;</type>
+          <declname>train_state</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="40" column="8" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="40" bodyend="44"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1afdf6c908446bbca98d0683f082f7a7e2" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::EarlyStopCheckpoint::onEpochEnd</definition>
+        <argsstring>(BoltGraph &amp;model, TrainState &amp;train_state) final</argsstring>
+        <name>onEpochEnd</name>
+        <qualifiedname>thirdai::bolt::EarlyStopCheckpoint::onEpochEnd</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_callback_1a925d84d71da56eb2bce18449924fa48a">onEpochEnd</reimplements>
+        <param>
+          <type><ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref> &amp;</type>
+          <declname>model</declname>
+        </param>
+        <param>
+          <type><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref> &amp;</type>
+          <declname>train_state</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="46" column="8" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="46" bodyend="61"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1ab1cf5df120c57661477908c9c76b6141" prot="private" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::EarlyStopCheckpoint::isImprovement</definition>
+        <argsstring>(double metric_val) const</argsstring>
+        <name>isImprovement</name>
+        <qualifiedname>thirdai::bolt::EarlyStopCheckpoint::isImprovement</qualifiedname>
+        <param>
+          <type>double</type>
+          <declname>metric_val</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="64" column="8" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="64" bodyend="69"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1ada5eea18a8f91ffa2bda92128661bbcc" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::EarlyStopCheckpoint::initValidationTrackers</definition>
+        <argsstring>()</argsstring>
+        <name>initValidationTrackers</name>
+        <qualifiedname>thirdai::bolt::EarlyStopCheckpoint::initValidationTrackers</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="71" column="8" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="71" bodyend="78"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>This callback is intended to stop training early based on prediction results from a given validation set. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>Saves the best model to model_save_path</para>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>monitored_metric</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>The metric to monitor for early stopping. The metric is assumed to be associated with validation data. </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>model_save_path</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>file path to save the model that scored the best on the validation set </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>patience</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>number of epochs with no improvement in validation score after which training will be stopped. </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>min_delta</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>minimum change in the monitored quantity to qualify as an improvement, i.e. an absolute change of less than min_delta, will count as no improvement.</para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+Based on the keras design found here: <ulink url="https://keras.io/api/callbacks/early_stopping/">https://keras.io/api/callbacks/early_stopping/</ulink> </para>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::bolt::Callback</label>
+        <link refid="classthirdai_1_1bolt_1_1_callback"/>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::EarlyStopCheckpoint</label>
+        <link refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>thirdai::bolt::Callback</label>
+        <link refid="classthirdai_1_1bolt_1_1_callback"/>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::EarlyStopCheckpoint</label>
+        <link refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" line="29" column="1" bodyfile="bolt/src/graph/callbacks/EarlyStopCheckpoint.h" bodystart="29" bodyend="90"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1a8b2a5e2cff24b97820894a389727407a" prot="private" virt="non-virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>_best_validation_score</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1ae01170e4a1ff91ca30fe95948f65bf43" prot="private" virt="non-virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>_epochs_since_best</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1a6562912bd68d99b0628075ec97dedca9" prot="private" virt="non-virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>_min_delta</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1a48f15e6b25b7154dced1e9aa9e6620bd" prot="private" virt="non-virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>_model_save_path</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1ae57ec5d675da6c9ce8a714247f021d37" prot="private" virt="non-virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>_monitored_metric</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1a5c11bf7fb1833d7c8d7e3d88f9895eb5" prot="private" virt="non-virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>_patience</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1ae8f6cc99e168c2a3478ab19c5dd0ae0c" prot="private" virt="non-virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>_should_minimize</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_callback_1a350d6447193ebfd65d19da3a8092f088" prot="public" virt="non-virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>Callback</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1a7464d7476fb1158ca75f6b2a04fa6934" prot="public" virt="non-virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>EarlyStopCheckpoint</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1ada5eea18a8f91ffa2bda92128661bbcc" prot="private" virt="non-virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>initValidationTrackers</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1ab1cf5df120c57661477908c9c76b6141" prot="private" virt="non-virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>isImprovement</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_callback_1aca034c60c5ab34b34b52c01a1498b42b" prot="public" virt="virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>onBatchBegin</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_callback_1a7628ce46213f8473d9dfa65bee099d55" prot="public" virt="virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>onBatchEnd</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_callback_1adf6ee076bc32d17e89d74f9fb9c1cb1d" prot="public" virt="virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>onEpochBegin</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1afdf6c908446bbca98d0683f082f7a7e2" prot="public" virt="virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>onEpochEnd</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint_1a52041a094a38b032fc73fff60a23fece" prot="public" virt="virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>onTrainBegin</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_callback_1a8518ec7ed46219e72bff0840adf1f9cf" prot="public" virt="virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>onTrainEnd</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_callback_1a1b118f785195a24dcc88c12e6e7ba5d0" prot="public" virt="virtual"><scope>thirdai::bolt::EarlyStopCheckpoint</scope><name>~Callback</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

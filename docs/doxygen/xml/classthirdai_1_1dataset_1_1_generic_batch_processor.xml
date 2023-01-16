@@ -1,0 +1,564 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_generic_batch_processor" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::dataset::GenericBatchProcessor</compoundname>
+    <basecompoundref refid="classthirdai_1_1dataset_1_1_batch_processor" prot="public" virt="non-virtual">thirdai::dataset::BatchProcessor&lt; BoltBatch, BoltBatch &gt;</basecompoundref>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="211" column="16" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="211" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1a09145451218278cfdd5b16c6d9a10582" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::GenericBatchProcessor::_expects_header</definition>
+        <argsstring></argsstring>
+        <name>_expects_header</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::_expects_header</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="221" column="8" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="221" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1a2f076b30701c411fa37f89cad25899ba" prot="private" static="no" mutable="no">
+        <type>char</type>
+        <definition>char thirdai::dataset::GenericBatchProcessor::_delimiter</definition>
+        <argsstring></argsstring>
+        <name>_delimiter</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::_delimiter</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="222" column="8" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="222" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1af724620a5d21f992c1c01e3ed97fdd2a" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::GenericBatchProcessor::_parallel</definition>
+        <argsstring></argsstring>
+        <name>_parallel</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::_parallel</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="223" column="8" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="223" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1a2f2e90d51f0a9944fe68673655d03094" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::GenericBatchProcessor::_expected_num_cols</definition>
+        <argsstring></argsstring>
+        <name>_expected_num_cols</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::_expected_num_cols</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="225" column="12" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="225" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1aaa0db43438c528257b17aa867e2e9d6c" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::GenericBatchProcessor::_input_blocks_dense</definition>
+        <argsstring></argsstring>
+        <name>_input_blocks_dense</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::_input_blocks_dense</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="226" column="8" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="226" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1ae2ff589cdfa343a10632c701d559f892" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::GenericBatchProcessor::_label_blocks_dense</definition>
+        <argsstring></argsstring>
+        <name>_label_blocks_dense</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::_label_blocks_dense</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="227" column="8" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="227" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1af7ed070ee3ee0d6e3261842e9c2198aa" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt; &gt;</type>
+        <definition>std::vector&lt;std::shared_ptr&lt;Block&gt; &gt; thirdai::dataset::GenericBatchProcessor::_input_blocks</definition>
+        <argsstring></argsstring>
+        <name>_input_blocks</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::_input_blocks</qualifiedname>
+        <briefdescription>
+<para>We save a copy of these vectors instead of just references because using references will cause errors when given Python lists through PyBind11. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>This is because while the PyBind11 creates an std::vector representation of a Python list when passing it to a C++ function, the vector does not persist beyond the function call, so future references to the vector will cause a segfault. Furthermore, these vectors are cheap to copy since they contain a small number of elements and each element is a pointer. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="238" column="15" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="238" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1a847b7f9c912eaf50517279e5ceec204b" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt; &gt;</type>
+        <definition>std::vector&lt;std::shared_ptr&lt;Block&gt; &gt; thirdai::dataset::GenericBatchProcessor::_label_blocks</definition>
+        <argsstring></argsstring>
+        <name>_label_blocks</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::_label_blocks</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="239" column="15" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="239" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1adee741707ed0eae3ccf9357457ad2eaf" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt;uint32_t&gt; thirdai::dataset::GenericBatchProcessor::_block_feature_offsets</definition>
+        <argsstring></argsstring>
+        <name>_block_feature_offsets</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::_block_feature_offsets</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="244" column="15" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="244" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1a059b82f70bae7dfbd4a2e39f3445d5cb" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::GenericBatchProcessor::GenericBatchProcessor</definition>
+        <argsstring>(std::vector&lt; std::shared_ptr&lt; Block &gt; &gt; input_blocks, std::vector&lt; std::shared_ptr&lt; Block &gt; &gt; label_blocks, bool has_header=false, char delimiter=&apos;,&apos;, bool parallel=true)</argsstring>
+        <name>GenericBatchProcessor</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::GenericBatchProcessor</qualifiedname>
+        <param>
+          <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt; &gt;</type>
+          <declname>input_blocks</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt; &gt;</type>
+          <declname>label_blocks</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>has_header</declname>
+          <defval>false</defval>
+        </param>
+        <param>
+          <type>char</type>
+          <declname>delimiter</declname>
+          <defval>&apos;,&apos;</defval>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>parallel</declname>
+          <defval>true</defval>
+        </param>
+        <briefdescription>
+<para>Here we copy input_blocks and label_blocks because when we accept a vector representation of a Python List created by PyBind11, the vector does not persist beyond this function call, which results in segfaults later down the line. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>It is therefore safest to just copy these vectors. Furthermore, these vectors are cheap to copy since they contain a small number of elements and each element is a pointer. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="22" column="3" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="22" bodyend="60"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1a7074e02232333800edd401710a79265c" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::tuple&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref>, <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt;</type>
+        <definition>std::tuple&lt; BoltBatch, BoltBatch &gt; thirdai::dataset::GenericBatchProcessor::createBatch</definition>
+        <argsstring>(const std::vector&lt; std::string &gt; &amp;rows) final</argsstring>
+        <name>createBatch</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::createBatch</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_batch_processor_1a4a7577492de4dfb22677f7a8661da52e">createBatch</reimplements>
+        <param>
+          <type>const std::vector&lt; std::string &gt; &amp;</type>
+          <declname>rows</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="62" column="14" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="62" bodyend="115"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1a6b5f35e4eb3fa6f0ac1d44b9be75a4f4" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::GenericBatchProcessor::expectsHeader</definition>
+        <argsstring>() const final</argsstring>
+        <name>expectsHeader</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::expectsHeader</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_batch_processor_1a89edb021f4c6343854d02ec31b2e5bf1">expectsHeader</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="117" column="8" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="117" bodyend="117"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1a5154927a1423d01ee149c9e82f0e93a8" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::GenericBatchProcessor::processHeader</definition>
+        <argsstring>(const std::string &amp;header) final</argsstring>
+        <name>processHeader</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::processHeader</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_batch_processor_1ad935fca149a9c4741d28665008ffa13b">processHeader</reimplements>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>header</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="119" column="8" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="119" bodyend="119"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1ad7b5d2d27bfa985e6c00b5f27e8b2b7d" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::GenericBatchProcessor::getInputDim</definition>
+        <argsstring>() const</argsstring>
+        <name>getInputDim</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::getInputDim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="121" column="12" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="121" bodyend="121"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1a358b52c01691a123a78dcd7e36eb19e2" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::GenericBatchProcessor::getLabelDim</definition>
+        <argsstring>() const</argsstring>
+        <name>getLabelDim</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::getLabelDim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="123" column="12" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="123" bodyend="123"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1a6da0342b856137c3cc5541106faaa42f" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::GenericBatchProcessor::prepareInputBlocksForBatch</definition>
+        <argsstring>(std::vector&lt; std::string_view &gt; &amp;sample)</argsstring>
+        <name>prepareInputBlocksForBatch</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::prepareInputBlocksForBatch</qualifiedname>
+        <param>
+          <type>std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>sample</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="125" column="8" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="125" bodyend="129"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1a4044f23a94faccfd2756855f9d99a898" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::exception_ptr</type>
+        <definition>std::exception_ptr thirdai::dataset::GenericBatchProcessor::makeInputVector</definition>
+        <argsstring>(std::vector&lt; std::string_view &gt; &amp;sample, BoltVector &amp;vector)</argsstring>
+        <name>makeInputVector</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::makeInputVector</qualifiedname>
+        <param>
+          <type>std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>sample</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>vector</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="131" column="22" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="131" bodyend="134"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1aa8dc87afecd2dec17b96fa07f3fc5497" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::exception_ptr</type>
+        <definition>std::exception_ptr thirdai::dataset::GenericBatchProcessor::makeLabelVector</definition>
+        <argsstring>(std::vector&lt; std::string_view &gt; &amp;sample, BoltVector &amp;vector)</argsstring>
+        <name>makeLabelVector</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::makeLabelVector</qualifiedname>
+        <param>
+          <type>std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>sample</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>vector</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="136" column="22" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="136" bodyend="139"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1ad542c8cbe919aa94bde3558d8437365b" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="structthirdai_1_1dataset_1_1_explanation" kindref="compound">Explanation</ref></type>
+        <definition>Explanation thirdai::dataset::GenericBatchProcessor::explainIndex</definition>
+        <argsstring>(uint32_t feature_index, const std::vector&lt; std::string_view &gt; &amp;input_row)</argsstring>
+        <name>explainIndex</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::explainIndex</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>feature_index</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>input_row</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="153" column="15" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="153" bodyend="162"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1a0e6ac4ef29e931b64c36d976426fda96" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_generic_batch_processor" kindref="compound">GenericBatchProcessor</ref> &gt;</type>
+        <definition>static std::shared_ptr&lt; GenericBatchProcessor &gt; thirdai::dataset::GenericBatchProcessor::make</definition>
+        <argsstring>(std::vector&lt; std::shared_ptr&lt; Block &gt; &gt; input_blocks, std::vector&lt; std::shared_ptr&lt; Block &gt; &gt; label_blocks, bool has_header=false, char delimiter=&apos;,&apos;, bool parallel=true)</argsstring>
+        <name>make</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::make</qualifiedname>
+        <param>
+          <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt; &gt;</type>
+          <declname>input_blocks</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt; &gt;</type>
+          <declname>label_blocks</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>has_header</declname>
+          <defval>false</defval>
+        </param>
+        <param>
+          <type>char</type>
+          <declname>delimiter</declname>
+          <defval>&apos;,&apos;</defval>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>parallel</declname>
+          <defval>true</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="141" column="26" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="141" bodyend="147"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-static-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1ab130eeb52b870a4664a2bed859fb3216" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::exception_ptr</type>
+        <definition>static std::exception_ptr thirdai::dataset::GenericBatchProcessor::makeVector</definition>
+        <argsstring>(std::vector&lt; std::string_view &gt; &amp;sample, BoltVector &amp;vector, std::vector&lt; std::shared_ptr&lt; Block &gt; &gt; &amp;blocks, bool blocks_dense)</argsstring>
+        <name>makeVector</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::makeVector</qualifiedname>
+        <param>
+          <type>std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>sample</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>vector</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt; &gt; &amp;</type>
+          <declname>blocks</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>blocks_dense</declname>
+        </param>
+        <briefdescription>
+<para>Encodes a sample as a <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> according to the given blocks. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="168" column="29" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="168" bodyend="190"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1adb26312f3eca502e09339f718e94591b" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>static uint32_t thirdai::dataset::GenericBatchProcessor::sumBlockDims</definition>
+        <argsstring>(const std::vector&lt; std::shared_ptr&lt; Block &gt; &gt; &amp;blocks)</argsstring>
+        <name>sumBlockDims</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::sumBlockDims</qualifiedname>
+        <param>
+          <type>const std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt; &gt; &amp;</type>
+          <declname>blocks</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="192" column="19" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="192" bodyend="199"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1a2fbdf094b8aa3d0d6eb9fbb68761b824" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt; uint32_t &gt; thirdai::dataset::GenericBatchProcessor::computeBlockFeatureOffsets</definition>
+        <argsstring>()</argsstring>
+        <name>computeBlockFeatureOffsets</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::computeBlockFeatureOffsets</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="201" column="15" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="201" bodyend="208"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1af28b9267023bf92781d4137f0e459683" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::dataset::GenericBatchProcessor::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="213" column="8" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="213" bodyend="216"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_generic_batch_processor_1aa749bda2a74cfa8d93559d8493fb9757" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::GenericBatchProcessor::GenericBatchProcessor</definition>
+        <argsstring>()</argsstring>
+        <name>GenericBatchProcessor</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessor::GenericBatchProcessor</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="219" column="3" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="219" bodyend="219"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::dataset::BatchProcessor&lt; BoltBatch, BoltBatch &gt;</label>
+        <link refid="classthirdai_1_1dataset_1_1_batch_processor"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::GenericBatchProcessor</label>
+        <link refid="classthirdai_1_1dataset_1_1_generic_batch_processor"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>thirdai::dataset::BatchProcessor&lt; BoltBatch, BoltBatch &gt;</label>
+        <link refid="classthirdai_1_1dataset_1_1_batch_processor"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::GenericBatchProcessor</label>
+        <link refid="classthirdai_1_1dataset_1_1_generic_batch_processor"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="20" column="1" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="20" bodyend="245"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1adee741707ed0eae3ccf9357457ad2eaf" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>_block_feature_offsets</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a2f076b30701c411fa37f89cad25899ba" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>_delimiter</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a2f2e90d51f0a9944fe68673655d03094" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>_expected_num_cols</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a09145451218278cfdd5b16c6d9a10582" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>_expects_header</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1af7ed070ee3ee0d6e3261842e9c2198aa" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>_input_blocks</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1aaa0db43438c528257b17aa867e2e9d6c" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>_input_blocks_dense</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a847b7f9c912eaf50517279e5ceec204b" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>_label_blocks</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1ae2ff589cdfa343a10632c701d559f892" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>_label_blocks_dense</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1af724620a5d21f992c1c01e3ed97fdd2a" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>_parallel</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_batch_processor_1a0d72eb4dd655c6dd292fadb54f2f743f" prot="public" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>BatchProcessor</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a2fbdf094b8aa3d0d6eb9fbb68761b824" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>computeBlockFeatureOffsets</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a7074e02232333800edd401710a79265c" prot="public" virt="virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>createBatch</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a6b5f35e4eb3fa6f0ac1d44b9be75a4f4" prot="public" virt="virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>expectsHeader</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1ad542c8cbe919aa94bde3558d8437365b" prot="public" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>explainIndex</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a059b82f70bae7dfbd4a2e39f3445d5cb" prot="public" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>GenericBatchProcessor</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1aa749bda2a74cfa8d93559d8493fb9757" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>GenericBatchProcessor</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1ad7b5d2d27bfa985e6c00b5f27e8b2b7d" prot="public" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>getInputDim</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a358b52c01691a123a78dcd7e36eb19e2" prot="public" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>getLabelDim</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a0e6ac4ef29e931b64c36d976426fda96" prot="public" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>make</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a4044f23a94faccfd2756855f9d99a898" prot="public" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>makeInputVector</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1aa8dc87afecd2dec17b96fa07f3fc5497" prot="public" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>makeLabelVector</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1ab130eeb52b870a4664a2bed859fb3216" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>makeVector</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a6da0342b856137c3cc5541106faaa42f" prot="public" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>prepareInputBlocksForBatch</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a5154927a1423d01ee149c9e82f0e93a8" prot="public" virt="virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>processHeader</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1af28b9267023bf92781d4137f0e459683" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1adb26312f3eca502e09339f718e94591b" prot="private" virt="non-virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>sumBlockDims</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_batch_processor_1a92be3a10bd5fbaebffbe2749d2d74476" prot="public" virt="virtual"><scope>thirdai::dataset::GenericBatchProcessor</scope><name>~BatchProcessor</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

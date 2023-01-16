@@ -1,0 +1,149 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_svm_batch_processor" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::dataset::SvmBatchProcessor</compoundname>
+    <basecompoundref refid="classthirdai_1_1dataset_1_1_unary_bolt_batch_processor" prot="public" virt="non-virtual">thirdai::dataset::UnaryBoltBatchProcessor</basecompoundref>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_svm_batch_processor_1a3d76e1095d2e17570f311107e46ccfb9" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::SvmBatchProcessor::_softmax_for_multiclass</definition>
+        <argsstring></argsstring>
+        <name>_softmax_for_multiclass</name>
+        <qualifiedname>thirdai::dataset::SvmBatchProcessor::_softmax_for_multiclass</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/SvmBatchProcessor.h" line="59" column="8" bodyfile="dataset/src/batch_processors/SvmBatchProcessor.h" bodystart="59" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_svm_batch_processor_1a7ae5f4f851729c0922b9eb77b38db4e5" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::SvmBatchProcessor::SvmBatchProcessor</definition>
+        <argsstring>(bool softmax_for_multiclass=true)</argsstring>
+        <name>SvmBatchProcessor</name>
+        <qualifiedname>thirdai::dataset::SvmBatchProcessor::SvmBatchProcessor</qualifiedname>
+        <param>
+          <type>bool</type>
+          <declname>softmax_for_multiclass</declname>
+          <defval>true</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/SvmBatchProcessor.h" line="10" column="12" bodyfile="dataset/src/batch_processors/SvmBatchProcessor.h" bodystart="10" bodyend="11"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_svm_batch_processor_1a3cff62e2adf3e75b572911e03fe56408" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::SvmBatchProcessor::expectsHeader</definition>
+        <argsstring>() const final</argsstring>
+        <name>expectsHeader</name>
+        <qualifiedname>thirdai::dataset::SvmBatchProcessor::expectsHeader</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_batch_processor_1a89edb021f4c6343854d02ec31b2e5bf1">expectsHeader</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/SvmBatchProcessor.h" line="13" column="8" bodyfile="dataset/src/batch_processors/SvmBatchProcessor.h" bodystart="13" bodyend="13"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_svm_batch_processor_1a970839428a8ff591a13bb4886d9f596e" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::SvmBatchProcessor::processHeader</definition>
+        <argsstring>(const std::string &amp;header) final</argsstring>
+        <name>processHeader</name>
+        <qualifiedname>thirdai::dataset::SvmBatchProcessor::processHeader</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_batch_processor_1ad935fca149a9c4741d28665008ffa13b">processHeader</reimplements>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>header</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/SvmBatchProcessor.h" line="15" column="8" bodyfile="dataset/src/batch_processors/SvmBatchProcessor.h" bodystart="15" bodyend="15"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_svm_batch_processor_1a268ade63db6cdd82ac5c0e20d1751c12" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::pair&lt; <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>, <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &gt;</type>
+        <definition>std::pair&lt; BoltVector, BoltVector &gt; thirdai::dataset::SvmBatchProcessor::processRow</definition>
+        <argsstring>(const std::string &amp;line) final</argsstring>
+        <name>processRow</name>
+        <qualifiedname>thirdai::dataset::SvmBatchProcessor::processRow</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_unary_bolt_batch_processor_1a0fca77f29f220b6457f2a1f5dbcf132b">processRow</reimplements>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>line</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/SvmBatchProcessor.h" line="17" column="13" bodyfile="dataset/src/batch_processors/SvmBatchProcessor.h" bodystart="17" bodyend="56"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="3">
+        <label>thirdai::dataset::BatchProcessor&lt; BoltBatch, BoltBatch &gt;</label>
+        <link refid="classthirdai_1_1dataset_1_1_batch_processor"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::SvmBatchProcessor</label>
+        <link refid="classthirdai_1_1dataset_1_1_svm_batch_processor"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::dataset::UnaryBoltBatchProcessor</label>
+        <link refid="classthirdai_1_1dataset_1_1_unary_bolt_batch_processor"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="3">
+        <label>thirdai::dataset::BatchProcessor&lt; BoltBatch, BoltBatch &gt;</label>
+        <link refid="classthirdai_1_1dataset_1_1_batch_processor"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::SvmBatchProcessor</label>
+        <link refid="classthirdai_1_1dataset_1_1_svm_batch_processor"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::dataset::UnaryBoltBatchProcessor</label>
+        <link refid="classthirdai_1_1dataset_1_1_unary_bolt_batch_processor"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="dataset/src/batch_processors/SvmBatchProcessor.h" line="8" column="1" bodyfile="dataset/src/batch_processors/SvmBatchProcessor.h" bodystart="8" bodyend="60"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_svm_batch_processor_1a3d76e1095d2e17570f311107e46ccfb9" prot="private" virt="non-virtual"><scope>thirdai::dataset::SvmBatchProcessor</scope><name>_softmax_for_multiclass</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_batch_processor_1a0d72eb4dd655c6dd292fadb54f2f743f" prot="public" virt="non-virtual"><scope>thirdai::dataset::SvmBatchProcessor</scope><name>BatchProcessor</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_unary_bolt_batch_processor_1aaf8bb57f330fa0dcfe399f712bfbd9f9" prot="public" virt="virtual"><scope>thirdai::dataset::SvmBatchProcessor</scope><name>createBatch</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_svm_batch_processor_1a3cff62e2adf3e75b572911e03fe56408" prot="public" virt="virtual"><scope>thirdai::dataset::SvmBatchProcessor</scope><name>expectsHeader</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_svm_batch_processor_1a970839428a8ff591a13bb4886d9f596e" prot="public" virt="virtual"><scope>thirdai::dataset::SvmBatchProcessor</scope><name>processHeader</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_svm_batch_processor_1a268ade63db6cdd82ac5c0e20d1751c12" prot="public" virt="virtual"><scope>thirdai::dataset::SvmBatchProcessor</scope><name>processRow</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_svm_batch_processor_1a7ae5f4f851729c0922b9eb77b38db4e5" prot="public" virt="non-virtual"><scope>thirdai::dataset::SvmBatchProcessor</scope><name>SvmBatchProcessor</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_unary_bolt_batch_processor_1a35895546d2083f989d1109057519e198" prot="protected" virt="non-virtual"><scope>thirdai::dataset::SvmBatchProcessor</scope><name>UnaryBoltBatchProcessor</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_batch_processor_1a92be3a10bd5fbaebffbe2749d2d74476" prot="public" virt="virtual"><scope>thirdai::dataset::SvmBatchProcessor</scope><name>~BatchProcessor</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

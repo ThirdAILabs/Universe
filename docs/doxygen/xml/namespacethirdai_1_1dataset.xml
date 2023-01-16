@@ -1,0 +1,443 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="namespacethirdai_1_1dataset" kind="namespace" language="C++">
+    <compoundname>thirdai::dataset</compoundname>
+    <innerclass refid="classthirdai_1_1dataset_1_1_batch_processor" prot="public">thirdai::dataset::BatchProcessor</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_block" prot="public">thirdai::dataset::Block</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_block_batch_processor" prot="public">thirdai::dataset::BlockBatchProcessor</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_categorical_block" prot="public">thirdai::dataset::CategoricalBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_char_k_gram_text_block" prot="public">thirdai::dataset::CharKGramTextBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_click_through_batch_processor" prot="public">thirdai::dataset::ClickThroughBatchProcessor</innerclass>
+    <innerclass refid="structthirdai_1_1dataset_1_1_click_through_dataset_loader" prot="public">thirdai::dataset::ClickThroughDatasetLoader</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_compute_batch_processor" prot="public">thirdai::dataset::ComputeBatchProcessor</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_count_min_sketch" prot="public">thirdai::dataset::CountMinSketch</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_data_loader" prot="public">thirdai::dataset::DataLoader</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_dataset_base" prot="public">thirdai::dataset::DatasetBase</innerclass>
+    <innerclass refid="structthirdai_1_1dataset_1_1_dataset_shuffle_config" prot="public">thirdai::dataset::DatasetShuffleConfig</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_date_block" prot="public">thirdai::dataset::DateBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_dense_array_block" prot="public">thirdai::dataset::DenseArrayBlock</innerclass>
+    <innerclass refid="structthirdai_1_1dataset_1_1_explanation" prot="public">thirdai::dataset::Explanation</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_generic_batch_processor" prot="public">thirdai::dataset::GenericBatchProcessor</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_in_memory_dataset" prot="public">thirdai::dataset::InMemoryDataset</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_item_history_collection" prot="public">thirdai::dataset::ItemHistoryCollection</innerclass>
+    <innerclass refid="structthirdai_1_1dataset_1_1_item_record" prot="public">thirdai::dataset::ItemRecord</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_masked_sentence_batch_processor" prot="public">thirdai::dataset::MaskedSentenceBatchProcessor</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_numerical_categorical_block" prot="public">thirdai::dataset::NumericalCategoricalBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_pair_gram_text_block" prot="public">thirdai::dataset::PairGramTextBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_processor_utils" prot="public">thirdai::dataset::ProcessorUtils</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_quantity_history_tracker" prot="public">thirdai::dataset::QuantityHistoryTracker</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_safe_file_i_o" prot="public">thirdai::dataset::SafeFileIO</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_segmented_dense_feature_vector" prot="public">thirdai::dataset::SegmentedDenseFeatureVector</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" prot="public">thirdai::dataset::SegmentedFeatureVector</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_segmented_sparse_feature_vector" prot="public">thirdai::dataset::SegmentedSparseFeatureVector</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_shuffle_batch_buffer" prot="public">thirdai::dataset::ShuffleBatchBuffer</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_simple_file_data_loader" prot="public">thirdai::dataset::SimpleFileDataLoader</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_streaming_dataset" prot="public">thirdai::dataset::StreamingDataset</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_streaming_generic_dataset_loader" prot="public">thirdai::dataset::StreamingGenericDatasetLoader</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block" prot="public">thirdai::dataset::StringLookupCategoricalBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_svm_batch_processor" prot="public">thirdai::dataset::SvmBatchProcessor</innerclass>
+    <innerclass refid="structthirdai_1_1dataset_1_1_svm_dataset_loader" prot="public">thirdai::dataset::SvmDatasetLoader</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_tabular_metadata" prot="public">thirdai::dataset::TabularMetadata</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_tabular_metadata_processor" prot="public">thirdai::dataset::TabularMetadataProcessor</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_tabular_pair_gram" prot="public">thirdai::dataset::TabularPairGram</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_text_block" prot="public">thirdai::dataset::TextBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_text_encoding_utils" prot="public">thirdai::dataset::TextEncodingUtils</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_thread_safe_vocabulary" prot="public">thirdai::dataset::ThreadSafeVocabulary</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_time_object" prot="public">thirdai::dataset::TimeObject</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_unary_bolt_batch_processor" prot="public">thirdai::dataset::UnaryBoltBatchProcessor</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_uni_gram_text_block" prot="public">thirdai::dataset::UniGramTextBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_user_count_history_block" prot="public">thirdai::dataset::UserCountHistoryBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_user_item_history_block" prot="public">thirdai::dataset::UserItemHistoryBlock</innerclass>
+    <innernamespace refid="namespacethirdai_1_1dataset_1_1numpy">thirdai::dataset::numpy</innernamespace>
+      <sectiondef kind="enum">
+      <memberdef kind="enum" id="_tabular_metadata_processor_8h_1af05a846a8a241b6ce65d4d5b8d1d6b04" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>TabularDataType</name>
+        <qualifiedname>thirdai::dataset::TabularDataType</qualifiedname>
+        <enumvalue id="_tabular_metadata_processor_8h_1af05a846a8a241b6ce65d4d5b8d1d6b04a87322391cc6e8948ce9fd5d6cb84fced" prot="public">
+          <name>Numeric</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_tabular_metadata_processor_8h_1af05a846a8a241b6ce65d4d5b8d1d6b04a397ae2f1915691d54607441f899e100c" prot="public">
+          <name>Categorical</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_tabular_metadata_processor_8h_1af05a846a8a241b6ce65d4d5b8d1d6b04ab021df6aac4654c454f46c77646e745f" prot="public">
+          <name>Label</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="17" column="1" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="17" bodyend="21"/>
+      </memberdef>
+      <memberdef kind="enum" id="_quantity_history_tracker_8h_1a0bea1f04142ea1732baca60b351d5797" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>QuantityTrackingGranularity</name>
+        <qualifiedname>thirdai::dataset::QuantityTrackingGranularity</qualifiedname>
+        <enumvalue id="_quantity_history_tracker_8h_1a0bea1f04142ea1732baca60b351d5797ac512b685438f41daa7386329a3b8f8d3" prot="public">
+          <name>Daily</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_quantity_history_tracker_8h_1a0bea1f04142ea1732baca60b351d5797a6c25e6a6da95b3d583c6ec4c3f82ed4d" prot="public">
+          <name>Weekly</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_quantity_history_tracker_8h_1a0bea1f04142ea1732baca60b351d5797a41e1aec44539e2610172ca909d6fce31" prot="public">
+          <name>Biweekly</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="_quantity_history_tracker_8h_1a0bea1f04142ea1732baca60b351d5797a9030e39f00132d583da4122532e509e9" prot="public">
+          <name>Monthly</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/QuantityHistoryTracker.h" line="18" column="1" bodyfile="dataset/src/utils/QuantityHistoryTracker.h" bodystart="18" bodyend="18"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="typedef">
+      <memberdef kind="typedef" id="_generic_batch_processor_8h_1a35258514308bc83b55a159e4859b264d" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_generic_batch_processor" kindref="compound">GenericBatchProcessor</ref> &gt;</type>
+        <definition>using thirdai::dataset::GenericBatchProcessorPtr = typedef std::shared_ptr&lt;GenericBatchProcessor&gt;</definition>
+        <argsstring></argsstring>
+        <name>GenericBatchProcessorPtr</name>
+        <qualifiedname>thirdai::dataset::GenericBatchProcessorPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/GenericBatchProcessor.h" line="247" column="1" bodyfile="dataset/src/batch_processors/GenericBatchProcessor.h" bodystart="247" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_tabular_metadata_processor_8h_1af6da6931b67c379e50c89834a244e62a" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_tabular_metadata" kindref="compound">TabularMetadata</ref> &gt;</type>
+        <definition>using thirdai::dataset::TabularMetadataPtr = typedef std::shared_ptr&lt;TabularMetadata&gt;</definition>
+        <argsstring></argsstring>
+        <name>TabularMetadataPtr</name>
+        <qualifiedname>thirdai::dataset::TabularMetadataPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="205" column="1" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="205" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_block_interface_8h_1a800fa4759acbb7def1320ba263bc6220" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref> &gt;</type>
+        <definition>using thirdai::dataset::BlockPtr = typedef std::shared_ptr&lt;Block&gt;</definition>
+        <argsstring></argsstring>
+        <name>BlockPtr</name>
+        <qualifiedname>thirdai::dataset::BlockPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/BlockInterface.h" line="22" column="1" bodyfile="dataset/src/blocks/BlockInterface.h" bodystart="22" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_categorical_8h_1a9dc3e54097a50c2a60f0b0aa3d49e21c" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_categorical_block" kindref="compound">CategoricalBlock</ref> &gt;</type>
+        <definition>using thirdai::dataset::CategoricalBlockPtr = typedef std::shared_ptr&lt;CategoricalBlock&gt;</definition>
+        <argsstring></argsstring>
+        <name>CategoricalBlockPtr</name>
+        <qualifiedname>thirdai::dataset::CategoricalBlockPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="79" column="1" bodyfile="dataset/src/blocks/Categorical.h" bodystart="79" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_categorical_8h_1a05689a02a45e00859434baadc7d9aad4" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_numerical_categorical_block" kindref="compound">NumericalCategoricalBlock</ref> &gt;</type>
+        <definition>using thirdai::dataset::NumericalCategoricalBlockPtr = typedef std::shared_ptr&lt;NumericalCategoricalBlock&gt;</definition>
+        <argsstring></argsstring>
+        <name>NumericalCategoricalBlockPtr</name>
+        <qualifiedname>thirdai::dataset::NumericalCategoricalBlockPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="115" column="1" bodyfile="dataset/src/blocks/Categorical.h" bodystart="115" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_categorical_8h_1a2d6d0898d53ddcf8dc0227788b0d01d2" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block" kindref="compound">StringLookupCategoricalBlock</ref> &gt;</type>
+        <definition>using thirdai::dataset::StringLookupCategoricalBlockPtr = typedef std::shared_ptr&lt;StringLookupCategoricalBlock&gt;</definition>
+        <argsstring></argsstring>
+        <name>StringLookupCategoricalBlockPtr</name>
+        <qualifiedname>thirdai::dataset::StringLookupCategoricalBlockPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="169" column="1" bodyfile="dataset/src/blocks/Categorical.h" bodystart="170" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_dense_array_8h_1a2db5a97efab17cca2d19edcd363a3fb1" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_dense_array_block" kindref="compound">DenseArrayBlock</ref> &gt;</type>
+        <definition>using thirdai::dataset::DenseArrayBlockPtr = typedef std::shared_ptr&lt;DenseArrayBlock&gt;</definition>
+        <argsstring></argsstring>
+        <name>DenseArrayBlockPtr</name>
+        <qualifiedname>thirdai::dataset::DenseArrayBlockPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/DenseArray.h" line="70" column="1" bodyfile="dataset/src/blocks/DenseArray.h" bodystart="70" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_tabular_pair_gram_8h_1a8b8b9f6bef5d33a11d376d3f28ad4702" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_tabular_pair_gram" kindref="compound">TabularPairGram</ref> &gt;</type>
+        <definition>using thirdai::dataset::TabularPairGramPtr = typedef std::shared_ptr&lt;TabularPairGram&gt;</definition>
+        <argsstring></argsstring>
+        <name>TabularPairGramPtr</name>
+        <qualifiedname>thirdai::dataset::TabularPairGramPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/TabularPairGram.h" line="85" column="1" bodyfile="dataset/src/blocks/TabularPairGram.h" bodystart="85" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_text_8h_1a93866a118136943fde3d8ceb351f9b0a" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_text_block" kindref="compound">TextBlock</ref> &gt;</type>
+        <definition>using thirdai::dataset::TextBlockPtr = typedef std::shared_ptr&lt;TextBlock&gt;</definition>
+        <argsstring></argsstring>
+        <name>TextBlockPtr</name>
+        <qualifiedname>thirdai::dataset::TextBlockPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Text.h" line="49" column="1" bodyfile="dataset/src/blocks/Text.h" bodystart="49" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_text_8h_1a3f4b398d54ce036318ba86d5212c3f84" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_pair_gram_text_block" kindref="compound">PairGramTextBlock</ref> &gt;</type>
+        <definition>using thirdai::dataset::PairGramTextBlockPtr = typedef std::shared_ptr&lt;PairGramTextBlock&gt;</definition>
+        <argsstring></argsstring>
+        <name>PairGramTextBlockPtr</name>
+        <qualifiedname>thirdai::dataset::PairGramTextBlockPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Text.h" line="90" column="1" bodyfile="dataset/src/blocks/Text.h" bodystart="90" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_text_8h_1a0e81f667a0b7855643d21e3e64df4f11" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_uni_gram_text_block" kindref="compound">UniGramTextBlock</ref> &gt;</type>
+        <definition>using thirdai::dataset::UniGramTextBlockPtr = typedef std::shared_ptr&lt;UniGramTextBlock&gt;</definition>
+        <argsstring></argsstring>
+        <name>UniGramTextBlockPtr</name>
+        <qualifiedname>thirdai::dataset::UniGramTextBlockPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Text.h" line="129" column="1" bodyfile="dataset/src/blocks/Text.h" bodystart="129" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_text_8h_1afcb0a19c9411ba7a86f9832e9bd5d05f" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_char_k_gram_text_block" kindref="compound">CharKGramTextBlock</ref> &gt;</type>
+        <definition>using thirdai::dataset::CharKGramTextBlockPtr = typedef std::shared_ptr&lt;CharKGramTextBlock&gt;</definition>
+        <argsstring></argsstring>
+        <name>CharKGramTextBlockPtr</name>
+        <qualifiedname>thirdai::dataset::CharKGramTextBlockPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Text.h" line="189" column="1" bodyfile="dataset/src/blocks/Text.h" bodystart="189" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_user_count_history_8h_1a5a75928186c55be24cb9cfd204a06c28" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_user_count_history_block" kindref="compound">UserCountHistoryBlock</ref> &gt;</type>
+        <definition>using thirdai::dataset::UserCountHistoryBlockPtr = typedef std::shared_ptr&lt;UserCountHistoryBlock&gt;</definition>
+        <argsstring></argsstring>
+        <name>UserCountHistoryBlockPtr</name>
+        <qualifiedname>thirdai::dataset::UserCountHistoryBlockPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserCountHistory.h" line="180" column="1" bodyfile="dataset/src/blocks/UserCountHistory.h" bodystart="180" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_user_item_history_8h_1a2fbd5ceb5ccd26fb6cfae6d68b092e8f" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_item_history_collection" kindref="compound">ItemHistoryCollection</ref> &gt;</type>
+        <definition>using thirdai::dataset::ItemHistoryCollectionPtr = typedef std::shared_ptr&lt;ItemHistoryCollection&gt;</definition>
+        <argsstring></argsstring>
+        <name>ItemHistoryCollectionPtr</name>
+        <qualifiedname>thirdai::dataset::ItemHistoryCollectionPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="63" column="1" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="63" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_user_item_history_8h_1a69eee9b283e1340e648c6eecd8a23d38" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_user_item_history_block" kindref="compound">UserItemHistoryBlock</ref> &gt;</type>
+        <definition>using thirdai::dataset::UserItemHistoryBlockPtr = typedef std::shared_ptr&lt;UserItemHistoryBlock&gt;</definition>
+        <argsstring></argsstring>
+        <name>UserItemHistoryBlockPtr</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlockPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="67" column="1" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="67" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_datasets_8h_1a7f9a2f558f297d068f79a561848b8e62" prot="public" static="no">
+        <type><ref refid="classthirdai_1_1dataset_1_1_in_memory_dataset" kindref="compound">InMemoryDataset</ref>&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt;</type>
+        <definition>using thirdai::dataset::BoltDataset = typedef InMemoryDataset&lt;BoltBatch&gt;</definition>
+        <argsstring></argsstring>
+        <name>BoltDataset</name>
+        <qualifiedname>thirdai::dataset::BoltDataset</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/Datasets.h" line="11" column="1" bodyfile="dataset/src/Datasets.h" bodystart="11" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_datasets_8h_1a0fbe9b582951b506b6228451a29a372f" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_in_memory_dataset" kindref="compound">BoltDataset</ref> &gt;</type>
+        <definition>using thirdai::dataset::BoltDatasetPtr = typedef std::shared_ptr&lt;BoltDataset&gt;</definition>
+        <argsstring></argsstring>
+        <name>BoltDatasetPtr</name>
+        <qualifiedname>thirdai::dataset::BoltDatasetPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/Datasets.h" line="12" column="1" bodyfile="dataset/src/Datasets.h" bodystart="12" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_datasets_8h_1aa190791db9488865e3b486fb70978b2b" prot="public" static="no">
+        <type>std::vector&lt; BoltDatasetPtr &gt;</type>
+        <definition>using thirdai::dataset::BoltDatasetList = typedef std::vector&lt;BoltDatasetPtr&gt;</definition>
+        <argsstring></argsstring>
+        <name>BoltDatasetList</name>
+        <qualifiedname>thirdai::dataset::BoltDatasetList</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/Datasets.h" line="13" column="1" bodyfile="dataset/src/Datasets.h" bodystart="13" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_in_memory_dataset_8h_1a96de26e24d903d17d3542de1b0504016" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_dataset_base" kindref="compound">DatasetBase</ref> &gt;</type>
+        <definition>using thirdai::dataset::DatasetBasePtr = typedef std::shared_ptr&lt;DatasetBase&gt;</definition>
+        <argsstring></argsstring>
+        <name>DatasetBasePtr</name>
+        <qualifiedname>thirdai::dataset::DatasetBasePtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/InMemoryDataset.h" line="42" column="1" bodyfile="dataset/src/InMemoryDataset.h" bodystart="42" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_in_memory_dataset_8h_1ae4cc540411bc256cf1038fabf2c54d61" prot="public" static="no">
+        <type>std::vector&lt; DatasetBasePtr &gt;</type>
+        <definition>using thirdai::dataset::DatasetBaseList = typedef std::vector&lt;DatasetBasePtr&gt;</definition>
+        <argsstring></argsstring>
+        <name>DatasetBaseList</name>
+        <qualifiedname>thirdai::dataset::DatasetBaseList</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/InMemoryDataset.h" line="43" column="1" bodyfile="dataset/src/InMemoryDataset.h" bodystart="43" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_quantity_history_tracker_8h_1a7870cf50c0640fc456e05fedb1d4ee98" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_quantity_history_tracker" kindref="compound">QuantityHistoryTracker</ref> &gt;</type>
+        <definition>using thirdai::dataset::QuantityHistoryTrackerPtr = typedef std::shared_ptr&lt;QuantityHistoryTracker&gt;</definition>
+        <argsstring></argsstring>
+        <name>QuantityHistoryTrackerPtr</name>
+        <qualifiedname>thirdai::dataset::QuantityHistoryTrackerPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/QuantityHistoryTracker.h" line="223" column="1" bodyfile="dataset/src/utils/QuantityHistoryTracker.h" bodystart="223" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="_thread_safe_vocabulary_8h_1ad059b49e63296b7fc459be2b4995c4ce" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_thread_safe_vocabulary" kindref="compound">ThreadSafeVocabulary</ref> &gt;</type>
+        <definition>using thirdai::dataset::ThreadSafeVocabularyPtr = typedef std::shared_ptr&lt;ThreadSafeVocabulary&gt;</definition>
+        <argsstring></argsstring>
+        <name>ThreadSafeVocabularyPtr</name>
+        <qualifiedname>thirdai::dataset::ThreadSafeVocabularyPtr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/utils/ThreadSafeVocabulary.h" line="176" column="1" bodyfile="dataset/src/utils/ThreadSafeVocabulary.h" bodystart="176" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="dataset/src/batch_processors/ClickThroughBatchProcessor.h" line="10" column="1"/>
+  </compounddef>
+</doxygen>

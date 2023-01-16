@@ -1,0 +1,183 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_metric_aggregator" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::bolt::MetricAggregator</compoundname>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_metric_aggregator_1a8bf82fc862fb47694fd8c4b3cc68c625" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_metric" kindref="compound">Metric</ref> &gt; &gt;</type>
+        <definition>std::vector&lt;std::shared_ptr&lt;Metric&gt; &gt; thirdai::bolt::MetricAggregator::_metrics</definition>
+        <argsstring></argsstring>
+        <name>_metrics</name>
+        <qualifiedname>thirdai::bolt::MetricAggregator::_metrics</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/MetricAggregator.h" line="72" column="15" bodyfile="bolt/src/metrics/MetricAggregator.h" bodystart="72" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_metric_aggregator_1a91d89e2c110a13e57cd190edc4198f1b" prot="private" static="no" mutable="no">
+        <type>MetricData</type>
+        <definition>MetricData thirdai::bolt::MetricAggregator::_output</definition>
+        <argsstring></argsstring>
+        <name>_output</name>
+        <qualifiedname>thirdai::bolt::MetricAggregator::_output</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/MetricAggregator.h" line="73" column="14" bodyfile="bolt/src/metrics/MetricAggregator.h" bodystart="73" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_aggregator_1a7f235c163a6a210a6d527282ba7ca053" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::MetricAggregator::MetricAggregator</definition>
+        <argsstring>(const std::vector&lt; std::string &gt; &amp;metrics)</argsstring>
+        <name>MetricAggregator</name>
+        <qualifiedname>thirdai::bolt::MetricAggregator::MetricAggregator</qualifiedname>
+        <param>
+          <type>const std::vector&lt; std::string &gt; &amp;</type>
+          <declname>metrics</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/MetricAggregator.h" line="19" column="12" bodyfile="bolt/src/metrics/MetricAggregator.h" bodystart="19" bodyend="23"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_aggregator_1ac516d8718ade91748509c7d11397c4c8" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::MetricAggregator::processSample</definition>
+        <argsstring>(const BoltVector &amp;output, const BoltVector &amp;labels)</argsstring>
+        <name>processSample</name>
+        <qualifiedname>thirdai::bolt::MetricAggregator::processSample</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>labels</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/MetricAggregator.h" line="25" column="8" bodyfile="bolt/src/metrics/MetricAggregator.h" bodystart="25" bodyend="29"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_aggregator_1a2441832057a9af73aa16d3d8540174f7" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::MetricAggregator::logAndReset</definition>
+        <argsstring>()</argsstring>
+        <name>logAndReset</name>
+        <qualifiedname>thirdai::bolt::MetricAggregator::logAndReset</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/MetricAggregator.h" line="31" column="8" bodyfile="bolt/src/metrics/MetricAggregator.h" bodystart="31" bodyend="36"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_aggregator_1abc7750beca3e5a62f93d90b53d5b05a8" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::bolt::MetricAggregator::summary</definition>
+        <argsstring>()</argsstring>
+        <name>summary</name>
+        <qualifiedname>thirdai::bolt::MetricAggregator::summary</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/MetricAggregator.h" line="38" column="15" bodyfile="bolt/src/metrics/MetricAggregator.h" bodystart="38" bodyend="49"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_aggregator_1a61bf84e468086ef4c35fcd3ac854cccb" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>MetricData</type>
+        <definition>MetricData thirdai::bolt::MetricAggregator::getOutput</definition>
+        <argsstring>()</argsstring>
+        <name>getOutput</name>
+        <qualifiedname>thirdai::bolt::MetricAggregator::getOutput</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/MetricAggregator.h" line="51" column="14" bodyfile="bolt/src/metrics/MetricAggregator.h" bodystart="51" bodyend="51"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_aggregator_1afcccb26382b957717f16adcb0345a6f5" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; double &gt; &amp;</type>
+        <definition>std::vector&lt; double &gt; &amp; thirdai::bolt::MetricAggregator::getSingleOutput</definition>
+        <argsstring>(const std::string &amp;metric_name)</argsstring>
+        <name>getSingleOutput</name>
+        <qualifiedname>thirdai::bolt::MetricAggregator::getSingleOutput</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>metric_name</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/MetricAggregator.h" line="53" column="15" bodyfile="bolt/src/metrics/MetricAggregator.h" bodystart="53" bodyend="59"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_aggregator_1a2dedde1d312b31c550bd6ed1e3254d13" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>InferenceMetricData</type>
+        <definition>InferenceMetricData thirdai::bolt::MetricAggregator::getOutputFromInference</definition>
+        <argsstring>()</argsstring>
+        <name>getOutputFromInference</name>
+        <qualifiedname>thirdai::bolt::MetricAggregator::getOutputFromInference</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/MetricAggregator.h" line="61" column="23" bodyfile="bolt/src/metrics/MetricAggregator.h" bodystart="61" bodyend="67"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_aggregator_1ad612d166674569d02b530598a25ae28f" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::MetricAggregator::getNumMetricsTracked</definition>
+        <argsstring>()</argsstring>
+        <name>getNumMetricsTracked</name>
+        <qualifiedname>thirdai::bolt::MetricAggregator::getNumMetricsTracked</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/MetricAggregator.h" line="69" column="12" bodyfile="bolt/src/metrics/MetricAggregator.h" bodystart="69" bodyend="69"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/metrics/MetricAggregator.h" line="14" column="1" bodyfile="bolt/src/metrics/MetricAggregator.h" bodystart="14" bodyend="74"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_metric_aggregator_1a8bf82fc862fb47694fd8c4b3cc68c625" prot="private" virt="non-virtual"><scope>thirdai::bolt::MetricAggregator</scope><name>_metrics</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_aggregator_1a91d89e2c110a13e57cd190edc4198f1b" prot="private" virt="non-virtual"><scope>thirdai::bolt::MetricAggregator</scope><name>_output</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_aggregator_1ad612d166674569d02b530598a25ae28f" prot="public" virt="non-virtual"><scope>thirdai::bolt::MetricAggregator</scope><name>getNumMetricsTracked</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_aggregator_1a61bf84e468086ef4c35fcd3ac854cccb" prot="public" virt="non-virtual"><scope>thirdai::bolt::MetricAggregator</scope><name>getOutput</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_aggregator_1a2dedde1d312b31c550bd6ed1e3254d13" prot="public" virt="non-virtual"><scope>thirdai::bolt::MetricAggregator</scope><name>getOutputFromInference</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_aggregator_1afcccb26382b957717f16adcb0345a6f5" prot="public" virt="non-virtual"><scope>thirdai::bolt::MetricAggregator</scope><name>getSingleOutput</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_aggregator_1a2441832057a9af73aa16d3d8540174f7" prot="public" virt="non-virtual"><scope>thirdai::bolt::MetricAggregator</scope><name>logAndReset</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_aggregator_1a7f235c163a6a210a6d527282ba7ca053" prot="public" virt="non-virtual"><scope>thirdai::bolt::MetricAggregator</scope><name>MetricAggregator</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_aggregator_1ac516d8718ade91748509c7d11397c4c8" prot="public" virt="non-virtual"><scope>thirdai::bolt::MetricAggregator</scope><name>processSample</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_aggregator_1abc7750beca3e5a62f93d90b53d5b05a8" prot="public" virt="non-virtual"><scope>thirdai::bolt::MetricAggregator</scope><name>summary</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

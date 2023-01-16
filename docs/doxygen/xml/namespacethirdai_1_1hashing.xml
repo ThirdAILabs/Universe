@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="namespacethirdai_1_1hashing" kind="namespace" language="C++">
+    <compoundname>thirdai::hashing</compoundname>
+    <innerclass refid="classthirdai_1_1hashing_1_1_densified_min_hash" prot="public">thirdai::hashing::DensifiedMinHash</innerclass>
+    <innerclass refid="classthirdai_1_1hashing_1_1_d_w_t_a_hash_function" prot="public">thirdai::hashing::DWTAHashFunction</innerclass>
+    <innerclass refid="classthirdai_1_1hashing_1_1_fast_s_r_p" prot="public">thirdai::hashing::FastSRP</innerclass>
+    <innerclass refid="classthirdai_1_1hashing_1_1_hash_function" prot="public">thirdai::hashing::HashFunction</innerclass>
+    <innerclass refid="classthirdai_1_1hashing_1_1_hash_utils" prot="public">thirdai::hashing::HashUtils</innerclass>
+    <innerclass refid="classthirdai_1_1hashing_1_1_sparse_random_projection" prot="public">thirdai::hashing::SparseRandomProjection</innerclass>
+    <innerclass refid="classthirdai_1_1hashing_1_1_universal_hash" prot="public">thirdai::hashing::UniversalHash</innerclass>
+      <sectiondef kind="var">
+      <memberdef kind="variable" id="_d_w_t_a_8cc_1af557c2038f7e4baa158db2d6ebc152e1" prot="public" static="no" constexpr="yes" mutable="no">
+        <type>constexpr uint32_t</type>
+        <definition>constexpr uint32_t thirdai::hashing::DEFAULT_BINSIZE</definition>
+        <argsstring></argsstring>
+        <name>DEFAULT_BINSIZE</name>
+        <qualifiedname>thirdai::hashing::DEFAULT_BINSIZE</qualifiedname>
+        <initializer>= 8</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/DWTA.cc" line="8" column="20" bodyfile="hashing/src/DWTA.cc" bodystart="8" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="_murmur_hash_8cc_1a384d0e08f2227ce4e1c287aa057f395b" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashing::MurmurHash</definition>
+        <argsstring>(const char *key, uint32_t len, uint32_t seed)</argsstring>
+        <name>MurmurHash</name>
+        <qualifiedname>thirdai::hashing::MurmurHash</qualifiedname>
+        <param>
+          <type>const char *</type>
+          <declname>key</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>len</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>seed</declname>
+        </param>
+        <briefdescription>
+<para>Returns a murmur hash of <lsquo/>key<rsquo/> based on <lsquo/>seed<rsquo/> using the MurmurHash3 algorithm. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/MurmurHash.cc" line="8" column="10" bodyfile="hashing/src/MurmurHash.cc" bodystart="8" bodyend="84" declfile="hashing/src/MurmurHash.h" declline="10" declcolumn="10"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="hashing/src/DensifiedMinHash.cc" line="13" column="1"/>
+  </compounddef>
+</doxygen>

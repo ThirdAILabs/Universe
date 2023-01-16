@@ -1,0 +1,155 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_vector_hash_table_8h" kind="file" language="C++">
+    <compoundname>VectorHashTable.h</compoundname>
+    <includes refid="_hash_table_8h" local="yes">HashTable.h</includes>
+    <includes local="no">atomic</includes>
+    <includes local="no">random</includes>
+    <includes local="no">unordered_set</includes>
+    <includes local="no">vector</includes>
+    <includedby refid="_vector_hash_table_8cc" local="yes">hashtable/src/VectorHashTable.cc</includedby>
+    <incdepgraph>
+      <node id="2">
+        <label>HashTable.h</label>
+        <link refid="_hash_table_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>hashtable/src/VectorHashTable.h</label>
+        <link refid="_vector_hash_table_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>atomic</label>
+      </node>
+      <node id="3">
+        <label>cereal/types/polymorphic.hpp</label>
+      </node>
+      <node id="4">
+        <label>cstdint</label>
+      </node>
+      <node id="8">
+        <label>random</label>
+      </node>
+      <node id="5">
+        <label>unordered_set</label>
+      </node>
+      <node id="6">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <innerclass refid="classthirdai_1_1hashtable_1_1_vector_hash_table" prot="public">thirdai::hashtable::VectorHashTable</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1hashtable">thirdai::hashtable</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;HashTable.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;atomic&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;random&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;unordered_set&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;vector&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::hashtable<sp/>{</highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">typename</highlight><highlight class="normal"><sp/>LABEL_T,<sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>USE_RESERVOIR&gt;</highlight></codeline>
+<codeline lineno="12" refid="classthirdai_1_1hashtable_1_1_vector_hash_table" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1hashtable_1_1_vector_hash_table" kindref="compound">VectorHashTable</ref><sp/>final<sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1hashtable_1_1_hash_table" kindref="compound">HashTable</ref>&lt;LABEL_T&gt;<sp/>{</highlight></codeline>
+<codeline lineno="13"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="14"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>We<sp/>use<sp/>SFINAE<sp/>to<sp/>make<sp/>the<sp/>first<sp/>constructor<sp/>resolve<sp/>when<sp/>USE_RESERVOIR</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>is<sp/>false<sp/>and<sp/>the<sp/>other<sp/>constructor<sp/>resolve<sp/>when<sp/>USE_RESERVOIR<sp/>is<sp/>true:</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>https://stackoverflow.com/questions/59703327/overloading-based-on-bool-template-parameter</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="17"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>This<sp/>is<sp/>a<sp/>slight<sp/>bit<sp/>of<sp/>magic,<sp/>I<sp/>honestly<sp/>don&apos;t<sp/>completely<sp/>understand<sp/>it</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>but<sp/>it<sp/>does<sp/>work<sp/>quite<sp/>nicely.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>b<sp/>=<sp/>USE_RESERVOIR,</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::enable_if_t&lt;!b&gt;*<sp/>=<sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">&gt;<sp/><sp/></highlight><highlight class="comment">//<sp/>when<sp/>USE_RESERVOIR<sp/>is<sp/>false</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="21"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1hashtable_1_1_vector_hash_table" kindref="compound">VectorHashTable</ref>(uint32_t<sp/>num_tables,<sp/>uint64_t<sp/>table_range)</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>_num_tables(num_tables),</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_table_range(table_range),</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_buckets(num_tables<sp/>*<sp/>table_range),</highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_generated_rand_nums(0),</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_num_elements_tried_insert_into_bucket(0),</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_max_reservoir_size(0)<sp/>{}</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"></highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>b<sp/>=<sp/>USE_RESERVOIR,</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::enable_if_t&lt;b&gt;*<sp/>=<sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">&gt;<sp/><sp/></highlight><highlight class="comment">//<sp/>when<sp/>USE_RESERVOIR<sp/>is<sp/>true</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1hashtable_1_1_vector_hash_table" kindref="compound">VectorHashTable</ref>(uint32_t<sp/>num_tables,<sp/>uint64_t<sp/>max_reservoir_size,</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint64_t<sp/>table_range,<sp/>uint64_t<sp/>seed<sp/>=<sp/>time(</highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">),</highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint64_t<sp/>max_rand<sp/>=<sp/><ref refid="classthirdai_1_1hashtable_1_1_hash_table" kindref="compound">HashTable&lt;LABEL_T&gt;::DEFAULT_MAX_RAND</ref>)</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>_num_tables(num_tables),</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_table_range(table_range),</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_buckets(num_tables<sp/>*<sp/>table_range),</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_generated_rand_nums(max_rand),</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_num_elements_tried_insert_into_bucket(num_tables<sp/>*<sp/>table_range),</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_max_reservoir_size(max_reservoir_size)<sp/>{</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/><sp/><sp/>std::mt19937<sp/>generator(seed);</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>i<sp/>=<sp/>0;<sp/>i<sp/>&lt;<sp/>max_rand;<sp/>i++)<sp/>{</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_generated_rand_nums[i]<sp/>=<sp/>generator();</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"></highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a480a8bff172519a7a560ee7f82520fd1" kindref="member">insert</ref>(uint64_t<sp/>n,<sp/>LABEL_T<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">*<sp/>labels,</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">*<sp/>hashes)<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"></highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a8a1026d1fefa89928f5a37fb6ba313bf" kindref="member">insertSequential</ref>(uint64_t<sp/>n,<sp/>LABEL_T<sp/>start,</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">*<sp/>hashes)<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"></highlight></codeline>
+<codeline lineno="52"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1aceefb06de7c841b313171c83298043b3" kindref="member">queryBySet</ref>(uint32_t<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">*<sp/>hashes,</highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::unordered_set&lt;LABEL_T&gt;&amp;<sp/>store)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"></highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>queryByCount(uint32_t<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">*<sp/>hashes,</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::vector&lt;uint32_t&gt;&amp;<sp/>counts)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"></highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a9f85e1ecea2bf7312727f64639b21853" kindref="member">queryByVector</ref>(uint32_t<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">*<sp/>hashes,</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::vector&lt;LABEL_T&gt;&amp;<sp/>results)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"></highlight></codeline>
+<codeline lineno="61"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a0a9176b54dd3874205b4d646c1517cd4" kindref="member">clearTables</ref>()<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="62"><highlight class="normal"></highlight></codeline>
+<codeline lineno="63" refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1ab64d69146bb759ee01fd1f9a597a0fa5" refkind="member"><highlight class="normal"><sp/><sp/>uint32_t<sp/><ref refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1ab64d69146bb759ee01fd1f9a597a0fa5" kindref="member">numTables</ref>()</highlight><highlight class="keyword"><sp/>const<sp/>override<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_num_tables;<sp/>};</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"></highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/>uint64_t<sp/>tableRange()</highlight><highlight class="keyword"><sp/>const<sp/>override<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_table_range;<sp/>};</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"></highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1hashtable_1_1_vector_hash_table_1a98f40f6373e8b2dd455835746c2fdd8e" kindref="member">sortBuckets</ref>();</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"></highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>insertIntoTable(LABEL_T<sp/>label,<sp/>uint32_t<sp/>hash,<sp/>uint32_t<sp/>table);</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"></highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/>uint64_t<sp/>getBucketIndex(uint64_t<sp/>table,<sp/>uint64_t<sp/>hash)</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>table<sp/>*<sp/>tableRange()<sp/>+<sp/>hash;</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"></highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>uint32_t<sp/>_num_tables;</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>uint64_t<sp/>_table_range;</highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/><sp/>std::vector&lt;std::vector&lt;LABEL_T&gt;&gt;<sp/>_buckets;</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"></highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>These<sp/>will<sp/>be<sp/>0<sp/>or<sp/>length<sp/>0<sp/>if<sp/>USE_RESERVOIR<sp/>is<sp/>false</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/>std::vector&lt;uint32_t&gt;<sp/>_generated_rand_nums;</highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/>std::vector&lt;uint32_t&gt;<sp/>_num_elements_tried_insert_into_bucket;</highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>uint64_t<sp/>_max_reservoir_size;</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"><sp/><sp/>std::atomic&lt;uint32_t&gt;<sp/>counter<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="88"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"></highlight></codeline>
+<codeline lineno="90"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::hashtable</highlight></codeline>
+    </programlisting>
+    <location file="hashtable/src/VectorHashTable.h"/>
+  </compounddef>
+</doxygen>

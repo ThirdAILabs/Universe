@@ -1,0 +1,279 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_logging_8h" kind="file" language="C++">
+    <compoundname>Logging.h</compoundname>
+    <includes local="no">spdlog/spdlog.h</includes>
+    <includes local="no">iostream</includes>
+    <includes local="no">string</includes>
+    <includedby refid="_graph_8cc" local="no">bolt/src/graph/Graph.cc</includedby>
+    <includedby refid="_metric_8h" local="no">bolt/src/metrics/Metric.h</includedby>
+    <includedby refid="_streaming_dataset_8h" local="no">dataset/src/StreamingDataset.h</includedby>
+    <includedby refid="_logging_8cc" local="no">utils/Logging.cc</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>utils/Logging.h</label>
+        <link refid="_logging_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>iostream</label>
+      </node>
+      <node id="2">
+        <label>spdlog/spdlog.h</label>
+      </node>
+      <node id="4">
+        <label>string</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="8">
+        <label>bolt/src/auto_classifiers/AutoClassifierBase.h</label>
+        <link refid="_auto_classifier_base_8h_source"/>
+      </node>
+      <node id="3">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h</label>
+        <link refid="_sequential_classifier_8h_source"/>
+      </node>
+      <node id="20">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h</label>
+        <link refid="_sequential_utils_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>bolt/src/graph/CommonNetworks.h</label>
+        <link refid="_common_networks_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="16">
+        <label>bolt/src/graph/DatasetContext.h</label>
+        <link refid="_dataset_context_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>bolt/src/graph/DistributedTrainingWrapper.h</label>
+        <link refid="_distributed_training_wrapper_8h_source"/>
+      </node>
+      <node id="6">
+        <label>bolt/src/graph/ExecutionConfig.h</label>
+        <link refid="_execution_config_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>bolt/src/graph/Graph.h</label>
+        <link refid="_graph_8h_source"/>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+      </node>
+      <node id="10">
+        <label>bolt/src/graph/callbacks/EarlyStopCheckpoint.h</label>
+        <link refid="_early_stop_checkpoint_8h_source"/>
+      </node>
+      <node id="11">
+        <label>bolt/src/graph/callbacks/LearningRateScheduler.h</label>
+        <link refid="_learning_rate_scheduler_8h_source"/>
+      </node>
+      <node id="2">
+        <label>bolt/src/metrics/Metric.h</label>
+        <link refid="_metric_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>bolt/src/metrics/MetricAggregator.h</label>
+        <link refid="_metric_aggregator_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+      <node id="12">
+        <label>bolt/src/root_cause_analysis/RootCauseAnalysis.h</label>
+        <link refid="_root_cause_analysis_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="14">
+        <label>dataset/src/DatasetLoaders.h</label>
+        <link refid="_dataset_loaders_8h_source"/>
+      </node>
+      <node id="15">
+        <label>dataset/src/Datasets.h</label>
+        <link refid="_datasets_8h_source"/>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+      </node>
+      <node id="17">
+        <label>dataset/src/NumpyDataset.h</label>
+        <link refid="_numpy_dataset_8h_source"/>
+      </node>
+      <node id="18">
+        <label>dataset/src/ShuffleBatchBuffer.h</label>
+        <link refid="_shuffle_batch_buffer_8h_source"/>
+        <childnode refid="19" relation="include">
+        </childnode>
+      </node>
+      <node id="13">
+        <label>dataset/src/StreamingDataset.h</label>
+        <link refid="_streaming_dataset_8h_source"/>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+      </node>
+      <node id="19">
+        <label>dataset/src/StreamingGenericDatasetLoader.h</label>
+        <link refid="_streaming_generic_dataset_loader_8h_source"/>
+        <childnode refid="20" relation="include">
+        </childnode>
+      </node>
+      <node id="21">
+        <label>dataset/src/core/BlockBatchProcessor.h</label>
+        <link refid="_block_batch_processor_8h_source"/>
+      </node>
+      <node id="1">
+        <label>utils/Logging.h</label>
+        <link refid="_logging_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1logging">thirdai::logging</innernamespace>
+      <sectiondef kind="define">
+      <memberdef kind="define" id="_logging_8h_1ac54cc7feff27f22e3fbd548fe2f9f0d8" prot="public" static="no">
+        <name>DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION</name>
+        <param><defname>function</defname></param>
+        <initializer>  template &lt;class... Args&gt;                                \
+  void function(Args... args) {                           \
+    auto logger = spdlog::get(NAME);                      \
+    if (!logger) {                                        \
+      return;                                             \
+    }                                                     \
+    logger-&gt;function(args...);                            \
+  }</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="utils/Logging.h" line="35" column="9" bodyfile="utils/Logging.h" bodystart="35" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;spdlog/spdlog.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;iostream&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::logging<sp/>{</highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Provide<sp/>of<sp/>a<sp/>few<sp/>sensible<sp/>defaults<sp/>for<sp/>a<sp/>logger.<sp/>The<sp/>following<sp/>is<sp/>also<sp/>used</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="comment">//<sp/>at<sp/>pybindings,<sp/>editing<sp/>here<sp/>provides<sp/>consistency<sp/>in<sp/>the<sp/>C++<sp/>and<sp/>Python<sp/>API</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="comment">//<sp/>being<sp/>the<sp/>single-source<sp/>of<sp/>truth.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>NAME<sp/>=<sp/></highlight><highlight class="stringliteral">&quot;thirdai&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>DEFAULT_LOG_TO_STDERR<sp/>=<sp/></highlight><highlight class="keyword">true</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>DEFAULT_LOG_PATH<sp/>=<sp/></highlight><highlight class="stringliteral">&quot;&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>DEFAULT_LOG_LEVEL<sp/>=<sp/></highlight><highlight class="stringliteral">&quot;info&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>DEFAULT_LOG_PATTERN<sp/>=<sp/></highlight><highlight class="stringliteral">&quot;[%Y-%m-%dT%T]<sp/>[%l]<sp/>|<sp/>%v&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>DEFAULT_LOG_FLUSH_INTERVAL<sp/>=<sp/>10;</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight><highlight class="comment">//<sp/>This<sp/>configures<sp/>a<sp/>logger<sp/>provided<sp/>a<sp/>string<sp/>path.<sp/>Client<sp/>is</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight><highlight class="comment">//<sp/>expected<sp/>to<sp/>configure<sp/>logging<sp/>at<sp/>the<sp/>beginning.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="20"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>setup(</highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>log_to_stderr<sp/>=<sp/>DEFAULT_LOG_TO_STDERR,</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>path<sp/>=<sp/>DEFAULT_LOG_PATH,</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>level<sp/>=<sp/>DEFAULT_LOG_LEVEL,</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>pattern<sp/>=<sp/>DEFAULT_LOG_PATTERN,</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>flush_interval<sp/>=<sp/>DEFAULT_LOG_FLUSH_INTERVAL);</highlight></codeline>
+<codeline lineno="25"><highlight class="normal"></highlight></codeline>
+<codeline lineno="26"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Macro<sp/>to<sp/>prevent<sp/>repetition.<sp/>The<sp/>desire<sp/>is<sp/>to<sp/>achieve<sp/>a<sp/>syntax:</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="27"><highlight class="normal"></highlight><highlight class="comment">//<sp/>thirdai::log::{trace,debug,info,warn,error,critical}</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="28"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="29"><highlight class="normal"></highlight><highlight class="comment">//<sp/>With<sp/>no<sp/>modifications<sp/>this<sp/>would<sp/>be<sp/>spdlog::info<sp/>or<sp/>spdlog::warn.<sp/>We<sp/>make<sp/>the</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="30"><highlight class="normal"></highlight><highlight class="comment">//<sp/>syntax<sp/>at<sp/>call<sp/>sites<sp/>thirdai::logging::info<sp/>or<sp/>thirdai::logging::warn.<sp/>When</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="31"><highlight class="normal"></highlight><highlight class="comment">//<sp/>within<sp/>the<sp/>thirdai<sp/>namespace,<sp/>one<sp/>may<sp/>simply<sp/>use<sp/>logging::info<sp/>or</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="32"><highlight class="normal"></highlight><highlight class="comment">//<sp/>logging::warn,<sp/>omitting<sp/>thirdai.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="33"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="34"><highlight class="normal"></highlight><highlight class="comment">//<sp/>NOLINTNEXTLINE</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="35"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(function)<sp/>\</highlight></codeline>
+<codeline lineno="36"><highlight class="preprocessor"><sp/><sp/>template<sp/>&lt;class...<sp/>Args&gt;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="37"><highlight class="preprocessor"><sp/><sp/>void<sp/>function(Args...<sp/>args)<sp/>{<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="38"><highlight class="preprocessor"><sp/><sp/><sp/><sp/>auto<sp/>logger<sp/>=<sp/>spdlog::get(NAME);<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="39"><highlight class="preprocessor"><sp/><sp/><sp/><sp/>if<sp/>(!logger)<sp/>{<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="40"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/>return;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="41"><highlight class="preprocessor"><sp/><sp/><sp/><sp/>}<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="42"><highlight class="preprocessor"><sp/><sp/><sp/><sp/>logger-&gt;function(args...);<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="43"><highlight class="preprocessor"><sp/><sp/>}</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="44"><highlight class="normal"></highlight></codeline>
+<codeline lineno="45"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Function<sp/>definitions<sp/>via<sp/>macros</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="46"><highlight class="normal">DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(trace)</highlight></codeline>
+<codeline lineno="47"><highlight class="normal">DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(debug)</highlight></codeline>
+<codeline lineno="48"><highlight class="normal">DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(info)</highlight></codeline>
+<codeline lineno="49"><highlight class="normal">DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(warn)</highlight></codeline>
+<codeline lineno="50"><highlight class="normal">DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(error)</highlight></codeline>
+<codeline lineno="51"><highlight class="normal">DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(critical)</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"></highlight></codeline>
+<codeline lineno="53"><highlight class="normal">DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION(flush)</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"></highlight></codeline>
+<codeline lineno="55"><highlight class="normal"></highlight><highlight class="preprocessor">#undef<sp/>DEFINE_THIRDAI_TO_SPDLOG_RELAY_FUNCTION</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="56"><highlight class="normal"></highlight></codeline>
+<codeline lineno="57"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::logging</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="utils/Logging.h"/>
+  </compounddef>
+</doxygen>

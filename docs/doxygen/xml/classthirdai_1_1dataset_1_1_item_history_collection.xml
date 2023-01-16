@@ -1,0 +1,167 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_item_history_collection" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::dataset::ItemHistoryCollection</compoundname>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_item_history_collection_1a00a4c5cb580cc81860371318242cc6df" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::deque&lt; <ref refid="structthirdai_1_1dataset_1_1_item_record" kindref="compound">ItemRecord</ref> &gt; &gt;</type>
+        <definition>std::vector&lt;std::deque&lt;ItemRecord&gt; &gt; thirdai::dataset::ItemHistoryCollection::_histories</definition>
+        <argsstring></argsstring>
+        <name>_histories</name>
+        <qualifiedname>thirdai::dataset::ItemHistoryCollection::_histories</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="50" column="15" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="50" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1dataset_1_1_item_history_collection_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::dataset::ItemHistoryCollection::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="56" column="16" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="56" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_item_history_collection_1a57fc79885d517994d2ee8310015c7e5e" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::ItemHistoryCollection::ItemHistoryCollection</definition>
+        <argsstring>(uint32_t n_histories)</argsstring>
+        <name>ItemHistoryCollection</name>
+        <qualifiedname>thirdai::dataset::ItemHistoryCollection::ItemHistoryCollection</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_histories</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="38" column="12" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="38" bodyend="39"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_item_history_collection_1a8ba797cfdb3822d89897c3c2a6b1304d" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::ItemHistoryCollection::numHistories</definition>
+        <argsstring>() const</argsstring>
+        <name>numHistories</name>
+        <qualifiedname>thirdai::dataset::ItemHistoryCollection::numHistories</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="41" column="12" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="41" bodyend="41"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_item_history_collection_1a58887f15c398e6a82aaddfcbe7e43c4a" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>auto &amp;</type>
+        <definition>auto &amp; thirdai::dataset::ItemHistoryCollection::at</definition>
+        <argsstring>(uint32_t history_id)</argsstring>
+        <name>at</name>
+        <qualifiedname>thirdai::dataset::ItemHistoryCollection::at</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>history_id</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="43" column="8" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="43" bodyend="43"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_item_history_collection_1ad7f9c0d824a422086976ac27cc695106" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_item_history_collection" kindref="compound">ItemHistoryCollection</ref> &gt;</type>
+        <definition>static std::shared_ptr&lt; ItemHistoryCollection &gt; thirdai::dataset::ItemHistoryCollection::make</definition>
+        <argsstring>(uint32_t n_histories)</argsstring>
+        <name>make</name>
+        <qualifiedname>thirdai::dataset::ItemHistoryCollection::make</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_histories</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="45" column="26" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="45" bodyend="47"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_item_history_collection_1ae85262eb912c21a95ffc2ad68feb7995" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::ItemHistoryCollection::ItemHistoryCollection</definition>
+        <argsstring>()</argsstring>
+        <name>ItemHistoryCollection</name>
+        <qualifiedname>thirdai::dataset::ItemHistoryCollection::ItemHistoryCollection</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="53" column="3" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="53" bodyend="53"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_item_history_collection_1a97036be9802f29de7ecb712cd12c35ff" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::dataset::ItemHistoryCollection::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::dataset::ItemHistoryCollection::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="58" column="8" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="58" bodyend="60"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="dataset/src/blocks/UserItemHistory.h" line="36" column="1" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="36" bodyend="61"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_item_history_collection_1a00a4c5cb580cc81860371318242cc6df" prot="private" virt="non-virtual"><scope>thirdai::dataset::ItemHistoryCollection</scope><name>_histories</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_item_history_collection_1a58887f15c398e6a82aaddfcbe7e43c4a" prot="public" virt="non-virtual"><scope>thirdai::dataset::ItemHistoryCollection</scope><name>at</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_item_history_collection_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::dataset::ItemHistoryCollection</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_item_history_collection_1a57fc79885d517994d2ee8310015c7e5e" prot="public" virt="non-virtual"><scope>thirdai::dataset::ItemHistoryCollection</scope><name>ItemHistoryCollection</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_item_history_collection_1ae85262eb912c21a95ffc2ad68feb7995" prot="private" virt="non-virtual"><scope>thirdai::dataset::ItemHistoryCollection</scope><name>ItemHistoryCollection</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_item_history_collection_1ad7f9c0d824a422086976ac27cc695106" prot="public" virt="non-virtual"><scope>thirdai::dataset::ItemHistoryCollection</scope><name>make</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_item_history_collection_1a8ba797cfdb3822d89897c3c2a6b1304d" prot="public" virt="non-virtual"><scope>thirdai::dataset::ItemHistoryCollection</scope><name>numHistories</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_item_history_collection_1a97036be9802f29de7ecb712cd12c35ff" prot="private" virt="non-virtual"><scope>thirdai::dataset::ItemHistoryCollection</scope><name>serialize</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,284 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_date_8h" kind="file" language="C++">
+    <compoundname>Date.h</compoundname>
+    <includes refid="_block_interface_8h" local="yes">BlockInterface.h</includes>
+    <includes refid="_time_utils_8h" local="no">dataset/src/utils/TimeUtils.h</includes>
+    <includes local="no">exception</includes>
+    <includes local="no">stdexcept</includes>
+    <includedby refid="_sequential_utils_8h" local="no">bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h</includedby>
+    <incdepgraph>
+      <node id="3">
+        <label>bolt_vector/src/BoltVector.h</label>
+        <link refid="_bolt_vector_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>BlockInterface.h</label>
+        <link refid="_block_interface_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>dataset/src/blocks/Date.h</label>
+        <link refid="_date_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+      </node>
+      <node id="22">
+        <label>dataset/src/utils/TimeUtils.h</label>
+        <link refid="_time_utils_8h_source"/>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+      </node>
+      <node id="6">
+        <label>algorithm</label>
+      </node>
+      <node id="7">
+        <label>cassert</label>
+      </node>
+      <node id="4">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="5">
+        <label>cereal/cereal.hpp</label>
+      </node>
+      <node id="23">
+        <label>cmath</label>
+      </node>
+      <node id="8">
+        <label>cstdint</label>
+      </node>
+      <node id="24">
+        <label>ctime</label>
+      </node>
+      <node id="25">
+        <label>exception</label>
+      </node>
+      <node id="26">
+        <label>iomanip</label>
+      </node>
+      <node id="9">
+        <label>iostream</label>
+      </node>
+      <node id="10">
+        <label>limits</label>
+      </node>
+      <node id="19">
+        <label>memory</label>
+      </node>
+      <node id="11">
+        <label>numeric</label>
+      </node>
+      <node id="12">
+        <label>optional</label>
+      </node>
+      <node id="13">
+        <label>queue</label>
+      </node>
+      <node id="14">
+        <label>sstream</label>
+      </node>
+      <node id="15">
+        <label>stdexcept</label>
+      </node>
+      <node id="16">
+        <label>string</label>
+      </node>
+      <node id="20">
+        <label>string_view</label>
+      </node>
+      <node id="21">
+        <label>unordered_map</label>
+      </node>
+      <node id="17">
+        <label>utility</label>
+      </node>
+      <node id="18">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="3">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h</label>
+        <link refid="_sequential_classifier_8h_source"/>
+      </node>
+      <node id="2">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h</label>
+        <link refid="_sequential_utils_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>dataset/src/blocks/Date.h</label>
+        <link refid="_date_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classthirdai_1_1dataset_1_1_date_block" prot="public">thirdai::dataset::DateBlock</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1dataset">thirdai::dataset</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;BlockInterface.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;dataset/src/utils/TimeUtils.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;exception&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;stdexcept&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::dataset<sp/>{</highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">DateBlockTests;</highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight></codeline>
+<codeline lineno="22" refid="classthirdai_1_1dataset_1_1_date_block" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1dataset_1_1_date_block" kindref="compound">DateBlock</ref><sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref><sp/>{</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">friend</highlight><highlight class="normal"><sp/>DateBlockTests;</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"></highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_date_block" kindref="compound">DateBlock</ref>(uint32_t<sp/>col)<sp/>:<sp/>_col(col)<sp/>{}</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"></highlight></codeline>
+<codeline lineno="28" refid="classthirdai_1_1dataset_1_1_date_block_1a68b9f0688d5154e283863df5d0181cf9" refkind="member"><highlight class="normal"><sp/><sp/>uint32_t<sp/><ref refid="classthirdai_1_1dataset_1_1_date_block_1a68b9f0688d5154e283863df5d0181cf9" kindref="member">featureDim</ref>()<sp/>const<sp/>final<sp/>{</highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>day_of_week_dim<sp/>+<sp/>month_of_year_dim<sp/>+<sp/>week_of_month_dim<sp/>+</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>week_of_year_dim;</highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/>};</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"></highlight></codeline>
+<codeline lineno="33" refid="classthirdai_1_1dataset_1_1_date_block_1a6f7bb7f6c1942e8f9f7574fce8e2bba7" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_date_block_1a6f7bb7f6c1942e8f9f7574fce8e2bba7" kindref="member">isDense</ref>()<sp/>const<sp/>final<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;<sp/>};</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"></highlight></codeline>
+<codeline lineno="35" refid="classthirdai_1_1dataset_1_1_date_block_1acb1a8f4633fc99f1e0ab0dd4458b009b" refkind="member"><highlight class="normal"><sp/><sp/>uint32_t<sp/><ref refid="classthirdai_1_1dataset_1_1_date_block_1acb1a8f4633fc99f1e0ab0dd4458b009b" kindref="member">expectedNumColumns</ref>()<sp/>const<sp/>final<sp/>{</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>_col<sp/>is<sp/>the<sp/>column<sp/>index,<sp/>so<sp/>we<sp/>expect<sp/>at<sp/>least</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>_col<sp/>+<sp/>1<sp/>columns<sp/>in<sp/>each<sp/>input<sp/>row.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_col<sp/>+<sp/>1;</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/>};</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"></highlight></codeline>
+<codeline lineno="41" refid="classthirdai_1_1dataset_1_1_date_block_1a18f3f7d55f5b2830e5103e8339fd8ed4" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="structthirdai_1_1dataset_1_1_explanation" kindref="compound">Explanation</ref><sp/><ref refid="classthirdai_1_1dataset_1_1_date_block_1a18f3f7d55f5b2830e5103e8339fd8ed4" kindref="member">explainIndex</ref>(</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>index_within_block,</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;std::string_view&gt;&amp;<sp/>input_row)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)input_row;</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/><sp/><sp/>std::string<sp/>reason;</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(index_within_block<sp/>&gt;=<sp/><ref refid="classthirdai_1_1dataset_1_1_date_block_1a68b9f0688d5154e283863df5d0181cf9" kindref="member">featureDim</ref>())<sp/>{</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight><highlight class="stringliteral">&quot;index<sp/>is<sp/>out<sp/>of<sp/>bounds<sp/>for<sp/>date<sp/>block.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(index_within_block<sp/>&lt;<sp/>day_of_week_dim)<sp/>{</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>reason<sp/>=<sp/></highlight><highlight class="stringliteral">&quot;day_of_week&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(index_within_block<sp/>&lt;<sp/>(day_of_week_dim<sp/>+<sp/>month_of_year_dim))<sp/>{</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>reason<sp/>=<sp/></highlight><highlight class="stringliteral">&quot;month_of_year&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(index_within_block<sp/>&lt;</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(day_of_week_dim<sp/>+<sp/>month_of_year_dim<sp/>+<sp/>week_of_month_dim))<sp/>{</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>reason<sp/>=<sp/></highlight><highlight class="stringliteral">&quot;week_of_month&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>reason<sp/>=<sp/></highlight><highlight class="stringliteral">&quot;week_of_year&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>{_col,<sp/>reason};</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="61"><highlight class="normal"></highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>make(uint32_t<sp/>col)<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;DateBlock&gt;(col);<sp/>}</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"></highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/></highlight><highlight class="keyword">protected</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/>uint32_t<sp/>day_of_week_dim<sp/>=<sp/>7;</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/>uint32_t<sp/>month_of_year_dim<sp/>=<sp/>12;</highlight></codeline>
+<codeline lineno="67"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/>uint32_t<sp/>week_of_month_dim<sp/>=<sp/>5;</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/>uint32_t<sp/>week_of_year_dim<sp/>=<sp/>53;</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"></highlight></codeline>
+<codeline lineno="70" refid="classthirdai_1_1dataset_1_1_date_block_1aa8892d29020816829e940d702b7ba925" refkind="member"><highlight class="normal"><sp/><sp/>std::exception_ptr<sp/><ref refid="classthirdai_1_1dataset_1_1_date_block_1aa8892d29020816829e940d702b7ba925" kindref="member">buildSegment</ref>(</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;std::string_view&gt;&amp;<sp/>input_row,</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref>&amp;<sp/>vec)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_time_object" kindref="compound">TimeObject</ref><sp/>time;</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"></highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">try</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>time<sp/>=<sp/><ref refid="classthirdai_1_1dataset_1_1_time_object" kindref="compound">TimeObject</ref>(input_row[_col]);</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">catch</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::invalid_argument&amp;<sp/>e)<sp/>{</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_exception_ptr(e);</highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"></highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>epoch_time<sp/>=<sp/>time.<ref refid="classthirdai_1_1dataset_1_1_time_object_1ac3d02313e99c7d4fbd3bd32803d9e27d" kindref="member">secondsSinceEpoch</ref>();</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>offset<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"></highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>day_of_week<sp/>=<sp/>(epoch_time<sp/>/<sp/>TimeObject::SECONDS_IN_DAY)<sp/>%<sp/>7;</highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/><sp/><sp/>vec.addSparseFeatureToSegment(offset<sp/>+<sp/>day_of_week,<sp/>1.0);</highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/><sp/><sp/>offset<sp/>+=<sp/>day_of_week_dim;</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"></highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/><sp/><sp/>vec.addSparseFeatureToSegment(offset<sp/>+<sp/>time.month(),<sp/>1.0);</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"><sp/><sp/><sp/><sp/>offset<sp/>+=<sp/>month_of_year_dim;</highlight></codeline>
+<codeline lineno="90"><highlight class="normal"></highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>week_of_month<sp/>=<sp/>time.dayOfMonthZeroIndexed()<sp/>/<sp/>7;</highlight></codeline>
+<codeline lineno="92"><highlight class="normal"><sp/><sp/><sp/><sp/>vec.addSparseFeatureToSegment(offset<sp/>+<sp/>week_of_month,<sp/>1.0);</highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/><sp/><sp/>offset<sp/>+=<sp/>week_of_month_dim;</highlight></codeline>
+<codeline lineno="94"><highlight class="normal"></highlight></codeline>
+<codeline lineno="95"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>week_of_year<sp/>=<sp/>time.dayOfYear()<sp/>/<sp/>7;</highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/><sp/><sp/>vec.addSparseFeatureToSegment(offset<sp/>+<sp/>week_of_year,<sp/>1.0);</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"></highlight></codeline>
+<codeline lineno="98"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="99"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="100"><highlight class="normal"></highlight></codeline>
+<codeline lineno="101"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="102"><highlight class="normal"><sp/><sp/>uint32_t<sp/>_col;</highlight></codeline>
+<codeline lineno="103"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="104"><highlight class="normal"></highlight></codeline>
+<codeline lineno="105"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::dataset</highlight></codeline>
+    </programlisting>
+    <location file="dataset/src/blocks/Date.h"/>
+  </compounddef>
+</doxygen>

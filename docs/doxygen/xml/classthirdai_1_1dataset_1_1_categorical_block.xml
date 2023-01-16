@@ -1,0 +1,309 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_categorical_block" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>thirdai::dataset::CategoricalBlock</compoundname>
+    <basecompoundref refid="classthirdai_1_1dataset_1_1_block" prot="public" virt="non-virtual">thirdai::dataset::Block</basecompoundref>
+    <derivedcompoundref refid="classthirdai_1_1dataset_1_1_numerical_categorical_block" prot="public" virt="non-virtual">thirdai::dataset::NumericalCategoricalBlock</derivedcompoundref>
+    <derivedcompoundref refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block" prot="public" virt="non-virtual">thirdai::dataset::StringLookupCategoricalBlock</derivedcompoundref>
+    <includes refid="_categorical_8h" local="no">Categorical.h</includes>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_categorical_block_1a88644bfb9ce7bff3ad2ea7fd344a7343" prot="public" static="no" mutable="no">
+        <type>friend</type>
+        <definition>friend thirdai::dataset::CategoricalBlock::CategoricalBlockTest</definition>
+        <argsstring></argsstring>
+        <name>CategoricalBlockTest</name>
+        <qualifiedname>thirdai::dataset::CategoricalBlock::CategoricalBlockTest</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="21" column="10" bodyfile="dataset/src/blocks/Categorical.h" bodystart="21" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_categorical_block_1a22a14506c33b4b904029bdd85c388598" prot="protected" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::CategoricalBlock::_n_classes</definition>
+        <argsstring></argsstring>
+        <name>_n_classes</name>
+        <qualifiedname>thirdai::dataset::CategoricalBlock::_n_classes</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="72" column="12" bodyfile="dataset/src/blocks/Categorical.h" bodystart="72" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_categorical_block_1a0f15697e5a4216cff307581f3d667fa0" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::CategoricalBlock::_col</definition>
+        <argsstring></argsstring>
+        <name>_col</name>
+        <qualifiedname>thirdai::dataset::CategoricalBlock::_col</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="75" column="12" bodyfile="dataset/src/blocks/Categorical.h" bodystart="75" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_categorical_block_1a393cc9e0bbd6268ec983510c18f4a799" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; char &gt;</type>
+        <definition>std::optional&lt;char&gt; thirdai::dataset::CategoricalBlock::_delimiter</definition>
+        <argsstring></argsstring>
+        <name>_delimiter</name>
+        <qualifiedname>thirdai::dataset::CategoricalBlock::_delimiter</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="76" column="17" bodyfile="dataset/src/blocks/Categorical.h" bodystart="76" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_categorical_block_1a60f569a3fb4ad91442ec9780e2c714b5" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::CategoricalBlock::CategoricalBlock</definition>
+        <argsstring>(uint32_t col, uint32_t n_classes, std::optional&lt; char &gt; delimiter)</argsstring>
+        <name>CategoricalBlock</name>
+        <qualifiedname>thirdai::dataset::CategoricalBlock::CategoricalBlock</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_classes</declname>
+        </param>
+        <param>
+          <type>std::optional&lt; char &gt;</type>
+          <declname>delimiter</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="23" column="3" bodyfile="dataset/src/blocks/Categorical.h" bodystart="23" bodyend="25"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_categorical_block_1a21cff869aa317945641b9b0e5c9ae2b9" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::CategoricalBlock::featureDim</definition>
+        <argsstring>() const final</argsstring>
+        <name>featureDim</name>
+        <qualifiedname>thirdai::dataset::CategoricalBlock::featureDim</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a5859698b5d80c130f745e66be3173eac">featureDim</reimplements>
+        <briefdescription>
+<para>Returns the dimension of the vector encoding. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="27" column="12" bodyfile="dataset/src/blocks/Categorical.h" bodystart="27" bodyend="27"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_categorical_block_1ab348bb0c80ed9b57f2aeb230bd009892" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::CategoricalBlock::isDense</definition>
+        <argsstring>() const final</argsstring>
+        <name>isDense</name>
+        <qualifiedname>thirdai::dataset::CategoricalBlock::isDense</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a9fc5f3b16e9044149d90dfa61e2506e6">isDense</reimplements>
+        <briefdescription>
+<para>True if the block produces dense features, False otherwise. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="29" column="8" bodyfile="dataset/src/blocks/Categorical.h" bodystart="29" bodyend="29"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_categorical_block_1ad6f2bba282be5220f90ea156fe291879" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::CategoricalBlock::expectedNumColumns</definition>
+        <argsstring>() const final</argsstring>
+        <name>expectedNumColumns</name>
+        <qualifiedname>thirdai::dataset::CategoricalBlock::expectedNumColumns</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a58bc2809a20117b3d8c9ca59ef5c3757">expectedNumColumns</reimplements>
+        <briefdescription>
+<para>Returns the minimum number of columns that the block expects to see in each row of the dataset. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="31" column="12" bodyfile="dataset/src/blocks/Categorical.h" bodystart="31" bodyend="31"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_categorical_block_1a9223a7dd8b74b614e93a6be9234b10b2" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type><ref refid="structthirdai_1_1dataset_1_1_explanation" kindref="compound">Explanation</ref></type>
+        <definition>Explanation thirdai::dataset::CategoricalBlock::explainIndex</definition>
+        <argsstring>(uint32_t index_within_block, const std::vector&lt; std::string_view &gt; &amp;input_row) final</argsstring>
+        <name>explainIndex</name>
+        <qualifiedname>thirdai::dataset::CategoricalBlock::explainIndex</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a74f791cba8e885b30ae102124ab237d3">explainIndex</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>index_within_block</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>input_row</declname>
+        </param>
+        <briefdescription>
+<para>For a given index, get the keyword which falls in that index when building the segmented feature vector. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Arguments: index_within_block : index within the block so that we can get exact keyword responsible. input_row: the string_view of input string so that we process the keywords when we call explainIndex method rather than storing that in buildsegment , which may affect thread safety.</para>
+<para>Returns: column number and keyword responsible for the given index from that column. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="33" column="15" bodyfile="dataset/src/blocks/Categorical.h" bodystart="33" bodyend="37"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_categorical_block_1af713acd5e86b5d87e5ff2f34b04da435" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>std::string</type>
+        <definition>virtual std::string thirdai::dataset::CategoricalBlock::getResponsibleCategory</definition>
+        <argsstring>(uint32_t index_within_block, const std::string_view &amp;category_value) const =0</argsstring>
+        <name>getResponsibleCategory</name>
+        <qualifiedname>thirdai::dataset::CategoricalBlock::getResponsibleCategory</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1a3866f470cfc8c699e34974e13bc6a2c9">getResponsibleCategory</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_numerical_categorical_block_1ad966a04bf956df632f70be52c9340c67">getResponsibleCategory</reimplementedby>
+        <param>
+          <type>uint32_t</type>
+          <declname>index_within_block</declname>
+        </param>
+        <param>
+          <type>const std::string_view &amp;</type>
+          <declname>category_value</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="44" column="23"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_categorical_block_1a9e130f6029370db99ea56e26900bd3d4" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::exception_ptr</type>
+        <definition>std::exception_ptr thirdai::dataset::CategoricalBlock::buildSegment</definition>
+        <argsstring>(const std::vector&lt; std::string_view &gt; &amp;input_row, SegmentedFeatureVector &amp;vec) final</argsstring>
+        <name>buildSegment</name>
+        <qualifiedname>thirdai::dataset::CategoricalBlock::buildSegment</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1af8e3d79b348482e033852b415a4dfaad">buildSegment</reimplements>
+        <param>
+          <type>const std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>input_row</declname>
+        </param>
+        <param>
+          <type><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref> &amp;</type>
+          <declname>vec</declname>
+        </param>
+        <briefdescription>
+<para>Derived class-specific implementation of how input rows get encoded (and what ends up in the vector segment). </para>
+        </briefdescription>
+        <detaileddescription>
+<para>WARNING: This function may be called in many threads simultaneously, so it should be thread-safe or robust to data races. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="49" column="22" bodyfile="dataset/src/blocks/Categorical.h" bodystart="49" bodyend="67"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_categorical_block_1a08523c85a1759eb00d49a1554dbdd645" prot="protected" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>std::exception_ptr</type>
+        <definition>virtual std::exception_ptr thirdai::dataset::CategoricalBlock::encodeCategory</definition>
+        <argsstring>(std::string_view category, SegmentedFeatureVector &amp;vec)=0</argsstring>
+        <name>encodeCategory</name>
+        <qualifiedname>thirdai::dataset::CategoricalBlock::encodeCategory</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_numerical_categorical_block_1ab826c07e3ace411d33f5ea45c192de10">encodeCategory</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block_1ae0f46b51f0022e216a54c40d58f28c4b">encodeCategory</reimplementedby>
+        <param>
+          <type>std::string_view</type>
+          <declname>category</declname>
+        </param>
+        <param>
+          <type><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref> &amp;</type>
+          <declname>vec</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/Categorical.h" line="69" column="30"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>A block that encodes categorical features (e.g. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>a numerical ID or an identification string). </para>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::dataset::Block</label>
+        <link refid="classthirdai_1_1dataset_1_1_block"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::CategoricalBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_categorical_block"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>thirdai::dataset::NumericalCategoricalBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_numerical_categorical_block"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>thirdai::dataset::StringLookupCategoricalBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>thirdai::dataset::Block</label>
+        <link refid="classthirdai_1_1dataset_1_1_block"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::CategoricalBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_categorical_block"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="dataset/src/blocks/Categorical.h" line="18" column="1" bodyfile="dataset/src/blocks/Categorical.h" bodystart="18" bodyend="77"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a0f15697e5a4216cff307581f3d667fa0" prot="private" virt="non-virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>_col</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a393cc9e0bbd6268ec983510c18f4a799" prot="private" virt="non-virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>_delimiter</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a22a14506c33b4b904029bdd85c388598" prot="protected" virt="non-virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>_n_classes</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1a67f4a42a2c11c4a403e0adeff8e5be3b" prot="public" virt="non-virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>addVectorSegment</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a9e130f6029370db99ea56e26900bd3d4" prot="protected" virt="virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>buildSegment</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a60f569a3fb4ad91442ec9780e2c714b5" prot="public" virt="non-virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>CategoricalBlock</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a88644bfb9ce7bff3ad2ea7fd344a7343" prot="public" virt="non-virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>CategoricalBlockTest</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a08523c85a1759eb00d49a1554dbdd645" prot="protected" virt="pure-virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>encodeCategory</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1ad6f2bba282be5220f90ea156fe291879" prot="public" virt="virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>expectedNumColumns</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a9223a7dd8b74b614e93a6be9234b10b2" prot="public" virt="virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>explainIndex</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1a21cff869aa317945641b9b0e5c9ae2b9" prot="public" virt="virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>featureDim</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1af713acd5e86b5d87e5ff2f34b04da435" prot="public" virt="pure-virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>getResponsibleCategory</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_categorical_block_1ab348bb0c80ed9b57f2aeb230bd009892" prot="public" virt="virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>isDense</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1a9411d9a3c22f805810489c4b29bbb0bc" prot="public" virt="virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>prepareForBatch</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1aa63fcaa97e225720801526fb1b7799b3" prot="public" virt="virtual"><scope>thirdai::dataset::CategoricalBlock</scope><name>~Block</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

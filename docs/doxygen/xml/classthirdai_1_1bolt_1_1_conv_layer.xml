@@ -1,0 +1,1065 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_conv_layer" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::bolt::ConvLayer</compoundname>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1af2b1d35d1160a334f97ed48289885f86" prot="private" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t thirdai::bolt::ConvLayer::_dim</definition>
+        <argsstring></argsstring>
+        <name>_dim</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_dim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="94" column="12" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="94" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1ad0419632d01ce0eb291ad56bf93b4c12" prot="private" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t thirdai::bolt::ConvLayer::_prev_dim</definition>
+        <argsstring></argsstring>
+        <name>_prev_dim</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_prev_dim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="94" column="17" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="94" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1a8864cd89b149e6a9cdc64ad9f9da14de" prot="private" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t thirdai::bolt::ConvLayer::_sparse_dim</definition>
+        <argsstring></argsstring>
+        <name>_sparse_dim</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_sparse_dim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="94" column="27" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="94" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1abe797b0579700fc04419ce2d3e7fcac3" prot="private" static="no" mutable="no">
+        <type>float</type>
+        <definition>float thirdai::bolt::ConvLayer::_sparsity</definition>
+        <argsstring></argsstring>
+        <name>_sparsity</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_sparsity</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="95" column="9" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="95" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1a23174ea979d14cb01a9b61406ff11684" prot="private" static="no" mutable="no">
+        <type>ActivationFunction</type>
+        <definition>ActivationFunction thirdai::bolt::ConvLayer::_act_func</definition>
+        <argsstring></argsstring>
+        <name>_act_func</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_act_func</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="96" column="22" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="96" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1a250bbde9747c687fd69c871b0a46933e" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; float &gt;</type>
+        <definition>std::vector&lt;float&gt; thirdai::bolt::ConvLayer::_weights</definition>
+        <argsstring></argsstring>
+        <name>_weights</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_weights</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="98" column="15" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="98" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1a5afb133a6c4a512c9c8807e1b9fcf243" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; float &gt;</type>
+        <definition>std::vector&lt;float&gt; thirdai::bolt::ConvLayer::_biases</definition>
+        <argsstring></argsstring>
+        <name>_biases</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_biases</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="99" column="15" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="99" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1ac8cac8f5a8f3c0e50c3fb694e9214300" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; <ref refid="structthirdai_1_1bolt_1_1_adam_optimizer" kindref="compound">AdamOptimizer</ref> &gt;</type>
+        <definition>std::optional&lt;AdamOptimizer&gt; thirdai::bolt::ConvLayer::_weight_optimizer</definition>
+        <argsstring></argsstring>
+        <name>_weight_optimizer</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_weight_optimizer</qualifiedname>
+        <initializer>= std::nullopt</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="101" column="17" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="101" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1a87367f1019b537f41321b4e53f64c0c8" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; <ref refid="structthirdai_1_1bolt_1_1_adam_optimizer" kindref="compound">AdamOptimizer</ref> &gt;</type>
+        <definition>std::optional&lt;AdamOptimizer&gt; thirdai::bolt::ConvLayer::_bias_optimizer</definition>
+        <argsstring></argsstring>
+        <name>_bias_optimizer</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_bias_optimizer</qualifiedname>
+        <initializer>= std::nullopt</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="102" column="17" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="102" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1aea8fe1ec1407fec3a38f07a1f277d362" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; bool &gt;</type>
+        <definition>std::vector&lt;bool&gt; thirdai::bolt::ConvLayer::_is_active</definition>
+        <argsstring></argsstring>
+        <name>_is_active</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_is_active</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="104" column="15" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="104" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1ac7e048a3d90f457c0899101be86f3e7c" prot="private" static="no" mutable="no">
+        <type>std::unique_ptr&lt; <ref refid="classthirdai_1_1hashing_1_1_hash_function" kindref="compound">hashing::HashFunction</ref> &gt;</type>
+        <definition>std::unique_ptr&lt;hashing::HashFunction&gt; thirdai::bolt::ConvLayer::_hasher</definition>
+        <argsstring></argsstring>
+        <name>_hasher</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_hasher</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="106" column="19" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="106" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1a526e569bf0752e8ecc5d32e28e1592b3" prot="private" static="no" mutable="no">
+        <type>std::unique_ptr&lt; <ref refid="classthirdai_1_1hashtable_1_1_sampled_hash_table" kindref="compound">hashtable::SampledHashTable</ref>&lt; uint32_t &gt; &gt;</type>
+        <definition>std::unique_ptr&lt;hashtable::SampledHashTable&lt;uint32_t&gt; &gt; thirdai::bolt::ConvLayer::_hash_table</definition>
+        <argsstring></argsstring>
+        <name>_hash_table</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_hash_table</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="107" column="19" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="107" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1ac9aa0628618706967f43280fb56f0676" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt;uint32_t&gt; thirdai::bolt::ConvLayer::_rand_neurons</definition>
+        <argsstring></argsstring>
+        <name>_rand_neurons</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_rand_neurons</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="108" column="15" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="108" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1ae674de3ada21d9f3dd9aa4e8f8208974" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::ConvLayer::_num_filters</definition>
+        <argsstring></argsstring>
+        <name>_num_filters</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_num_filters</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="110" column="12" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="110" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1a34bafe4bac6ddf70be92130e255d24b0" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::ConvLayer::_num_sparse_filters</definition>
+        <argsstring></argsstring>
+        <name>_num_sparse_filters</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_num_sparse_filters</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="111" column="12" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="111" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1ac67f38d0e9ce30237ab09c9871f1c6ac" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::ConvLayer::_patch_dim</definition>
+        <argsstring></argsstring>
+        <name>_patch_dim</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_patch_dim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="112" column="12" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="112" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1a0116fb772c2b87938055bad44ce0fe23" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::ConvLayer::_sparse_patch_dim</definition>
+        <argsstring></argsstring>
+        <name>_sparse_patch_dim</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_sparse_patch_dim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="113" column="12" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="113" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1abb7c5c31b93e67c15a9d708da97cb9a9" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::ConvLayer::_num_patches</definition>
+        <argsstring></argsstring>
+        <name>_num_patches</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_num_patches</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="114" column="12" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="114" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1a1cf5904dc06f35c5a8f9b1e4b1c982c6" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::ConvLayer::_prev_num_filters</definition>
+        <argsstring></argsstring>
+        <name>_prev_num_filters</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_prev_num_filters</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="115" column="12" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="115" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1a162a808af2d65bf1009392cc4ddc7387" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::ConvLayer::_prev_num_sparse_filters</definition>
+        <argsstring></argsstring>
+        <name>_prev_num_sparse_filters</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_prev_num_sparse_filters</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="116" column="12" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="116" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1acfd29e4c0ba82eae48ad7c516397c7c7" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::ConvLayer::_kernel_size</definition>
+        <argsstring></argsstring>
+        <name>_kernel_size</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_kernel_size</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="117" column="12" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="117" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1ae1059d143e94212188e2224d15806a84" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt;uint32_t&gt; thirdai::bolt::ConvLayer::_in_to_out</definition>
+        <argsstring></argsstring>
+        <name>_in_to_out</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_in_to_out</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="118" column="15" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="118" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_conv_layer_1a7d625bac94d55ef0e14ae70169deb456" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt;uint32_t&gt; thirdai::bolt::ConvLayer::_out_to_in</definition>
+        <argsstring></argsstring>
+        <name>_out_to_in</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::_out_to_in</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="118" column="26" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="118" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1bolt_1_1_conv_layer_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+<para>Training data-structures (like the optimizer and the active neurons trackers) are not loaded in by default. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>If we want to continue training after a load, the expectation is that the higher level Graph/Network API will handle this initialization with the initOptimizer() method.</para>
+<para>Doing this means our load API is as simple as possible for both training and inference purposes. It doesn&apos;t make sense to load these data-structures by default then remove them with another function since users may be memory constrained during deployment.</para>
+<para>We don&apos;t know yet if its worth it to save the optimizer for retraining/finetuning purposes. If in the future we figure out this has some benefit we can adjust this method accordingly. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="135" column="16" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="135" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1ad1d9e87d0f4926d0b587709af267da00" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::ConvLayer::ConvLayer</definition>
+        <argsstring>(const ConvLayerConfig &amp;config, uint64_t prev_dim, uint32_t prev_num_filters, uint32_t prev_num_sparse_filters, std::pair&lt; uint32_t, uint32_t &gt; next_kernel_size)</argsstring>
+        <name>ConvLayer</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::ConvLayer</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1bolt_1_1_conv_layer_config" kindref="compound">ConvLayerConfig</ref> &amp;</type>
+          <declname>config</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>prev_dim</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>prev_num_filters</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>prev_num_sparse_filters</declname>
+        </param>
+        <param>
+          <type>std::pair&lt; uint32_t, uint32_t &gt;</type>
+          <declname>next_kernel_size</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="16" column="3" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="9" bodyend="66"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a3e68ca89544e587ed2c6668ed4f84d06" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::forward</definition>
+        <argsstring>(const BoltVector &amp;input, BoltVector &amp;output, const BoltVector *labels)</argsstring>
+        <name>forward</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::forward</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>input</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> *</type>
+          <declname>labels</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="20" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="68" bodyend="84"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1af4ea608ba33760f6e7fbe17dda6da2bb" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::backpropagate</definition>
+        <argsstring>(BoltVector &amp;input, BoltVector &amp;output)</argsstring>
+        <name>backpropagate</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::backpropagate</qualifiedname>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>input</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="23" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="161" bodyend="175"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a333d6c97e8c24bca266e4f57d66003b5" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::backpropagateInputLayer</definition>
+        <argsstring>(BoltVector &amp;input, BoltVector &amp;output)</argsstring>
+        <name>backpropagateInputLayer</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::backpropagateInputLayer</qualifiedname>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>input</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="25" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="177" bodyend="191"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1af8352984704378b822ee60480c475c16" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::updateParameters</definition>
+        <argsstring>(float lr, uint32_t iter, float B1, float B2, float eps)</argsstring>
+        <name>updateParameters</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::updateParameters</qualifiedname>
+        <param>
+          <type>float</type>
+          <declname>lr</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>iter</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>B1</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>B2</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>eps</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="27" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="274" bodyend="326"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a46b83b43927698496a61c4787f8af45a" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref></type>
+        <definition>BoltBatch thirdai::bolt::ConvLayer::createBatchState</definition>
+        <argsstring>(const uint32_t batch_size, bool use_sparsity) const</argsstring>
+        <name>createBatchState</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::createBatchState</qualifiedname>
+        <param>
+          <type>const uint32_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>use_sparsity</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="29" column="13" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="29" bodyend="37"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a8658e4c4f3f3c7ff91a66598af2f46e8" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::buildHashTables</definition>
+        <argsstring>()</argsstring>
+        <name>buildHashTables</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::buildHashTables</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="39" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="342" bodyend="356"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1ae867dd331552ae96749bb18df586a01d" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::reBuildHashFunction</definition>
+        <argsstring>()</argsstring>
+        <name>reBuildHashFunction</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::reBuildHashFunction</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="41" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="335" bodyend="340"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1ae10f80b8d124f858cdbf21d887d28e76" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::ConvLayer::getDim</definition>
+        <argsstring>() const</argsstring>
+        <name>getDim</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::getDim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="43" column="12" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="43" bodyend="43"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1ade59ac3b490dd976da8ecacf140f77d4" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::ConvLayer::getInputDim</definition>
+        <argsstring>() const</argsstring>
+        <name>getInputDim</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::getInputDim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="45" column="12" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="45" bodyend="45"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a0914f18b677a9bdccbf5ca7174b2e6bf" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::ConvLayer::getSparseDim</definition>
+        <argsstring>() const</argsstring>
+        <name>getSparseDim</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::getSparseDim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="47" column="12" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="47" bodyend="47"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a4b7fcf9e654f3440a2d63d706fb7bb68" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>float *</type>
+        <definition>float * thirdai::bolt::ConvLayer::getWeights</definition>
+        <argsstring>() const</argsstring>
+        <name>getWeights</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::getWeights</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="49" column="9" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="358" bodyend="363"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a6ee4592782667db3ed9f355ae59f3a73" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>float *</type>
+        <definition>float * thirdai::bolt::ConvLayer::getBiases</definition>
+        <argsstring>() const</argsstring>
+        <name>getBiases</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::getBiases</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="51" column="9" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="365" bodyend="370"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1af6c52d69bf50b0ad392c41a865ec3ed4" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::setTrainable</definition>
+        <argsstring>(bool trainable)</argsstring>
+        <name>setTrainable</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::setTrainable</qualifiedname>
+        <param>
+          <type>bool</type>
+          <declname>trainable</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="53" column="8"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a687e03645105f7436aff21dc7a6eacd0" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::ConvLayer::getTrainable</definition>
+        <argsstring>() const</argsstring>
+        <name>getTrainable</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::getTrainable</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="55" column="8"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1aa675fe1af4c50abde8b984abf8d36dd4" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::setWeights</definition>
+        <argsstring>(const float *new_weights)</argsstring>
+        <name>setWeights</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::setWeights</qualifiedname>
+        <param>
+          <type>const float *</type>
+          <declname>new_weights</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="57" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="372" bodyend="374"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1ae271a2d7181b4a552abc162cbe4babff" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::setBiases</definition>
+        <argsstring>(const float *new_biases)</argsstring>
+        <name>setBiases</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::setBiases</qualifiedname>
+        <param>
+          <type>const float *</type>
+          <declname>new_biases</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="59" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="376" bodyend="378"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1aaac4dd9458154ad900459dbda300c69f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::setWeightGradients</definition>
+        <argsstring>(const float *update_weight_gradient)</argsstring>
+        <name>setWeightGradients</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::setWeightGradients</qualifiedname>
+        <param>
+          <type>const float *</type>
+          <declname>update_weight_gradient</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="61" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="380" bodyend="383"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1af5e1c4508cd287f65b81ed8bf5b3204e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::setBiasesGradients</definition>
+        <argsstring>(const float *update_bias_gradient)</argsstring>
+        <name>setBiasesGradients</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::setBiasesGradients</qualifiedname>
+        <param>
+          <type>const float *</type>
+          <declname>update_bias_gradient</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="63" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="385" bodyend="388"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1ad375d5bd973777cfe503e035f0729bdf" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>float *</type>
+        <definition>float * thirdai::bolt::ConvLayer::getBiasesGradient</definition>
+        <argsstring>()</argsstring>
+        <name>getBiasesGradient</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::getBiasesGradient</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="65" column="9" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="390" bodyend="392"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1ab12322f6d29cdd488579ed2d237439bd" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>float *</type>
+        <definition>float * thirdai::bolt::ConvLayer::getWeightsGradient</definition>
+        <argsstring>()</argsstring>
+        <name>getWeightsGradient</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::getWeightsGradient</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="67" column="9" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="394" bodyend="396"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1aef2d3ea2379f0c3b477a09b635a6fb3e" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>float</type>
+        <definition>float thirdai::bolt::ConvLayer::getSparsity</definition>
+        <argsstring>() const</argsstring>
+        <name>getSparsity</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::getSparsity</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="69" column="9" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="69" bodyend="69"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a30af0af133d075a4b826cc2ddd2f0c42" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::initOptimizer</definition>
+        <argsstring>()</argsstring>
+        <name>initOptimizer</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::initOptimizer</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="71" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="328" bodyend="333"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a9380e9a8af4d1e643e4970be23093f0f" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>bool</type>
+            <declname>DENSE</declname>
+            <defname>DENSE</defname>
+          </param>
+          <param>
+            <type>bool</type>
+            <declname>PREV_DENSE</declname>
+            <defname>PREV_DENSE</defname>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::forwardImpl</definition>
+        <argsstring>(const BoltVector &amp;input, BoltVector &amp;output)</argsstring>
+        <name>forwardImpl</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::forwardImpl</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>input</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="75" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="87" bodyend="134"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a9ae9872a2e56a716c9997feb374bb00c" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>bool</type>
+            <declname>PREV_DENSE</declname>
+            <defname>PREV_DENSE</defname>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::selectActiveFilters</definition>
+        <argsstring>(const BoltVector &amp;input, BoltVector &amp;output, uint32_t in_patch, uint64_t out_patch, const std::vector&lt; uint32_t &gt; &amp;active_filters)</argsstring>
+        <name>selectActiveFilters</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::selectActiveFilters</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>input</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>in_patch</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>out_patch</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>active_filters</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="78" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="236" bodyend="272"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a781af0289f00488d96a7f0099c30cf22" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>bool</type>
+            <declname>DENSE</declname>
+            <defname>DENSE</defname>
+          </param>
+          <param>
+            <type>bool</type>
+            <declname>PREV_DENSE</declname>
+            <defname>PREV_DENSE</defname>
+          </param>
+        </templateparamlist>
+        <type>float</type>
+        <definition>float thirdai::bolt::ConvLayer::calculateFilterActivation</definition>
+        <argsstring>(const BoltVector &amp;input, const BoltVector &amp;output, uint32_t in_patch, uint64_t out_idx, std::vector&lt; uint32_t &gt; prev_active_filters, uint32_t effective_patch_dim)</argsstring>
+        <name>calculateFilterActivation</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::calculateFilterActivation</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>input</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>in_patch</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>out_idx</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; uint32_t &gt;</type>
+          <declname>prev_active_filters</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>effective_patch_dim</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="83" column="9" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="137" bodyend="159"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a91ca3a2f200b8c4b5966874163bea611" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>bool</type>
+            <declname>FIRST_LAYER</declname>
+            <defname>FIRST_LAYER</defname>
+          </param>
+          <param>
+            <type>bool</type>
+            <declname>DENSE</declname>
+            <defname>DENSE</defname>
+          </param>
+          <param>
+            <type>bool</type>
+            <declname>PREV_DENSE</declname>
+            <defname>PREV_DENSE</defname>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::backpropagateImpl</definition>
+        <argsstring>(BoltVector &amp;input, BoltVector &amp;output)</argsstring>
+        <name>backpropagateImpl</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::backpropagateImpl</qualifiedname>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>input</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="90" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="194" bodyend="233"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a0995c225e143161599faafe97aef37ca" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::buildPatchMaps</definition>
+        <argsstring>(std::pair&lt; uint32_t, uint32_t &gt; next_kernel_size)</argsstring>
+        <name>buildPatchMaps</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::buildPatchMaps</qualifiedname>
+        <param>
+          <type>std::pair&lt; uint32_t, uint32_t &gt;</type>
+          <declname>next_kernel_size</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+<para>TODO(David): btw this will be factored out soon into an N-tower model and a patch remapping</para>
+<para>Suppose we have an image that can be broken into 16 patches (numbers 0-15) with kernel size K x K as follows: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15</para>
+<para>Suppose then that each patch is flattened into a (K x K x channels) dimensional vector and concatenated next to each other in patch order (patch 0, patch 1, ...). This is the input to the <ref refid="classthirdai_1_1bolt_1_1_conv_layer" kindref="compound">ConvLayer</ref>.</para>
+<para>To prepare for a possible future <ref refid="classthirdai_1_1bolt_1_1_conv_layer" kindref="compound">ConvLayer</ref>, we need to distribute the patches in memory in a way that is amenable for another convolution. Therefore, we accept a next_kernel_size and calculate an in_patch to out_patch mapping. The patch output needs to be placed somewhere in memory that is efficient for the next kernel size. Since we are dealing with flattened images, we need to remap the patches such that all patches within a future kernel are next to each other.</para>
+<para>Take this for example, where we are preparing for a future 2x2 kernel_size. We have patches 0, 1, 4, 5 that all will be together in a future 2x2 kernel and should be placed next to each other for the next <ref refid="classthirdai_1_1bolt_1_1_conv_layer" kindref="compound">ConvLayer</ref>. However, since their indices are not adjacent, they won&apos;t be placed next to each other. Thus we must remap them. Under this remapping, the 2x2 kernels in the next layer will each contain the 4 patch outputs necessary for the kernels to work.</para>
+<para>0 1 2 3 0 1 4 5 4 5 6 7 --&gt; 2 3 6 7 8 9 10 11 8 9 12 13 12 13 14 15 10 11 14 15</para>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="92" column="8" bodyfile="bolt/src/layers/ConvLayer.cc" bodystart="399" bodyend="474"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1ae1dbc7b16c20abcd2ce826215fa748cc" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::bolt::ConvLayer::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="137" column="8" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="137" bodyend="143"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_conv_layer_1a122f3b582bb9960b0629636913f32623" prot="protected" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::ConvLayer::ConvLayer</definition>
+        <argsstring>()</argsstring>
+        <name>ConvLayer</name>
+        <qualifiedname>thirdai::bolt::ConvLayer::ConvLayer</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/ConvLayer.h" line="147" column="3" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="147" bodyend="147"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/layers/ConvLayer.h" line="14" column="1" bodyfile="bolt/src/layers/ConvLayer.h" bodystart="14" bodyend="148"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a23174ea979d14cb01a9b61406ff11684" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_act_func</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a87367f1019b537f41321b4e53f64c0c8" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_bias_optimizer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a5afb133a6c4a512c9c8807e1b9fcf243" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_biases</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1af2b1d35d1160a334f97ed48289885f86" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_dim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a526e569bf0752e8ecc5d32e28e1592b3" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_hash_table</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ac7e048a3d90f457c0899101be86f3e7c" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_hasher</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ae1059d143e94212188e2224d15806a84" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_in_to_out</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1aea8fe1ec1407fec3a38f07a1f277d362" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_is_active</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1acfd29e4c0ba82eae48ad7c516397c7c7" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_kernel_size</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ae674de3ada21d9f3dd9aa4e8f8208974" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_num_filters</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1abb7c5c31b93e67c15a9d708da97cb9a9" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_num_patches</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a34bafe4bac6ddf70be92130e255d24b0" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_num_sparse_filters</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a7d625bac94d55ef0e14ae70169deb456" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_out_to_in</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ac67f38d0e9ce30237ab09c9871f1c6ac" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_patch_dim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ad0419632d01ce0eb291ad56bf93b4c12" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_prev_dim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a1cf5904dc06f35c5a8f9b1e4b1c982c6" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_prev_num_filters</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a162a808af2d65bf1009392cc4ddc7387" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_prev_num_sparse_filters</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ac9aa0628618706967f43280fb56f0676" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_rand_neurons</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a8864cd89b149e6a9cdc64ad9f9da14de" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_sparse_dim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a0116fb772c2b87938055bad44ce0fe23" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_sparse_patch_dim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1abe797b0579700fc04419ce2d3e7fcac3" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_sparsity</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ac8cac8f5a8f3c0e50c3fb694e9214300" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_weight_optimizer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a250bbde9747c687fd69c871b0a46933e" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>_weights</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1af4ea608ba33760f6e7fbe17dda6da2bb" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>backpropagate</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a91ca3a2f200b8c4b5966874163bea611" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>backpropagateImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a333d6c97e8c24bca266e4f57d66003b5" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>backpropagateInputLayer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a8658e4c4f3f3c7ff91a66598af2f46e8" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>buildHashTables</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a0995c225e143161599faafe97aef37ca" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>buildPatchMaps</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a781af0289f00488d96a7f0099c30cf22" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>calculateFilterActivation</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ad1d9e87d0f4926d0b587709af267da00" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>ConvLayer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a122f3b582bb9960b0629636913f32623" prot="protected" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>ConvLayer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a46b83b43927698496a61c4787f8af45a" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>createBatchState</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a3e68ca89544e587ed2c6668ed4f84d06" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>forward</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a9380e9a8af4d1e643e4970be23093f0f" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>forwardImpl</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a6ee4592782667db3ed9f355ae59f3a73" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>getBiases</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ad375d5bd973777cfe503e035f0729bdf" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>getBiasesGradient</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ae10f80b8d124f858cdbf21d887d28e76" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>getDim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ade59ac3b490dd976da8ecacf140f77d4" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>getInputDim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a0914f18b677a9bdccbf5ca7174b2e6bf" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>getSparseDim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1aef2d3ea2379f0c3b477a09b635a6fb3e" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>getSparsity</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a687e03645105f7436aff21dc7a6eacd0" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>getTrainable</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a4b7fcf9e654f3440a2d63d706fb7bb68" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>getWeights</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ab12322f6d29cdd488579ed2d237439bd" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>getWeightsGradient</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a30af0af133d075a4b826cc2ddd2f0c42" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>initOptimizer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ae867dd331552ae96749bb18df586a01d" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>reBuildHashFunction</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1a9ae9872a2e56a716c9997feb374bb00c" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>selectActiveFilters</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ae1dbc7b16c20abcd2ce826215fa748cc" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1ae271a2d7181b4a552abc162cbe4babff" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>setBiases</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1af5e1c4508cd287f65b81ed8bf5b3204e" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>setBiasesGradients</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1af6c52d69bf50b0ad392c41a865ec3ed4" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>setTrainable</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1aaac4dd9458154ad900459dbda300c69f" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>setWeightGradients</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1aa675fe1af4c50abde8b984abf8d36dd4" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>setWeights</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_conv_layer_1af8352984704378b822ee60480c475c16" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConvLayer</scope><name>updateParameters</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

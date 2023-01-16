@@ -1,0 +1,241 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::bolt::sequential_classifier::Pipeline</compoundname>
+      <sectiondef kind="public-static-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1a87c9aee67c556c534d062921182e9e58" prot="public" static="yes" constexpr="yes" mutable="no">
+        <type>constexpr uint32_t</type>
+        <definition>constexpr uint32_t thirdai::bolt::sequential_classifier::Pipeline::BATCH_SIZE</definition>
+        <argsstring></argsstring>
+        <name>BATCH_SIZE</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Pipeline::BATCH_SIZE</qualifiedname>
+        <initializer>= 2048</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="194" column="29" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="194" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1a863945c71aa0e851a3564225bf47e235" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1dataset_1_1_streaming_generic_dataset_loader" kindref="compound">dataset::StreamingGenericDatasetLoader</ref></type>
+        <definition>static dataset::StreamingGenericDatasetLoader thirdai::bolt::sequential_classifier::Pipeline::buildForFile</definition>
+        <argsstring>(const Schema &amp;schema, DataState &amp;state, const std::string &amp;filename, char delimiter, bool for_training)</argsstring>
+        <name>buildForFile</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Pipeline::buildForFile</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema" kindref="compound">Schema</ref> &amp;</type>
+          <declname>schema</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state" kindref="compound">DataState</ref> &amp;</type>
+          <declname>state</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <param>
+          <type>char</type>
+          <declname>delimiter</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>for_training</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="196" column="49" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="196" bodyend="225"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1a7ab7b68d55fb449c4dbff45464a4fa76" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>dataset::GenericBatchProcessorPtr</type>
+        <definition>static dataset::GenericBatchProcessorPtr thirdai::bolt::sequential_classifier::Pipeline::buildSingleInferenceBatchProcessor</definition>
+        <argsstring>(const Schema &amp;schema, DataState &amp;state, const ColumnNumberMap &amp;col_nums)</argsstring>
+        <name>buildSingleInferenceBatchProcessor</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Pipeline::buildSingleInferenceBatchProcessor</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema" kindref="compound">Schema</ref> &amp;</type>
+          <declname>schema</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state" kindref="compound">DataState</ref> &amp;</type>
+          <declname>state</declname>
+        </param>
+        <param>
+          <type>const <ref refid="classthirdai_1_1bolt_1_1sequential__classifier_1_1_column_number_map" kindref="compound">ColumnNumberMap</ref> &amp;</type>
+          <declname>col_nums</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="227" column="44" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="227" bodyend="233"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1a0271f68814ec4cb41554fec6598d0ba1" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; dataset::BlockPtr &gt;</type>
+        <definition>static std::vector&lt; dataset::BlockPtr &gt; thirdai::bolt::sequential_classifier::Pipeline::buildInputBlocks</definition>
+        <argsstring>(const Schema &amp;schema, DataState &amp;state, const ColumnNumberMap &amp;col_nums, bool for_training)</argsstring>
+        <name>buildInputBlocks</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Pipeline::buildInputBlocks</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema" kindref="compound">Schema</ref> &amp;</type>
+          <declname>schema</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state" kindref="compound">DataState</ref> &amp;</type>
+          <declname>state</declname>
+        </param>
+        <param>
+          <type>const <ref refid="classthirdai_1_1bolt_1_1sequential__classifier_1_1_column_number_map" kindref="compound">ColumnNumberMap</ref> &amp;</type>
+          <declname>col_nums</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>for_training</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="236" column="22" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="236" bodyend="271"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1a8f71a21ac15ff4639d62316529503e5e" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>dataset::BlockPtr</type>
+        <definition>static dataset::BlockPtr thirdai::bolt::sequential_classifier::Pipeline::makeCategoricalBlock</definition>
+        <argsstring>(const CategoricalPair &amp;categorical, DataState &amp;state, const ColumnNumberMap &amp;col_nums, std::optional&lt; char &gt; delimiter)</argsstring>
+        <name>makeCategoricalBlock</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Pipeline::makeCategoricalBlock</qualifiedname>
+        <param>
+          <type>const CategoricalPair &amp;</type>
+          <declname>categorical</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state" kindref="compound">DataState</ref> &amp;</type>
+          <declname>state</declname>
+        </param>
+        <param>
+          <type>const <ref refid="classthirdai_1_1bolt_1_1sequential__classifier_1_1_column_number_map" kindref="compound">ColumnNumberMap</ref> &amp;</type>
+          <declname>col_nums</declname>
+        </param>
+        <param>
+          <type>std::optional&lt; char &gt;</type>
+          <declname>delimiter</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="273" column="28" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="273" bodyend="283"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1a80b4925348a83d6cf247d4d91896ff43" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>dataset::UserCountHistoryBlockPtr</type>
+        <definition>static dataset::UserCountHistoryBlockPtr thirdai::bolt::sequential_classifier::Pipeline::makeQuantityTrackingBlock</definition>
+        <argsstring>(uint32_t id, const Schema &amp;schema, const std::string &amp;track_quantity_col_name, DataState &amp;state, const ColumnNumberMap &amp;col_nums, bool for_training)</argsstring>
+        <name>makeQuantityTrackingBlock</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Pipeline::makeQuantityTrackingBlock</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>id</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema" kindref="compound">Schema</ref> &amp;</type>
+          <declname>schema</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>track_quantity_col_name</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state" kindref="compound">DataState</ref> &amp;</type>
+          <declname>state</declname>
+        </param>
+        <param>
+          <type>const <ref refid="classthirdai_1_1bolt_1_1sequential__classifier_1_1_column_number_map" kindref="compound">ColumnNumberMap</ref> &amp;</type>
+          <declname>col_nums</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>for_training</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="285" column="44" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="285" bodyend="309"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1aef38c2aed9e2d6c4665b6c7b4a6c97b2" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>dataset::BlockPtr</type>
+        <definition>static dataset::BlockPtr thirdai::bolt::sequential_classifier::Pipeline::makeCategoryTrackingBlock</definition>
+        <argsstring>(uint32_t id, const Schema &amp;schema, const SequentialTriplet &amp;track_category, DataState &amp;state, const ColumnNumberMap &amp;col_nums, bool for_training, std::optional&lt; char &gt; delimiter)</argsstring>
+        <name>makeCategoryTrackingBlock</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::Pipeline::makeCategoryTrackingBlock</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>id</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_schema" kindref="compound">Schema</ref> &amp;</type>
+          <declname>schema</declname>
+        </param>
+        <param>
+          <type>const SequentialTriplet &amp;</type>
+          <declname>track_category</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state" kindref="compound">DataState</ref> &amp;</type>
+          <declname>state</declname>
+        </param>
+        <param>
+          <type>const <ref refid="classthirdai_1_1bolt_1_1sequential__classifier_1_1_column_number_map" kindref="compound">ColumnNumberMap</ref> &amp;</type>
+          <declname>col_nums</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>for_training</declname>
+        </param>
+        <param>
+          <type>std::optional&lt; char &gt;</type>
+          <declname>delimiter</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="312" column="28" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="312" bodyend="346"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="192" column="1" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="192" bodyend="347"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1a87c9aee67c556c534d062921182e9e58" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Pipeline</scope><name>BATCH_SIZE</name></member>
+      <member refid="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1a863945c71aa0e851a3564225bf47e235" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Pipeline</scope><name>buildForFile</name></member>
+      <member refid="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1a0271f68814ec4cb41554fec6598d0ba1" prot="private" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Pipeline</scope><name>buildInputBlocks</name></member>
+      <member refid="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1a7ab7b68d55fb449c4dbff45464a4fa76" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Pipeline</scope><name>buildSingleInferenceBatchProcessor</name></member>
+      <member refid="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1a8f71a21ac15ff4639d62316529503e5e" prot="private" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Pipeline</scope><name>makeCategoricalBlock</name></member>
+      <member refid="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1aef38c2aed9e2d6c4665b6c7b4a6c97b2" prot="private" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Pipeline</scope><name>makeCategoryTrackingBlock</name></member>
+      <member refid="classthirdai_1_1bolt_1_1sequential__classifier_1_1_pipeline_1a80b4925348a83d6cf247d4d91896ff43" prot="private" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::Pipeline</scope><name>makeQuantityTrackingBlock</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

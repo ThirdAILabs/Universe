@@ -1,0 +1,636 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1hashtable_1_1_sampled_hash_table" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::hashtable::SampledHashTable</compoundname>
+    <basecompoundref refid="classthirdai_1_1hashtable_1_1_hash_table" prot="public" virt="non-virtual">thirdai::hashtable::HashTable&lt; LABEL_T &gt;</basecompoundref>
+    <includes refid="_sampled_hash_table_8h" local="no">SampledHashTable.h</includes>
+    <templateparamlist>
+      <param>
+        <type>typename LABEL_T</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a57165e39cc3f8e1492f0a252f208b5b7" prot="private" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::_num_tables</definition>
+        <argsstring></argsstring>
+        <name>_num_tables</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::_num_tables</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="23" column="12" bodyfile="hashtable/src/SampledHashTable.h" bodystart="23" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a92817cf5afbbe7ca94f54112b5639216" prot="private" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::_reservoir_size</definition>
+        <argsstring></argsstring>
+        <name>_reservoir_size</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::_reservoir_size</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="23" column="24" bodyfile="hashtable/src/SampledHashTable.h" bodystart="23" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a5472fd6fef9455eb581aa3fbd79cf2f3" prot="private" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::_range</definition>
+        <argsstring></argsstring>
+        <name>_range</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::_range</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="23" column="40" bodyfile="hashtable/src/SampledHashTable.h" bodystart="23" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1ae60e1d26df3e3e4b8cec01353ad70f32" prot="private" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::_max_rand</definition>
+        <argsstring></argsstring>
+        <name>_max_rand</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::_max_rand</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="23" column="47" bodyfile="hashtable/src/SampledHashTable.h" bodystart="23" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a57a30c4cb68ccd4a6e0b043ea027991d" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; LABEL_T &gt;</type>
+        <definition>std::vector&lt;LABEL_T&gt; thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::_data</definition>
+        <argsstring></argsstring>
+        <name>_data</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::_data</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="25" column="15" bodyfile="hashtable/src/SampledHashTable.h" bodystart="25" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a31b5563a657dddce9c1205a94d00f99f" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt;uint32_t&gt; thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::_counters</definition>
+        <argsstring></argsstring>
+        <name>_counters</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::_counters</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="26" column="15" bodyfile="hashtable/src/SampledHashTable.h" bodystart="26" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a17adf2c7b360495e8f7ff2d13e50f574" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt;uint32_t&gt; thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::_gen_rand</definition>
+        <argsstring></argsstring>
+        <name>_gen_rand</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::_gen_rand</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="27" column="15" bodyfile="hashtable/src/SampledHashTable.h" bodystart="27" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="42" column="16" bodyfile="hashtable/src/SampledHashTable.h" bodystart="42" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a7cfaacaddc420002751da6e32a60cc33" prot="private" static="no" constexpr="yes" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>constexpr uint64_t</type>
+        <definition>constexpr uint64_t thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::CounterIdx</definition>
+        <argsstring>(uint64_t table, uint64_t row) const</argsstring>
+        <name>CounterIdx</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::CounterIdx</qualifiedname>
+        <param>
+          <type>uint64_t</type>
+          <declname>table</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>row</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="29" column="22" bodyfile="hashtable/src/SampledHashTable.h" bodystart="29" bodyend="31"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1afbdd0ed080afc150a24668c55c67fd23" prot="private" static="no" constexpr="yes" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>constexpr uint64_t</type>
+        <definition>constexpr uint64_t thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::DataIdx</definition>
+        <argsstring>(uint64_t table, uint64_t row, uint64_t offset) const</argsstring>
+        <name>DataIdx</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::DataIdx</qualifiedname>
+        <param>
+          <type>uint64_t</type>
+          <declname>table</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>row</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>offset</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="33" column="22" bodyfile="hashtable/src/SampledHashTable.h" bodystart="33" bodyend="36"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a80fa99ed92a66a5a29e567267deaa56e" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::insertIntoTables</definition>
+        <argsstring>(LABEL_T label, const uint32_t *hashes)</argsstring>
+        <name>insertIntoTables</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::insertIntoTables</qualifiedname>
+        <param>
+          <type>LABEL_T</type>
+          <declname>label</declname>
+        </param>
+        <param>
+          <type>const uint32_t *</type>
+          <declname>hashes</declname>
+        </param>
+        <briefdescription>
+<para>Helper method that inserts a given label into the hash tables. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="39" column="8" bodyfile="hashtable/src/SampledHashTable.cc" bodystart="45" bodyend="62"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a6bfdc04a57195ca3a4de3c8c67953d72" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="44" column="8" bodyfile="hashtable/src/SampledHashTable.h" bodystart="44" bodyend="47"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a4f0feed5ecfaf3e2b0658144bba40ae5" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::SampledHashTable</definition>
+        <argsstring>()</argsstring>
+        <name>SampledHashTable</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::SampledHashTable</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="44" column="8" bodyfile="hashtable/src/SampledHashTable.h" bodystart="49" bodyend="49"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a007b273bb3d9c9ac401264c21ce01cf8" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::atomic_fetch_and_add</definition>
+        <argsstring>(uint32_t table, uint32_t row)</argsstring>
+        <name>atomic_fetch_and_add</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::atomic_fetch_and_add</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>table</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>row</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="51" column="12" bodyfile="hashtable/src/SampledHashTable.h" bodystart="51" bodyend="64"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a014fd24e2b684912f1c856ce1c5b98f7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::SampledHashTable</definition>
+        <argsstring>(uint64_t num_tables, uint64_t reservoir_size, uint64_t range, uint32_t seed=time(nullptr), uint64_t max_rand=HashTable&lt; LABEL_T &gt;::DEFAULT_MAX_RAND)</argsstring>
+        <name>SampledHashTable</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::SampledHashTable</qualifiedname>
+        <param>
+          <type>uint64_t</type>
+          <declname>num_tables</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>reservoir_size</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>range</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>seed</declname>
+          <defval>time(nullptr)</defval>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>max_rand</declname>
+          <defval><ref refid="classthirdai_1_1hashtable_1_1_hash_table" kindref="compound">HashTable</ref>&lt; LABEL_T &gt;<ref refid="classthirdai_1_1hashtable_1_1_hash_table_1adaff6d5fd3c18382448d34c65f95249d" kindref="member">::DEFAULT_MAX_RAND</ref></defval>
+        </param>
+        <briefdescription>
+<para>num_tables: number of hash tables reservoir_size: the size of each reservoir range_pow: log base 2 of the range of the table seed: optional parameter, controls seed of the pre-generated random vals max_rand: optional parameter, controls how many pre-generated random values are created for reservoir sampling </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="75" column="3" bodyfile="hashtable/src/SampledHashTable.cc" bodystart="8" bodyend="24"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a188dae4e7f35ac5d1e50a228e7b78cf5" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::SampledHashTable</definition>
+        <argsstring>(const SampledHashTable &amp;other)=delete</argsstring>
+        <name>SampledHashTable</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::SampledHashTable</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1hashtable_1_1_sampled_hash_table" kindref="compound">SampledHashTable</ref> &amp;</type>
+          <declname>other</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="79" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a5a2fb428989094f2db4a70de34d47b59" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1hashtable_1_1_sampled_hash_table" kindref="compound">SampledHashTable</ref> &amp;</type>
+        <definition>SampledHashTable &amp; thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::operator=</definition>
+        <argsstring>(const SampledHashTable &amp;other)=delete</argsstring>
+        <name>operator=</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::operator=</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1hashtable_1_1_sampled_hash_table" kindref="compound">SampledHashTable</ref> &amp;</type>
+          <declname>other</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="81" column="20"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a2c9e97cad2ff7a17ff5ed82d954da313" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::insert</definition>
+        <argsstring>(uint64_t n, const LABEL_T *labels, const uint32_t *hashes) override</argsstring>
+        <name>insert</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::insert</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1a9a7d8614318e4035807d13b1076cfdf3">insert</reimplements>
+        <param>
+          <type>uint64_t</type>
+          <declname>n</declname>
+        </param>
+        <param>
+          <type>const LABEL_T *</type>
+          <declname>labels</declname>
+        </param>
+        <param>
+          <type>const uint32_t *</type>
+          <declname>hashes</declname>
+        </param>
+        <briefdescription>
+<para>Inserts n elements with the specified labels. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="86" column="8" bodyfile="hashtable/src/SampledHashTable.cc" bodystart="27" bodyend="33"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1abc3ac6aa45c0f162e645fa1ee4788129" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::insertSequential</definition>
+        <argsstring>(uint64_t n, LABEL_T start, const uint32_t *hashes) override</argsstring>
+        <name>insertSequential</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::insertSequential</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1a0f5e5a1d64a9d0dd4293adadd7da937e">insertSequential</reimplements>
+        <param>
+          <type>uint64_t</type>
+          <declname>n</declname>
+        </param>
+        <param>
+          <type>LABEL_T</type>
+          <declname>start</declname>
+        </param>
+        <param>
+          <type>const uint32_t *</type>
+          <declname>hashes</declname>
+        </param>
+        <briefdescription>
+<para>Inserts n elements with consecutive labels starting at start. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="92" column="8" bodyfile="hashtable/src/SampledHashTable.cc" bodystart="36" bodyend="42"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a6a2bdd803a703631d1eaf6f1273462b1" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::queryBySet</definition>
+        <argsstring>(uint32_t const *hashes, std::unordered_set&lt; LABEL_T &gt; &amp;store) const override</argsstring>
+        <name>queryBySet</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::queryBySet</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1a8493d373a764c72a7d1e0604d4844401">queryBySet</reimplements>
+        <param>
+          <type>uint32_t const *</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>std::unordered_set&lt; LABEL_T &gt; &amp;</type>
+          <declname>store</declname>
+        </param>
+        <briefdescription>
+<para>Queries the table and returns a set that is the union of the reservoirs specified by the hashes. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="99" column="8" bodyfile="hashtable/src/SampledHashTable.cc" bodystart="65" bodyend="78"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1af9bdadfe09d9456f4b6fa5162f5ecc63" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::queryAndInsertForInference</definition>
+        <argsstring>(uint32_t const *hashes, std::unordered_set&lt; LABEL_T &gt; &amp;store, uint32_t outputsize)</argsstring>
+        <name>queryAndInsertForInference</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::queryAndInsertForInference</qualifiedname>
+        <param>
+          <type>uint32_t const *</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>std::unordered_set&lt; LABEL_T &gt; &amp;</type>
+          <declname>store</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>outputsize</declname>
+        </param>
+        <briefdescription>
+<para>The hashes array should have length equal to the number of tables, and the ith entry should be a bucket index into the ith table. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="109" column="8" bodyfile="hashtable/src/SampledHashTable.cc" bodystart="81" bodyend="135"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1ae6075520685df0c1ddb647f6d80ce524" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::queryByCount</definition>
+        <argsstring>(uint32_t const *hashes, std::vector&lt; uint32_t &gt; &amp;counts) const override</argsstring>
+        <name>queryByCount</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::queryByCount</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1ad16f0cfcd1af69fbb030e89e7953dcc2">queryByCount</reimplements>
+        <param>
+          <type>uint32_t const *</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>counts</declname>
+        </param>
+        <briefdescription>
+<para>Queries the table and returns the counts of elements in the union of the reservoirs specified by the hashes. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="117" column="8" bodyfile="hashtable/src/SampledHashTable.cc" bodystart="138" bodyend="151"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1ada75bfdc1d36ba6cfc0882d2e38d8614" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::queryByVector</definition>
+        <argsstring>(uint32_t const *hashes, std::vector&lt; LABEL_T &gt; &amp;results) const override</argsstring>
+        <name>queryByVector</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::queryByVector</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1a5d9f4bbeeb994e4c95a32179b9b61366">queryByVector</reimplements>
+        <param>
+          <type>uint32_t const *</type>
+          <declname>hashes</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; LABEL_T &gt; &amp;</type>
+          <declname>results</declname>
+        </param>
+        <briefdescription>
+<para>Queries the table and returns a vector containing the contents of the reservoirs specified by the hashes. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="124" column="8" bodyfile="hashtable/src/SampledHashTable.cc" bodystart="154" bodyend="167"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a4ced7450a620c5a53989fbc849eb2a68" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::clearTables</definition>
+        <argsstring>() override</argsstring>
+        <name>clearTables</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::clearTables</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1a5b1cae616f6eeaa53fcf8bbbc86c0d51">clearTables</reimplements>
+        <briefdescription>
+<para>Removes all elements from all tables. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="127" column="8" bodyfile="hashtable/src/SampledHashTable.cc" bodystart="170" bodyend="176"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1ab95e20a87e6f118faa3ad868d6af06f4" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::numTables</definition>
+        <argsstring>() const override</argsstring>
+        <name>numTables</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::numTables</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1ac9acc44cca78fc831b047bcf0f80d727">numTables</reimplements>
+        <briefdescription>
+<para>Returns the total number of tables. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="129" column="12" bodyfile="hashtable/src/SampledHashTable.h" bodystart="129" bodyend="129"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a9faa07f264b351e1b875107b2ad8fca3" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>uint64_t</type>
+        <definition>uint64_t thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::tableRange</definition>
+        <argsstring>() const override</argsstring>
+        <name>tableRange</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::tableRange</qualifiedname>
+        <reimplements refid="classthirdai_1_1hashtable_1_1_hash_table_1ab44d9352b51b00bc51577dc542d6732e">tableRange</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="131" column="19" bodyfile="hashtable/src/SampledHashTable.h" bodystart="131" bodyend="131"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a1a6ad7f4d171e688b19594517b783371" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::summarize</definition>
+        <argsstring>(std::stringstream &amp;summary)</argsstring>
+        <name>summarize</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::summarize</qualifiedname>
+        <param>
+          <type>std::stringstream &amp;</type>
+          <declname>summary</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="133" column="8" bodyfile="hashtable/src/SampledHashTable.h" bodystart="133" bodyend="136"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashtable_1_1_sampled_hash_table_1aec8415657072d3dbb68d864e93925a04" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;::~SampledHashTable</definition>
+        <argsstring>()=default</argsstring>
+        <name>~SampledHashTable</name>
+        <qualifiedname>thirdai::hashtable::SampledHashTable::~SampledHashTable</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashtable/src/SampledHashTable.h" line="138" column="3"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>This class implements the hash table interface for a sampled hash table where reservoirs are inserted into via the reservoir sampling algorithm when full. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>This allows for reservoirs to be preallocated and makes insertion and querying fast. </para>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::hashtable::HashTable&lt; LABEL_T &gt;</label>
+        <link refid="classthirdai_1_1hashtable_1_1_hash_table"/>
+      </node>
+      <node id="1">
+        <label>thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;</label>
+        <link refid="classthirdai_1_1hashtable_1_1_sampled_hash_table"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>thirdai::hashtable::HashTable&lt; LABEL_T &gt;</label>
+        <link refid="classthirdai_1_1hashtable_1_1_hash_table"/>
+      </node>
+      <node id="1">
+        <label>thirdai::hashtable::SampledHashTable&lt; LABEL_T &gt;</label>
+        <link refid="classthirdai_1_1hashtable_1_1_sampled_hash_table"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="hashtable/src/SampledHashTable.h" line="21" column="1" bodyfile="hashtable/src/SampledHashTable.h" bodystart="21" bodyend="139"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a31b5563a657dddce9c1205a94d00f99f" prot="private" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>_counters</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a57a30c4cb68ccd4a6e0b043ea027991d" prot="private" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>_data</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a17adf2c7b360495e8f7ff2d13e50f574" prot="private" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>_gen_rand</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1ae60e1d26df3e3e4b8cec01353ad70f32" prot="private" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>_max_rand</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a57165e39cc3f8e1492f0a252f208b5b7" prot="private" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>_num_tables</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a5472fd6fef9455eb581aa3fbd79cf2f3" prot="private" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>_range</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a92817cf5afbbe7ca94f54112b5639216" prot="private" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>_reservoir_size</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a007b273bb3d9c9ac401264c21ce01cf8" prot="private" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>atomic_fetch_and_add</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a4ced7450a620c5a53989fbc849eb2a68" prot="public" virt="virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>clearTables</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a7cfaacaddc420002751da6e32a60cc33" prot="private" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>CounterIdx</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1afbdd0ed080afc150a24668c55c67fd23" prot="private" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>DataIdx</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_hash_table_1adaff6d5fd3c18382448d34c65f95249d" prot="protected" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>DEFAULT_MAX_RAND</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a2c9e97cad2ff7a17ff5ed82d954da313" prot="public" virt="virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>insert</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a80fa99ed92a66a5a29e567267deaa56e" prot="private" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>insertIntoTables</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1abc3ac6aa45c0f162e645fa1ee4788129" prot="public" virt="virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>insertSequential</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1ab95e20a87e6f118faa3ad868d6af06f4" prot="public" virt="virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>numTables</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a5a2fb428989094f2db4a70de34d47b59" prot="public" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>operator=</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1af9bdadfe09d9456f4b6fa5162f5ecc63" prot="public" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>queryAndInsertForInference</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1ae6075520685df0c1ddb647f6d80ce524" prot="public" virt="virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>queryByCount</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a6a2bdd803a703631d1eaf6f1273462b1" prot="public" virt="virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>queryBySet</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1ada75bfdc1d36ba6cfc0882d2e38d8614" prot="public" virt="virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>queryByVector</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a4f0feed5ecfaf3e2b0658144bba40ae5" prot="private" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>SampledHashTable</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a014fd24e2b684912f1c856ce1c5b98f7" prot="public" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>SampledHashTable</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a188dae4e7f35ac5d1e50a228e7b78cf5" prot="public" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>SampledHashTable</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a6bfdc04a57195ca3a4de3c8c67953d72" prot="private" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a1a6ad7f4d171e688b19594517b783371" prot="public" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>summarize</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1a9faa07f264b351e1b875107b2ad8fca3" prot="public" virt="virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>tableRange</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_hash_table_1ae07e848e80f02d6b0bb3052a48c7a6eb" prot="public" virt="virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>~HashTable</name></member>
+      <member refid="classthirdai_1_1hashtable_1_1_sampled_hash_table_1aec8415657072d3dbb68d864e93925a04" prot="public" virt="non-virtual"><scope>thirdai::hashtable::SampledHashTable</scope><name>~SampledHashTable</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,205 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_compressed_vector_8h" kind="file" language="C++">
+    <compoundname>CompressedVector.h</compoundname>
+    <includes refid="_compression_utils_8h" local="yes">CompressionUtils.h</includes>
+    <includes local="no">cstddef</includes>
+    <includes local="no">cstdint</includes>
+    <includes local="no">string</includes>
+    <includedby refid="_compression_factory_8h" local="yes">compression/src/CompressionFactory.h</includedby>
+    <includedby refid="_count_sketch_8cc" local="yes">compression/src/CountSketch.cc</includedby>
+    <includedby refid="_count_sketch_8h" local="yes">compression/src/CountSketch.h</includedby>
+    <includedby refid="_dragon_vector_8cc" local="yes">compression/src/DragonVector.cc</includedby>
+    <includedby refid="_dragon_vector_8h" local="yes">compression/src/DragonVector.h</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>compression/src/CompressedVector.h</label>
+        <link refid="_compressed_vector_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>CompressionUtils.h</label>
+        <link refid="_compression_utils_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>hashing/src/UniversalHash.h</label>
+        <link refid="_universal_hash_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>algorithm</label>
+      </node>
+      <node id="6">
+        <label>array</label>
+      </node>
+      <node id="4">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="5">
+        <label>cereal/types/array.hpp</label>
+      </node>
+      <node id="12">
+        <label>cstddef</label>
+      </node>
+      <node id="7">
+        <label>cstdint</label>
+      </node>
+      <node id="10">
+        <label>random</label>
+      </node>
+      <node id="8">
+        <label>string</label>
+      </node>
+      <node id="11">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="1">
+        <label>compression/src/CompressedVector.h</label>
+        <link refid="_compressed_vector_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>compression/src/CompressionFactory.h</label>
+        <link refid="_compression_factory_8h_source"/>
+      </node>
+      <node id="3">
+        <label>compression/src/CountSketch.h</label>
+        <link refid="_count_sketch_8h_source"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>compression/src/DragonVector.h</label>
+        <link refid="_dragon_vector_8h_source"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classthirdai_1_1compression_1_1_compressed_vector" prot="public">thirdai::compression::CompressedVector</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1compression">thirdai::compression</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;CompressionUtils.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;compression/src/CompressionUtils.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cstddef&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cstdint&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::compression<sp/>{</highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="keyword">enum<sp/>class</highlight><highlight class="normal"><sp/>CompressionScheme<sp/>{<sp/>Dragon<sp/>=<sp/>0,<sp/>CountSketch<sp/>=<sp/>1<sp/>};</highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>CompressionScheme<sp/>convertStringToEnum(</highlight></codeline>
+<codeline lineno="14"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>compression_scheme)<sp/>{</highlight></codeline>
+<codeline lineno="15"><highlight class="normal"><sp/><sp/>std::string<sp/>lower_name;</highlight></codeline>
+<codeline lineno="16"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keywordtype">char</highlight><highlight class="normal"><sp/>c<sp/>:<sp/>compression_scheme)<sp/>{</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"><sp/><sp/><sp/><sp/>lower_name.push_back(std::tolower(c));</highlight></codeline>
+<codeline lineno="18"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(lower_name<sp/>==<sp/></highlight><highlight class="stringliteral">&quot;dragon&quot;</highlight><highlight class="normal">)<sp/>{</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>CompressionScheme::Dragon;</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(lower_name<sp/>==<sp/></highlight><highlight class="stringliteral">&quot;count_sketch&quot;</highlight><highlight class="normal">)<sp/>{</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>CompressionScheme::CountSketch;</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight><highlight class="stringliteral">&quot;Invalid<sp/>compression<sp/>scheme<sp/>specified.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="26"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"></highlight></codeline>
+<codeline lineno="28"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">class</highlight><highlight class="normal"><sp/>T&gt;</highlight></codeline>
+<codeline lineno="29" refid="classthirdai_1_1compression_1_1_compressed_vector" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1compression_1_1_compressed_vector" kindref="compound">CompressedVector</ref><sp/>{</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1compression_1_1_compressed_vector" kindref="compound">CompressedVector&lt;T&gt;</ref>()<sp/>{}</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"></highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">/*</highlight></codeline>
+<codeline lineno="34"><highlight class="comment"><sp/><sp/><sp/>*<sp/>Index<sp/>refers<sp/>to<sp/>the<sp/>index<sp/>in<sp/>the<sp/>uncompressed_vector.</highlight></codeline>
+<codeline lineno="35"><highlight class="comment"><sp/><sp/><sp/>*<sp/>Since,<sp/>the<sp/>vector<sp/>is<sp/>compressed,<sp/>the<sp/>returned<sp/>value<sp/>is<sp/>just<sp/>an<sp/>estimate<sp/>and</highlight></codeline>
+<codeline lineno="36"><highlight class="comment"><sp/><sp/><sp/>*<sp/>not<sp/>exact.</highlight></codeline>
+<codeline lineno="37"><highlight class="comment"><sp/><sp/><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/>T<sp/>get(uint32_t<sp/>index)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"></highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>set(uint32_t<sp/>index,<sp/>T<sp/>value)<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"></highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>clear()<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"></highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>methods<sp/>for<sp/>the<sp/>compressed_vector<sp/>class</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="45"><highlight class="normal"></highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">/*</highlight></codeline>
+<codeline lineno="47"><highlight class="comment"><sp/><sp/><sp/>*<sp/>Extending<sp/>a<sp/>sketch<sp/>is<sp/>appending<sp/>the<sp/>given<sp/>sketch<sp/>to<sp/>the<sp/>current<sp/>object.</highlight></codeline>
+<codeline lineno="48"><highlight class="comment"><sp/><sp/><sp/>*<sp/>Each<sp/>compressed<sp/>vector<sp/>type<sp/>will<sp/>have<sp/>its<sp/>own<sp/>logic<sp/>for<sp/>extending.</highlight></codeline>
+<codeline lineno="49"><highlight class="comment"><sp/><sp/><sp/>*<sp/>Extending<sp/>a<sp/>CompressedVector<sp/>by<sp/>another<sp/>is<sp/>supposed<sp/>to<sp/>be<sp/>non-lossy<sp/>in</highlight></codeline>
+<codeline lineno="50"><highlight class="comment"><sp/><sp/><sp/>*<sp/>nature<sp/>as<sp/>all<sp/>the<sp/>data<sp/>from<sp/>the<sp/>two<sp/>vectors<sp/>is<sp/>simply<sp/>concatenated.<sp/>In</highlight></codeline>
+<codeline lineno="51"><highlight class="comment"><sp/><sp/><sp/>*<sp/>contrast,<sp/>add<sp/>might<sp/>be<sp/>lossy<sp/>in<sp/>nature<sp/>but<sp/>is<sp/>supposed<sp/>to<sp/>be<sp/>all-reducible.</highlight></codeline>
+<codeline lineno="52"><highlight class="comment"><sp/><sp/><sp/>*<sp/>Hence,<sp/>there<sp/>is<sp/>a<sp/>tradeoff:</highlight></codeline>
+<codeline lineno="53"><highlight class="comment"><sp/><sp/><sp/>*<sp/><sp/>extend:<sp/>non-lossy<sp/>but<sp/>more<sp/>memory</highlight></codeline>
+<codeline lineno="54"><highlight class="comment"><sp/><sp/><sp/>*<sp/><sp/>add:<sp/>lossy<sp/>but<sp/>memory<sp/>footprint<sp/>does<sp/>not<sp/>change.</highlight></codeline>
+<codeline lineno="55"><highlight class="comment"><sp/><sp/><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>extend(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1compression_1_1_compressed_vector" kindref="compound">CompressedVector&lt;T&gt;</ref>&amp;<sp/>vec);</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"></highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">/*</highlight></codeline>
+<codeline lineno="59"><highlight class="comment"><sp/><sp/><sp/>*<sp/>Returns<sp/>a<sp/>std::vector<sp/>formed<sp/>by<sp/>decompressing<sp/>the<sp/>compressed<sp/>vector.<sp/>This</highlight></codeline>
+<codeline lineno="60"><highlight class="comment"><sp/><sp/><sp/>*<sp/>method<sp/>should<sp/>be<sp/>implemented<sp/>by<sp/>all<sp/>the<sp/>schemes.</highlight></codeline>
+<codeline lineno="61"><highlight class="comment"><sp/><sp/><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/>std::vector&lt;T&gt;<sp/>decompress()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"></highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/>CompressionScheme<sp/>type()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"></highlight></codeline>
+<codeline lineno="66"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/>uint32_t<sp/>uncompressedSize()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="67"><highlight class="normal"></highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/>uint32_t<sp/>size()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"></highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1compression_1_1_compressed_vector" kindref="compound">~CompressedVector</ref>()<sp/>=<sp/></highlight><highlight class="keywordflow">default</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"></highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">/*</highlight></codeline>
+<codeline lineno="73"><highlight class="comment"><sp/><sp/><sp/>*<sp/>We<sp/>pass<sp/>a<sp/>pointer<sp/>to<sp/>a<sp/>char<sp/>array<sp/>to<sp/>serialize<sp/>function.<sp/>The<sp/>memory<sp/>for</highlight></codeline>
+<codeline lineno="74"><highlight class="comment"><sp/><sp/><sp/>*<sp/>storing<sp/>this<sp/>array<sp/>is<sp/>allocated<sp/>by<sp/>the<sp/>user<sp/>before<sp/>the<sp/>serialize<sp/>method<sp/>is</highlight></codeline>
+<codeline lineno="75"><highlight class="comment"><sp/><sp/><sp/>*<sp/>called.<sp/>This<sp/>shifts<sp/>the<sp/>burden<sp/>of<sp/>managing<sp/>the<sp/>memory<sp/>to<sp/>the<sp/>caller<sp/>and</highlight></codeline>
+<codeline lineno="76"><highlight class="comment"><sp/><sp/><sp/>*<sp/>also<sp/>makes<sp/>it<sp/>easier<sp/>to<sp/>work<sp/>with<sp/>memory<sp/>leaks.</highlight></codeline>
+<codeline lineno="77"><highlight class="comment"><sp/><sp/><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>serialize(</highlight><highlight class="keywordtype">char</highlight><highlight class="normal">*<sp/>serialized_data)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="79"><highlight class="normal"></highlight></codeline>
+<codeline lineno="80"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/>uint32_t<sp/>serialized_size()<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="81"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"></highlight></codeline>
+<codeline lineno="83"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::compression</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="compression/src/CompressedVector.h"/>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="namespacethirdai_1_1hashtable" kind="namespace" language="C++">
+    <compoundname>thirdai::hashtable</compoundname>
+    <innerclass refid="classthirdai_1_1hashtable_1_1_hash_table" prot="public">thirdai::hashtable::HashTable</innerclass>
+    <innerclass refid="classthirdai_1_1hashtable_1_1_sampled_hash_table" prot="public">thirdai::hashtable::SampledHashTable</innerclass>
+    <innerclass refid="classthirdai_1_1hashtable_1_1_tiny_table" prot="public">thirdai::hashtable::TinyTable</innerclass>
+    <innerclass refid="classthirdai_1_1hashtable_1_1_vector_hash_table" prot="public">thirdai::hashtable::VectorHashTable</innerclass>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="hashtable/src/HashTable.h" line="8" column="1"/>
+  </compounddef>
+</doxygen>

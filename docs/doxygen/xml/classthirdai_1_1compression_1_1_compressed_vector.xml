@@ -1,0 +1,258 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1compression_1_1_compressed_vector" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>thirdai::compression::CompressedVector</compoundname>
+    <derivedcompoundref refid="classthirdai_1_1compression_1_1_count_sketch" prot="public" virt="non-virtual">thirdai::compression::CountSketch&lt; T &gt;</derivedcompoundref>
+    <derivedcompoundref refid="classthirdai_1_1compression_1_1_dragon_vector" prot="public" virt="non-virtual">thirdai::compression::DragonVector&lt; T &gt;</derivedcompoundref>
+    <templateparamlist>
+      <param>
+        <type>class T</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_compressed_vector_1a95227a93560eaf18584e521ff5487d2a" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::compression::CompressedVector&lt; T &gt;::CompressedVector</definition>
+        <argsstring>()</argsstring>
+        <name>CompressedVector</name>
+        <qualifiedname>thirdai::compression::CompressedVector::CompressedVector</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressedVector.h" line="13" column="26" bodyfile="compression/src/CompressedVector.h" bodystart="31" bodyend="31"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_compressed_vector_1a6da0f4103a7b8cccc3c714a023b55ec1" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>T</type>
+        <definition>virtual T thirdai::compression::CompressedVector&lt; T &gt;::get</definition>
+        <argsstring>(uint32_t index) const =0</argsstring>
+        <name>get</name>
+        <qualifiedname>thirdai::compression::CompressedVector::get</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_count_sketch_1a5258146adf63c333036aa322fafd1861">get</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_dragon_vector_1aa35283d3a1e0a761adf02cbc1306bdcf">get</reimplementedby>
+        <param>
+          <type>uint32_t</type>
+          <declname>index</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressedVector.h" line="38" column="13"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_compressed_vector_1a3af71cf93ecff56348e32d72c26991d8" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::compression::CompressedVector&lt; T &gt;::set</definition>
+        <argsstring>(uint32_t index, T value)=0</argsstring>
+        <name>set</name>
+        <qualifiedname>thirdai::compression::CompressedVector::set</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_count_sketch_1afb136639e67c61f03c6ea0503510babe">set</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_dragon_vector_1abd3b850a3deb279e31b792f68993df1b">set</reimplementedby>
+        <param>
+          <type>uint32_t</type>
+          <declname>index</declname>
+        </param>
+        <param>
+          <type>T</type>
+          <declname>value</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressedVector.h" line="40" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_compressed_vector_1aa6e9cec24fc7e0c610429ac6a6bef9db" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::compression::CompressedVector&lt; T &gt;::clear</definition>
+        <argsstring>()=0</argsstring>
+        <name>clear</name>
+        <qualifiedname>thirdai::compression::CompressedVector::clear</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_count_sketch_1a740d06ab731dd3af3fcffd265471a8e8">clear</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_dragon_vector_1afa99a184d8582739b54c996898b43275">clear</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressedVector.h" line="42" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_compressed_vector_1a2c7a0062270a52be9c870c4cce943a06" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::compression::CompressedVector&lt; T &gt;::extend</definition>
+        <argsstring>(const CompressedVector&lt; T &gt; &amp;vec)</argsstring>
+        <name>extend</name>
+        <qualifiedname>thirdai::compression::CompressedVector::extend</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1compression_1_1_compressed_vector" kindref="compound">CompressedVector</ref>&lt; T &gt; &amp;</type>
+          <declname>vec</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressedVector.h" line="56" column="8"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_compressed_vector_1a2bedb8405b027b71cfb7d6b47fd4d90e" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>std::vector&lt; T &gt;</type>
+        <definition>virtual std::vector&lt; T &gt; thirdai::compression::CompressedVector&lt; T &gt;::decompress</definition>
+        <argsstring>() const =0</argsstring>
+        <name>decompress</name>
+        <qualifiedname>thirdai::compression::CompressedVector::decompress</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_count_sketch_1a296e39aac01d9f333d0ae5700442ea31">decompress</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_dragon_vector_1a07e4576091e333d8f0220380f54980d8">decompress</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressedVector.h" line="62" column="23"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_compressed_vector_1a6d2b109a3fa11c059faa1d244ce11e5f" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>CompressionScheme</type>
+        <definition>virtual CompressionScheme thirdai::compression::CompressedVector&lt; T &gt;::type</definition>
+        <argsstring>() const =0</argsstring>
+        <name>type</name>
+        <qualifiedname>thirdai::compression::CompressedVector::type</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_count_sketch_1a72d5483e8f1cb2826d121a280d49fc2a">type</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_dragon_vector_1aa5a962896c7f9fdd0dc45f3be963916d">type</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressedVector.h" line="64" column="29"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_compressed_vector_1a330e6e04aff6318af877112bdb8e2d42" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>uint32_t</type>
+        <definition>virtual uint32_t thirdai::compression::CompressedVector&lt; T &gt;::uncompressedSize</definition>
+        <argsstring>() const =0</argsstring>
+        <name>uncompressedSize</name>
+        <qualifiedname>thirdai::compression::CompressedVector::uncompressedSize</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_count_sketch_1acde0ec16d3a8e8d15379b5550547eb22">uncompressedSize</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_dragon_vector_1ae304b188b419edebf59134b43ea15480">uncompressedSize</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressedVector.h" line="66" column="20"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_compressed_vector_1a78c35dba3c7ed7cd801a01c7c83358ab" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>uint32_t</type>
+        <definition>virtual uint32_t thirdai::compression::CompressedVector&lt; T &gt;::size</definition>
+        <argsstring>() const =0</argsstring>
+        <name>size</name>
+        <qualifiedname>thirdai::compression::CompressedVector::size</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_count_sketch_1af0ee30933b83028ff5bdaea660df167c">size</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_dragon_vector_1acc434501e8421fcce5532a32ab4c72f8">size</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressedVector.h" line="68" column="20"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_compressed_vector_1a61f99ea6ddcc088d132102af37e48a85" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type></type>
+        <definition>virtual thirdai::compression::CompressedVector&lt; T &gt;::~CompressedVector</definition>
+        <argsstring>()=default</argsstring>
+        <name>~CompressedVector</name>
+        <qualifiedname>thirdai::compression::CompressedVector::~CompressedVector</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressedVector.h" line="70" column="11"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_compressed_vector_1a8e0dbf7a71124b4faae63fd58c887387" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::compression::CompressedVector&lt; T &gt;::serialize</definition>
+        <argsstring>(char *serialized_data) const =0</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::compression::CompressedVector::serialize</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_count_sketch_1a4180fae7c1fea45c71f6ffad76e91c77">serialize</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_dragon_vector_1ad191c87658d8ac1af5f3997ce6bd5c0d">serialize</reimplementedby>
+        <param>
+          <type>char *</type>
+          <declname>serialized_data</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressedVector.h" line="78" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1_compressed_vector_1a19d5825d6f10469657b0376393b732d2" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>uint32_t</type>
+        <definition>virtual uint32_t thirdai::compression::CompressedVector&lt; T &gt;::serialized_size</definition>
+        <argsstring>() const =0</argsstring>
+        <name>serialized_size</name>
+        <qualifiedname>thirdai::compression::CompressedVector::serialized_size</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_count_sketch_1a42cde871c40565a0ea9fbd6f05761a8f">serialized_size</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1compression_1_1_dragon_vector_1aaf6c8566080509b82fd898d9deebcad6">serialized_size</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/CompressedVector.h" line="80" column="20"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="1">
+        <label>thirdai::compression::CompressedVector&lt; T &gt;</label>
+        <link refid="classthirdai_1_1compression_1_1_compressed_vector"/>
+      </node>
+      <node id="2">
+        <label>thirdai::compression::CountSketch&lt; T &gt;</label>
+        <link refid="classthirdai_1_1compression_1_1_count_sketch"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>thirdai::compression::DragonVector&lt; T &gt;</label>
+        <link refid="classthirdai_1_1compression_1_1_dragon_vector"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <location file="compression/src/CompressedVector.h" line="29" column="1" bodyfile="compression/src/CompressedVector.h" bodystart="29" bodyend="81"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1compression_1_1_compressed_vector_1aa6e9cec24fc7e0c610429ac6a6bef9db" prot="public" virt="pure-virtual"><scope>thirdai::compression::CompressedVector</scope><name>clear</name></member>
+      <member refid="classthirdai_1_1compression_1_1_compressed_vector_1a95227a93560eaf18584e521ff5487d2a" prot="public" virt="non-virtual"><scope>thirdai::compression::CompressedVector</scope><name>CompressedVector</name></member>
+      <member refid="classthirdai_1_1compression_1_1_compressed_vector_1a2bedb8405b027b71cfb7d6b47fd4d90e" prot="public" virt="pure-virtual"><scope>thirdai::compression::CompressedVector</scope><name>decompress</name></member>
+      <member refid="classthirdai_1_1compression_1_1_compressed_vector_1a2c7a0062270a52be9c870c4cce943a06" prot="public" virt="non-virtual"><scope>thirdai::compression::CompressedVector</scope><name>extend</name></member>
+      <member refid="classthirdai_1_1compression_1_1_compressed_vector_1a6da0f4103a7b8cccc3c714a023b55ec1" prot="public" virt="pure-virtual"><scope>thirdai::compression::CompressedVector</scope><name>get</name></member>
+      <member refid="classthirdai_1_1compression_1_1_compressed_vector_1a8e0dbf7a71124b4faae63fd58c887387" prot="public" virt="pure-virtual"><scope>thirdai::compression::CompressedVector</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1compression_1_1_compressed_vector_1a19d5825d6f10469657b0376393b732d2" prot="public" virt="pure-virtual"><scope>thirdai::compression::CompressedVector</scope><name>serialized_size</name></member>
+      <member refid="classthirdai_1_1compression_1_1_compressed_vector_1a3af71cf93ecff56348e32d72c26991d8" prot="public" virt="pure-virtual"><scope>thirdai::compression::CompressedVector</scope><name>set</name></member>
+      <member refid="classthirdai_1_1compression_1_1_compressed_vector_1a78c35dba3c7ed7cd801a01c7c83358ab" prot="public" virt="pure-virtual"><scope>thirdai::compression::CompressedVector</scope><name>size</name></member>
+      <member refid="classthirdai_1_1compression_1_1_compressed_vector_1a6d2b109a3fa11c059faa1d244ce11e5f" prot="public" virt="pure-virtual"><scope>thirdai::compression::CompressedVector</scope><name>type</name></member>
+      <member refid="classthirdai_1_1compression_1_1_compressed_vector_1a330e6e04aff6318af877112bdb8e2d42" prot="public" virt="pure-virtual"><scope>thirdai::compression::CompressedVector</scope><name>uncompressedSize</name></member>
+      <member refid="classthirdai_1_1compression_1_1_compressed_vector_1a61f99ea6ddcc088d132102af37e48a85" prot="public" virt="virtual"><scope>thirdai::compression::CompressedVector</scope><name>~CompressedVector</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

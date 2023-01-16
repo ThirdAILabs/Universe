@@ -1,0 +1,317 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="namespacetabular__classifier" kind="namespace" language="Python">
+    <compoundname>tabular_classifier</compoundname>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="tabular__classifier_8py_1a3bb2ed383625698c2d1b8d03f0fae8df" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def tabular_classifier.compute_accuracy_of_predictions</definition>
+        <argsstring>(test_labels, predictions)</argsstring>
+        <name>compute_accuracy_of_predictions</name>
+        <qualifiedname>tabular_classifier.compute_accuracy_of_predictions</qualifiedname>
+        <param>
+          <type>test_labels</type>
+          <defname>test_labels</defname>
+        </param>
+        <param>
+          <type>predictions</type>
+          <defname>predictions</defname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/experiments/tabular_classifier.py" line="10" column="1" bodyfile="bolt/experiments/tabular_classifier.py" bodystart="10" bodyend="16"/>
+      </memberdef>
+      <memberdef kind="function" id="tabular__classifier_8py_1a8a6f1af0c89f3d20b435116422540b6d" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def tabular_classifier.map_categories_to_integers</definition>
+        <argsstring>(dataframes)</argsstring>
+        <name>map_categories_to_integers</name>
+        <qualifiedname>tabular_classifier.map_categories_to_integers</qualifiedname>
+        <param>
+          <type>dataframes</type>
+          <defname>dataframes</defname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/experiments/tabular_classifier.py" line="17" column="1" bodyfile="bolt/experiments/tabular_classifier.py" bodystart="17" bodyend="23"/>
+      </memberdef>
+      <memberdef kind="function" id="tabular__classifier_8py_1aff83d4bc0166c402ac9d77e819d650c5" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def tabular_classifier.get_col_datatypes</definition>
+        <argsstring>(dataset_base_filename)</argsstring>
+        <name>get_col_datatypes</name>
+        <qualifiedname>tabular_classifier.get_col_datatypes</qualifiedname>
+        <param>
+          <type>dataset_base_filename</type>
+          <defname>dataset_base_filename</defname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/experiments/tabular_classifier.py" line="24" column="1" bodyfile="bolt/experiments/tabular_classifier.py" bodystart="24" bodyend="32"/>
+      </memberdef>
+      <memberdef kind="function" id="tabular__classifier_8py_1a8aab5f13836e0a6972dcbecdd2520085" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def tabular_classifier.accuracy</definition>
+        <argsstring>(predictions, ytest)</argsstring>
+        <name>accuracy</name>
+        <qualifiedname>tabular_classifier.accuracy</qualifiedname>
+        <param>
+          <type>predictions</type>
+          <defname>predictions</defname>
+        </param>
+        <param>
+          <type>ytest</type>
+          <defname>ytest</defname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/experiments/tabular_classifier.py" line="33" column="1" bodyfile="bolt/experiments/tabular_classifier.py" bodystart="33" bodyend="40"/>
+      </memberdef>
+      <memberdef kind="function" id="tabular__classifier_8py_1ab273e8da6048159153a226c820022a24" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def tabular_classifier.log_message</definition>
+        <argsstring>(message, out_file)</argsstring>
+        <name>log_message</name>
+        <qualifiedname>tabular_classifier.log_message</qualifiedname>
+        <param>
+          <type>message</type>
+          <defname>message</defname>
+        </param>
+        <param>
+          <type>out_file</type>
+          <defname>out_file</defname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/experiments/tabular_classifier.py" line="41" column="1" bodyfile="bolt/experiments/tabular_classifier.py" bodystart="41" bodyend="45"/>
+      </memberdef>
+      <memberdef kind="function" id="tabular__classifier_8py_1aca0d1bbff7413f60277f93819bf8f249" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def tabular_classifier.prep_data</definition>
+        <argsstring>(data_dir, dtypes)</argsstring>
+        <name>prep_data</name>
+        <qualifiedname>tabular_classifier.prep_data</qualifiedname>
+        <param>
+          <type>data_dir</type>
+          <defname>data_dir</defname>
+        </param>
+        <param>
+          <type>dtypes</type>
+          <defname>dtypes</defname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/experiments/tabular_classifier.py" line="46" column="1" bodyfile="bolt/experiments/tabular_classifier.py" bodystart="46" bodyend="68"/>
+      </memberdef>
+      <memberdef kind="function" id="tabular__classifier_8py_1aecd9b59d61dbef908d22003505897852" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def tabular_classifier.to_numpy</definition>
+        <argsstring>(xdata, ydata)</argsstring>
+        <name>to_numpy</name>
+        <qualifiedname>tabular_classifier.to_numpy</qualifiedname>
+        <param>
+          <type>xdata</type>
+          <defname>xdata</defname>
+        </param>
+        <param>
+          <type>ydata</type>
+          <defname>ydata</defname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/experiments/tabular_classifier.py" line="69" column="1" bodyfile="bolt/experiments/tabular_classifier.py" bodystart="69" bodyend="75"/>
+      </memberdef>
+      <memberdef kind="function" id="tabular__classifier_8py_1a3747e084f78fa6dec8a5c9007e667977" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def tabular_classifier.test_bolt_single_inference</definition>
+        <argsstring>(model, bolt_test_file)</argsstring>
+        <name>test_bolt_single_inference</name>
+        <qualifiedname>tabular_classifier.test_bolt_single_inference</qualifiedname>
+        <param>
+          <type>model</type>
+          <defname>model</defname>
+        </param>
+        <param>
+          <type>bolt_test_file</type>
+          <defname>bolt_test_file</defname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/experiments/tabular_classifier.py" line="76" column="1" bodyfile="bolt/experiments/tabular_classifier.py" bodystart="76" bodyend="88"/>
+      </memberdef>
+      <memberdef kind="function" id="tabular__classifier_8py_1a6265f44a02a4f20ce9a863c37819cfbf" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def tabular_classifier.train_bolt</definition>
+        <argsstring>(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file)</argsstring>
+        <name>train_bolt</name>
+        <qualifiedname>tabular_classifier.train_bolt</qualifiedname>
+        <param>
+          <type>dtypes</type>
+          <defname>dtypes</defname>
+        </param>
+        <param>
+          <type>ytrain</type>
+          <defname>ytrain</defname>
+        </param>
+        <param>
+          <type>yvalid</type>
+          <defname>yvalid</defname>
+        </param>
+        <param>
+          <type>ytest</type>
+          <defname>ytest</defname>
+        </param>
+        <param>
+          <type>dataset_base_filename</type>
+          <defname>dataset_base_filename</defname>
+        </param>
+        <param>
+          <type>out_file</type>
+          <defname>out_file</defname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/experiments/tabular_classifier.py" line="89" column="1" bodyfile="bolt/experiments/tabular_classifier.py" bodystart="89" bodyend="136"/>
+      </memberdef>
+      <memberdef kind="function" id="tabular__classifier_8py_1aa7648c36e5aee8e790cda96eae4f2c11" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def tabular_classifier.train_xgboost</definition>
+        <argsstring>(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)</argsstring>
+        <name>train_xgboost</name>
+        <qualifiedname>tabular_classifier.train_xgboost</qualifiedname>
+        <param>
+          <type>xtrain</type>
+          <defname>xtrain</defname>
+        </param>
+        <param>
+          <type>ytrain</type>
+          <defname>ytrain</defname>
+        </param>
+        <param>
+          <type>xvalid</type>
+          <defname>xvalid</defname>
+        </param>
+        <param>
+          <type>yvalid</type>
+          <defname>yvalid</defname>
+        </param>
+        <param>
+          <type>xtest</type>
+          <defname>xtest</defname>
+        </param>
+        <param>
+          <type>ytest</type>
+          <defname>ytest</defname>
+        </param>
+        <param>
+          <type>out_file</type>
+          <defname>out_file</defname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/experiments/tabular_classifier.py" line="137" column="1" bodyfile="bolt/experiments/tabular_classifier.py" bodystart="137" bodyend="168"/>
+      </memberdef>
+      <memberdef kind="function" id="tabular__classifier_8py_1af7476d9e253d0604d6737d65c67070bf" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def tabular_classifier.train_tabnet</definition>
+        <argsstring>(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)</argsstring>
+        <name>train_tabnet</name>
+        <qualifiedname>tabular_classifier.train_tabnet</qualifiedname>
+        <param>
+          <type>xtrain</type>
+          <defname>xtrain</defname>
+        </param>
+        <param>
+          <type>ytrain</type>
+          <defname>ytrain</defname>
+        </param>
+        <param>
+          <type>xvalid</type>
+          <defname>xvalid</defname>
+        </param>
+        <param>
+          <type>yvalid</type>
+          <defname>yvalid</defname>
+        </param>
+        <param>
+          <type>xtest</type>
+          <defname>xtest</defname>
+        </param>
+        <param>
+          <type>ytest</type>
+          <defname>ytest</defname>
+        </param>
+        <param>
+          <type>out_file</type>
+          <defname>out_file</defname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/experiments/tabular_classifier.py" line="169" column="1" bodyfile="bolt/experiments/tabular_classifier.py" bodystart="169" bodyend="194"/>
+      </memberdef>
+      <memberdef kind="function" id="tabular__classifier_8py_1adca2eb3cc567d46abaddf9964256b4e8" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def tabular_classifier.main</definition>
+        <argsstring>()</argsstring>
+        <name>main</name>
+        <qualifiedname>tabular_classifier.main</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/experiments/tabular_classifier.py" line="195" column="1" bodyfile="bolt/experiments/tabular_classifier.py" bodystart="195" bodyend="241"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/experiments/tabular_classifier.py" line="1" column="1"/>
+  </compounddef>
+</doxygen>

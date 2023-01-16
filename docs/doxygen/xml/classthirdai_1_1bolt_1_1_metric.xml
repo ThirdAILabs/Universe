@@ -1,0 +1,212 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_metric" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>thirdai::bolt::Metric</compoundname>
+    <derivedcompoundref refid="classthirdai_1_1bolt_1_1_categorical_accuracy" prot="public" virt="non-virtual">thirdai::bolt::CategoricalAccuracy</derivedcompoundref>
+    <derivedcompoundref refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy" prot="public" virt="non-virtual">thirdai::bolt::CategoricalCrossEntropy</derivedcompoundref>
+    <derivedcompoundref refid="classthirdai_1_1bolt_1_1_f_measure" prot="public" virt="non-virtual">thirdai::bolt::FMeasure</derivedcompoundref>
+    <derivedcompoundref refid="classthirdai_1_1bolt_1_1_mean_squared_error_metric" prot="public" virt="non-virtual">thirdai::bolt::MeanSquaredErrorMetric</derivedcompoundref>
+    <derivedcompoundref refid="classthirdai_1_1bolt_1_1_recall_at_k" prot="public" virt="non-virtual">thirdai::bolt::RecallAtK</derivedcompoundref>
+    <derivedcompoundref refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error" prot="public" virt="non-virtual">thirdai::bolt::WeightedMeanAbsolutePercentageError</derivedcompoundref>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_1afac01d5227e7a54ab3e97a43b84ba505" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::Metric::record</definition>
+        <argsstring>(const BoltVector &amp;output, const BoltVector &amp;labels)=0</argsstring>
+        <name>record</name>
+        <qualifiedname>thirdai::bolt::Metric::record</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1a6c516570f5a9d0424607d739be16d572">record</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy_1afa067d30dfb9d19c79bbacb74b7f5470">record</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_mean_squared_error_metric_1acc8b0379e48181460da1991faaf6e904">record</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error_1a1dfea016899ca27db069a41db0d49ad1">record</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_recall_at_k_1a8aaba05d0525a389576df4f235d85786">record</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_f_measure_1a89e2a6a9ce485902d1bc64045010ac40">record</reimplementedby>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>labels</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="30" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_1a7cc18ba1410d086d505d3dd145262c40" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>double</type>
+        <definition>virtual double thirdai::bolt::Metric::value</definition>
+        <argsstring>()=0</argsstring>
+        <name>value</name>
+        <qualifiedname>thirdai::bolt::Metric::value</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1a0b51644cb9cc40bda18ff0e7f6bfe857">value</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy_1ae5d3620b65bd35971f77beb6ee8a39f1">value</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_mean_squared_error_metric_1ac0a601392b81c11041e6271ebe01de72">value</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error_1a4aaea2aaf939e16fd2db01621bbf513d">value</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_recall_at_k_1a831fb15494c9ad26f407e317e5af098f">value</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_f_measure_1afbfe30ede17c5c1c5f8886fbbb028df9">value</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="33" column="18"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_1a9bf72bdd3547abc390e035936bc5ad82" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::Metric::reset</definition>
+        <argsstring>()=0</argsstring>
+        <name>reset</name>
+        <qualifiedname>thirdai::bolt::Metric::reset</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1aff6ad0169aef0418498b26c2481c6c94">reset</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy_1a6045bd62519a467337552073f6c01be4">reset</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_mean_squared_error_metric_1abdb2467b49ab320c2339093d621c714a">reset</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error_1a107c9899dfc34f6f6cdbc956e8741165">reset</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_recall_at_k_1a4cdeea9ca58b1fd7749f684517c942fb">reset</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_f_measure_1a426835f5be8bcf8dc1b9152e7c611111">reset</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="36" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_1a41432cee6f375a3203923ad64144d981" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>std::string</type>
+        <definition>virtual std::string thirdai::bolt::Metric::summary</definition>
+        <argsstring>()=0</argsstring>
+        <name>summary</name>
+        <qualifiedname>thirdai::bolt::Metric::summary</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1af0c6350c85e9a7bff0d491868f3b8727">summary</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy_1a5c32101105c06d0c5845fc314895e576">summary</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_mean_squared_error_metric_1ace583d45ae4600d6cf0f89f9a9af6ffa">summary</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error_1af57480739b684b6df76b23ec04a4962d">summary</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_recall_at_k_1ae0f31c0f34da346d0f5cd4844919bf16">summary</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_f_measure_1a3d72c04eb825e33fb3cf4190f3d90d75">summary</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="39" column="23"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_1afbd365875c1a09115e794f3bb5d5aff0" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>std::string</type>
+        <definition>virtual std::string thirdai::bolt::Metric::name</definition>
+        <argsstring>()=0</argsstring>
+        <name>name</name>
+        <qualifiedname>thirdai::bolt::Metric::name</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1aa0a5f89425486aa98230fc2f6441be7b">name</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy_1ada1b16bed7be46507c3f3e2c4284f071">name</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_mean_squared_error_metric_1a652c10b61c47bcd581daada105d95fd4">name</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error_1a1e3ff95b7ef03f5cfa4b87cc52279472">name</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_recall_at_k_1a88f05b238be260ff05b581c510f54938">name</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_f_measure_1a7e5d4766f342b31aa3c9ffcc37912c05">name</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="42" column="23"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_1a669e36d863f3f143a60aef059c4adffa" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>bool</type>
+        <definition>virtual bool thirdai::bolt::Metric::smallerIsBetter</definition>
+        <argsstring>() const =0</argsstring>
+        <name>smallerIsBetter</name>
+        <qualifiedname>thirdai::bolt::Metric::smallerIsBetter</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_categorical_accuracy_1ae3b6ad79026099f644b5d73d132615d2">smallerIsBetter</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy_1a777682fe8f0b320319ecc4bbc6a57c51">smallerIsBetter</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_mean_squared_error_metric_1a12d05c887cf80e31a225a5df94a1e699">smallerIsBetter</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error_1afcdfa54e8d2c941f4c784514106831e0">smallerIsBetter</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_recall_at_k_1a63a147d89ab72c551844b13b2d047f1a">smallerIsBetter</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1bolt_1_1_f_measure_1ad7aad5e39a7bd1c0c632fb3fe3ccb781">smallerIsBetter</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="47" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_metric_1a44b6ac1083c99ac6ffa9e2f095e0d151" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type></type>
+        <definition>virtual thirdai::bolt::Metric::~Metric</definition>
+        <argsstring>()=default</argsstring>
+        <name>~Metric</name>
+        <qualifiedname>thirdai::bolt::Metric::~Metric</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="49" column="11"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::bolt::CategoricalAccuracy</label>
+        <link refid="classthirdai_1_1bolt_1_1_categorical_accuracy"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>thirdai::bolt::CategoricalCrossEntropy</label>
+        <link refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>thirdai::bolt::FMeasure</label>
+        <link refid="classthirdai_1_1bolt_1_1_f_measure"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>thirdai::bolt::MeanSquaredErrorMetric</label>
+        <link refid="classthirdai_1_1bolt_1_1_mean_squared_error_metric"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::Metric</label>
+        <link refid="classthirdai_1_1bolt_1_1_metric"/>
+      </node>
+      <node id="6">
+        <label>thirdai::bolt::RecallAtK</label>
+        <link refid="classthirdai_1_1bolt_1_1_recall_at_k"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>thirdai::bolt::WeightedMeanAbsolutePercentageError</label>
+        <link refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <location file="bolt/src/metrics/Metric.h" line="26" column="1" bodyfile="bolt/src/metrics/Metric.h" bodystart="26" bodyend="50"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_metric_1afbd365875c1a09115e794f3bb5d5aff0" prot="public" virt="pure-virtual"><scope>thirdai::bolt::Metric</scope><name>name</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_1afac01d5227e7a54ab3e97a43b84ba505" prot="public" virt="pure-virtual"><scope>thirdai::bolt::Metric</scope><name>record</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_1a9bf72bdd3547abc390e035936bc5ad82" prot="public" virt="pure-virtual"><scope>thirdai::bolt::Metric</scope><name>reset</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_1a669e36d863f3f143a60aef059c4adffa" prot="public" virt="pure-virtual"><scope>thirdai::bolt::Metric</scope><name>smallerIsBetter</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_1a41432cee6f375a3203923ad64144d981" prot="public" virt="pure-virtual"><scope>thirdai::bolt::Metric</scope><name>summary</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_1a7cc18ba1410d086d505d3dd145262c40" prot="public" virt="pure-virtual"><scope>thirdai::bolt::Metric</scope><name>value</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_1a44b6ac1083c99ac6ffa9e2f095e0d151" prot="public" virt="virtual"><scope>thirdai::bolt::Metric</scope><name>~Metric</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

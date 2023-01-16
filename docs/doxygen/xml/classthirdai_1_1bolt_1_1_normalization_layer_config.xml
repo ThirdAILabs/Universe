@@ -1,0 +1,228 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_normalization_layer_config" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::bolt::NormalizationLayerConfig</compoundname>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_normalization_layer_config_1af010871ee0651e24acfdf70a5532fc61" prot="private" static="no" mutable="no">
+        <type>float</type>
+        <definition>float thirdai::bolt::NormalizationLayerConfig::_epsilon</definition>
+        <argsstring></argsstring>
+        <name>_epsilon</name>
+        <qualifiedname>thirdai::bolt::NormalizationLayerConfig::_epsilon</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="283" column="9" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="283" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_normalization_layer_config_1a2a9539a33850b28079526594b627d1bf" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; float &gt;</type>
+        <definition>std::optional&lt;float&gt; thirdai::bolt::NormalizationLayerConfig::_beta_regularizer</definition>
+        <argsstring></argsstring>
+        <name>_beta_regularizer</name>
+        <qualifiedname>thirdai::bolt::NormalizationLayerConfig::_beta_regularizer</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="288" column="17" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="288" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_normalization_layer_config_1ae25c73c30cc1d2234771e4ef22f1d1cb" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; float &gt;</type>
+        <definition>std::optional&lt;float&gt; thirdai::bolt::NormalizationLayerConfig::_gamma_regularizer</definition>
+        <argsstring></argsstring>
+        <name>_gamma_regularizer</name>
+        <qualifiedname>thirdai::bolt::NormalizationLayerConfig::_gamma_regularizer</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="289" column="17" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="289" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1bolt_1_1_normalization_layer_config_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::bolt::NormalizationLayerConfig::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="291" column="16" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="291" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_normalization_layer_config_1a7a559725c4fbb1f5aff54ee4aeb096bd" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::NormalizationLayerConfig::NormalizationLayerConfig</definition>
+        <argsstring>(float epsilon=0.00001)</argsstring>
+        <name>NormalizationLayerConfig</name>
+        <qualifiedname>thirdai::bolt::NormalizationLayerConfig::NormalizationLayerConfig</qualifiedname>
+        <param>
+          <type>float</type>
+          <declname>epsilon</declname>
+          <defval>0.00001</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="251" column="12" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="251" bodyend="254"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_normalization_layer_config_1a0adf0cd30eef1a100309fbeec76b3323" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1bolt_1_1_normalization_layer_config" kindref="compound">NormalizationLayerConfig</ref> &amp;</type>
+        <definition>NormalizationLayerConfig &amp; thirdai::bolt::NormalizationLayerConfig::setCenteringFactor</definition>
+        <argsstring>(float centering_factor)</argsstring>
+        <name>setCenteringFactor</name>
+        <qualifiedname>thirdai::bolt::NormalizationLayerConfig::setCenteringFactor</qualifiedname>
+        <param>
+          <type>float</type>
+          <declname>centering_factor</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="260" column="28" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="260" bodyend="263"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_normalization_layer_config_1a9bc755d31015c32ca4da50bc7547b75d" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1bolt_1_1_normalization_layer_config" kindref="compound">NormalizationLayerConfig</ref> &amp;</type>
+        <definition>NormalizationLayerConfig &amp; thirdai::bolt::NormalizationLayerConfig::setScalingFactor</definition>
+        <argsstring>(float scaling_factor)</argsstring>
+        <name>setScalingFactor</name>
+        <qualifiedname>thirdai::bolt::NormalizationLayerConfig::setScalingFactor</qualifiedname>
+        <param>
+          <type>float</type>
+          <declname>scaling_factor</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="265" column="28" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="265" bodyend="268"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_normalization_layer_config_1a8e3756af2211d620f071477cbb62b7ad" prot="public" static="no" constexpr="yes" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>constexpr float</type>
+        <definition>constexpr float thirdai::bolt::NormalizationLayerConfig::beta</definition>
+        <argsstring>() const</argsstring>
+        <name>beta</name>
+        <qualifiedname>thirdai::bolt::NormalizationLayerConfig::beta</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="271" column="19" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="271" bodyend="273"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_normalization_layer_config_1aff7c31c1bcaeb50bfaa4d6946f5b5a04" prot="public" static="no" constexpr="yes" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>constexpr float</type>
+        <definition>constexpr float thirdai::bolt::NormalizationLayerConfig::gamma</definition>
+        <argsstring>() const</argsstring>
+        <name>gamma</name>
+        <qualifiedname>thirdai::bolt::NormalizationLayerConfig::gamma</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="276" column="19" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="276" bodyend="278"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_normalization_layer_config_1a8b972ff6f94970f3e25c5408736e0063" prot="public" static="no" constexpr="yes" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>constexpr float</type>
+        <definition>constexpr float thirdai::bolt::NormalizationLayerConfig::epsilon</definition>
+        <argsstring>() const</argsstring>
+        <name>epsilon</name>
+        <qualifiedname>thirdai::bolt::NormalizationLayerConfig::epsilon</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="279" column="19" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="279" bodyend="279"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_normalization_layer_config_1a6b01d5ff092d5fcb67c83e6745ef9eb4" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1bolt_1_1_normalization_layer_config" kindref="compound">NormalizationLayerConfig</ref></type>
+        <definition>static NormalizationLayerConfig thirdai::bolt::NormalizationLayerConfig::makeConfig</definition>
+        <argsstring>()</argsstring>
+        <name>makeConfig</name>
+        <qualifiedname>thirdai::bolt::NormalizationLayerConfig::makeConfig</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="256" column="35" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="256" bodyend="258"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_normalization_layer_config_1aac78e69eb79ffe83d06382390e072c5b" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::bolt::NormalizationLayerConfig::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::bolt::NormalizationLayerConfig::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/LayerConfig.h" line="293" column="8" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="293" bodyend="295"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/layers/LayerConfig.h" line="249" column="1" bodyfile="bolt/src/layers/LayerConfig.h" bodystart="249" bodyend="296"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_normalization_layer_config_1a2a9539a33850b28079526594b627d1bf" prot="private" virt="non-virtual"><scope>thirdai::bolt::NormalizationLayerConfig</scope><name>_beta_regularizer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_normalization_layer_config_1af010871ee0651e24acfdf70a5532fc61" prot="private" virt="non-virtual"><scope>thirdai::bolt::NormalizationLayerConfig</scope><name>_epsilon</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_normalization_layer_config_1ae25c73c30cc1d2234771e4ef22f1d1cb" prot="private" virt="non-virtual"><scope>thirdai::bolt::NormalizationLayerConfig</scope><name>_gamma_regularizer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_normalization_layer_config_1a8e3756af2211d620f071477cbb62b7ad" prot="public" virt="non-virtual"><scope>thirdai::bolt::NormalizationLayerConfig</scope><name>beta</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_normalization_layer_config_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::bolt::NormalizationLayerConfig</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_normalization_layer_config_1a8b972ff6f94970f3e25c5408736e0063" prot="public" virt="non-virtual"><scope>thirdai::bolt::NormalizationLayerConfig</scope><name>epsilon</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_normalization_layer_config_1aff7c31c1bcaeb50bfaa4d6946f5b5a04" prot="public" virt="non-virtual"><scope>thirdai::bolt::NormalizationLayerConfig</scope><name>gamma</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_normalization_layer_config_1a6b01d5ff092d5fcb67c83e6745ef9eb4" prot="public" virt="non-virtual"><scope>thirdai::bolt::NormalizationLayerConfig</scope><name>makeConfig</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_normalization_layer_config_1a7a559725c4fbb1f5aff54ee4aeb096bd" prot="public" virt="non-virtual"><scope>thirdai::bolt::NormalizationLayerConfig</scope><name>NormalizationLayerConfig</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_normalization_layer_config_1aac78e69eb79ffe83d06382390e072c5b" prot="private" virt="non-virtual"><scope>thirdai::bolt::NormalizationLayerConfig</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_normalization_layer_config_1a0adf0cd30eef1a100309fbeec76b3323" prot="public" virt="non-virtual"><scope>thirdai::bolt::NormalizationLayerConfig</scope><name>setCenteringFactor</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_normalization_layer_config_1a9bc755d31015c32ca4da50bc7547b75d" prot="public" virt="non-virtual"><scope>thirdai::bolt::NormalizationLayerConfig</scope><name>setScalingFactor</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

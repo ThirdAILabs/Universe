@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state" kind="struct" language="C++" prot="private">
+    <compoundname>thirdai::bolt::ConcatenateNode::GraphState</compoundname>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1ab9affbe0524356c2f8b11f594f582792" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; NodePtr &gt;</type>
+        <definition>std::vector&lt;NodePtr&gt; thirdai::bolt::ConcatenateNode::GraphState::inputs</definition>
+        <argsstring></argsstring>
+        <name>inputs</name>
+        <qualifiedname>thirdai::bolt::ConcatenateNode::GraphState::inputs</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Concatenate.h" line="307" column="17" bodyfile="bolt/src/graph/nodes/Concatenate.h" bodystart="307" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1ae1cf8236ecbab5ad5762a3f71cfe3774" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt;uint32_t&gt; thirdai::bolt::ConcatenateNode::GraphState::neuron_index_offsets</definition>
+        <argsstring></argsstring>
+        <name>neuron_index_offsets</name>
+        <qualifiedname>thirdai::bolt::ConcatenateNode::GraphState::neuron_index_offsets</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Concatenate.h" line="319" column="17" bodyfile="bolt/src/graph/nodes/Concatenate.h" bodystart="319" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1a531a64e1d3545e9459a808bbb7db848c" prot="public" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::ConcatenateNode::GraphState::concatenated_dense_dim</definition>
+        <argsstring></argsstring>
+        <name>concatenated_dense_dim</name>
+        <qualifiedname>thirdai::bolt::ConcatenateNode::GraphState::concatenated_dense_dim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Concatenate.h" line="322" column="14" bodyfile="bolt/src/graph/nodes/Concatenate.h" bodystart="322" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::bolt::ConcatenateNode::GraphState::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Concatenate.h" line="325" column="18" bodyfile="bolt/src/graph/nodes/Concatenate.h" bodystart="325" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1a97bbe6b90d965ff1000a1dbcc6d54812" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::ConcatenateNode::GraphState::GraphState</definition>
+        <argsstring>()</argsstring>
+        <name>GraphState</name>
+        <qualifiedname>thirdai::bolt::ConcatenateNode::GraphState::GraphState</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Concatenate.h" line="296" column="5" bodyfile="bolt/src/graph/nodes/Concatenate.h" bodystart="296" bodyend="296"/>
+      </memberdef>
+      <memberdef kind="function" id="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1a4ce234011cf58b06320f615ed30e640c" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::ConcatenateNode::GraphState::GraphState</definition>
+        <argsstring>(std::vector&lt; NodePtr &gt; inputs, std::vector&lt; uint32_t &gt; neuron_index_offsets, uint32_t concatenated_dense_dim)</argsstring>
+        <name>GraphState</name>
+        <qualifiedname>thirdai::bolt::ConcatenateNode::GraphState::GraphState</qualifiedname>
+        <param>
+          <type>std::vector&lt; NodePtr &gt;</type>
+          <declname>inputs</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; uint32_t &gt;</type>
+          <declname>neuron_index_offsets</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>concatenated_dense_dim</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Concatenate.h" line="299" column="5" bodyfile="bolt/src/graph/nodes/Concatenate.h" bodystart="299" bodyend="304"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1a308082d67550bfbc3b6893025048f36c" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::bolt::ConcatenateNode::GraphState::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::bolt::ConcatenateNode::GraphState::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/nodes/Concatenate.h" line="327" column="10" bodyfile="bolt/src/graph/nodes/Concatenate.h" bodystart="327" bodyend="329"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/graph/nodes/Concatenate.h" line="294" column="3" bodyfile="bolt/src/graph/nodes/Concatenate.h" bodystart="294" bodyend="330"/>
+    <listofallmembers>
+      <member refid="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConcatenateNode::GraphState</scope><name>cereal::access</name></member>
+      <member refid="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1a531a64e1d3545e9459a808bbb7db848c" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConcatenateNode::GraphState</scope><name>concatenated_dense_dim</name></member>
+      <member refid="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1a97bbe6b90d965ff1000a1dbcc6d54812" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConcatenateNode::GraphState</scope><name>GraphState</name></member>
+      <member refid="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1a4ce234011cf58b06320f615ed30e640c" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConcatenateNode::GraphState</scope><name>GraphState</name></member>
+      <member refid="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1ab9affbe0524356c2f8b11f594f582792" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConcatenateNode::GraphState</scope><name>inputs</name></member>
+      <member refid="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1ae1cf8236ecbab5ad5762a3f71cfe3774" prot="public" virt="non-virtual"><scope>thirdai::bolt::ConcatenateNode::GraphState</scope><name>neuron_index_offsets</name></member>
+      <member refid="structthirdai_1_1bolt_1_1_concatenate_node_1_1_graph_state_1a308082d67550bfbc3b6893025048f36c" prot="private" virt="non-virtual"><scope>thirdai::bolt::ConcatenateNode::GraphState</scope><name>serialize</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

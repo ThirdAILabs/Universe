@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_categorical_data_type" kind="struct" language="C++" prot="public">
+    <compoundname>thirdai::bolt::sequential_classifier::CategoricalDataType</compoundname>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_categorical_data_type_1ab72af866c04dcad2f16def5e54910a28" prot="public" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::sequential_classifier::CategoricalDataType::n_unique_classes</definition>
+        <argsstring></argsstring>
+        <name>n_unique_classes</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::CategoricalDataType::n_unique_classes</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" line="16" column="12" bodyfile="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" bodystart="16" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" line="15" column="1" bodyfile="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" bodystart="15" bodyend="17"/>
+    <listofallmembers>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_categorical_data_type_1ab72af866c04dcad2f16def5e54910a28" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::CategoricalDataType</scope><name>n_unique_classes</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,166 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_batch_processor" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>thirdai::dataset::BatchProcessor</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename...</type>
+        <declname>BATCH_Ts</declname>
+        <defname>BATCH_Ts</defname>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1dataset_1_1_batch_processor_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::dataset::BatchProcessor::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/BatchProcessor.h" line="28" column="16" bodyfile="dataset/src/BatchProcessor.h" bodystart="28" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_batch_processor_1a4a7577492de4dfb22677f7a8661da52e" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>std::tuple&lt; BATCH_Ts... &gt;</type>
+        <definition>virtual std::tuple&lt; BATCH_Ts... &gt; thirdai::dataset::BatchProcessor&lt; BATCH_Ts &gt;::createBatch</definition>
+        <argsstring>(const std::vector&lt; std::string &gt; &amp;rows)=0</argsstring>
+        <name>createBatch</name>
+        <qualifiedname>thirdai::dataset::BatchProcessor::createBatch</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_click_through_batch_processor_1a6af60ee9bfe85e6ea16ded623e4d647c">createBatch</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a7074e02232333800edd401710a79265c">createBatch</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_masked_sentence_batch_processor_1a7a1bb5563030ae30a1894f79b18822bf">createBatch</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_unary_bolt_batch_processor_1aaf8bb57f330fa0dcfe399f712bfbd9f9">createBatch</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_compute_batch_processor_1aa1b70d3a3dc978814f547f223d1d969a">createBatch</reimplementedby>
+        <param>
+          <type>const std::vector&lt; std::string &gt; &amp;</type>
+          <declname>rows</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/BatchProcessor.h" line="14" column="22"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_batch_processor_1a89edb021f4c6343854d02ec31b2e5bf1" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>bool</type>
+        <definition>virtual bool thirdai::dataset::BatchProcessor&lt; BATCH_Ts &gt;::expectsHeader</definition>
+        <argsstring>() const =0</argsstring>
+        <name>expectsHeader</name>
+        <qualifiedname>thirdai::dataset::BatchProcessor::expectsHeader</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_click_through_batch_processor_1a5a1919d3335961b5f5a0e4e397cfc555">expectsHeader</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a6b5f35e4eb3fa6f0ac1d44b9be75a4f4">expectsHeader</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_masked_sentence_batch_processor_1aa215ab61a131501c5ed986eb7bb4025f">expectsHeader</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_svm_batch_processor_1a3cff62e2adf3e75b572911e03fe56408">expectsHeader</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_tabular_metadata_processor_1aedf03f01d2ef78b103a2a88bc71af3cb">expectsHeader</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/BatchProcessor.h" line="17" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_batch_processor_1ad935fca149a9c4741d28665008ffa13b" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::dataset::BatchProcessor&lt; BATCH_Ts &gt;::processHeader</definition>
+        <argsstring>(const std::string &amp;header)=0</argsstring>
+        <name>processHeader</name>
+        <qualifiedname>thirdai::dataset::BatchProcessor::processHeader</qualifiedname>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_click_through_batch_processor_1ad687850e0df106519120ef1bcb53a615">processHeader</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_generic_batch_processor_1a5154927a1423d01ee149c9e82f0e93a8">processHeader</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_masked_sentence_batch_processor_1acbefa2ee0efe8aaf84ed2b606a1879f0">processHeader</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_svm_batch_processor_1a970839428a8ff591a13bb4886d9f596e">processHeader</reimplementedby>
+        <reimplementedby refid="classthirdai_1_1dataset_1_1_tabular_metadata_processor_1ac90be5ca8a57a8ad80675abfcee562dc">processHeader</reimplementedby>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>header</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/BatchProcessor.h" line="19" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_batch_processor_1a92be3a10bd5fbaebffbe2749d2d74476" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type></type>
+        <definition>virtual thirdai::dataset::BatchProcessor&lt; BATCH_Ts &gt;::~BatchProcessor</definition>
+        <argsstring>()=default</argsstring>
+        <name>~BatchProcessor</name>
+        <qualifiedname>thirdai::dataset::BatchProcessor::~BatchProcessor</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/BatchProcessor.h" line="21" column="11"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_batch_processor_1a0d72eb4dd655c6dd292fadb54f2f743f" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::BatchProcessor&lt; BATCH_Ts &gt;::BatchProcessor</definition>
+        <argsstring>()</argsstring>
+        <name>BatchProcessor</name>
+        <qualifiedname>thirdai::dataset::BatchProcessor::BatchProcessor</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/BatchProcessor.h" line="24" column="3" bodyfile="dataset/src/BatchProcessor.h" bodystart="24" bodyend="24"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_batch_processor_1a95a88f995987b488c51c9ca258558f37" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::dataset::BatchProcessor&lt; BATCH_Ts &gt;::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::dataset::BatchProcessor::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/BatchProcessor.h" line="30" column="8" bodyfile="dataset/src/BatchProcessor.h" bodystart="30" bodyend="32"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="dataset/src/BatchProcessor.h" line="12" column="1" bodyfile="dataset/src/BatchProcessor.h" bodystart="12" bodyend="33"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_batch_processor_1a0d72eb4dd655c6dd292fadb54f2f743f" prot="public" virt="non-virtual"><scope>thirdai::dataset::BatchProcessor</scope><name>BatchProcessor</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_batch_processor_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::dataset::BatchProcessor</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_batch_processor_1a4a7577492de4dfb22677f7a8661da52e" prot="public" virt="pure-virtual"><scope>thirdai::dataset::BatchProcessor</scope><name>createBatch</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_batch_processor_1a89edb021f4c6343854d02ec31b2e5bf1" prot="public" virt="pure-virtual"><scope>thirdai::dataset::BatchProcessor</scope><name>expectsHeader</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_batch_processor_1ad935fca149a9c4741d28665008ffa13b" prot="public" virt="pure-virtual"><scope>thirdai::dataset::BatchProcessor</scope><name>processHeader</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_batch_processor_1a95a88f995987b488c51c9ca258558f37" prot="private" virt="non-virtual"><scope>thirdai::dataset::BatchProcessor</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_batch_processor_1a92be3a10bd5fbaebffbe2749d2d74476" prot="public" virt="virtual"><scope>thirdai::dataset::BatchProcessor</scope><name>~BatchProcessor</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

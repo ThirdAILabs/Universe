@@ -1,0 +1,184 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1hashing_1_1_universal_hash" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::hashing::UniversalHash</compoundname>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1hashing_1_1_universal_hash_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::hashing::UniversalHash::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/UniversalHash.h" line="37" column="16" bodyfile="hashing/src/UniversalHash.h" bodystart="37" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_universal_hash_1aec6c169789a02bad3d7944e782a84ddc" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashing::UniversalHash::_seed</definition>
+        <argsstring></argsstring>
+        <name>_seed</name>
+        <qualifiedname>thirdai::hashing::UniversalHash::_seed</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/UniversalHash.h" line="43" column="12" bodyfile="hashing/src/UniversalHash.h" bodystart="43" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1hashing_1_1_universal_hash_1ab9bc295ba87360c0fb945a59e3913450" prot="private" static="no" mutable="no">
+        <type>std::array&lt; std::array&lt; uint32_t, 256 &gt;, 8 &gt;</type>
+        <definition>std::array&lt;std::array&lt;uint32_t, 256&gt;, 8&gt; thirdai::hashing::UniversalHash::T</definition>
+        <argsstring></argsstring>
+        <name>T</name>
+        <qualifiedname>thirdai::hashing::UniversalHash::T</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/UniversalHash.h" line="44" column="14" bodyfile="hashing/src/UniversalHash.h" bodystart="44" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_universal_hash_1aa99f74e812e7cbbd5196fadc8ed81619" prot="public" static="no" const="no" explicit="yes" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::hashing::UniversalHash::UniversalHash</definition>
+        <argsstring>(uint32_t seed)</argsstring>
+        <name>UniversalHash</name>
+        <qualifiedname>thirdai::hashing::UniversalHash::UniversalHash</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>seed</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/UniversalHash.h" line="16" column="12" bodyfile="hashing/src/UniversalHash.cc" bodystart="9" bodyend="18"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_universal_hash_1ac2db5418a5d52da282150d59cc0024ab" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashing::UniversalHash::gethash</definition>
+        <argsstring>(const std::string &amp;key) const</argsstring>
+        <name>gethash</name>
+        <qualifiedname>thirdai::hashing::UniversalHash::gethash</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>key</declname>
+        </param>
+        <briefdescription>
+<para>Hash string key. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/UniversalHash.h" line="21" column="12" bodyfile="hashing/src/UniversalHash.cc" bodystart="20" bodyend="26"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_universal_hash_1abb1f053dc6c901770d596eb88e330101" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashing::UniversalHash::gethash</definition>
+        <argsstring>(uint64_t key) const</argsstring>
+        <name>gethash</name>
+        <qualifiedname>thirdai::hashing::UniversalHash::gethash</qualifiedname>
+        <param>
+          <type>uint64_t</type>
+          <declname>key</declname>
+        </param>
+        <briefdescription>
+<para>Hash integer key. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Allows for smaller int sizes. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/UniversalHash.h" line="26" column="12" bodyfile="hashing/src/UniversalHash.cc" bodystart="28" bodyend="34"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_universal_hash_1a695d19159fb8a96c3b8fb253b387cf13" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::hashing::UniversalHash::seed</definition>
+        <argsstring>() const</argsstring>
+        <name>seed</name>
+        <qualifiedname>thirdai::hashing::UniversalHash::seed</qualifiedname>
+        <briefdescription>
+<para>Returns the seed of the universal hash. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/UniversalHash.h" line="31" column="12" bodyfile="hashing/src/UniversalHash.cc" bodystart="36" bodyend="36"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_universal_hash_1ad44f052b1da9a71ba330ebf3e5f8dbc6" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::hashing::UniversalHash::UniversalHash</definition>
+        <argsstring>()</argsstring>
+        <name>UniversalHash</name>
+        <qualifiedname>thirdai::hashing::UniversalHash::UniversalHash</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/UniversalHash.h" line="35" column="3" bodyfile="hashing/src/UniversalHash.h" bodystart="35" bodyend="35"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1hashing_1_1_universal_hash_1ab1cb94407a05e3549fa90c6765147d90" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::hashing::UniversalHash::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::hashing::UniversalHash::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="hashing/src/UniversalHash.h" line="39" column="8" bodyfile="hashing/src/UniversalHash.h" bodystart="39" bodyend="41"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="hashing/src/UniversalHash.h" line="14" column="1" bodyfile="hashing/src/UniversalHash.h" bodystart="14" bodyend="45"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1hashing_1_1_universal_hash_1aec6c169789a02bad3d7944e782a84ddc" prot="private" virt="non-virtual"><scope>thirdai::hashing::UniversalHash</scope><name>_seed</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_universal_hash_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::hashing::UniversalHash</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_universal_hash_1ac2db5418a5d52da282150d59cc0024ab" prot="public" virt="non-virtual"><scope>thirdai::hashing::UniversalHash</scope><name>gethash</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_universal_hash_1abb1f053dc6c901770d596eb88e330101" prot="public" virt="non-virtual"><scope>thirdai::hashing::UniversalHash</scope><name>gethash</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_universal_hash_1a695d19159fb8a96c3b8fb253b387cf13" prot="public" virt="non-virtual"><scope>thirdai::hashing::UniversalHash</scope><name>seed</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_universal_hash_1ab1cb94407a05e3549fa90c6765147d90" prot="private" virt="non-virtual"><scope>thirdai::hashing::UniversalHash</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_universal_hash_1ab9bc295ba87360c0fb945a59e3913450" prot="private" virt="non-virtual"><scope>thirdai::hashing::UniversalHash</scope><name>T</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_universal_hash_1aa99f74e812e7cbbd5196fadc8ed81619" prot="public" virt="non-virtual"><scope>thirdai::hashing::UniversalHash</scope><name>UniversalHash</name></member>
+      <member refid="classthirdai_1_1hashing_1_1_universal_hash_1ad44f052b1da9a71ba330ebf3e5f8dbc6" prot="private" virt="non-virtual"><scope>thirdai::hashing::UniversalHash</scope><name>UniversalHash</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

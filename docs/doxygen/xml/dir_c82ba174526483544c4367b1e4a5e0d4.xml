@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="dir_c82ba174526483544c4367b1e4a5e0d4" kind="dir">
+    <compoundname>bolt_vector/src</compoundname>
+    <innerfile refid="_bolt_vector_8h">BoltVector.h</innerfile>
+    <innerfile refid="_bolt_vector_norm_8h">BoltVectorNorm.h</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt_vector/src/"/>
+  </compounddef>
+</doxygen>

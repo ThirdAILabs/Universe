@@ -1,0 +1,252 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1licensing_1_1_license" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::licensing::License</compoundname>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1licensing_1_1_license_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::licensing::License::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="licensing/src/License.h" line="62" column="16" bodyfile="licensing/src/License.h" bodystart="62" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1licensing_1_1_license_1a1e60c5b0a7bcae55515cc631f99b7723" prot="private" static="no" mutable="no">
+        <type>int64_t</type>
+        <definition>int64_t thirdai::licensing::License::_expire_time_epoch_millis</definition>
+        <argsstring></argsstring>
+        <name>_expire_time_epoch_millis</name>
+        <qualifiedname>thirdai::licensing::License::_expire_time_epoch_millis</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="licensing/src/License.h" line="75" column="11" bodyfile="licensing/src/License.h" bodystart="75" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1licensing_1_1_license_1aef82745b6dc1f0cdae30014537f4f721" prot="private" static="no" mutable="no">
+        <type>int64_t</type>
+        <definition>int64_t thirdai::licensing::License::_start_time_epoch_millis</definition>
+        <argsstring></argsstring>
+        <name>_start_time_epoch_millis</name>
+        <qualifiedname>thirdai::licensing::License::_start_time_epoch_millis</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="licensing/src/License.h" line="76" column="11" bodyfile="licensing/src/License.h" bodystart="76" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1licensing_1_1_license_1affef07e1a8fe10005673d0050d7e2750" prot="private" static="no" mutable="no">
+        <type>std::map&lt; std::string, std::string &gt;</type>
+        <definition>std::map&lt;std::string, std::string&gt; thirdai::licensing::License::_metadata</definition>
+        <argsstring></argsstring>
+        <name>_metadata</name>
+        <qualifiedname>thirdai::licensing::License::_metadata</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="licensing/src/License.h" line="80" column="12" bodyfile="licensing/src/License.h" bodystart="80" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1licensing_1_1_license_1ab8e9d87ac64a7f1468f1f02dc76bb924" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::licensing::License::License</definition>
+        <argsstring>(std::map&lt; std::string, std::string &gt; metadata, int64_t expire_time_epoch_millis)</argsstring>
+        <name>License</name>
+        <qualifiedname>thirdai::licensing::License::License</qualifiedname>
+        <param>
+          <type>std::map&lt; std::string, std::string &gt;</type>
+          <declname>metadata</declname>
+        </param>
+        <param>
+          <type>int64_t</type>
+          <declname>expire_time_epoch_millis</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="licensing/src/License.h" line="20" column="3" bodyfile="licensing/src/License.h" bodystart="20" bodyend="24"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1licensing_1_1_license_1a29a893d14db8466d20f91084b3d7c0dd" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool thirdai::licensing::License::isExpired</definition>
+        <argsstring>() const</argsstring>
+        <name>isExpired</name>
+        <qualifiedname>thirdai::licensing::License::isExpired</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="licensing/src/License.h" line="34" column="8" bodyfile="licensing/src/License.h" bodystart="34" bodyend="37"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1licensing_1_1_license_1af0dd72c221f0ed1814bf2269f9da22d6" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::licensing::License::getMetadataValue</definition>
+        <argsstring>(const std::string &amp;key) const</argsstring>
+        <name>getMetadataValue</name>
+        <qualifiedname>thirdai::licensing::License::getMetadataValue</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>key</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="licensing/src/License.h" line="39" column="15" bodyfile="licensing/src/License.h" bodystart="39" bodyend="41"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1licensing_1_1_license_1af9ba3786bdbc7d5187a9b4d188be65c6" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>int64_t</type>
+        <definition>int64_t thirdai::licensing::License::getExpireTimeMillis</definition>
+        <argsstring>() const</argsstring>
+        <name>getExpireTimeMillis</name>
+        <qualifiedname>thirdai::licensing::License::getExpireTimeMillis</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="licensing/src/License.h" line="43" column="11" bodyfile="licensing/src/License.h" bodystart="43" bodyend="43"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1licensing_1_1_license_1af6e03555d9030a7df3bab31d5f43163e" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::licensing::License::toString</definition>
+        <argsstring>() const</argsstring>
+        <name>toString</name>
+        <qualifiedname>thirdai::licensing::License::toString</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="licensing/src/License.h" line="47" column="15" bodyfile="licensing/src/License.h" bodystart="47" bodyend="58"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1licensing_1_1_license_1a779b65b986832c127ea075c6cd10f3dc" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1licensing_1_1_license" kindref="compound">License</ref></type>
+        <definition>static License thirdai::licensing::License::createLicenseWithNDaysLeft</definition>
+        <argsstring>(std::map&lt; std::string, std::string &gt; metadata, int64_t num_days)</argsstring>
+        <name>createLicenseWithNDaysLeft</name>
+        <qualifiedname>thirdai::licensing::License::createLicenseWithNDaysLeft</qualifiedname>
+        <param>
+          <type>std::map&lt; std::string, std::string &gt;</type>
+          <declname>metadata</declname>
+        </param>
+        <param>
+          <type>int64_t</type>
+          <declname>num_days</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="licensing/src/License.h" line="26" column="18" bodyfile="licensing/src/License.h" bodystart="26" bodyend="32"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1licensing_1_1_license_1a911c7d3478c13db2eb737ce1b143939d" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::licensing::License::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::licensing::License::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="licensing/src/License.h" line="64" column="8" bodyfile="licensing/src/License.h" bodystart="64" bodyend="66"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1licensing_1_1_license_1a66abae2b1b2a563519e608d678b378ee" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::licensing::License::License</definition>
+        <argsstring>()</argsstring>
+        <name>License</name>
+        <qualifiedname>thirdai::licensing::License::License</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="licensing/src/License.h" line="68" column="3"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-static-func">
+      <memberdef kind="function" id="classthirdai_1_1licensing_1_1_license_1a3c1447cb5abf5a7b84305450c3301061" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>int64_t</type>
+        <definition>static int64_t thirdai::licensing::License::getCurrentEpochMillis</definition>
+        <argsstring>()</argsstring>
+        <name>getCurrentEpochMillis</name>
+        <qualifiedname>thirdai::licensing::License::getCurrentEpochMillis</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="licensing/src/License.h" line="70" column="18" bodyfile="licensing/src/License.h" bodystart="70" bodyend="73"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="licensing/src/License.h" line="18" column="1" bodyfile="licensing/src/License.h" bodystart="18" bodyend="81"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1licensing_1_1_license_1a1e60c5b0a7bcae55515cc631f99b7723" prot="private" virt="non-virtual"><scope>thirdai::licensing::License</scope><name>_expire_time_epoch_millis</name></member>
+      <member refid="classthirdai_1_1licensing_1_1_license_1affef07e1a8fe10005673d0050d7e2750" prot="private" virt="non-virtual"><scope>thirdai::licensing::License</scope><name>_metadata</name></member>
+      <member refid="classthirdai_1_1licensing_1_1_license_1aef82745b6dc1f0cdae30014537f4f721" prot="private" virt="non-virtual"><scope>thirdai::licensing::License</scope><name>_start_time_epoch_millis</name></member>
+      <member refid="classthirdai_1_1licensing_1_1_license_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::licensing::License</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1licensing_1_1_license_1a779b65b986832c127ea075c6cd10f3dc" prot="public" virt="non-virtual"><scope>thirdai::licensing::License</scope><name>createLicenseWithNDaysLeft</name></member>
+      <member refid="classthirdai_1_1licensing_1_1_license_1a3c1447cb5abf5a7b84305450c3301061" prot="private" virt="non-virtual"><scope>thirdai::licensing::License</scope><name>getCurrentEpochMillis</name></member>
+      <member refid="classthirdai_1_1licensing_1_1_license_1af9ba3786bdbc7d5187a9b4d188be65c6" prot="public" virt="non-virtual"><scope>thirdai::licensing::License</scope><name>getExpireTimeMillis</name></member>
+      <member refid="classthirdai_1_1licensing_1_1_license_1af0dd72c221f0ed1814bf2269f9da22d6" prot="public" virt="non-virtual"><scope>thirdai::licensing::License</scope><name>getMetadataValue</name></member>
+      <member refid="classthirdai_1_1licensing_1_1_license_1a29a893d14db8466d20f91084b3d7c0dd" prot="public" virt="non-virtual"><scope>thirdai::licensing::License</scope><name>isExpired</name></member>
+      <member refid="classthirdai_1_1licensing_1_1_license_1ab8e9d87ac64a7f1468f1f02dc76bb924" prot="public" virt="non-virtual"><scope>thirdai::licensing::License</scope><name>License</name></member>
+      <member refid="classthirdai_1_1licensing_1_1_license_1a66abae2b1b2a563519e608d678b378ee" prot="private" virt="non-virtual"><scope>thirdai::licensing::License</scope><name>License</name></member>
+      <member refid="classthirdai_1_1licensing_1_1_license_1a911c7d3478c13db2eb737ce1b143939d" prot="private" virt="non-virtual"><scope>thirdai::licensing::License</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1licensing_1_1_license_1af6e03555d9030a7df3bab31d5f43163e" prot="public" virt="non-virtual"><scope>thirdai::licensing::License</scope><name>toString</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

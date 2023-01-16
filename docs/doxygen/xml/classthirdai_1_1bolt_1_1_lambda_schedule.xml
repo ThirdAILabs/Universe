@@ -1,0 +1,113 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_lambda_schedule" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::bolt::LambdaSchedule</compoundname>
+    <basecompoundref refid="classthirdai_1_1bolt_1_1_l_r_schedule" prot="public" virt="non-virtual">thirdai::bolt::LRSchedule</basecompoundref>
+    <includes refid="_learning_rate_scheduler_8h" local="no">LearningRateScheduler.h</includes>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_lambda_schedule_1a3c9214f23eb203e749d6f0afddb8583f" prot="private" static="no" mutable="no">
+        <type>std::function&lt; float(float, uint32_t)&gt;</type>
+        <definition>std::function&lt;float(float, uint32_t)&gt; thirdai::bolt::LambdaSchedule::_schedule</definition>
+        <argsstring></argsstring>
+        <name>_schedule</name>
+        <qualifiedname>thirdai::bolt::LambdaSchedule::_schedule</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="103" column="17" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="103" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_lambda_schedule_1a923ec26cc5046449642c8b4c941dd288" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::LambdaSchedule::LambdaSchedule</definition>
+        <argsstring>(std::function&lt; float(float, uint32_t)&gt; schedule)</argsstring>
+        <name>LambdaSchedule</name>
+        <qualifiedname>thirdai::bolt::LambdaSchedule::LambdaSchedule</qualifiedname>
+        <param>
+          <type>std::function&lt; float(float, uint32_t)&gt;</type>
+          <declname>schedule</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="95" column="12" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="95" bodyend="96"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_lambda_schedule_1a6252fc9c0160036c8d6e562572c38ccb" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>float</type>
+        <definition>float thirdai::bolt::LambdaSchedule::getNextLR</definition>
+        <argsstring>(float current_learning_rate, const uint32_t epoch) final</argsstring>
+        <name>getNextLR</name>
+        <qualifiedname>thirdai::bolt::LambdaSchedule::getNextLR</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_l_r_schedule_1a59e47807e04e27bffc257b8ddb1288b4">getNextLR</reimplements>
+        <param>
+          <type>float</type>
+          <declname>current_learning_rate</declname>
+        </param>
+        <param>
+          <type>const uint32_t</type>
+          <declname>epoch</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="98" column="9" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="98" bodyend="100"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>Schedules per-epoch learning rate using a lambda function. </para>
+    </briefdescription>
+    <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>schedule</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>A function pointer for scheduling the learning rate The function pointer has the following signature: float schedule(float learning_rate, uint32_t epoch); </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::bolt::LRSchedule</label>
+        <link refid="classthirdai_1_1bolt_1_1_l_r_schedule"/>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::LambdaSchedule</label>
+        <link refid="classthirdai_1_1bolt_1_1_lambda_schedule"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>thirdai::bolt::LRSchedule</label>
+        <link refid="classthirdai_1_1bolt_1_1_l_r_schedule"/>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::LambdaSchedule</label>
+        <link refid="classthirdai_1_1bolt_1_1_lambda_schedule"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="93" column="1" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="93" bodyend="104"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_lambda_schedule_1a3c9214f23eb203e749d6f0afddb8583f" prot="private" virt="non-virtual"><scope>thirdai::bolt::LambdaSchedule</scope><name>_schedule</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_lambda_schedule_1a6252fc9c0160036c8d6e562572c38ccb" prot="public" virt="virtual"><scope>thirdai::bolt::LambdaSchedule</scope><name>getNextLR</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_lambda_schedule_1a923ec26cc5046449642c8b4c941dd288" prot="public" virt="non-virtual"><scope>thirdai::bolt::LambdaSchedule</scope><name>LambdaSchedule</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_l_r_schedule_1aed977e23bd1177061f05add7c8909e85" prot="public" virt="virtual"><scope>thirdai::bolt::LambdaSchedule</scope><name>~LRSchedule</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

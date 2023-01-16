@@ -1,0 +1,452 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_loss_functions_8h" kind="file" language="C++">
+    <compoundname>LossFunctions.h</compoundname>
+    <includes local="no">cereal/types/polymorphic.hpp</includes>
+    <includes refid="_bolt_vector_8h" local="no">bolt_vector/src/BoltVector.h</includes>
+    <includes refid="_string_manipulation_8h" local="no">utils/StringManipulation.h</includes>
+    <includes local="no">algorithm</includes>
+    <includes local="no">memory</includes>
+    <includes local="no">stdexcept</includes>
+    <includedby refid="_sequential_classifier_8h" local="no">bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h</includedby>
+    <includedby refid="_common_networks_8h" local="no">bolt/src/graph/CommonNetworks.h</includedby>
+    <includedby refid="_distributed_training_wrapper_8h" local="no">bolt/src/graph/DistributedTrainingWrapper.h</includedby>
+    <includedby refid="_graph_8cc" local="no">bolt/src/graph/Graph.cc</includedby>
+    <includedby refid="_graph_8h" local="no">bolt/src/graph/Graph.h</includedby>
+    <includedby refid="_graph_property_checks_8h" local="no">bolt/src/graph/GraphPropertyChecks.h</includedby>
+    <includedby refid="_metric_aggregator_8h" local="no">bolt/src/metrics/MetricAggregator.h</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>bolt/src/loss_functions/LossFunctions.h</label>
+        <link refid="_loss_functions_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>bolt_vector/src/BoltVector.h</label>
+        <link refid="_bolt_vector_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+      </node>
+      <node id="19">
+        <label>utils/StringManipulation.h</label>
+        <link refid="_string_manipulation_8h_source"/>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+      </node>
+      <node id="6">
+        <label>algorithm</label>
+      </node>
+      <node id="7">
+        <label>cassert</label>
+      </node>
+      <node id="4">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="5">
+        <label>cereal/cereal.hpp</label>
+      </node>
+      <node id="2">
+        <label>cereal/types/polymorphic.hpp</label>
+      </node>
+      <node id="8">
+        <label>cstdint</label>
+      </node>
+      <node id="9">
+        <label>iostream</label>
+      </node>
+      <node id="10">
+        <label>limits</label>
+      </node>
+      <node id="21">
+        <label>memory</label>
+      </node>
+      <node id="11">
+        <label>numeric</label>
+      </node>
+      <node id="12">
+        <label>optional</label>
+      </node>
+      <node id="13">
+        <label>queue</label>
+      </node>
+      <node id="14">
+        <label>sstream</label>
+      </node>
+      <node id="15">
+        <label>stdexcept</label>
+      </node>
+      <node id="16">
+        <label>string</label>
+      </node>
+      <node id="20">
+        <label>string_view</label>
+      </node>
+      <node id="17">
+        <label>utility</label>
+      </node>
+      <node id="18">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="6">
+        <label>bolt/src/auto_classifiers/AutoClassifierBase.h</label>
+        <link refid="_auto_classifier_base_8h_source"/>
+      </node>
+      <node id="2">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h</label>
+        <link refid="_sequential_classifier_8h_source"/>
+      </node>
+      <node id="3">
+        <label>bolt/src/graph/CommonNetworks.h</label>
+        <link refid="_common_networks_8h_source"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>bolt/src/graph/DistributedTrainingWrapper.h</label>
+        <link refid="_distributed_training_wrapper_8h_source"/>
+      </node>
+      <node id="12">
+        <label>bolt/src/graph/ExecutionConfig.h</label>
+        <link refid="_execution_config_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>bolt/src/graph/Graph.h</label>
+        <link refid="_graph_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+      </node>
+      <node id="10">
+        <label>bolt/src/graph/GraphPropertyChecks.h</label>
+        <link refid="_graph_property_checks_8h_source"/>
+      </node>
+      <node id="7">
+        <label>bolt/src/graph/callbacks/EarlyStopCheckpoint.h</label>
+        <link refid="_early_stop_checkpoint_8h_source"/>
+      </node>
+      <node id="8">
+        <label>bolt/src/graph/callbacks/LearningRateScheduler.h</label>
+        <link refid="_learning_rate_scheduler_8h_source"/>
+      </node>
+      <node id="1">
+        <label>bolt/src/loss_functions/LossFunctions.h</label>
+        <link refid="_loss_functions_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+      </node>
+      <node id="11">
+        <label>bolt/src/metrics/MetricAggregator.h</label>
+        <link refid="_metric_aggregator_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>bolt/src/root_cause_analysis/RootCauseAnalysis.h</label>
+        <link refid="_root_cause_analysis_8h_source"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classthirdai_1_1bolt_1_1_loss_function" prot="public">thirdai::bolt::LossFunction</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy_loss" prot="public">thirdai::bolt::CategoricalCrossEntropyLoss</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_binary_cross_entropy_loss" prot="public">thirdai::bolt::BinaryCrossEntropyLoss</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_mean_squared_error" prot="public">thirdai::bolt::MeanSquaredError</innerclass>
+    <innerclass refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error_loss" prot="public">thirdai::bolt::WeightedMeanAbsolutePercentageErrorLoss</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1bolt">thirdai::bolt</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/types/polymorphic.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt_vector/src/BoltVector.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;utils/StringManipulation.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;algorithm&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;memory&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;stdexcept&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::bolt<sp/>{</highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight></codeline>
+<codeline lineno="12" refid="classthirdai_1_1bolt_1_1_loss_function" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1bolt_1_1_loss_function" kindref="compound">LossFunction</ref><sp/>{</highlight></codeline>
+<codeline lineno="13"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="14"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1bolt_1_1_loss_function" kindref="compound">LossFunction</ref>()<sp/>{}</highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>lossGradients(<ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>&amp;<sp/>output,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>&amp;<sp/>labels,</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>batch_size)</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="18"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(output.isDense())<sp/>{</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(labels.isDense())<sp/>{</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>computeLossGradientsImpl&lt;true,<sp/>true&gt;(output,<sp/>labels,<sp/>batch_size);</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>computeLossGradientsImpl&lt;true,<sp/>false&gt;(output,<sp/>labels,<sp/>batch_size);</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(labels.isDense())<sp/>{</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>computeLossGradientsImpl&lt;false,<sp/>true&gt;(output,<sp/>labels,<sp/>batch_size);</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>computeLossGradientsImpl&lt;false,<sp/>false&gt;(output,<sp/>labels,<sp/>batch_size);</highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"></highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_loss_function" kindref="compound">~LossFunction</ref>()<sp/>=<sp/></highlight><highlight class="keywordflow">default</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"></highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>OUTPUT_DENSE,<sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>LABEL_DENSE&gt;</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>computeLossGradientsImpl(<ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>&amp;<sp/>output,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>&amp;<sp/>labels,</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>batch_size)</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(!(OUTPUT_DENSE<sp/>&amp;&amp;<sp/>output.active_neurons<sp/>!=<sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">));</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(!LABEL_DENSE<sp/>||<sp/>labels.active_neurons<sp/>==<sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(OUTPUT_DENSE<sp/>&amp;&amp;<sp/>LABEL_DENSE)<sp/>{</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>assert(output.len<sp/>==<sp/>labels.len);</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*</highlight></codeline>
+<codeline lineno="45"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>Loss<sp/>functions<sp/>are<sp/>only<sp/>used<sp/>in<sp/>training.</highlight></codeline>
+<codeline lineno="46"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>If<sp/>the<sp/>label<sp/>is<sp/>sparse,<sp/>the<sp/>neurons<sp/>of<sp/>the<sp/>network&apos;s<sp/>final</highlight></codeline>
+<codeline lineno="47"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>layer<sp/>that<sp/>correspond<sp/>to<sp/>the<sp/>label&apos;s<sp/>nonzero<sp/>elements<sp/>are</highlight></codeline>
+<codeline lineno="48"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>automatically<sp/>selected<sp/>and<sp/>activated<sp/>during<sp/>training.</highlight></codeline>
+<codeline lineno="49"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>Thus,<sp/>we<sp/>don&apos;t<sp/>have<sp/>to<sp/>consider<sp/>the<sp/>case<sp/>where<sp/>there<sp/>are</highlight></codeline>
+<codeline lineno="50"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>nonzeros<sp/>in<sp/>the<sp/>label<sp/>that<sp/>correspond<sp/>to<sp/>inactive<sp/>neurons<sp/>in</highlight></codeline>
+<codeline lineno="51"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>the<sp/>output<sp/>layer.</highlight></codeline>
+<codeline lineno="52"><highlight class="comment"><sp/><sp/><sp/><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>i<sp/>=<sp/>0;<sp/>i<sp/>&lt;<sp/>output.len;<sp/>i++)<sp/>{</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>active_neuron<sp/>=<sp/>OUTPUT_DENSE<sp/>?<sp/>i<sp/>:<sp/>output.active_neurons[i];</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>label_val<sp/>=</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>labels.<ref refid="structthirdai_1_1_bolt_vector_1a5bae1b753bdfc77342918f6b35813f7f" kindref="member">findActiveNeuron</ref>&lt;LABEL_DENSE&gt;(active_neuron).activation;</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>output.gradients[i]<sp/>=</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>elementLossGradient(label_val,<sp/>output.activations[i],<sp/>batch_size);</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="61"><highlight class="normal"></highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>elementLossGradient(</highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>label,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>activation,</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>batch_size)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"></highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">friend</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">cereal::access;</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">class</highlight><highlight class="normal"><sp/>Archive&gt;</highlight></codeline>
+<codeline lineno="67"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>serialize(Archive&amp;<sp/>archive)<sp/>{</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)archive;</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="70"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"></highlight></codeline>
+<codeline lineno="72" refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy_loss" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy_loss" kindref="compound">CategoricalCrossEntropyLoss</ref><sp/>final<sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_loss_function" kindref="compound">LossFunction</ref><sp/>{</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy_loss" kindref="compound">CategoricalCrossEntropyLoss</ref>()<sp/>{}</highlight></codeline>
+<codeline lineno="75"><highlight class="normal"></highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;CategoricalCrossEntropyLoss&gt;</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/>makeCategoricalCrossEntropyLoss()<sp/>{</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;CategoricalCrossEntropyLoss&gt;();</highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"></highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>elementLossGradient(</highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>label,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>activation,</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>batch_size)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>(label<sp/>-<sp/>activation)<sp/>/<sp/>batch_size;</highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="86"><highlight class="normal"></highlight></codeline>
+<codeline lineno="87"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">friend</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">cereal::access;</highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">class</highlight><highlight class="normal"><sp/>Archive&gt;</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>serialize(Archive&amp;<sp/>archive)<sp/>{</highlight></codeline>
+<codeline lineno="90"><highlight class="normal"><sp/><sp/><sp/><sp/>archive(cereal::base_class&lt;LossFunction&gt;(</highlight><highlight class="keyword">this</highlight><highlight class="normal">));</highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="92"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="93"><highlight class="normal"></highlight></codeline>
+<codeline lineno="94" refid="classthirdai_1_1bolt_1_1_binary_cross_entropy_loss" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1bolt_1_1_binary_cross_entropy_loss" kindref="compound">BinaryCrossEntropyLoss</ref><sp/>final<sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_loss_function" kindref="compound">LossFunction</ref><sp/>{</highlight></codeline>
+<codeline lineno="95"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1bolt_1_1_binary_cross_entropy_loss" kindref="compound">BinaryCrossEntropyLoss</ref>()<sp/>{}</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"></highlight></codeline>
+<codeline lineno="98"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;BinaryCrossEntropyLoss&gt;<sp/>makeBinaryCrossEntropyLoss()<sp/>{</highlight></codeline>
+<codeline lineno="99"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;BinaryCrossEntropyLoss&gt;();</highlight></codeline>
+<codeline lineno="100"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="101"><highlight class="normal"></highlight></codeline>
+<codeline lineno="102"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="103"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>elementLossGradient(</highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>label,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>activation,</highlight></codeline>
+<codeline lineno="104"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>batch_size)</highlight><highlight class="keyword"><sp/>const<sp/>override<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="105"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>Derivation</highlight></codeline>
+<codeline lineno="106"><highlight class="comment"></highlight></codeline>
+<codeline lineno="107"><highlight class="comment"><sp/><sp/><sp/><sp/>Note:<sp/>we<sp/>are<sp/>assuming<sp/>that<sp/>BCE<sp/>is<sp/>used<sp/>along<sp/>with<sp/>a<sp/>signmoid<sp/>activation<sp/>in</highlight></codeline>
+<codeline lineno="108"><highlight class="comment"><sp/><sp/><sp/><sp/>the<sp/>final<sp/>layer.</highlight></codeline>
+<codeline lineno="109"><highlight class="comment"></highlight></codeline>
+<codeline lineno="110"><highlight class="comment"><sp/><sp/><sp/><sp/>Notation:</highlight></codeline>
+<codeline lineno="111"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/>*<sp/>y<sp/>-<sp/>the<sp/>true<sp/>label<sp/>for<sp/>the<sp/>neuron<sp/>in<sp/>question,<sp/>y<sp/>is<sp/>0<sp/>or<sp/>1.</highlight></codeline>
+<codeline lineno="112"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/>*<sp/>a<sp/>-<sp/>the<sp/>activation<sp/>of<sp/>the<sp/>neuron.</highlight></codeline>
+<codeline lineno="113"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/>*<sp/>z<sp/>-<sp/>the<sp/>net<sp/>inputs<sp/>of<sp/>the<sp/>neuron<sp/>before<sp/>applying<sp/>the<sp/>activation<sp/>function.</highlight></codeline>
+<codeline lineno="114"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/>*<sp/>sig<sp/>-<sp/>the<sp/>sigmoid<sp/>function.<sp/>Note<sp/>that<sp/>d/dx<sp/>sig(x)<sp/>=<sp/>sig(x)(1-sig(x))</highlight></codeline>
+<codeline lineno="115"><highlight class="comment"></highlight></codeline>
+<codeline lineno="116"><highlight class="comment"><sp/><sp/><sp/><sp/>BCE(a,y)<sp/>=<sp/>-<sp/>y<sp/>log(a)<sp/>-<sp/>(1-y)<sp/>log(1-a)</highlight></codeline>
+<codeline lineno="117"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>=<sp/>-<sp/>y<sp/>log(sig(z))<sp/>-<sp/>(1-y)<sp/>log(1-sig(z))</highlight></codeline>
+<codeline lineno="118"><highlight class="comment"></highlight></codeline>
+<codeline lineno="119"><highlight class="comment"><sp/><sp/><sp/><sp/>d/dz<sp/>BCE(a,y)</highlight></codeline>
+<codeline lineno="120"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>=<sp/>-<sp/>y<sp/>[1/sig(x)]<sp/>sig(x)(1-sig(x))<sp/>+<sp/>(1-y)<sp/>[1/(1-sig(x))]<sp/>sig(x)(1-sig(x))</highlight></codeline>
+<codeline lineno="121"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>=<sp/>-<sp/>y<sp/>(1-sig(x))<sp/>+<sp/>(1-y)<sp/>sig(x)</highlight></codeline>
+<codeline lineno="122"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>=<sp/>-<sp/>y<sp/>+<sp/>y<sp/>sig(x)<sp/>+<sp/>sig(x)<sp/>-<sp/>y<sp/>sig(x)</highlight></codeline>
+<codeline lineno="123"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>=<sp/>sig(x)<sp/>-<sp/>y</highlight></codeline>
+<codeline lineno="124"><highlight class="comment"></highlight></codeline>
+<codeline lineno="125"><highlight class="comment"><sp/><sp/><sp/><sp/>We<sp/>are<sp/>computing<sp/>y<sp/>-<sp/>sig(x)<sp/>because<sp/>we<sp/>want<sp/>the<sp/>negative<sp/>gradient<sp/>to</highlight></codeline>
+<codeline lineno="126"><highlight class="comment"><sp/><sp/><sp/><sp/>minimize<sp/>the<sp/>loss<sp/>function.<sp/>We<sp/>divide<sp/>by<sp/>batch<sp/>size<sp/>because<sp/>we<sp/>average<sp/>the</highlight></codeline>
+<codeline lineno="127"><highlight class="comment"><sp/><sp/><sp/><sp/>loss<sp/>over<sp/>the<sp/>batch.</highlight></codeline>
+<codeline lineno="128"><highlight class="comment"></highlight></codeline>
+<codeline lineno="129"><highlight class="comment"><sp/><sp/><sp/><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="130"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>(label<sp/>-<sp/>activation)<sp/>/<sp/>batch_size;</highlight></codeline>
+<codeline lineno="131"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="132"><highlight class="normal"></highlight></codeline>
+<codeline lineno="133"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">friend</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">cereal::access;</highlight></codeline>
+<codeline lineno="134"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">class</highlight><highlight class="normal"><sp/>Archive&gt;</highlight></codeline>
+<codeline lineno="135"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>serialize(Archive&amp;<sp/>archive)<sp/>{</highlight></codeline>
+<codeline lineno="136"><highlight class="normal"><sp/><sp/><sp/><sp/>archive(cereal::base_class&lt;LossFunction&gt;(</highlight><highlight class="keyword">this</highlight><highlight class="normal">));</highlight></codeline>
+<codeline lineno="137"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="138"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="139"><highlight class="normal"></highlight></codeline>
+<codeline lineno="140" refid="classthirdai_1_1bolt_1_1_mean_squared_error" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1bolt_1_1_mean_squared_error" kindref="compound">MeanSquaredError</ref><sp/>final<sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_loss_function" kindref="compound">LossFunction</ref><sp/>{</highlight></codeline>
+<codeline lineno="141"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="142"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1bolt_1_1_mean_squared_error" kindref="compound">MeanSquaredError</ref>()<sp/>{}</highlight></codeline>
+<codeline lineno="143"><highlight class="normal"></highlight></codeline>
+<codeline lineno="144"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;MeanSquaredError&gt;<sp/>makeMeanSquaredError()<sp/>{</highlight></codeline>
+<codeline lineno="145"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;MeanSquaredError&gt;();</highlight></codeline>
+<codeline lineno="146"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="147"><highlight class="normal"></highlight></codeline>
+<codeline lineno="148"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="149"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>elementLossGradient(</highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>label,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>activation,</highlight></codeline>
+<codeline lineno="150"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>batch_size)</highlight><highlight class="keyword"><sp/>const<sp/>override<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="151"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>2<sp/>*<sp/>(label<sp/>-<sp/>activation)<sp/>/<sp/>batch_size;</highlight></codeline>
+<codeline lineno="152"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="153"><highlight class="normal"></highlight></codeline>
+<codeline lineno="154"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">friend</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">cereal::access;</highlight></codeline>
+<codeline lineno="155"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">class</highlight><highlight class="normal"><sp/>Archive&gt;</highlight></codeline>
+<codeline lineno="156"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>serialize(Archive&amp;<sp/>archive)<sp/>{</highlight></codeline>
+<codeline lineno="157"><highlight class="normal"><sp/><sp/><sp/><sp/>archive(cereal::base_class&lt;LossFunction&gt;(</highlight><highlight class="keyword">this</highlight><highlight class="normal">));</highlight></codeline>
+<codeline lineno="158"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="159"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="160"><highlight class="normal"></highlight></codeline>
+<codeline lineno="168" refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error_loss" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error_loss" kindref="compound">WeightedMeanAbsolutePercentageErrorLoss</ref><sp/>final<sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_loss_function" kindref="compound">LossFunction</ref><sp/>{</highlight></codeline>
+<codeline lineno="169"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="170"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error_loss" kindref="compound">WeightedMeanAbsolutePercentageErrorLoss</ref>()<sp/>{}</highlight></codeline>
+<codeline lineno="171"><highlight class="normal"></highlight></codeline>
+<codeline lineno="172"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;WeightedMeanAbsolutePercentageErrorLoss&gt;</highlight></codeline>
+<codeline lineno="173"><highlight class="normal"><sp/><sp/>makeWeightedMeanAbsolutePercentageErrorLoss()<sp/>{</highlight></codeline>
+<codeline lineno="174"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;WeightedMeanAbsolutePercentageErrorLoss&gt;();</highlight></codeline>
+<codeline lineno="175"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="176"><highlight class="normal"></highlight></codeline>
+<codeline lineno="177"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="178"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>elementLossGradient(</highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>label,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>activation,</highlight></codeline>
+<codeline lineno="179"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>batch_size)</highlight><highlight class="keyword"><sp/>const<sp/>override<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="180"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>direction<sp/>=<sp/>activation<sp/>&gt;<sp/>label<sp/>?<sp/>-1.0<sp/>:<sp/>1.0;</highlight></codeline>
+<codeline lineno="181"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>direction<sp/>/<sp/>batch_size;</highlight></codeline>
+<codeline lineno="182"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="183"><highlight class="normal"></highlight></codeline>
+<codeline lineno="184"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">friend</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">cereal::access;</highlight></codeline>
+<codeline lineno="185"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">class</highlight><highlight class="normal"><sp/>Archive&gt;</highlight></codeline>
+<codeline lineno="186"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>serialize(Archive&amp;<sp/>archive)<sp/>{</highlight></codeline>
+<codeline lineno="187"><highlight class="normal"><sp/><sp/><sp/><sp/>archive(cereal::base_class&lt;LossFunction&gt;(</highlight><highlight class="keyword">this</highlight><highlight class="normal">));</highlight></codeline>
+<codeline lineno="188"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="189"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="190"><highlight class="normal"></highlight></codeline>
+<codeline lineno="191"><highlight class="normal"></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;LossFunction&gt;<sp/>getLossFunction(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>name)<sp/>{</highlight></codeline>
+<codeline lineno="192"><highlight class="normal"><sp/><sp/>std::string<sp/>lower_name<sp/>=<sp/>utils::lower(name);</highlight></codeline>
+<codeline lineno="193"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(lower_name<sp/>==<sp/></highlight><highlight class="stringliteral">&quot;categoricalcrossentropyloss&quot;</highlight><highlight class="normal">)<sp/>{</highlight></codeline>
+<codeline lineno="194"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss();</highlight></codeline>
+<codeline lineno="195"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="196"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(lower_name<sp/>==<sp/></highlight><highlight class="stringliteral">&quot;binarycrossentropyloss&quot;</highlight><highlight class="normal"><sp/>||<sp/>lower_name<sp/>==<sp/></highlight><highlight class="stringliteral">&quot;bce&quot;</highlight><highlight class="normal">)<sp/>{</highlight></codeline>
+<codeline lineno="197"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>BinaryCrossEntropyLoss::makeBinaryCrossEntropyLoss();</highlight></codeline>
+<codeline lineno="198"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="199"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(lower_name<sp/>==<sp/></highlight><highlight class="stringliteral">&quot;meansquarederror&quot;</highlight><highlight class="normal"><sp/>||<sp/>lower_name<sp/>==<sp/></highlight><highlight class="stringliteral">&quot;mse&quot;</highlight><highlight class="normal">)<sp/>{</highlight></codeline>
+<codeline lineno="200"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>MeanSquaredError::makeMeanSquaredError();</highlight></codeline>
+<codeline lineno="201"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="202"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(lower_name<sp/>==<sp/></highlight><highlight class="stringliteral">&quot;weightedmeanabsolutepercentageerror&quot;</highlight><highlight class="normal"><sp/>||</highlight></codeline>
+<codeline lineno="203"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>lower_name<sp/>==<sp/></highlight><highlight class="stringliteral">&quot;wmape&quot;</highlight><highlight class="normal">)<sp/>{</highlight></codeline>
+<codeline lineno="204"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>WeightedMeanAbsolutePercentageErrorLoss::</highlight></codeline>
+<codeline lineno="205"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>makeWeightedMeanAbsolutePercentageErrorLoss();</highlight></codeline>
+<codeline lineno="206"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="207"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="208"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&apos;&quot;</highlight><highlight class="normal"><sp/>+<sp/>name<sp/>+</highlight></codeline>
+<codeline lineno="209"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&apos;<sp/>is<sp/>not<sp/>a<sp/>valid<sp/>loss<sp/>function.<sp/>Use<sp/>&apos;CategoricalCrossEntropyLoss&apos;,<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="210"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&apos;BinaryCrossEntropyLoss&apos;,<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="211"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&apos;MeanSquaredError&apos;/&apos;MSE&apos;,<sp/>or<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="212"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&apos;WeightedMeanAbsolutePercentageError&apos;/&apos;WMAPE&apos;&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="213"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="214"><highlight class="normal"></highlight></codeline>
+<codeline lineno="215"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::bolt</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="216"><highlight class="normal"></highlight></codeline>
+<codeline lineno="217"><highlight class="normal">CEREAL_REGISTER_TYPE(<ref refid="classthirdai_1_1bolt_1_1_categorical_cross_entropy_loss" kindref="compound">thirdai::bolt::CategoricalCrossEntropyLoss</ref>)</highlight></codeline>
+<codeline lineno="218"><highlight class="normal">CEREAL_REGISTER_TYPE(<ref refid="classthirdai_1_1bolt_1_1_binary_cross_entropy_loss" kindref="compound">thirdai::bolt::BinaryCrossEntropyLoss</ref>)</highlight></codeline>
+<codeline lineno="219"><highlight class="normal">CEREAL_REGISTER_TYPE(<ref refid="classthirdai_1_1bolt_1_1_mean_squared_error" kindref="compound">thirdai::bolt::MeanSquaredError</ref>)</highlight></codeline>
+<codeline lineno="220"><highlight class="normal">CEREAL_REGISTER_TYPE(<ref refid="classthirdai_1_1bolt_1_1_weighted_mean_absolute_percentage_error_loss" kindref="compound">thirdai::bolt::WeightedMeanAbsolutePercentageErrorLoss</ref>)</highlight></codeline>
+    </programlisting>
+    <location file="bolt/src/loss_functions/LossFunctions.h"/>
+  </compounddef>
+</doxygen>

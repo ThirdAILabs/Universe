@@ -1,0 +1,499 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_tabular_metadata" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::dataset::TabularMetadata</compoundname>
+    <includes refid="_tabular_metadata_processor_8h" local="no">TabularMetadataProcessor.h</includes>
+      <sectiondef kind="private-static-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_tabular_metadata_1a52a11756d6244f209756f3cd972ef367" prot="private" static="yes" constexpr="yes" mutable="no">
+        <type>constexpr uint32_t</type>
+        <definition>constexpr uint32_t thirdai::dataset::TabularMetadata::DEFAULT_NUM_BINS</definition>
+        <argsstring></argsstring>
+        <name>DEFAULT_NUM_BINS</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::DEFAULT_NUM_BINS</qualifiedname>
+        <initializer>= 10</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="131" column="29" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="131" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1dataset_1_1_tabular_metadata_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="185" column="16" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="185" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_tabular_metadata_1ab9942c52d92bd105b01cac133ddeea5e" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; TabularDataType &gt;</type>
+        <definition>std::vector&lt;TabularDataType&gt; thirdai::dataset::TabularMetadata::_column_dtypes</definition>
+        <argsstring></argsstring>
+        <name>_column_dtypes</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::_column_dtypes</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="192" column="15" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="192" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_tabular_metadata_1a367bcadc8ec95623da60c59b413e1882" prot="private" static="no" mutable="no">
+        <type>std::unordered_map&lt; uint32_t, std::pair&lt; double, double &gt; &gt;</type>
+        <definition>std::unordered_map&lt;uint32_t, std::pair&lt;double, double&gt; &gt; thirdai::dataset::TabularMetadata::_col_min_maxes</definition>
+        <argsstring></argsstring>
+        <name>_col_min_maxes</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::_col_min_maxes</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="193" column="22" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="193" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_tabular_metadata_1aa06169163c7d876907be019e7d6ae78c" prot="private" static="no" mutable="no">
+        <type>ThreadSafeVocabularyPtr</type>
+        <definition>ThreadSafeVocabularyPtr thirdai::dataset::TabularMetadata::_class_name_to_id</definition>
+        <argsstring></argsstring>
+        <name>_class_name_to_id</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::_class_name_to_id</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="195" column="27" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="195" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_tabular_metadata_1a3f6b227ddf9fdb37d7c6e4a2786347cd" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt;std::string&gt; thirdai::dataset::TabularMetadata::_column_names</definition>
+        <argsstring></argsstring>
+        <name>_column_names</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::_column_names</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="197" column="15" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="197" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_tabular_metadata_1a1b134e33d168132e928095275ef5c9d9" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; std::unordered_map&lt; uint32_t, uint32_t &gt; &gt;</type>
+        <definition>std::optional&lt;std::unordered_map&lt;uint32_t, uint32_t&gt; &gt; thirdai::dataset::TabularMetadata::_col_to_num_bins</definition>
+        <argsstring></argsstring>
+        <name>_col_to_num_bins</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::_col_to_num_bins</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="200" column="17" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="200" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_tabular_metadata_1a4e83ce7c2a6badcc9761b16260dd7e3d" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; uint32_t &gt;</type>
+        <definition>std::optional&lt;uint32_t&gt; thirdai::dataset::TabularMetadata::_label_col</definition>
+        <argsstring></argsstring>
+        <name>_label_col</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::_label_col</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="202" column="17" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="202" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1ae1a042dfd60633c2c7a65b621376b409" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::TabularMetadata::TabularMetadata</definition>
+        <argsstring>(std::vector&lt; TabularDataType &gt; column_dtypes, std::unordered_map&lt; uint32_t, std::pair&lt; double, double &gt; &gt; col_min_maxes, ThreadSafeVocabularyPtr class_name_to_id, std::vector&lt; std::string &gt; column_names={}, std::optional&lt; std::unordered_map&lt; uint32_t, uint32_t &gt; &gt; col_to_num_bins=std::nullopt)</argsstring>
+        <name>TabularMetadata</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::TabularMetadata</qualifiedname>
+        <param>
+          <type>std::vector&lt; TabularDataType &gt;</type>
+          <declname>column_dtypes</declname>
+        </param>
+        <param>
+          <type>std::unordered_map&lt; uint32_t, std::pair&lt; double, double &gt; &gt;</type>
+          <declname>col_min_maxes</declname>
+        </param>
+        <param>
+          <type>ThreadSafeVocabularyPtr</type>
+          <declname>class_name_to_id</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; std::string &gt;</type>
+          <declname>column_names</declname>
+          <defval>{}</defval>
+        </param>
+        <param>
+          <type>std::optional&lt; std::unordered_map&lt; uint32_t, uint32_t &gt; &gt;</type>
+          <declname>col_to_num_bins</declname>
+          <defval>std::nullopt</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="44" column="3" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="44" bodyend="66"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1a6a4ea5f78ae5847a4b5eeb631850321b" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::TabularMetadata::getLabelCol</definition>
+        <argsstring>() const</argsstring>
+        <name>getLabelCol</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::getLabelCol</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="68" column="12" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="68" bodyend="68"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1afcaadb9dd67ccef778017fab375b27d3" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>ThreadSafeVocabularyPtr</type>
+        <definition>ThreadSafeVocabularyPtr thirdai::dataset::TabularMetadata::getClassToIdMap</definition>
+        <argsstring>()</argsstring>
+        <name>getClassToIdMap</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::getClassToIdMap</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="70" column="27" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="70" bodyend="70"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1a208928d1fc237aafdae5f88cd328c53c" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::TabularMetadata::numColumns</definition>
+        <argsstring>() const</argsstring>
+        <name>numColumns</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::numColumns</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="72" column="12" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="72" bodyend="72"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1afc9999af8f9be8f670236655e99d1570" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>TabularDataType</type>
+        <definition>TabularDataType thirdai::dataset::TabularMetadata::colType</definition>
+        <argsstring>(uint32_t col)</argsstring>
+        <name>colType</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::colType</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="74" column="19" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="74" bodyend="74"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1acb32ff7f649c1e773c34569e8e5f2662" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::TabularMetadata::getStringHashValue</definition>
+        <argsstring>(const std::string &amp;str_val, uint32_t col) const</argsstring>
+        <name>getStringHashValue</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::getStringHashValue</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>str_val</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="76" column="12" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="76" bodyend="83"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1a73e6ed533f4a2500f1963c2005650e84" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::TabularMetadata::getNumericHashValue</definition>
+        <argsstring>(uint32_t col, const std::string &amp;str_val, std::exception_ptr &amp;exception_ptr)</argsstring>
+        <name>getNumericHashValue</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::getNumericHashValue</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>str_val</declname>
+        </param>
+        <param>
+          <type>std::exception_ptr &amp;</type>
+          <declname>exception_ptr</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="85" column="12" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="85" bodyend="93"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1afe5b679d87c4329b0291e38f3f5abd41" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>double</type>
+        <definition>double thirdai::dataset::TabularMetadata::getColBinsize</definition>
+        <argsstring>(uint32_t col)</argsstring>
+        <name>getColBinsize</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::getColBinsize</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="96" column="10" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="96" bodyend="98"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1a008e7099c399a565c4dc5f504d721730" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::TabularMetadata::getColBin</definition>
+        <argsstring>(uint32_t col, const std::string &amp;str_val, std::exception_ptr &amp;exception_ptr)</argsstring>
+        <name>getColBin</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::getColBin</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>str_val</declname>
+        </param>
+        <param>
+          <type>std::exception_ptr &amp;</type>
+          <declname>exception_ptr</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="100" column="12" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="100" bodyend="125"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1a0bfbb7c473f0dc9185357b7cbdc0ce4e" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>double</type>
+        <definition>double thirdai::dataset::TabularMetadata::colMin</definition>
+        <argsstring>(uint32_t col)</argsstring>
+        <name>colMin</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::colMin</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="127" column="10" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="127" bodyend="127"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1a46c6bdf7bcd31fb1b8ac8d74a1bff84c" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>double</type>
+        <definition>double thirdai::dataset::TabularMetadata::colMax</definition>
+        <argsstring>(uint32_t col)</argsstring>
+        <name>colMax</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::colMax</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="129" column="10" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="129" bodyend="129"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1a005cfe6fc26a2080f37e59306e050465" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::TabularMetadata::numBins</definition>
+        <argsstring>(uint32_t col)</argsstring>
+        <name>numBins</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::numBins</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>col</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="133" column="12" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="133" bodyend="138"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1ad522cb2a2c61d9c276927515193d8232" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::TabularMetadata::verifyInputs</definition>
+        <argsstring>()</argsstring>
+        <name>verifyInputs</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::verifyInputs</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="140" column="8" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="140" bodyend="179"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1aabe809a4db1ddcc18c57397fba1e5605" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::TabularMetadata::TabularMetadata</definition>
+        <argsstring>()</argsstring>
+        <name>TabularMetadata</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::TabularMetadata</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="182" column="3" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="182" bodyend="182"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_tabular_metadata_1a5ca11f32f8b62ec95f9db99cfde0fff2" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::dataset::TabularMetadata::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::dataset::TabularMetadata::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="187" column="8" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="187" bodyend="190"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>This object stores metadata about a Tabular Dataset like column type information, max/min values for numeric columns, etc. </para>
+    </briefdescription>
+    <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>column_dtypes</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Types of the observed columns. </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>col_min_maxes</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Mapping from column number to a pair of min/max values. Must specify a pair for each Numeric type as specified in column_dtypes. </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>class_name_to_id</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>ThreadSafeVocabularyPtr of the labels. Should be fixed </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>column_names</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Vector of column names. Must match the length of column_dtypes. Required for use in RCA but optional for general use. </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>col_to_num_bins</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>Optional mapping from column number to the number of bins to use for that column. Must specify a pair for each Numeric type as specified in column_dtypes. If map is not passed in, <ref refid="classthirdai_1_1dataset_1_1_tabular_pair_gram" kindref="compound">TabularPairGram</ref> default the number of bins to 10.</para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+TODO(david): look at a TabularBinningStrategy class to try out different methods? </para>
+    </detaileddescription>
+    <location file="dataset/src/batch_processors/TabularMetadataProcessor.h" line="42" column="1" bodyfile="dataset/src/batch_processors/TabularMetadataProcessor.h" bodystart="42" bodyend="203"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1aa06169163c7d876907be019e7d6ae78c" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>_class_name_to_id</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1a367bcadc8ec95623da60c59b413e1882" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>_col_min_maxes</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1a1b134e33d168132e928095275ef5c9d9" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>_col_to_num_bins</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1ab9942c52d92bd105b01cac133ddeea5e" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>_column_dtypes</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1a3f6b227ddf9fdb37d7c6e4a2786347cd" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>_column_names</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1a4e83ce7c2a6badcc9761b16260dd7e3d" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>_label_col</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1a46c6bdf7bcd31fb1b8ac8d74a1bff84c" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>colMax</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1a0bfbb7c473f0dc9185357b7cbdc0ce4e" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>colMin</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1afc9999af8f9be8f670236655e99d1570" prot="public" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>colType</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1a52a11756d6244f209756f3cd972ef367" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>DEFAULT_NUM_BINS</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1afcaadb9dd67ccef778017fab375b27d3" prot="public" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>getClassToIdMap</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1a008e7099c399a565c4dc5f504d721730" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>getColBin</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1afe5b679d87c4329b0291e38f3f5abd41" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>getColBinsize</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1a6a4ea5f78ae5847a4b5eeb631850321b" prot="public" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>getLabelCol</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1a73e6ed533f4a2500f1963c2005650e84" prot="public" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>getNumericHashValue</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1acb32ff7f649c1e773c34569e8e5f2662" prot="public" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>getStringHashValue</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1a005cfe6fc26a2080f37e59306e050465" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>numBins</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1a208928d1fc237aafdae5f88cd328c53c" prot="public" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>numColumns</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1a5ca11f32f8b62ec95f9db99cfde0fff2" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1ae1a042dfd60633c2c7a65b621376b409" prot="public" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>TabularMetadata</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1aabe809a4db1ddcc18c57397fba1e5605" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>TabularMetadata</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_tabular_metadata_1ad522cb2a2c61d9c276927515193d8232" prot="private" virt="non-virtual"><scope>thirdai::dataset::TabularMetadata</scope><name>verifyInputs</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

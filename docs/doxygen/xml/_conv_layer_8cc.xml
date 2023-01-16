@@ -1,0 +1,807 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_conv_layer_8cc" kind="file" language="C++">
+    <compoundname>ConvLayer.cc</compoundname>
+    <includes refid="_conv_layer_8h" local="yes">ConvLayer.h</includes>
+    <includes refid="_fully_connected_layer_8h" local="yes">FullyConnectedLayer.h</includes>
+    <includes local="no">exceptions/src/Exceptions.h</includes>
+    <includes local="no">numeric</includes>
+    <includes local="no">random</includes>
+    <incdepgraph>
+      <node id="1">
+        <label>bolt/src/layers/ConvLayer.cc</label>
+        <link refid="_conv_layer_8cc"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="42" relation="include">
+        </childnode>
+        <childnode refid="41" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="44" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>ConvLayer.h</label>
+        <link refid="_conv_layer_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="40" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+        <childnode refid="41" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+      </node>
+      <node id="42">
+        <label>FullyConnectedLayer.h</label>
+        <link refid="_fully_connected_layer_8h_source"/>
+        <childnode refid="43" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="40" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="44" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>LayerConfig.h</label>
+        <link refid="_layer_config_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="37" relation="include">
+        </childnode>
+        <childnode refid="39" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>LayerUtils.h</label>
+        <link refid="_layer_utils_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+      </node>
+      <node id="40">
+        <label>bolt/src/layers/Optimizer.h</label>
+        <link refid="_optimizer_8h_source"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+      </node>
+      <node id="32">
+        <label>SamplingConfig.h</label>
+        <link refid="_sampling_config_8h_source"/>
+        <childnode refid="33" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+        <childnode refid="37" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+      </node>
+      <node id="13">
+        <label>bolt_vector/src/BoltVector.h</label>
+        <link refid="_bolt_vector_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>hashing/src/DWTA.h</label>
+        <link refid="_d_w_t_a_8h_source"/>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+      </node>
+      <node id="27">
+        <label>hashing/src/FastSRP.h</label>
+        <link refid="_fast_s_r_p_8h_source"/>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+      </node>
+      <node id="10">
+        <label>HashFunction.h</label>
+        <link refid="_hash_function_8h_source"/>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+      </node>
+      <node id="11">
+        <label>HashUtils.h</label>
+        <link refid="_hash_utils_8h_source"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+      </node>
+      <node id="28">
+        <label>hashing/src/SRP.h</label>
+        <link refid="_s_r_p_8h_source"/>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+      </node>
+      <node id="35">
+        <label>HashTable.h</label>
+        <link refid="_hash_table_8h_source"/>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="36" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+      </node>
+      <node id="34">
+        <label>hashtable/src/SampledHashTable.h</label>
+        <link refid="_sampled_hash_table_8h_source"/>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="35" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="36" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+      </node>
+      <node id="29">
+        <label>utils/StringManipulation.h</label>
+        <link refid="_string_manipulation_8h_source"/>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+      </node>
+      <node id="15">
+        <label>algorithm</label>
+      </node>
+      <node id="16">
+        <label>cassert</label>
+      </node>
+      <node id="31">
+        <label>cctype</label>
+      </node>
+      <node id="5">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="14">
+        <label>cereal/cereal.hpp</label>
+      </node>
+      <node id="33">
+        <label>cereal/types/base_class.hpp</label>
+      </node>
+      <node id="43">
+        <label>cereal/types/memory.hpp</label>
+      </node>
+      <node id="6">
+        <label>cereal/types/optional.hpp</label>
+      </node>
+      <node id="9">
+        <label>cereal/types/polymorphic.hpp</label>
+      </node>
+      <node id="3">
+        <label>cereal/types/vector.hpp</label>
+      </node>
+      <node id="37">
+        <label>cmath</label>
+      </node>
+      <node id="12">
+        <label>cstdint</label>
+      </node>
+      <node id="39">
+        <label>exception</label>
+      </node>
+      <node id="41">
+        <label>exceptions/src/Exceptions.h</label>
+      </node>
+      <node id="17">
+        <label>iostream</label>
+      </node>
+      <node id="18">
+        <label>limits</label>
+      </node>
+      <node id="38">
+        <label>memory</label>
+      </node>
+      <node id="19">
+        <label>numeric</label>
+      </node>
+      <node id="20">
+        <label>optional</label>
+      </node>
+      <node id="21">
+        <label>queue</label>
+      </node>
+      <node id="44">
+        <label>random</label>
+      </node>
+      <node id="22">
+        <label>sstream</label>
+      </node>
+      <node id="23">
+        <label>stdexcept</label>
+      </node>
+      <node id="24">
+        <label>string</label>
+      </node>
+      <node id="30">
+        <label>string_view</label>
+      </node>
+      <node id="36">
+        <label>unordered_set</label>
+      </node>
+      <node id="25">
+        <label>utility</label>
+      </node>
+      <node id="26">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1bolt">thirdai::bolt</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#include<sp/>&quot;ConvLayer.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;FullyConnectedLayer.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;exceptions/src/Exceptions.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;numeric&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;random&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::bolt<sp/>{</highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal">ConvLayer::ConvLayer(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>ConvLayerConfig&amp;<sp/>config,<sp/>uint64_t<sp/>prev_dim,</highlight></codeline>
+<codeline lineno="10"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>prev_num_filters,</highlight></codeline>
+<codeline lineno="11"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>prev_num_sparse_filters,</highlight></codeline>
+<codeline lineno="12"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::pair&lt;uint32_t,<sp/>uint32_t&gt;<sp/>next_kernel_size)</highlight></codeline>
+<codeline lineno="13"><highlight class="normal"><sp/><sp/><sp/><sp/>:<sp/>_dim(config.num_filters<sp/>*<sp/>config.num_patches),</highlight></codeline>
+<codeline lineno="14"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_prev_dim(prev_dim),</highlight></codeline>
+<codeline lineno="15"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_sparse_dim(config.sparsity<sp/>*<sp/>config.num_filters<sp/>*<sp/>config.num_patches),</highlight></codeline>
+<codeline lineno="16"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_sparsity(config.sparsity),</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_act_func(config.act_func),</highlight></codeline>
+<codeline lineno="18"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_num_filters(config.num_filters),</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_num_sparse_filters(config.num_filters<sp/>*<sp/>config.sparsity),</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_num_patches(config.num_patches),</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_prev_num_filters(prev_num_filters),</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_prev_num_sparse_filters(prev_num_sparse_filters),</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_kernel_size(config.kernel_size.first<sp/>*<sp/>config.kernel_size.second)<sp/>{</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(_act_func<sp/>!=<sp/>ActivationFunction::ReLU)<sp/>{</highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;Conv<sp/>layers<sp/>currently<sp/>support<sp/>only<sp/>ReLU<sp/>Activation.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"></highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(config.kernel_size.first<sp/>!=<sp/>config.kernel_size.second)<sp/>{</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;Conv<sp/>layers<sp/>currently<sp/>support<sp/>only<sp/>square<sp/>kernels.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="33"><highlight class="normal"></highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/>_patch_dim<sp/>=<sp/>_kernel_size<sp/>*<sp/>_prev_num_filters;</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/>_sparse_patch_dim<sp/>=<sp/>_kernel_size<sp/>*<sp/>_prev_num_sparse_filters;</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"></highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/>_weights<sp/>=<sp/>std::vector&lt;float&gt;(_num_filters<sp/>*<sp/>_patch_dim);</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/>_biases<sp/>=<sp/>std::vector&lt;float&gt;(_num_filters);</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"></highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/>_is_active<sp/>=<sp/>std::vector&lt;bool&gt;(_num_filters<sp/>*<sp/>_num_patches,<sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"></highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/>initOptimizer();</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"></highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/>buildPatchMaps(next_kernel_size);</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"></highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/>std::random_device<sp/>rd;</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/>std::default_random_engine<sp/>eng(rd());</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/>std::normal_distribution&lt;float&gt;<sp/>dist(0.0,<sp/>0.01);</highlight></codeline>
+<codeline lineno="49"><highlight class="normal"></highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/>std::generate(_weights.begin(),<sp/>_weights.end(),<sp/>[&amp;]()<sp/>{<sp/>return<sp/>dist(eng);<sp/>});</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/>std::generate(_biases.begin(),<sp/>_biases.end(),<sp/>[&amp;]()<sp/>{<sp/>return<sp/>dist(eng);<sp/>});</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"></highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(_sparsity<sp/>&lt;<sp/>1.0)<sp/>{</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>hashes<sp/>input<sp/>of<sp/>size<sp/>_patch_dim</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/><sp/><sp/>_hasher<sp/>=<sp/>config.sampling_config-&gt;getHashFunction(_patch_dim);</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"></highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/><sp/><sp/>_hash_table<sp/>=<sp/>config.sampling_config-&gt;getHashTable();</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"></highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/><sp/><sp/>buildHashTables();</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"></highlight></codeline>
+<codeline lineno="61"><highlight class="normal"><sp/><sp/><sp/><sp/>_rand_neurons<sp/>=<sp/>std::vector&lt;uint32_t&gt;(_num_filters);</highlight></codeline>
+<codeline lineno="62"><highlight class="normal"></highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/>std::iota(_rand_neurons.begin(),<sp/>_rand_neurons.end(),<sp/>0);</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/><sp/><sp/>std::shuffle(_rand_neurons.begin(),<sp/>_rand_neurons.end(),<sp/>rd);</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="66"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="67"><highlight class="normal"></highlight></codeline>
+<codeline lineno="68"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::forward(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>BoltVector&amp;<sp/>input,<sp/>BoltVector&amp;<sp/>output,</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>BoltVector*<sp/>labels)<sp/>{</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/>(void)labels;</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(output.isDense())<sp/>{</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(input.isDense())<sp/>{</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>forwardImpl&lt;true,<sp/>true&gt;(input,<sp/>output);</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>forwardImpl&lt;true,<sp/>false&gt;(input,<sp/>output);</highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(input.isDense())<sp/>{</highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>forwardImpl&lt;false,<sp/>true&gt;(input,<sp/>output);</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>forwardImpl&lt;false,<sp/>false&gt;(input,<sp/>output);</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="84"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="85"><highlight class="normal"></highlight></codeline>
+<codeline lineno="86"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>DENSE,<sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>PREV_DENSE&gt;</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::forwardImpl(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>BoltVector&amp;<sp/>input,<sp/>BoltVector&amp;<sp/>output)<sp/>{</highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/>uint32_t<sp/>num_active_filters;</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(DENSE)<sp/>{</highlight></codeline>
+<codeline lineno="90"><highlight class="normal"><sp/><sp/><sp/><sp/>num_active_filters<sp/>=<sp/>_num_filters;</highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/><sp/><sp/>std::fill_n(output.gradients,<sp/>_dim,<sp/>0);</highlight></codeline>
+<codeline lineno="92"><highlight class="normal"><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/><sp/><sp/>num_active_filters<sp/>=<sp/>_num_sparse_filters;</highlight></codeline>
+<codeline lineno="94"><highlight class="normal"><sp/><sp/><sp/><sp/>std::fill_n(output.gradients,<sp/>_sparse_dim,<sp/>0);</highlight></codeline>
+<codeline lineno="95"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="96"><highlight class="normal"></highlight></codeline>
+<codeline lineno="97"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>elements<sp/>to<sp/>loop<sp/>through<sp/>to<sp/>calculate<sp/>a<sp/>dot<sp/>product<sp/>filter<sp/>act<sp/>on<sp/>a<sp/>patch</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="98"><highlight class="normal"><sp/><sp/>uint32_t<sp/>effective_patch_dim<sp/>=<sp/>PREV_DENSE<sp/>?<sp/>_patch_dim<sp/>:<sp/>_sparse_patch_dim;</highlight></codeline>
+<codeline lineno="99"><highlight class="normal"></highlight></codeline>
+<codeline lineno="100"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>input.active_neurons[i]<sp/>is<sp/>an<sp/>index<sp/>into<sp/>input.activations<sp/>with<sp/>an<sp/>offset</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="101"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>we<sp/>mod<sp/>here<sp/>to<sp/>remove<sp/>that<sp/>offset</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="102"><highlight class="normal"><sp/><sp/>std::vector&lt;uint32_t&gt;<sp/>prev_active_filters(input.len);<sp/><sp/></highlight><highlight class="comment">//<sp/>unused<sp/>if<sp/>DENSE</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="103"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!PREV_DENSE)<sp/>{</highlight></codeline>
+<codeline lineno="104"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>TODO(david)<sp/>calculate<sp/>once<sp/>instead<sp/>of<sp/>in<sp/>both<sp/>forward<sp/>and<sp/>backward?</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="105"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>i<sp/>=<sp/>0;<sp/>i<sp/>&lt;<sp/>input.len;<sp/>i++)<sp/>{</highlight></codeline>
+<codeline lineno="106"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>prev_active_filters[i]<sp/>=<sp/>input.active_neurons[i]<sp/>%<sp/>_patch_dim;</highlight></codeline>
+<codeline lineno="107"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="108"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="109"><highlight class="normal"></highlight></codeline>
+<codeline lineno="110"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>for<sp/>each<sp/>patch,<sp/>we<sp/>look<sp/>at<sp/>a<sp/>section<sp/>of<sp/>the<sp/>input<sp/>(an<sp/>input<sp/>patch)<sp/>and</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="111"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>populate<sp/>a<sp/>section<sp/>of<sp/>the<sp/>output<sp/>(an<sp/>output<sp/>patch)<sp/>with<sp/>that<sp/>input&apos;s</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="112"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>filter<sp/>activations.<sp/>in_patch<sp/>and<sp/>out_patch<sp/>tell<sp/>us<sp/>what<sp/>patch<sp/>we<sp/>are</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="113"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>looking<sp/>at<sp/>in<sp/>the<sp/>input/output<sp/>respectively</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="114"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>in_patch<sp/>=<sp/>0;<sp/>in_patch<sp/>&lt;<sp/>_num_patches;<sp/>in_patch++)<sp/>{</highlight></codeline>
+<codeline lineno="115"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>out_patch<sp/>=<sp/>_in_to_out[in_patch];</highlight></codeline>
+<codeline lineno="116"><highlight class="normal"></highlight></codeline>
+<codeline lineno="117"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!DENSE)<sp/>{</highlight></codeline>
+<codeline lineno="118"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>selectActiveFilters&lt;PREV_DENSE&gt;(input,<sp/>output,<sp/>in_patch,<sp/>out_patch,</highlight></codeline>
+<codeline lineno="119"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>prev_active_filters);</highlight></codeline>
+<codeline lineno="120"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="121"><highlight class="normal"></highlight></codeline>
+<codeline lineno="122"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>for<sp/>each<sp/>filter<sp/>selected</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="123"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>filter<sp/>=<sp/>0;<sp/>filter<sp/>&lt;<sp/>num_active_filters;<sp/>filter++)<sp/>{</highlight></codeline>
+<codeline lineno="124"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>out_idx:<sp/>the<sp/>actual<sp/>INDEX<sp/>in<sp/>the<sp/>output<sp/>that<sp/>corresponds<sp/>to<sp/>where<sp/>a</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="125"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>patch&apos;s<sp/>filter<sp/>activations<sp/>lie</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="126"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint64_t<sp/>out_idx<sp/>=<sp/>out_patch<sp/>*<sp/>num_active_filters<sp/>+<sp/>filter;</highlight></codeline>
+<codeline lineno="127"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>act<sp/>=<sp/>calculateFilterActivation&lt;DENSE,<sp/>PREV_DENSE&gt;(</highlight></codeline>
+<codeline lineno="128"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>input,<sp/>output,<sp/>in_patch,<sp/>out_idx,<sp/>prev_active_filters,</highlight></codeline>
+<codeline lineno="129"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>effective_patch_dim);</highlight></codeline>
+<codeline lineno="130"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>assert(!std::isnan(act));</highlight></codeline>
+<codeline lineno="131"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>output.activations[out_idx]<sp/>=<sp/>std::max(0.0F,<sp/>act);</highlight></codeline>
+<codeline lineno="132"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="133"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="134"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="135"><highlight class="normal"></highlight></codeline>
+<codeline lineno="136"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>DENSE,<sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>PREV_DENSE&gt;</highlight></codeline>
+<codeline lineno="137"><highlight class="normal"></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>ConvLayer::calculateFilterActivation(</highlight></codeline>
+<codeline lineno="138"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>BoltVector&amp;<sp/>input,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>BoltVector&amp;<sp/>output,<sp/>uint32_t<sp/>in_patch,</highlight></codeline>
+<codeline lineno="139"><highlight class="normal"><sp/><sp/><sp/><sp/>uint64_t<sp/>out_idx,<sp/>std::vector&lt;uint32_t&gt;<sp/>prev_active_filters,</highlight></codeline>
+<codeline lineno="140"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>effective_patch_dim)<sp/>{</highlight></codeline>
+<codeline lineno="141"><highlight class="normal"><sp/><sp/>uint64_t<sp/>act_neuron<sp/>=<sp/>DENSE<sp/>?<sp/>out_idx<sp/>:<sp/>output.active_neurons[out_idx];</highlight></codeline>
+<codeline lineno="142"><highlight class="normal"><sp/><sp/>assert(act_neuron<sp/>&lt;<sp/>_dim);</highlight></codeline>
+<codeline lineno="143"><highlight class="normal"></highlight></codeline>
+<codeline lineno="144"><highlight class="normal"><sp/><sp/>uint32_t<sp/>act_filter<sp/>=<sp/>act_neuron<sp/>%<sp/>_num_filters;<sp/><sp/></highlight><highlight class="comment">//<sp/>remove<sp/>offset<sp/>again</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="145"><highlight class="normal"></highlight></codeline>
+<codeline lineno="146"><highlight class="normal"><sp/><sp/>_is_active[act_neuron]<sp/>=<sp/></highlight><highlight class="keyword">true</highlight><highlight class="normal">;<sp/><sp/></highlight><highlight class="comment">//<sp/>used<sp/>in<sp/>updateParameters</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="147"><highlight class="normal"></highlight></codeline>
+<codeline lineno="148"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>calculate<sp/>filter<sp/>activation<sp/>via<sp/>dot<sp/>product</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="149"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>act<sp/>=<sp/>_biases[act_filter];</highlight></codeline>
+<codeline lineno="150"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>i<sp/>=<sp/>0;<sp/>i<sp/>&lt;<sp/>effective_patch_dim;<sp/>i++)<sp/>{</highlight></codeline>
+<codeline lineno="151"><highlight class="normal"><sp/><sp/><sp/><sp/>uint64_t<sp/>in_idx<sp/>=<sp/>in_patch<sp/>*<sp/>effective_patch_dim<sp/>+<sp/>i;</highlight></codeline>
+<codeline lineno="152"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(in_idx<sp/>&lt;<sp/>input.len);</highlight></codeline>
+<codeline lineno="153"><highlight class="normal"><sp/><sp/><sp/><sp/>uint64_t<sp/>prev_act_neuron<sp/>=<sp/>PREV_DENSE<sp/>?<sp/>i<sp/>:<sp/>prev_active_filters[in_idx];</highlight></codeline>
+<codeline lineno="154"><highlight class="normal"></highlight></codeline>
+<codeline lineno="155"><highlight class="normal"><sp/><sp/><sp/><sp/>act<sp/>+=<sp/>_weights[act_filter<sp/>*<sp/>_patch_dim<sp/>+<sp/>prev_act_neuron]<sp/>*</highlight></codeline>
+<codeline lineno="156"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>input.activations[in_idx];</highlight></codeline>
+<codeline lineno="157"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="158"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>act;</highlight></codeline>
+<codeline lineno="159"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="160"><highlight class="normal"></highlight></codeline>
+<codeline lineno="161"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::backpropagate(BoltVector&amp;<sp/>input,<sp/>BoltVector&amp;<sp/>output)<sp/>{</highlight></codeline>
+<codeline lineno="162"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(output.isDense())<sp/>{</highlight></codeline>
+<codeline lineno="163"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(input.isDense())<sp/>{</highlight></codeline>
+<codeline lineno="164"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>backpropagateImpl&lt;false,<sp/>true,<sp/>true&gt;(input,<sp/>output);</highlight></codeline>
+<codeline lineno="165"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="166"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>backpropagateImpl&lt;false,<sp/>true,<sp/>false&gt;(input,<sp/>output);</highlight></codeline>
+<codeline lineno="167"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="168"><highlight class="normal"><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="169"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(input.isDense())<sp/>{</highlight></codeline>
+<codeline lineno="170"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>backpropagateImpl&lt;false,<sp/>false,<sp/>true&gt;(input,<sp/>output);</highlight></codeline>
+<codeline lineno="171"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="172"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>backpropagateImpl&lt;false,<sp/>false,<sp/>false&gt;(input,<sp/>output);</highlight></codeline>
+<codeline lineno="173"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="174"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="175"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="176"><highlight class="normal"></highlight></codeline>
+<codeline lineno="177"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::backpropagateInputLayer(BoltVector&amp;<sp/>input,<sp/>BoltVector&amp;<sp/>output)<sp/>{</highlight></codeline>
+<codeline lineno="178"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(output.isDense())<sp/>{</highlight></codeline>
+<codeline lineno="179"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(input.isDense())<sp/>{</highlight></codeline>
+<codeline lineno="180"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>backpropagateImpl&lt;true,<sp/>true,<sp/>true&gt;(input,<sp/>output);</highlight></codeline>
+<codeline lineno="181"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="182"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>backpropagateImpl&lt;true,<sp/>true,<sp/>false&gt;(input,<sp/>output);</highlight></codeline>
+<codeline lineno="183"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="184"><highlight class="normal"><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="185"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(input.isDense())<sp/>{</highlight></codeline>
+<codeline lineno="186"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>backpropagateImpl&lt;true,<sp/>false,<sp/>true&gt;(input,<sp/>output);</highlight></codeline>
+<codeline lineno="187"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="188"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>backpropagateImpl&lt;true,<sp/>false,<sp/>false&gt;(input,<sp/>output);</highlight></codeline>
+<codeline lineno="189"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="190"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="191"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="192"><highlight class="normal"></highlight></codeline>
+<codeline lineno="193"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>FIRST_LAYER,<sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>DENSE,<sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>PREV_DENSE&gt;</highlight></codeline>
+<codeline lineno="194"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::backpropagateImpl(BoltVector&amp;<sp/>input,<sp/>BoltVector&amp;<sp/>output)<sp/>{</highlight></codeline>
+<codeline lineno="195"><highlight class="normal"><sp/><sp/>uint32_t<sp/>len_out<sp/>=<sp/>DENSE<sp/>?<sp/>_dim<sp/>:<sp/>_sparse_dim;</highlight></codeline>
+<codeline lineno="196"><highlight class="normal"><sp/><sp/>uint32_t<sp/>num_active_filters<sp/>=<sp/>DENSE<sp/>?<sp/>_num_filters<sp/>:<sp/>_num_sparse_filters;</highlight></codeline>
+<codeline lineno="197"><highlight class="normal"><sp/><sp/>uint32_t<sp/>effective_patch_dim<sp/>=<sp/>PREV_DENSE<sp/>?<sp/>_patch_dim<sp/>:<sp/>_sparse_patch_dim;</highlight></codeline>
+<codeline lineno="198"><highlight class="normal"></highlight></codeline>
+<codeline lineno="199"><highlight class="normal"><sp/><sp/>std::vector&lt;uint32_t&gt;<sp/>prev_active_filters(input.len);<sp/><sp/></highlight><highlight class="comment">//<sp/>unused<sp/>if<sp/>DENSE</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="200"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!PREV_DENSE)<sp/>{</highlight></codeline>
+<codeline lineno="201"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>i<sp/>=<sp/>0;<sp/>i<sp/>&lt;<sp/>input.len;<sp/>i++)<sp/>{</highlight></codeline>
+<codeline lineno="202"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>prev_active_filters[i]<sp/>=<sp/>input.active_neurons[i]<sp/>%<sp/>_patch_dim;</highlight></codeline>
+<codeline lineno="203"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="204"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="205"><highlight class="normal"></highlight></codeline>
+<codeline lineno="206"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>loop<sp/>through<sp/>every<sp/>output<sp/>neuron</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="207"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>n<sp/>=<sp/>0;<sp/>n<sp/>&lt;<sp/>len_out;<sp/>n++)<sp/>{</highlight></codeline>
+<codeline lineno="208"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(!std::isnan(output.gradients[n]));</highlight></codeline>
+<codeline lineno="209"><highlight class="normal"><sp/><sp/><sp/><sp/>output.gradients[n]<sp/>*=<sp/>actFuncDerivative(output.activations[n],<sp/>_act_func);</highlight></codeline>
+<codeline lineno="210"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(!std::isnan(output.gradients[n]));</highlight></codeline>
+<codeline lineno="211"><highlight class="normal"></highlight></codeline>
+<codeline lineno="212"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>act_neuron<sp/>=<sp/>DENSE<sp/>?<sp/>n<sp/>:<sp/>output.active_neurons[n];</highlight></codeline>
+<codeline lineno="213"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>act_filter<sp/>=<sp/>act_neuron<sp/>%<sp/>_num_filters;</highlight></codeline>
+<codeline lineno="214"><highlight class="normal"></highlight></codeline>
+<codeline lineno="215"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>out_patch<sp/>=<sp/>n<sp/>/<sp/>num_active_filters;</highlight></codeline>
+<codeline lineno="216"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>in_patch<sp/>=<sp/>_out_to_in[out_patch];</highlight></codeline>
+<codeline lineno="217"><highlight class="normal"></highlight></codeline>
+<codeline lineno="218"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>loop<sp/>through<sp/>each<sp/>input<sp/>neuron<sp/>and<sp/>update<sp/>the<sp/>gradients</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="219"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>i<sp/>=<sp/>0;<sp/>i<sp/>&lt;<sp/>effective_patch_dim;<sp/>i++)<sp/>{</highlight></codeline>
+<codeline lineno="220"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint64_t<sp/>in_idx<sp/>=<sp/>in_patch<sp/>*<sp/>effective_patch_dim<sp/>+<sp/>i;</highlight></codeline>
+<codeline lineno="221"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>prev_act_neuron<sp/>=<sp/>PREV_DENSE<sp/>?<sp/>i<sp/>:<sp/>prev_active_filters[in_idx];</highlight></codeline>
+<codeline lineno="222"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>assert(prev_act_neuron<sp/>&lt;<sp/>_prev_dim);</highlight></codeline>
+<codeline lineno="223"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_weight_optimizer-&gt;gradients[act_filter<sp/>*<sp/>_patch_dim<sp/>+<sp/>prev_act_neuron]<sp/>+=</highlight></codeline>
+<codeline lineno="224"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>output.gradients[n]<sp/>*<sp/>input.activations[in_idx];</highlight></codeline>
+<codeline lineno="225"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!FIRST_LAYER)<sp/>{</highlight></codeline>
+<codeline lineno="226"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>input.gradients[in_idx]<sp/>+=</highlight></codeline>
+<codeline lineno="227"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>output.gradients[n]<sp/>*</highlight></codeline>
+<codeline lineno="228"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_weights[act_filter<sp/>*<sp/>_patch_dim<sp/>+<sp/>prev_act_neuron];</highlight></codeline>
+<codeline lineno="229"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="230"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="231"><highlight class="normal"><sp/><sp/><sp/><sp/>_bias_optimizer-&gt;gradients[act_filter]<sp/>+=<sp/>output.gradients[n];</highlight></codeline>
+<codeline lineno="232"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="233"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="234"><highlight class="normal"></highlight></codeline>
+<codeline lineno="235"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>PREV_DENSE&gt;</highlight></codeline>
+<codeline lineno="236"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::selectActiveFilters(</highlight></codeline>
+<codeline lineno="237"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>BoltVector&amp;<sp/>input,<sp/>BoltVector&amp;<sp/>output,<sp/>uint32_t<sp/>in_patch,</highlight></codeline>
+<codeline lineno="238"><highlight class="normal"><sp/><sp/><sp/><sp/>uint64_t<sp/>out_patch,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;uint32_t&gt;&amp;<sp/>prev_active_filters)<sp/>{</highlight></codeline>
+<codeline lineno="239"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>hash<sp/>a<sp/>section<sp/>of<sp/>the<sp/>input<sp/>(the<sp/>input<sp/>patch)<sp/>and<sp/>populate<sp/>a<sp/>section<sp/>of<sp/>the</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="240"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>output<sp/>(the<sp/>output<sp/>patch)<sp/>with<sp/>that<sp/>input&apos;s<sp/>active<sp/>filters<sp/>(with<sp/>an<sp/>offset)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="241"><highlight class="normal"><sp/><sp/>std::unordered_set&lt;uint32_t&gt;<sp/>active_set;</highlight></codeline>
+<codeline lineno="242"><highlight class="normal"><sp/><sp/>std::vector&lt;uint32_t&gt;<sp/>hashes(_hasher-&gt;numTables());</highlight></codeline>
+<codeline lineno="243"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(PREV_DENSE)<sp/>{</highlight></codeline>
+<codeline lineno="244"><highlight class="normal"><sp/><sp/><sp/><sp/>_hasher-&gt;hashSingleDense(&amp;input.activations[in_patch<sp/>*<sp/>_patch_dim],</highlight></codeline>
+<codeline lineno="245"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_patch_dim,<sp/>hashes.data());</highlight></codeline>
+<codeline lineno="246"><highlight class="normal"><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="247"><highlight class="normal"><sp/><sp/><sp/><sp/>_hasher-&gt;hashSingleSparse(</highlight></codeline>
+<codeline lineno="248"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>prev_active_filters.data()<sp/>+<sp/>in_patch<sp/>*<sp/>_sparse_patch_dim,</highlight></codeline>
+<codeline lineno="249"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&amp;input.activations[in_patch<sp/>*<sp/>_sparse_patch_dim],<sp/>_sparse_patch_dim,</highlight></codeline>
+<codeline lineno="250"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>hashes.data());</highlight></codeline>
+<codeline lineno="251"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="252"><highlight class="normal"><sp/><sp/>_hash_table-&gt;queryBySet(hashes.data(),<sp/>active_set);</highlight></codeline>
+<codeline lineno="253"><highlight class="normal"></highlight></codeline>
+<codeline lineno="254"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(active_set.size()<sp/>&lt;<sp/>_num_sparse_filters)<sp/>{</highlight></codeline>
+<codeline lineno="255"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>rand_offset<sp/>=<sp/>rand()<sp/>%<sp/>_num_filters;</highlight></codeline>
+<codeline lineno="256"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">while</highlight><highlight class="normal"><sp/>(active_set.size()<sp/>&lt;<sp/>_num_sparse_filters)<sp/>{</highlight></codeline>
+<codeline lineno="257"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>active_set.insert(_rand_neurons[rand_offset++]);</highlight></codeline>
+<codeline lineno="258"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>rand_offset<sp/>=<sp/>rand_offset<sp/>%<sp/>_num_filters;</highlight></codeline>
+<codeline lineno="259"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="260"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="261"><highlight class="normal"></highlight></codeline>
+<codeline lineno="262"><highlight class="normal"><sp/><sp/>uint32_t<sp/>cnt<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="263"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>x<sp/>:<sp/>active_set)<sp/>{</highlight></codeline>
+<codeline lineno="264"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(cnt<sp/>==<sp/>_num_sparse_filters)<sp/>{</highlight></codeline>
+<codeline lineno="265"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">break</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="266"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="267"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(x<sp/>&lt;<sp/>_num_filters);</highlight></codeline>
+<codeline lineno="268"><highlight class="normal"><sp/><sp/><sp/><sp/>output.active_neurons[out_patch<sp/>*<sp/>_num_sparse_filters<sp/>+<sp/>cnt]<sp/>=</highlight></codeline>
+<codeline lineno="269"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>out_patch<sp/>*<sp/>_num_filters<sp/>+<sp/>x;</highlight></codeline>
+<codeline lineno="270"><highlight class="normal"><sp/><sp/><sp/><sp/>cnt++;</highlight></codeline>
+<codeline lineno="271"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="272"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="273"><highlight class="normal"></highlight></codeline>
+<codeline lineno="274"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::updateParameters(</highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>lr,<sp/>uint32_t<sp/>iter,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>B1,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>B2,</highlight></codeline>
+<codeline lineno="275"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>eps)<sp/>{</highlight></codeline>
+<codeline lineno="276"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>B1_bias_corrected<sp/>=<sp/></highlight><highlight class="keyword">static_cast&lt;</highlight><highlight class="keywordtype">float</highlight><highlight class="keyword">&gt;</highlight><highlight class="normal">(1<sp/>-<sp/>pow(B1,<sp/>iter));</highlight></codeline>
+<codeline lineno="277"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>B2_bias_corrected<sp/>=<sp/></highlight><highlight class="keyword">static_cast&lt;</highlight><highlight class="keywordtype">float</highlight><highlight class="keyword">&gt;</highlight><highlight class="normal">(1<sp/>-<sp/>pow(B2,<sp/>iter));</highlight></codeline>
+<codeline lineno="278"><highlight class="normal"></highlight></codeline>
+<codeline lineno="279"><highlight class="normal"></highlight><highlight class="preprocessor">#pragma<sp/>omp<sp/>parallel<sp/>for<sp/>default(none)<sp/>\</highlight></codeline>
+<codeline lineno="280"><highlight class="preprocessor"><sp/><sp/><sp/><sp/>shared(lr,<sp/>B1,<sp/>B1_bias_corrected,<sp/>B2,<sp/>B2_bias_corrected,<sp/>eps)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="281"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>n<sp/>=<sp/>0;<sp/>n<sp/>&lt;<sp/>_num_filters;<sp/>n++)<sp/>{</highlight></codeline>
+<codeline lineno="282"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!_is_active[n])<sp/>{</highlight></codeline>
+<codeline lineno="283"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">continue</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="284"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="285"><highlight class="normal"></highlight></codeline>
+<codeline lineno="286"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>i<sp/>=<sp/>0;<sp/>i<sp/>&lt;<sp/>_patch_dim;<sp/>i++)<sp/>{</highlight></codeline>
+<codeline lineno="287"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>indx<sp/>=<sp/>n<sp/>*<sp/>_patch_dim<sp/>+<sp/>i;</highlight></codeline>
+<codeline lineno="288"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>grad<sp/>=<sp/>_weight_optimizer-&gt;gradients[indx];</highlight></codeline>
+<codeline lineno="289"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>assert(!std::isnan(grad));</highlight></codeline>
+<codeline lineno="290"><highlight class="normal"></highlight></codeline>
+<codeline lineno="291"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_weight_optimizer-&gt;momentum[indx]<sp/>=</highlight></codeline>
+<codeline lineno="292"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>B1<sp/>*<sp/>_weight_optimizer-&gt;momentum[indx]<sp/>+<sp/>(1<sp/>-<sp/>B1)<sp/>*<sp/>grad;</highlight></codeline>
+<codeline lineno="293"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_weight_optimizer-&gt;velocity[indx]<sp/>=</highlight></codeline>
+<codeline lineno="294"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>B2<sp/>*<sp/>_weight_optimizer-&gt;velocity[indx]<sp/>+<sp/>(1<sp/>-<sp/>B2)<sp/>*<sp/>grad<sp/>*<sp/>grad;</highlight></codeline>
+<codeline lineno="295"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>assert(!std::isnan(_weight_optimizer-&gt;momentum[indx]));</highlight></codeline>
+<codeline lineno="296"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>assert(!std::isnan(_weight_optimizer-&gt;velocity[indx]));</highlight></codeline>
+<codeline lineno="297"><highlight class="normal"></highlight></codeline>
+<codeline lineno="298"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_weights[indx]<sp/>+=</highlight></codeline>
+<codeline lineno="299"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>lr<sp/>*<sp/>(_weight_optimizer-&gt;momentum[indx]<sp/>/<sp/>B1_bias_corrected)<sp/>/</highlight></codeline>
+<codeline lineno="300"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(std::sqrt(_weight_optimizer-&gt;velocity[indx]<sp/>/<sp/>B2_bias_corrected)<sp/>+</highlight></codeline>
+<codeline lineno="301"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>eps);</highlight></codeline>
+<codeline lineno="302"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>assert(!std::isnan(_weights[indx]));</highlight></codeline>
+<codeline lineno="303"><highlight class="normal"></highlight></codeline>
+<codeline lineno="304"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_weight_optimizer-&gt;gradients[indx]<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="305"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="306"><highlight class="normal"></highlight></codeline>
+<codeline lineno="307"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>grad<sp/>=<sp/>_bias_optimizer-&gt;gradients[n];</highlight></codeline>
+<codeline lineno="308"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(!std::isnan(grad));</highlight></codeline>
+<codeline lineno="309"><highlight class="normal"></highlight></codeline>
+<codeline lineno="310"><highlight class="normal"><sp/><sp/><sp/><sp/>_bias_optimizer-&gt;momentum[n]<sp/>=</highlight></codeline>
+<codeline lineno="311"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>B1<sp/>*<sp/>_bias_optimizer-&gt;momentum[n]<sp/>+<sp/>(1<sp/>-<sp/>B1)<sp/>*<sp/>grad;</highlight></codeline>
+<codeline lineno="312"><highlight class="normal"><sp/><sp/><sp/><sp/>_bias_optimizer-&gt;velocity[n]<sp/>=</highlight></codeline>
+<codeline lineno="313"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>B2<sp/>*<sp/>_bias_optimizer-&gt;velocity[n]<sp/>+<sp/>(1<sp/>-<sp/>B2)<sp/>*<sp/>grad<sp/>*<sp/>grad;</highlight></codeline>
+<codeline lineno="314"><highlight class="normal"></highlight></codeline>
+<codeline lineno="315"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(!std::isnan(_bias_optimizer-&gt;momentum[n]));</highlight></codeline>
+<codeline lineno="316"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(!std::isnan(_bias_optimizer-&gt;velocity[n]));</highlight></codeline>
+<codeline lineno="317"><highlight class="normal"></highlight></codeline>
+<codeline lineno="318"><highlight class="normal"><sp/><sp/><sp/><sp/>_biases[n]<sp/>+=</highlight></codeline>
+<codeline lineno="319"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>lr<sp/>*<sp/>(_bias_optimizer-&gt;momentum[n]<sp/>/<sp/>B1_bias_corrected)<sp/>/</highlight></codeline>
+<codeline lineno="320"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(std::sqrt(_bias_optimizer-&gt;velocity[n]<sp/>/<sp/>B2_bias_corrected)<sp/>+<sp/>eps);</highlight></codeline>
+<codeline lineno="321"><highlight class="normal"><sp/><sp/><sp/><sp/>assert(!std::isnan(_biases[n]));</highlight></codeline>
+<codeline lineno="322"><highlight class="normal"></highlight></codeline>
+<codeline lineno="323"><highlight class="normal"><sp/><sp/><sp/><sp/>_bias_optimizer-&gt;gradients[n]<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="324"><highlight class="normal"><sp/><sp/><sp/><sp/>_is_active[n]<sp/>=<sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="325"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="326"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="327"><highlight class="normal"></highlight></codeline>
+<codeline lineno="328"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::initOptimizer()<sp/>{</highlight></codeline>
+<codeline lineno="329"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!_weight_optimizer<sp/>||<sp/>!_bias_optimizer)<sp/>{</highlight></codeline>
+<codeline lineno="330"><highlight class="normal"><sp/><sp/><sp/><sp/>_weight_optimizer<sp/>=<sp/>AdamOptimizer(_dim<sp/>*<sp/>_prev_dim);</highlight></codeline>
+<codeline lineno="331"><highlight class="normal"><sp/><sp/><sp/><sp/>_bias_optimizer<sp/>=<sp/>AdamOptimizer(_dim);</highlight></codeline>
+<codeline lineno="332"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="333"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="334"><highlight class="normal"></highlight></codeline>
+<codeline lineno="335"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::reBuildHashFunction()<sp/>{</highlight></codeline>
+<codeline lineno="336"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(_sparsity<sp/>&gt;=<sp/>1.0)<sp/>{</highlight></codeline>
+<codeline lineno="337"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="338"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="339"><highlight class="normal"><sp/><sp/>_hasher<sp/>=<sp/>_hasher-&gt;copyWithNewSeeds();</highlight></codeline>
+<codeline lineno="340"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="341"><highlight class="normal"></highlight></codeline>
+<codeline lineno="342"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::buildHashTables()<sp/>{</highlight></codeline>
+<codeline lineno="343"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(_sparsity<sp/>&gt;=<sp/>1.0)<sp/>{</highlight></codeline>
+<codeline lineno="344"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="345"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="346"><highlight class="normal"><sp/><sp/>uint64_t<sp/>num_tables<sp/>=<sp/>_hash_table-&gt;numTables();</highlight></codeline>
+<codeline lineno="347"><highlight class="normal"><sp/><sp/>std::vector&lt;uint32_t&gt;<sp/>hashes(num_tables<sp/>*<sp/>_num_filters);</highlight></codeline>
+<codeline lineno="348"><highlight class="normal"></highlight><highlight class="preprocessor">#pragma<sp/>omp<sp/>parallel<sp/>for<sp/>default(none)<sp/>shared(num_tables,<sp/>hashes)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="349"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>n<sp/>=<sp/>0;<sp/>n<sp/>&lt;<sp/>_num_filters;<sp/>n++)<sp/>{</highlight></codeline>
+<codeline lineno="350"><highlight class="normal"><sp/><sp/><sp/><sp/>_hasher-&gt;hashSingleDense(_weights.data()<sp/>+<sp/>n<sp/>*<sp/>_patch_dim,<sp/>_patch_dim,</highlight></codeline>
+<codeline lineno="351"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>hashes.data()<sp/>+<sp/>n<sp/>*<sp/>num_tables);</highlight></codeline>
+<codeline lineno="352"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="353"><highlight class="normal"></highlight></codeline>
+<codeline lineno="354"><highlight class="normal"><sp/><sp/>_hash_table-&gt;clearTables();</highlight></codeline>
+<codeline lineno="355"><highlight class="normal"><sp/><sp/>_hash_table-&gt;insertSequential(_num_filters,<sp/>0,<sp/>hashes.data());</highlight></codeline>
+<codeline lineno="356"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="357"><highlight class="normal"></highlight></codeline>
+<codeline lineno="358"><highlight class="normal"></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>ConvLayer::getWeights()</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="359"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>weights_copy<sp/>=<sp/></highlight><highlight class="keyword">new</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">[_dim<sp/>*<sp/>_prev_dim];</highlight></codeline>
+<codeline lineno="360"><highlight class="normal"><sp/><sp/>std::copy(_weights.begin(),<sp/>_weights.end(),<sp/>weights_copy);</highlight></codeline>
+<codeline lineno="361"><highlight class="normal"></highlight></codeline>
+<codeline lineno="362"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>weights_copy;</highlight></codeline>
+<codeline lineno="363"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="364"><highlight class="normal"></highlight></codeline>
+<codeline lineno="365"><highlight class="normal"></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>ConvLayer::getBiases()</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="366"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>biases_copy<sp/>=<sp/></highlight><highlight class="keyword">new</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">[_dim];</highlight></codeline>
+<codeline lineno="367"><highlight class="normal"><sp/><sp/>std::copy(_biases.begin(),<sp/>_biases.end(),<sp/>biases_copy);</highlight></codeline>
+<codeline lineno="368"><highlight class="normal"></highlight></codeline>
+<codeline lineno="369"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>biases_copy;</highlight></codeline>
+<codeline lineno="370"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="371"><highlight class="normal"></highlight></codeline>
+<codeline lineno="372"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::setWeights(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>new_weights)<sp/>{</highlight></codeline>
+<codeline lineno="373"><highlight class="normal"><sp/><sp/>std::copy(new_weights,<sp/>new_weights<sp/>+<sp/>_dim<sp/>*<sp/>_prev_dim,<sp/>_weights.begin());</highlight></codeline>
+<codeline lineno="374"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="375"><highlight class="normal"></highlight></codeline>
+<codeline lineno="376"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::setBiases(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>new_biases)<sp/>{</highlight></codeline>
+<codeline lineno="377"><highlight class="normal"><sp/><sp/>std::copy(new_biases,<sp/>new_biases<sp/>+<sp/>_dim,<sp/>_biases.begin());</highlight></codeline>
+<codeline lineno="378"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="379"><highlight class="normal"></highlight></codeline>
+<codeline lineno="380"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::setWeightGradients(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>update_weight_gradient)<sp/>{</highlight></codeline>
+<codeline lineno="381"><highlight class="normal"><sp/><sp/>std::copy(update_weight_gradient,<sp/>update_weight_gradient<sp/>+<sp/>_dim<sp/>*<sp/>_prev_dim,</highlight></codeline>
+<codeline lineno="382"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_weight_optimizer-&gt;gradients.begin());</highlight></codeline>
+<codeline lineno="383"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="384"><highlight class="normal"></highlight></codeline>
+<codeline lineno="385"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::setBiasesGradients(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>update_bias_gradient)<sp/>{</highlight></codeline>
+<codeline lineno="386"><highlight class="normal"><sp/><sp/>std::copy(update_bias_gradient,<sp/>update_bias_gradient<sp/>+<sp/>_dim,</highlight></codeline>
+<codeline lineno="387"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_bias_optimizer-&gt;gradients.begin());</highlight></codeline>
+<codeline lineno="388"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="389"><highlight class="normal"></highlight></codeline>
+<codeline lineno="390"><highlight class="normal"></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>ConvLayer::getBiasesGradient()<sp/>{</highlight></codeline>
+<codeline lineno="391"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_bias_optimizer-&gt;gradients.data();</highlight></codeline>
+<codeline lineno="392"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="393"><highlight class="normal"></highlight></codeline>
+<codeline lineno="394"><highlight class="normal"></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>ConvLayer::getWeightsGradient()<sp/>{</highlight></codeline>
+<codeline lineno="395"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_weight_optimizer-&gt;gradients.data();</highlight></codeline>
+<codeline lineno="396"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="397"><highlight class="normal"></highlight></codeline>
+<codeline lineno="398"><highlight class="normal"></highlight><highlight class="comment">//<sp/>this<sp/>function<sp/>is<sp/>only<sp/>called<sp/>from<sp/>constructor</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="399"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>ConvLayer::buildPatchMaps(std::pair&lt;uint32_t,<sp/>uint32_t&gt;<sp/>next_kernel_size)<sp/>{</highlight></codeline>
+<codeline lineno="434"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(next_kernel_size.first<sp/>!=<sp/>next_kernel_size.second)<sp/>{</highlight></codeline>
+<codeline lineno="435"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="436"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;Conv<sp/>layers<sp/>currently<sp/>support<sp/>only<sp/>square<sp/>kernels.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="437"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="438"><highlight class="normal"></highlight></codeline>
+<codeline lineno="439"><highlight class="normal"><sp/><sp/>_in_to_out<sp/>=<sp/>std::vector&lt;uint32_t&gt;(_num_patches);</highlight></codeline>
+<codeline lineno="440"><highlight class="normal"><sp/><sp/>_out_to_in<sp/>=<sp/>std::vector&lt;uint32_t&gt;(_num_patches);</highlight></codeline>
+<codeline lineno="441"><highlight class="normal"></highlight></codeline>
+<codeline lineno="442"><highlight class="normal"><sp/><sp/>uint32_t<sp/>next_filter_length<sp/>=<sp/>next_kernel_size.first;</highlight></codeline>
+<codeline lineno="443"><highlight class="normal"><sp/><sp/>uint32_t<sp/>num_patches_for_side<sp/>=</highlight></codeline>
+<codeline lineno="444"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::sqrt(_num_patches);<sp/><sp/></highlight><highlight class="comment">//<sp/>assumes<sp/>square<sp/>images</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="445"><highlight class="normal"></highlight></codeline>
+<codeline lineno="446"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>this<sp/>is<sp/>a<sp/>vector<sp/>of<sp/>the<sp/>top<sp/>left<sp/>patch<sp/>values<sp/>for<sp/>the<sp/>next<sp/>kernel<sp/>size.<sp/>in</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="447"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>the<sp/>example<sp/>above,<sp/>this<sp/>vector<sp/>would<sp/>be<sp/>&lt;0,<sp/>2,<sp/>8,<sp/>10&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="448"><highlight class="normal"><sp/><sp/>std::vector&lt;uint32_t&gt;<sp/>top_left_patch_vals;</highlight></codeline>
+<codeline lineno="449"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>i<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="450"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/>i<sp/>&lt;=<sp/>_num_patches<sp/>-<sp/>next_filter_length<sp/>-</highlight></codeline>
+<codeline lineno="451"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>((next_filter_length<sp/>-<sp/>1)<sp/>*<sp/>num_patches_for_side);</highlight></codeline>
+<codeline lineno="452"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/>i<sp/>+=<sp/>next_filter_length)<sp/>{</highlight></codeline>
+<codeline lineno="453"><highlight class="normal"><sp/><sp/><sp/><sp/>top_left_patch_vals.push_back(i);</highlight></codeline>
+<codeline lineno="454"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(((i<sp/>+<sp/>next_filter_length)<sp/>%<sp/>num_patches_for_side)<sp/>==<sp/>0)<sp/>{</highlight></codeline>
+<codeline lineno="455"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>i<sp/>+=<sp/>(next_filter_length<sp/>-<sp/>1)<sp/>*<sp/>num_patches_for_side;</highlight></codeline>
+<codeline lineno="456"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="457"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="458"><highlight class="normal"></highlight></codeline>
+<codeline lineno="459"><highlight class="normal"><sp/><sp/>uint32_t<sp/>patch<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="460"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>for<sp/>each<sp/>top<sp/>left<sp/>patch<sp/>val,<sp/>map<sp/>the<sp/>patches<sp/>in<sp/>order<sp/>to<sp/>the<sp/>values<sp/>within</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="461"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>the<sp/>filter<sp/>for<sp/>that<sp/>patch<sp/>val</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="462"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>start<sp/>:<sp/>top_left_patch_vals)<sp/>{</highlight></codeline>
+<codeline lineno="463"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>base_val<sp/>=<sp/>start;</highlight></codeline>
+<codeline lineno="464"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>y<sp/>=<sp/>0;<sp/>y<sp/>&lt;<sp/>next_filter_length;<sp/>y++)<sp/>{</highlight></codeline>
+<codeline lineno="465"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>x<sp/>=<sp/>0;<sp/>x<sp/>&lt;<sp/>next_filter_length;<sp/>x++)<sp/>{</highlight></codeline>
+<codeline lineno="466"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>new_patch<sp/>=<sp/>base_val<sp/>+<sp/>x;</highlight></codeline>
+<codeline lineno="467"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_in_to_out[patch]<sp/>=<sp/>new_patch;</highlight></codeline>
+<codeline lineno="468"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_out_to_in[new_patch]<sp/>=<sp/>patch;</highlight></codeline>
+<codeline lineno="469"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>patch++;</highlight></codeline>
+<codeline lineno="470"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="471"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>base_val<sp/>+=<sp/>num_patches_for_side;</highlight></codeline>
+<codeline lineno="472"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="473"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="474"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="475"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::bolt</highlight></codeline>
+    </programlisting>
+    <location file="bolt/src/layers/ConvLayer.cc"/>
+  </compounddef>
+</doxygen>

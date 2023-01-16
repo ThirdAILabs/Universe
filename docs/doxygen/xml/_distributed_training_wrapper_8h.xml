@@ -1,0 +1,844 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_distributed_training_wrapper_8h" kind="file" language="C++">
+    <compoundname>DistributedTrainingWrapper.h</compoundname>
+    <includes refid="_graph_8h" local="yes">Graph.h</includes>
+    <includes refid="_dataset_context_8h" local="no">bolt/src/graph/DatasetContext.h</includes>
+    <includes refid="_execution_config_8h" local="no">bolt/src/graph/ExecutionConfig.h</includes>
+    <includes refid="_inference_output_tracker_8h" local="no">bolt/src/graph/InferenceOutputTracker.h</includes>
+    <includes refid="_callback_8h" local="no">bolt/src/graph/callbacks/Callback.h</includes>
+    <includes refid="_fully_connected_8h" local="no">bolt/src/graph/nodes/FullyConnected.h</includes>
+    <includes refid="_loss_functions_8h" local="no">bolt/src/loss_functions/LossFunctions.h</includes>
+    <includes refid="_metric_aggregator_8h" local="no">bolt/src/metrics/MetricAggregator.h</includes>
+    <includes local="no">utility</includes>
+    <includes local="no">vector</includes>
+    <incdepgraph>
+      <node id="9">
+        <label>DatasetContext.h</label>
+        <link refid="_dataset_context_8h_source"/>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="53" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>bolt/src/graph/DistributedTrainingWrapper.h</label>
+        <link refid="_distributed_training_wrapper_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="63" relation="include">
+        </childnode>
+        <childnode refid="75" relation="include">
+        </childnode>
+        <childnode refid="64" relation="include">
+        </childnode>
+        <childnode refid="76" relation="include">
+        </childnode>
+        <childnode refid="74" relation="include">
+        </childnode>
+        <childnode refid="65" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="63">
+        <label>ExecutionConfig.h</label>
+        <link refid="_execution_config_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="64" relation="include">
+        </childnode>
+        <childnode refid="65" relation="include">
+        </childnode>
+        <childnode refid="53" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>Graph.h</label>
+        <link refid="_graph_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="63" relation="include">
+        </childnode>
+        <childnode refid="75" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="74" relation="include">
+        </childnode>
+        <childnode refid="65" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="50" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="75">
+        <label>InferenceOutputTracker.h</label>
+        <link refid="_inference_output_tracker_8h_source"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+      </node>
+      <node id="12">
+        <label>bolt/src/graph/Node.h</label>
+        <link refid="_node_8h_source"/>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="49" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="50" relation="include">
+        </childnode>
+      </node>
+      <node id="64">
+        <label>bolt/src/graph/callbacks/Callback.h</label>
+        <link refid="_callback_8h_source"/>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="76">
+        <label>bolt/src/graph/nodes/FullyConnected.h</label>
+        <link refid="_fully_connected_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="40" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="39" relation="include">
+        </childnode>
+        <childnode refid="56" relation="include">
+        </childnode>
+        <childnode refid="49" relation="include">
+        </childnode>
+        <childnode refid="51" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+      </node>
+      <node id="10">
+        <label>bolt/src/graph/nodes/Input.h</label>
+        <link refid="_input_8h_source"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="49" relation="include">
+        </childnode>
+        <childnode refid="51" relation="include">
+        </childnode>
+        <childnode refid="52" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+      </node>
+      <node id="13">
+        <label>bolt/src/layers/FullyConnectedLayer.h</label>
+        <link refid="_fully_connected_layer_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="47" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="41" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="48" relation="include">
+        </childnode>
+      </node>
+      <node id="14">
+        <label>LayerConfig.h</label>
+        <link refid="_layer_config_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="39" relation="include">
+        </childnode>
+        <childnode refid="36" relation="include">
+        </childnode>
+        <childnode refid="44" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+      </node>
+      <node id="15">
+        <label>LayerUtils.h</label>
+        <link refid="_layer_utils_8h_source"/>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+        <childnode refid="35" relation="include">
+        </childnode>
+        <childnode refid="36" relation="include">
+        </childnode>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+      </node>
+      <node id="47">
+        <label>bolt/src/layers/Optimizer.h</label>
+        <link refid="_optimizer_8h_source"/>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="39">
+        <label>SamplingConfig.h</label>
+        <link refid="_sampling_config_8h_source"/>
+        <childnode refid="40" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="41" relation="include">
+        </childnode>
+        <childnode refid="44" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+      </node>
+      <node id="74">
+        <label>bolt/src/loss_functions/LossFunctions.h</label>
+        <link refid="_loss_functions_8h_source"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="36" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+      </node>
+      <node id="66">
+        <label>Metric.h</label>
+        <link refid="_metric_8h_source"/>
+        <childnode refid="67" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="71" relation="include">
+        </childnode>
+        <childnode refid="60" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="68" relation="include">
+        </childnode>
+        <childnode refid="72" relation="include">
+        </childnode>
+        <childnode refid="69" relation="include">
+        </childnode>
+        <childnode refid="52" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="73" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="70" relation="include">
+        </childnode>
+        <childnode refid="50" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+      </node>
+      <node id="65">
+        <label>bolt/src/metrics/MetricAggregator.h</label>
+        <link refid="_metric_aggregator_8h_source"/>
+        <childnode refid="66" relation="include">
+        </childnode>
+        <childnode refid="74" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="73" relation="include">
+        </childnode>
+      </node>
+      <node id="67">
+        <label>bolt/src/metrics/MetricHelpers.h</label>
+        <link refid="_metric_helpers_8h_source"/>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="68" relation="include">
+        </childnode>
+        <childnode refid="44" relation="include">
+        </childnode>
+        <childnode refid="69" relation="include">
+        </childnode>
+        <childnode refid="70" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="20">
+        <label>bolt_vector/src/BoltVector.h</label>
+        <link refid="_bolt_vector_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="54">
+        <label>BatchProcessor.h</label>
+        <link refid="_batch_processor_8h_source"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="59">
+        <label>DataLoader.h</label>
+        <link refid="_data_loader_8h_source"/>
+        <childnode refid="56" relation="include">
+        </childnode>
+        <childnode refid="57" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="53">
+        <label>dataset/src/Datasets.h</label>
+        <link refid="_datasets_8h_source"/>
+        <childnode refid="54" relation="include">
+        </childnode>
+        <childnode refid="55" relation="include">
+        </childnode>
+        <childnode refid="58" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+      </node>
+      <node id="55">
+        <label>InMemoryDataset.h</label>
+        <link refid="_in_memory_dataset_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="40" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="56" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="58">
+        <label>StreamingDataset.h</label>
+        <link refid="_streaming_dataset_8h_source"/>
+        <childnode refid="54" relation="include">
+        </childnode>
+        <childnode refid="59" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="55" relation="include">
+        </childnode>
+        <childnode refid="60" relation="include">
+        </childnode>
+        <childnode refid="62" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="56">
+        <label>utils/SafeFileIO.h</label>
+        <link refid="_safe_file_i_o_8h_source"/>
+        <childnode refid="57" relation="include">
+        </childnode>
+      </node>
+      <node id="16">
+        <label>hashing/src/DWTA.h</label>
+        <link refid="_d_w_t_a_8h_source"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="34">
+        <label>hashing/src/FastSRP.h</label>
+        <link refid="_fast_s_r_p_8h_source"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+      </node>
+      <node id="17">
+        <label>HashFunction.h</label>
+        <link refid="_hash_function_8h_source"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+      </node>
+      <node id="18">
+        <label>HashUtils.h</label>
+        <link refid="_hash_utils_8h_source"/>
+        <childnode refid="19" relation="include">
+        </childnode>
+      </node>
+      <node id="35">
+        <label>hashing/src/SRP.h</label>
+        <link refid="_s_r_p_8h_source"/>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="42">
+        <label>HashTable.h</label>
+        <link refid="_hash_table_8h_source"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="43" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="41">
+        <label>hashtable/src/SampledHashTable.h</label>
+        <link refid="_sampled_hash_table_8h_source"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="42" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="43" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="60">
+        <label>utils/Logging.h</label>
+        <link refid="_logging_8h_source"/>
+        <childnode refid="61" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+      </node>
+      <node id="36">
+        <label>utils/StringManipulation.h</label>
+        <link refid="_string_manipulation_8h_source"/>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="37" relation="include">
+        </childnode>
+      </node>
+      <node id="22">
+        <label>algorithm</label>
+      </node>
+      <node id="68">
+        <label>atomic</label>
+      </node>
+      <node id="23">
+        <label>cassert</label>
+      </node>
+      <node id="38">
+        <label>cctype</label>
+      </node>
+      <node id="4">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="5">
+        <label>cereal/archives/binary.hpp</label>
+      </node>
+      <node id="21">
+        <label>cereal/cereal.hpp</label>
+      </node>
+      <node id="40">
+        <label>cereal/types/base_class.hpp</label>
+      </node>
+      <node id="6">
+        <label>cereal/types/memory.hpp</label>
+      </node>
+      <node id="7">
+        <label>cereal/types/optional.hpp</label>
+      </node>
+      <node id="11">
+        <label>cereal/types/polymorphic.hpp</label>
+      </node>
+      <node id="8">
+        <label>cereal/types/vector.hpp</label>
+      </node>
+      <node id="62">
+        <label>chrono</label>
+      </node>
+      <node id="44">
+        <label>cmath</label>
+      </node>
+      <node id="51">
+        <label>cstddef</label>
+      </node>
+      <node id="19">
+        <label>cstdint</label>
+      </node>
+      <node id="72">
+        <label>cstdlib</label>
+      </node>
+      <node id="46">
+        <label>exception</label>
+      </node>
+      <node id="49">
+        <label>exceptions/src/Exceptions.h</label>
+      </node>
+      <node id="57">
+        <label>fstream</label>
+      </node>
+      <node id="69">
+        <label>functional</label>
+      </node>
+      <node id="52">
+        <label>iomanip</label>
+      </node>
+      <node id="24">
+        <label>iostream</label>
+      </node>
+      <node id="25">
+        <label>limits</label>
+      </node>
+      <node id="45">
+        <label>memory</label>
+      </node>
+      <node id="26">
+        <label>numeric</label>
+      </node>
+      <node id="27">
+        <label>optional</label>
+      </node>
+      <node id="28">
+        <label>queue</label>
+      </node>
+      <node id="48">
+        <label>random</label>
+      </node>
+      <node id="73">
+        <label>regex</label>
+      </node>
+      <node id="61">
+        <label>spdlog/spdlog.h</label>
+      </node>
+      <node id="29">
+        <label>sstream</label>
+      </node>
+      <node id="30">
+        <label>stdexcept</label>
+      </node>
+      <node id="31">
+        <label>string</label>
+      </node>
+      <node id="37">
+        <label>string_view</label>
+      </node>
+      <node id="71">
+        <label>sys/types.h</label>
+      </node>
+      <node id="70">
+        <label>type_traits</label>
+      </node>
+      <node id="50">
+        <label>unordered_map</label>
+      </node>
+      <node id="43">
+        <label>unordered_set</label>
+      </node>
+      <node id="32">
+        <label>utility</label>
+      </node>
+      <node id="33">
+        <label>vector</label>
+      </node>
+      <node id="3">
+        <label>wrappers/src/LicenseWrapper.h</label>
+      </node>
+    </incdepgraph>
+    <innerclass refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper" prot="public">thirdai::bolt::DistributedTrainingWrapper</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1bolt">thirdai::bolt</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;Graph.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt/src/graph/DatasetContext.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt/src/graph/ExecutionConfig.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt/src/graph/InferenceOutputTracker.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt/src/graph/callbacks/Callback.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt/src/graph/nodes/FullyConnected.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt/src/loss_functions/LossFunctions.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt/src/metrics/MetricAggregator.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;utility&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;vector&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::bolt<sp/>{</highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight></codeline>
+<codeline lineno="16" refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper" kindref="compound">DistributedTrainingWrapper</ref><sp/>{</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="18"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper" kindref="compound">DistributedTrainingWrapper</ref>(BoltGraphPtr<sp/>bolt_graph,</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>dataset::BoltDatasetList&amp;<sp/>train_data,</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>dataset::BoltDatasetPtr&amp;<sp/>train_labels,</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1bolt_1_1_train_config" kindref="compound">TrainConfig</ref><sp/>train_config)</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>_bolt_graph(std::move(bolt_graph)),</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_train_context(<ref refid="classthirdai_1_1bolt_1_1_dataset_context" kindref="compound">DatasetContext</ref>(train_data,<sp/>train_labels)),</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_train_config(std::move(train_config)),</highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_metric_aggregator(_train_config.getMetricAggregator())<sp/>{</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"><sp/><sp/><sp/><sp/>_bolt_graph-&gt;verifyCanTrain(_train_context);</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"><sp/><sp/><sp/><sp/>_bolt_graph-&gt;prepareToProcessBatches(_train_context.batchSize(),</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>use_sparsity=*/</highlight><highlight class="keyword">true</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/><sp/><sp/>_bolt_graph-&gt;enableDistributedTraining();</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="31"><highlight class="normal"></highlight></codeline>
+<codeline lineno="32"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>computeAndSaveBatchGradients(uint32_t<sp/>batch_idx)<sp/>{</highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/><sp/><sp/>_train_context.setInputs(batch_idx,<sp/>_bolt_graph-&gt;_inputs);</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref>&amp;<sp/>batch_labels<sp/>=<sp/>_train_context.labels()-&gt;at(batch_idx);</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/>_bolt_graph-&gt;processTrainingBatch(batch_labels,<sp/>_metric_aggregator);</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"></highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>updateParameters()<sp/>{</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/><sp/><sp/>_bolt_graph-&gt;updateParametersAndSampling(</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>learning_rate<sp/>=<sp/>*/</highlight><highlight class="normal"><sp/>_train_config.learningRate(),</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>rebuild_hash_tables_batch<sp/>=<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_train_config.getRebuildHashTablesBatchInterval(</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_train_context.batchSize(),<sp/>_train_context.len()),</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>reconstruct_hash_functions_batch<sp/>=<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_train_config.getReconstructHashFunctionsBatchInterval(</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_train_context.batchSize(),<sp/>_train_context.len()));</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"></highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/><sp/>BoltGraphPtr<sp/>getModel()<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_bolt_graph;<sp/>}</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"></highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>finishTraining()<sp/>{<sp/>_bolt_graph-&gt;cleanupAfterBatchProcessing();<sp/>}</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"></highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/>BoltGraphPtr<sp/>_bolt_graph;</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1bolt_1_1_dataset_context" kindref="compound">DatasetContext</ref><sp/>_train_context;</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1bolt_1_1_train_config" kindref="compound">TrainConfig</ref><sp/>_train_config;</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1bolt_1_1_metric_aggregator" kindref="compound">MetricAggregator</ref><sp/>_metric_aggregator;</highlight></codeline>
+<codeline lineno="58"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"></highlight></codeline>
+<codeline lineno="60"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::bolt</highlight></codeline>
+    </programlisting>
+    <location file="bolt/src/graph/DistributedTrainingWrapper.h"/>
+  </compounddef>
+</doxygen>

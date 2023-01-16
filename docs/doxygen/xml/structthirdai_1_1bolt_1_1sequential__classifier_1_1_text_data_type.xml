@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_text_data_type" kind="struct" language="C++" prot="public">
+    <compoundname>thirdai::bolt::sequential_classifier::TextDataType</compoundname>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_text_data_type_1a810f799b57b4e67eecc751b7fb4aa0e8" prot="public" static="no" mutable="no">
+        <type>std::optional&lt; uint32_t &gt;</type>
+        <definition>std::optional&lt;uint32_t&gt; thirdai::bolt::sequential_classifier::TextDataType::average_n_words</definition>
+        <argsstring></argsstring>
+        <name>average_n_words</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::TextDataType::average_n_words</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" line="20" column="17" bodyfile="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" bodystart="20" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" line="19" column="1" bodyfile="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" bodystart="19" bodyend="21"/>
+    <listofallmembers>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_text_data_type_1a810f799b57b4e67eecc751b7fb4aa0e8" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::TextDataType</scope><name>average_n_words</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

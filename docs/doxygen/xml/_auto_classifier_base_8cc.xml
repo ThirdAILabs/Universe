@@ -1,0 +1,1074 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_auto_classifier_base_8cc" kind="file" language="C++">
+    <compoundname>AutoClassifierBase.cc</compoundname>
+    <includes refid="_auto_classifier_base_8h" local="yes">AutoClassifierBase.h</includes>
+    <includes refid="_bolt_vector_8h" local="no">bolt_vector/src/BoltVector.h</includes>
+    <incdepgraph>
+      <node id="1">
+        <label>bolt/src/auto_classifiers/AutoClassifierBase.cc</label>
+        <link refid="_auto_classifier_base_8cc"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>AutoClassifierBase.h</label>
+        <link refid="_auto_classifier_base_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="77" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="54" relation="include">
+        </childnode>
+        <childnode refid="78" relation="include">
+        </childnode>
+        <childnode refid="58" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="74" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+      </node>
+      <node id="10">
+        <label>DatasetContext.h</label>
+        <link refid="_dataset_context_8h_source"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="54" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+      </node>
+      <node id="64">
+        <label>ExecutionConfig.h</label>
+        <link refid="_execution_config_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="65" relation="include">
+        </childnode>
+        <childnode refid="66" relation="include">
+        </childnode>
+        <childnode refid="54" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>bolt/src/graph/Graph.h</label>
+        <link refid="_graph_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="64" relation="include">
+        </childnode>
+        <childnode refid="76" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="75" relation="include">
+        </childnode>
+        <childnode refid="66" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="51" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="76">
+        <label>InferenceOutputTracker.h</label>
+        <link refid="_inference_output_tracker_8h_source"/>
+        <childnode refid="13" relation="include">
+        </childnode>
+      </node>
+      <node id="13">
+        <label>bolt/src/graph/Node.h</label>
+        <link refid="_node_8h_source"/>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="50" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="51" relation="include">
+        </childnode>
+      </node>
+      <node id="65">
+        <label>bolt/src/graph/callbacks/Callback.h</label>
+        <link refid="_callback_8h_source"/>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="77">
+        <label>bolt/src/graph/nodes/FullyConnected.h</label>
+        <link refid="_fully_connected_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="41" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="40" relation="include">
+        </childnode>
+        <childnode refid="57" relation="include">
+        </childnode>
+        <childnode refid="50" relation="include">
+        </childnode>
+        <childnode refid="52" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="11">
+        <label>bolt/src/graph/nodes/Input.h</label>
+        <link refid="_input_8h_source"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="50" relation="include">
+        </childnode>
+        <childnode refid="52" relation="include">
+        </childnode>
+        <childnode refid="53" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+      </node>
+      <node id="14">
+        <label>bolt/src/layers/FullyConnectedLayer.h</label>
+        <link refid="_fully_connected_layer_8h_source"/>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="48" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="42" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="49" relation="include">
+        </childnode>
+      </node>
+      <node id="15">
+        <label>LayerConfig.h</label>
+        <link refid="_layer_config_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="40" relation="include">
+        </childnode>
+        <childnode refid="37" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="47" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+      </node>
+      <node id="16">
+        <label>LayerUtils.h</label>
+        <link refid="_layer_utils_8h_source"/>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="35" relation="include">
+        </childnode>
+        <childnode refid="36" relation="include">
+        </childnode>
+        <childnode refid="37" relation="include">
+        </childnode>
+        <childnode refid="39" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="48">
+        <label>bolt/src/layers/Optimizer.h</label>
+        <link refid="_optimizer_8h_source"/>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="40">
+        <label>SamplingConfig.h</label>
+        <link refid="_sampling_config_8h_source"/>
+        <childnode refid="41" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="35" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="42" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+      </node>
+      <node id="75">
+        <label>bolt/src/loss_functions/LossFunctions.h</label>
+        <link refid="_loss_functions_8h_source"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="37" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+      </node>
+      <node id="67">
+        <label>Metric.h</label>
+        <link refid="_metric_8h_source"/>
+        <childnode refid="68" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="72" relation="include">
+        </childnode>
+        <childnode refid="61" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="69" relation="include">
+        </childnode>
+        <childnode refid="73" relation="include">
+        </childnode>
+        <childnode refid="70" relation="include">
+        </childnode>
+        <childnode refid="53" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="74" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="71" relation="include">
+        </childnode>
+        <childnode refid="51" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="66">
+        <label>bolt/src/metrics/MetricAggregator.h</label>
+        <link refid="_metric_aggregator_8h_source"/>
+        <childnode refid="67" relation="include">
+        </childnode>
+        <childnode refid="75" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="74" relation="include">
+        </childnode>
+      </node>
+      <node id="68">
+        <label>bolt/src/metrics/MetricHelpers.h</label>
+        <link refid="_metric_helpers_8h_source"/>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="69" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="70" relation="include">
+        </childnode>
+        <childnode refid="71" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="21">
+        <label>bolt_vector/src/BoltVector.h</label>
+        <link refid="_bolt_vector_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="55">
+        <label>BatchProcessor.h</label>
+        <link refid="_batch_processor_8h_source"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="60">
+        <label>DataLoader.h</label>
+        <link refid="_data_loader_8h_source"/>
+        <childnode refid="57" relation="include">
+        </childnode>
+        <childnode refid="58" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="54">
+        <label>dataset/src/Datasets.h</label>
+        <link refid="_datasets_8h_source"/>
+        <childnode refid="55" relation="include">
+        </childnode>
+        <childnode refid="56" relation="include">
+        </childnode>
+        <childnode refid="59" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+      </node>
+      <node id="56">
+        <label>InMemoryDataset.h</label>
+        <link refid="_in_memory_dataset_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="41" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="57" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="59">
+        <label>StreamingDataset.h</label>
+        <link refid="_streaming_dataset_8h_source"/>
+        <childnode refid="55" relation="include">
+        </childnode>
+        <childnode refid="60" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="56" relation="include">
+        </childnode>
+        <childnode refid="61" relation="include">
+        </childnode>
+        <childnode refid="63" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="57">
+        <label>utils/SafeFileIO.h</label>
+        <link refid="_safe_file_i_o_8h_source"/>
+        <childnode refid="58" relation="include">
+        </childnode>
+      </node>
+      <node id="17">
+        <label>hashing/src/DWTA.h</label>
+        <link refid="_d_w_t_a_8h_source"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="35">
+        <label>hashing/src/FastSRP.h</label>
+        <link refid="_fast_s_r_p_8h_source"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+      </node>
+      <node id="18">
+        <label>HashFunction.h</label>
+        <link refid="_hash_function_8h_source"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+      </node>
+      <node id="19">
+        <label>HashUtils.h</label>
+        <link refid="_hash_utils_8h_source"/>
+        <childnode refid="20" relation="include">
+        </childnode>
+      </node>
+      <node id="36">
+        <label>hashing/src/SRP.h</label>
+        <link refid="_s_r_p_8h_source"/>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="43">
+        <label>HashTable.h</label>
+        <link refid="_hash_table_8h_source"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="44" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="42">
+        <label>hashtable/src/SampledHashTable.h</label>
+        <link refid="_sampled_hash_table_8h_source"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="43" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="44" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+      </node>
+      <node id="61">
+        <label>utils/Logging.h</label>
+        <link refid="_logging_8h_source"/>
+        <childnode refid="62" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+      </node>
+      <node id="37">
+        <label>utils/StringManipulation.h</label>
+        <link refid="_string_manipulation_8h_source"/>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="38" relation="include">
+        </childnode>
+      </node>
+      <node id="23">
+        <label>algorithm</label>
+      </node>
+      <node id="69">
+        <label>atomic</label>
+      </node>
+      <node id="24">
+        <label>cassert</label>
+      </node>
+      <node id="39">
+        <label>cctype</label>
+      </node>
+      <node id="5">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="6">
+        <label>cereal/archives/binary.hpp</label>
+      </node>
+      <node id="22">
+        <label>cereal/cereal.hpp</label>
+      </node>
+      <node id="41">
+        <label>cereal/types/base_class.hpp</label>
+      </node>
+      <node id="7">
+        <label>cereal/types/memory.hpp</label>
+      </node>
+      <node id="8">
+        <label>cereal/types/optional.hpp</label>
+      </node>
+      <node id="12">
+        <label>cereal/types/polymorphic.hpp</label>
+      </node>
+      <node id="9">
+        <label>cereal/types/vector.hpp</label>
+      </node>
+      <node id="63">
+        <label>chrono</label>
+      </node>
+      <node id="45">
+        <label>cmath</label>
+      </node>
+      <node id="52">
+        <label>cstddef</label>
+      </node>
+      <node id="20">
+        <label>cstdint</label>
+      </node>
+      <node id="73">
+        <label>cstdlib</label>
+      </node>
+      <node id="47">
+        <label>exception</label>
+      </node>
+      <node id="50">
+        <label>exceptions/src/Exceptions.h</label>
+      </node>
+      <node id="58">
+        <label>fstream</label>
+      </node>
+      <node id="70">
+        <label>functional</label>
+      </node>
+      <node id="53">
+        <label>iomanip</label>
+      </node>
+      <node id="25">
+        <label>iostream</label>
+      </node>
+      <node id="26">
+        <label>limits</label>
+      </node>
+      <node id="46">
+        <label>memory</label>
+      </node>
+      <node id="27">
+        <label>numeric</label>
+      </node>
+      <node id="28">
+        <label>optional</label>
+      </node>
+      <node id="29">
+        <label>queue</label>
+      </node>
+      <node id="49">
+        <label>random</label>
+      </node>
+      <node id="74">
+        <label>regex</label>
+      </node>
+      <node id="62">
+        <label>spdlog/spdlog.h</label>
+      </node>
+      <node id="30">
+        <label>sstream</label>
+      </node>
+      <node id="31">
+        <label>stdexcept</label>
+      </node>
+      <node id="32">
+        <label>string</label>
+      </node>
+      <node id="38">
+        <label>string_view</label>
+      </node>
+      <node id="78">
+        <label>sys/stat.h</label>
+      </node>
+      <node id="72">
+        <label>sys/types.h</label>
+      </node>
+      <node id="71">
+        <label>type_traits</label>
+      </node>
+      <node id="51">
+        <label>unordered_map</label>
+      </node>
+      <node id="44">
+        <label>unordered_set</label>
+      </node>
+      <node id="33">
+        <label>utility</label>
+      </node>
+      <node id="34">
+        <label>vector</label>
+      </node>
+      <node id="4">
+        <label>wrappers/src/LicenseWrapper.h</label>
+      </node>
+    </incdepgraph>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1bolt">thirdai::bolt</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#include<sp/>&quot;AutoClassifierBase.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt_vector/src/BoltVector.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#if<sp/>defined<sp/>__linux</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;sys/sysinfo.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#endif</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#if<sp/>defined<sp/>__APPLE__</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;sys/sysctl.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#endif</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="preprocessor">#if<sp/>_WIN32</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;windows.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="preprocessor">#endif</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::bolt<sp/>{</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal">AutoClassifierBase::AutoClassifierBase(uint64_t<sp/>input_dim,<sp/>uint32_t<sp/>n_classes,</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>model_size)<sp/>{</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/>uint32_t<sp/>hidden_layer_size<sp/>=</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>getHiddenLayerSize(model_size,<sp/>n_classes,<sp/>input_dim);</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"></highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>hidden_layer_sparsity<sp/>=<sp/>getHiddenLayerSparsity(hidden_layer_size);</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"></highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>input_layer<sp/>=<sp/>Input::make(input_dim);</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"></highlight></codeline>
+<codeline lineno="27"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>hidden_layer<sp/>=<sp/>FullyConnectedNode::makeAutotuned(</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>dim=<sp/>*/</highlight><highlight class="normal"><sp/>hidden_layer_size,<sp/></highlight><highlight class="comment">/*<sp/>sparsity=<sp/>*/</highlight><highlight class="normal"><sp/>hidden_layer_sparsity,</highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>activation=<sp/>*/</highlight><highlight class="normal"><sp/></highlight><highlight class="stringliteral">&quot;relu&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"></highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/>hidden_layer-&gt;addPredecessor(input_layer);</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"></highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>output_layer<sp/>=<sp/>FullyConnectedNode::makeDense(</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>dim=<sp/>*/</highlight><highlight class="normal"><sp/>n_classes,<sp/></highlight><highlight class="comment">/*<sp/>activation=<sp/>*/</highlight><highlight class="normal"><sp/></highlight><highlight class="stringliteral">&quot;softmax&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"></highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/><sp/>output_layer-&gt;addPredecessor(hidden_layer);</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"></highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/>_model<sp/>=<sp/>std::make_shared&lt;BoltGraph&gt;(std::vector&lt;InputPtr&gt;{input_layer},</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>output_layer);</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"></highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/>_model-&gt;compile(std::make_shared&lt;CategoricalCrossEntropyLoss&gt;());</highlight></codeline>
+<codeline lineno="42"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"></highlight></codeline>
+<codeline lineno="44"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>AutoClassifierBase::train(</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>filename,</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;dataset::BatchProcessor&lt;BoltBatch,<sp/>BoltBatch&gt;&gt;&amp;</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>batch_processor,</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>epochs,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>learning_rate)<sp/>{</highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>dataset<sp/>=<sp/>loadStreamingDataset(filename,<sp/>batch_processor);</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"></highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>The<sp/>case<sp/>has<sp/>yet<sp/>to<sp/>come<sp/>up<sp/>where<sp/>loading<sp/>the<sp/>dataset<sp/>in</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="52"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>memory<sp/>is<sp/>a<sp/>concern.<sp/>Additionally,<sp/>supporting<sp/>streaming<sp/>datasets<sp/>in<sp/>the<sp/>DAG</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>api<sp/>would<sp/>require<sp/>a<sp/>lot<sp/>of<sp/>messy<sp/>refactoring.<sp/>When<sp/>the<sp/>problem<sp/>does<sp/>come<sp/>up</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>we<sp/>can<sp/>prioritize<sp/>that<sp/>and<sp/>come<sp/>up<sp/>with<sp/>a<sp/>good<sp/>solution<sp/>in<sp/>another<sp/>PR</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>(TODO(david,<sp/>nick)).<sp/>In<sp/>the<sp/>meantime,<sp/>the<sp/>user<sp/>can<sp/>simply<sp/>implement<sp/>this</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>chunked<sp/>processing<sp/>themselves<sp/>by<sp/>training<sp/>on<sp/>sections<sp/>of<sp/>the<sp/>dataset.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!canLoadDatasetInMemory(filename))<sp/>{</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight><highlight class="stringliteral">&quot;Cannot<sp/>load<sp/>dataset<sp/>in<sp/>memory.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>[train_data,<sp/>train_labels]<sp/>=<sp/>dataset-&gt;loadInMemory();</highlight></codeline>
+<codeline lineno="61"><highlight class="normal"></highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/>TrainConfig<sp/>first_epoch_config<sp/>=</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>TrainConfig::makeConfig(</highlight><highlight class="comment">/*<sp/>learning_rate=<sp/>*/</highlight><highlight class="normal"><sp/>learning_rate,</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>epochs=<sp/>*/</highlight><highlight class="normal"><sp/>1)</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>.withMetrics({</highlight><highlight class="stringliteral">&quot;categorical_accuracy&quot;</highlight><highlight class="normal">});</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"></highlight></codeline>
+<codeline lineno="67"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>TODO(david)<sp/>verify<sp/>freezing<sp/>hash<sp/>tables<sp/>is<sp/>good<sp/>for<sp/>autoclassifier</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>training.<sp/>The<sp/>only<sp/>way<sp/>we<sp/>can<sp/>really<sp/>test<sp/>this<sp/>is<sp/>when<sp/>we<sp/>have<sp/>a<sp/>validation</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="69"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>based<sp/>early<sp/>stop<sp/>callback<sp/>already<sp/>implemented.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/>_model-&gt;train({train_data},<sp/>train_labels,<sp/>first_epoch_config);</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"><sp/><sp/>_model-&gt;freezeHashTables(</highlight><highlight class="comment">/*<sp/>insert_labels_if_not_found<sp/>*/</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">true</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"></highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/>TrainConfig<sp/>remaining_epochs_config<sp/>=</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>TrainConfig::makeConfig(</highlight><highlight class="comment">/*<sp/>learning_rate=<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>learning_rate,</highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>epochs=<sp/>*/</highlight><highlight class="normal"><sp/>epochs<sp/>-<sp/>1)</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>.withMetrics({</highlight><highlight class="stringliteral">&quot;categorical_accuracy&quot;</highlight><highlight class="normal">});</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"></highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/>_model-&gt;train({train_data},<sp/>train_labels,<sp/>remaining_epochs_config);</highlight></codeline>
+<codeline lineno="80"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="81"><highlight class="normal"></highlight></codeline>
+<codeline lineno="82"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>AutoClassifierBase::predict(</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>filename,</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;dataset::BatchProcessor&lt;BoltBatch,<sp/>BoltBatch&gt;&gt;&amp;</highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>batch_processor,</highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::optional&lt;std::string&gt;&amp;<sp/>output_filename,</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;std::string&gt;&amp;<sp/>class_id_to_class_name)<sp/>{</highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>dataset<sp/>=<sp/>loadStreamingDataset(filename,<sp/>batch_processor);</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"></highlight></codeline>
+<codeline lineno="90"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>see<sp/>comment<sp/>above<sp/>in<sp/>train(..)<sp/>about<sp/>loading<sp/>in<sp/>memory</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!canLoadDatasetInMemory(filename))<sp/>{</highlight></codeline>
+<codeline lineno="92"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight><highlight class="stringliteral">&quot;Cannot<sp/>load<sp/>dataset<sp/>in<sp/>memory.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="94"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>[test_data,<sp/>test_labels]<sp/>=<sp/>dataset-&gt;loadInMemory();</highlight></codeline>
+<codeline lineno="95"><highlight class="normal"></highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/>std::optional&lt;std::ofstream&gt;<sp/>output_file;</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(output_filename)<sp/>{</highlight></codeline>
+<codeline lineno="98"><highlight class="normal"><sp/><sp/><sp/><sp/>output_file<sp/>=<sp/>dataset::SafeFileIO::ofstream(*output_filename);</highlight></codeline>
+<codeline lineno="99"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="100"><highlight class="normal"></highlight></codeline>
+<codeline lineno="101"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>print_predictions_callback<sp/>=<sp/>[&amp;](</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>BoltVector&amp;<sp/>output)<sp/>{</highlight></codeline>
+<codeline lineno="102"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!output_file)<sp/>{</highlight></codeline>
+<codeline lineno="103"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="104"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="105"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>class_id<sp/>=<sp/>output.getHighestActivationId();</highlight></codeline>
+<codeline lineno="106"><highlight class="normal"><sp/><sp/><sp/><sp/>(*output_file)<sp/>&lt;&lt;<sp/>class_id_to_class_name[class_id]<sp/>&lt;&lt;<sp/>std::endl;</highlight></codeline>
+<codeline lineno="107"><highlight class="normal"><sp/><sp/>};</highlight></codeline>
+<codeline lineno="108"><highlight class="normal"></highlight></codeline>
+<codeline lineno="109"><highlight class="normal"><sp/><sp/>PredictConfig<sp/>config<sp/>=<sp/>PredictConfig::makeConfig()</highlight></codeline>
+<codeline lineno="110"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>.enableSparseInference()</highlight></codeline>
+<codeline lineno="111"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>.withMetrics({</highlight><highlight class="stringliteral">&quot;categorical_accuracy&quot;</highlight><highlight class="normal">})</highlight></codeline>
+<codeline lineno="112"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>.withOutputCallback(print_predictions_callback)</highlight></codeline>
+<codeline lineno="113"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>.silence();</highlight></codeline>
+<codeline lineno="114"><highlight class="normal"></highlight></codeline>
+<codeline lineno="115"><highlight class="normal"><sp/><sp/>_model-&gt;predict({test_data},<sp/>test_labels,<sp/>config);</highlight></codeline>
+<codeline lineno="116"><highlight class="normal"></highlight></codeline>
+<codeline lineno="117"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(output_file)<sp/>{</highlight></codeline>
+<codeline lineno="118"><highlight class="normal"><sp/><sp/><sp/><sp/>output_file-&gt;close();</highlight></codeline>
+<codeline lineno="119"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="120"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="121"><highlight class="normal"></highlight></codeline>
+<codeline lineno="122"><highlight class="normal">BoltVector<sp/>AutoClassifierBase::predictSingle(</highlight></codeline>
+<codeline lineno="123"><highlight class="normal"><sp/><sp/><sp/><sp/>std::vector&lt;BoltVector&gt;&amp;&amp;<sp/>test_data,<sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>use_sparse_inference)<sp/>{</highlight></codeline>
+<codeline lineno="124"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_model-&gt;predictSingle(std::move(test_data),<sp/>use_sparse_inference);</highlight></codeline>
+<codeline lineno="125"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="126"><highlight class="normal"></highlight></codeline>
+<codeline lineno="127"><highlight class="normal">std::shared_ptr&lt;dataset::StreamingDataset&lt;BoltBatch,<sp/>BoltBatch&gt;&gt;</highlight></codeline>
+<codeline lineno="128"><highlight class="normal">AutoClassifierBase::loadStreamingDataset(</highlight></codeline>
+<codeline lineno="129"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>filename,</highlight></codeline>
+<codeline lineno="130"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::shared_ptr&lt;dataset::BatchProcessor&lt;BoltBatch,<sp/>BoltBatch&gt;&gt;&amp;</highlight></codeline>
+<codeline lineno="131"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>batch_processor,</highlight></codeline>
+<codeline lineno="132"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>batch_size)<sp/>{</highlight></codeline>
+<codeline lineno="133"><highlight class="normal"><sp/><sp/>std::shared_ptr&lt;dataset::DataLoader&gt;<sp/>data_loader<sp/>=</highlight></codeline>
+<codeline lineno="134"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::make_shared&lt;dataset::SimpleFileDataLoader&gt;(filename,<sp/>batch_size);</highlight></codeline>
+<codeline lineno="135"><highlight class="normal"></highlight></codeline>
+<codeline lineno="136"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>dataset<sp/>=</highlight></codeline>
+<codeline lineno="137"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::make_shared&lt;dataset::StreamingDataset&lt;BoltBatch,<sp/>BoltBatch&gt;&gt;(</highlight></codeline>
+<codeline lineno="138"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>data_loader,<sp/>batch_processor);</highlight></codeline>
+<codeline lineno="139"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>dataset;</highlight></codeline>
+<codeline lineno="140"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="141"><highlight class="normal"></highlight></codeline>
+<codeline lineno="142"><highlight class="normal">uint32_t<sp/>AutoClassifierBase::getHiddenLayerSize(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>model_size,</highlight></codeline>
+<codeline lineno="143"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint64_t<sp/>n_classes,</highlight></codeline>
+<codeline lineno="144"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint64_t<sp/>input_dim)<sp/>{</highlight></codeline>
+<codeline lineno="145"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">/*</highlight></codeline>
+<codeline lineno="146"><highlight class="comment"><sp/><sp/><sp/><sp/>Estimated<sp/>num<sp/>parameters<sp/>=<sp/>(input_dim<sp/>+<sp/>n_classes)<sp/>*<sp/>hidden_dim</highlight></codeline>
+<codeline lineno="147"><highlight class="comment"></highlight></codeline>
+<codeline lineno="148"><highlight class="comment"><sp/><sp/><sp/><sp/>Estimated<sp/>memory<sp/>=<sp/>(Estimated<sp/>num<sp/>parameters)<sp/>*<sp/>16</highlight></codeline>
+<codeline lineno="149"><highlight class="comment"></highlight></codeline>
+<codeline lineno="150"><highlight class="comment"><sp/><sp/><sp/><sp/>16<sp/>comes<sp/>from<sp/>4<sp/>bytes<sp/>per<sp/>parameter,<sp/>and<sp/>4x<sp/>the<sp/>number<sp/>of<sp/>parameters<sp/>from</highlight></codeline>
+<codeline lineno="151"><highlight class="comment"><sp/><sp/><sp/><sp/>gradients,<sp/>momentum,<sp/>velocity.</highlight></codeline>
+<codeline lineno="152"><highlight class="comment"></highlight></codeline>
+<codeline lineno="153"><highlight class="comment"><sp/><sp/><sp/><sp/>We<sp/>can<sp/>get<sp/>the<sp/>maximum<sp/>layer<sp/>size<sp/>by<sp/>setting<sp/>this<sp/>equation<sp/>equal<sp/>to<sp/>the</highlight></codeline>
+<codeline lineno="154"><highlight class="comment"><sp/><sp/><sp/><sp/>amount<sp/>of<sp/>ram.</highlight></codeline>
+<codeline lineno="155"><highlight class="comment"><sp/><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="156"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>TODO(nicholas):<sp/>what<sp/>if<sp/>getSystemRam()<sp/>fails?</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="157"><highlight class="normal"><sp/><sp/>uint64_t<sp/>memory_budget<sp/>=<sp/>getMemoryBudget(model_size);</highlight></codeline>
+<codeline lineno="158"><highlight class="normal"></highlight></codeline>
+<codeline lineno="159"><highlight class="normal"><sp/><sp/>uint64_t<sp/>hidden_layer_size<sp/>=<sp/>memory_budget<sp/>/<sp/>(16<sp/>*<sp/>(input_dim<sp/>+<sp/>n_classes));</highlight></codeline>
+<codeline lineno="160"><highlight class="normal"></highlight></codeline>
+<codeline lineno="161"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>hidden_layer_size;</highlight></codeline>
+<codeline lineno="162"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="163"><highlight class="normal"></highlight></codeline>
+<codeline lineno="164"><highlight class="normal"></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>AutoClassifierBase::getHiddenLayerSparsity(uint64_t<sp/>layer_size)<sp/>{</highlight></codeline>
+<codeline lineno="165"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(layer_size<sp/>&lt;<sp/>1000)<sp/>{</highlight></codeline>
+<codeline lineno="166"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>0.2;</highlight></codeline>
+<codeline lineno="167"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="168"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(layer_size<sp/>&lt;<sp/>4000)<sp/>{</highlight></codeline>
+<codeline lineno="169"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>0.1;</highlight></codeline>
+<codeline lineno="170"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="171"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(layer_size<sp/>&lt;<sp/>10000)<sp/>{</highlight></codeline>
+<codeline lineno="172"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>0.05;</highlight></codeline>
+<codeline lineno="173"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="174"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(layer_size<sp/>&lt;<sp/>30000)<sp/>{</highlight></codeline>
+<codeline lineno="175"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>0.01;</highlight></codeline>
+<codeline lineno="176"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="177"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>0.005;</highlight></codeline>
+<codeline lineno="178"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="179"><highlight class="normal"></highlight></codeline>
+<codeline lineno="180"><highlight class="normal"></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/>uint64_t<sp/>ONE_GB<sp/>=<sp/>1<sp/>&lt;&lt;<sp/>30;</highlight></codeline>
+<codeline lineno="181"><highlight class="normal"></highlight></codeline>
+<codeline lineno="182"><highlight class="normal">uint64_t<sp/>AutoClassifierBase::getMemoryBudget(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>model_size)<sp/>{</highlight></codeline>
+<codeline lineno="183"><highlight class="normal"><sp/><sp/>std::regex<sp/>small_re(</highlight><highlight class="stringliteral">&quot;[Ss]mall&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="184"><highlight class="normal"><sp/><sp/>std::regex<sp/>medium_re(</highlight><highlight class="stringliteral">&quot;[Mm]edium&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="185"><highlight class="normal"><sp/><sp/>std::regex<sp/>large_re(</highlight><highlight class="stringliteral">&quot;[Ll]arge&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="186"><highlight class="normal"><sp/><sp/>std::regex<sp/>gig_re(</highlight><highlight class="stringliteral">&quot;[1-9]\\d*<sp/>?Gb&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="187"><highlight class="normal"></highlight></codeline>
+<codeline lineno="188"><highlight class="normal"><sp/><sp/>std::optional&lt;uint64_t&gt;<sp/>system_ram_opt<sp/>=<sp/>getSystemRam();</highlight></codeline>
+<codeline lineno="189"><highlight class="normal"></highlight></codeline>
+<codeline lineno="190"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!system_ram_opt)<sp/>{</highlight></codeline>
+<codeline lineno="191"><highlight class="normal"><sp/><sp/><sp/><sp/>std::cout<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;WARNING:<sp/>Unable<sp/>to<sp/>determine<sp/>total<sp/>RAM<sp/>on<sp/>your<sp/>machine.<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="192"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;Using<sp/>default<sp/>of<sp/>8Gb.&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="193"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;&lt;<sp/>std::endl;</highlight></codeline>
+<codeline lineno="194"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="195"><highlight class="normal"></highlight></codeline>
+<codeline lineno="196"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>If<sp/>unable<sp/>to<sp/>find<sp/>system<sp/>RAM<sp/>assume<sp/>max<sp/>ram<sp/>is<sp/>8Gb</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="197"><highlight class="normal"><sp/><sp/>uint64_t<sp/>system_ram<sp/>=<sp/>getSystemRam().value_or(8<sp/>*<sp/>ONE_GB);</highlight></codeline>
+<codeline lineno="198"><highlight class="normal"></highlight></codeline>
+<codeline lineno="199"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>For<sp/>small<sp/>models<sp/>we<sp/>use<sp/>either<sp/>1Gb<sp/>of<sp/>1/16th<sp/>of<sp/>the<sp/>total<sp/>RAM,<sp/>whichever</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="200"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>is<sp/>smaller.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="201"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(std::regex_search(model_size,<sp/>small_re))<sp/>{</highlight></codeline>
+<codeline lineno="202"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::min&lt;uint64_t&gt;(system_ram<sp/>/<sp/>16,<sp/>ONE_GB);</highlight></codeline>
+<codeline lineno="203"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="204"><highlight class="normal"></highlight></codeline>
+<codeline lineno="205"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>For<sp/>medium<sp/>models<sp/>we<sp/>use<sp/>either<sp/>2Gb<sp/>of<sp/>1/8th<sp/>of<sp/>the<sp/>total<sp/>RAM,<sp/>whichever</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="206"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>is<sp/>smaller.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="207"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(std::regex_search(model_size,<sp/>medium_re))<sp/>{</highlight></codeline>
+<codeline lineno="208"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::min&lt;uint64_t&gt;(system_ram<sp/>/<sp/>8,<sp/>2<sp/>*<sp/>ONE_GB);</highlight></codeline>
+<codeline lineno="209"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="210"><highlight class="normal"></highlight></codeline>
+<codeline lineno="211"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>For<sp/>large<sp/>models<sp/>we<sp/>use<sp/>either<sp/>4Gb<sp/>of<sp/>1/4th<sp/>of<sp/>the<sp/>total<sp/>RAM,<sp/>whichever</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="212"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>is<sp/>smaller.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="213"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(std::regex_search(model_size,<sp/>large_re))<sp/>{</highlight></codeline>
+<codeline lineno="214"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::min&lt;uint64_t&gt;(system_ram<sp/>/<sp/>4,<sp/>4<sp/>*<sp/>ONE_GB);</highlight></codeline>
+<codeline lineno="215"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="216"><highlight class="normal"></highlight></codeline>
+<codeline lineno="217"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(std::regex_search(model_size,<sp/>gig_re))<sp/>{</highlight></codeline>
+<codeline lineno="218"><highlight class="normal"><sp/><sp/><sp/><sp/>uint64_t<sp/>requested_size<sp/>=<sp/>std::stoull(model_size)<sp/>*<sp/>ONE_GB;</highlight></codeline>
+<codeline lineno="219"><highlight class="normal"></highlight></codeline>
+<codeline lineno="220"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(requested_size<sp/>&gt;<sp/>(system_ram<sp/>/<sp/>2))<sp/>{</highlight></codeline>
+<codeline lineno="221"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::cout<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;WARNING:<sp/>You<sp/>have<sp/>requested<sp/>&quot;</highlight><highlight class="normal"><sp/>&lt;&lt;<sp/>model_size</highlight></codeline>
+<codeline lineno="222"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;<sp/>for<sp/>your<sp/>text<sp/>classifier.<sp/>This<sp/>is<sp/>over<sp/>1/2<sp/>of<sp/>the<sp/>total<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="223"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;RAM<sp/>on<sp/>your<sp/>machine.&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="224"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&lt;&lt;<sp/>std::endl;</highlight></codeline>
+<codeline lineno="225"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="226"><highlight class="normal"></highlight></codeline>
+<codeline lineno="227"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::min&lt;uint64_t&gt;(requested_size,<sp/>system_ram);</highlight></codeline>
+<codeline lineno="228"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="229"><highlight class="normal"></highlight></codeline>
+<codeline lineno="230"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="231"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&apos;model_size&apos;<sp/>parameter<sp/>must<sp/>be<sp/>either<sp/>&apos;small&apos;,<sp/>&apos;medium&apos;,<sp/>&apos;large&apos;,<sp/>or<sp/>&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="232"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;a<sp/>gigabyte<sp/>size<sp/>of<sp/>the<sp/>model,<sp/>i.e.<sp/>5Gb&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="233"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="234"><highlight class="normal"></highlight></codeline>
+<codeline lineno="235"><highlight class="normal">std::optional&lt;uint64_t&gt;<sp/>AutoClassifierBase::getSystemRam()<sp/>{</highlight></codeline>
+<codeline lineno="236"><highlight class="normal"></highlight><highlight class="preprocessor">#if<sp/>defined<sp/>__linux__</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="237"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>https://stackoverflow.com/questions/349889/how-do-you-determine-the-amount-of-linux-system-ram-in-c</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="238"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal">sysinfo<sp/>mem_info;</highlight></codeline>
+<codeline lineno="239"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(sysinfo(&amp;mem_info)<sp/>==<sp/>0)<sp/>{</highlight></codeline>
+<codeline lineno="240"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>mem_info.totalram;</highlight></codeline>
+<codeline lineno="241"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="242"><highlight class="normal"></highlight><highlight class="preprocessor">#elif<sp/>defined<sp/>__APPLE__</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="243"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>https://stackoverflow.com/questions/8782228/retrieve-ram-info-on-a-mac</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="244"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>mib[]<sp/>=<sp/>{CTL_HW,<sp/>HW_MEMSIZE};</highlight></codeline>
+<codeline lineno="245"><highlight class="normal"><sp/><sp/>uint64_t<sp/>mem_size<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="246"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>length<sp/>=<sp/></highlight><highlight class="keyword">sizeof</highlight><highlight class="normal">(mem_size);</highlight></codeline>
+<codeline lineno="247"><highlight class="normal"></highlight></codeline>
+<codeline lineno="248"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(sysctl(mib,<sp/>2,<sp/>&amp;mem_size,<sp/>&amp;length,<sp/>NULL,<sp/>0)<sp/>==<sp/>0)<sp/>{</highlight></codeline>
+<codeline lineno="249"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>mem_size;</highlight></codeline>
+<codeline lineno="250"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="251"><highlight class="normal"></highlight><highlight class="preprocessor">#elif<sp/>_WIN32</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="252"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>https://stackoverflow.com/questions/2513505/how-to-get-available-memory-c-g</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="253"><highlight class="normal"><sp/><sp/>MEMORYSTATUSEX<sp/>status;</highlight></codeline>
+<codeline lineno="254"><highlight class="normal"><sp/><sp/>status.dwLength<sp/>=<sp/></highlight><highlight class="keyword">sizeof</highlight><highlight class="normal">(status);</highlight></codeline>
+<codeline lineno="255"><highlight class="normal"><sp/><sp/>GlobalMemoryStatusEx(&amp;status);</highlight></codeline>
+<codeline lineno="256"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>status.ullTotalPhys;</highlight></codeline>
+<codeline lineno="257"><highlight class="normal"></highlight><highlight class="preprocessor">#endif</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="258"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::nullopt;</highlight></codeline>
+<codeline lineno="259"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="260"><highlight class="normal"></highlight></codeline>
+<codeline lineno="261"><highlight class="normal"></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>AutoClassifierBase::canLoadDatasetInMemory(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>filename)<sp/>{</highlight></codeline>
+<codeline lineno="262"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>total_ram<sp/>=<sp/>getSystemRam().value();</highlight></codeline>
+<codeline lineno="263"><highlight class="normal"></highlight></codeline>
+<codeline lineno="264"><highlight class="normal"></highlight><highlight class="preprocessor">#if<sp/>defined(__APPLE__)<sp/>||<sp/>defined(__linux__)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="265"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>TODO(Nicholas):<sp/>separate<sp/>file<sp/>size<sp/>method<sp/>for<sp/>windows</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="266"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal">stat<sp/>file_stats;</highlight></codeline>
+<codeline lineno="267"><highlight class="normal"></highlight></codeline>
+<codeline lineno="268"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!stat(filename.c_str(),<sp/>&amp;file_stats))<sp/>{</highlight></codeline>
+<codeline lineno="269"><highlight class="normal"><sp/><sp/><sp/><sp/>uint64_t<sp/>file_size<sp/>=<sp/>file_stats.st_size;</highlight></codeline>
+<codeline lineno="270"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>total_ram<sp/>/<sp/>2<sp/>&gt;=<sp/>file_size;</highlight></codeline>
+<codeline lineno="271"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="272"><highlight class="normal"></highlight><highlight class="preprocessor">#elif<sp/>_WIN32</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="273"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/stat-functions?redirectedfrom=MSDN&amp;view=msvc-170</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="274"><highlight class="normal"></highlight></codeline>
+<codeline lineno="275"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal">_stat64<sp/>file_stats;</highlight></codeline>
+<codeline lineno="276"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!_stat64(filename.c_str(),<sp/>&amp;file_stats))<sp/>{</highlight></codeline>
+<codeline lineno="277"><highlight class="normal"><sp/><sp/><sp/><sp/>uint64_t<sp/>file_size<sp/>=<sp/>file_stats.st_size;</highlight></codeline>
+<codeline lineno="278"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>total_ram<sp/>/<sp/>2<sp/>&gt;=<sp/>file_size;</highlight></codeline>
+<codeline lineno="279"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="280"><highlight class="normal"></highlight></codeline>
+<codeline lineno="281"><highlight class="normal"></highlight><highlight class="preprocessor">#endif</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="282"><highlight class="normal"></highlight></codeline>
+<codeline lineno="283"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::runtime_error(</highlight><highlight class="stringliteral">&quot;Unable<sp/>to<sp/>get<sp/>filesize<sp/>of<sp/>&apos;&quot;</highlight><highlight class="normal"><sp/>+<sp/>filename<sp/>+<sp/></highlight><highlight class="stringliteral">&quot;&apos;&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="284"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="285"><highlight class="normal"></highlight></codeline>
+<codeline lineno="286"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::bolt</highlight></codeline>
+    </programlisting>
+    <location file="bolt/src/auto_classifiers/AutoClassifierBase.cc"/>
+  </compounddef>
+</doxygen>

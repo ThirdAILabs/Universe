@@ -1,0 +1,445 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="namespaceimage__flask__app" kind="namespace" language="Python">
+    <compoundname>image_flask_app</compoundname>
+      <sectiondef kind="var">
+      <memberdef kind="variable" id="image__flask__app_8py_1aacc5c1cbe3c34bb3d20278a72f67a2e9" prot="public" static="no" mutable="no">
+        <type>string</type>
+        <definition>string image_flask_app.chunk_path</definition>
+        <argsstring></argsstring>
+        <name>chunk_path</name>
+        <qualifiedname>image_flask_app.chunk_path</qualifiedname>
+        <initializer>=  &quot;/Users/josh/IndexChunks/&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="19" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="19" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1a3245f609a04d7299d90135b946c58832" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int image_flask_app.max_chunk_num_exclusive</definition>
+        <argsstring></argsstring>
+        <name>max_chunk_num_exclusive</name>
+        <qualifiedname>image_flask_app.max_chunk_num_exclusive</qualifiedname>
+        <initializer>=  129</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="20" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="20" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1aac69b960632e4c65765ddc467791ddb3" prot="public" static="no" mutable="no">
+        <type>string</type>
+        <definition>string image_flask_app.file_name_index_path</definition>
+        <argsstring></argsstring>
+        <name>file_name_index_path</name>
+        <qualifiedname>image_flask_app.file_name_index_path</qualifiedname>
+        <initializer>=  &quot;/Users/josh/IndexChunks/all_files.npy&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="21" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="21" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1a8d44c6a71a0dd930c2b018be51a4e46e" prot="public" static="no" mutable="no">
+        <type>string</type>
+        <definition>string image_flask_app.average_vector_path</definition>
+        <argsstring></argsstring>
+        <name>average_vector_path</name>
+        <qualifiedname>image_flask_app.average_vector_path</qualifiedname>
+        <initializer>=  &quot;/Users/josh/IndexChunks/avg.npy&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="22" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="22" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1ab617477b4149ff9698731e4182a35637" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int image_flask_app.max_image_size_bytes</definition>
+        <argsstring></argsstring>
+        <name>max_image_size_bytes</name>
+        <qualifiedname>image_flask_app.max_image_size_bytes</qualifiedname>
+        <initializer>=  16000000</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="23" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="23" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1ab9378783840d1c6b37486e683087593f" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int image_flask_app.reservoir_size</definition>
+        <argsstring></argsstring>
+        <name>reservoir_size</name>
+        <qualifiedname>image_flask_app.reservoir_size</qualifiedname>
+        <initializer>=  500</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="25" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="25" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1a3a7dbabac4dbd8ae77adcdb03986d2e4" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int image_flask_app.num_tables</definition>
+        <argsstring></argsstring>
+        <name>num_tables</name>
+        <qualifiedname>image_flask_app.num_tables</qualifiedname>
+        <initializer>=  500</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="26" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="26" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1ab2e621ac979581e1111aa4452ed28b5e" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int image_flask_app.hashes_per_table</definition>
+        <argsstring></argsstring>
+        <name>hashes_per_table</name>
+        <qualifiedname>image_flask_app.hashes_per_table</qualifiedname>
+        <initializer>=  12</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="27" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="27" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1ade3720e2466e9b7849af36968b9c30e8" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>image_flask_app.hf</definition>
+        <argsstring></argsstring>
+        <name>hf</name>
+        <qualifiedname>image_flask_app.hf</qualifiedname>
+        <initializer>=  thirdai.hashing.SignedRandomProjection(
+    input_dim=4096, hashes_per_table=hashes_per_table, num_tables=num_tables
+)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="28" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="28" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1a670684dee07308e5019c88b521f73ac4" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>image_flask_app.mag_search_index</definition>
+        <argsstring></argsstring>
+        <name>mag_search_index</name>
+        <qualifiedname>image_flask_app.mag_search_index</qualifiedname>
+        <initializer>=  thirdai.search.MagSearch(hf, reservoir_size=reservoir_size)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="32" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="32" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1a8c21622045c81121fdcc739d880c190f" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int image_flask_app.num_vectors</definition>
+        <argsstring></argsstring>
+        <name>num_vectors</name>
+        <qualifiedname>image_flask_app.num_vectors</qualifiedname>
+        <initializer>=  0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="33" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="33" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1a492c96f3db0e392328e5c83a03e86d56" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>image_flask_app.start</definition>
+        <argsstring></argsstring>
+        <name>start</name>
+        <qualifiedname>image_flask_app.start</qualifiedname>
+        <initializer>=  time.perf_counter()</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="34" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="34" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1af1c975e39811e25f0712c298a8c77f51" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int image_flask_app.num_bytes</definition>
+        <argsstring></argsstring>
+        <name>num_bytes</name>
+        <qualifiedname>image_flask_app.num_bytes</qualifiedname>
+        <initializer>=  0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="35" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="35" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1a0179f1789c2dea6799c3532055803fa4" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>image_flask_app.batch</definition>
+        <argsstring></argsstring>
+        <name>batch</name>
+        <qualifiedname>image_flask_app.batch</qualifiedname>
+        <initializer>=  np.load(&quot;%schunk-ave%d.npy&quot; % (chunk_path, chunk_num))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="37" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="37" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1a410f2e0a6306e3b10549378f414e7ae8" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>image_flask_app.dense_data</definition>
+        <argsstring></argsstring>
+        <name>dense_data</name>
+        <qualifiedname>image_flask_app.dense_data</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="39" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="39" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1a09e6794d7a880c88f54ca48345a293bb" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>image_flask_app.starting_index</definition>
+        <argsstring></argsstring>
+        <name>starting_index</name>
+        <qualifiedname>image_flask_app.starting_index</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="39" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="39" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1af2c6fa693f02dc267cca70215c324066" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>image_flask_app.end</definition>
+        <argsstring></argsstring>
+        <name>end</name>
+        <qualifiedname>image_flask_app.end</qualifiedname>
+        <initializer>=  time.perf_counter()</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="41" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="41" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1aaf3730cd6cc62a2c5f167baac9cac349" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>image_flask_app.flush</definition>
+        <argsstring></argsstring>
+        <name>flush</name>
+        <qualifiedname>image_flask_app.flush</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="44" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="44" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1a1946626fcd351549c2a4da79a666addb" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>image_flask_app.raw_model</definition>
+        <argsstring></argsstring>
+        <name>raw_model</name>
+        <qualifiedname>image_flask_app.raw_model</qualifiedname>
+        <initializer>=  tf.keras.applications.VGG16(weights=&quot;imagenet&quot;)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="48" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="48" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1ae85b3d8a2e393930796a8a428cad9fb3" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>image_flask_app.final_model</definition>
+        <argsstring></argsstring>
+        <name>final_model</name>
+        <qualifiedname>image_flask_app.final_model</qualifiedname>
+        <initializer>=  tf.keras.Model(
+    inputs=raw_model.input, outputs=raw_model.get_layer(&quot;fc2&quot;).output
+)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="49" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="49" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1a141e59ef372e8631d6868cda8b3d4298" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>image_flask_app.file_name_index</definition>
+        <argsstring></argsstring>
+        <name>file_name_index</name>
+        <qualifiedname>image_flask_app.file_name_index</qualifiedname>
+        <initializer>=  np.load(file_name_index_path)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="53" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="53" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1a8431ac04af63a1968df9cd2402b8a7ff" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>image_flask_app.average_vector</definition>
+        <argsstring></argsstring>
+        <name>average_vector</name>
+        <qualifiedname>image_flask_app.average_vector</qualifiedname>
+        <initializer>=  np.load(average_vector_path)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="54" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="54" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1ad53d6d6d4fb112787461c41b48707a0f" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>image_flask_app.app</definition>
+        <argsstring></argsstring>
+        <name>app</name>
+        <qualifiedname>image_flask_app.app</qualifiedname>
+        <initializer>=  Flask(__name__)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="56" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="56" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1ad9c1a657c0b9d00c787dd2b61e89f266" prot="public" static="no" mutable="no">
+        <type>dictionary</type>
+        <definition>dictionary image_flask_app.allowed_extensions</definition>
+        <argsstring></argsstring>
+        <name>allowed_extensions</name>
+        <qualifiedname>image_flask_app.allowed_extensions</qualifiedname>
+        <initializer>=  {&quot;jpg&quot;, &quot;jpeg&quot;}</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="59" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="59" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="image__flask__app_8py_1a6a8426493fc40c52fab1e85a1c015d90" prot="public" static="no" mutable="no">
+        <type>string</type>
+        <definition>string image_flask_app.image_ask_html</definition>
+        <argsstring></argsstring>
+        <name>image_ask_html</name>
+        <qualifiedname>image_flask_app.image_ask_html</qualifiedname>
+        <initializer>=  &quot;&quot;&quot;
+    &lt;!doctype html&gt;
+    &lt;title&gt;MagSearch Demo&lt;/title&gt;
+    &lt;h1&gt;MagSearch demo: upload a jpg image and get semantically similar images!&lt;/h1&gt;
+    &lt;form method=post enctype=multipart/form-data&gt;
+      &lt;input type=file name=file&gt;
+      &lt;input type=submit value=Upload&gt;
+    &lt;/form&gt;
+    &quot;&quot;&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="66" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="66" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="image__flask__app_8py_1a6888069a1bdb185e2e8ed4f74f3d3ab0" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def image_flask_app.allowed_file</definition>
+        <argsstring>(filename)</argsstring>
+        <name>allowed_file</name>
+        <qualifiedname>image_flask_app.allowed_file</qualifiedname>
+        <param>
+          <type>filename</type>
+          <defname>filename</defname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="62" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="62" bodyend="65"/>
+      </memberdef>
+      <memberdef kind="function" id="image__flask__app_8py_1a3e3a18a1cf2eafc452f26e572332f9fe" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def image_flask_app.do_ann</definition>
+        <argsstring>()</argsstring>
+        <name>do_ann</name>
+        <qualifiedname>image_flask_app.do_ann</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="78" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="78" bodyend="121"/>
+      </memberdef>
+      <memberdef kind="function" id="image__flask__app_8py_1a4ae379f634a46a38f0aaa9c968cf6321" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def image_flask_app.get_image</definition>
+        <argsstring>()</argsstring>
+        <name>get_image</name>
+        <qualifiedname>image_flask_app.get_image</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/experimental/image_flask_app.py" line="122" column="1" bodyfile="search/experimental/image_flask_app.py" bodystart="122" bodyend="129"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="search/experimental/image_flask_app.py" line="1" column="1"/>
+  </compounddef>
+</doxygen>

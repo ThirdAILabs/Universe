@@ -1,0 +1,387 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_categorical_8h" kind="file" language="C++">
+    <compoundname>Categorical.h</compoundname>
+    <includes refid="_block_interface_8h" local="yes">BlockInterface.h</includes>
+    <includes refid="_processor_utils_8h" local="no">dataset/src/batch_processors/ProcessorUtils.h</includes>
+    <includes refid="_thread_safe_vocabulary_8h" local="no">dataset/src/utils/ThreadSafeVocabulary.h</includes>
+    <includes local="no">exception</includes>
+    <includes local="no">memory</includes>
+    <includes local="no">optional</includes>
+    <includes local="no">stdexcept</includes>
+    <includes local="no">string</includes>
+    <includedby refid="_sequential_utils_8h" local="no">bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h</includedby>
+    <incdepgraph>
+      <node id="3">
+        <label>bolt_vector/src/BoltVector.h</label>
+        <link refid="_bolt_vector_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+      </node>
+      <node id="22">
+        <label>dataset/src/batch_processors/ProcessorUtils.h</label>
+        <link refid="_processor_utils_8h_source"/>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>BlockInterface.h</label>
+        <link refid="_block_interface_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>dataset/src/blocks/Categorical.h</label>
+        <link refid="_categorical_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+      </node>
+      <node id="23">
+        <label>dataset/src/utils/ThreadSafeVocabulary.h</label>
+        <link refid="_thread_safe_vocabulary_8h_source"/>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+      </node>
+      <node id="6">
+        <label>algorithm</label>
+      </node>
+      <node id="7">
+        <label>cassert</label>
+      </node>
+      <node id="4">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="24">
+        <label>cereal/archives/binary.hpp</label>
+      </node>
+      <node id="5">
+        <label>cereal/cereal.hpp</label>
+      </node>
+      <node id="25">
+        <label>cereal/types/unordered_map.hpp</label>
+      </node>
+      <node id="26">
+        <label>cereal/types/vector.hpp</label>
+      </node>
+      <node id="8">
+        <label>cstdint</label>
+      </node>
+      <node id="27">
+        <label>exception</label>
+      </node>
+      <node id="9">
+        <label>iostream</label>
+      </node>
+      <node id="10">
+        <label>limits</label>
+      </node>
+      <node id="19">
+        <label>memory</label>
+      </node>
+      <node id="11">
+        <label>numeric</label>
+      </node>
+      <node id="12">
+        <label>optional</label>
+      </node>
+      <node id="13">
+        <label>queue</label>
+      </node>
+      <node id="14">
+        <label>sstream</label>
+      </node>
+      <node id="15">
+        <label>stdexcept</label>
+      </node>
+      <node id="16">
+        <label>string</label>
+      </node>
+      <node id="20">
+        <label>string_view</label>
+      </node>
+      <node id="21">
+        <label>unordered_map</label>
+      </node>
+      <node id="17">
+        <label>utility</label>
+      </node>
+      <node id="18">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="3">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h</label>
+        <link refid="_sequential_classifier_8h_source"/>
+      </node>
+      <node id="2">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h</label>
+        <link refid="_sequential_utils_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>dataset/src/blocks/Categorical.h</label>
+        <link refid="_categorical_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classthirdai_1_1dataset_1_1_categorical_block" prot="public">thirdai::dataset::CategoricalBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_numerical_categorical_block" prot="public">thirdai::dataset::NumericalCategoricalBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block" prot="public">thirdai::dataset::StringLookupCategoricalBlock</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1dataset">thirdai::dataset</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;BlockInterface.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;dataset/src/batch_processors/ProcessorUtils.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;dataset/src/utils/ThreadSafeVocabulary.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;exception&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;memory&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;optional&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;stdexcept&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::dataset<sp/>{</highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight></codeline>
+<codeline lineno="18" refid="classthirdai_1_1dataset_1_1_categorical_block" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1dataset_1_1_categorical_block" kindref="compound">CategoricalBlock</ref><sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref><sp/>{</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Declaration<sp/>included<sp/>from<sp/>BlockInterface.h</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="21"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">friend</highlight><highlight class="normal"><sp/>CategoricalBlockTest;</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"></highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_categorical_block" kindref="compound">CategoricalBlock</ref>(uint32_t<sp/>col,<sp/>uint32_t<sp/>n_classes,</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::optional&lt;char&gt;<sp/>delimiter)</highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>_n_classes(n_classes),<sp/>_col(col),<sp/>_delimiter(delimiter)<sp/>{}</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"></highlight></codeline>
+<codeline lineno="27" refid="classthirdai_1_1dataset_1_1_categorical_block_1a21cff869aa317945641b9b0e5c9ae2b9" refkind="member"><highlight class="normal"><sp/><sp/>uint32_t<sp/><ref refid="classthirdai_1_1dataset_1_1_categorical_block_1a21cff869aa317945641b9b0e5c9ae2b9" kindref="member">featureDim</ref>()<sp/>const<sp/>final<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_n_classes;<sp/>};</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"></highlight></codeline>
+<codeline lineno="29" refid="classthirdai_1_1dataset_1_1_categorical_block_1ab348bb0c80ed9b57f2aeb230bd009892" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_categorical_block_1ab348bb0c80ed9b57f2aeb230bd009892" kindref="member">isDense</ref>()<sp/>const<sp/>final<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;<sp/>};</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"></highlight></codeline>
+<codeline lineno="31" refid="classthirdai_1_1dataset_1_1_categorical_block_1ad6f2bba282be5220f90ea156fe291879" refkind="member"><highlight class="normal"><sp/><sp/>uint32_t<sp/><ref refid="classthirdai_1_1dataset_1_1_categorical_block_1ad6f2bba282be5220f90ea156fe291879" kindref="member">expectedNumColumns</ref>()<sp/>const<sp/>final<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_col<sp/>+<sp/>1;<sp/>};</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"></highlight></codeline>
+<codeline lineno="33" refid="classthirdai_1_1dataset_1_1_categorical_block_1a9223a7dd8b74b614e93a6be9234b10b2" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="structthirdai_1_1dataset_1_1_explanation" kindref="compound">Explanation</ref><sp/><ref refid="classthirdai_1_1dataset_1_1_categorical_block_1a9223a7dd8b74b614e93a6be9234b10b2" kindref="member">explainIndex</ref>(</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>index_within_block,</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;std::string_view&gt;&amp;<sp/>input_row)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>{_col,<sp/>getResponsibleCategory(index_within_block,<sp/>input_row[_col])};</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"></highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">/*</highlight></codeline>
+<codeline lineno="40"><highlight class="comment"><sp/><sp/>Although<sp/>as<sp/>of<sp/>now<sp/>we<sp/>don&apos;t<sp/>need<sp/>the<sp/>category_value<sp/>to<sp/>get<sp/>the<sp/>responsible</highlight></codeline>
+<codeline lineno="41"><highlight class="comment"><sp/><sp/>category,<sp/>in<sp/>future<sp/>it<sp/>might<sp/>be<sp/>helpful,<sp/>so<sp/>passing<sp/>the<sp/>value<sp/>as<sp/>we<sp/>do<sp/>in<sp/>text</highlight></codeline>
+<codeline lineno="42"><highlight class="comment"><sp/><sp/>block.</highlight></codeline>
+<codeline lineno="43"><highlight class="comment"><sp/><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/>std::string<sp/>getResponsibleCategory(</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>index_within_block,</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string_view&amp;<sp/>category_value)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"></highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/></highlight><highlight class="keyword">protected</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="49" refid="classthirdai_1_1dataset_1_1_categorical_block_1a9e130f6029370db99ea56e26900bd3d4" refkind="member"><highlight class="normal"><sp/><sp/>std::exception_ptr<sp/><ref refid="classthirdai_1_1dataset_1_1_categorical_block_1a9e130f6029370db99ea56e26900bd3d4" kindref="member">buildSegment</ref>(</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;std::string_view&gt;&amp;<sp/>input_row,</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref>&amp;<sp/>vec)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!_delimiter)<sp/>{</highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>encodeCategory(input_row.at(_col),<sp/>vec);</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"></highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>csv_category_set<sp/>=<sp/>std::string(input_row[_col]);</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>categories<sp/>=</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>ProcessorUtils::parseCsvRow(csv_category_set,<sp/>_delimiter.value());</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>category<sp/>:<sp/>categories)<sp/>{</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>exception<sp/>=<sp/>encodeCategory(category,<sp/>vec);</highlight></codeline>
+<codeline lineno="61"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(exception)<sp/>{</highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>exception;</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"></highlight></codeline>
+<codeline lineno="66"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="67"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"></highlight></codeline>
+<codeline lineno="69"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/>std::exception_ptr<sp/>encodeCategory(std::string_view<sp/>category,</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref>&amp;<sp/>vec)<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"></highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/>uint32_t<sp/>_n_classes;</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"></highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/>uint32_t<sp/>_col;</highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/>std::optional&lt;char&gt;<sp/>_delimiter;</highlight></codeline>
+<codeline lineno="77"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"></highlight></codeline>
+<codeline lineno="79"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">CategoricalBlockPtr<sp/>=<sp/>std::shared_ptr&lt;CategoricalBlock&gt;;</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"></highlight></codeline>
+<codeline lineno="81" refid="classthirdai_1_1dataset_1_1_numerical_categorical_block" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1dataset_1_1_numerical_categorical_block" kindref="compound">NumericalCategoricalBlock</ref><sp/>final<sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_categorical_block" kindref="compound">CategoricalBlock</ref><sp/>{</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_numerical_categorical_block" kindref="compound">NumericalCategoricalBlock</ref>(uint32_t<sp/>col,<sp/>uint32_t<sp/>n_classes,</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::optional&lt;char&gt;<sp/>delimiter<sp/>=<sp/>std::nullopt)</highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/><ref refid="classthirdai_1_1dataset_1_1_categorical_block" kindref="compound">CategoricalBlock</ref>(col,<sp/>n_classes,<sp/>delimiter)<sp/>{}</highlight></codeline>
+<codeline lineno="86"><highlight class="normal"></highlight></codeline>
+<codeline lineno="87"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>make(uint32_t<sp/>col,<sp/>uint32_t<sp/>n_classes,</highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::optional&lt;char&gt;<sp/>delimiter<sp/>=<sp/>std::nullopt)<sp/>{</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;NumericalCategoricalBlock&gt;(col,<sp/>n_classes,</highlight></codeline>
+<codeline lineno="90"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>delimiter);</highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="92"><highlight class="normal"></highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/>std::string<sp/>getResponsibleCategory(</highlight></codeline>
+<codeline lineno="94"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>index_within_block,</highlight></codeline>
+<codeline lineno="95"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string_view&amp;<sp/>category_value)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)category_value;</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::to_string(index_within_block);</highlight></codeline>
+<codeline lineno="98"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="99"><highlight class="normal"></highlight></codeline>
+<codeline lineno="100"><highlight class="normal"><sp/></highlight><highlight class="keyword">protected</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="101"><highlight class="normal"><sp/><sp/>std::exception_ptr<sp/>encodeCategory(std::string_view<sp/>category,</highlight></codeline>
+<codeline lineno="102"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref>&amp;<sp/>vec)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="103"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">char</highlight><highlight class="normal">*<sp/>end;</highlight></codeline>
+<codeline lineno="104"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/></highlight><highlight class="keywordtype">id</highlight><highlight class="normal"><sp/>=<sp/>std::strtoul(category.data(),<sp/>&amp;end,<sp/>10);</highlight></codeline>
+<codeline lineno="105"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keywordtype">id</highlight><highlight class="normal"><sp/>&gt;=<sp/>_n_classes)<sp/>{</highlight></codeline>
+<codeline lineno="106"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_exception_ptr(</highlight></codeline>
+<codeline lineno="107"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::invalid_argument(</highlight><highlight class="stringliteral">&quot;Received<sp/>label<sp/>&quot;</highlight><highlight class="normal"><sp/>+<sp/>std::to_string(</highlight><highlight class="keywordtype">id</highlight><highlight class="normal">)<sp/>+</highlight></codeline>
+<codeline lineno="108"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;<sp/>larger<sp/>than<sp/>or<sp/>equal<sp/>to<sp/>n_classes&quot;</highlight><highlight class="normal">));</highlight></codeline>
+<codeline lineno="109"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="110"><highlight class="normal"><sp/><sp/><sp/><sp/>vec.<ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1af9322f2281aa25b47ba941bf0e174ba5" kindref="member">addSparseFeatureToSegment</ref>(</highlight><highlight class="keywordtype">id</highlight><highlight class="normal">,<sp/>1.0);</highlight></codeline>
+<codeline lineno="111"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="112"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="113"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="114"><highlight class="normal"></highlight></codeline>
+<codeline lineno="115"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">NumericalCategoricalBlockPtr<sp/>=<sp/>std::shared_ptr&lt;NumericalCategoricalBlock&gt;;</highlight></codeline>
+<codeline lineno="116"><highlight class="normal"></highlight></codeline>
+<codeline lineno="117" refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block" kindref="compound">StringLookupCategoricalBlock</ref><sp/>final<sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_categorical_block" kindref="compound">CategoricalBlock</ref><sp/>{</highlight></codeline>
+<codeline lineno="118"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="119"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block" kindref="compound">StringLookupCategoricalBlock</ref>(uint32_t<sp/>col,<sp/>ThreadSafeVocabularyPtr<sp/>vocab,</highlight></codeline>
+<codeline lineno="120"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::optional&lt;char&gt;<sp/>delimiter<sp/>=<sp/>std::nullopt)</highlight></codeline>
+<codeline lineno="121"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/><ref refid="classthirdai_1_1dataset_1_1_categorical_block" kindref="compound">CategoricalBlock</ref>(col,<sp/>vocab-&gt;vocabSize(),<sp/>delimiter),</highlight></codeline>
+<codeline lineno="122"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_vocab(std::move(vocab))<sp/>{}</highlight></codeline>
+<codeline lineno="123"><highlight class="normal"></highlight></codeline>
+<codeline lineno="124"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block" kindref="compound">StringLookupCategoricalBlock</ref>(uint32_t<sp/>col,<sp/>uint32_t<sp/>n_classes,</highlight></codeline>
+<codeline lineno="125"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::optional&lt;char&gt;<sp/>delimiter<sp/>=<sp/>std::nullopt)</highlight></codeline>
+<codeline lineno="126"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/><ref refid="classthirdai_1_1dataset_1_1_string_lookup_categorical_block" kindref="compound">StringLookupCategoricalBlock</ref>(col,<sp/>ThreadSafeVocabulary::make(n_classes),</highlight></codeline>
+<codeline lineno="127"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>delimiter)<sp/>{}</highlight></codeline>
+<codeline lineno="128"><highlight class="normal"></highlight></codeline>
+<codeline lineno="129"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>make(uint32_t<sp/>col,<sp/>ThreadSafeVocabularyPtr<sp/>vocab,</highlight></codeline>
+<codeline lineno="130"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::optional&lt;char&gt;<sp/>delimiter<sp/>=<sp/>std::nullopt)<sp/>{</highlight></codeline>
+<codeline lineno="131"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;StringLookupCategoricalBlock&gt;(col,<sp/>std::move(vocab),</highlight></codeline>
+<codeline lineno="132"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>delimiter);</highlight></codeline>
+<codeline lineno="133"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="134"><highlight class="normal"></highlight></codeline>
+<codeline lineno="135"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>make(uint32_t<sp/>col,<sp/>uint32_t<sp/>n_classes,</highlight></codeline>
+<codeline lineno="136"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::optional&lt;char&gt;<sp/>delimiter<sp/>=<sp/>std::nullopt)<sp/>{</highlight></codeline>
+<codeline lineno="137"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;StringLookupCategoricalBlock&gt;(col,<sp/>n_classes,</highlight></codeline>
+<codeline lineno="138"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>delimiter);</highlight></codeline>
+<codeline lineno="139"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="140"><highlight class="normal"></highlight></codeline>
+<codeline lineno="141"><highlight class="normal"><sp/><sp/>ThreadSafeVocabularyPtr<sp/>getVocabulary()</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_vocab;<sp/>}</highlight></codeline>
+<codeline lineno="142"><highlight class="normal"></highlight></codeline>
+<codeline lineno="143"><highlight class="normal"><sp/><sp/>std::string<sp/>getResponsibleCategory(</highlight></codeline>
+<codeline lineno="144"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>index,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string_view&amp;<sp/>category_value)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="145"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)category_value;</highlight></codeline>
+<codeline lineno="146"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_vocab-&gt;getString(index);</highlight></codeline>
+<codeline lineno="147"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="148"><highlight class="normal"></highlight></codeline>
+<codeline lineno="149"><highlight class="normal"><sp/></highlight><highlight class="keyword">protected</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="150"><highlight class="normal"><sp/><sp/>std::exception_ptr<sp/>encodeCategory(std::string_view<sp/>category,</highlight></codeline>
+<codeline lineno="151"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref>&amp;<sp/>vec)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="152"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>id_str<sp/>=<sp/>std::string(category);</highlight></codeline>
+<codeline lineno="153"><highlight class="normal"></highlight></codeline>
+<codeline lineno="154"><highlight class="normal"><sp/><sp/><sp/><sp/>uint32_t<sp/>uid;</highlight></codeline>
+<codeline lineno="155"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">try</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="156"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uid<sp/>=<sp/>_vocab-&gt;getUid(id_str);</highlight></codeline>
+<codeline lineno="157"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">catch</highlight><highlight class="normal"><sp/>(...)<sp/>{</highlight></codeline>
+<codeline lineno="158"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::current_exception();</highlight></codeline>
+<codeline lineno="159"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="160"><highlight class="normal"></highlight></codeline>
+<codeline lineno="161"><highlight class="normal"><sp/><sp/><sp/><sp/>vec.<ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1af9322f2281aa25b47ba941bf0e174ba5" kindref="member">addSparseFeatureToSegment</ref>(</highlight><highlight class="comment">/*<sp/>index=<sp/>*/</highlight><highlight class="normal"><sp/>uid,<sp/></highlight><highlight class="comment">/*<sp/>value=<sp/>*/</highlight><highlight class="normal"><sp/>1.0);</highlight></codeline>
+<codeline lineno="162"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="163"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="164"><highlight class="normal"></highlight></codeline>
+<codeline lineno="165"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="166"><highlight class="normal"><sp/><sp/>ThreadSafeVocabularyPtr<sp/>_vocab;</highlight></codeline>
+<codeline lineno="167"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="168"><highlight class="normal"></highlight></codeline>
+<codeline lineno="169"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">StringLookupCategoricalBlockPtr<sp/>=</highlight></codeline>
+<codeline lineno="170"><highlight class="normal"><sp/><sp/><sp/><sp/>std::shared_ptr&lt;StringLookupCategoricalBlock&gt;;</highlight></codeline>
+<codeline lineno="171"><highlight class="normal"></highlight></codeline>
+<codeline lineno="172"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::dataset</highlight></codeline>
+    </programlisting>
+    <location file="dataset/src/blocks/Categorical.h"/>
+  </compounddef>
+</doxygen>

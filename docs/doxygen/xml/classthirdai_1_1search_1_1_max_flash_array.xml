@@ -1,0 +1,276 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1search_1_1_max_flash_array" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::search::MaxFlashArray</compoundname>
+    <includes refid="_max_flash_array_8h" local="no">MaxFlashArray.h</includes>
+    <templateparamlist>
+      <param>
+        <type>typename LABEL_T</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1search_1_1_max_flash_array_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::search::MaxFlashArray::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlashArray.h" line="57" column="16" bodyfile="search/src/MaxFlashArray.h" bodystart="57" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1search_1_1_max_flash_array_1a26056fff3897db1320b83ee3ed530252" prot="private" static="no" mutable="no">
+        <type>LABEL_T</type>
+        <definition>LABEL_T thirdai::search::MaxFlashArray&lt; LABEL_T &gt;::_max_allowable_doc_size</definition>
+        <argsstring></argsstring>
+        <name>_max_allowable_doc_size</name>
+        <qualifiedname>thirdai::search::MaxFlashArray::_max_allowable_doc_size</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlashArray.h" line="64" column="11" bodyfile="search/src/MaxFlashArray.h" bodystart="64" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1search_1_1_max_flash_array_1a08ad280e2efe5eb99bc11ae99b296bf4" prot="private" static="no" mutable="no">
+        <type>std::unique_ptr&lt; <ref refid="classthirdai_1_1hashing_1_1_hash_function" kindref="compound">hashing::HashFunction</ref> &gt;</type>
+        <definition>std::unique_ptr&lt;hashing::HashFunction&gt; thirdai::search::MaxFlashArray&lt; LABEL_T &gt;::_hash_function</definition>
+        <argsstring></argsstring>
+        <name>_hash_function</name>
+        <qualifiedname>thirdai::search::MaxFlashArray::_hash_function</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlashArray.h" line="65" column="19" bodyfile="search/src/MaxFlashArray.h" bodystart="65" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1search_1_1_max_flash_array_1a371a6b8490b63914bfac2159fc56cb36" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::unique_ptr&lt; <ref refid="classthirdai_1_1search_1_1_max_flash" kindref="compound">MaxFlash</ref>&lt; LABEL_T &gt; &gt; &gt;</type>
+        <definition>std::vector&lt;std::unique_ptr&lt;MaxFlash&lt;LABEL_T&gt; &gt; &gt; thirdai::search::MaxFlashArray&lt; LABEL_T &gt;::_maxflash_array</definition>
+        <argsstring></argsstring>
+        <name>_maxflash_array</name>
+        <qualifiedname>thirdai::search::MaxFlashArray::_maxflash_array</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlashArray.h" line="66" column="15" bodyfile="search/src/MaxFlashArray.h" bodystart="66" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1search_1_1_max_flash_array_1a4ff71cfb9fbc2e6a49301dc4b23da0bc" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; float &gt;</type>
+        <definition>std::vector&lt;float&gt; thirdai::search::MaxFlashArray&lt; LABEL_T &gt;::_collision_count_to_sim</definition>
+        <argsstring></argsstring>
+        <name>_collision_count_to_sim</name>
+        <qualifiedname>thirdai::search::MaxFlashArray::_collision_count_to_sim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlashArray.h" line="67" column="15" bodyfile="search/src/MaxFlashArray.h" bodystart="67" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_array_1aa71933278053ceaa4441d17a2185b108" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::search::MaxFlashArray&lt; LABEL_T &gt;::MaxFlashArray</definition>
+        <argsstring>(hashing::HashFunction *function, uint32_t hashes_per_table, uint64_t max_doc_size=std::numeric_limits&lt; LABEL_T &gt;::max())</argsstring>
+        <name>MaxFlashArray</name>
+        <qualifiedname>thirdai::search::MaxFlashArray::MaxFlashArray</qualifiedname>
+        <param>
+          <type><ref refid="classthirdai_1_1hashing_1_1_hash_function" kindref="compound">hashing::HashFunction</ref> *</type>
+          <declname>function</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>hashes_per_table</declname>
+        </param>
+        <param>
+          <type>uint64_t</type>
+          <declname>max_doc_size</declname>
+          <defval>std::numeric_limits&lt; LABEL_T &gt;::max()</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlashArray.h" line="34" column="3" bodyfile="search/src/MaxFlashArray.cc" bodystart="11" bodyend="35"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_array_1a4ea50ee2f5b4b76d3423592d5e775b89" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::search::MaxFlashArray&lt; LABEL_T &gt;::MaxFlashArray</definition>
+        <argsstring>()</argsstring>
+        <name>MaxFlashArray</name>
+        <qualifiedname>thirdai::search::MaxFlashArray::MaxFlashArray</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlashArray.h" line="40" column="3" bodyfile="search/src/MaxFlashArray.h" bodystart="40" bodyend="40"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_array_1a34b6cf3a3d58682a4cc5d775a2bb5bf7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>uint64_t</type>
+        <definition>uint64_t thirdai::search::MaxFlashArray&lt; LABEL_T &gt;::addDocument</definition>
+        <argsstring>(const BoltBatch &amp;batch)</argsstring>
+        <name>addDocument</name>
+        <qualifiedname>thirdai::search::MaxFlashArray::addDocument</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &amp;</type>
+          <declname>batch</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlashArray.h" line="42" column="12" bodyfile="search/src/MaxFlashArray.cc" bodystart="38" bodyend="46"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_array_1a87f060cb1ac3d8366165b929aa7e862e" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>std::vector&lt; float &gt;</type>
+        <definition>std::vector&lt; float &gt; thirdai::search::MaxFlashArray&lt; LABEL_T &gt;::getDocumentScores</definition>
+        <argsstring>(const BoltBatch &amp;query, const std::vector&lt; uint32_t &gt; &amp;documents_to_query) const</argsstring>
+        <name>getDocumentScores</name>
+        <qualifiedname>thirdai::search::MaxFlashArray::getDocumentScores</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &amp;</type>
+          <declname>query</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>documents_to_query</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlashArray.h" line="44" column="15" bodyfile="search/src/MaxFlashArray.cc" bodystart="49" bodyend="75"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_array_1a1dea9f85386c4cd899e852d0c44df29f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::search::MaxFlashArray&lt; LABEL_T &gt;::MaxFlashArray</definition>
+        <argsstring>(const MaxFlashArray &amp;)=delete</argsstring>
+        <name>MaxFlashArray</name>
+        <qualifiedname>thirdai::search::MaxFlashArray::MaxFlashArray</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1search_1_1_max_flash_array" kindref="compound">MaxFlashArray</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlashArray.h" line="49" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_array_1a21d4338c9c40c3948a77811eeac3c567" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1search_1_1_max_flash_array" kindref="compound">MaxFlashArray</ref> &amp;</type>
+        <definition>MaxFlashArray &amp; thirdai::search::MaxFlashArray&lt; LABEL_T &gt;::operator=</definition>
+        <argsstring>(const MaxFlashArray &amp;)=delete</argsstring>
+        <name>operator=</name>
+        <qualifiedname>thirdai::search::MaxFlashArray::operator=</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1search_1_1_max_flash_array" kindref="compound">MaxFlashArray</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlashArray.h" line="50" column="17"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_array_1a9c38603bbc1d2a112202d06ab3cf1ddc" prot="private" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename BATCH_T</type>
+          </param>
+        </templateparamlist>
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>template std::vector&lt; uint32_t &gt; thirdai::search::MaxFlashArray&lt; LABEL_T &gt;::hash</definition>
+        <argsstring>(const BATCH_T &amp;batch) const</argsstring>
+        <name>hash</name>
+        <qualifiedname>thirdai::search::MaxFlashArray::hash</qualifiedname>
+        <param>
+          <type>const BATCH_T &amp;</type>
+          <declname>batch</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlashArray.h" line="54" column="15" bodyfile="search/src/MaxFlashArray.cc" bodystart="83" bodyend="85"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_array_1af6b5d1cb42190354117aa4d3c636690c" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::search::MaxFlashArray&lt; LABEL_T &gt;::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::search::MaxFlashArray::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlashArray.h" line="59" column="8" bodyfile="search/src/MaxFlashArray.h" bodystart="59" bodyend="62"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>Represents a collection of documents. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>We can incrementally update documents and estimate the ColBERT score (sum of max similarities) between a query and a document. LABEL_T is an unsigned numerical type, currently uint8_t, uin16_t, uin32_t. </para>
+    </detaileddescription>
+    <location file="search/src/MaxFlashArray.h" line="24" column="1" bodyfile="search/src/MaxFlashArray.h" bodystart="24" bodyend="68"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1search_1_1_max_flash_array_1a4ff71cfb9fbc2e6a49301dc4b23da0bc" prot="private" virt="non-virtual"><scope>thirdai::search::MaxFlashArray</scope><name>_collision_count_to_sim</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_array_1a08ad280e2efe5eb99bc11ae99b296bf4" prot="private" virt="non-virtual"><scope>thirdai::search::MaxFlashArray</scope><name>_hash_function</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_array_1a26056fff3897db1320b83ee3ed530252" prot="private" virt="non-virtual"><scope>thirdai::search::MaxFlashArray</scope><name>_max_allowable_doc_size</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_array_1a371a6b8490b63914bfac2159fc56cb36" prot="private" virt="non-virtual"><scope>thirdai::search::MaxFlashArray</scope><name>_maxflash_array</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_array_1a34b6cf3a3d58682a4cc5d775a2bb5bf7" prot="public" virt="non-virtual"><scope>thirdai::search::MaxFlashArray</scope><name>addDocument</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_array_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::search::MaxFlashArray</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_array_1a87f060cb1ac3d8366165b929aa7e862e" prot="public" virt="non-virtual"><scope>thirdai::search::MaxFlashArray</scope><name>getDocumentScores</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_array_1a9c38603bbc1d2a112202d06ab3cf1ddc" prot="private" virt="non-virtual"><scope>thirdai::search::MaxFlashArray</scope><name>hash</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_array_1aa71933278053ceaa4441d17a2185b108" prot="public" virt="non-virtual"><scope>thirdai::search::MaxFlashArray</scope><name>MaxFlashArray</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_array_1a4ea50ee2f5b4b76d3423592d5e775b89" prot="public" virt="non-virtual"><scope>thirdai::search::MaxFlashArray</scope><name>MaxFlashArray</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_array_1a1dea9f85386c4cd899e852d0c44df29f" prot="public" virt="non-virtual"><scope>thirdai::search::MaxFlashArray</scope><name>MaxFlashArray</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_array_1a21d4338c9c40c3948a77811eeac3c567" prot="public" virt="non-virtual"><scope>thirdai::search::MaxFlashArray</scope><name>operator=</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_array_1af6b5d1cb42190354117aa4d3c636690c" prot="private" virt="non-virtual"><scope>thirdai::search::MaxFlashArray</scope><name>serialize</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,241 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_shuffle_batch_buffer" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::dataset::ShuffleBatchBuffer</compoundname>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1ad265342269405d947417e7255b91f8c0" prot="private" static="no" mutable="no">
+        <type>std::mt19937</type>
+        <definition>std::mt19937 thirdai::dataset::ShuffleBatchBuffer::_gen</definition>
+        <argsstring></argsstring>
+        <name>_gen</name>
+        <qualifiedname>thirdai::dataset::ShuffleBatchBuffer::_gen</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/ShuffleBatchBuffer.h" line="132" column="16" bodyfile="dataset/src/ShuffleBatchBuffer.h" bodystart="132" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a800fce5adb6b06d1c9e7901603f1fa05" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::ShuffleBatchBuffer::_reached_end_of_dataset</definition>
+        <argsstring></argsstring>
+        <name>_reached_end_of_dataset</name>
+        <qualifiedname>thirdai::dataset::ShuffleBatchBuffer::_reached_end_of_dataset</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/ShuffleBatchBuffer.h" line="134" column="8" bodyfile="dataset/src/ShuffleBatchBuffer.h" bodystart="134" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1abb78cd7fe3ff52f8eee967a1fd9b0bff" prot="private" static="no" mutable="no">
+        <type>size_t</type>
+        <definition>size_t thirdai::dataset::ShuffleBatchBuffer::_batch_size</definition>
+        <argsstring></argsstring>
+        <name>_batch_size</name>
+        <qualifiedname>thirdai::dataset::ShuffleBatchBuffer::_batch_size</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/ShuffleBatchBuffer.h" line="135" column="10" bodyfile="dataset/src/ShuffleBatchBuffer.h" bodystart="135" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1af42ac8351c6dab29fa6a9b9c5c99c565" prot="private" static="no" mutable="no">
+        <type>std::deque&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt;</type>
+        <definition>std::deque&lt;BoltBatch&gt; thirdai::dataset::ShuffleBatchBuffer::_input_batches</definition>
+        <argsstring></argsstring>
+        <name>_input_batches</name>
+        <qualifiedname>thirdai::dataset::ShuffleBatchBuffer::_input_batches</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/ShuffleBatchBuffer.h" line="137" column="14" bodyfile="dataset/src/ShuffleBatchBuffer.h" bodystart="137" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a00575d704bcc24d53baa5a6af35d192d" prot="private" static="no" mutable="no">
+        <type>std::deque&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt;</type>
+        <definition>std::deque&lt;BoltBatch&gt; thirdai::dataset::ShuffleBatchBuffer::_label_batches</definition>
+        <argsstring></argsstring>
+        <name>_label_batches</name>
+        <qualifiedname>thirdai::dataset::ShuffleBatchBuffer::_label_batches</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/ShuffleBatchBuffer.h" line="138" column="14" bodyfile="dataset/src/ShuffleBatchBuffer.h" bodystart="138" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a082deb9d5bb7098dcee1cd22c03e9274" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::ShuffleBatchBuffer::ShuffleBatchBuffer</definition>
+        <argsstring>(uint32_t shuffle_seed, size_t batch_size)</argsstring>
+        <name>ShuffleBatchBuffer</name>
+        <qualifiedname>thirdai::dataset::ShuffleBatchBuffer::ShuffleBatchBuffer</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>shuffle_seed</declname>
+        </param>
+        <param>
+          <type>size_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/ShuffleBatchBuffer.h" line="17" column="12" bodyfile="dataset/src/ShuffleBatchBuffer.h" bodystart="17" bodyend="20"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1aa48367e1eb517e712d7b83542f05af1b" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::ShuffleBatchBuffer::insertBatch</definition>
+        <argsstring>(std::tuple&lt; BoltBatch, BoltBatch &gt; &amp;&amp;batch, bool shuffle)</argsstring>
+        <name>insertBatch</name>
+        <qualifiedname>thirdai::dataset::ShuffleBatchBuffer::insertBatch</qualifiedname>
+        <param>
+          <type>std::tuple&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref>, <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt; &amp;&amp;</type>
+          <declname>batch</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>shuffle</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/ShuffleBatchBuffer.h" line="22" column="8" bodyfile="dataset/src/ShuffleBatchBuffer.h" bodystart="22" bodyend="32"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1afa67ff6e1be49d45be2d5f5bc18bb049" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::optional&lt; std::pair&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref>, <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt; &gt;</type>
+        <definition>std::optional&lt; std::pair&lt; BoltBatch, BoltBatch &gt; &gt; thirdai::dataset::ShuffleBatchBuffer::popBatch</definition>
+        <argsstring>()</argsstring>
+        <name>popBatch</name>
+        <qualifiedname>thirdai::dataset::ShuffleBatchBuffer::popBatch</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/ShuffleBatchBuffer.h" line="34" column="17" bodyfile="dataset/src/ShuffleBatchBuffer.h" bodystart="34" bodyend="45"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a4084421452964a974866aff08d7d23d9" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::pair&lt; std::vector&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt;, std::vector&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt; &gt;</type>
+        <definition>std::pair&lt; std::vector&lt; BoltBatch &gt;, std::vector&lt; BoltBatch &gt; &gt; thirdai::dataset::ShuffleBatchBuffer::exportBuffer</definition>
+        <argsstring>()</argsstring>
+        <name>exportBuffer</name>
+        <qualifiedname>thirdai::dataset::ShuffleBatchBuffer::exportBuffer</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/ShuffleBatchBuffer.h" line="47" column="13" bodyfile="dataset/src/ShuffleBatchBuffer.h" bodystart="47" bodyend="65"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a7cfac183720ffe57fba0d75a35691f00" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::ShuffleBatchBuffer::empty</definition>
+        <argsstring>() const</argsstring>
+        <name>empty</name>
+        <qualifiedname>thirdai::dataset::ShuffleBatchBuffer::empty</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/ShuffleBatchBuffer.h" line="67" column="15" bodyfile="dataset/src/ShuffleBatchBuffer.h" bodystart="67" bodyend="67"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a41723c38c78d8d53d5890827fd28a878" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::ShuffleBatchBuffer::checkConsistentBatchSize</definition>
+        <argsstring>(size_t new_input_batch_size, size_t new_label_batch_size)</argsstring>
+        <name>checkConsistentBatchSize</name>
+        <qualifiedname>thirdai::dataset::ShuffleBatchBuffer::checkConsistentBatchSize</qualifiedname>
+        <param>
+          <type>size_t</type>
+          <declname>new_input_batch_size</declname>
+        </param>
+        <param>
+          <type>size_t</type>
+          <declname>new_label_batch_size</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/ShuffleBatchBuffer.h" line="70" column="15" bodyfile="dataset/src/ShuffleBatchBuffer.h" bodystart="70" bodyend="99"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-static-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a9e526952449b750eba2e34da7b738bbc" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void thirdai::dataset::ShuffleBatchBuffer::swapShuffle</definition>
+        <argsstring>(std::deque&lt; BoltBatch &gt; &amp;input_batches, std::deque&lt; BoltBatch &gt; &amp;label_batches, size_t expected_batch_size, std::mt19937 &amp;gen)</argsstring>
+        <name>swapShuffle</name>
+        <qualifiedname>thirdai::dataset::ShuffleBatchBuffer::swapShuffle</qualifiedname>
+        <param>
+          <type>std::deque&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt; &amp;</type>
+          <declname>input_batches</declname>
+        </param>
+        <param>
+          <type>std::deque&lt; <ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref> &gt; &amp;</type>
+          <declname>label_batches</declname>
+        </param>
+        <param>
+          <type>size_t</type>
+          <declname>expected_batch_size</declname>
+        </param>
+        <param>
+          <type>std::mt19937 &amp;</type>
+          <declname>gen</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/ShuffleBatchBuffer.h" line="101" column="22" bodyfile="dataset/src/ShuffleBatchBuffer.h" bodystart="101" bodyend="130"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="dataset/src/ShuffleBatchBuffer.h" line="15" column="1" bodyfile="dataset/src/ShuffleBatchBuffer.h" bodystart="15" bodyend="139"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1abb78cd7fe3ff52f8eee967a1fd9b0bff" prot="private" virt="non-virtual"><scope>thirdai::dataset::ShuffleBatchBuffer</scope><name>_batch_size</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1ad265342269405d947417e7255b91f8c0" prot="private" virt="non-virtual"><scope>thirdai::dataset::ShuffleBatchBuffer</scope><name>_gen</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1af42ac8351c6dab29fa6a9b9c5c99c565" prot="private" virt="non-virtual"><scope>thirdai::dataset::ShuffleBatchBuffer</scope><name>_input_batches</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a00575d704bcc24d53baa5a6af35d192d" prot="private" virt="non-virtual"><scope>thirdai::dataset::ShuffleBatchBuffer</scope><name>_label_batches</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a800fce5adb6b06d1c9e7901603f1fa05" prot="private" virt="non-virtual"><scope>thirdai::dataset::ShuffleBatchBuffer</scope><name>_reached_end_of_dataset</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a41723c38c78d8d53d5890827fd28a878" prot="private" virt="non-virtual"><scope>thirdai::dataset::ShuffleBatchBuffer</scope><name>checkConsistentBatchSize</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a7cfac183720ffe57fba0d75a35691f00" prot="public" virt="non-virtual"><scope>thirdai::dataset::ShuffleBatchBuffer</scope><name>empty</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a4084421452964a974866aff08d7d23d9" prot="public" virt="non-virtual"><scope>thirdai::dataset::ShuffleBatchBuffer</scope><name>exportBuffer</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1aa48367e1eb517e712d7b83542f05af1b" prot="public" virt="non-virtual"><scope>thirdai::dataset::ShuffleBatchBuffer</scope><name>insertBatch</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1afa67ff6e1be49d45be2d5f5bc18bb049" prot="public" virt="non-virtual"><scope>thirdai::dataset::ShuffleBatchBuffer</scope><name>popBatch</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a082deb9d5bb7098dcee1cd22c03e9274" prot="public" virt="non-virtual"><scope>thirdai::dataset::ShuffleBatchBuffer</scope><name>ShuffleBatchBuffer</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_shuffle_batch_buffer_1a9e526952449b750eba2e34da7b738bbc" prot="private" virt="non-virtual"><scope>thirdai::dataset::ShuffleBatchBuffer</scope><name>swapShuffle</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

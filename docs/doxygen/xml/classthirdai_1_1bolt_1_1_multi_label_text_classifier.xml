@@ -1,0 +1,377 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_multi_label_text_classifier" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::bolt::MultiLabelTextClassifier</compoundname>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="217" column="16" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="217" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1abd8ba863f9ca5e947ea4d08ae9183756" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::MultiLabelTextClassifier::_n_classes</definition>
+        <argsstring></argsstring>
+        <name>_n_classes</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::_n_classes</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="223" column="12" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="223" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a9229d0c097e15cd5fbd4fdd44419793b" prot="private" static="no" mutable="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_generic_batch_processor" kindref="compound">dataset::GenericBatchProcessor</ref> &gt;</type>
+        <definition>std::shared_ptr&lt;dataset::GenericBatchProcessor&gt; thirdai::bolt::MultiLabelTextClassifier::_labeled_processor</definition>
+        <argsstring></argsstring>
+        <name>_labeled_processor</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::_labeled_processor</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="224" column="19" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="224" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1aef50e1cc7684ec441b2d2571e013b4b7" prot="private" static="no" mutable="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_generic_batch_processor" kindref="compound">dataset::GenericBatchProcessor</ref> &gt;</type>
+        <definition>std::shared_ptr&lt;dataset::GenericBatchProcessor&gt; thirdai::bolt::MultiLabelTextClassifier::_unlabeled_processor</definition>
+        <argsstring></argsstring>
+        <name>_unlabeled_processor</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::_unlabeled_processor</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="225" column="19" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="225" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a375e512aa126eb8c66e0473bbc0d6717" prot="private" static="no" mutable="no">
+        <type>BoltGraphPtr</type>
+        <definition>BoltGraphPtr thirdai::bolt::MultiLabelTextClassifier::_classifier</definition>
+        <argsstring></argsstring>
+        <name>_classifier</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::_classifier</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="226" column="16" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="226" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1ac0fe3599f4b8d763e913af0adb47e507" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::MultiLabelTextClassifier::MultiLabelTextClassifier</definition>
+        <argsstring>(uint32_t n_classes)</argsstring>
+        <name>MultiLabelTextClassifier</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::MultiLabelTextClassifier</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_classes</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="31" column="12" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="31" bodyend="54"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a414bb512e6fa3ae1044c77c912ad5c65" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::MultiLabelTextClassifier::train</definition>
+        <argsstring>(const std::string &amp;filename, uint32_t epochs, float learning_rate, const std::vector&lt; std::string &gt; &amp;metrics={})</argsstring>
+        <name>train</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::train</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>epochs</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>learning_rate</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; std::string &gt; &amp;</type>
+          <declname>metrics</declname>
+          <defval>{}</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="56" column="8" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="56" bodyend="74"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a23b836bea484f6e148bb20dab77c3663" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>InferenceResult</type>
+        <definition>InferenceResult thirdai::bolt::MultiLabelTextClassifier::predict</definition>
+        <argsstring>(const std::string &amp;filename, const std::vector&lt; std::string &gt; &amp;metrics={})</argsstring>
+        <name>predict</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::predict</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; std::string &gt; &amp;</type>
+          <declname>metrics</declname>
+          <defval>{}</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="76" column="19" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="76" bodyend="90"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a0237c471b371adc78f257e90627e7127" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref></type>
+        <definition>BoltVector thirdai::bolt::MultiLabelTextClassifier::predictSingleFromSentence</definition>
+        <argsstring>(std::string sentence, float threshold=0.95)</argsstring>
+        <name>predictSingleFromSentence</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::predictSingleFromSentence</qualifiedname>
+        <param>
+          <type>std::string</type>
+          <declname>sentence</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>threshold</declname>
+          <defval>0.95</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="92" column="14" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="92" bodyend="118"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a2b2f122351ddcd5b2e6d4bf344ee69f8" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref></type>
+        <definition>BoltVector thirdai::bolt::MultiLabelTextClassifier::predictSingleFromTokens</definition>
+        <argsstring>(const std::vector&lt; uint32_t &gt; &amp;tokens, float threshold=0.95)</argsstring>
+        <name>predictSingleFromTokens</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::predictSingleFromTokens</qualifiedname>
+        <param>
+          <type>const std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>tokens</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>threshold</declname>
+          <defval>0.95</defval>
+        </param>
+        <briefdescription>
+<para>We provide a convenience function to predict with tokens because we are ware that practitioners may preprocess data with their own tokenizers. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>We don&apos;t have a similar convenience function for training and predicting because even if they do use tokens, we will read these tokens from a file anyway so there is no need for such a function. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="130" column="14" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="130" bodyend="134"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a459a61d702e57c7924a8fb7e23e33bd7" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::MultiLabelTextClassifier::save</definition>
+        <argsstring>(const std::string &amp;filename)</argsstring>
+        <name>save</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::save</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="136" column="8" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="136" bodyend="141"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a870e5ff5ca51263f3972bad55b385a12" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::MultiLabelTextClassifier::numClasses</definition>
+        <argsstring>() const</argsstring>
+        <name>numClasses</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::numClasses</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="155" column="12" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="155" bodyend="155"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1ab4154b87a298a4a261be53f3b88680a5" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::unique_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier" kindref="compound">MultiLabelTextClassifier</ref> &gt;</type>
+        <definition>static std::unique_ptr&lt; MultiLabelTextClassifier &gt; thirdai::bolt::MultiLabelTextClassifier::load</definition>
+        <argsstring>(const std::string &amp;filename)</argsstring>
+        <name>load</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::load</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>filename</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="143" column="26" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="143" bodyend="153"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a7a76c9ff29d9acebe1a641899579ecf5" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>float</type>
+        <definition>static float thirdai::bolt::MultiLabelTextClassifier::getOutputSparsity</definition>
+        <argsstring>(uint32_t output_dim)</argsstring>
+        <name>getOutputSparsity</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::getOutputSparsity</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>output_dim</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="158" column="16" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="158" bodyend="186"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a8726d0aa02c18c0a4cd055bd0cf2b5af" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::string</type>
+        <definition>static std::string thirdai::bolt::MultiLabelTextClassifier::tokensToSentence</definition>
+        <argsstring>(const std::vector&lt; uint32_t &gt; &amp;tokens)</argsstring>
+        <name>tokensToSentence</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::tokensToSentence</qualifiedname>
+        <param>
+          <type>const std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>tokens</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="202" column="22" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="202" bodyend="211"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a903e6237655ece73ff0913a6c80e9ee4" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::MultiLabelTextClassifier::buildBatchProcessors</definition>
+        <argsstring>(uint32_t n_classes)</argsstring>
+        <name>buildBatchProcessors</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::buildBatchProcessors</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_classes</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="188" column="8" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="188" bodyend="200"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a066bb0d620707714969c322984b5cf3b" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::MultiLabelTextClassifier::MultiLabelTextClassifier</definition>
+        <argsstring>()</argsstring>
+        <name>MultiLabelTextClassifier</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::MultiLabelTextClassifier</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="214" column="3" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="214" bodyend="214"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a64d1e332a13390ce636e29a1a3f6f79b" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::bolt::MultiLabelTextClassifier::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::bolt::MultiLabelTextClassifier::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="219" column="8" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="219" bodyend="221"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" line="29" column="1" bodyfile="bolt/src/auto_classifiers/MultiLabelTextClassifier.h" bodystart="29" bodyend="227"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a375e512aa126eb8c66e0473bbc0d6717" prot="private" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>_classifier</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a9229d0c097e15cd5fbd4fdd44419793b" prot="private" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>_labeled_processor</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1abd8ba863f9ca5e947ea4d08ae9183756" prot="private" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>_n_classes</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1aef50e1cc7684ec441b2d2571e013b4b7" prot="private" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>_unlabeled_processor</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a903e6237655ece73ff0913a6c80e9ee4" prot="private" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>buildBatchProcessors</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a7a76c9ff29d9acebe1a641899579ecf5" prot="private" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>getOutputSparsity</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1ab4154b87a298a4a261be53f3b88680a5" prot="public" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>load</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1ac0fe3599f4b8d763e913af0adb47e507" prot="public" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>MultiLabelTextClassifier</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a066bb0d620707714969c322984b5cf3b" prot="private" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>MultiLabelTextClassifier</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a870e5ff5ca51263f3972bad55b385a12" prot="public" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>numClasses</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a23b836bea484f6e148bb20dab77c3663" prot="public" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>predict</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a0237c471b371adc78f257e90627e7127" prot="public" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>predictSingleFromSentence</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a2b2f122351ddcd5b2e6d4bf344ee69f8" prot="public" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>predictSingleFromTokens</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a459a61d702e57c7924a8fb7e23e33bd7" prot="public" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>save</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a64d1e332a13390ce636e29a1a3f6f79b" prot="private" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>serialize</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a8726d0aa02c18c0a4cd055bd0cf2b5af" prot="private" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>tokensToSentence</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multi_label_text_classifier_1a414bb512e6fa3ae1044c77c912ad5c65" prot="public" virt="non-virtual"><scope>thirdai::bolt::MultiLabelTextClassifier</scope><name>train</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,99 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1compression_1_1serializer_1_1_binary_output_helper" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::compression::serializer::BinaryOutputHelper</compoundname>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1compression_1_1serializer_1_1_binary_output_helper_1a070f03edc3ad183566a7a41d28497545" prot="private" static="no" mutable="no">
+        <type>char *</type>
+        <definition>char* thirdai::compression::serializer::BinaryOutputHelper::_ptr</definition>
+        <argsstring></argsstring>
+        <name>_ptr</name>
+        <qualifiedname>thirdai::compression::serializer::BinaryOutputHelper::_ptr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/Serializer.h" line="73" column="8" bodyfile="compression/src/Serializer.h" bodystart="73" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1serializer_1_1_binary_output_helper_1a8f657640d9dfe1dc0ba61bea0487ec86" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::compression::serializer::BinaryOutputHelper::BinaryOutputHelper</definition>
+        <argsstring>(char *data)</argsstring>
+        <name>BinaryOutputHelper</name>
+        <qualifiedname>thirdai::compression::serializer::BinaryOutputHelper::BinaryOutputHelper</qualifiedname>
+        <param>
+          <type>char *</type>
+          <declname>data</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/Serializer.h" line="55" column="12" bodyfile="compression/src/Serializer.h" bodystart="55" bodyend="55"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1serializer_1_1_binary_output_helper_1a8c300ed59937d820fafc5f8724586bde" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class T</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::compression::serializer::BinaryOutputHelper::write</definition>
+        <argsstring>(const T *data)</argsstring>
+        <name>write</name>
+        <qualifiedname>thirdai::compression::serializer::BinaryOutputHelper::write</qualifiedname>
+        <param>
+          <type>const T *</type>
+          <declname>data</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/Serializer.h" line="58" column="8" bodyfile="compression/src/Serializer.h" bodystart="58" bodyend="61"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1compression_1_1serializer_1_1_binary_output_helper_1ab059d817f40f517a140b7995cf1d446e" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class T</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::compression::serializer::BinaryOutputHelper::writeVector</definition>
+        <argsstring>(const std::vector&lt; T &gt; &amp;vector)</argsstring>
+        <name>writeVector</name>
+        <qualifiedname>thirdai::compression::serializer::BinaryOutputHelper::writeVector</qualifiedname>
+        <param>
+          <type>const std::vector&lt; T &gt; &amp;</type>
+          <declname>vector</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="compression/src/Serializer.h" line="64" column="8" bodyfile="compression/src/Serializer.h" bodystart="64" bodyend="70"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="compression/src/Serializer.h" line="53" column="1" bodyfile="compression/src/Serializer.h" bodystart="53" bodyend="74"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1compression_1_1serializer_1_1_binary_output_helper_1a070f03edc3ad183566a7a41d28497545" prot="private" virt="non-virtual"><scope>thirdai::compression::serializer::BinaryOutputHelper</scope><name>_ptr</name></member>
+      <member refid="classthirdai_1_1compression_1_1serializer_1_1_binary_output_helper_1a8f657640d9dfe1dc0ba61bea0487ec86" prot="public" virt="non-virtual"><scope>thirdai::compression::serializer::BinaryOutputHelper</scope><name>BinaryOutputHelper</name></member>
+      <member refid="classthirdai_1_1compression_1_1serializer_1_1_binary_output_helper_1a8c300ed59937d820fafc5f8724586bde" prot="public" virt="non-virtual"><scope>thirdai::compression::serializer::BinaryOutputHelper</scope><name>write</name></member>
+      <member refid="classthirdai_1_1compression_1_1serializer_1_1_binary_output_helper_1ab059d817f40f517a140b7995cf1d446e" prot="public" virt="non-virtual"><scope>thirdai::compression::serializer::BinaryOutputHelper</scope><name>writeVector</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

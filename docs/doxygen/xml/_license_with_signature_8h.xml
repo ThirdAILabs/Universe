@@ -1,0 +1,451 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_license_with_signature_8h" kind="file" language="C++">
+    <compoundname>LicenseWithSignature.h</compoundname>
+    <includes local="no">cereal/access.hpp</includes>
+    <includes local="no">cereal/archives/binary.hpp</includes>
+    <includes local="no">cereal/types/string.hpp</includes>
+    <includes refid="_license_8h" local="yes">License.h</includes>
+    <includes local="no">cryptopp/base64.h</includes>
+    <includes local="no">cryptopp/files.h</includes>
+    <includes local="no">cryptopp/filters.h</includes>
+    <includes local="no">cryptopp/osrng.h</includes>
+    <includes local="no">cryptopp/rsa.h</includes>
+    <includes local="no">exceptions/src/Exceptions.h</includes>
+    <includes local="no">sys/types.h</includes>
+    <includes local="no">exception</includes>
+    <includes local="no">filesystem</includes>
+    <includes local="no">fstream</includes>
+    <includes local="no">optional</includes>
+    <includes local="no">utility</includes>
+    <includedby refid="_create_signed_license_8cc" local="yes">licensing/src/CreateSignedLicense.cc</includedby>
+    <incdepgraph>
+      <node id="5">
+        <label>License.h</label>
+        <link refid="_license_8h_source"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>licensing/src/LicenseWithSignature.h</label>
+        <link refid="_license_with_signature_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="3">
+        <label>cereal/archives/binary.hpp</label>
+      </node>
+      <node id="6">
+        <label>cereal/types/map.hpp</label>
+      </node>
+      <node id="4">
+        <label>cereal/types/string.hpp</label>
+      </node>
+      <node id="7">
+        <label>chrono</label>
+      </node>
+      <node id="11">
+        <label>cryptopp/base64.h</label>
+      </node>
+      <node id="12">
+        <label>cryptopp/files.h</label>
+      </node>
+      <node id="13">
+        <label>cryptopp/filters.h</label>
+      </node>
+      <node id="14">
+        <label>cryptopp/osrng.h</label>
+      </node>
+      <node id="15">
+        <label>cryptopp/rsa.h</label>
+      </node>
+      <node id="18">
+        <label>exception</label>
+      </node>
+      <node id="16">
+        <label>exceptions/src/Exceptions.h</label>
+      </node>
+      <node id="19">
+        <label>filesystem</label>
+      </node>
+      <node id="20">
+        <label>fstream</label>
+      </node>
+      <node id="8">
+        <label>map</label>
+      </node>
+      <node id="21">
+        <label>optional</label>
+      </node>
+      <node id="9">
+        <label>string</label>
+      </node>
+      <node id="17">
+        <label>sys/types.h</label>
+      </node>
+      <node id="10">
+        <label>utility</label>
+      </node>
+    </incdepgraph>
+    <innerclass refid="classthirdai_1_1licensing_1_1_license_with_signature" prot="public">thirdai::licensing::LicenseWithSignature</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1licensing">thirdai::licensing</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/access.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/archives/binary.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/types/string.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;License.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cryptopp/base64.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cryptopp/files.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cryptopp/filters.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cryptopp/osrng.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cryptopp/rsa.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;exceptions/src/Exceptions.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;sys/types.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;exception&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;filesystem&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;fstream&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;optional&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight><highlight class="preprocessor">#if<sp/>defined<sp/>__linux__<sp/>||<sp/>defined<sp/>__APPLE__</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;pwd.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="20"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;unistd.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight><highlight class="preprocessor">#endif</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="22"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;utility&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="23"><highlight class="normal"></highlight></codeline>
+<codeline lineno="24"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::licensing<sp/>{</highlight></codeline>
+<codeline lineno="25"><highlight class="normal"></highlight></codeline>
+<codeline lineno="26" refid="classthirdai_1_1licensing_1_1_license_with_signature" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1licensing_1_1_license_with_signature" kindref="compound">LicenseWithSignature</ref><sp/>{</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>This<sp/>is<sp/>public<sp/>because<sp/>it<sp/>is<sp/>a<sp/>top<sp/>level<sp/>serialization<sp/>target,<sp/>only</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>call<sp/>this<sp/>if<sp/>you<sp/>are<sp/>creating<sp/>an<sp/>object<sp/>to<sp/>serialize<sp/>into</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1licensing_1_1_license_with_signature" kindref="compound">LicenseWithSignature</ref>()<sp/>:<sp/>_license(std::map&lt;std::string,<sp/>std::string&gt;(),<sp/>0){};</highlight></codeline>
+<codeline lineno="31"><highlight class="normal"></highlight></codeline>
+<codeline lineno="32"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1licensing_1_1_license_with_signature" kindref="compound">LicenseWithSignature</ref>(<ref refid="classthirdai_1_1licensing_1_1_license" kindref="compound">License</ref><sp/>license,</highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>CryptoPP::RSA::PrivateKey&amp;<sp/>private_key)</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>_license(std::move(license))<sp/>{</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>See<sp/>https://cryptopp.com/wiki/RSA_Cryptography<sp/>for<sp/>more<sp/>details</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="36"><highlight class="normal"></highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/><sp/><sp/>std::string<sp/>license_state_to_sign<sp/>=<sp/>_license.toString();</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"></highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>This<sp/>is<sp/>automatically<sp/>seeded<sp/>with<sp/>the<sp/>OS&apos;s<sp/>randomness<sp/>source</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/><sp/><sp/>CryptoPP::AutoSeededRandomPool<sp/>rng;</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"></highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>These<sp/>lines<sp/>sign<sp/>the<sp/>License<sp/>state<sp/>for<sp/>later<sp/>verification.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>The<sp/>objects<sp/>created<sp/>with<sp/>the<sp/>&quot;new&quot;<sp/>keyword<sp/>are<sp/>automatically<sp/>deleted,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>it&apos;s<sp/>the<sp/>recommended<sp/>way<sp/>use<sp/>this<sp/>library.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>We<sp/>don&apos;t<sp/>need<sp/>to<sp/>do<sp/>anything<sp/>besides<sp/>defining<sp/>the</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>&quot;source<sp/>-&gt;<sp/>signer<sp/>-&gt;<sp/>sink&quot;<sp/>pipeline<sp/>using<sp/>a<sp/>nested<sp/>builder<sp/>pattern.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>This<sp/>is<sp/>because<sp/>the<sp/>pumpAll<sp/>boolean<sp/>is<sp/>set<sp/>to<sp/>true,<sp/>so<sp/>the<sp/>source<sp/>will</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>automatically<sp/>be<sp/>pumped<sp/>into<sp/>the<sp/>SignerVerifier,<sp/>which<sp/>will<sp/>in<sp/>turn<sp/>pump</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>the<sp/>signature<sp/>into<sp/>the<sp/>sink<sp/>and<sp/>therefore<sp/>the<sp/>_signature<sp/>field.<sp/>Thus</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>after<sp/>these<sp/>next<sp/>lines<sp/>_signature<sp/>will<sp/>contain<sp/>the<sp/>signature<sp/>of<sp/>the</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>license<sp/>state<sp/>and<sp/>this<sp/>object<sp/>will<sp/>be<sp/>ready<sp/>for<sp/>serialization.<sp/>See</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="52"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>https://cryptopp.com/wiki/RSA_Cryptography<sp/>for<sp/>more<sp/>details.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/><sp/><sp/>CryptoPP::RSASSA_PKCS1v15_SHA_Signer<sp/>signer(private_key);</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/><sp/><sp/>CryptoPP::StringSource<sp/>source(</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>string<sp/>=<sp/>*/</highlight><highlight class="normal"><sp/>license_state_to_sign,<sp/></highlight><highlight class="comment">/*<sp/>pumpAll<sp/>=<sp/>*/</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">true</highlight><highlight class="normal">,</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">new</highlight><highlight class="normal"><sp/>CryptoPP::SignerFilter(</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>rng<sp/>=<sp/>*/</highlight><highlight class="normal"><sp/>rng,<sp/></highlight><highlight class="comment">/*<sp/>signer<sp/>=<sp/>*/</highlight><highlight class="normal"><sp/>signer,</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">new</highlight><highlight class="normal"><sp/>CryptoPP::StringSink(</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>output<sp/>=<sp/>*/</highlight><highlight class="normal"><sp/>_signature))<sp/><sp/></highlight><highlight class="comment">//<sp/>SignerFilter</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="60"><highlight class="normal"><sp/><sp/><sp/><sp/>);<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>StringSource</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="61"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="62"><highlight class="normal"></highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Returns<sp/>true<sp/>if<sp/>the<sp/>content<sp/>of<sp/>the<sp/>license<sp/>can<sp/>be<sp/>verified<sp/>with<sp/>the<sp/>public</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>key<sp/>and<sp/>false<sp/>otherwise</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>verify(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>CryptoPP::RSA::PublicKey&amp;<sp/>public_key)</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>See<sp/>https://cryptopp.com/wiki/RSA_Cryptography<sp/>for<sp/>more<sp/>details</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="67"><highlight class="normal"></highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/><sp/><sp/>std::string<sp/>license_state_to_sign<sp/>=<sp/>_license.toString();</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"></highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>These<sp/>lines<sp/>try<sp/>to<sp/>verify<sp/>the<sp/>License<sp/>with<sp/>the<sp/>signature<sp/>field</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="71"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>and<sp/>the<sp/>passed<sp/>in<sp/>public<sp/>key.<sp/>Similar<sp/>to<sp/>in<sp/>the<sp/>constructor<sp/>above,<sp/>the</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>objects<sp/>created<sp/>with<sp/>the<sp/>&quot;new&quot;<sp/>keyword<sp/>are<sp/>automatically<sp/>deleted<sp/>and<sp/>the</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>&quot;source<sp/>-&gt;<sp/>verifier&quot;<sp/>pipeline<sp/>automatically<sp/>runs<sp/>on<sp/>construction.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>The<sp/>verificaiton<sp/>process<sp/>works<sp/>as<sp/>follows:<sp/>the<sp/>license<sp/>state<sp/>concatenated</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/><sp/>with<sp/>the<sp/>signature<sp/>is<sp/>verified<sp/>by<sp/>the<sp/>VerificaitonFilter,<sp/>which<sp/>does<sp/>the</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>verification<sp/>with<sp/>the<sp/>public<sp/>key<sp/>it<sp/>was<sp/>constructed<sp/>with.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>If<sp/>the<sp/>verification<sp/>fails<sp/>the<sp/>cryptopp<sp/>library</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>throws<sp/>an<sp/>error,<sp/>which<sp/>we<sp/>catch,<sp/>and<sp/>then<sp/>we<sp/>return<sp/>false.<sp/>See</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>https://cryptopp.com/wiki/RSA_Cryptography<sp/>for<sp/>more<sp/>details.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="80"><highlight class="normal"><sp/><sp/><sp/><sp/>CryptoPP::RSASSA_PKCS1v15_SHA_Verifier<sp/>verifier(public_key);</highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">try</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>CryptoPP::StringSource<sp/>source(</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>string<sp/>=<sp/>*/</highlight><highlight class="normal"><sp/>license_state_to_sign<sp/>+<sp/>_signature,</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>pumpAll<sp/>=<sp/>*/</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">true</highlight><highlight class="normal">,</highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">new</highlight><highlight class="normal"><sp/>CryptoPP::SignatureVerificationFilter(</highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>verifier<sp/>=<sp/>*/</highlight><highlight class="normal"><sp/>verifier,<sp/></highlight><highlight class="comment">/*<sp/>attachment<sp/>=<sp/>*/</highlight><highlight class="normal"><sp/>NULL,</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>flags<sp/>=<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>CryptoPP::SignatureVerificationFilter::</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>THROW_EXCEPTION)<sp/><sp/></highlight><highlight class="comment">//<sp/>SignatureVerificationFilter</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="90"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>);<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>StringSource</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/><sp/><sp/>}<sp/></highlight><highlight class="keywordflow">catch</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::exception&amp;<sp/>e)<sp/>{</highlight></codeline>
+<codeline lineno="92"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="94"><highlight class="normal"></highlight></codeline>
+<codeline lineno="95"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">true</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"></highlight></codeline>
+<codeline lineno="98"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>serializeToFile(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>path)<sp/>{</highlight></codeline>
+<codeline lineno="99"><highlight class="normal"><sp/><sp/><sp/><sp/>std::ofstream<sp/>filestream(path,<sp/>std::ios::binary);</highlight></codeline>
+<codeline lineno="100"><highlight class="normal"><sp/><sp/><sp/><sp/>cereal::BinaryOutputArchive<sp/>oarchive(filestream);</highlight></codeline>
+<codeline lineno="101"><highlight class="normal"><sp/><sp/><sp/><sp/>oarchive(*</highlight><highlight class="keyword">this</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="102"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="103"><highlight class="normal"></highlight></codeline>
+<codeline lineno="104"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1licensing_1_1_license_with_signature" kindref="compound">LicenseWithSignature</ref><sp/>deserializeFromFile(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>path)<sp/>{</highlight></codeline>
+<codeline lineno="105"><highlight class="normal"><sp/><sp/><sp/><sp/>std::ifstream<sp/>filestream(path,<sp/>std::ios::binary);</highlight></codeline>
+<codeline lineno="106"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1licensing_1_1_license_with_signature" kindref="compound">LicenseWithSignature</ref><sp/>serialize_into;</highlight></codeline>
+<codeline lineno="107"><highlight class="normal"><sp/><sp/><sp/><sp/>{</highlight></codeline>
+<codeline lineno="108"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>cereal::BinaryInputArchive<sp/>iarchive(filestream);</highlight></codeline>
+<codeline lineno="109"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>iarchive(serialize_into);</highlight></codeline>
+<codeline lineno="110"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="111"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>serialize_into;</highlight></codeline>
+<codeline lineno="112"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="113"><highlight class="normal"></highlight></codeline>
+<codeline lineno="126" refid="classthirdai_1_1licensing_1_1_license_with_signature_1ae9568b3b045a5f2f8181c790ed95c980" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1licensing_1_1_license_with_signature_1ae9568b3b045a5f2f8181c790ed95c980" kindref="member">findVerifyAndCheckLicense</ref>(</highlight></codeline>
+<codeline lineno="127"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::optional&lt;std::string&gt;&amp;<sp/>license_path)<sp/>{</highlight></codeline>
+<codeline lineno="128"><highlight class="normal"><sp/><sp/><sp/><sp/>std::vector&lt;std::string&gt;<sp/>license_file_name_options<sp/>=</highlight></codeline>
+<codeline lineno="129"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>get_license_name_options(license_path);</highlight></codeline>
+<codeline lineno="130"><highlight class="normal"></highlight></codeline>
+<codeline lineno="131"><highlight class="normal"><sp/><sp/><sp/><sp/>std::pair&lt;LicenseWithSignature,<sp/>std::string&gt;<sp/>license_with_file<sp/>=</highlight></codeline>
+<codeline lineno="132"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>get_license_from_options(license_file_name_options);</highlight></codeline>
+<codeline lineno="133"><highlight class="normal"></highlight></codeline>
+<codeline lineno="134"><highlight class="normal"><sp/><sp/><sp/><sp/>verify_and_check_license(license_with_file);</highlight></codeline>
+<codeline lineno="135"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="136"><highlight class="normal"></highlight></codeline>
+<codeline lineno="137"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1licensing_1_1_license" kindref="compound">License</ref>&amp;<sp/>get_license()</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_license;<sp/>}</highlight></codeline>
+<codeline lineno="138"><highlight class="normal"></highlight></codeline>
+<codeline lineno="139"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>For<sp/>now<sp/>this<sp/>is<sp/>just<sp/>used<sp/>for<sp/>testing</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="140"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>set_license(License<sp/>new_license)<sp/>{<sp/>_license<sp/>=<sp/>std::move(new_license);<sp/>}</highlight></codeline>
+<codeline lineno="141"><highlight class="normal"></highlight></codeline>
+<codeline lineno="142"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="143"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Tell<sp/>Cereal<sp/>what<sp/>to<sp/>serialize.<sp/>See<sp/>https://uscilab.github.io/cereal/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="144"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">friend</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">cereal::access;</highlight></codeline>
+<codeline lineno="145"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">class</highlight><highlight class="normal"><sp/>Archive&gt;</highlight></codeline>
+<codeline lineno="146"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>serialize(Archive&amp;<sp/>archive)<sp/>{</highlight></codeline>
+<codeline lineno="147"><highlight class="normal"><sp/><sp/><sp/><sp/>archive(_signature,<sp/>_license);</highlight></codeline>
+<codeline lineno="148"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="149"><highlight class="normal"></highlight></codeline>
+<codeline lineno="150"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string<sp/>PUBLIC_KEY_BASE_64<sp/>=</highlight></codeline>
+<codeline lineno="151"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAsIv9g8w+&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="152"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;DLlepzpE02luu6lV2DY7g5N0cnqhbaoArE5UOEiKK2EFPCeQTp8+TkYk64/&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="153"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;ieMab4CoIU3ZmVp5GUyKkWsLJhDUE3dXJrLhIDTg7HFr6qwrFDosRWI26grq+&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="154"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;CFPsiVLTjlJCd+7sv1EtR5TPhympKAKRbUI1pffnK8QTJ8F5Bfg/&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="155"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;1tLHk3lpUp4vF90se0TWgmXe7CW6GtWeXqiwsfzK9IzkgLbX4DQJnyIRPS9MLoQr/&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="156"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;nSws7jMPDtUIuSjUIOQojxIhxTO5iL+&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="157"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;mfiV2h7nRLMtJM6lLKmrDK09sE4geE8zJytCcP1l15s7gZy7g7i1mwrpfiulmfNVvDj0LoKY&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="158"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;D2&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="159"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;nx1mj+gCgnUasqLWILNUXgV19eGGLd23+&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="160"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;hc7NzF10KFVXIcLebrG7o6WfFY5NSYu2pDzialgpCXmiysyIKj/HXY1hpbi0/dMII/&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="161"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;lVN2QhDb5zTVIjzBr+kMuJ9dNNl9Sn4eso+dMNjQrQ2F9WvcgS1ZQ4Ju/5qOZrRAgMBAAE=&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="162"><highlight class="normal"></highlight></codeline>
+<codeline lineno="163"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">/*</highlight></codeline>
+<codeline lineno="164"><highlight class="comment"><sp/><sp/><sp/>*<sp/>Returns<sp/>a<sp/>vector<sp/>of<sp/>possible<sp/>license<sp/>file<sp/>names.<sp/>Tries<sp/>to<sp/>add<sp/>each<sp/>of<sp/>the</highlight></codeline>
+<codeline lineno="165"><highlight class="comment"><sp/><sp/><sp/>*<sp/>following<sp/>license<sp/>file<sp/>paths<sp/>in<sp/>the<sp/>following<sp/>order:</highlight></codeline>
+<codeline lineno="166"><highlight class="comment"><sp/><sp/><sp/>*<sp/>0.<sp/>The<sp/>passed<sp/>in<sp/>license<sp/>path</highlight></codeline>
+<codeline lineno="167"><highlight class="comment"><sp/><sp/><sp/>*<sp/>1.<sp/>env(THIRDAI_LICENSE_PATH)</highlight></codeline>
+<codeline lineno="168"><highlight class="comment"><sp/><sp/><sp/>*<sp/>2.<sp/>~/license.serialized</highlight></codeline>
+<codeline lineno="169"><highlight class="comment"><sp/><sp/><sp/>*<sp/>3.<sp/>{cwd}/license.serialized</highlight></codeline>
+<codeline lineno="170"><highlight class="comment"><sp/><sp/><sp/>*<sp/>If<sp/>one<sp/>of<sp/>the<sp/>methods<sp/>fails<sp/>does<sp/>not<sp/>add<sp/>that<sp/>path.</highlight></codeline>
+<codeline lineno="171"><highlight class="comment"><sp/><sp/><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="172"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::vector&lt;std::string&gt;<sp/>get_license_name_options(</highlight></codeline>
+<codeline lineno="173"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::optional&lt;std::string&gt;&amp;<sp/>license_path)<sp/>{</highlight></codeline>
+<codeline lineno="174"><highlight class="normal"><sp/><sp/><sp/><sp/>std::vector&lt;std::string&gt;<sp/>license_file_name_options;</highlight></codeline>
+<codeline lineno="175"><highlight class="normal"></highlight></codeline>
+<codeline lineno="176"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(license_path)<sp/>{</highlight></codeline>
+<codeline lineno="177"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>license_file_name_options.push_back(license_path.value());</highlight></codeline>
+<codeline lineno="178"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="179"><highlight class="normal"></highlight></codeline>
+<codeline lineno="180"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>optional_license_environment_path<sp/>=</highlight></codeline>
+<codeline lineno="181"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>get_license_path_from_environment();</highlight></codeline>
+<codeline lineno="182"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(optional_license_environment_path)<sp/>{</highlight></codeline>
+<codeline lineno="183"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>license_file_name_options.push_back(</highlight></codeline>
+<codeline lineno="184"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>optional_license_environment_path.value());</highlight></codeline>
+<codeline lineno="185"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="186"><highlight class="normal"></highlight></codeline>
+<codeline lineno="187"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>optional_home_dir<sp/>=<sp/>get_home_directory();</highlight></codeline>
+<codeline lineno="188"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(optional_home_dir)<sp/>{</highlight></codeline>
+<codeline lineno="189"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>license_file_name_options.push_back(optional_home_dir.value()<sp/>+</highlight></codeline>
+<codeline lineno="190"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;/license.serialized&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="191"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="192"><highlight class="normal"></highlight></codeline>
+<codeline lineno="193"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>optional_current_dir<sp/>=<sp/>get_current_directory();</highlight></codeline>
+<codeline lineno="194"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(optional_current_dir)<sp/>{</highlight></codeline>
+<codeline lineno="195"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>license_file_name_options.push_back(optional_current_dir.value()<sp/>+</highlight></codeline>
+<codeline lineno="196"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;/license.serialized&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="197"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="198"><highlight class="normal"></highlight></codeline>
+<codeline lineno="199"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>license_file_name_options;</highlight></codeline>
+<codeline lineno="200"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="201"><highlight class="normal"></highlight></codeline>
+<codeline lineno="202"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Finds<sp/>the<sp/>first<sp/>license<sp/>file<sp/>in<sp/>the<sp/>list<sp/>of<sp/>license<sp/>file<sp/>options,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="203"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>deserializes<sp/>it,<sp/>and<sp/>returns<sp/>it<sp/>along<sp/>with<sp/>the<sp/>file<sp/>name.<sp/>If<sp/>no<sp/>license</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="204"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>file<sp/>can<sp/>be<sp/>opened,<sp/>we<sp/>throw<sp/>an<sp/>error.<sp/>If<sp/>the<sp/>deserialization<sp/>fails,<sp/>Cereal</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="205"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>will<sp/>throw<sp/>an<sp/>error.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="206"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::pair&lt;LicenseWithSignature,<sp/>std::string&gt;<sp/>get_license_from_options(</highlight></codeline>
+<codeline lineno="207"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;std::string&gt;&amp;<sp/>license_file_name_options)<sp/>{</highlight></codeline>
+<codeline lineno="208"><highlight class="normal"><sp/><sp/><sp/><sp/>std::optional&lt;std::pair&lt;LicenseWithSignature,<sp/>std::string&gt;&gt;</highlight></codeline>
+<codeline lineno="209"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>license_with_file;</highlight></codeline>
+<codeline lineno="210"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>license_file_name<sp/>:<sp/>license_file_name_options)<sp/>{</highlight></codeline>
+<codeline lineno="211"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(can_access_file(license_file_name))<sp/>{</highlight></codeline>
+<codeline lineno="212"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>license_with_file<sp/>=<sp/>{deserializeFromFile(license_file_name),</highlight></codeline>
+<codeline lineno="213"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>license_file_name};</highlight></codeline>
+<codeline lineno="214"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">break</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="215"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="216"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="217"><highlight class="normal"></highlight></codeline>
+<codeline lineno="218"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!license_with_file)<sp/>{</highlight></codeline>
+<codeline lineno="219"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::string<sp/>license_files_tried;</highlight></codeline>
+<codeline lineno="220"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>license_file_name<sp/>:<sp/>license_file_name_options)<sp/>{</highlight></codeline>
+<codeline lineno="221"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>license_files_tried<sp/>+=<sp/>license_file_name<sp/>+<sp/></highlight><highlight class="stringliteral">&quot;,<sp/>&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="222"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="223"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>thirdai::exceptions::LicenseCheckException(</highlight></codeline>
+<codeline lineno="224"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;could<sp/>not<sp/>find<sp/>any<sp/>license<sp/>file<sp/>(tried<sp/>the<sp/>following<sp/>locations:<sp/>&quot;</highlight><highlight class="normal"><sp/>+</highlight></codeline>
+<codeline lineno="225"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>license_files_tried<sp/>+</highlight></codeline>
+<codeline lineno="226"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;).<sp/>Go<sp/>to<sp/>https://thirdai.com/try-bolt<sp/>to<sp/>get<sp/>a<sp/>license.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="227"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="228"><highlight class="normal"></highlight></codeline>
+<codeline lineno="229"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>license_with_file.value();</highlight></codeline>
+<codeline lineno="230"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="231"><highlight class="normal"></highlight></codeline>
+<codeline lineno="232"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Verifies<sp/>the<sp/>license<sp/>with<sp/>the<sp/>stored<sp/>public<sp/>key.<sp/>If<sp/>the<sp/>verification<sp/>fails,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="233"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>throws<sp/>an<sp/>error.<sp/>If<sp/>the<sp/>verication<sp/>is<sp/>succesfull<sp/>but<sp/>the<sp/>license<sp/>has</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="234"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>expired,<sp/>throws<sp/>an<sp/>error.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="235"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>verify_and_check_license(</highlight></codeline>
+<codeline lineno="236"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::pair&lt;LicenseWithSignature,<sp/>std::string&gt;&amp;<sp/>license_with_file)<sp/>{</highlight></codeline>
+<codeline lineno="237"><highlight class="normal"><sp/><sp/><sp/><sp/>CryptoPP::RSA::PublicKey<sp/>public_key;</highlight></codeline>
+<codeline lineno="238"><highlight class="normal"><sp/><sp/><sp/><sp/>CryptoPP::StringSource<sp/>ss(PUBLIC_KEY_BASE_64,<sp/></highlight><highlight class="keyword">true</highlight><highlight class="normal">,</highlight></codeline>
+<codeline lineno="239"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">new</highlight><highlight class="normal"><sp/>CryptoPP::Base64Decoder);</highlight></codeline>
+<codeline lineno="240"><highlight class="normal"><sp/><sp/><sp/><sp/>public_key.BERDecode(ss);</highlight></codeline>
+<codeline lineno="241"><highlight class="normal"></highlight></codeline>
+<codeline lineno="242"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(!license_with_file.first.verify(public_key))<sp/>{</highlight></codeline>
+<codeline lineno="243"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>thirdai::exceptions::LicenseCheckException(</highlight></codeline>
+<codeline lineno="244"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;license<sp/>verification<sp/>failure<sp/>using<sp/>license<sp/>file<sp/>&quot;</highlight><highlight class="normal"><sp/>+</highlight></codeline>
+<codeline lineno="245"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>license_with_file.second<sp/>+</highlight></codeline>
+<codeline lineno="246"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;.<sp/>Go<sp/>to<sp/>https://thirdai.com/try-bolt<sp/>to<sp/>get<sp/>a<sp/>valid<sp/>license.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="247"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="248"><highlight class="normal"></highlight></codeline>
+<codeline lineno="249"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(license_with_file.first.get_license().isExpired())<sp/>{</highlight></codeline>
+<codeline lineno="250"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>thirdai::exceptions::LicenseCheckException(</highlight></codeline>
+<codeline lineno="251"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;the<sp/>following<sp/>license<sp/>file<sp/>is<sp/>expired:<sp/>&quot;</highlight><highlight class="normal"><sp/>+<sp/>license_with_file.second<sp/>+</highlight></codeline>
+<codeline lineno="252"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;.<sp/>Go<sp/>to<sp/>https://thirdai.com/try-bolt<sp/>to<sp/>renew<sp/>your<sp/>license.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="253"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="254"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="255"><highlight class="normal"></highlight></codeline>
+<codeline lineno="256"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>can_access_file(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>fileName)<sp/>{</highlight></codeline>
+<codeline lineno="257"><highlight class="normal"><sp/><sp/><sp/><sp/>std::ifstream<sp/>infile(fileName);</highlight></codeline>
+<codeline lineno="258"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>infile.good();</highlight></codeline>
+<codeline lineno="259"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="260"><highlight class="normal"></highlight></codeline>
+<codeline lineno="261"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::optional&lt;std::string&gt;<sp/>get_license_path_from_environment()<sp/>{</highlight></codeline>
+<codeline lineno="262"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">char</highlight><highlight class="normal">*<sp/>license_env_path<sp/>=<sp/>std::getenv(</highlight><highlight class="stringliteral">&quot;THIRDAI_LICENSE_PATH&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="263"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(license_env_path<sp/>==<sp/>NULL)<sp/>{</highlight></codeline>
+<codeline lineno="264"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>{};</highlight></codeline>
+<codeline lineno="265"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="266"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>This<sp/>copies<sp/>the<sp/>char*<sp/>into<sp/>a<sp/>string<sp/>object,<sp/>so<sp/>no<sp/>we<sp/>are<sp/>not<sp/>deleting</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="267"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>the<sp/>memory<sp/>of<sp/>the<sp/>environment<sp/>variable<sp/>(which<sp/>is<sp/>good!)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="268"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>license_env_path;</highlight></codeline>
+<codeline lineno="269"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="270"><highlight class="normal"></highlight></codeline>
+<codeline lineno="271"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::optional&lt;std::string&gt;<sp/>get_current_directory()<sp/>{</highlight></codeline>
+<codeline lineno="272"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>path<sp/>=<sp/>std::filesystem::current_path();</highlight></codeline>
+<codeline lineno="273"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(path.empty())<sp/>{</highlight></codeline>
+<codeline lineno="274"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>{};</highlight></codeline>
+<codeline lineno="275"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="276"><highlight class="normal"></highlight></codeline>
+<codeline lineno="277"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>path.u8string();</highlight></codeline>
+<codeline lineno="278"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="279"><highlight class="normal"></highlight></codeline>
+<codeline lineno="280"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::optional&lt;std::string&gt;<sp/>get_home_directory()<sp/>{</highlight></codeline>
+<codeline lineno="281"><highlight class="normal"></highlight><highlight class="preprocessor">#if<sp/>defined<sp/>__linux__<sp/>||<sp/>defined<sp/>__APPLE__</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="282"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal">passwd*<sp/>pw<sp/>=<sp/>getpwuid(getuid());</highlight></codeline>
+<codeline lineno="283"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(pw<sp/>==<sp/>NULL)<sp/>{</highlight></codeline>
+<codeline lineno="284"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::nullopt;</highlight></codeline>
+<codeline lineno="285"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="286"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">char</highlight><highlight class="normal">*<sp/>dir<sp/>=<sp/>getpwuid(getuid())-&gt;pw_dir;</highlight></codeline>
+<codeline lineno="287"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(dir<sp/>==<sp/>NULL)<sp/>{</highlight></codeline>
+<codeline lineno="288"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::nullopt;</highlight></codeline>
+<codeline lineno="289"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="290"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::string(dir);</highlight></codeline>
+<codeline lineno="291"><highlight class="normal"></highlight><highlight class="preprocessor">#elif<sp/>_WIN32</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="292"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>get_home_directory_windows();</highlight></codeline>
+<codeline lineno="293"><highlight class="normal"></highlight><highlight class="preprocessor">#endif</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="294"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="295"><highlight class="normal"></highlight></codeline>
+<codeline lineno="296"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::optional&lt;std::string&gt;<sp/>get_home_directory_windows()<sp/>{</highlight></codeline>
+<codeline lineno="297"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">char</highlight><highlight class="normal">*<sp/>dir<sp/>=<sp/>std::getenv(</highlight><highlight class="stringliteral">&quot;USERPROFILE&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="298"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(dir<sp/>==<sp/>NULL)<sp/>{</highlight></codeline>
+<codeline lineno="299"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">char</highlight><highlight class="normal">*<sp/>home_drive<sp/>=<sp/>std::getenv(</highlight><highlight class="stringliteral">&quot;HOMEDRIVE&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="300"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">char</highlight><highlight class="normal">*<sp/>home_path<sp/>=<sp/>std::getenv(</highlight><highlight class="stringliteral">&quot;HOMEPATH&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="301"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(home_drive<sp/>==<sp/>NULL<sp/>||<sp/>home_path<sp/>==<sp/>NULL)<sp/>{</highlight></codeline>
+<codeline lineno="302"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::nullopt;</highlight></codeline>
+<codeline lineno="303"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="304"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>This<sp/>copies<sp/>the<sp/>char*<sp/>into<sp/>a<sp/>string<sp/>object,<sp/>so<sp/>no<sp/>we<sp/>are<sp/>not<sp/>deleting</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="305"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>the<sp/>memory<sp/>of<sp/>the<sp/>environment<sp/>variable<sp/>(which<sp/>is<sp/>good!)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="306"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::string(home_drive)<sp/>+<sp/>std::string(home_path);</highlight></codeline>
+<codeline lineno="307"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="308"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>dir;</highlight></codeline>
+<codeline lineno="309"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="310"><highlight class="normal"></highlight></codeline>
+<codeline lineno="311"><highlight class="normal"><sp/><sp/>License<sp/>_license;</highlight></codeline>
+<codeline lineno="312"><highlight class="normal"><sp/><sp/>std::string<sp/>_signature;</highlight></codeline>
+<codeline lineno="313"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="314"><highlight class="normal"></highlight></codeline>
+<codeline lineno="315"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::licensing</highlight></codeline>
+    </programlisting>
+    <location file="licensing/src/LicenseWithSignature.h"/>
+  </compounddef>
+</doxygen>

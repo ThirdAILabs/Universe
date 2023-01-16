@@ -1,0 +1,196 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1search_1_1_max_flash" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::search::MaxFlash</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename LABEL_T</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classthirdai_1_1search_1_1_max_flash_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::search::MaxFlash::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlash.h" line="26" column="16" bodyfile="search/src/MaxFlash.h" bodystart="26" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1search_1_1_max_flash_1a2e873adc57bfa3c831f2d16c214bd056" prot="private" static="no" mutable="no">
+        <type><ref refid="classthirdai_1_1hashtable_1_1_tiny_table" kindref="compound">hashtable::TinyTable</ref>&lt; LABEL_T &gt;</type>
+        <definition>hashtable::TinyTable&lt;LABEL_T&gt; thirdai::search::MaxFlash&lt; LABEL_T &gt;::_hashtable</definition>
+        <argsstring></argsstring>
+        <name>_hashtable</name>
+        <qualifiedname>thirdai::search::MaxFlash::_hashtable</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlash.h" line="34" column="24" bodyfile="search/src/MaxFlash.h" bodystart="34" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_1a3635deb8344f2169ef449a8e6175c9ce" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::search::MaxFlash&lt; LABEL_T &gt;::MaxFlash</definition>
+        <argsstring>(uint32_t num_tables, uint32_t range, LABEL_T num_elements, const std::vector&lt; uint32_t &gt; &amp;hashes)</argsstring>
+        <name>MaxFlash</name>
+        <qualifiedname>thirdai::search::MaxFlash::MaxFlash</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>num_tables</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>range</declname>
+        </param>
+        <param>
+          <type>LABEL_T</type>
+          <declname>num_elements</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>hashes</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlash.h" line="13" column="3" bodyfile="search/src/MaxFlash.cc" bodystart="8" bodyend="11"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_1a9ec4479fcef8bdcbd37956da000b23ab" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>float</type>
+        <definition>float thirdai::search::MaxFlash&lt; LABEL_T &gt;::getScore</definition>
+        <argsstring>(const std::vector&lt; uint32_t &gt; &amp;query_hashes, uint32_t num_elements, std::vector&lt; uint32_t &gt; &amp;count_buffer, const std::vector&lt; float &gt; &amp;collision_count_to_sim) const</argsstring>
+        <name>getScore</name>
+        <qualifiedname>thirdai::search::MaxFlash::getScore</qualifiedname>
+        <param>
+          <type>const std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>query_hashes</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>num_elements</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>count_buffer</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; float &gt; &amp;</type>
+          <declname>collision_count_to_sim</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlash.h" line="16" column="9" bodyfile="search/src/MaxFlash.cc" bodystart="14" bodyend="44"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_1a5ba54ef53734f170289409a9cf3a5b10" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::search::MaxFlash&lt; LABEL_T &gt;::MaxFlash</definition>
+        <argsstring>(const MaxFlash &amp;)=delete</argsstring>
+        <name>MaxFlash</name>
+        <qualifiedname>thirdai::search::MaxFlash::MaxFlash</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1search_1_1_max_flash" kindref="compound">MaxFlash</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlash.h" line="21" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_1a9fdcc588b3c9a3c50c746d32276d7f83" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type><ref refid="classthirdai_1_1search_1_1_max_flash" kindref="compound">MaxFlash</ref> &amp;</type>
+        <definition>MaxFlash &amp; thirdai::search::MaxFlash&lt; LABEL_T &gt;::operator=</definition>
+        <argsstring>(const MaxFlash &amp;)=delete</argsstring>
+        <name>operator=</name>
+        <qualifiedname>thirdai::search::MaxFlash::operator=</qualifiedname>
+        <param>
+          <type>const <ref refid="classthirdai_1_1search_1_1_max_flash" kindref="compound">MaxFlash</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlash.h" line="22" column="12"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_1a198e2a49c36de33e99241bbf8e531ba8" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::search::MaxFlash&lt; LABEL_T &gt;::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::search::MaxFlash::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlash.h" line="28" column="8" bodyfile="search/src/MaxFlash.h" bodystart="28" bodyend="30"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1search_1_1_max_flash_1a2c68f86e59fbf938a0ab40ff964166e9" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::search::MaxFlash&lt; LABEL_T &gt;::MaxFlash</definition>
+        <argsstring>()</argsstring>
+        <name>MaxFlash</name>
+        <qualifiedname>thirdai::search::MaxFlash::MaxFlash</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="search/src/MaxFlash.h" line="28" column="8" bodyfile="search/src/MaxFlash.h" bodystart="32" bodyend="32"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="search/src/MaxFlash.h" line="11" column="1" bodyfile="search/src/MaxFlash.h" bodystart="11" bodyend="35"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1search_1_1_max_flash_1a2e873adc57bfa3c831f2d16c214bd056" prot="private" virt="non-virtual"><scope>thirdai::search::MaxFlash</scope><name>_hashtable</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::search::MaxFlash</scope><name>cereal::access</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_1a9ec4479fcef8bdcbd37956da000b23ab" prot="public" virt="non-virtual"><scope>thirdai::search::MaxFlash</scope><name>getScore</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_1a3635deb8344f2169ef449a8e6175c9ce" prot="public" virt="non-virtual"><scope>thirdai::search::MaxFlash</scope><name>MaxFlash</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_1a5ba54ef53734f170289409a9cf3a5b10" prot="public" virt="non-virtual"><scope>thirdai::search::MaxFlash</scope><name>MaxFlash</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_1a2c68f86e59fbf938a0ab40ff964166e9" prot="private" virt="non-virtual"><scope>thirdai::search::MaxFlash</scope><name>MaxFlash</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_1a9fdcc588b3c9a3c50c746d32276d7f83" prot="public" virt="non-virtual"><scope>thirdai::search::MaxFlash</scope><name>operator=</name></member>
+      <member refid="classthirdai_1_1search_1_1_max_flash_1a198e2a49c36de33e99241bbf8e531ba8" prot="private" virt="non-virtual"><scope>thirdai::search::MaxFlash</scope><name>serialize</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

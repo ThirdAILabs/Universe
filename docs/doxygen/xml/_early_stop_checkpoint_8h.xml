@@ -1,0 +1,813 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_early_stop_checkpoint_8h" kind="file" language="C++">
+    <compoundname>EarlyStopCheckpoint.h</compoundname>
+    <includes refid="_callback_8h" local="yes">Callback.h</includes>
+    <includes refid="_execution_config_8h" local="no">bolt/src/graph/ExecutionConfig.h</includes>
+    <includes refid="_graph_8h" local="no">bolt/src/graph/Graph.h</includes>
+    <includes refid="_datasets_8h" local="no">dataset/src/Datasets.h</includes>
+    <includes local="no">functional</includes>
+    <includes local="no">limits</includes>
+    <incdepgraph>
+      <node id="54">
+        <label>DatasetContext.h</label>
+        <link refid="_dataset_context_8h_source"/>
+        <childnode refid="55" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="41" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>bolt/src/graph/ExecutionConfig.h</label>
+        <link refid="_execution_config_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="41" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+      </node>
+      <node id="51">
+        <label>bolt/src/graph/Graph.h</label>
+        <link refid="_graph_8h_source"/>
+        <childnode refid="52" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="44" relation="include">
+        </childnode>
+        <childnode refid="53" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="54" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="75" relation="include">
+        </childnode>
+        <childnode refid="56" relation="include">
+        </childnode>
+        <childnode refid="55" relation="include">
+        </childnode>
+        <childnode refid="57" relation="include">
+        </childnode>
+        <childnode refid="37" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="36" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="75">
+        <label>InferenceOutputTracker.h</label>
+        <link refid="_inference_output_tracker_8h_source"/>
+        <childnode refid="56" relation="include">
+        </childnode>
+      </node>
+      <node id="56">
+        <label>bolt/src/graph/Node.h</label>
+        <link refid="_node_8h_source"/>
+        <childnode refid="57" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="73" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="36" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>Callback.h</label>
+        <link refid="_callback_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>bolt/src/graph/callbacks/EarlyStopCheckpoint.h</label>
+        <link refid="_early_stop_checkpoint_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="51" relation="include">
+        </childnode>
+        <childnode refid="41" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+      </node>
+      <node id="55">
+        <label>bolt/src/graph/nodes/Input.h</label>
+        <link refid="_input_8h_source"/>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="56" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="73" relation="include">
+        </childnode>
+        <childnode refid="74" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+      </node>
+      <node id="57">
+        <label>bolt/src/layers/FullyConnectedLayer.h</label>
+        <link refid="_fully_connected_layer_8h_source"/>
+        <childnode refid="53" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="58" relation="include">
+        </childnode>
+        <childnode refid="59" relation="include">
+        </childnode>
+        <childnode refid="71" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="60" relation="include">
+        </childnode>
+        <childnode refid="67" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="72" relation="include">
+        </childnode>
+      </node>
+      <node id="58">
+        <label>LayerConfig.h</label>
+        <link refid="_layer_config_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="59" relation="include">
+        </childnode>
+        <childnode refid="66" relation="include">
+        </childnode>
+        <childnode refid="39" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="70" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+      </node>
+      <node id="59">
+        <label>LayerUtils.h</label>
+        <link refid="_layer_utils_8h_source"/>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="60" relation="include">
+        </childnode>
+        <childnode refid="63" relation="include">
+        </childnode>
+        <childnode refid="64" relation="include">
+        </childnode>
+        <childnode refid="39" relation="include">
+        </childnode>
+        <childnode refid="65" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+      </node>
+      <node id="71">
+        <label>bolt/src/layers/Optimizer.h</label>
+        <link refid="_optimizer_8h_source"/>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="66">
+        <label>SamplingConfig.h</label>
+        <link refid="_sampling_config_8h_source"/>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="60" relation="include">
+        </childnode>
+        <childnode refid="63" relation="include">
+        </childnode>
+        <childnode refid="61" relation="include">
+        </childnode>
+        <childnode refid="67" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+      </node>
+      <node id="37">
+        <label>bolt/src/loss_functions/LossFunctions.h</label>
+        <link refid="_loss_functions_8h_source"/>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="39" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+      </node>
+      <node id="10">
+        <label>Metric.h</label>
+        <link refid="_metric_8h_source"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="35" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="36" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>bolt/src/metrics/MetricAggregator.h</label>
+        <link refid="_metric_aggregator_8h_source"/>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="37" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="35" relation="include">
+        </childnode>
+      </node>
+      <node id="11">
+        <label>bolt/src/metrics/MetricHelpers.h</label>
+        <link refid="_metric_helpers_8h_source"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="12">
+        <label>bolt_vector/src/BoltVector.h</label>
+        <link refid="_bolt_vector_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="42">
+        <label>BatchProcessor.h</label>
+        <link refid="_batch_processor_8h_source"/>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="49">
+        <label>DataLoader.h</label>
+        <link refid="_data_loader_8h_source"/>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="47" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="41">
+        <label>dataset/src/Datasets.h</label>
+        <link refid="_datasets_8h_source"/>
+        <childnode refid="42" relation="include">
+        </childnode>
+        <childnode refid="43" relation="include">
+        </childnode>
+        <childnode refid="48" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+      </node>
+      <node id="43">
+        <label>InMemoryDataset.h</label>
+        <link refid="_in_memory_dataset_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="44" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
+        </childnode>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="46" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="48">
+        <label>StreamingDataset.h</label>
+        <link refid="_streaming_dataset_8h_source"/>
+        <childnode refid="42" relation="include">
+        </childnode>
+        <childnode refid="49" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="43" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="50" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="46">
+        <label>utils/SafeFileIO.h</label>
+        <link refid="_safe_file_i_o_8h_source"/>
+        <childnode refid="47" relation="include">
+        </childnode>
+      </node>
+      <node id="60">
+        <label>hashing/src/DWTA.h</label>
+        <link refid="_d_w_t_a_8h_source"/>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="61" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="63">
+        <label>hashing/src/FastSRP.h</label>
+        <link refid="_fast_s_r_p_8h_source"/>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="61" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+      </node>
+      <node id="61">
+        <label>HashFunction.h</label>
+        <link refid="_hash_function_8h_source"/>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="62" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+      </node>
+      <node id="62">
+        <label>HashUtils.h</label>
+        <link refid="_hash_utils_8h_source"/>
+        <childnode refid="16" relation="include">
+        </childnode>
+      </node>
+      <node id="64">
+        <label>hashing/src/SRP.h</label>
+        <link refid="_s_r_p_8h_source"/>
+        <childnode refid="61" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="68">
+        <label>HashTable.h</label>
+        <link refid="_hash_table_8h_source"/>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="69" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="67">
+        <label>hashtable/src/SampledHashTable.h</label>
+        <link refid="_sampled_hash_table_8h_source"/>
+        <childnode refid="38" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="68" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="69" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="31">
+        <label>utils/Logging.h</label>
+        <link refid="_logging_8h_source"/>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+      </node>
+      <node id="39">
+        <label>utils/StringManipulation.h</label>
+        <link refid="_string_manipulation_8h_source"/>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="40" relation="include">
+        </childnode>
+      </node>
+      <node id="14">
+        <label>algorithm</label>
+      </node>
+      <node id="26">
+        <label>atomic</label>
+      </node>
+      <node id="15">
+        <label>cassert</label>
+      </node>
+      <node id="65">
+        <label>cctype</label>
+      </node>
+      <node id="6">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="44">
+        <label>cereal/archives/binary.hpp</label>
+      </node>
+      <node id="13">
+        <label>cereal/cereal.hpp</label>
+      </node>
+      <node id="45">
+        <label>cereal/types/base_class.hpp</label>
+      </node>
+      <node id="53">
+        <label>cereal/types/memory.hpp</label>
+      </node>
+      <node id="7">
+        <label>cereal/types/optional.hpp</label>
+      </node>
+      <node id="38">
+        <label>cereal/types/polymorphic.hpp</label>
+      </node>
+      <node id="8">
+        <label>cereal/types/vector.hpp</label>
+      </node>
+      <node id="50">
+        <label>chrono</label>
+      </node>
+      <node id="27">
+        <label>cmath</label>
+      </node>
+      <node id="74">
+        <label>cstddef</label>
+      </node>
+      <node id="16">
+        <label>cstdint</label>
+      </node>
+      <node id="33">
+        <label>cstdlib</label>
+      </node>
+      <node id="70">
+        <label>exception</label>
+      </node>
+      <node id="73">
+        <label>exceptions/src/Exceptions.h</label>
+      </node>
+      <node id="47">
+        <label>fstream</label>
+      </node>
+      <node id="28">
+        <label>functional</label>
+      </node>
+      <node id="34">
+        <label>iomanip</label>
+      </node>
+      <node id="17">
+        <label>iostream</label>
+      </node>
+      <node id="18">
+        <label>limits</label>
+      </node>
+      <node id="3">
+        <label>memory</label>
+      </node>
+      <node id="19">
+        <label>numeric</label>
+      </node>
+      <node id="20">
+        <label>optional</label>
+      </node>
+      <node id="21">
+        <label>queue</label>
+      </node>
+      <node id="72">
+        <label>random</label>
+      </node>
+      <node id="35">
+        <label>regex</label>
+      </node>
+      <node id="32">
+        <label>spdlog/spdlog.h</label>
+      </node>
+      <node id="22">
+        <label>sstream</label>
+      </node>
+      <node id="23">
+        <label>stdexcept</label>
+      </node>
+      <node id="24">
+        <label>string</label>
+      </node>
+      <node id="40">
+        <label>string_view</label>
+      </node>
+      <node id="30">
+        <label>sys/types.h</label>
+      </node>
+      <node id="29">
+        <label>type_traits</label>
+      </node>
+      <node id="36">
+        <label>unordered_map</label>
+      </node>
+      <node id="69">
+        <label>unordered_set</label>
+      </node>
+      <node id="25">
+        <label>utility</label>
+      </node>
+      <node id="4">
+        <label>vector</label>
+      </node>
+      <node id="52">
+        <label>wrappers/src/LicenseWrapper.h</label>
+      </node>
+    </incdepgraph>
+    <innerclass refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint" prot="public">thirdai::bolt::EarlyStopCheckpoint</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1bolt">thirdai::bolt</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;Callback.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt/src/graph/ExecutionConfig.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt/src/graph/Graph.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;dataset/src/Datasets.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;functional&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;limits&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::bolt<sp/>{</highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight></codeline>
+<codeline lineno="29" refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint" kindref="compound">EarlyStopCheckpoint</ref><sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_callback" kindref="compound">Callback</ref><sp/>{</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1bolt_1_1_early_stop_checkpoint" kindref="compound">EarlyStopCheckpoint</ref>(std::string<sp/>monitored_metric,<sp/>std::string<sp/>model_save_path,</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>patience<sp/>=<sp/>2,<sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>min_delta<sp/>=<sp/>0)</highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>_monitored_metric(std::move(monitored_metric)),</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_model_save_path(std::move(model_save_path)),</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_patience(patience),</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_min_delta(std::abs(min_delta))<sp/>{</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/><sp/><sp/>initValidationTrackers();</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"></highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onTrainBegin(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)model;</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)train_state;</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/>initValidationTrackers();</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"></highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>onEpochEnd(<ref refid="classthirdai_1_1bolt_1_1_bolt_graph" kindref="compound">BoltGraph</ref>&amp;<sp/>model,<sp/><ref refid="classthirdai_1_1bolt_1_1_train_state" kindref="compound">TrainState</ref>&amp;<sp/>train_state)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>metric_val<sp/>=</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>train_state.getValidationMetrics(_monitored_metric).back();</highlight></codeline>
+<codeline lineno="49"><highlight class="normal"></highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(isImprovement(metric_val))<sp/>{</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_best_validation_score<sp/>=<sp/>metric_val;</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_epochs_since_best<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>model.save(_model_save_path);</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"></highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/><sp/><sp/>_epochs_since_best++;</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(_epochs_since_best<sp/>==<sp/>_patience)<sp/>{</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>train_state.stop_training<sp/>=<sp/></highlight><highlight class="keyword">true</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="61"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="62"><highlight class="normal"></highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>isImprovement(</highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>metric_val)</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(_should_minimize)<sp/>{</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>metric_val<sp/>+<sp/>_min_delta<sp/>&lt;<sp/>_best_validation_score;</highlight></codeline>
+<codeline lineno="67"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>metric_val<sp/>-<sp/>_min_delta<sp/>&gt;<sp/>_best_validation_score;</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"></highlight></codeline>
+<codeline lineno="71"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>initValidationTrackers()<sp/>{</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/><sp/><sp/>_epochs_since_best<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/><sp/><sp/>_should_minimize<sp/>=<sp/>makeMetric(_monitored_metric)-&gt;smallerIsBetter();</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"></highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/><sp/><sp/>_best_validation_score<sp/>=<sp/>_should_minimize</highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>?<sp/>std::numeric_limits&lt;double&gt;::max()</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>std::numeric_limits&lt;double&gt;::min();</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="79"><highlight class="normal"></highlight></codeline>
+<codeline lineno="80"><highlight class="normal"><sp/><sp/>std::string<sp/>_monitored_metric;</highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/><sp/>std::string<sp/>_model_save_path;</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/>uint32_t<sp/>_patience;</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>_min_delta;</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"></highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Below<sp/>are<sp/>variables<sp/>used<sp/>to<sp/>track<sp/>the<sp/>best<sp/>validation<sp/>score<sp/>over<sp/>the<sp/>course</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>of<sp/>a<sp/>train<sp/>call.<sp/>These<sp/>are<sp/>reset<sp/>in<sp/>onTrainBegin(..)<sp/>so<sp/>they<sp/>can<sp/>be<sp/>reused.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="87"><highlight class="normal"><sp/><sp/>uint32_t<sp/>_epochs_since_best;</highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>_should_minimize;</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>_best_validation_score;</highlight></codeline>
+<codeline lineno="90"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="91"><highlight class="normal"></highlight></codeline>
+<codeline lineno="92"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">EarlyStopCheckpointPtr<sp/>=<sp/>std::shared_ptr&lt;EarlyStopCheckpoint&gt;;</highlight></codeline>
+<codeline lineno="93"><highlight class="normal"></highlight></codeline>
+<codeline lineno="94"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::bolt</highlight></codeline>
+    </programlisting>
+    <location file="bolt/src/graph/callbacks/EarlyStopCheckpoint.h"/>
+  </compounddef>
+</doxygen>

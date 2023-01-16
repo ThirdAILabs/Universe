@@ -1,0 +1,666 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1dataset_1_1_user_item_history_block" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::dataset::UserItemHistoryBlock</compoundname>
+    <basecompoundref refid="classthirdai_1_1dataset_1_1_block" prot="public" virt="non-virtual">thirdai::dataset::Block</basecompoundref>
+    <includes refid="_user_item_history_8h" local="no">UserItemHistory.h</includes>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a086994b0d7821378ff768935ea654040" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::UserItemHistoryBlock::_user_col</definition>
+        <argsstring></argsstring>
+        <name>_user_col</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::_user_col</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="273" column="12" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="273" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a508c59e53cffbe50c5afdd55540f7a4e" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::UserItemHistoryBlock::_item_col</definition>
+        <argsstring></argsstring>
+        <name>_item_col</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::_item_col</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="274" column="12" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="274" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_item_history_block_1aea4c6c2b8bce49aa3e29c37920f17ce2" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::UserItemHistoryBlock::_timestamp_col</definition>
+        <argsstring></argsstring>
+        <name>_timestamp_col</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::_timestamp_col</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="275" column="12" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="275" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a7b06873bd4155508c9910f33d8d86009" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::UserItemHistoryBlock::_track_last_n</definition>
+        <argsstring></argsstring>
+        <name>_track_last_n</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::_track_last_n</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="276" column="12" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="276" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_item_history_block_1afaf50a54d963b0285260960dfe3197a9" prot="private" static="no" mutable="no">
+        <type>ThreadSafeVocabularyPtr</type>
+        <definition>ThreadSafeVocabularyPtr thirdai::dataset::UserItemHistoryBlock::_user_id_lookup</definition>
+        <argsstring></argsstring>
+        <name>_user_id_lookup</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::_user_id_lookup</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="278" column="27" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="278" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_item_history_block_1adb2e0a9acf98c6c8ba8486b0ad83fbcb" prot="private" static="no" mutable="no">
+        <type>ThreadSafeVocabularyPtr</type>
+        <definition>ThreadSafeVocabularyPtr thirdai::dataset::UserItemHistoryBlock::_item_id_lookup</definition>
+        <argsstring></argsstring>
+        <name>_item_id_lookup</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::_item_id_lookup</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="279" column="27" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="279" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a3d53670dfac4fc29ab9dc0b805ed3dd9" prot="private" static="no" mutable="no">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1dataset_1_1_item_history_collection" kindref="compound">ItemHistoryCollection</ref> &gt;</type>
+        <definition>std::shared_ptr&lt;ItemHistoryCollection&gt; thirdai::dataset::UserItemHistoryBlock::_per_user_history</definition>
+        <argsstring></argsstring>
+        <name>_per_user_history</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::_per_user_history</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="281" column="19" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="281" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_item_history_block_1af27bacbee3fa48326454c1f9077c994e" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::UserItemHistoryBlock::_should_update_history</definition>
+        <argsstring></argsstring>
+        <name>_should_update_history</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::_should_update_history</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="283" column="8" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="283" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a85f05f81e5bf5649868023987e24ba3e" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::UserItemHistoryBlock::_include_current_row</definition>
+        <argsstring></argsstring>
+        <name>_include_current_row</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::_include_current_row</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="284" column="8" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="284" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a679ab5b6837634d7b01b6b18818af02b" prot="private" static="no" mutable="no">
+        <type>std::optional&lt; char &gt;</type>
+        <definition>std::optional&lt;char&gt; thirdai::dataset::UserItemHistoryBlock::_item_col_delimiter</definition>
+        <argsstring></argsstring>
+        <name>_item_col_delimiter</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::_item_col_delimiter</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="285" column="17" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="285" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1dataset_1_1_user_item_history_block_1ad08a4db947e3f8752dda90e6455142d4" prot="private" static="no" mutable="no">
+        <type>int64_t</type>
+        <definition>int64_t thirdai::dataset::UserItemHistoryBlock::_time_lag</definition>
+        <argsstring></argsstring>
+        <name>_time_lag</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::_time_lag</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="286" column="11" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="286" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a54d5b680aef9a000660c8d6d98307d9c" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::UserItemHistoryBlock::UserItemHistoryBlock</definition>
+        <argsstring>(uint32_t user_col, uint32_t item_col, uint32_t timestamp_col, ThreadSafeVocabularyPtr user_id_map, ThreadSafeVocabularyPtr item_id_map, ItemHistoryCollectionPtr item_history_collection, uint32_t track_last_n, bool should_update_history=true, bool include_current_row=false, std::optional&lt; char &gt; item_col_delimiter=std::nullopt, int64_t time_lag=0)</argsstring>
+        <name>UserItemHistoryBlock</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::UserItemHistoryBlock</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>user_col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>item_col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>timestamp_col</declname>
+        </param>
+        <param>
+          <type>ThreadSafeVocabularyPtr</type>
+          <declname>user_id_map</declname>
+        </param>
+        <param>
+          <type>ThreadSafeVocabularyPtr</type>
+          <declname>item_id_map</declname>
+        </param>
+        <param>
+          <type>ItemHistoryCollectionPtr</type>
+          <declname>item_history_collection</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>track_last_n</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>should_update_history</declname>
+          <defval>true</defval>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>include_current_row</declname>
+          <defval>false</defval>
+        </param>
+        <param>
+          <type>std::optional&lt; char &gt;</type>
+          <declname>item_col_delimiter</declname>
+          <defval>std::nullopt</defval>
+        </param>
+        <param>
+          <type>int64_t</type>
+          <declname>time_lag</declname>
+          <defval>0</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="74" column="3" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="74" bodyend="104"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a15bd116f2f1cd01f298ba3652de3b039" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::UserItemHistoryBlock::UserItemHistoryBlock</definition>
+        <argsstring>(uint32_t user_col, uint32_t item_col, uint32_t timestamp_col, uint32_t track_last_n, uint32_t n_unique_users, uint32_t n_unique_items, bool should_update_history=true, bool include_current_row=false, std::optional&lt; char &gt; item_col_delimiter=std::nullopt, int64_t time_lag=0)</argsstring>
+        <name>UserItemHistoryBlock</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::UserItemHistoryBlock</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>user_col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>item_col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>timestamp_col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>track_last_n</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_unique_users</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_unique_items</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>should_update_history</declname>
+          <defval>true</defval>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>include_current_row</declname>
+          <defval>false</defval>
+        </param>
+        <param>
+          <type>std::optional&lt; char &gt;</type>
+          <declname>item_col_delimiter</declname>
+          <defval>std::nullopt</defval>
+        </param>
+        <param>
+          <type>int64_t</type>
+          <declname>time_lag</declname>
+          <defval>0</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="106" column="3" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="106" bodyend="123"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a2dca87bb1bcae48e1ef6ce3c36942bf3" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::UserItemHistoryBlock::featureDim</definition>
+        <argsstring>() const final</argsstring>
+        <name>featureDim</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::featureDim</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a5859698b5d80c130f745e66be3173eac">featureDim</reimplements>
+        <briefdescription>
+<para>Returns the dimension of the vector encoding. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="125" column="12" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="125" bodyend="125"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_item_history_block_1afb26db2bc0310d28de8bf23d70094900" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>bool</type>
+        <definition>bool thirdai::dataset::UserItemHistoryBlock::isDense</definition>
+        <argsstring>() const final</argsstring>
+        <name>isDense</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::isDense</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a9fc5f3b16e9044149d90dfa61e2506e6">isDense</reimplements>
+        <briefdescription>
+<para>True if the block produces dense features, False otherwise. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="127" column="8" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="127" bodyend="127"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a51059c137aa2f9e42a384e31e5a98605" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::UserItemHistoryBlock::expectedNumColumns</definition>
+        <argsstring>() const final</argsstring>
+        <name>expectedNumColumns</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::expectedNumColumns</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a58bc2809a20117b3d8c9ca59ef5c3757">expectedNumColumns</reimplements>
+        <briefdescription>
+<para>Returns the minimum number of columns that the block expects to see in each row of the dataset. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="129" column="12" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="129" bodyend="133"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a50c732b96581a0fd7c8e9a744ffcba92" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type><ref refid="structthirdai_1_1dataset_1_1_explanation" kindref="compound">Explanation</ref></type>
+        <definition>Explanation thirdai::dataset::UserItemHistoryBlock::explainIndex</definition>
+        <argsstring>(uint32_t index_within_block, const std::vector&lt; std::string_view &gt; &amp;input_row) final</argsstring>
+        <name>explainIndex</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::explainIndex</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1a74f791cba8e885b30ae102124ab237d3">explainIndex</reimplements>
+        <param>
+          <type>uint32_t</type>
+          <declname>index_within_block</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>input_row</declname>
+        </param>
+        <briefdescription>
+<para>For a given index, get the keyword which falls in that index when building the segmented feature vector. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>Arguments: index_within_block : index within the block so that we can get exact keyword responsible. input_row: the string_view of input string so that we process the keywords when we call explainIndex method rather than storing that in buildsegment , which may affect thread safety.</para>
+<para>Returns: column number and keyword responsible for the given index from that column. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="162" column="15" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="162" bodyend="169"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a74637e44888166e3c8620b1627fbe91c" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>UserItemHistoryBlockPtr</type>
+        <definition>static UserItemHistoryBlockPtr thirdai::dataset::UserItemHistoryBlock::make</definition>
+        <argsstring>(uint32_t user_col, uint32_t item_col, uint32_t timestamp_col, ThreadSafeVocabularyPtr user_id_map, ThreadSafeVocabularyPtr item_id_map, ItemHistoryCollectionPtr records, uint32_t track_last_n, bool should_update_history=true, bool include_current_row=false, std::optional&lt; char &gt; item_col_delimiter=std::nullopt, int64_t time_lag=0)</argsstring>
+        <name>make</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::make</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>user_col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>item_col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>timestamp_col</declname>
+        </param>
+        <param>
+          <type>ThreadSafeVocabularyPtr</type>
+          <declname>user_id_map</declname>
+        </param>
+        <param>
+          <type>ThreadSafeVocabularyPtr</type>
+          <declname>item_id_map</declname>
+        </param>
+        <param>
+          <type>ItemHistoryCollectionPtr</type>
+          <declname>records</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>track_last_n</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>should_update_history</declname>
+          <defval>true</defval>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>include_current_row</declname>
+          <defval>false</defval>
+        </param>
+        <param>
+          <type>std::optional&lt; char &gt;</type>
+          <declname>item_col_delimiter</declname>
+          <defval>std::nullopt</defval>
+        </param>
+        <param>
+          <type>int64_t</type>
+          <declname>time_lag</declname>
+          <defval>0</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="135" column="34" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="135" bodyend="147"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_item_history_block_1ac794e097ac6e87edeca92b10381e8efb" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>UserItemHistoryBlockPtr</type>
+        <definition>static UserItemHistoryBlockPtr thirdai::dataset::UserItemHistoryBlock::make</definition>
+        <argsstring>(uint32_t user_col, uint32_t item_col, uint32_t timestamp_col, uint32_t track_last_n, uint32_t n_unique_users, uint32_t n_unique_items, bool should_update_history=true, bool include_current_row=false, std::optional&lt; char &gt; item_col_delimiter=std::nullopt, int64_t time_lag=0)</argsstring>
+        <name>make</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::make</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>user_col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>item_col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>timestamp_col</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>track_last_n</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_unique_users</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>n_unique_items</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>should_update_history</declname>
+          <defval>true</defval>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>include_current_row</declname>
+          <defval>false</defval>
+        </param>
+        <param>
+          <type>std::optional&lt; char &gt;</type>
+          <declname>item_col_delimiter</declname>
+          <defval>std::nullopt</defval>
+        </param>
+        <param>
+          <type>int64_t</type>
+          <declname>time_lag</declname>
+          <defval>0</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="149" column="34" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="149" bodyend="159"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a3e67dc0a75e0912378f8cf6999a2b385" prot="protected" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::exception_ptr</type>
+        <definition>std::exception_ptr thirdai::dataset::UserItemHistoryBlock::buildSegment</definition>
+        <argsstring>(const std::vector&lt; std::string_view &gt; &amp;input_row, SegmentedFeatureVector &amp;vec) final</argsstring>
+        <name>buildSegment</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::buildSegment</qualifiedname>
+        <reimplements refid="classthirdai_1_1dataset_1_1_block_1af8e3d79b348482e033852b415a4dfaad">buildSegment</reimplements>
+        <param>
+          <type>const std::vector&lt; std::string_view &gt; &amp;</type>
+          <declname>input_row</declname>
+        </param>
+        <param>
+          <type><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref> &amp;</type>
+          <declname>vec</declname>
+        </param>
+        <briefdescription>
+<para>Derived class-specific implementation of how input rows get encoded (and what ends up in the vector segment). </para>
+        </briefdescription>
+        <detaileddescription>
+<para>WARNING: This function may be called in many threads simultaneously, so it should be thread-safe or robust to data races. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="172" column="22" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="172" bodyend="210"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a43877c7c40c861b76f16cc2e705c888c" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; uint32_t &gt;</type>
+        <definition>std::vector&lt; uint32_t &gt; thirdai::dataset::UserItemHistoryBlock::getItemIds</definition>
+        <argsstring>(const std::string &amp;item_str)</argsstring>
+        <name>getItemIds</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::getItemIds</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>item_str</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="213" column="15" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="213" bodyend="227"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_item_history_block_1a09b9151e845f2f56ef42d677dac19534" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::UserItemHistoryBlock::extendVectorWithUserHistory</definition>
+        <argsstring>(uint32_t user_id, int64_t timestamp_seconds, SegmentedFeatureVector &amp;vec, bool remove_outdated_elements)</argsstring>
+        <name>extendVectorWithUserHistory</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::extendVectorWithUserHistory</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>user_id</declname>
+        </param>
+        <param>
+          <type>int64_t</type>
+          <declname>timestamp_seconds</declname>
+        </param>
+        <param>
+          <type><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref> &amp;</type>
+          <declname>vec</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>remove_outdated_elements</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="229" column="8" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="229" bodyend="255"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_item_history_block_1aa322d549d59a9c8f274614b2776d77b9" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::UserItemHistoryBlock::addNewItemsToUserHistory</definition>
+        <argsstring>(uint32_t user_id, int64_t timestamp_seconds, std::vector&lt; uint32_t &gt; &amp;new_item_ids)</argsstring>
+        <name>addNewItemsToUserHistory</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::addNewItemsToUserHistory</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>user_id</declname>
+        </param>
+        <param>
+          <type>int64_t</type>
+          <declname>timestamp_seconds</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>new_item_ids</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="258" column="8" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="258" bodyend="264"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1dataset_1_1_user_item_history_block_1aa0434db2d523840546281dc32e58fbc2" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::dataset::UserItemHistoryBlock::removeNewItemsFromUserHistory</definition>
+        <argsstring>(uint32_t user_id, std::vector&lt; uint32_t &gt; &amp;new_item_ids)</argsstring>
+        <name>removeNewItemsFromUserHistory</name>
+        <qualifiedname>thirdai::dataset::UserItemHistoryBlock::removeNewItemsFromUserHistory</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>user_id</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; uint32_t &gt; &amp;</type>
+          <declname>new_item_ids</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/blocks/UserItemHistory.h" line="266" column="8" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="266" bodyend="271"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>Tracks up to the last N items associated with each user. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::dataset::Block</label>
+        <link refid="classthirdai_1_1dataset_1_1_block"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::UserItemHistoryBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_user_item_history_block"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>thirdai::dataset::Block</label>
+        <link refid="classthirdai_1_1dataset_1_1_block"/>
+      </node>
+      <node id="1">
+        <label>thirdai::dataset::UserItemHistoryBlock</label>
+        <link refid="classthirdai_1_1dataset_1_1_user_item_history_block"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="dataset/src/blocks/UserItemHistory.h" line="72" column="1" bodyfile="dataset/src/blocks/UserItemHistory.h" bodystart="72" bodyend="287"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a85f05f81e5bf5649868023987e24ba3e" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>_include_current_row</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a508c59e53cffbe50c5afdd55540f7a4e" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>_item_col</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a679ab5b6837634d7b01b6b18818af02b" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>_item_col_delimiter</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1adb2e0a9acf98c6c8ba8486b0ad83fbcb" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>_item_id_lookup</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a3d53670dfac4fc29ab9dc0b805ed3dd9" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>_per_user_history</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1af27bacbee3fa48326454c1f9077c994e" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>_should_update_history</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1ad08a4db947e3f8752dda90e6455142d4" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>_time_lag</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1aea4c6c2b8bce49aa3e29c37920f17ce2" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>_timestamp_col</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a7b06873bd4155508c9910f33d8d86009" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>_track_last_n</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a086994b0d7821378ff768935ea654040" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>_user_col</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1afaf50a54d963b0285260960dfe3197a9" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>_user_id_lookup</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1aa322d549d59a9c8f274614b2776d77b9" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>addNewItemsToUserHistory</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1a67f4a42a2c11c4a403e0adeff8e5be3b" prot="public" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>addVectorSegment</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a3e67dc0a75e0912378f8cf6999a2b385" prot="protected" virt="virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>buildSegment</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a51059c137aa2f9e42a384e31e5a98605" prot="public" virt="virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>expectedNumColumns</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a50c732b96581a0fd7c8e9a744ffcba92" prot="public" virt="virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>explainIndex</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a09b9151e845f2f56ef42d677dac19534" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>extendVectorWithUserHistory</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a2dca87bb1bcae48e1ef6ce3c36942bf3" prot="public" virt="virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>featureDim</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a43877c7c40c861b76f16cc2e705c888c" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>getItemIds</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1afb26db2bc0310d28de8bf23d70094900" prot="public" virt="virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>isDense</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a74637e44888166e3c8620b1627fbe91c" prot="public" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>make</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1ac794e097ac6e87edeca92b10381e8efb" prot="public" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>make</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1a9411d9a3c22f805810489c4b29bbb0bc" prot="public" virt="virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>prepareForBatch</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1aa0434db2d523840546281dc32e58fbc2" prot="private" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>removeNewItemsFromUserHistory</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a54d5b680aef9a000660c8d6d98307d9c" prot="public" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>UserItemHistoryBlock</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_user_item_history_block_1a15bd116f2f1cd01f298ba3652de3b039" prot="public" virt="non-virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>UserItemHistoryBlock</name></member>
+      <member refid="classthirdai_1_1dataset_1_1_block_1aa63fcaa97e225720801526fb1b7799b3" prot="public" virt="virtual"><scope>thirdai::dataset::UserItemHistoryBlock</scope><name>~Block</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

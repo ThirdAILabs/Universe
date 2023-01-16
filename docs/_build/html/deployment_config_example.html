@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Using the DeploymentConfig and ModelPipeline &mdash; thirdai  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Python API" href="python_api/index.html" />
+    <link rel="prev" title="Distributed training" href="distributed_tutorial.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> thirdai
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributed_tutorial.html">Distributed training</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Using the DeploymentConfig and ModelPipeline</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#defining-a-deploymentconfig">Defining a DeploymentConfig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-a-modelpipeline">Creating a ModelPipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#training-with-the-modelpipeline">Training with the ModelPipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#evaluating-with-the-modelpipeline">Evaluating with the ModelPipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inference-with-the-modelpipeline">Inference with the ModelPipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#saving-loading-the-modelpipeline">Saving &amp; Loading the ModelPipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="python_api/index.html">Python API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">thirdai</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Using the DeploymentConfig and ModelPipeline</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/deployment_config_example.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="using-the-deploymentconfig-and-modelpipeline">
+<h1>Using the DeploymentConfig and ModelPipeline<a class="headerlink" href="#using-the-deploymentconfig-and-modelpipeline" title="Permalink to this heading"></a></h1>
+<p>The <cite>ModelPipeline</cite> is a wrapper around a Bolt DAG model and a dataset pipeline that
+abstracts the process of loading and featurizing a dataset and training a model into
+a single interface that hides the complexity from the user. Rather than take in a
+<cite>BoltDataset</cite>, it takes in raw files/DataLoaders and hides the data processing step.</p>
+<p>The <cite>DeploymentConfig</cite> is a way of specifying the architecture and parameters of a
+<cite>ModelPipeline</cite> while allowing us to hide architecture decisions from customers,
+while also still allowing the user to input some hyperparameters to the model and/or
+dataset pipeline.</p>
+<section id="defining-a-deploymentconfig">
+<h2>Defining a DeploymentConfig<a class="headerlink" href="#defining-a-deploymentconfig" title="Permalink to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>First define the config for the model:</p></li>
+</ol>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model_config</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">ModelConfig</span><span class="p">(</span>
+<span class="go">        input_names=[&quot;input&quot;],</span>
+<span class="go">        nodes=[</span>
+<span class="go">            deployment.FullyConnectedNodeConfig(</span>
+<span class="go">                name=&quot;hidden&quot;,</span>
+<span class="go">                dim=deployment.OptionMappedParameter(</span>
+<span class="go">                    option_name=&quot;size&quot;, values={&quot;small&quot;: 100, &quot;large&quot;: 200}</span>
+<span class="go">                ),</span>
+<span class="go">                activation=deployment.ConstantParameter(&quot;relu&quot;),</span>
+<span class="go">                predecessor=&quot;input&quot;,</span>
+<span class="go">            ),</span>
+<span class="go">            deployment.FullyConnectedNodeConfig(</span>
+<span class="go">                name=&quot;output&quot;,</span>
+<span class="go">                dim=deployment.UserSpecifiedParameter(&quot;output_dim&quot;, type=int),</span>
+<span class="go">                sparsity=deployment.ConstantParameter(1.0),</span>
+<span class="go">                activation=deployment.ConstantParameter(&quot;softmax&quot;),</span>
+<span class="go">                predecessor=&quot;hidden&quot;,</span>
+<span class="go">            ),</span>
+<span class="go">        ],</span>
+<span class="go">        loss=bolt.CategoricalCrossEntropyLoss(),</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Then define the config for the dataset loader:</p></li>
+</ol>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dataset_config</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">SingleBlockDatasetFactory</span><span class="p">(</span>
+<span class="go">        data_block=deployment.TextBlockConfig(use_pairgrams=True),</span>
+<span class="go">        label_block=deployment.NumericalCategoricalBlockConfig(</span>
+<span class="go">            n_classes=deployment.UserSpecifiedParameter(&quot;output_dim&quot;, type=int),</span>
+<span class="go">            delimiter=deployment.ConstantParameter(&quot;,&quot;),</span>
+<span class="go">        ),</span>
+<span class="go">        shuffle=deployment.ConstantParameter(False),</span>
+<span class="go">        delimiter=deployment.UserSpecifiedParameter(&quot;delimiter&quot;, type=str),</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>Then define the <cite>TrainEvalParameters</cite> (these are additional parameters that the
+model uses for training/evaluation):</p></li>
+</ol>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">train_eval_params</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">TrainEvalParameters</span><span class="p">(</span>
+<span class="go">        rebuild_hash_tables_interval=None,</span>
+<span class="go">        reconstruct_hash_functions_interval=None,</span>
+<span class="go">        default_batch_size=256,</span>
+<span class="go">        freeze_hash_tables=True,</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="4">
+<li><p>Now we can construct the complete deployment config:</p></li>
+</ol>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">config</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">DeploymentConfig</span><span class="p">(</span>
+<span class="go">        dataset_config=dataset_config,</span>
+<span class="go">        model_config=model_config,</span>
+<span class="go">        train_eval_parameters=train_eval_params,</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</section>
+<section id="creating-a-modelpipeline">
+<h2>Creating a ModelPipeline<a class="headerlink" href="#creating-a-modelpipeline" title="Permalink to this heading"></a></h2>
+<p>The <cite>ModelPipeline</cite> can be constructed by passing in the path to a serialized <cite>DeploymentConfig</cite>
+config or by passing in the DeploymentConfig directly.</p>
+<ol class="arabic simple">
+<li><p>Save the <cite>DeploymentConfig</cite>.</p></li>
+</ol>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">config</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;./saved_config&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>To construct the <cite>ModelPipeline</cite> we need to pass in the saved config as well as
+the values needed for any <cite>UserSpecifiedParameter</cite> or <cite>OptionMappedParameter</cite>.</p></li>
+</ol>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">bolt</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">(</span>
+<span class="go">        config_path=&quot;./saved_config&quot;,</span>
+<span class="go">        parameters={&quot;size&quot;: &quot;large&quot;, &quot;output_dim&quot;: num_classes, &quot;delimiter&quot;: &quot;,&quot;},</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</section>
+<section id="training-with-the-modelpipeline">
+<h2>Training with the ModelPipeline<a class="headerlink" href="#training-with-the-modelpipeline" title="Permalink to this heading"></a></h2>
+<p>Training is similar to the regular Bolt API where you pass in <cite>TrainConfig</cite> that allows
+specification of various hyperparameters and options.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">train_config</span> <span class="o">=</span> <span class="n">bolt</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">TrainConfig</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">epochs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Optionally you can also specify options like metrics or validation. The <cite>ModelPipeline</cite>
+has a method to load a validation dataset since it contains the dataset loader functionality.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">train_config</span> <span class="o">=</span> <span class="n">train_config</span><span class="o">.</span><span class="n">with_metrics</span><span class="p">([</span><span class="s2">&quot;mean_squared_error&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">val_data</span><span class="p">,</span> <span class="n">val_labels</span> <span class="o">=</span> <span class="n">trained_text_classifier</span><span class="o">.</span><span class="n">load_validation_data</span><span class="p">(</span><span class="s2">&quot;./validation_data&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">validation_config</span> <span class="o">=</span> <span class="p">(</span>
+<span class="go">        bolt.EvalConfig()</span>
+<span class="go">        .with_metrics([&quot;categorical_accuracy&quot;])</span>
+<span class="go">    )</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">train_config</span> <span class="o">=</span> <span class="n">train_config</span><span class="o">.</span><span class="n">with_validation</span><span class="p">(</span>
+<span class="go">        validation_data=val_data,</span>
+<span class="go">        validation_labels=val_labels,</span>
+<span class="go">        eval_config=validation_config,</span>
+<span class="go">        validation_frequency=10,</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+<p>The model will default to the <cite>batch_size</cite> provided in the <cite>TrainEvalParameters</cite> if
+not specified in the call to train. The parameter <cite>max_in_memory_batches</cite> is also
+optional, providing it means the <cite>ModelPipeline</cite> will load the dataset it chunks with
+up to the specified number of batches.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">(</span>
+<span class="go">        filename=&quot;./train_data&quot;,</span>
+<span class="go">        train_config=train_config,</span>
+<span class="go">        batch_size=256,</span>
+<span class="go">        max_in_memory_batches=12,</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</section>
+<section id="evaluating-with-the-modelpipeline">
+<h2>Evaluating with the ModelPipeline<a class="headerlink" href="#evaluating-with-the-modelpipeline" title="Permalink to this heading"></a></h2>
+<p>Evaulate just requires an evaluation dataset or optionally a Bolt <cite>EvalConfig</cite>
+if you would like to specify metrics or sparse inference. It returns the activations
+from the final layer of the model.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">eval_config</span> <span class="o">=</span> <span class="p">(</span>
+<span class="go">        bolt.EvalConfig()</span>
+<span class="go">        .with_metrics([&quot;categorical_accuracy&quot;])</span>
+<span class="go">        .enable_sparse_inference()</span>
+<span class="go">    )</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">activations</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
+<span class="go">        filename=&quot;./test_data&quot;, eval_config=eval_config</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+</section>
+<section id="inference-with-the-modelpipeline">
+<h2>Inference with the ModelPipeline<a class="headerlink" href="#inference-with-the-modelpipeline" title="Permalink to this heading"></a></h2>
+<p>The model pipeline has methods for <cite>predict</cite>, <cite>predict_batch</cite>, and <cite>predict_tokens</cite>.
+These methods take in unlabeled samples and return activations. Whether to use sparse
+inference is an optional parameter (default is False).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;some single sample&quot;</span><span class="p">,</span> <span class="n">use_sparse_inference</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict_batch</span><span class="p">([</span><span class="s2">&quot;some sample&quot;</span><span class="p">,</span> <span class="s2">&quot;another sample&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">precict_tokens</span><span class="p">([</span><span class="mi">14</span><span class="p">,</span> <span class="mi">92</span><span class="p">,</span> <span class="mi">74</span><span class="p">,</span> <span class="mi">46</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="saving-loading-the-modelpipeline">
+<h2>Saving &amp; Loading the ModelPipeline<a class="headerlink" href="#saving-loading-the-modelpipeline" title="Permalink to this heading"></a></h2>
+<p>The model pipeline supports save/load functions just like most of our library.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;./saved_model_pipeline&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new_model</span> <span class="o">=</span> <span class="n">bolt</span><span class="o">.</span><span class="n">Pipeline</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;./saved_model_pipeline&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="distributed_tutorial.html" class="btn btn-neutral float-left" title="Distributed training" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="python_api/index.html" class="btn btn-neutral float-right" title="Python API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, t.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,113 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_multiplicative_l_r" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::bolt::MultiplicativeLR</compoundname>
+    <basecompoundref refid="classthirdai_1_1bolt_1_1_l_r_schedule" prot="public" virt="non-virtual">thirdai::bolt::LRSchedule</basecompoundref>
+    <includes refid="_learning_rate_scheduler_8h" local="no">LearningRateScheduler.h</includes>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_multiplicative_l_r_1a6c481dd3862c4fcabead265fd9a76436" prot="private" static="no" mutable="no">
+        <type>float</type>
+        <definition>float thirdai::bolt::MultiplicativeLR::_gamma</definition>
+        <argsstring></argsstring>
+        <name>_gamma</name>
+        <qualifiedname>thirdai::bolt::MultiplicativeLR::_gamma</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="65" column="9" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="65" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multiplicative_l_r_1acd907c4830608577411a4cf7c1899e6f" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::MultiplicativeLR::MultiplicativeLR</definition>
+        <argsstring>(float gamma)</argsstring>
+        <name>MultiplicativeLR</name>
+        <qualifiedname>thirdai::bolt::MultiplicativeLR::MultiplicativeLR</qualifiedname>
+        <param>
+          <type>float</type>
+          <declname>gamma</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="57" column="12" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="57" bodyend="57"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_multiplicative_l_r_1ae623a36de1b387ed736a3b4786399360" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>float</type>
+        <definition>float thirdai::bolt::MultiplicativeLR::getNextLR</definition>
+        <argsstring>(float current_learning_rate, const uint32_t epoch) final</argsstring>
+        <name>getNextLR</name>
+        <qualifiedname>thirdai::bolt::MultiplicativeLR::getNextLR</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_l_r_schedule_1a59e47807e04e27bffc257b8ddb1288b4">getNextLR</reimplements>
+        <param>
+          <type>float</type>
+          <declname>current_learning_rate</declname>
+        </param>
+        <param>
+          <type>const uint32_t</type>
+          <declname>epoch</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="59" column="9" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="59" bodyend="62"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>Schedules per-epoch learning rate using a multiplicative factor. </para>
+    </briefdescription>
+    <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>gamma</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>multiplicative factor </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>thirdai::bolt::LRSchedule</label>
+        <link refid="classthirdai_1_1bolt_1_1_l_r_schedule"/>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::MultiplicativeLR</label>
+        <link refid="classthirdai_1_1bolt_1_1_multiplicative_l_r"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>thirdai::bolt::LRSchedule</label>
+        <link refid="classthirdai_1_1bolt_1_1_l_r_schedule"/>
+      </node>
+      <node id="1">
+        <label>thirdai::bolt::MultiplicativeLR</label>
+        <link refid="classthirdai_1_1bolt_1_1_multiplicative_l_r"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="bolt/src/graph/callbacks/LearningRateScheduler.h" line="55" column="1" bodyfile="bolt/src/graph/callbacks/LearningRateScheduler.h" bodystart="55" bodyend="66"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_multiplicative_l_r_1a6c481dd3862c4fcabead265fd9a76436" prot="private" virt="non-virtual"><scope>thirdai::bolt::MultiplicativeLR</scope><name>_gamma</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multiplicative_l_r_1ae623a36de1b387ed736a3b4786399360" prot="public" virt="virtual"><scope>thirdai::bolt::MultiplicativeLR</scope><name>getNextLR</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_multiplicative_l_r_1acd907c4830608577411a4cf7c1899e6f" prot="public" virt="non-virtual"><scope>thirdai::bolt::MultiplicativeLR</scope><name>MultiplicativeLR</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_l_r_schedule_1aed977e23bd1177061f05add7c8909e85" prot="public" virt="virtual"><scope>thirdai::bolt::MultiplicativeLR</scope><name>~LRSchedule</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

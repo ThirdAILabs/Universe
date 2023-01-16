@@ -1,0 +1,198 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_tiny_table_8h" kind="file" language="C++">
+    <compoundname>TinyTable.h</compoundname>
+    <includes local="no">cereal/types/vector.hpp</includes>
+    <includes local="no">atomic</includes>
+    <includes local="no">exception</includes>
+    <includes local="no">iostream</includes>
+    <includes local="no">random</includes>
+    <includes local="no">stdexcept</includes>
+    <includes local="no">string</includes>
+    <includes local="no">unordered_set</includes>
+    <includes local="no">vector</includes>
+    <includedby refid="_max_flash_8h" local="no">search/src/MaxFlash.h</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>hashtable/src/TinyTable.h</label>
+        <link refid="_tiny_table_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>atomic</label>
+      </node>
+      <node id="2">
+        <label>cereal/types/vector.hpp</label>
+      </node>
+      <node id="4">
+        <label>exception</label>
+      </node>
+      <node id="5">
+        <label>iostream</label>
+      </node>
+      <node id="6">
+        <label>random</label>
+      </node>
+      <node id="7">
+        <label>stdexcept</label>
+      </node>
+      <node id="8">
+        <label>string</label>
+      </node>
+      <node id="9">
+        <label>unordered_set</label>
+      </node>
+      <node id="10">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="1">
+        <label>hashtable/src/TinyTable.h</label>
+        <link refid="_tiny_table_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>search/src/DocSearch.h</label>
+        <link refid="_doc_search_8h_source"/>
+      </node>
+      <node id="2">
+        <label>search/src/MaxFlash.h</label>
+        <link refid="_max_flash_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>search/src/MaxFlashArray.h</label>
+        <link refid="_max_flash_array_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classthirdai_1_1hashtable_1_1_tiny_table" prot="public">thirdai::hashtable::TinyTable</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1hashtable">thirdai::hashtable</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cereal/types/vector.hpp&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;atomic&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;exception&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;iostream&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;random&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;stdexcept&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;string&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;unordered_set&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;vector&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::hashtable<sp/>{</highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight></codeline>
+<codeline lineno="27"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">typename</highlight><highlight class="normal"><sp/>LABEL_T&gt;</highlight></codeline>
+<codeline lineno="28" refid="classthirdai_1_1hashtable_1_1_tiny_table" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1hashtable_1_1_tiny_table" kindref="compound">TinyTable</ref><sp/>final<sp/>{</highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1hashtable_1_1_tiny_table" kindref="compound">TinyTable</ref>(uint32_t<sp/>num_tables,<sp/>uint32_t<sp/>range,<sp/>LABEL_T<sp/>num_elements,</highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;uint32_t&gt;&amp;<sp/>hashes)</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/>_hash_range(range),</highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_num_elements(num_elements),</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_num_tables(num_tables),</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_index((_hash_range<sp/>+<sp/>1<sp/>+<sp/>_num_elements)<sp/>*<sp/>_num_tables)<sp/>{</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>table<sp/>=<sp/>0;<sp/>table<sp/>&lt;<sp/>num_tables;<sp/>table++)<sp/>{</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>Generate<sp/>inverted<sp/>index<sp/>from<sp/>hashes<sp/>to<sp/>vec_ids</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::vector&lt;std::vector&lt;LABEL_T&gt;&gt;<sp/>temp_buckets(_hash_range);</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>vec_id<sp/>=<sp/>0;<sp/>vec_id<sp/>&lt;<sp/>num_elements;<sp/>vec_id++)<sp/>{</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint64_t<sp/>hash<sp/>=<sp/>hashes.at(vec_id<sp/>*<sp/>num_tables<sp/>+<sp/>table);</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>temp_buckets.at(hash).push_back(vec_id);</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"></highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>Populate<sp/>bucket<sp/>start<sp/>and<sp/>end<sp/>offsets</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>See<sp/>doc<sp/>comment<sp/>for<sp/>_index<sp/>to<sp/>understand<sp/>what<sp/>is<sp/>going<sp/>on<sp/>here</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>uint32_t<sp/>table_offsets_start<sp/>=<sp/>table<sp/>*<sp/>(_hash_range<sp/>+<sp/>1);</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_index.at(table_offsets_start)<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>bucket<sp/>=<sp/>1;<sp/>bucket<sp/>&lt;=<sp/>_hash_range;<sp/>bucket++)<sp/>{</highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_index.at(table_offsets_start<sp/>+<sp/>bucket)<sp/>=</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_index.at(table_offsets_start<sp/>+<sp/>bucket<sp/>-<sp/>1)<sp/>+</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>temp_buckets.at(bucket<sp/>-<sp/>1).size();</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="53"><highlight class="normal"></highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>Populate<sp/>hashes<sp/>into<sp/>table<sp/>itself</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>See<sp/>doc<sp/>comment<sp/>for<sp/>_index<sp/>to<sp/>understand<sp/>what<sp/>is<sp/>going<sp/>on<sp/>here</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint64_t<sp/>current_offset<sp/>=<sp/>_table_start<sp/>+<sp/>_num_elements<sp/>*<sp/>table;</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>bucket<sp/>=<sp/>0;<sp/>bucket<sp/>&lt;<sp/>_hash_range;<sp/>bucket++)<sp/>{</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(LABEL_T<sp/>item<sp/>:<sp/>temp_buckets.at(bucket))<sp/>{</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_index.at(current_offset)<sp/>=<sp/>item;</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>current_offset<sp/>+=<sp/>1;</highlight></codeline>
+<codeline lineno="61"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"></highlight></codeline>
+<codeline lineno="66"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>queryByCount(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;uint32_t&gt;&amp;<sp/>hashes,<sp/>uint32_t<sp/>hash_offset,</highlight></codeline>
+<codeline lineno="67"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::vector&lt;uint32_t&gt;&amp;<sp/>counts)</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>table<sp/>=<sp/>0;<sp/>table<sp/>&lt;<sp/>_num_tables;<sp/>table++)<sp/>{</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>hash<sp/>=<sp/>hashes.at(hash_offset<sp/>+<sp/>table);</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>LABEL_T<sp/>start_offset<sp/>=<sp/>_index[(_hash_range<sp/>+<sp/>1)<sp/>*<sp/>table<sp/>+<sp/>hash];</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>LABEL_T<sp/>end_offset<sp/>=<sp/>_index[(_hash_range<sp/>+<sp/>1)<sp/>*<sp/>table<sp/>+<sp/>hash<sp/>+<sp/>1];</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint64_t<sp/>table_offset<sp/>=</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_table_start<sp/>+<sp/></highlight><highlight class="keyword">static_cast&lt;</highlight><highlight class="normal">uint64_t</highlight><highlight class="keyword">&gt;</highlight><highlight class="normal">(table)<sp/>*<sp/>_num_elements;</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint64_t<sp/>offset<sp/>=<sp/>table_offset<sp/>+<sp/>start_offset;</highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>offset<sp/>&lt;<sp/>table_offset<sp/>+<sp/>end_offset;<sp/>offset++)<sp/>{</highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>counts.at(_index.at(offset))++;</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"></highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/>uint32_t<sp/>numTables()</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_num_tables;<sp/>}</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"></highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">constexpr</highlight><highlight class="normal"><sp/>LABEL_T<sp/>numElements()</highlight><highlight class="keyword"><sp/>const<sp/></highlight><highlight class="normal">{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_num_elements;<sp/>}</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"></highlight></codeline>
+<codeline lineno="85"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Delete<sp/>copy<sp/>constructor<sp/>and<sp/>assignment</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1hashtable_1_1_tiny_table" kindref="compound">TinyTable</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1hashtable_1_1_tiny_table" kindref="compound">TinyTable</ref>&amp;)<sp/>=<sp/></highlight><highlight class="keyword">delete</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1hashtable_1_1_tiny_table" kindref="compound">TinyTable</ref>&amp;<sp/>operator=(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1hashtable_1_1_tiny_table" kindref="compound">TinyTable</ref>&amp;)<sp/>=<sp/></highlight><highlight class="keyword">delete</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="88"><highlight class="normal"></highlight></codeline>
+<codeline lineno="89"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="90"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Tell<sp/>Cereal<sp/>what<sp/>to<sp/>serialize.<sp/>See<sp/>https://uscilab.github.io/cereal/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">friend</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal">cereal::access;</highlight></codeline>
+<codeline lineno="92"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">class</highlight><highlight class="normal"><sp/>Archive&gt;</highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>serialize(Archive&amp;<sp/>archive)<sp/>{</highlight></codeline>
+<codeline lineno="94"><highlight class="normal"><sp/><sp/><sp/><sp/>archive(_hash_range,<sp/>_num_elements,<sp/>_num_tables,<sp/>_table_start,<sp/>_index);</highlight></codeline>
+<codeline lineno="95"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Private<sp/>constructor<sp/>for<sp/>Cereal.<sp/>See<sp/>https://uscilab.github.io/cereal/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="97"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1hashtable_1_1_tiny_table" kindref="compound">TinyTable&lt;LABEL_T&gt;</ref>(){};</highlight></codeline>
+<codeline lineno="98"><highlight class="normal"></highlight></codeline>
+<codeline lineno="99"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Techincally<sp/>this<sp/>is<sp/>16<sp/>+<sp/>sizeof(LABEL_T)<sp/>wasted<sp/>bytes<sp/>per<sp/>table,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="100"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>but<sp/>it&apos;s<sp/>fine<sp/>for<sp/>now</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="101"><highlight class="normal"><sp/><sp/>uint32_t<sp/>_hash_range;</highlight></codeline>
+<codeline lineno="102"><highlight class="normal"><sp/><sp/>LABEL_T<sp/>_num_elements;</highlight></codeline>
+<codeline lineno="103"><highlight class="normal"><sp/><sp/>uint32_t<sp/>_num_tables;</highlight></codeline>
+<codeline lineno="104"><highlight class="normal"><sp/><sp/>uint64_t<sp/>_table_start<sp/>=</highlight></codeline>
+<codeline lineno="105"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">static_cast&lt;</highlight><highlight class="normal">uint64_t</highlight><highlight class="keyword">&gt;</highlight><highlight class="normal">(_num_tables)<sp/>*<sp/>(_hash_range<sp/>+<sp/>1);</highlight></codeline>
+<codeline lineno="129"><highlight class="normal"><sp/><sp/>std::vector&lt;LABEL_T&gt;<sp/>_index;</highlight></codeline>
+<codeline lineno="130"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="131"><highlight class="normal"></highlight></codeline>
+<codeline lineno="132"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::hashtable</highlight></codeline>
+    </programlisting>
+    <location file="hashtable/src/TinyTable.h"/>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="dir_8eb4ef0c514daf8a59fd393a6cac6081" kind="dir">
+    <compoundname>compression/src</compoundname>
+    <innerfile refid="_compressed_vector_8h">CompressedVector.h</innerfile>
+    <innerfile refid="_compression_factory_8h">CompressionFactory.h</innerfile>
+    <innerfile refid="_compression_utils_8h">CompressionUtils.h</innerfile>
+    <innerfile refid="_count_sketch_8cc">CountSketch.cc</innerfile>
+    <innerfile refid="_count_sketch_8h">CountSketch.h</innerfile>
+    <innerfile refid="_dragon_vector_8cc">DragonVector.cc</innerfile>
+    <innerfile refid="_dragon_vector_8h">DragonVector.h</innerfile>
+    <innerfile refid="_serializer_8h">Serializer.h</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="compression/src/"/>
+  </compounddef>
+</doxygen>

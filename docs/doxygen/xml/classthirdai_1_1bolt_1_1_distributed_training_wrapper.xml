@@ -1,0 +1,172 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_distributed_training_wrapper" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::bolt::DistributedTrainingWrapper</compoundname>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1ad9aae3978d09692130eb712d692d56b4" prot="private" static="no" mutable="no">
+        <type>BoltGraphPtr</type>
+        <definition>BoltGraphPtr thirdai::bolt::DistributedTrainingWrapper::_bolt_graph</definition>
+        <argsstring></argsstring>
+        <name>_bolt_graph</name>
+        <qualifiedname>thirdai::bolt::DistributedTrainingWrapper::_bolt_graph</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DistributedTrainingWrapper.h" line="54" column="16" bodyfile="bolt/src/graph/DistributedTrainingWrapper.h" bodystart="54" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1a24cf1c24eb628c016527275903662965" prot="private" static="no" mutable="no">
+        <type><ref refid="classthirdai_1_1bolt_1_1_dataset_context" kindref="compound">DatasetContext</ref></type>
+        <definition>DatasetContext thirdai::bolt::DistributedTrainingWrapper::_train_context</definition>
+        <argsstring></argsstring>
+        <name>_train_context</name>
+        <qualifiedname>thirdai::bolt::DistributedTrainingWrapper::_train_context</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DistributedTrainingWrapper.h" line="55" column="18" bodyfile="bolt/src/graph/DistributedTrainingWrapper.h" bodystart="55" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1a7759eab621aa2ca2ade31d759a0090fb" prot="private" static="no" mutable="no">
+        <type><ref refid="classthirdai_1_1bolt_1_1_train_config" kindref="compound">TrainConfig</ref></type>
+        <definition>TrainConfig thirdai::bolt::DistributedTrainingWrapper::_train_config</definition>
+        <argsstring></argsstring>
+        <name>_train_config</name>
+        <qualifiedname>thirdai::bolt::DistributedTrainingWrapper::_train_config</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DistributedTrainingWrapper.h" line="56" column="15" bodyfile="bolt/src/graph/DistributedTrainingWrapper.h" bodystart="56" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1afe49fb5302a5262618e5b02d7e04eade" prot="private" static="no" mutable="no">
+        <type><ref refid="classthirdai_1_1bolt_1_1_metric_aggregator" kindref="compound">MetricAggregator</ref></type>
+        <definition>MetricAggregator thirdai::bolt::DistributedTrainingWrapper::_metric_aggregator</definition>
+        <argsstring></argsstring>
+        <name>_metric_aggregator</name>
+        <qualifiedname>thirdai::bolt::DistributedTrainingWrapper::_metric_aggregator</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DistributedTrainingWrapper.h" line="57" column="20" bodyfile="bolt/src/graph/DistributedTrainingWrapper.h" bodystart="57" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1ad2f764987202259471651f1cec962cbe" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::DistributedTrainingWrapper::DistributedTrainingWrapper</definition>
+        <argsstring>(BoltGraphPtr bolt_graph, const dataset::BoltDatasetList &amp;train_data, const dataset::BoltDatasetPtr &amp;train_labels, TrainConfig train_config)</argsstring>
+        <name>DistributedTrainingWrapper</name>
+        <qualifiedname>thirdai::bolt::DistributedTrainingWrapper::DistributedTrainingWrapper</qualifiedname>
+        <param>
+          <type>BoltGraphPtr</type>
+          <declname>bolt_graph</declname>
+        </param>
+        <param>
+          <type>const dataset::BoltDatasetList &amp;</type>
+          <declname>train_data</declname>
+        </param>
+        <param>
+          <type>const dataset::BoltDatasetPtr &amp;</type>
+          <declname>train_labels</declname>
+        </param>
+        <param>
+          <type><ref refid="classthirdai_1_1bolt_1_1_train_config" kindref="compound">TrainConfig</ref></type>
+          <declname>train_config</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DistributedTrainingWrapper.h" line="18" column="3" bodyfile="bolt/src/graph/DistributedTrainingWrapper.h" bodystart="18" bodyend="30"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1a311658f7847387b8cb1dad2a79322f7e" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::DistributedTrainingWrapper::computeAndSaveBatchGradients</definition>
+        <argsstring>(uint32_t batch_idx)</argsstring>
+        <name>computeAndSaveBatchGradients</name>
+        <qualifiedname>thirdai::bolt::DistributedTrainingWrapper::computeAndSaveBatchGradients</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_idx</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DistributedTrainingWrapper.h" line="32" column="8" bodyfile="bolt/src/graph/DistributedTrainingWrapper.h" bodystart="32" bodyend="36"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1a0a4cd3405aa235c40b5b34697aee8a5f" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::DistributedTrainingWrapper::updateParameters</definition>
+        <argsstring>()</argsstring>
+        <name>updateParameters</name>
+        <qualifiedname>thirdai::bolt::DistributedTrainingWrapper::updateParameters</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DistributedTrainingWrapper.h" line="38" column="8" bodyfile="bolt/src/graph/DistributedTrainingWrapper.h" bodystart="38" bodyend="47"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1ac2731c29ce0299585fcdeae7b3df89f7" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>BoltGraphPtr</type>
+        <definition>BoltGraphPtr thirdai::bolt::DistributedTrainingWrapper::getModel</definition>
+        <argsstring>()</argsstring>
+        <name>getModel</name>
+        <qualifiedname>thirdai::bolt::DistributedTrainingWrapper::getModel</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DistributedTrainingWrapper.h" line="49" column="16" bodyfile="bolt/src/graph/DistributedTrainingWrapper.h" bodystart="49" bodyend="49"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1a54617e14968fdf4a4bc298a271d7d949" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::DistributedTrainingWrapper::finishTraining</definition>
+        <argsstring>()</argsstring>
+        <name>finishTraining</name>
+        <qualifiedname>thirdai::bolt::DistributedTrainingWrapper::finishTraining</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/DistributedTrainingWrapper.h" line="51" column="8" bodyfile="bolt/src/graph/DistributedTrainingWrapper.h" bodystart="51" bodyend="51"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/graph/DistributedTrainingWrapper.h" line="16" column="1" bodyfile="bolt/src/graph/DistributedTrainingWrapper.h" bodystart="16" bodyend="58"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1ad9aae3978d09692130eb712d692d56b4" prot="private" virt="non-virtual"><scope>thirdai::bolt::DistributedTrainingWrapper</scope><name>_bolt_graph</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1afe49fb5302a5262618e5b02d7e04eade" prot="private" virt="non-virtual"><scope>thirdai::bolt::DistributedTrainingWrapper</scope><name>_metric_aggregator</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1a7759eab621aa2ca2ade31d759a0090fb" prot="private" virt="non-virtual"><scope>thirdai::bolt::DistributedTrainingWrapper</scope><name>_train_config</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1a24cf1c24eb628c016527275903662965" prot="private" virt="non-virtual"><scope>thirdai::bolt::DistributedTrainingWrapper</scope><name>_train_context</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1a311658f7847387b8cb1dad2a79322f7e" prot="public" virt="non-virtual"><scope>thirdai::bolt::DistributedTrainingWrapper</scope><name>computeAndSaveBatchGradients</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1ad2f764987202259471651f1cec962cbe" prot="public" virt="non-virtual"><scope>thirdai::bolt::DistributedTrainingWrapper</scope><name>DistributedTrainingWrapper</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1a54617e14968fdf4a4bc298a271d7d949" prot="public" virt="non-virtual"><scope>thirdai::bolt::DistributedTrainingWrapper</scope><name>finishTraining</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1ac2731c29ce0299585fcdeae7b3df89f7" prot="public" virt="non-virtual"><scope>thirdai::bolt::DistributedTrainingWrapper</scope><name>getModel</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_distributed_training_wrapper_1a0a4cd3405aa235c40b5b34697aee8a5f" prot="public" virt="non-virtual"><scope>thirdai::bolt::DistributedTrainingWrapper</scope><name>updateParameters</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

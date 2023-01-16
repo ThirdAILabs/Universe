@@ -1,0 +1,400 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_metric_aggregator_8h" kind="file" language="C++">
+    <compoundname>MetricAggregator.h</compoundname>
+    <includes refid="_metric_8h" local="yes">Metric.h</includes>
+    <includes refid="_loss_functions_8h" local="no">bolt/src/loss_functions/LossFunctions.h</includes>
+    <includes local="no">memory</includes>
+    <includes local="no">regex</includes>
+    <includedby refid="_distributed_training_wrapper_8h" local="no">bolt/src/graph/DistributedTrainingWrapper.h</includedby>
+    <includedby refid="_execution_config_8h" local="no">bolt/src/graph/ExecutionConfig.h</includedby>
+    <includedby refid="_graph_8cc" local="no">bolt/src/graph/Graph.cc</includedby>
+    <includedby refid="_graph_8h" local="no">bolt/src/graph/Graph.h</includedby>
+    <incdepgraph>
+      <node id="32">
+        <label>bolt/src/loss_functions/LossFunctions.h</label>
+        <link refid="_loss_functions_8h_source"/>
+        <childnode refid="33" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>Metric.h</label>
+        <link refid="_metric_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>bolt/src/metrics/MetricAggregator.h</label>
+        <link refid="_metric_aggregator_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>bolt/src/metrics/MetricHelpers.h</label>
+        <link refid="_metric_helpers_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>bolt_vector/src/BoltVector.h</label>
+        <link refid="_bolt_vector_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+      </node>
+      <node id="25">
+        <label>utils/Logging.h</label>
+        <link refid="_logging_8h_source"/>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+      </node>
+      <node id="34">
+        <label>utils/StringManipulation.h</label>
+        <link refid="_string_manipulation_8h_source"/>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="35" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>algorithm</label>
+      </node>
+      <node id="20">
+        <label>atomic</label>
+      </node>
+      <node id="8">
+        <label>cassert</label>
+      </node>
+      <node id="5">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="6">
+        <label>cereal/cereal.hpp</label>
+      </node>
+      <node id="33">
+        <label>cereal/types/polymorphic.hpp</label>
+      </node>
+      <node id="21">
+        <label>cmath</label>
+      </node>
+      <node id="9">
+        <label>cstdint</label>
+      </node>
+      <node id="27">
+        <label>cstdlib</label>
+      </node>
+      <node id="22">
+        <label>functional</label>
+      </node>
+      <node id="28">
+        <label>iomanip</label>
+      </node>
+      <node id="10">
+        <label>iostream</label>
+      </node>
+      <node id="11">
+        <label>limits</label>
+      </node>
+      <node id="29">
+        <label>memory</label>
+      </node>
+      <node id="12">
+        <label>numeric</label>
+      </node>
+      <node id="13">
+        <label>optional</label>
+      </node>
+      <node id="14">
+        <label>queue</label>
+      </node>
+      <node id="30">
+        <label>regex</label>
+      </node>
+      <node id="26">
+        <label>spdlog/spdlog.h</label>
+      </node>
+      <node id="15">
+        <label>sstream</label>
+      </node>
+      <node id="16">
+        <label>stdexcept</label>
+      </node>
+      <node id="17">
+        <label>string</label>
+      </node>
+      <node id="35">
+        <label>string_view</label>
+      </node>
+      <node id="24">
+        <label>sys/types.h</label>
+      </node>
+      <node id="23">
+        <label>type_traits</label>
+      </node>
+      <node id="31">
+        <label>unordered_map</label>
+      </node>
+      <node id="18">
+        <label>utility</label>
+      </node>
+      <node id="19">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="5">
+        <label>bolt/src/auto_classifiers/AutoClassifierBase.h</label>
+        <link refid="_auto_classifier_base_8h_source"/>
+      </node>
+      <node id="6">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h</label>
+        <link refid="_sequential_classifier_8h_source"/>
+      </node>
+      <node id="7">
+        <label>bolt/src/graph/CommonNetworks.h</label>
+        <link refid="_common_networks_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>bolt/src/graph/DistributedTrainingWrapper.h</label>
+        <link refid="_distributed_training_wrapper_8h_source"/>
+      </node>
+      <node id="3">
+        <label>bolt/src/graph/ExecutionConfig.h</label>
+        <link refid="_execution_config_8h_source"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>bolt/src/graph/Graph.h</label>
+        <link refid="_graph_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>bolt/src/graph/callbacks/EarlyStopCheckpoint.h</label>
+        <link refid="_early_stop_checkpoint_8h_source"/>
+      </node>
+      <node id="9">
+        <label>bolt/src/graph/callbacks/LearningRateScheduler.h</label>
+        <link refid="_learning_rate_scheduler_8h_source"/>
+      </node>
+      <node id="1">
+        <label>bolt/src/metrics/MetricAggregator.h</label>
+        <link refid="_metric_aggregator_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="10">
+        <label>bolt/src/root_cause_analysis/RootCauseAnalysis.h</label>
+        <link refid="_root_cause_analysis_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classthirdai_1_1bolt_1_1_metric_aggregator" prot="public">thirdai::bolt::MetricAggregator</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1bolt">thirdai::bolt</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;Metric.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt/src/loss_functions/LossFunctions.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;memory&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;regex&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::bolt<sp/>{</highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">MetricData<sp/>=<sp/>std::unordered_map&lt;std::string,<sp/>std::vector&lt;double&gt;&gt;;</highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">InferenceMetricData<sp/>=<sp/>std::unordered_map&lt;std::string,<sp/>double&gt;;</highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="comment">//<sp/>TODO(Geordie):<sp/>Instead<sp/>of<sp/>hard<sp/>coding<sp/>the<sp/>options,<sp/>use<sp/>a<sp/>static<sp/>map.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14" refid="classthirdai_1_1bolt_1_1_metric_aggregator" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1bolt_1_1_metric_aggregator" kindref="compound">MetricAggregator</ref><sp/>{</highlight></codeline>
+<codeline lineno="15"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="16"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Loss<sp/>function<sp/>metrics<sp/>are<sp/>only<sp/>supported<sp/>during<sp/>training.<sp/>See<sp/>comments<sp/>in</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="17"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>loss<sp/>function<sp/>for<sp/>why.<sp/>A<sp/>nullptr<sp/>is<sp/>passed<sp/>in<sp/>during<sp/>testing<sp/>to<sp/>indicate</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>that<sp/>it<sp/>is<sp/>not<sp/>avilable.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1bolt_1_1_metric_aggregator" kindref="compound">MetricAggregator</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;std::string&gt;&amp;<sp/>metrics)<sp/>{</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal">&amp;<sp/>name<sp/>:<sp/>metrics)<sp/>{</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_metrics.push_back(makeMetric(name));</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"></highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>processSample(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>&amp;<sp/>output,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>&amp;<sp/>labels)<sp/>{</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">auto</highlight><highlight class="normal">&amp;<sp/>metric<sp/>:<sp/>_metrics)<sp/>{</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>metric-&gt;record(output,<sp/>labels);</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"></highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>logAndReset()<sp/>{</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">auto</highlight><highlight class="normal">&amp;<sp/>metric<sp/>:<sp/>_metrics)<sp/>{</highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>_output[metric-&gt;name()].push_back(metric-&gt;value());</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>metric-&gt;reset();</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"></highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/>std::string<sp/>summary()<sp/>{</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/><sp/><sp/>std::stringstream<sp/>stream;</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/><sp/><sp/>stream<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;{&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>i<sp/>=<sp/>0;<sp/>i<sp/>&lt;<sp/>_metrics.size();<sp/>i++)<sp/>{</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(i<sp/>!=<sp/>0)<sp/>{</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>stream<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;,<sp/>&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>stream<sp/>&lt;&lt;<sp/>_metrics[i]-&gt;summary();</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><sp/><sp/>stream<sp/>&lt;&lt;<sp/></highlight><highlight class="stringliteral">&quot;}&quot;</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>stream.str();</highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"></highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/>MetricData<sp/>getOutput()<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_output;<sp/>}</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"></highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/>std::vector&lt;double&gt;&amp;<sp/>getSingleOutput(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string&amp;<sp/>metric_name)<sp/>{</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>(_output.count(metric_name)<sp/>!=<sp/>0)<sp/>{</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_output[metric_name];</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight><highlight class="stringliteral">&quot;Could<sp/>not<sp/>find<sp/>metric<sp/>name<sp/>&apos;&quot;</highlight><highlight class="normal"><sp/>+<sp/>metric_name<sp/>+</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&apos;<sp/>in<sp/>list<sp/>of<sp/>computed<sp/>metrics.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"></highlight></codeline>
+<codeline lineno="61"><highlight class="normal"><sp/><sp/>InferenceMetricData<sp/>getOutputFromInference()<sp/>{</highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/><sp/><sp/>InferenceMetricData<sp/>data;</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal">&amp;<sp/>metric<sp/>:<sp/>_output)<sp/>{</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>data[metric.first]<sp/>=<sp/>metric.second.at(0);</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>data;</highlight></codeline>
+<codeline lineno="67"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"></highlight></codeline>
+<codeline lineno="69"><highlight class="normal"><sp/><sp/>uint32_t<sp/>getNumMetricsTracked()<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_metrics.size();<sp/>}</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"></highlight></codeline>
+<codeline lineno="71"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/>std::vector&lt;std::shared_ptr&lt;Metric&gt;&gt;<sp/>_metrics;</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/>MetricData<sp/>_output;</highlight></codeline>
+<codeline lineno="74"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="75"><highlight class="normal"></highlight></codeline>
+<codeline lineno="76"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::bolt</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="bolt/src/metrics/MetricAggregator.h"/>
+  </compounddef>
+</doxygen>

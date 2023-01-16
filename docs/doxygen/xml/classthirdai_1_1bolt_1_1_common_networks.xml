@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_common_networks" kind="class" language="C++" prot="public">
+    <compoundname>thirdai::bolt::CommonNetworks</compoundname>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_common_networks_1a98f69d74ffee34b56e6729494a3e4479" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>BoltGraphPtr</type>
+        <definition>static BoltGraphPtr thirdai::bolt::CommonNetworks::FullyConnected</definition>
+        <argsstring>(uint32_t input_dim, std::vector&lt; FullyConnectedNodePtr &gt; layers)</argsstring>
+        <name>FullyConnected</name>
+        <qualifiedname>thirdai::bolt::CommonNetworks::FullyConnected</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>input_dim</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; FullyConnectedNodePtr &gt;</type>
+          <declname>layers</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/graph/CommonNetworks.h" line="17" column="23" bodyfile="bolt/src/graph/CommonNetworks.h" bodystart="17" bodyend="36"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/graph/CommonNetworks.h" line="15" column="1" bodyfile="bolt/src/graph/CommonNetworks.h" bodystart="15" bodyend="37"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_common_networks_1a98f69d74ffee34b56e6729494a3e4479" prot="public" virt="non-virtual"><scope>thirdai::bolt::CommonNetworks</scope><name>FullyConnected</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

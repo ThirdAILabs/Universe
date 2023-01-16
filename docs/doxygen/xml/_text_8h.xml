@@ -1,0 +1,385 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_text_8h" kind="file" language="C++">
+    <compoundname>Text.h</compoundname>
+    <includes refid="_block_interface_8h" local="yes">BlockInterface.h</includes>
+    <includes refid="_text_encoding_utils_8h" local="no">dataset/src/utils/TextEncodingUtils.h</includes>
+    <includes refid="_string_manipulation_8h" local="no">utils/StringManipulation.h</includes>
+    <includes local="no">memory</includes>
+    <includes local="no">stdexcept</includes>
+    <includedby refid="_sequential_utils_8h" local="no">bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h</includedby>
+    <incdepgraph>
+      <node id="3">
+        <label>bolt_vector/src/BoltVector.h</label>
+        <link refid="_bolt_vector_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>BlockInterface.h</label>
+        <link refid="_block_interface_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>dataset/src/blocks/Text.h</label>
+        <link refid="_text_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+      </node>
+      <node id="22">
+        <label>dataset/src/utils/TextEncodingUtils.h</label>
+        <link refid="_text_encoding_utils_8h_source"/>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+      </node>
+      <node id="23">
+        <label>hashing/src/HashUtils.h</label>
+        <link refid="_hash_utils_8h_source"/>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="24">
+        <label>hashing/src/MurmurHash.h</label>
+        <link refid="_murmur_hash_8h_source"/>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="27">
+        <label>utils/StringManipulation.h</label>
+        <link refid="_string_manipulation_8h_source"/>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+      </node>
+      <node id="6">
+        <label>algorithm</label>
+      </node>
+      <node id="7">
+        <label>cassert</label>
+      </node>
+      <node id="4">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="5">
+        <label>cereal/cereal.hpp</label>
+      </node>
+      <node id="8">
+        <label>cstdint</label>
+      </node>
+      <node id="25">
+        <label>functional</label>
+      </node>
+      <node id="9">
+        <label>iostream</label>
+      </node>
+      <node id="10">
+        <label>limits</label>
+      </node>
+      <node id="19">
+        <label>memory</label>
+      </node>
+      <node id="11">
+        <label>numeric</label>
+      </node>
+      <node id="12">
+        <label>optional</label>
+      </node>
+      <node id="13">
+        <label>queue</label>
+      </node>
+      <node id="14">
+        <label>sstream</label>
+      </node>
+      <node id="15">
+        <label>stdexcept</label>
+      </node>
+      <node id="16">
+        <label>string</label>
+      </node>
+      <node id="20">
+        <label>string_view</label>
+      </node>
+      <node id="26">
+        <label>type_traits</label>
+      </node>
+      <node id="21">
+        <label>unordered_map</label>
+      </node>
+      <node id="17">
+        <label>utility</label>
+      </node>
+      <node id="18">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="3">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h</label>
+        <link refid="_sequential_classifier_8h_source"/>
+      </node>
+      <node id="2">
+        <label>bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h</label>
+        <link refid="_sequential_utils_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>dataset/src/blocks/Text.h</label>
+        <link refid="_text_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="classthirdai_1_1dataset_1_1_text_block" prot="public">thirdai::dataset::TextBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_pair_gram_text_block" prot="public">thirdai::dataset::PairGramTextBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_uni_gram_text_block" prot="public">thirdai::dataset::UniGramTextBlock</innerclass>
+    <innerclass refid="classthirdai_1_1dataset_1_1_char_k_gram_text_block" prot="public">thirdai::dataset::CharKGramTextBlock</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1dataset">thirdai::dataset</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;BlockInterface.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;dataset/src/utils/TextEncodingUtils.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;utils/StringManipulation.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;memory&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;stdexcept&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::dataset<sp/>{</highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight></codeline>
+<codeline lineno="14" refid="classthirdai_1_1dataset_1_1_text_block" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1dataset_1_1_text_block" kindref="compound">TextBlock</ref><sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_block" kindref="compound">Block</ref><sp/>{</highlight></codeline>
+<codeline lineno="15"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="16"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_text_block" kindref="compound">TextBlock</ref>(uint32_t<sp/>col,<sp/>uint32_t<sp/>dim)<sp/>:<sp/>_dim(dim),<sp/>_col(col)<sp/>{}</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight></codeline>
+<codeline lineno="18" refid="classthirdai_1_1dataset_1_1_text_block_1ab11d61fcff3671e91a416134d1e4ef49" refkind="member"><highlight class="normal"><sp/><sp/>uint32_t<sp/><ref refid="classthirdai_1_1dataset_1_1_text_block_1ab11d61fcff3671e91a416134d1e4ef49" kindref="member">featureDim</ref>()<sp/>const<sp/>final<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_dim;<sp/>};</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight></codeline>
+<codeline lineno="20" refid="classthirdai_1_1dataset_1_1_text_block_1a11c09b2a465c9b6ee2e3d47c4039e6c0" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_text_block_1a11c09b2a465c9b6ee2e3d47c4039e6c0" kindref="member">isDense</ref>()<sp/>const<sp/>final<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;<sp/>};</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight></codeline>
+<codeline lineno="22" refid="classthirdai_1_1dataset_1_1_text_block_1ab41d5baa51103c97f582ee66432ae5b8" refkind="member"><highlight class="normal"><sp/><sp/>uint32_t<sp/><ref refid="classthirdai_1_1dataset_1_1_text_block_1ab41d5baa51103c97f582ee66432ae5b8" kindref="member">expectedNumColumns</ref>()<sp/>const<sp/>final<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>_col<sp/>+<sp/>1;<sp/>};</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"></highlight></codeline>
+<codeline lineno="24" refid="classthirdai_1_1dataset_1_1_text_block_1a76eff03a3c6cbee19897c42382629870" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="structthirdai_1_1dataset_1_1_explanation" kindref="compound">Explanation</ref><sp/><ref refid="classthirdai_1_1dataset_1_1_text_block_1a76eff03a3c6cbee19897c42382629870" kindref="member">explainIndex</ref>(</highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>index_within_block,</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;std::string_view&gt;&amp;<sp/>input_row)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>{_col,<sp/>getResponsibleWord(index_within_block,<sp/>input_row.at(_col))};</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="29"><highlight class="normal"></highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/>std::string<sp/>getResponsibleWord(</highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>index,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string_view&amp;<sp/>text)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"></highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/></highlight><highlight class="keyword">protected</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="34" refid="classthirdai_1_1dataset_1_1_text_block_1a426c8e954cb04c7c3a9b4e35d11846cf" refkind="member"><highlight class="normal"><sp/><sp/>std::exception_ptr<sp/><ref refid="classthirdai_1_1dataset_1_1_text_block_1a426c8e954cb04c7c3a9b4e35d11846cf" kindref="member">buildSegment</ref>(</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;std::string_view&gt;&amp;<sp/>input_row,</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref>&amp;<sp/>vec)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>encodeText(input_row.at(_col),<sp/>vec);</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="39"><highlight class="normal"></highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">virtual</highlight><highlight class="normal"><sp/>std::exception_ptr<sp/>encodeText(std::string_view<sp/>text,</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref>&amp;<sp/>vec)<sp/>=<sp/>0;</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"></highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/>uint32_t<sp/>_dim;</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"></highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/>uint32_t<sp/>_col;</highlight></codeline>
+<codeline lineno="47"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"></highlight></codeline>
+<codeline lineno="49"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">TextBlockPtr<sp/>=<sp/>std::shared_ptr&lt;TextBlock&gt;;</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"></highlight></codeline>
+<codeline lineno="55" refid="classthirdai_1_1dataset_1_1_pair_gram_text_block" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1dataset_1_1_pair_gram_text_block" kindref="compound">PairGramTextBlock</ref><sp/>final<sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_text_block" kindref="compound">TextBlock</ref><sp/>{</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_pair_gram_text_block" kindref="compound">PairGramTextBlock</ref>(</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>col,<sp/>uint32_t<sp/>dim<sp/>=<sp/>TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/><ref refid="classthirdai_1_1dataset_1_1_text_block" kindref="compound">TextBlock</ref>(col,<sp/>dim)<sp/>{}</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"></highlight></codeline>
+<codeline lineno="61"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>make(</highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>col,</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>dim<sp/>=<sp/>TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)<sp/>{</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;PairGramTextBlock&gt;(col,<sp/>dim);</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"></highlight></codeline>
+<codeline lineno="67"><highlight class="normal"><sp/><sp/>std::string<sp/>getResponsibleWord(uint32_t<sp/>index,</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string_view&amp;<sp/>text)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)index;</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)text;</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;Explain<sp/>Index<sp/>is<sp/>not<sp/>yet<sp/>implemented<sp/>for<sp/>pairgram<sp/>block.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"></highlight></codeline>
+<codeline lineno="75"><highlight class="normal"><sp/></highlight><highlight class="keyword">protected</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/>std::exception_ptr<sp/>encodeText(std::string_view<sp/>text,</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref>&amp;<sp/>vec)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/><sp/><sp/>std::vector&lt;uint32_t&gt;<sp/>pairgrams<sp/>=</highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_text_encoding_utils_1a2219ee99d25fad65807d3bcdb53129a2" kindref="member">TextEncodingUtils::computeRawPairgrams</ref>(text,<sp/>_dim);</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"></highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_text_encoding_utils_1a5896e3626bfad395ce7165ac77d174e5" kindref="member">TextEncodingUtils::sumRepeatedIndices</ref>(</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>pairgrams,<sp/></highlight><highlight class="comment">/*<sp/>base_value=<sp/>*/</highlight><highlight class="normal"><sp/>1.0,<sp/>[&amp;](uint32_t<sp/>pairgram,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>value)<sp/>{</highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>vec.<ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1af9322f2281aa25b47ba941bf0e174ba5" kindref="member">addSparseFeatureToSegment</ref>(pairgram,<sp/>value);</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>});</highlight></codeline>
+<codeline lineno="85"><highlight class="normal"></highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="88"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"></highlight></codeline>
+<codeline lineno="90"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">PairGramTextBlockPtr<sp/>=<sp/>std::shared_ptr&lt;PairGramTextBlock&gt;;</highlight></codeline>
+<codeline lineno="91"><highlight class="normal"></highlight></codeline>
+<codeline lineno="95" refid="classthirdai_1_1dataset_1_1_uni_gram_text_block" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1dataset_1_1_uni_gram_text_block" kindref="compound">UniGramTextBlock</ref><sp/>final<sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_text_block" kindref="compound">TextBlock</ref><sp/>{</highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_uni_gram_text_block" kindref="compound">UniGramTextBlock</ref>(</highlight></codeline>
+<codeline lineno="98"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>col,<sp/>uint32_t<sp/>dim<sp/>=<sp/>TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)</highlight></codeline>
+<codeline lineno="99"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/><ref refid="classthirdai_1_1dataset_1_1_text_block" kindref="compound">TextBlock</ref>(col,<sp/>dim)<sp/>{}</highlight></codeline>
+<codeline lineno="100"><highlight class="normal"></highlight></codeline>
+<codeline lineno="101"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>make(</highlight></codeline>
+<codeline lineno="102"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>col,</highlight></codeline>
+<codeline lineno="103"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>dim<sp/>=<sp/>TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)<sp/>{</highlight></codeline>
+<codeline lineno="104"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;UniGramTextBlock&gt;(col,<sp/>dim);</highlight></codeline>
+<codeline lineno="105"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="106"><highlight class="normal"></highlight></codeline>
+<codeline lineno="107"><highlight class="normal"><sp/><sp/>std::string<sp/>getResponsibleWord(uint32_t<sp/>index,</highlight></codeline>
+<codeline lineno="108"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string_view&amp;<sp/>text)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="109"><highlight class="normal"><sp/><sp/><sp/><sp/>std::unordered_map&lt;uint32_t,<sp/>std::string&gt;<sp/>index_to_word_map<sp/>=</highlight></codeline>
+<codeline lineno="110"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_text_encoding_utils_1a0537b20c200a726576f6d0de00c82b1a" kindref="member">TextEncodingUtils::buildUnigramHashToWordMap</ref>(text,<sp/>_dim);</highlight></codeline>
+<codeline lineno="111"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>index_to_word_map.at(index);</highlight></codeline>
+<codeline lineno="112"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="113"><highlight class="normal"></highlight></codeline>
+<codeline lineno="114"><highlight class="normal"><sp/></highlight><highlight class="keyword">protected</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="115"><highlight class="normal"><sp/><sp/>std::exception_ptr<sp/>encodeText(std::string_view<sp/>text,</highlight></codeline>
+<codeline lineno="116"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref>&amp;<sp/>vec)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="117"><highlight class="normal"><sp/><sp/><sp/><sp/>std::vector&lt;uint32_t&gt;<sp/>unigrams<sp/>=</highlight></codeline>
+<codeline lineno="118"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_text_encoding_utils_1a5b6ccc28b5b2e67907e0c8c12965d467" kindref="member">TextEncodingUtils::computeRawUnigramsWithRange</ref>(text,<sp/>_dim);</highlight></codeline>
+<codeline lineno="119"><highlight class="normal"></highlight></codeline>
+<codeline lineno="120"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_text_encoding_utils_1a5896e3626bfad395ce7165ac77d174e5" kindref="member">TextEncodingUtils::sumRepeatedIndices</ref>(</highlight></codeline>
+<codeline lineno="121"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>unigrams,<sp/></highlight><highlight class="comment">/*<sp/>base_value=<sp/>*/</highlight><highlight class="normal"><sp/>1.0,<sp/>[&amp;](uint32_t<sp/>unigram,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>value)<sp/>{</highlight></codeline>
+<codeline lineno="122"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>vec.<ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1af9322f2281aa25b47ba941bf0e174ba5" kindref="member">addSparseFeatureToSegment</ref>(unigram,<sp/>value);</highlight></codeline>
+<codeline lineno="123"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>});</highlight></codeline>
+<codeline lineno="124"><highlight class="normal"></highlight></codeline>
+<codeline lineno="125"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="126"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="127"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="128"><highlight class="normal"></highlight></codeline>
+<codeline lineno="129"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">UniGramTextBlockPtr<sp/>=<sp/>std::shared_ptr&lt;UniGramTextBlock&gt;;</highlight></codeline>
+<codeline lineno="130"><highlight class="normal"></highlight></codeline>
+<codeline lineno="134" refid="classthirdai_1_1dataset_1_1_char_k_gram_text_block" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1dataset_1_1_char_k_gram_text_block" kindref="compound">CharKGramTextBlock</ref><sp/>final<sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_text_block" kindref="compound">TextBlock</ref><sp/>{</highlight></codeline>
+<codeline lineno="135"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="136"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_char_k_gram_text_block" kindref="compound">CharKGramTextBlock</ref>(</highlight></codeline>
+<codeline lineno="137"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>col,<sp/>uint32_t<sp/>k,</highlight></codeline>
+<codeline lineno="138"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>dim<sp/>=<sp/>TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)</highlight></codeline>
+<codeline lineno="139"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/><ref refid="classthirdai_1_1dataset_1_1_text_block" kindref="compound">TextBlock</ref>(col,<sp/>dim),<sp/>_k(k)<sp/>{}</highlight></codeline>
+<codeline lineno="140"><highlight class="normal"></highlight></codeline>
+<codeline lineno="141"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">auto</highlight><highlight class="normal"><sp/>make(</highlight></codeline>
+<codeline lineno="142"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>col,<sp/>uint32_t<sp/>k,</highlight></codeline>
+<codeline lineno="143"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>dim<sp/>=<sp/>TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)<sp/>{</highlight></codeline>
+<codeline lineno="144"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::make_shared&lt;CharKGramTextBlock&gt;(col,<sp/>k,<sp/>dim);</highlight></codeline>
+<codeline lineno="145"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="146"><highlight class="normal"></highlight></codeline>
+<codeline lineno="147"><highlight class="normal"><sp/><sp/>std::string<sp/>getResponsibleWord(uint32_t<sp/>index,</highlight></codeline>
+<codeline lineno="148"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::string_view&amp;<sp/>text)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="149"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)index;</highlight></codeline>
+<codeline lineno="150"><highlight class="normal"><sp/><sp/><sp/><sp/>(void)text;</highlight></codeline>
+<codeline lineno="151"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">throw</highlight><highlight class="normal"><sp/>std::invalid_argument(</highlight></codeline>
+<codeline lineno="152"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;Explain<sp/>Index<sp/>is<sp/>not<sp/>yet<sp/>implemented<sp/>for<sp/>char-k<sp/>block.&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="153"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="154"><highlight class="normal"></highlight></codeline>
+<codeline lineno="155"><highlight class="normal"><sp/></highlight><highlight class="keyword">protected</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="156"><highlight class="normal"><sp/><sp/>std::exception_ptr<sp/>encodeText(std::string_view<sp/>text,</highlight></codeline>
+<codeline lineno="157"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector" kindref="compound">SegmentedFeatureVector</ref>&amp;<sp/>vec)<sp/></highlight><highlight class="keyword">final</highlight><highlight class="normal"><sp/>{</highlight></codeline>
+<codeline lineno="158"><highlight class="normal"><sp/><sp/><sp/><sp/>std::string<sp/>lower_case_text<sp/>=<sp/>utils::lower(text);</highlight></codeline>
+<codeline lineno="159"><highlight class="normal"></highlight></codeline>
+<codeline lineno="160"><highlight class="normal"><sp/><sp/><sp/><sp/>std::vector&lt;uint32_t&gt;<sp/>char_k_grams;</highlight></codeline>
+<codeline lineno="161"><highlight class="normal"></highlight></codeline>
+<codeline lineno="162"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>n_kgrams<sp/>=<sp/>text.size()<sp/>&gt;=<sp/>_k<sp/>?<sp/>text.size()<sp/>-<sp/>(_k<sp/>-<sp/>1)<sp/>:<sp/>1;</highlight></codeline>
+<codeline lineno="163"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>len<sp/>=<sp/>std::min(text.size(),<sp/></highlight><highlight class="keyword">static_cast&lt;</highlight><highlight class="keywordtype">size_t</highlight><highlight class="keyword">&gt;</highlight><highlight class="normal">(_k));</highlight></codeline>
+<codeline lineno="164"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(uint32_t<sp/>offset<sp/>=<sp/>0;<sp/>offset<sp/>&lt;<sp/>n_kgrams;<sp/>offset++)<sp/>{</highlight></codeline>
+<codeline lineno="165"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>k_gram_hash<sp/>=<sp/>TextEncodingUtils::computeUnigram(</highlight></codeline>
+<codeline lineno="166"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>key=<sp/>*/</highlight><highlight class="normal"><sp/>&amp;lower_case_text.at(offset),<sp/>len)<sp/>%</highlight></codeline>
+<codeline lineno="167"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_dim;</highlight></codeline>
+<codeline lineno="168"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>char_k_grams.push_back(k_gram_hash);</highlight></codeline>
+<codeline lineno="169"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="170"><highlight class="normal"></highlight></codeline>
+<codeline lineno="171"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*</highlight></codeline>
+<codeline lineno="172"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>Deduplication<sp/>adds<sp/>an<sp/>overhead<sp/>of<sp/>around<sp/>10%<sp/>but<sp/>helps<sp/>to<sp/>reduce</highlight></codeline>
+<codeline lineno="173"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>number<sp/>of<sp/>entries<sp/>in<sp/>the<sp/>sparse<sp/>vector,<sp/>which<sp/>can<sp/>in<sp/>turn<sp/>make<sp/>BOLT</highlight></codeline>
+<codeline lineno="174"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/>run<sp/>faster.</highlight></codeline>
+<codeline lineno="175"><highlight class="comment"><sp/><sp/><sp/><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="176"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_text_encoding_utils_1a5896e3626bfad395ce7165ac77d174e5" kindref="member">TextEncodingUtils::sumRepeatedIndices</ref>(</highlight></codeline>
+<codeline lineno="177"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>indices<sp/>=<sp/>*/</highlight><highlight class="normal"><sp/>char_k_grams,</highlight></codeline>
+<codeline lineno="178"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>base_value<sp/>=<sp/>*/</highlight><highlight class="normal"><sp/>1.0,<sp/>[&amp;](uint32_t<sp/>index,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>value)<sp/>{</highlight></codeline>
+<codeline lineno="179"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>vec.<ref refid="classthirdai_1_1dataset_1_1_segmented_feature_vector_1af9322f2281aa25b47ba941bf0e174ba5" kindref="member">addSparseFeatureToSegment</ref>(index,<sp/>value);</highlight></codeline>
+<codeline lineno="180"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>});</highlight></codeline>
+<codeline lineno="181"><highlight class="normal"></highlight></codeline>
+<codeline lineno="182"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="183"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="184"><highlight class="normal"></highlight></codeline>
+<codeline lineno="185"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="186"><highlight class="normal"><sp/><sp/>uint32_t<sp/>_k;</highlight></codeline>
+<codeline lineno="187"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="188"><highlight class="normal"></highlight></codeline>
+<codeline lineno="189"><highlight class="normal"></highlight><highlight class="keyword">using<sp/></highlight><highlight class="normal">CharKGramTextBlockPtr<sp/>=<sp/>std::shared_ptr&lt;CharKGramTextBlock&gt;;</highlight></codeline>
+<codeline lineno="190"><highlight class="normal"></highlight></codeline>
+<codeline lineno="191"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::dataset</highlight></codeline>
+    </programlisting>
+    <location file="dataset/src/blocks/Text.h"/>
+  </compounddef>
+</doxygen>

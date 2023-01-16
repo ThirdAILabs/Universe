@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_date_data_type" kind="struct" language="C++" prot="public">
+    <compoundname>thirdai::bolt::sequential_classifier::DateDataType</compoundname>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" line="25" column="1" bodyfile="bolt/src/auto_classifiers/sequential_classifier/ConstructorUtilityTypes.h" bodystart="25" bodyend="25"/>
+    <listofallmembers>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

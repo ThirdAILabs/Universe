@@ -1,0 +1,302 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_f_measure" kind="class" language="C++" prot="public" final="yes">
+    <compoundname>thirdai::bolt::FMeasure</compoundname>
+    <basecompoundref refid="classthirdai_1_1bolt_1_1_metric" prot="public" virt="non-virtual">thirdai::bolt::Metric</basecompoundref>
+    <includes refid="_metric_8h" local="no">Metric.h</includes>
+      <sectiondef kind="public-static-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_f_measure_1a3a530fa4c1e026f2a04550cee7ab1487" prot="public" static="yes" constexpr="yes" mutable="no">
+        <type>constexpr const char *</type>
+        <definition>constexpr const char* thirdai::bolt::FMeasure::NAME</definition>
+        <argsstring></argsstring>
+        <name>NAME</name>
+        <qualifiedname>thirdai::bolt::FMeasure::NAME</qualifiedname>
+        <initializer>= &quot;f_measure&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="510" column="31" bodyfile="bolt/src/metrics/Metric.h" bodystart="510" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_f_measure_1a9bec4f1cdd3354d7ebcbfa98c17619b8" prot="private" static="no" mutable="no">
+        <type>float</type>
+        <definition>float thirdai::bolt::FMeasure::_threshold</definition>
+        <argsstring></argsstring>
+        <name>_threshold</name>
+        <qualifiedname>thirdai::bolt::FMeasure::_threshold</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="560" column="9" bodyfile="bolt/src/metrics/Metric.h" bodystart="560" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_f_measure_1a3539a4212b116020c4d8d23821621b89" prot="private" static="no" mutable="no">
+        <type>std::atomic&lt; uint64_t &gt;</type>
+        <definition>std::atomic&lt;uint64_t&gt; thirdai::bolt::FMeasure::_true_positive</definition>
+        <argsstring></argsstring>
+        <name>_true_positive</name>
+        <qualifiedname>thirdai::bolt::FMeasure::_true_positive</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="561" column="15" bodyfile="bolt/src/metrics/Metric.h" bodystart="561" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_f_measure_1a853fea31a4f399d9d02bb7ba4a7af9ac" prot="private" static="no" mutable="no">
+        <type>std::atomic&lt; uint64_t &gt;</type>
+        <definition>std::atomic&lt;uint64_t&gt; thirdai::bolt::FMeasure::_false_positive</definition>
+        <argsstring></argsstring>
+        <name>_false_positive</name>
+        <qualifiedname>thirdai::bolt::FMeasure::_false_positive</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="562" column="15" bodyfile="bolt/src/metrics/Metric.h" bodystart="562" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classthirdai_1_1bolt_1_1_f_measure_1a6fba8f951733be53e94b86a20c510fc3" prot="private" static="no" mutable="no">
+        <type>std::atomic&lt; uint64_t &gt;</type>
+        <definition>std::atomic&lt;uint64_t&gt; thirdai::bolt::FMeasure::_false_negative</definition>
+        <argsstring></argsstring>
+        <name>_false_negative</name>
+        <qualifiedname>thirdai::bolt::FMeasure::_false_negative</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="563" column="15" bodyfile="bolt/src/metrics/Metric.h" bodystart="563" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_f_measure_1a93466938b72372b9d4a94e5df8c51993" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::FMeasure::FMeasure</definition>
+        <argsstring>(float threshold)</argsstring>
+        <name>FMeasure</name>
+        <qualifiedname>thirdai::bolt::FMeasure::FMeasure</qualifiedname>
+        <param>
+          <type>float</type>
+          <declname>threshold</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="450" column="12" bodyfile="bolt/src/metrics/Metric.h" bodystart="450" bodyend="454"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_f_measure_1a89e2a6a9ce485902d1bc64045010ac40" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::FMeasure::record</definition>
+        <argsstring>(const BoltVector &amp;output, const BoltVector &amp;labels) final</argsstring>
+        <name>record</name>
+        <qualifiedname>thirdai::bolt::FMeasure::record</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_metric_1afac01d5227e7a54ab3e97a43b84ba505">record</reimplements>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>labels</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="456" column="8" bodyfile="bolt/src/metrics/Metric.h" bodystart="456" bodyend="481"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_f_measure_1afbfe30ede17c5c1c5f8886fbbb028df9" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>double</type>
+        <definition>double thirdai::bolt::FMeasure::value</definition>
+        <argsstring>() final</argsstring>
+        <name>value</name>
+        <qualifiedname>thirdai::bolt::FMeasure::value</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_metric_1a7cc18ba1410d086d505d3dd145262c40">value</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="483" column="10" bodyfile="bolt/src/metrics/Metric.h" bodystart="483" bodyend="486"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_f_measure_1aef3013ad3e357dc688306d22d99fdbbb" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::tuple&lt; double, double, double &gt;</type>
+        <definition>std::tuple&lt; double, double, double &gt; thirdai::bolt::FMeasure::metrics</definition>
+        <argsstring>()</argsstring>
+        <name>metrics</name>
+        <qualifiedname>thirdai::bolt::FMeasure::metrics</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="488" column="14" bodyfile="bolt/src/metrics/Metric.h" bodystart="488" bodyend="502"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_f_measure_1a426835f5be8bcf8dc1b9152e7c611111" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>void</type>
+        <definition>void thirdai::bolt::FMeasure::reset</definition>
+        <argsstring>() final</argsstring>
+        <name>reset</name>
+        <qualifiedname>thirdai::bolt::FMeasure::reset</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_metric_1a9bf72bdd3547abc390e035936bc5ad82">reset</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="504" column="8" bodyfile="bolt/src/metrics/Metric.h" bodystart="504" bodyend="508"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_f_measure_1a7e5d4766f342b31aa3c9ffcc37912c05" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::bolt::FMeasure::name</definition>
+        <argsstring>() final</argsstring>
+        <name>name</name>
+        <qualifiedname>thirdai::bolt::FMeasure::name</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_metric_1afbd365875c1a09115e794f3bb5d5aff0">name</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="512" column="15" bodyfile="bolt/src/metrics/Metric.h" bodystart="512" bodyend="516"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_f_measure_1a3d72c04eb825e33fb3cf4190f3d90d75" prot="public" static="no" const="no" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>std::string</type>
+        <definition>std::string thirdai::bolt::FMeasure::summary</definition>
+        <argsstring>() final</argsstring>
+        <name>summary</name>
+        <qualifiedname>thirdai::bolt::FMeasure::summary</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_metric_1a41432cee6f375a3203923ad64144d981">summary</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="518" column="15" bodyfile="bolt/src/metrics/Metric.h" bodystart="518" bodyend="527"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_f_measure_1ad7aad5e39a7bd1c0c632fb3fe3ccb781" prot="public" static="no" const="yes" explicit="no" inline="yes" final="yes" virt="virtual">
+        <type>bool</type>
+        <definition>bool thirdai::bolt::FMeasure::smallerIsBetter</definition>
+        <argsstring>() const final</argsstring>
+        <name>smallerIsBetter</name>
+        <qualifiedname>thirdai::bolt::FMeasure::smallerIsBetter</qualifiedname>
+        <reimplements refid="classthirdai_1_1bolt_1_1_metric_1a669e36d863f3f143a60aef059c4adffa">smallerIsBetter</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="529" column="8" bodyfile="bolt/src/metrics/Metric.h" bodystart="529" bodyend="529"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_f_measure_1a51ab34dd9138968e7b400608e49ee43d" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool thirdai::bolt::FMeasure::isFMeasure</definition>
+        <argsstring>(const std::string &amp;name)</argsstring>
+        <name>isFMeasure</name>
+        <qualifiedname>thirdai::bolt::FMeasure::isFMeasure</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>name</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="531" column="15" bodyfile="bolt/src/metrics/Metric.h" bodystart="531" bodyend="533"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_f_measure_1a964cced60d6a8d76405091a1cdde970b" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::shared_ptr&lt; <ref refid="classthirdai_1_1bolt_1_1_metric" kindref="compound">Metric</ref> &gt;</type>
+        <definition>static std::shared_ptr&lt; Metric &gt; thirdai::bolt::FMeasure::make</definition>
+        <argsstring>(const std::string &amp;name)</argsstring>
+        <name>make</name>
+        <qualifiedname>thirdai::bolt::FMeasure::make</qualifiedname>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>name</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/metrics/Metric.h" line="535" column="26" bodyfile="bolt/src/metrics/Metric.h" bodystart="535" bodyend="557"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>The F-Measure is a metric that takes into account both precision and recall. </para>
+    </briefdescription>
+    <detaileddescription>
+<para>It is defined as the harmonic mean of precision and recall. The returned metric is in absolute terms; 1.0 is 100%. </para>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="1">
+        <label>thirdai::bolt::FMeasure</label>
+        <link refid="classthirdai_1_1bolt_1_1_f_measure"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::bolt::Metric</label>
+        <link refid="classthirdai_1_1bolt_1_1_metric"/>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="1">
+        <label>thirdai::bolt::FMeasure</label>
+        <link refid="classthirdai_1_1bolt_1_1_f_measure"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>thirdai::bolt::Metric</label>
+        <link refid="classthirdai_1_1bolt_1_1_metric"/>
+      </node>
+    </collaborationgraph>
+    <location file="bolt/src/metrics/Metric.h" line="448" column="1" bodyfile="bolt/src/metrics/Metric.h" bodystart="448" bodyend="564"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1a6fba8f951733be53e94b86a20c510fc3" prot="private" virt="non-virtual"><scope>thirdai::bolt::FMeasure</scope><name>_false_negative</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1a853fea31a4f399d9d02bb7ba4a7af9ac" prot="private" virt="non-virtual"><scope>thirdai::bolt::FMeasure</scope><name>_false_positive</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1a9bec4f1cdd3354d7ebcbfa98c17619b8" prot="private" virt="non-virtual"><scope>thirdai::bolt::FMeasure</scope><name>_threshold</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1a3539a4212b116020c4d8d23821621b89" prot="private" virt="non-virtual"><scope>thirdai::bolt::FMeasure</scope><name>_true_positive</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1a93466938b72372b9d4a94e5df8c51993" prot="public" virt="non-virtual"><scope>thirdai::bolt::FMeasure</scope><name>FMeasure</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1a51ab34dd9138968e7b400608e49ee43d" prot="public" virt="non-virtual"><scope>thirdai::bolt::FMeasure</scope><name>isFMeasure</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1a964cced60d6a8d76405091a1cdde970b" prot="public" virt="non-virtual"><scope>thirdai::bolt::FMeasure</scope><name>make</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1aef3013ad3e357dc688306d22d99fdbbb" prot="public" virt="non-virtual"><scope>thirdai::bolt::FMeasure</scope><name>metrics</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1a3a530fa4c1e026f2a04550cee7ab1487" prot="public" virt="non-virtual"><scope>thirdai::bolt::FMeasure</scope><name>NAME</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1a7e5d4766f342b31aa3c9ffcc37912c05" prot="public" virt="virtual"><scope>thirdai::bolt::FMeasure</scope><name>name</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1a89e2a6a9ce485902d1bc64045010ac40" prot="public" virt="virtual"><scope>thirdai::bolt::FMeasure</scope><name>record</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1a426835f5be8bcf8dc1b9152e7c611111" prot="public" virt="virtual"><scope>thirdai::bolt::FMeasure</scope><name>reset</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1ad7aad5e39a7bd1c0c632fb3fe3ccb781" prot="public" virt="virtual"><scope>thirdai::bolt::FMeasure</scope><name>smallerIsBetter</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1a3d72c04eb825e33fb3cf4190f3d90d75" prot="public" virt="virtual"><scope>thirdai::bolt::FMeasure</scope><name>summary</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_f_measure_1afbfe30ede17c5c1c5f8886fbbb028df9" prot="public" virt="virtual"><scope>thirdai::bolt::FMeasure</scope><name>value</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_metric_1a44b6ac1083c99ac6ffa9e2f095e0d151" prot="public" virt="virtual"><scope>thirdai::bolt::FMeasure</scope><name>~Metric</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

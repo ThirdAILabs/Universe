@@ -1,0 +1,104 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="structthirdai_1_1dataset_1_1_dataset_shuffle_config" kind="struct" language="C++" prot="public">
+    <compoundname>thirdai::dataset::DatasetShuffleConfig</compoundname>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structthirdai_1_1dataset_1_1_dataset_shuffle_config_1a6f8c2f3d106a6cbc482bfe2c47b37dae" prot="public" static="no" mutable="no">
+        <type>size_t</type>
+        <definition>size_t thirdai::dataset::DatasetShuffleConfig::n_batches</definition>
+        <argsstring></argsstring>
+        <name>n_batches</name>
+        <qualifiedname>thirdai::dataset::DatasetShuffleConfig::n_batches</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingGenericDatasetLoader.h" line="25" column="10" bodyfile="dataset/src/StreamingGenericDatasetLoader.h" bodystart="25" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1dataset_1_1_dataset_shuffle_config_1aaef9434a0ca4954ee510ef263acf9d53" prot="public" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::dataset::DatasetShuffleConfig::seed</definition>
+        <argsstring></argsstring>
+        <name>seed</name>
+        <qualifiedname>thirdai::dataset::DatasetShuffleConfig::seed</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingGenericDatasetLoader.h" line="26" column="12" bodyfile="dataset/src/StreamingGenericDatasetLoader.h" bodystart="26" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structthirdai_1_1dataset_1_1_dataset_shuffle_config_1a0c622f4494c00d67cf86eae13774cb14" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::DatasetShuffleConfig::DatasetShuffleConfig</definition>
+        <argsstring>()</argsstring>
+        <name>DatasetShuffleConfig</name>
+        <qualifiedname>thirdai::dataset::DatasetShuffleConfig::DatasetShuffleConfig</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingGenericDatasetLoader.h" line="17" column="3" bodyfile="dataset/src/StreamingGenericDatasetLoader.h" bodystart="17" bodyend="17"/>
+      </memberdef>
+      <memberdef kind="function" id="structthirdai_1_1dataset_1_1_dataset_shuffle_config_1ac8bdc54889650fba9b74c2b39ee97763" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::DatasetShuffleConfig::DatasetShuffleConfig</definition>
+        <argsstring>(size_t n_batches_in_buffer)</argsstring>
+        <name>DatasetShuffleConfig</name>
+        <qualifiedname>thirdai::dataset::DatasetShuffleConfig::DatasetShuffleConfig</qualifiedname>
+        <param>
+          <type>size_t</type>
+          <declname>n_batches_in_buffer</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingGenericDatasetLoader.h" line="19" column="12" bodyfile="dataset/src/StreamingGenericDatasetLoader.h" bodystart="19" bodyend="20"/>
+      </memberdef>
+      <memberdef kind="function" id="structthirdai_1_1dataset_1_1_dataset_shuffle_config_1a7a01b238cdfe490c1e5e2677d5f73287" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::dataset::DatasetShuffleConfig::DatasetShuffleConfig</definition>
+        <argsstring>(size_t n_batches_in_buffer, uint32_t seed)</argsstring>
+        <name>DatasetShuffleConfig</name>
+        <qualifiedname>thirdai::dataset::DatasetShuffleConfig::DatasetShuffleConfig</qualifiedname>
+        <param>
+          <type>size_t</type>
+          <declname>n_batches_in_buffer</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>seed</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="dataset/src/StreamingGenericDatasetLoader.h" line="22" column="3" bodyfile="dataset/src/StreamingGenericDatasetLoader.h" bodystart="22" bodyend="23"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="dataset/src/StreamingGenericDatasetLoader.h" line="16" column="1" bodyfile="dataset/src/StreamingGenericDatasetLoader.h" bodystart="16" bodyend="27"/>
+    <listofallmembers>
+      <member refid="structthirdai_1_1dataset_1_1_dataset_shuffle_config_1a0c622f4494c00d67cf86eae13774cb14" prot="public" virt="non-virtual"><scope>thirdai::dataset::DatasetShuffleConfig</scope><name>DatasetShuffleConfig</name></member>
+      <member refid="structthirdai_1_1dataset_1_1_dataset_shuffle_config_1ac8bdc54889650fba9b74c2b39ee97763" prot="public" virt="non-virtual"><scope>thirdai::dataset::DatasetShuffleConfig</scope><name>DatasetShuffleConfig</name></member>
+      <member refid="structthirdai_1_1dataset_1_1_dataset_shuffle_config_1a7a01b238cdfe490c1e5e2677d5f73287" prot="public" virt="non-virtual"><scope>thirdai::dataset::DatasetShuffleConfig</scope><name>DatasetShuffleConfig</name></member>
+      <member refid="structthirdai_1_1dataset_1_1_dataset_shuffle_config_1a6f8c2f3d106a6cbc482bfe2c47b37dae" prot="public" virt="non-virtual"><scope>thirdai::dataset::DatasetShuffleConfig</scope><name>n_batches</name></member>
+      <member refid="structthirdai_1_1dataset_1_1_dataset_shuffle_config_1aaef9434a0ca4954ee510ef263acf9d53" prot="public" virt="non-virtual"><scope>thirdai::dataset::DatasetShuffleConfig</scope><name>seed</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

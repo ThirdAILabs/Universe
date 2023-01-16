@@ -1,0 +1,497 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="classthirdai_1_1bolt_1_1_sequential_layer" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>thirdai::bolt::SequentialLayer</compoundname>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1a1364ddaf71e7013ca40d1b1b252a89a6" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::forward</definition>
+        <argsstring>(const BoltVector &amp;input, BoltVector &amp;output, const BoltVector *labels)=0</argsstring>
+        <name>forward</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::forward</qualifiedname>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>input</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <param>
+          <type>const <ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> *</type>
+          <declname>labels</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="10" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1a83637432f3f26d5c7454add1c465cc5f" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::backpropagate</definition>
+        <argsstring>(BoltVector &amp;input, BoltVector &amp;output)=0</argsstring>
+        <name>backpropagate</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::backpropagate</qualifiedname>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>input</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="13" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1a81d7466a3ca73997cc236ca9077fcd15" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::backpropagateInputLayer</definition>
+        <argsstring>(BoltVector &amp;input, BoltVector &amp;output)=0</argsstring>
+        <name>backpropagateInputLayer</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::backpropagateInputLayer</qualifiedname>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>input</declname>
+        </param>
+        <param>
+          <type><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref> &amp;</type>
+          <declname>output</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="15" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1ab24babf656bbd17db92b2b281d0f60a4" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::updateParameters</definition>
+        <argsstring>(float lr, uint32_t iter, float B1, float B2, float eps)=0</argsstring>
+        <name>updateParameters</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::updateParameters</qualifiedname>
+        <param>
+          <type>float</type>
+          <declname>lr</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>iter</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>B1</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>B2</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>eps</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="18" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1a7d3169ac89faf0dfe8d39bc13456b364" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type><ref refid="classthirdai_1_1_bolt_batch" kindref="compound">BoltBatch</ref></type>
+        <definition>virtual BoltBatch thirdai::bolt::SequentialLayer::createBatchState</definition>
+        <argsstring>(uint32_t batch_size, bool use_sparsity) const =0</argsstring>
+        <name>createBatchState</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::createBatchState</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>batch_size</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>use_sparsity</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="21" column="21"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1a8808519a0a7c8c10106316a01618bad6" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::freezeHashTables</definition>
+        <argsstring>(bool insert_labels_if_not_found)=0</argsstring>
+        <name>freezeHashTables</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::freezeHashTables</qualifiedname>
+        <param>
+          <type>bool</type>
+          <declname>insert_labels_if_not_found</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="24" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1ac71db77be6bfa2e1ca5d14e13a9ef77c" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::buildHashTables</definition>
+        <argsstring>()=0</argsstring>
+        <name>buildHashTables</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::buildHashTables</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="26" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1a508a9999cec15b49a8208ad7224fbf3e" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::reBuildHashFunction</definition>
+        <argsstring>()=0</argsstring>
+        <name>reBuildHashFunction</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::reBuildHashFunction</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="28" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1a8175d5c3630ec23ebbef7f4ca3f14ae7" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>uint32_t</type>
+        <definition>virtual uint32_t thirdai::bolt::SequentialLayer::getDim</definition>
+        <argsstring>() const =0</argsstring>
+        <name>getDim</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::getDim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="31" column="20"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1a6ae305dbaea6e4fa81a6fc78a97b7cef" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>uint32_t</type>
+        <definition>virtual uint32_t thirdai::bolt::SequentialLayer::getInputDim</definition>
+        <argsstring>() const =0</argsstring>
+        <name>getInputDim</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::getInputDim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="34" column="20"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1aa2d0830df7510f1bff618be485d2d38d" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>uint32_t</type>
+        <definition>virtual uint32_t thirdai::bolt::SequentialLayer::getSparseDim</definition>
+        <argsstring>() const =0</argsstring>
+        <name>getSparseDim</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::getSparseDim</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="38" column="20"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1ac7b686ac8a126ad691aa44120ed562b6" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>float *</type>
+        <definition>virtual float * thirdai::bolt::SequentialLayer::getWeights</definition>
+        <argsstring>() const =0</argsstring>
+        <name>getWeights</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::getWeights</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="40" column="17"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1aa13aeb7b75277e61eb4c12b96e700f1f" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>float *</type>
+        <definition>virtual float * thirdai::bolt::SequentialLayer::getBiases</definition>
+        <argsstring>() const =0</argsstring>
+        <name>getBiases</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::getBiases</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="42" column="17"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1a4984c38b019387d8a8c40c71095c145d" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::setWeightGradients</definition>
+        <argsstring>(const float *update_weight_gradient)=0</argsstring>
+        <name>setWeightGradients</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::setWeightGradients</qualifiedname>
+        <param>
+          <type>const float *</type>
+          <declname>update_weight_gradient</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="44" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1af499c4e83f5375ad6d0674a0c3671ccd" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::setBiasesGradients</definition>
+        <argsstring>(const float *update_bias_gradient)=0</argsstring>
+        <name>setBiasesGradients</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::setBiasesGradients</qualifiedname>
+        <param>
+          <type>const float *</type>
+          <declname>update_bias_gradient</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="46" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1a1007916e0c83d3594fbf527bd7e846e5" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>float *</type>
+        <definition>virtual float * thirdai::bolt::SequentialLayer::getBiasesGradient</definition>
+        <argsstring>()=0</argsstring>
+        <name>getBiasesGradient</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::getBiasesGradient</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="48" column="17"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1aaab5770f680fa492edef7604fb8d665b" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>float *</type>
+        <definition>virtual float * thirdai::bolt::SequentialLayer::getWeightsGradient</definition>
+        <argsstring>()=0</argsstring>
+        <name>getWeightsGradient</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::getWeightsGradient</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="50" column="17"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1a008eeec48730f07f818e466f39f3b4eb" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::setTrainable</definition>
+        <argsstring>(bool trainable)=0</argsstring>
+        <name>setTrainable</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::setTrainable</qualifiedname>
+        <param>
+          <type>bool</type>
+          <declname>trainable</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="52" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1aed6c30bc8b679d06031b46cfb605f55b" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::setWeights</definition>
+        <argsstring>(const float *new_weights)=0</argsstring>
+        <name>setWeights</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::setWeights</qualifiedname>
+        <param>
+          <type>const float *</type>
+          <declname>new_weights</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="54" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1a4abc5adcb5391e984838debef23f7bb6" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>bool</type>
+        <definition>virtual bool thirdai::bolt::SequentialLayer::getTrainable</definition>
+        <argsstring>() const =0</argsstring>
+        <name>getTrainable</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::getTrainable</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="56" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1ad2ab73b5afd5bc9bffb8c2c902ab4124" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::setBiases</definition>
+        <argsstring>(const float *new_biases)=0</argsstring>
+        <name>setBiases</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::setBiases</qualifiedname>
+        <param>
+          <type>const float *</type>
+          <declname>new_biases</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="58" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1addd5be2c7536fce3450ef58ddc7f88e5" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>float</type>
+        <definition>virtual float thirdai::bolt::SequentialLayer::getSparsity</definition>
+        <argsstring>() const =0</argsstring>
+        <name>getSparsity</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::getSparsity</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="60" column="17"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1aed2d69c7c1b35a182949c5022940e4a4" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::setSparsity</definition>
+        <argsstring>(float sparsity)=0</argsstring>
+        <name>setSparsity</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::setSparsity</qualifiedname>
+        <param>
+          <type>float</type>
+          <declname>sparsity</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="62" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1aaf4e308b5902db2726939361ce2b4625" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::buildLayerSummary</definition>
+        <argsstring>(std::stringstream &amp;summary, bool detailed) const</argsstring>
+        <name>buildLayerSummary</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::buildLayerSummary</qualifiedname>
+        <param>
+          <type>std::stringstream &amp;</type>
+          <declname>summary</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>detailed</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="64" column="16" bodyfile="bolt/src/layers/SequentialLayer.h" bodystart="64" bodyend="68"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1ad989430c7868606c5d8f09c837c2fdfd" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void thirdai::bolt::SequentialLayer::initOptimizer</definition>
+        <argsstring>()=0</argsstring>
+        <name>initOptimizer</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::initOptimizer</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="70" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classthirdai_1_1bolt_1_1_sequential_layer_1a5f3295c235147b7e2b3d9e393f4682f8" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type></type>
+        <definition>virtual thirdai::bolt::SequentialLayer::~SequentialLayer</definition>
+        <argsstring>()=default</argsstring>
+        <name>~SequentialLayer</name>
+        <qualifiedname>thirdai::bolt::SequentialLayer::~SequentialLayer</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/layers/SequentialLayer.h" line="72" column="11"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/layers/SequentialLayer.h" line="8" column="1" bodyfile="bolt/src/layers/SequentialLayer.h" bodystart="8" bodyend="73"/>
+    <listofallmembers>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1a83637432f3f26d5c7454add1c465cc5f" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>backpropagate</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1a81d7466a3ca73997cc236ca9077fcd15" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>backpropagateInputLayer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1ac71db77be6bfa2e1ca5d14e13a9ef77c" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>buildHashTables</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1aaf4e308b5902db2726939361ce2b4625" prot="public" virt="virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>buildLayerSummary</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1a7d3169ac89faf0dfe8d39bc13456b364" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>createBatchState</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1a1364ddaf71e7013ca40d1b1b252a89a6" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>forward</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1a8808519a0a7c8c10106316a01618bad6" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>freezeHashTables</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1aa13aeb7b75277e61eb4c12b96e700f1f" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>getBiases</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1a1007916e0c83d3594fbf527bd7e846e5" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>getBiasesGradient</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1a8175d5c3630ec23ebbef7f4ca3f14ae7" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>getDim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1a6ae305dbaea6e4fa81a6fc78a97b7cef" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>getInputDim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1aa2d0830df7510f1bff618be485d2d38d" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>getSparseDim</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1addd5be2c7536fce3450ef58ddc7f88e5" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>getSparsity</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1a4abc5adcb5391e984838debef23f7bb6" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>getTrainable</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1ac7b686ac8a126ad691aa44120ed562b6" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>getWeights</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1aaab5770f680fa492edef7604fb8d665b" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>getWeightsGradient</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1ad989430c7868606c5d8f09c837c2fdfd" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>initOptimizer</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1a508a9999cec15b49a8208ad7224fbf3e" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>reBuildHashFunction</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1ad2ab73b5afd5bc9bffb8c2c902ab4124" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>setBiases</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1af499c4e83f5375ad6d0674a0c3671ccd" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>setBiasesGradients</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1aed2d69c7c1b35a182949c5022940e4a4" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>setSparsity</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1a008eeec48730f07f818e466f39f3b4eb" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>setTrainable</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1a4984c38b019387d8a8c40c71095c145d" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>setWeightGradients</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1aed6c30bc8b679d06031b46cfb605f55b" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>setWeights</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1ab24babf656bbd17db92b2b281d0f60a4" prot="public" virt="pure-virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>updateParameters</name></member>
+      <member refid="classthirdai_1_1bolt_1_1_sequential_layer_1a5f3295c235147b7e2b3d9e393f4682f8" prot="public" virt="virtual"><scope>thirdai::bolt::SequentialLayer</scope><name>~SequentialLayer</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,141 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state" kind="struct" language="C++" prot="public">
+    <compoundname>thirdai::bolt::sequential_classifier::DataState</compoundname>
+    <includes refid="_sequential_utils_8h" local="no">SequentialUtils.h</includes>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1ace238b963509c65ab5b09b8140def47b" prot="public" static="no" mutable="no">
+        <type>std::unordered_map&lt; std::string, dataset::ThreadSafeVocabularyPtr &gt;</type>
+        <definition>std::unordered_map&lt;std::string, dataset::ThreadSafeVocabularyPtr&gt; thirdai::bolt::sequential_classifier::DataState::vocabs_by_column</definition>
+        <argsstring></argsstring>
+        <name>vocabs_by_column</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::DataState::vocabs_by_column</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="104" column="7" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="104" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1ad4a6f710452aba204d0f017e193e5da5" prot="public" static="no" mutable="no">
+        <type>std::unordered_map&lt; std::string, dataset::ItemHistoryCollectionPtr &gt;</type>
+        <definition>std::unordered_map&lt;std::string, dataset::ItemHistoryCollectionPtr&gt; thirdai::bolt::sequential_classifier::DataState::history_collections_by_id</definition>
+        <argsstring></argsstring>
+        <name>history_collections_by_id</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::DataState::history_collections_by_id</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="113" column="7" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="113" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1a9ae3939b0b980408e5f76c498d31536b" prot="public" static="no" mutable="no">
+        <type>std::unordered_map&lt; std::string, dataset::QuantityHistoryTrackerPtr &gt;</type>
+        <definition>std::unordered_map&lt;std::string, dataset::QuantityHistoryTrackerPtr&gt; thirdai::bolt::sequential_classifier::DataState::quantity_histories_by_id</definition>
+        <argsstring></argsstring>
+        <name>quantity_histories_by_id</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::DataState::quantity_histories_by_id</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="116" column="7" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="116" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1a35e913406d427bed642b3ac9c9cbe7dc" prot="public" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t thirdai::bolt::sequential_classifier::DataState::n_index_single</definition>
+        <argsstring></argsstring>
+        <name>n_index_single</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::DataState::n_index_single</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="120" column="12" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="120" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class cereal::access</definition>
+        <argsstring></argsstring>
+        <name>cereal::access</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::DataState::access</qualifiedname>
+        <param>
+          <type>cereal::access</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="124" column="16" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="124" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1af65ae7c0ff648e919a1d5e14aa67b910" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>thirdai::bolt::sequential_classifier::DataState::DataState</definition>
+        <argsstring>()</argsstring>
+        <name>DataState</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::DataState::DataState</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="118" column="3" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="118" bodyend="118"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1ad142e0aee2834d6d114ecc1deb9534d4" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Archive</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void thirdai::bolt::sequential_classifier::DataState::serialize</definition>
+        <argsstring>(Archive &amp;archive)</argsstring>
+        <name>serialize</name>
+        <qualifiedname>thirdai::bolt::sequential_classifier::DataState::serialize</qualifiedname>
+        <param>
+          <type>Archive &amp;</type>
+          <declname>archive</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="126" column="8" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="126" bodyend="129"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+<para>Stores persistent states for data preprocessing. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" line="102" column="1" bodyfile="bolt/src/auto_classifiers/sequential_classifier/SequentialUtils.h" bodystart="102" bodyend="130"/>
+    <listofallmembers>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1ab2f44cbb59a08132f4c843e5225bba0e" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::DataState</scope><name>cereal::access</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1af65ae7c0ff648e919a1d5e14aa67b910" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::DataState</scope><name>DataState</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1ad4a6f710452aba204d0f017e193e5da5" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::DataState</scope><name>history_collections_by_id</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1a35e913406d427bed642b3ac9c9cbe7dc" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::DataState</scope><name>n_index_single</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1a9ae3939b0b980408e5f76c498d31536b" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::DataState</scope><name>quantity_histories_by_id</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1ad142e0aee2834d6d114ecc1deb9534d4" prot="private" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::DataState</scope><name>serialize</name></member>
+      <member refid="structthirdai_1_1bolt_1_1sequential__classifier_1_1_data_state_1ace238b963509c65ab5b09b8140def47b" prot="public" virt="non-virtual"><scope>thirdai::bolt::sequential_classifier::DataState</scope><name>vocabs_by_column</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,325 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.4" xml:lang="en-US">
+  <compounddef id="_block_batch_processor_8h" kind="file" language="C++">
+    <compoundname>BlockBatchProcessor.h</compoundname>
+    <includes refid="_bolt_vector_8h" local="no">bolt_vector/src/BoltVector.h</includes>
+    <includes refid="_datasets_8h" local="no">dataset/src/Datasets.h</includes>
+    <includes refid="_block_interface_8h" local="no">dataset/src/blocks/BlockInterface.h</includes>
+    <includes local="no">cstdlib</includes>
+    <includes local="no">random</includes>
+    <includedby refid="_block_batch_processor_8cc" local="yes">dataset/src/core/BlockBatchProcessor.cc</includedby>
+    <incdepgraph>
+      <node id="2">
+        <label>bolt_vector/src/BoltVector.h</label>
+        <link refid="_bolt_vector_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+      </node>
+      <node id="19">
+        <label>BatchProcessor.h</label>
+        <link refid="_batch_processor_8h_source"/>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+      </node>
+      <node id="29">
+        <label>DataLoader.h</label>
+        <link refid="_data_loader_8h_source"/>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+      </node>
+      <node id="18">
+        <label>dataset/src/Datasets.h</label>
+        <link refid="_datasets_8h_source"/>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+      <node id="21">
+        <label>InMemoryDataset.h</label>
+        <link refid="_in_memory_dataset_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+      </node>
+      <node id="28">
+        <label>StreamingDataset.h</label>
+        <link refid="_streaming_dataset_8h_source"/>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+      </node>
+      <node id="33">
+        <label>dataset/src/blocks/BlockInterface.h</label>
+        <link refid="_block_interface_8h_source"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="27" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
+        </childnode>
+        <childnode refid="35" relation="include">
+        </childnode>
+        <childnode refid="17" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>dataset/src/core/BlockBatchProcessor.h</label>
+        <link refid="_block_batch_processor_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+        <childnode refid="36" relation="include">
+        </childnode>
+        <childnode refid="37" relation="include">
+        </childnode>
+      </node>
+      <node id="25">
+        <label>utils/SafeFileIO.h</label>
+        <link refid="_safe_file_i_o_8h_source"/>
+        <childnode refid="26" relation="include">
+        </childnode>
+      </node>
+      <node id="30">
+        <label>utils/Logging.h</label>
+        <link refid="_logging_8h_source"/>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>algorithm</label>
+      </node>
+      <node id="6">
+        <label>cassert</label>
+      </node>
+      <node id="3">
+        <label>cereal/access.hpp</label>
+      </node>
+      <node id="22">
+        <label>cereal/archives/binary.hpp</label>
+      </node>
+      <node id="4">
+        <label>cereal/cereal.hpp</label>
+      </node>
+      <node id="23">
+        <label>cereal/types/base_class.hpp</label>
+      </node>
+      <node id="20">
+        <label>cereal/types/polymorphic.hpp</label>
+      </node>
+      <node id="24">
+        <label>cereal/types/vector.hpp</label>
+      </node>
+      <node id="32">
+        <label>chrono</label>
+      </node>
+      <node id="7">
+        <label>cstdint</label>
+      </node>
+      <node id="36">
+        <label>cstdlib</label>
+      </node>
+      <node id="26">
+        <label>fstream</label>
+      </node>
+      <node id="8">
+        <label>iostream</label>
+      </node>
+      <node id="9">
+        <label>limits</label>
+      </node>
+      <node id="27">
+        <label>memory</label>
+      </node>
+      <node id="10">
+        <label>numeric</label>
+      </node>
+      <node id="11">
+        <label>optional</label>
+      </node>
+      <node id="12">
+        <label>queue</label>
+      </node>
+      <node id="37">
+        <label>random</label>
+      </node>
+      <node id="31">
+        <label>spdlog/spdlog.h</label>
+      </node>
+      <node id="13">
+        <label>sstream</label>
+      </node>
+      <node id="14">
+        <label>stdexcept</label>
+      </node>
+      <node id="15">
+        <label>string</label>
+      </node>
+      <node id="34">
+        <label>string_view</label>
+      </node>
+      <node id="35">
+        <label>unordered_map</label>
+      </node>
+      <node id="16">
+        <label>utility</label>
+      </node>
+      <node id="17">
+        <label>vector</label>
+      </node>
+    </incdepgraph>
+    <innerclass refid="classthirdai_1_1dataset_1_1_block_batch_processor" prot="public">thirdai::dataset::BlockBatchProcessor</innerclass>
+    <innernamespace refid="namespacethirdai">thirdai</innernamespace>
+    <innernamespace refid="namespacethirdai_1_1dataset">thirdai::dataset</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;bolt_vector/src/BoltVector.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;dataset/src/Datasets.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;dataset/src/blocks/BlockInterface.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cstdlib&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;random&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">thirdai::dataset<sp/>{</highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight></codeline>
+<codeline lineno="16" refid="classthirdai_1_1dataset_1_1_block_batch_processor" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classthirdai_1_1dataset_1_1_block_batch_processor" kindref="compound">BlockBatchProcessor</ref><sp/>{</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"><sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="18"><highlight class="normal"><sp/><sp/><ref refid="classthirdai_1_1dataset_1_1_block_batch_processor_1a8b68ecf264374327c41820d08e693b3c" kindref="member">BlockBatchProcessor</ref>(std::vector&lt;std::shared_ptr&lt;Block&gt;&gt;<sp/>input_blocks,</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>std::vector&lt;std::shared_ptr&lt;Block&gt;&gt;<sp/>target_blocks,</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>output_batch_size,<sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>est_num_elems<sp/>=<sp/>0);</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight></codeline>
+<codeline lineno="26"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="classthirdai_1_1dataset_1_1_block_batch_processor_1aa0f825429397f54cee07d0b485062306" kindref="member">processBatch</ref>(std::vector&lt;std::vector&lt;std::string&gt;&gt;&amp;<sp/>batch);</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"></highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/>std::pair&lt;BoltDatasetPtr,<sp/>BoltDatasetPtr&gt;<sp/><ref refid="classthirdai_1_1dataset_1_1_block_batch_processor_1a4d38b9681705a2f891c13068df975a86" kindref="member">exportInMemoryDataset</ref>(</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>shuffle<sp/>=<sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">,<sp/>uint32_t<sp/>shuffle_seed<sp/>=<sp/>std::rand());</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"></highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/></highlight><highlight class="keyword">private</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::vector&lt;uint32_t&gt;<sp/>makeFinalPositions(uint32_t<sp/>n_exported,</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>shuffle,</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>uint32_t<sp/>shuffle_seed);</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"></highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/>std::exception_ptr<sp/>makeVector(</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::vector&lt;std::string&gt;&amp;<sp/>sample,<sp/><ref refid="structthirdai_1_1_bolt_vector" kindref="compound">BoltVector</ref>&amp;<sp/>vector,</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>std::vector&lt;std::shared_ptr&lt;Block&gt;&gt;&amp;<sp/>blocks,<sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>blocks_dense);</highlight></codeline>
+<codeline lineno="52"><highlight class="normal"></highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/>uint32_t<sp/>_batch_size;</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>_input_blocks_dense;</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>_target_blocks_dense;</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/>std::vector&lt;BoltVector&gt;<sp/>_input_vectors;</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/>std::optional&lt;std::vector&lt;BoltVector&gt;&gt;<sp/>_target_vectors;</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/>std::vector&lt;std::shared_ptr&lt;Block&gt;&gt;<sp/>_input_blocks;</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"><sp/><sp/>std::vector&lt;std::shared_ptr&lt;Block&gt;&gt;<sp/>_target_blocks;</highlight></codeline>
+<codeline lineno="70"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="71"><highlight class="normal"></highlight></codeline>
+<codeline lineno="72"><highlight class="normal">}<sp/><sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>thirdai::dataset</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="dataset/src/core/BlockBatchProcessor.h"/>
+  </compounddef>
+</doxygen>
