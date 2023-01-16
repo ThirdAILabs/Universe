@@ -38,7 +38,9 @@ class Input final : public Node {
   }
 
   // This class does not own this memory, but we pass it in as a pointer that
-  // will be stored as a field so it can be used in future method calls.
+  // will be stored as a field so it can be used in future method calls. This
+  // class will assume it is valid memory until setInputs is called again with a
+  // new current input; the caller should ensure that this is the case.
   void setInputs(BoltBatch* inputs);
 
   uint32_t expectedInputDim() const { return _expected_input_dim; }

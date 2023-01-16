@@ -218,7 +218,6 @@ TEST(FullyConnectedDagTest, TrainOnBatch) {
 
   auto test_metrics = model.evaluate(/* test_data= */ {test_data}, test_labels,
                                      getEvalConfig());
-  std::cout << test_metrics.first["categorical_accuracy"] << std::endl;
   ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.95);
 }
 

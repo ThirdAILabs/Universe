@@ -460,7 +460,7 @@ InferenceResult BoltGraph::evaluate(
   // We have to prepare for batch processing so that we know the correct number
   // of nonzeros in the output node and can allocate the InferenceOutputTracker.
   prepareToProcessBatch(
-      /* batch_size= */ 1,
+      /* batch_size= */ predict_context.batchSize(),
       /* use_sparsity= */ eval_config.sparseInferenceEnabled());
   InferenceOutputTracker outputTracker(
       _output, eval_config.shouldReturnActivations(),
