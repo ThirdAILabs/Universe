@@ -45,7 +45,7 @@ def run_demo_notebooks(notebook_paths, temp_dir):
         print(f"The following notebooks failed due to error: {failed_notebooks}")
         for failed_notebook, error in zip(failed_notebooks, failed_notebook_errors):
             print(f"The error for notebook {failed_notebook}: \n {error}")
-        
+
         sys.exit(1)
     else:
         print("All notebooks ran successfully")
