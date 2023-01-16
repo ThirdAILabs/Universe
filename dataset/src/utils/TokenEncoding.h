@@ -105,6 +105,49 @@ class TokenEncoding {
     }
   }
 
+  static std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
+      const std::string_view sentence, uint32_t output_range,
+      char delimiter = ' ') {
+    auto words = splitIntoWords(sentence, delimiter);
+
+    auto unigrams = computeUnigrams(words);
+
+    assert(words.size() == unigrams.size());
+    uint32_t length = words.size();
+
+    std::unordered_map<uint32_t, std::string> index_to_word;
+    for (uint32_t i = 0; i < length; i++) {
+      index_to_word[unigrams[i] % output_range] = words[i];
+    }
+
+    return index_to_word;
+  }
+
+  struct PairGram {
+    uint32_t pairgram;
+    uint32_t first_token;
+    uint32_t second_token;
+  };
+
+  template <typename PAIRGRAM_PROCESSOR_T>
+  static void forEachPairgramFromUnigram(
+      const std::vector<uint32_t>& unigram_hashes, uint32_t output_range,
+      PAIRGRAM_PROCESSOR_T pairgram_processor) {
+    static_assert(std::is_convertible<PAIRGRAM_PROCESSOR_T,
+                                      std::function<void(PairGram)>>::value);
+
+    for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
+      for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
+        uint32_t combined_hash = hashing::HashUtils::combineHashes(
+            unigram_hashes[prev_token], unigram_hashes[token]);
+        combined_hash = combined_hash % output_range;
+        pairgram_processor({/* pairgram= */ combined_hash,
+                            /* first_token= */ unigram_hashes[prev_token],
+                            /* second_token= */ unigram_hashes[token]});
+      }
+    }
+  }
+
   static std::vector<std::string_view> splitIntoWords(std::string_view sentence,
                                                       char delimiter = ' ') {
     std::vector<std::string_view> words;
@@ -184,51 +227,6 @@ class TokenEncoding {
 
   static uint32_t seededMurmurHash(const char* key, uint32_t len) {
     return hashing::MurmurHash(key, len, HASH_SEED);
-  }
-
-  // END NEW FUNCTIONS
-
-  static std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
-      const std::string_view sentence, uint32_t output_range,
-      char delimiter = ' ') {
-    auto words = splitIntoWords(sentence, delimiter);
-
-    auto unigrams = computeUnigrams(words);
-
-    assert(words.size() == unigrams.size());
-    uint32_t length = words.size();
-
-    std::unordered_map<uint32_t, std::string> index_to_word;
-    for (uint32_t i = 0; i < length; i++) {
-      index_to_word[unigrams[i] % output_range] = words[i];
-    }
-
-    return index_to_word;
-  }
-
-  struct PairGram {
-    uint32_t pairgram;
-    uint32_t first_token;
-    uint32_t second_token;
-  };
-
-  template <typename PAIRGRAM_PROCESSOR_T>
-  static void forEachPairgramFromUnigram(
-      const std::vector<uint32_t>& unigram_hashes, uint32_t output_range,
-      PAIRGRAM_PROCESSOR_T pairgram_processor) {
-    static_assert(std::is_convertible<PAIRGRAM_PROCESSOR_T,
-                                      std::function<void(PairGram)>>::value);
-
-    for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
-      for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
-        uint32_t combined_hash = hashing::HashUtils::combineHashes(
-            unigram_hashes[prev_token], unigram_hashes[token]);
-        combined_hash = combined_hash % output_range;
-        pairgram_processor({/* pairgram= */ combined_hash,
-                            /* first_token= */ unigram_hashes[prev_token],
-                            /* second_token= */ unigram_hashes[token]});
-      }
-    }
   }
 };
 
