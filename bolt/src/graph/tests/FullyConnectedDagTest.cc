@@ -5,6 +5,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/metrics/MetricAggregator.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <optional>
@@ -200,14 +201,14 @@ TEST(FullyConnectedDagTest, TrainOnBatch) {
 
   std::vector<uint32_t> batch_sizes = {10, 20, 30, 20, 30};
 
+  MetricAggregator metrics({});
   for (uint32_t batch_size_i : batch_sizes) {
     auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
         /* n_classes= */ n_classes, /* n_batches= */ n_batches,
         /* batch_size= */ batch_size_i, /* noisy_dataset= */ false);
 
     for (uint32_t i = 0; i < data->numBatches(); i++) {
-      model.trainOnBatch(std::move(data->at(i)), labels->at(i), 0.001,
-                         std::make_shared<CategoricalCrossEntropy>());
+      model.trainOnBatch(std::move(data->at(i)), labels->at(i), 0.001, metrics);
     }
   }
 

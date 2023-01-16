@@ -250,9 +250,9 @@ MetricData BoltGraph::train(
   return metric_data;
 }
 
-double BoltGraph::trainOnBatch(std::vector<BoltBatch>& inputs,
-                               const BoltBatch& labels, float learning_rate,
-                               const std::shared_ptr<Metric>& metric) {
+void BoltGraph::trainOnBatch(std::vector<BoltBatch>& inputs,
+                             const BoltBatch& labels, float learning_rate,
+                             MetricAggregator& metrics) {
   if (inputs.size() != _inputs.size()) {
     throw std::invalid_argument("Expected " + std::to_string(_inputs.size()) +
                                 " inputs, but received " +
@@ -262,15 +262,12 @@ double BoltGraph::trainOnBatch(std::vector<BoltBatch>& inputs,
     _inputs[i]->setInputs(&inputs[i]);
   }
 
-  MetricAggregator metrics(metric);
   processTrainingBatch(labels, metrics);
 
   // We will not update hash tables in this method.
   updateParametersAndSampling(learning_rate,
                               std::numeric_limits<uint32_t>::max(),
                               std::numeric_limits<uint32_t>::max());
-
-  return metric->value();
 }
 
 void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,

@@ -1,0 +1,26 @@
+1. Title: CLINC150
+
+2. Source Information
+  -- Creators: Stefan Larson
+  -- Contact: stefan.dataset@gmail.com
+
+3. Citation
+  -- Bibtex: https://www.aclweb.org/anthology/D19-1131.bib
+  -- Paper link: https://www.aclweb.org/anthology/D19-1131/
+  -- Please cite as: "Stefan Larson, Anish Mahendran, Joseph J. Peper, Christopher Clarke, Andrew Lee, Parker Hill, Jonathan K. Kummerfeld, Kevin Leach, Michael A. Laurenzano, Lingjia Tang, and Jason Mars. 2019. An evaluation dataset for intent classification and out-of-scope prediction. In Proceedings of EMNLP-IJCNLP."
+
+4. Abstract
+  -- This is a intent classification (text classification) dataset with 150 in-domain intent classes. The main purpose of this dataset is to evaluate various classifiers on out-of-domain performance. This dataset includes a large out-of-domain test set for evaluating out-of-domain performance. The background scenario for this dataset is to mimic a simple intent classification driven dialog system; the 150 in-domain intents include topics such as banking, automotive, travel, etc.
+
+5. Summary of files:
+There are 4 versions of the dataset:
+- data_full.json: each of the 150 in-domain intent classes have 100 train, 20 val, and 30 test samples. The out-of-domain class has 100 train, 100 val, and 1,000 test samples. Note that the out-of-domain class does not necessarily need to be used at training time. This is the main version of the dataset.
+- data_small.json: each of the 150 in-domain intent classes have 50 train, 20 val, and 30 test samples. The out-of-domain class has 100 train, 100 val, and 1,000 test samples. Note that the out-of-domain class does not necessarily need to be used at training time.
+- data_imbalanced.json: each of the 150 in-domain intent classes have either 25, 50, 75, or 100 train, 20 val, and 30 samples. The out-of-domain class has 100 train, 100 val, and 1,000 test samples. Note that the out-of-domain class does not necessarily need to be used at training time.
+- data_oos_plus.json: same as data_full.json except there are 250 out-of-domain training samples.
+
+6. Preprocessing
+  -- All samples are in text format. No tokenization has been applied. Users of this dataset are free to use whatever sentence representation (e.g. bag-of-words, sentence embeddings) they choose.
+
+7. Summary Statistics
+  -- N in-domain classes: 150
