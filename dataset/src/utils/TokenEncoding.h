@@ -12,9 +12,8 @@
 // todo profile new strategy
 // todo unit tests
 // todo split into .h and .cc
-// todo explainability
-// todo replace existing code
 // todo make into namespace instead of a class
+// todo integrate into UDT?
 
 namespace thirdai::dataset {
 

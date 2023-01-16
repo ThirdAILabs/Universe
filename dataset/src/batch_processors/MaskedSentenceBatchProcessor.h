@@ -87,11 +87,10 @@ class MaskedSentenceBatchProcessor final : public BatchProcessor {
     TokenEncoding::mod(pairgrams, _output_range);
     auto dedpulicated_pairgrams = TokenEncoding::sumRepeatedIndices(pairgrams);
 
-    // return {std::move(pairgrams),
-    //         BoltVector::makeSparseVector(
-    //             masked_indices, std::vector<float>(masked_tokens_size, 1.0)),
-    //         std::move(label)};
-    return {};
+    return {BoltVector::makeSparseVector(dedpulicated_pairgrams),
+            BoltVector::makeSparseVector(
+                masked_indices, std::vector<float>(masked_tokens_size, 1.0)),
+            std::move(label)};
   }
 
   std::shared_ptr<Vocabulary> _vocab;

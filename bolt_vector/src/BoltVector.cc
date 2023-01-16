@@ -115,6 +115,17 @@ BoltVector BoltVector::makeSparseVector(const std::vector<uint32_t>& indices,
   return vec;
 }
 
+BoltVector BoltVector::makeSparseVector(
+    const std::vector<std::pair<uint32_t, float>>& index_value_pairs) {
+  BoltVector vec(index_value_pairs.size(), /* is_dense = */ false,
+                 /* has_gradient = */ false);
+  for (uint32_t i = 0; i < index_value_pairs.size(); i++) {
+    vec.active_neurons[i] = index_value_pairs[i].first;
+    vec.activations[i] = index_value_pairs[i].second;
+  }
+  return vec;
+}
+
 BoltVector BoltVector::makeDenseVector(const std::vector<float>& values) {
   BoltVector vec(values.size(), /* is_dense = */ true,
                  /* has_gradient = */ false);

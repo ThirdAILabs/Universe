@@ -309,7 +309,10 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<const std::string&, uint32_t>(), py::arg("filename"),
            py::arg("batch_size"));
 
-  dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
+  dataset_submodule.def("make_sparse_vector",
+                        py::overload_cast<const std::vector<uint32_t>&,
+                                          const std::vector<float>&>(
+                            &BoltVector::makeSparseVector),
                         py::arg("indices"), py::arg("values"));
 
   dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
