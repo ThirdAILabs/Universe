@@ -250,19 +250,14 @@ MetricData BoltGraph::train(
   return metric_data;
 }
 
-void BoltGraph::trainOnBatch(std::vector<BoltBatch>& inputs,
+void BoltGraph::trainOnBatch(std::vector<BoltBatch>&& inputs,
                              const BoltBatch& labels, float learning_rate,
                              MetricAggregator& metrics,
                              uint32_t rebuild_hash_tables_interval,
                              uint32_t reconstruct_hash_functions_interval) {
-  if (inputs.size() != _inputs.size()) {
-    throw std::invalid_argument("Expected " + std::to_string(_inputs.size()) +
-                                " inputs, but received " +
-                                std::to_string(inputs.size()) + " inputs.");
-  }
-  for (uint32_t i = 0; i < inputs.size(); i++) {
-    _inputs[i]->setInputs(&inputs[i]);
-  }
+  SingleBatchDatasetContext dataset_context(std::move(inputs));
+  verifyInputForGraph(dataset_context);
+  dataset_context.setInputs(/* batch_idx= */ 0, _inputs);
 
   processTrainingBatch(labels, metrics);
 
@@ -562,6 +557,26 @@ BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
   }
 
   return BoltBatch(std::move(outputs));
+}
+
+void BoltGraph::predictSingleBatchNoReturn(std::vector<BoltBatch>&& test_data,
+                                           bool use_sparse_inference) {
+  SingleBatchDatasetContext single_predict_context(std::move(test_data));
+
+  verifyCanPredict(single_predict_context, /* has_labels = */ false,
+                   /* returning_activations = */ true,
+                   /* num_metrics_tracked = */ 0);
+
+  uint32_t batch_size = single_predict_context.batchSize();
+
+  prepareToProcessBatch(batch_size, use_sparse_inference);
+
+  single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
+
+#pragma omp parallel for default(none) shared(batch_size)
+  for (uint32_t vec_index = 0; vec_index < batch_size; vec_index++) {
+    forward(vec_index, nullptr);
+  }
 }
 
 void BoltGraph::processEvaluationBatch(uint64_t batch_size,

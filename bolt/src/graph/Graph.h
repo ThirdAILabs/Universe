@@ -59,21 +59,10 @@ class BoltGraph {
                    const dataset::BoltDatasetPtr& train_labels,
                    const TrainConfig& train_config);
 
-  void trainOnBatch(std::vector<BoltBatch>& inputs, const BoltBatch& labels,
+  void trainOnBatch(std::vector<BoltBatch>&& inputs, const BoltBatch& labels,
                     float learning_rate, MetricAggregator& metrics,
                     uint32_t rebuild_hash_tables_interval,
                     uint32_t reconstruct_hash_functions_interval);
-
-  void trainOnBatch(BoltBatch&& input, const BoltBatch& labels,
-                    float learning_rate, MetricAggregator& metrics,
-                    uint32_t rebuild_hash_tables_interval,
-                    uint32_t reconstruct_hash_functions_interval) {
-    std::vector<BoltBatch> inputs;
-    inputs.emplace_back(std::move(input));
-    trainOnBatch(inputs, labels, learning_rate, metrics,
-                 rebuild_hash_tables_interval,
-                 reconstruct_hash_functions_interval);
-  }
 
   InferenceResult evaluate(
       const std::vector<dataset::BoltDatasetPtr>& test_data,
@@ -92,6 +81,9 @@ class BoltGraph {
 
   BoltBatch predictSingleBatch(std::vector<BoltBatch>&& test_data,
                                bool use_sparse_inference);
+
+  void predictSingleBatchNoReturn(std::vector<BoltBatch>&& test_data,
+                                  bool use_sparse_inference);
 
   std::vector<NodePtr> getNodeTraversalOrder() const {
     std::vector<NodePtr> nodes;
