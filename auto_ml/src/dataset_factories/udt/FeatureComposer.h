@@ -36,7 +36,7 @@ using ColumnVocabularies =
 class FeatureComposer {
  public:
   static UDTConfigPtr verifyConfigIsValid(
-      UDTConfigPtr&& config,
+      const UDTConfigPtr& config,
       const TemporalRelationships& temporal_relationships);
 
   static std::vector<dataset::BlockPtr> makeNonTemporalFeatureBlocks(
