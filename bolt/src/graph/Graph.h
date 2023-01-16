@@ -60,14 +60,19 @@ class BoltGraph {
                    const TrainConfig& train_config);
 
   void trainOnBatch(std::vector<BoltBatch>& inputs, const BoltBatch& labels,
-                    float learning_rate, MetricAggregator& metrics);
+                    float learning_rate, MetricAggregator& metrics,
+                    uint32_t rebuild_hash_tables_interval,
+                    uint32_t reconstruct_hash_functions_interval);
 
   void trainOnBatch(BoltBatch&& input, const BoltBatch& labels,
-                    float learning_rate, MetricAggregator& metrics) {
+                    float learning_rate, MetricAggregator& metrics,
+                    uint32_t rebuild_hash_tables_interval,
+                    uint32_t reconstruct_hash_functions_interval) {
     std::vector<BoltBatch> inputs;
     inputs.emplace_back(std::move(input));
-
-    trainOnBatch(inputs, labels, learning_rate, metrics);
+    trainOnBatch(inputs, labels, learning_rate, metrics,
+                 rebuild_hash_tables_interval,
+                 reconstruct_hash_functions_interval);
   }
 
   InferenceResult evaluate(

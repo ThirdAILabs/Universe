@@ -208,7 +208,10 @@ TEST(FullyConnectedDagTest, TrainOnBatch) {
         /* batch_size= */ batch_size_i, /* noisy_dataset= */ false);
 
     for (uint32_t i = 0; i < data->numBatches(); i++) {
-      model.trainOnBatch(std::move(data->at(i)), labels->at(i), 0.001, metrics);
+      model.trainOnBatch(std::move(data->at(i)), labels->at(i),
+                         /* learning_rate= */ 0.001, metrics,
+                         /* rebuild_hash_tables_interval= */ 10,
+                         /* reconstruct_hash_functions_interval= */ 50);
     }
   }
 
