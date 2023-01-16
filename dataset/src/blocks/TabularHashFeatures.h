@@ -97,6 +97,8 @@ class TabularHashFeatures final : public Block {
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final;
 
  private:
+  
+
   /**
    * For values between the min and the max (inclusive), we divide that range
    * into N uniform chunks and return a bin number from 0 to N-1. Additionally
