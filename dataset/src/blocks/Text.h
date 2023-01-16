@@ -111,24 +111,29 @@ class PairGramTextBlock final : public TextBlock {
 using PairGramTextBlockPtr = std::shared_ptr<PairGramTextBlock>;
 
 /**
- * A block that encodes text as a weighted set of space-separated words.
+ * A block that encodes text as hashed N-gram tokens.
  */
-class UniGramTextBlock final : public TextBlock {
+class NGramTextBlock final : public TextBlock {
  public:
-  explicit UniGramTextBlock(
-      ColumnIdentifier col,
+  explicit NGramTextBlock(
+      ColumnIdentifier col, uint32_t n = 1,
       uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
       char delimiter = ' ')
-      : TextBlock(std::move(col), dim), _delimiter(delimiter) {}
+      : TextBlock(std::move(col), dim), _n(n), _delimiter(delimiter) {}
 
-  static auto make(ColumnIdentifier col,
+  static auto make(ColumnIdentifier col, uint32_t n = 1,
                    uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
                    char delimiter = ' ') {
-    return std::make_shared<UniGramTextBlock>(std::move(col), dim, delimiter);
+    return std::make_shared<NGramTextBlock>(std::move(col), n, dim, delimiter);
   }
 
   std::string getResponsibleWord(uint32_t index,
                                  const std::string_view& text) const final {
+    // TODO(any): implement explanations for generic N grams
+    if (_n != 1) {
+      throw std::invalid_argument(
+          "Word explanations not supported for n != 1.");
+    }
     std::unordered_map<uint32_t, std::string> index_to_word_map =
         TokenEncoding::buildUnigramHashToWordMap(text, _dim, _delimiter);
     return index_to_word_map.at(index);
@@ -138,7 +143,7 @@ class UniGramTextBlock final : public TextBlock {
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> unigrams =
-        TokenEncoding::computeUnigrams(text, _delimiter);
+        TokenEncoding::computeNGrams(text, /* n= */ _n, _delimiter);
     TokenEncoding::mod(unigrams, _dim);
 
     for (auto& [index, value] : TokenEncoding::sumRepeatedIndices(unigrams)) {
@@ -150,18 +155,19 @@ class UniGramTextBlock final : public TextBlock {
 
  private:
   // Private constructor for cereal.
-  UniGramTextBlock() {}
+  NGramTextBlock() {}
 
+  uint32_t _n;
   char _delimiter = ' ';
 
   friend class cereal::access;
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<TextBlock>(this), _delimiter);
+    archive(cereal::base_class<TextBlock>(this), _n, _delimiter);
   }
 };
 
-using UniGramTextBlockPtr = std::shared_ptr<UniGramTextBlock>;
+using NGramTextBlockPtr = std::shared_ptr<NGramTextBlock>;
 
 /**
  * A block that encodes text as a weighted set of character k-grams.
@@ -236,5 +242,5 @@ using CharKGramTextBlockPtr = std::shared_ptr<CharKGramTextBlock>;
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::TextBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::PairGramTextBlock)
-CEREAL_REGISTER_TYPE(thirdai::dataset::UniGramTextBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::NGramTextBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::CharKGramTextBlock)

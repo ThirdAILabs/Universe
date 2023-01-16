@@ -134,19 +134,21 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &PairGramTextBlock::isDense,
            "Returns false since text blocks always produce sparse features.");
 
-  py::class_<UniGramTextBlock, TextBlock, UniGramTextBlockPtr>(
-      block_submodule, "TextUniGram",
-      "A block that encodes text as a weighted set of space-separated words.")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("col"),
+  py::class_<NGramTextBlock, TextBlock, NGramTextBlockPtr>(
+      block_submodule, "TextNGram",
+      "A block that encodes text as hashed N-gram tokens.")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("col"),
+           py::arg("n"),
            py::arg("dim") = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
            "the text to be encoded.\n"
+           " * n: Int - The number of words per N-gram representation."
            " * dim: Int - Dimension of the encoding")
-      .def("feature_dim", &UniGramTextBlock::featureDim,
+      .def("feature_dim", &NGramTextBlock::featureDim,
            "Returns the dimension of the vector encoding.")
-      .def("is_dense", &UniGramTextBlock::isDense,
+      .def("is_dense", &NGramTextBlock::isDense,
            "Returns false since text blocks always produce sparse "
            "features.");
 

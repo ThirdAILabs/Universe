@@ -74,8 +74,9 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
         // want is unigrams of the "words" separated by some delimiter
         // 2. text hash range of MAXINT is fine since features are later
         // hashed into a range. In fact it may reduce hash collisions.
-        blocks.push_back(dataset::UniGramTextBlock::make(
-            col_name, /* dim= */ std::numeric_limits<uint32_t>::max(),
+        blocks.push_back(dataset::NGramTextBlock::make(
+            col_name, /* n= */ 1,
+            /* dim= */ std::numeric_limits<uint32_t>::max(),
             *categorical->delimiter));
       } else {
         tabular_columns.push_back(dataset::TabularColumn::Categorical(
@@ -99,8 +100,9 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
         blocks.push_back(dataset::PairGramTextBlock::make(
             col_name, /* dim= */ std::numeric_limits<uint32_t>::max()));
       } else {
-        blocks.push_back(dataset::UniGramTextBlock::make(
-            col_name, /* dim= */ std::numeric_limits<uint32_t>::max()));
+        blocks.push_back(dataset::NGramTextBlock::make(
+            col_name, /* n= */ 1,
+            /* dim= */ std::numeric_limits<uint32_t>::max()));
       }
     }
 

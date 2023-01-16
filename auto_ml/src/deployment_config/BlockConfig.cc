@@ -31,7 +31,7 @@ dataset::BlockPtr TextBlockConfig::getBlock(
   if (_use_pairgrams) {
     return dataset::PairGramTextBlock::make(column, range);
   }
-  return dataset::UniGramTextBlock::make(column, range);
+  return dataset::NGramTextBlock::make(column, /* n= */ 1, range);
 }
 
 }  // namespace thirdai::automl::deployment

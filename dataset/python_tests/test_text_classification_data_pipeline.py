@@ -63,8 +63,8 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
 def test_text_classification_data_pipeline_with_unigrams():
     from thirdai.dataset import blocks
 
-    helper_for_text_classification_data_pipeline(blocks.TextUniGram(col=1), ",")
-    helper_for_text_classification_data_pipeline(blocks.TextUniGram(col=1), "\t")
+    helper_for_text_classification_data_pipeline(blocks.TextNGram(col=1, n=1), ",")
+    helper_for_text_classification_data_pipeline(blocks.TextNGram(col=1, n=1), "\t")
 
 
 @pytest.mark.integration
