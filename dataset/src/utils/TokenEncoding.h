@@ -27,7 +27,9 @@ class TokenEncoding {
   static constexpr uint32_t HASH_SEED = 341;
   static constexpr uint32_t DEFAULT_TEXT_ENCODING_DIM = 100000;
 
-  // NEW FUNCTIONS
+  static uint32_t seededMurmurHash(const char* key, uint32_t len) {
+    return hashing::MurmurHash(key, len, HASH_SEED);
+  }
 
   static std::vector<uint32_t> computeNGrams(
       const std::vector<std::string_view>& words, uint32_t n) {
@@ -223,10 +225,6 @@ class TokenEncoding {
     }
 
     return index_value_pairs;
-  }
-
-  static uint32_t seededMurmurHash(const char* key, uint32_t len) {
-    return hashing::MurmurHash(key, len, HASH_SEED);
   }
 };
 
