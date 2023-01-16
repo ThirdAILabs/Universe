@@ -77,10 +77,11 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       UDTConfigPtr config, bool force_parallel,
       uint32_t text_pairgram_word_limit, bool contextual_columns = false,
       std::optional<dataset::RegressionBinningStrategy> regression_binning =
-          std::nullopt) {
+          std::nullopt,
+      uint32_t prediction_depth = 1) {
     return std::make_shared<UDTDatasetFactory>(
         std::move(config), force_parallel, text_pairgram_word_limit,
-        contextual_columns, regression_binning);
+        contextual_columns, regression_binning, prediction_depth);
   }
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
@@ -209,7 +210,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
                                              bool should_update_history) {
     verifyProcessorsAreInitialized();
     verifyColumnNumberMapIsInitialized();
-    auto& processor = getProcessor(should_update_history);
+    BatchProcessorPtr processor = getProcessor(should_update_history);
     return {boltVectorFromInput(processor, *_column_number_map,
                                 _config->delimiter, input)};
   }
@@ -371,8 +372,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     up watching is not available during inference, so we should not update the
     history.
   */
-  dataset::GenericBatchProcessorPtr _labeled_history_updating_processor;
-  dataset::GenericBatchProcessorPtr _unlabeled_non_updating_processor;
+  dataset::BatchProcessorPtr _labeled_history_updating_processor;
+  dataset::BatchProcessorPtr _unlabeled_non_updating_processor;
   std::unordered_map<std::string, dataset::GenericBatchProcessorPtr>
       _metadata_processors;
 

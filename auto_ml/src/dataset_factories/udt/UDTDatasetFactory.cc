@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/batch_processors/UnrollingLSTMProcessor.h>
 #include <stdexcept>
 
 namespace thirdai::automl::data {
@@ -218,8 +219,7 @@ void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
   }
 }
 
-dataset::GenericBatchProcessorPtr
-UDTDatasetFactory::makeLabeledUpdatingProcessor(
+dataset::BatchProcessorPtr UDTDatasetFactory::makeLabeledUpdatingProcessor(
     const ColumnNumberMap& column_number_map) {
   if (!_config->data_types.count(_config->target)) {
     throw std::invalid_argument(
@@ -231,10 +231,18 @@ UDTDatasetFactory::makeLabeledUpdatingProcessor(
   auto input_blocks = buildInputBlocks(/* column_numbers= */ column_number_map,
                                        /* should_update_history= */ true);
 
-  auto processor = dataset::GenericBatchProcessor::make(
-      std::move(input_blocks), {label_block}, /* has_header= */ true,
-      /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
-      /* hash_range= */ _config->hash_range);
+  BatchProcessorPtr processor = nullptr;
+  if (prediction_depth == 1) {
+    processor = dataset::GenericBatchProcessor::make(
+        std::move(input_blocks), {label_block}, /* has_header= */ true,
+        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
+        /* hash_range= */ _config->hash_range);
+  } else {
+    processor = dataset::UnrollingLSTMProcessor::make(
+        std::move(input_blocks), {label_block}, /* has_header= */ true,
+        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
+        /* hash_range= */ _config->hash_range);
+  }
   return processor;
 }
 
