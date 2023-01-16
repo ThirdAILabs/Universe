@@ -2,16 +2,13 @@
 
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
-#include <dataset/src/blocks/BlockInterface.h>
 #include <functional>
 #include <string_view>
 #include <type_traits>
-
-// todo unit tests
-// todo integrate into UDT?
+#include <unordered_map>
 
 /**
- * @brief This namespace should be the source of token encodings across the
+ * This namespace should be the source of token encodings across the
  * codebase to ensure consistency in code, implementation, hash seeds, etc.
  */
 namespace thirdai::dataset::TokenEncoding {
@@ -63,20 +60,6 @@ void mod(std::vector<uint32_t>& tokens, uint32_t dim);
  */
 std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
     std::string_view sentence, uint32_t output_range, char delimiter = ' ');
-
-struct PairGram {
-  uint32_t pairgram;
-  uint32_t first_token;
-  uint32_t second_token;
-};
-
-/**
- * Given unigram hash tokens, applies a given lambda to all pairgrams
- */
-template <typename PAIRGRAM_PROCESSOR_T>
-void forEachPairgramFromUnigram(const std::vector<uint32_t>& unigram_hashes,
-                                uint32_t output_range,
-                                PAIRGRAM_PROCESSOR_T pairgram_processor);
 
 /**
  * Splits a sentence into words by delimiter.

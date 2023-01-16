@@ -1,7 +1,7 @@
-#include "TokenEncoding.h"
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <functional>
 #include <string_view>
 #include <type_traits>
@@ -98,25 +98,6 @@ std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
   }
 
   return index_to_word;
-}
-
-template <typename PAIRGRAM_PROCESSOR_T>
-void forEachPairgramFromUnigram(const std::vector<uint32_t>& unigram_hashes,
-                                uint32_t output_range,
-                                PAIRGRAM_PROCESSOR_T pairgram_processor) {
-  static_assert(std::is_convertible<PAIRGRAM_PROCESSOR_T,
-                                    std::function<void(PairGram)>>::value);
-
-  for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
-    for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
-      uint32_t combined_hash = hashing::HashUtils::combineHashes(
-          unigram_hashes[prev_token], unigram_hashes[token]);
-      combined_hash = combined_hash % output_range;
-      pairgram_processor({/* pairgram= */ combined_hash,
-                          /* first_token= */ unigram_hashes[prev_token],
-                          /* second_token= */ unigram_hashes[token]});
-    }
-  }
 }
 
 std::vector<std::string_view> splitIntoWords(std::string_view sentence,
