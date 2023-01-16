@@ -29,9 +29,8 @@ class TokenEncoding {
 
   // NEW FUNCTIONS
 
-  static std::vector<uint32_t> computeNGrams(std::string_view sentence,
-                                             uint32_t n, char delimiter = ' ') {
-    auto words = splitIntoWords(sentence, delimiter);
+  static std::vector<uint32_t> computeNGrams(
+      const std::vector<std::string_view>& words, uint32_t n) {
     uint32_t num_words = words.size();
 
     std::vector<uint32_t> n_gram_tokens;
@@ -41,7 +40,7 @@ class TokenEncoding {
     // - We include unigrams in all n-gram computations so bolt always can
     // identify keywords
     for (const auto& word : words) {
-      n_gram_tokens.push_back(computeUnigram(word.data(), word.size()));
+      n_gram_tokens.push_back(seededMurmurHash(word.data(), word.size()));
     }
 
     // if we have to do more than unigrams and there are enough words to N-gram
@@ -49,30 +48,18 @@ class TokenEncoding {
       for (uint32_t start_word_idx = 0; start_word_idx <= num_words - n;
            start_word_idx++) {
         std::string_view word = words[start_word_idx];
-        uint32_t n_gram_token = computeUnigram(word.data(), word.size());
+        uint32_t n_gram_token = seededMurmurHash(word.data(), word.size());
 
         for (uint32_t i = 1; i < n; i++) {
           word = words[start_word_idx + i];
           n_gram_token = hashing::HashUtils::combineHashes(
-              n_gram_token, computeUnigram(word.data(), word.size()));
+              n_gram_token, seededMurmurHash(word.data(), word.size()));
         }
         n_gram_tokens.push_back(n_gram_token);
       }
     }
 
     return n_gram_tokens;
-  }
-
-  static std::vector<uint32_t> computeUnigrams(std::string_view sentence,
-                                               char delimiter = ' ') {
-    return computeNGrams(sentence, /* n= */ 1, delimiter);
-  }
-
-  static std::vector<uint32_t> computePairGrams(
-      const std::string_view sentence) {
-    std::vector<uint32_t> unigrams = computeNGrams(sentence, /* n= */ 1);
-
-    return computePairGrams(unigrams);
   }
 
   static std::vector<uint32_t> computePairGrams(
@@ -86,6 +73,30 @@ class TokenEncoding {
     }
 
     return pairgrams;
+  }
+
+  static std::vector<uint32_t> computeNGrams(std::string_view sentence,
+                                             uint32_t n, char delimiter = ' ') {
+    auto words = splitIntoWords(sentence, delimiter);
+
+    return computeNGrams(words, n);
+  }
+
+  static std::vector<uint32_t> computeUnigrams(std::string_view sentence,
+                                               char delimiter = ' ') {
+    return computeNGrams(sentence, /* n= */ 1, delimiter);
+  }
+
+  static std::vector<uint32_t> computeUnigrams(
+      const std::vector<std::string_view>& words) {
+    return computeNGrams(words, /* n= */ 1);
+  }
+
+  static std::vector<uint32_t> computePairGrams(
+      const std::string_view sentence) {
+    std::vector<uint32_t> unigrams = computeUnigrams(sentence);
+
+    return computePairGrams(unigrams);
   }
 
   static void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
@@ -171,27 +182,27 @@ class TokenEncoding {
     return index_value_pairs;
   }
 
-  // END NEW FUNCTIONS
-
-  static uint32_t computeUnigram(const char* key, uint32_t len) {
+  static uint32_t seededMurmurHash(const char* key, uint32_t len) {
     return hashing::MurmurHash(key, len, HASH_SEED);
   }
 
-  /**
-   * Get the word_hash to word map, which we can use it for RCA. Its better to
-   * write seperate function than to overload the already existing function.
-   */
+  // END NEW FUNCTIONS
+
   static std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
       const std::string_view sentence, uint32_t output_range,
       char delimiter = ' ') {
+    auto words = splitIntoWords(sentence, delimiter);
+
+    auto unigrams = computeUnigrams(words);
+
+    assert(words.size() == unigrams.size());
+    uint32_t length = words.size();
+
     std::unordered_map<uint32_t, std::string> index_to_word;
-    forEachWordHash(
-        sentence,
-        [&](uint32_t word_hash, const std::string_view& word) {
-          (void)word_hash;
-          index_to_word[word_hash % output_range] = word;
-        },
-        delimiter);
+    for (uint32_t i = 0; i < length; i++) {
+      index_to_word[unigrams[i] % output_range] = words[i];
+    }
+
     return index_to_word;
   }
 

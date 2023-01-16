@@ -198,7 +198,7 @@ class CharKGramTextBlock final : public TextBlock {
     size_t n_kgrams = text.size() >= _k ? text.size() - (_k - 1) : 1;
     size_t len = std::min(text.size(), static_cast<size_t>(_k));
     for (uint32_t offset = 0; offset < n_kgrams; offset++) {
-      uint32_t k_gram_hash = TokenEncoding::computeUnigram(
+      uint32_t k_gram_hash = TokenEncoding::seededMurmurHash(
                                  /* key= */ &lower_case_text.at(offset), len) %
                              _dim;
       char_k_grams.push_back(k_gram_hash);

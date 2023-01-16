@@ -52,8 +52,7 @@ columns::TokenArrayColumnPtr SentenceUnigram::rawUnigramColumn(
     shared(num_rows, column_values, input_column)
   for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
     std::string text = (*input_column)[row_idx];
-    std::vector<uint32_t> unigrams = computeUnigrams(text);
-    column_values[row_idx] = unigrams;
+    column_values[row_idx] = computeUnigrams(text);
   }
 
   return std::make_shared<columns::CppTokenArrayColumn>(
@@ -62,12 +61,10 @@ columns::TokenArrayColumnPtr SentenceUnigram::rawUnigramColumn(
 
 std::vector<uint32_t> SentenceUnigram::computeUnigrams(
     const std::string& text) {
-  std::vector<uint32_t> unigrams;
+  std::vector<uint32_t> unigrams =
+      dataset::TokenEncoding::computeUnigrams(text);
   if (_output_range) {
-    unigrams = dataset::TokenEncoding::computeUnigrams(text);
     dataset::TokenEncoding::mod(unigrams, *_output_range);
-  } else {
-    unigrams = dataset::TokenEncoding::computeUnigrams(text);
   }
   return unigrams;
 }

@@ -22,7 +22,7 @@ static constexpr uint32_t DEFAULT_NUM_BINS = 10;
 enum class TabularDataType {
   Numeric,
   Categorical,
-};  // TODO(david) add datetime/text support
+};
 
 struct TabularColumn {
   static TabularColumn Numeric(ColumnIdentifier identifier,

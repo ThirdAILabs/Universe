@@ -111,7 +111,7 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
         break;
       }
       case TabularDataType::Categorical: {
-        unigram = TokenEncoding::computeUnigram(str_val.data(), str_val.size());
+        unigram = TokenEncoding::seededMurmurHash(str_val.data(), str_val.size());
         break;
       }
     }
