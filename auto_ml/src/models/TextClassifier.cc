@@ -135,7 +135,7 @@ std::vector<BoltBatch> TextClassifier::featurize(const py::dict& data) const {
       data["bert_tokens"].cast<NumpyArray<uint32_t>>();
   verifyArrayHasNDimensions(tokens, 1, "bert_tokens");
 
-  NumpyArray<float> metadata = data["metadata"].cast<NumpyArray<float>>();
+  NumpyArray<uint32_t> metadata = data["metadata"].cast<NumpyArray<uint32_t>>();
   verifyArrayHasNDimensions(metadata, 2, "metadata");
   uint32_t batch_size = metadata.shape(0);
   verifyArrayShape(metadata, {batch_size, _metadata_dim}, "metadata");
@@ -152,7 +152,7 @@ std::vector<BoltBatch> TextClassifier::featurize(const py::dict& data) const {
   // and can't be called within omp loops.
   const uint32_t* tokens_ptr = tokens.data();
   const uint32_t* offsets_ptr = offsets.data();
-  const float* metadata_ptr = metadata.data();
+  const uint32_t* metadata_ptr = metadata.data();
 
 #pragma omp parallel for default(none) \
     shared(batch_size, metadata_ptr, tokens_ptr, offsets_ptr, vectors)
@@ -188,7 +188,7 @@ BoltBatch TextClassifier::convertLabelsToBoltBatch(NumpyArray<float>& labels,
 }
 
 std::vector<uint32_t> TextClassifier::getMetadataNonzeros(
-    const float* metadata) const {
+    const uint32_t* metadata) const {
   std::vector<uint32_t> metadata_nonzeros;
   try {  // This is to make sure that no exceptions get thrown in omp loops.
     for (uint32_t i = 0; i < _metadata_dim; i++) {
@@ -265,10 +265,8 @@ TextClassifier::binaryCrossEntropyLoss(const NumpyArray<float>& labels,
   return std::make_pair(loss / batch_size, std::move(per_class_loss));
 }
 
-template <typename T>
-void TextClassifier::verifyArrayHasNDimensions(const NumpyArray<T>& array,
-                                               uint32_t n,
-                                               const std::string& name) {
+void TextClassifier::verifyArrayHasNDimensions(
+    const NumpyArray<uint32_t>& array, uint32_t n, const std::string& name) {
   if (array.ndim() != n) {
     std::stringstream error;
     error << "Expected " << name << " to have " << n
@@ -278,8 +276,7 @@ void TextClassifier::verifyArrayHasNDimensions(const NumpyArray<T>& array,
   }
 }
 
-template <typename T>
-void TextClassifier::verifyArrayShape(const NumpyArray<T>& array,
+void TextClassifier::verifyArrayShape(const NumpyArray<uint32_t>& array,
                                       std::vector<uint32_t> expected_dims,
                                       const std::string& name) {
   if (expected_dims.empty()) {

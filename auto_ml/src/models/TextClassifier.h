@@ -70,7 +70,7 @@ class TextClassifier {
    * (batch_size + 1) that gives the offsets of the tokens for each document.
    * The tokens for document i should be in the range [offsets[i], offsets[i+1])
    * in the tokens array. The field "metadata" should be a 2D numpy array of 0/1
-   * values (dtype is float32) that represent the metadata for each document.
+   * values (dtype is uint32) that represent the metadata for each document.
    */
   std::vector<BoltBatch> featurize(const py::dict& data) const;
 
@@ -87,7 +87,7 @@ class TextClassifier {
    * dimension to each nonzero so that the returned indices are ready to be
    * concatenated with the tokens.
    */
-  std::vector<uint32_t> getMetadataNonzeros(const float* metadata) const;
+  std::vector<uint32_t> getMetadataNonzeros(const uint32_t* metadata) const;
 
   /**
    * Concatenates the berk tokens and metadata nonzeros into a sparse
@@ -107,17 +107,15 @@ class TextClassifier {
   /**
    * Checks that the given array has the correct number of dimensions.
    */
-  template <typename T>
-  static void verifyArrayHasNDimensions(const NumpyArray<T>& array, uint32_t n,
-                                        const std::string& name);
+  static void verifyArrayHasNDimensions(const NumpyArray<uint32_t>& array,
+                                        uint32_t n, const std::string& name);
 
   /**
    * Checks that the given array has the correct shape. Assumes that
    * verifyArrayHasNDimensions has already been called and it can safely access
    * each dimension of the provided array.
    */
-  template <typename T>
-  static void verifyArrayShape(const NumpyArray<T>& array,
+  static void verifyArrayShape(const NumpyArray<uint32_t>& array,
                                std::vector<uint32_t> expected_dims,
                                const std::string& name);
 
