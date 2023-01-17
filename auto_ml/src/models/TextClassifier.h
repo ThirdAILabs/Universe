@@ -38,6 +38,12 @@ class TextClassifier {
   BoltBatch convertLabelsToBoltBatch(NumpyArray<float>& labels,
                                      uint32_t batch_size) const;
 
+  std::vector<uint32_t> getMetadataNonzeros(const float* metadata) const;
+
+  static BoltVector concatTokensAndMetadata(
+      const uint32_t* tokens, uint32_t n_tokens,
+      const std::vector<uint32_t>& metadata_nonzeros);
+
   std::pair<float, std::optional<NumpyArray<float>>> binaryCrossEntropyLoss(
       const NumpyArray<float>& labels, bool return_loss_per_class);
 
@@ -49,6 +55,9 @@ class TextClassifier {
   static void verifyArrayShape(const NumpyArray<T>& array,
                                std::vector<uint32_t> expected_dims,
                                const std::string& name);
+
+  static void verifyOffsets(const NumpyArray<uint32_t>& offsets,
+                            uint32_t tokens_length);
 
   // Private constructor for cereal.
   TextClassifier() {}

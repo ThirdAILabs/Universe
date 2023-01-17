@@ -13,6 +13,7 @@
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::automl::models {
 
@@ -143,30 +144,26 @@ std::vector<BoltBatch> TextClassifier::featurize(const py::dict& data) const {
       data["doc_offsets"].cast<NumpyArray<uint32_t>>();
   verifyArrayHasNDimensions(offsets, 1, "doc_offsets");
   verifyArrayShape(offsets, {batch_size + 1}, "doc_offsets");
+  verifyOffsets(offsets, tokens.shape(0));
 
   std::vector<BoltVector> vectors(batch_size);
 
+  // We use pointers here because py::array_t access methods throw exceptions
+  // and can't be called within omp loops.
+  const uint32_t* tokens_ptr = tokens.data();
+  const uint32_t* offsets_ptr = offsets.data();
+  const float* metadata_ptr = metadata.data();
+
 #pragma omp parallel for default(none) \
-    shared(batch_size, metadata, tokens, offsets, vectors)
+    shared(batch_size, metadata_ptr, tokens_ptr, offsets_ptr, vectors)
   for (uint32_t i = 0; i < batch_size; i++) {
-    std::vector<uint32_t> metadata_nonzeros;
-    for (uint32_t j = 0; j < _metadata_dim; j++) {
-      if (metadata.at(i, j) != 0) {
-        metadata_nonzeros.push_back(_input_vocab_size + j);
-      }
-    }
+    std::vector<uint32_t> metadata_nonzeros =
+        getMetadataNonzeros(metadata_ptr + i * _metadata_dim);
 
-    uint32_t n_tokens = offsets.at(i + 1) - offsets.at(i);
-    vectors[i] = BoltVector(/* l= */ n_tokens + metadata_nonzeros.size(),
-                            /* is_dense= */ false, /* has_gradient= */ false);
-
-    const uint32_t* tokens_ptr = tokens.data(offsets.at(i));
-    std::copy(tokens_ptr, tokens_ptr + n_tokens, vectors[i].active_neurons);
-
-    std::copy(metadata_nonzeros.begin(), metadata_nonzeros.end(),
-              vectors[i].active_neurons + n_tokens);
-
-    std::fill_n(vectors[i].activations, vectors[i].len, 1.0);
+    uint32_t tokens_start = offsets_ptr[i];
+    uint32_t n_tokens = offsets_ptr[i + 1] - tokens_start;
+    vectors[i] = concatTokensAndMetadata(tokens_ptr + tokens_start, n_tokens,
+                                         metadata_nonzeros);
   }
 
   std::vector<BoltBatch> output_batches;
@@ -190,6 +187,38 @@ BoltBatch TextClassifier::convertLabelsToBoltBatch(NumpyArray<float>& labels,
   return BoltBatch(std::move(label_vectors));
 }
 
+std::vector<uint32_t> TextClassifier::getMetadataNonzeros(
+    const float* metadata) const {
+  std::vector<uint32_t> metadata_nonzeros;
+  try {  // This is to make sure that no exceptions get thrown in omp loops.
+    for (uint32_t i = 0; i < _metadata_dim; i++) {
+      if (metadata[i] != 0) {
+        metadata_nonzeros.push_back(_input_vocab_size + i);
+      }
+    }
+  } catch (std::exception& e) {
+    return {};
+  }
+  return metadata_nonzeros;
+}
+
+BoltVector TextClassifier::concatTokensAndMetadata(
+    const uint32_t* tokens, uint32_t n_tokens,
+    const std::vector<uint32_t>& metadata_nonzeros) {
+  BoltVector vector(/* l= */ n_tokens + metadata_nonzeros.size(),
+                    /* is_dense= */ false, /* has_gradient= */ false);
+
+  (void)tokens;
+  std::copy(tokens, tokens + n_tokens, vector.active_neurons);
+
+  std::copy(metadata_nonzeros.begin(), metadata_nonzeros.end(),
+            vector.active_neurons + n_tokens);
+
+  std::fill_n(vector.activations, vector.len, 1.0);
+
+  return vector;
+}
+
 std::pair<float, std::optional<NumpyArray<float>>>
 TextClassifier::binaryCrossEntropyLoss(const NumpyArray<float>& labels,
                                        bool return_loss_per_class) {
@@ -202,28 +231,34 @@ TextClassifier::binaryCrossEntropyLoss(const NumpyArray<float>& labels,
 
   float loss = 0.0;
 
-#pragma omp parallel for default(none) shared(batch_size, per_class_loss, labels) reduction(+ : loss)
+  // We use pointers here because py::array_t access methods throw exceptions
+  // and can't be called within omp loops.
+  float* per_class_loss_ptr =
+      per_class_loss ? per_class_loss->mutable_data() : nullptr;
+  const float* labels_ptr = labels.data();
+
+#pragma omp parallel for default(none) shared(batch_size, per_class_loss_ptr, labels_ptr) reduction(+ : loss)
   for (uint32_t class_id = 0; class_id < _n_classes; class_id++) {
-    if (per_class_loss) {
-      per_class_loss->mutable_at(class_id) = 0.0;
+    if (per_class_loss_ptr) {
+      per_class_loss_ptr[class_id] = 0.0;
     }
     for (uint32_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
       float activation =
           _model->output()->getOutputVector(batch_idx).activations[class_id];
-      float label = labels.at(batch_idx, class_id);
+      float label = labels_ptr[batch_idx * _n_classes + class_id];
 
       float single_loss =
           label == 1.0 ? std::log(activation) : std::log(1 - activation);
 
       loss -= single_loss;
 
-      if (per_class_loss) {
-        per_class_loss->mutable_at(class_id) -= single_loss;
+      if (per_class_loss_ptr) {
+        per_class_loss_ptr[class_id] -= single_loss;
       }
     }
 
-    if (per_class_loss) {
-      per_class_loss->mutable_at(class_id) /= batch_size;
+    if (per_class_loss_ptr) {
+      per_class_loss_ptr[class_id] /= batch_size;
     }
   }
 
@@ -264,6 +299,18 @@ void TextClassifier::verifyArrayShape(const NumpyArray<T>& array,
       }
       error << ").";
       throw std::invalid_argument(error.str());
+    }
+  }
+}
+
+void TextClassifier::verifyOffsets(const NumpyArray<uint32_t>& offsets,
+                                   uint32_t tokens_length) {
+  for (uint32_t i = 0; i < offsets.shape(0); i++) {
+    if (offsets.at(i) >= tokens_length) {
+      throw std::invalid_argument("Invalid offset " +
+                                  std::to_string(offsets.at(i)) +
+                                  " for CSR tokens array of length " +
+                                  std::to_string(tokens_length) + ".");
     }
   }
 }
