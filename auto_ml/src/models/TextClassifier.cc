@@ -305,13 +305,17 @@ void TextClassifier::verifyArrayShape(const NumpyArray<T>& array,
 
 void TextClassifier::verifyOffsets(const NumpyArray<uint32_t>& offsets,
                                    uint32_t tokens_length) {
-  for (uint32_t i = 0; i < offsets.shape(0); i++) {
+  for (uint32_t i = 0; i < offsets.shape(0) - 1; i++) {
     if (offsets.at(i) >= tokens_length) {
       throw std::invalid_argument("Invalid offset " +
                                   std::to_string(offsets.at(i)) +
                                   " for CSR tokens array of length " +
                                   std::to_string(tokens_length) + ".");
     }
+  }
+  if (offsets.at(offsets.shape(0) - 1) != tokens_length) {
+    throw std::invalid_argument(
+        "The last offset should be the number of tokens + 1.");
   }
 }
 
