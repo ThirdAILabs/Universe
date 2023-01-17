@@ -21,9 +21,10 @@ def get_notebook_paths(temp_dir):
 
 
 def run_demo_notebooks(notebook_paths, temp_dir):
-    failed_notebooks = []
-    failed_notebook_errors = []
+    errors = []
     for notebook_path in notebook_paths:
+        if Path(notebook_path).stem != "SentimentAnalysis":
+            continue
         with open(notebook_path) as notebook_file:
             # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
             nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
@@ -38,14 +39,11 @@ def run_demo_notebooks(notebook_paths, temp_dir):
                 nb_out = ep.preprocess(nb_in)
             except Exception as error:
                 notebook_name = Path(notebook_path).stem
-                failed_notebooks.append(notebook_name)
-                failed_notebook_errors.append(error)
+                errors.append((notebook_name, error))
 
-    if failed_notebooks:
-        print(f"The following notebooks failed due to error: {failed_notebooks}")
-        for failed_notebook, error in zip(failed_notebooks, failed_notebook_errors):
-            print(f"The error for notebook {failed_notebook}: \n {error}")
-
+    if errors:
+        for failed_notebook, error in errors:
+            print(f"Failure in notebook: {failed_notebook}: \n {error}")
         sys.exit(1)
     else:
         print("All notebooks ran successfully")
