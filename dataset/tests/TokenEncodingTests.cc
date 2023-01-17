@@ -20,14 +20,15 @@ TEST(TokenEncodingTest, VerifyNumberOfNGrams) {
   std::string_view sentence = "This is a sentence with many words.";
   uint32_t num_words = 7;
 
-  for (uint32_t n = 1; n < 5; n++) {
+  for (uint32_t n = 1; n < 8; n++) {
     auto n_gram_tokens = TokenEncoding::computeNGrams(sentence, /* n= */ n);
 
     uint32_t expected_num_ngrams;
-    if (n == 1) {
+    // - computeNGrams always includes unigrams regardless of the N value
+    // - if N is too large we can't make an NGram and will only have unigrams
+    if (n == 1 || n > num_words) {
       expected_num_ngrams = num_words;
-    } else {
-      // computeNGrams always includes unigrams
+    } else if (n <= num_words) {
       expected_num_ngrams = num_words + (num_words - n + 1);
     }
 
