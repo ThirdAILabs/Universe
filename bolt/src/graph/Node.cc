@@ -37,12 +37,6 @@ void Node::prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) {
         "Cannot call prepareForBatchProcessing before calling compile.");
   }
 
-  if (getState() == NodeState::PreparedForBatchProcessing) {
-    throw exceptions::NodeStateMachineError(
-        "Cannot call prepareForBatchProcessing consecutively (must call "
-        "cleanupAfterBatchProcessing in between).");
-  }
-
   prepareForBatchProcessingImpl(batch_size, use_sparsity);
 
   if (batch_size > 0 && numNonzerosInOutput() == 0) {
@@ -52,16 +46,6 @@ void Node::prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) {
         "dimensions of nodes are nonzero, and that the dimension will be "
         "nonzero after applying sparsity.");
   }
-}
-
-void Node::cleanupAfterBatchProcessing() {
-  if (getState() != Node::PreparedForBatchProcessing) {
-    throw exceptions::NodeStateMachineError(
-        "Can only call cleanupAfterBatchProcessing after "
-        "prepareForBatchProcessing.");
-  }
-
-  cleanupAfterBatchProcessingImpl();
 }
 
 std::vector<NodePtr> Node::getPredecessors() const {
