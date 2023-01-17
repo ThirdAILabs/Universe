@@ -96,7 +96,7 @@ void DWTAHashFunction::hashSingleSparse(const uint32_t* indices,
   }
   delete[] bin_values;
 
-  HashUtils::densifyHashes(hashes, _num_hashes);
+  densifyHashes(hashes, _num_hashes);
   compactHashes(hashes, output);
 
   delete[] hashes;
@@ -105,7 +105,7 @@ void DWTAHashFunction::hashSingleSparse(const uint32_t* indices,
 void DWTAHashFunction::compactHashes(const uint32_t* hashes,
                                      uint32_t* final_hashes) const {
   // TODO (Josh, Patrick): Figure out how to consolidate this version of
-  // compactHashes with HashUtils::defaultCompactHashesMethod.
+  // compactHashes with defaultCompactHashesMethod.
   for (uint32_t i = 0; i < _num_tables; i++) {
     uint32_t index = 0;
     for (uint32_t j = 0; j < _hashes_per_table; j++) {

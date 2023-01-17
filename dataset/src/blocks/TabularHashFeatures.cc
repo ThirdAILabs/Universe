@@ -123,7 +123,7 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
       }
     }
     // Hash with different salt per column.
-    unigram = hashing::HashUtils::combineHashes(unigram, salt++);
+    unigram = hashing::combineHashes(unigram, salt++);
 
     unigram_to_column_identifier[unigram] = std::move(column_identifier);
     unigram_hashes.push_back(unigram);
@@ -193,7 +193,7 @@ void forEachPairgramFromUnigram(const std::vector<uint32_t>& unigram_hashes,
 
   for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
     for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
-      uint32_t combined_hash = hashing::HashUtils::combineHashes(
+      uint32_t combined_hash = hashing::combineHashes(
           unigram_hashes[prev_token], unigram_hashes[token]);
       combined_hash = combined_hash % output_range;
       pairgram_processor({/* pairgram= */ combined_hash,

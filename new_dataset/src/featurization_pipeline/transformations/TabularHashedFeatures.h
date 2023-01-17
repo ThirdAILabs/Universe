@@ -61,7 +61,7 @@ class TabularHashedFeatures : public Transformation {
         // to avoid two identical values in different columns from having the
         // same hash value we combine the with the hash of the column name of
         // origin
-        salted_unigrams.push_back(hashing::HashUtils::combineHashes(
+        salted_unigrams.push_back(hashing::combineHashes(
             hashed_col_val, column_name_hashes[col_num]));
         col_num++;
       }

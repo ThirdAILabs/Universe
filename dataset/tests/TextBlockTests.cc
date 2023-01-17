@@ -123,10 +123,9 @@ class TextBlockTest : public testing::Test {
         uint32_t second_word_hash =
             hashing::MurmurHash(second_word.c_str(), second_word.length(),
                                 token_encoding::HASH_SEED);
-        auto pairgram_hash = (hashing::HashUtils::combineHashes(
-                                  first_word_hash, second_word_hash) %
-                              dim) +
-                             offset;
+        auto pairgram_hash =
+            (hashing::combineHashes(first_word_hash, second_word_hash) % dim) +
+            offset;
         feats[pairgram_hash]++;
       }
     }

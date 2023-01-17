@@ -32,8 +32,7 @@ std::vector<uint32_t> ngrams(const std::vector<std::string_view>& words,
 
       for (uint32_t i = 1; i < n; i++) {
         uint32_t next_token = n_gram_tokens[start_token_idx + i];
-        n_gram_token =
-            hashing::HashUtils::combineHashes(n_gram_token, next_token);
+        n_gram_token = hashing::combineHashes(n_gram_token, next_token);
       }
       n_gram_tokens.push_back(n_gram_token);
     }
@@ -46,8 +45,8 @@ std::vector<uint32_t> pairgrams(const std::vector<uint32_t>& unigrams) {
   std::vector<uint32_t> tokens;
   for (uint32_t token = 0; token < unigrams.size(); token++) {
     for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
-      tokens.push_back(hashing::HashUtils::combineHashes(unigrams[prev_token],
-                                                         unigrams[token]));
+      tokens.push_back(
+          hashing::combineHashes(unigrams[prev_token], unigrams[token]));
     }
   }
 
