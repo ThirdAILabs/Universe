@@ -2,6 +2,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <utils/StringManipulation.h>
 #include <functional>
 #include <string_view>
 #include <type_traits>
@@ -55,7 +56,7 @@ std::vector<uint32_t> computePairGrams(const std::vector<uint32_t>& unigrams) {
 
 std::vector<uint32_t> computeNGrams(std::string_view sentence, uint32_t n,
                                     char delimiter) {
-  auto words = splitIntoWords(sentence, delimiter);
+  auto words = thirdai::utils::splitIntoWords(sentence, delimiter);
 
   return computeNGrams(words, n);
 }
@@ -84,7 +85,7 @@ void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
 
 std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
     std::string_view sentence, uint32_t output_range, char delimiter) {
-  auto words = splitIntoWords(sentence, delimiter);
+  auto words = thirdai::utils::splitIntoWords(sentence, delimiter);
 
   auto unigrams = computeUnigrams(words);
 
@@ -97,43 +98,6 @@ std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
   }
 
   return index_to_word;
-}
-
-std::vector<std::string_view> splitIntoWords(std::string_view sentence,
-                                             char delimiter) {
-  std::vector<std::string_view> words;
-
-  bool prev_is_delim = true;
-  uint32_t start_of_word_offset;
-  for (uint32_t i = 0; i < sentence.size(); i++) {
-    if (prev_is_delim && sentence[i] != delimiter) {
-      // If we go from a space to a non-space character then we are at the
-      // start of a word.
-      start_of_word_offset = i;
-      prev_is_delim = false;
-    }
-    if (!prev_is_delim && sentence[i] == delimiter) {
-      // If we go from a non-space character to a space then we are at the end
-      // of a word.
-      uint32_t len = i - start_of_word_offset;
-
-      std::string_view word_view(sentence.data() + start_of_word_offset, len);
-
-      words.push_back(word_view);
-      prev_is_delim = true;
-    }
-  }
-  if (!prev_is_delim) {
-    // If we don't find a space at the end of the sentence, then there's a
-    // last word we need to hash.
-    uint32_t len = sentence.size() - start_of_word_offset;
-
-    std::string_view word_view(sentence.data() + start_of_word_offset, len);
-
-    words.push_back(word_view);
-  }
-
-  return words;
 }
 
 std::vector<std::pair<uint32_t, float>> sumRepeatedIndices(

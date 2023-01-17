@@ -62,12 +62,6 @@ std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
     std::string_view sentence, uint32_t output_range, char delimiter = ' ');
 
 /**
- * Splits a sentence into words by delimiter.
- */
-std::vector<std::string_view> splitIntoWords(std::string_view sentence,
-                                             char delimiter = ' ');
-
-/**
  * Given a vector of indices, sums repeated indices by multiplying the number of
  * occurrences by base_value. Returns a vector of index, value pairs where each
  * index is unique. This typically has a small overhead but should significantly

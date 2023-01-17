@@ -4,18 +4,6 @@
 
 namespace thirdai::dataset {
 
-TEST(TokenEncodingTest, TestSplitIntoWords) {
-  std::string_view sentence = "This is a sentence with many words.";
-  auto words = TokenEncoding::splitIntoWords(sentence);
-  ASSERT_EQ(words.size(), 7);
-  ASSERT_EQ(words[3], "sentence");
-
-  sentence = "This-is-a-sentence-with-many-words.";
-  words = TokenEncoding::splitIntoWords(sentence, '-');
-  ASSERT_EQ(words.size(), 7);
-  ASSERT_EQ(words[3], "sentence");
-}
-
 TEST(TokenEncodingTest, VerifyNumberOfNGrams) {
   std::string_view sentence = "This is a sentence with many words.";
   uint32_t num_words = 7;
