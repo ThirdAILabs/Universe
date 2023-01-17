@@ -6,5 +6,5 @@ from thirdai._thirdai.dataset import *
 __all__ = []
 __all__.extend(dir(thirdai._thirdai.dataset))
 
-from .csv_data_loader import CSVDataLoader
-from .parquet_loader import ParquetLoader
+from .csv_data_source import CSVDataSource
+from .parquet_data_source import ParquetSource

@@ -58,13 +58,12 @@ class DatasetContext final : public DatasetContextBase {
   const dataset::BoltDatasetPtr& labels() const { return _labels; }
 
  private:
-  static void verifyBatchSizes(const dataset::DatasetBaseList& datasets);
-
-  static void verifyDatasetLens(const dataset::DatasetBaseList& datasets);
+  static void verifyBatchSizes(const dataset::BoltDatasetList& datasets);
+  static void verifyDatasetLens(const dataset::BoltDatasetList& datasets);
 
   std::vector<dataset::BoltDatasetPtr> _data;
   dataset::BoltDatasetPtr _labels;
-  std::vector<dataset::DatasetBasePtr> _all_dag_datasets;
+  std::vector<dataset::BoltDatasetPtr> _all_dag_datasets;
 };
 
 /**

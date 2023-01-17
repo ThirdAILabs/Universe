@@ -3,7 +3,6 @@
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_map.hpp>
-#include "DataTypes.h"
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <cstdint>
 #include <map>
@@ -11,7 +10,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace thirdai::automl::data {
+namespace thirdai::dataset {
 
 class ColumnNumberMap {
  public:
@@ -27,15 +26,6 @@ class ColumnNumberMap {
 
   ColumnNumberMap() {}
 
-  explicit ColumnNumberMap(const std::map<std::string, DataTypePtr>& data_types)
-      : _n_cols(data_types.size()) {
-    uint32_t col_num = 0;
-    for (const auto& [col_name, _] : data_types) {
-      _name_to_num[col_name] = col_num;
-      col_num++;
-    }
-  }
-
   uint32_t at(const std::string& col_name) const {
     if (_name_to_num.count(col_name) == 0) {
       std::stringstream error_ss;
@@ -44,6 +34,10 @@ class ColumnNumberMap {
       throw std::runtime_error(error_ss.str());
     }
     return _name_to_num.at(col_name);
+  }
+
+  bool containsColumn(const std::string& col_name) const {
+    return _name_to_num.count(col_name);
   }
 
   bool equals(const ColumnNumberMap& other) {
@@ -76,4 +70,4 @@ class ColumnNumberMap {
 
 using ColumnNumberMapPtr = std::shared_ptr<ColumnNumberMap>;
 
-}  // namespace thirdai::automl::data
+}  // namespace thirdai::dataset

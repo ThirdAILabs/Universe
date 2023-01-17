@@ -4,7 +4,7 @@
 namespace thirdai::automl::deployment {
 
 std::pair<data::DatasetLoaderFactoryPtr, bolt::BoltGraphPtr>
-DeploymentConfig::createDataLoaderAndModel(
+DeploymentConfig::createDataSourceAndModel(
     UserInputMap user_specified_parameters) const {
   data::DatasetLoaderFactoryPtr dataset_factory =
       _dataset_config->createDatasetState(user_specified_parameters);

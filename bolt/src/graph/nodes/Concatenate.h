@@ -68,10 +68,6 @@ class ConcatenateNode final
     return _batch_processing_state->outputs[vec_index];
   }
 
-  void cleanupAfterBatchProcessingImpl() final {
-    _batch_processing_state = std::nullopt;
-  }
-
   std::vector<NodePtr> getPredecessorsImpl() const final {
     return _graph_state->inputs;
   }

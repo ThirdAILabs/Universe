@@ -4,7 +4,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/Vocabulary.h>
-#include <dataset/src/utils/TextEncodingUtils.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <memory>
 #include <random>
 #include <unordered_map>
@@ -12,8 +12,7 @@
 
 namespace thirdai::dataset {
 
-class MaskedSentenceBatchProcessor final
-    : public BatchProcessor<BoltBatch, BoltBatch, BoltBatch> {
+class MaskedSentenceBatchProcessor final : public BatchProcessor {
  public:
   explicit MaskedSentenceBatchProcessor(std::shared_ptr<Vocabulary> vocab,
                                         uint32_t output_range)
@@ -29,7 +28,7 @@ class MaskedSentenceBatchProcessor final
     _masked_tokens_percentage = masked_tokens_percentage;
   }
 
-  std::tuple<BoltBatch, BoltBatch, BoltBatch> createBatch(
+  std::vector<BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> vectors(rows.size());
     std::vector<BoltVector> masked_indices(rows.size());
@@ -44,9 +43,8 @@ class MaskedSentenceBatchProcessor final
       labels[i] = std::move(label);
     }
 
-    return std::make_tuple(BoltBatch(std::move(vectors)),
-                           BoltBatch(std::move(masked_indices)),
-                           BoltBatch(std::move(labels)));
+    return {BoltBatch(std::move(vectors)), BoltBatch(std::move(masked_indices)),
+            BoltBatch(std::move(labels))};
   }
 
   bool expectsHeader() const final { return false; }
@@ -85,8 +83,8 @@ class MaskedSentenceBatchProcessor final
     BoltVector label = BoltVector::makeSparseVector(
         masked_word_ids, std::vector<float>(masked_word_ids.size(), 1.0));
 
-    auto pairgrams = TextEncodingUtils::computePairgramsFromUnigrams(
-        unigrams, _output_range);
+    auto pairgrams =
+        TokenEncoding::computePairgramsFromUnigrams(unigrams, _output_range);
 
     return {std::move(pairgrams),
             BoltVector::makeSparseVector(
@@ -104,5 +102,8 @@ class MaskedSentenceBatchProcessor final
   // words in the input sequence are randomly masked.
   std::optional<float> _masked_tokens_percentage;
 };  // namespace thirdai::dataset
+
+using MaskedSentenceBatchProcessorPtr =
+    std::shared_ptr<MaskedSentenceBatchProcessor>;
 
 }  // namespace thirdai::dataset

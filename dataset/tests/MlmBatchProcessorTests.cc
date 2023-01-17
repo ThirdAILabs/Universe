@@ -1,9 +1,9 @@
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
-#include <dataset/src/StreamingDataset.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
-#include <dataset/src/utils/TextEncodingUtils.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <unordered_map>
 
 namespace thirdai::dataset::tests {
@@ -49,7 +49,10 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
 
   dataset::MaskedSentenceBatchProcessor processor(vocab, RANGE);
 
-  auto [data, masked_indices, labels] = processor.createBatch(rows);
+  auto datasets = processor.createBatch(rows);
+  auto data = datasets.at(0);
+  auto masked_indices = datasets.at(1);
+  auto labels = datasets.at(2);
 
   std::unordered_set<uint32_t> masked_word_hashes;
 
@@ -88,7 +91,10 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatchMultipleMaskedTokens) {
   dataset::MaskedSentenceBatchProcessor processor(
       vocab, RANGE, /* masked_tokens_percentage= */ 0.3);
 
-  auto [data, masked_indices, labels] = processor.createBatch(rows);
+  auto datasets = processor.createBatch(rows);
+  auto data = datasets.at(0);
+  auto masked_indices = datasets.at(1);
+  auto labels = datasets.at(2);
 
   EXPECT_EQ(data.getBatchSize(), 4);
   EXPECT_EQ(masked_indices.getBatchSize(), 4);

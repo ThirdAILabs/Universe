@@ -83,7 +83,7 @@ def test_bad_inference_metrics():
     eval_config = get_simple_eval_config().with_metrics([])
     with pytest.raises(
         ValueError,
-        match=f"Doing inference without returning activations and no metrics is a NOOP",
+        match=f"Doing evaluation without metrics or activations is a no-op. Did you forget to specify this in the EvalConfig?",
     ):
         model.evaluate(data, labels, eval_config)
 

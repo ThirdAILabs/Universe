@@ -65,7 +65,9 @@ class CategoricalBlockTest : public testing::Test {
       input_row_view[i] =
           std::string_view(input_row[i].c_str(), input_row[i].size());
     }
-    if (auto err = block.addVectorSegment(input_row_view, vec)) {
+
+    RowSampleRef input_row_view_ref(input_row_view);
+    if (auto err = block.addVectorSegment(input_row_view_ref, vec)) {
       std::rethrow_exception(err);
     }
   }
@@ -170,7 +172,7 @@ TEST_F(CategoricalBlockTest, TestMultiLabelParsing) {
 
   auto batch = batch_processor.createBatch(rows);
 
-  auto [data, labels] = std::move(batch);
+  auto labels = std::move(batch).at(1);
 
   std::vector<std::vector<uint32_t>> expected_labels = {
       {4, 90, 77, 121, 143, 118, 100},
@@ -194,7 +196,7 @@ TEST_F(CategoricalBlockTest, RegressionCategoricalBlock) {
   std::vector<std::string> rows = {"3.7", "2.8",  "9.2",  "5.9",
                                    "1.3", "10.8", "12.1", "-3.2"};
 
-  auto [_, labels] = batch_processor.createBatch(rows);
+  auto labels = batch_processor.createBatch(rows).at(1);
 
   std::vector<std::vector<uint32_t>> expected_labels = {
       {4, 5, 6}, {2, 3, 4}, {15, 16, 17}, {8, 9, 10},

@@ -10,7 +10,7 @@ bolt::BoltGraphPtr ModelConfig::createModel(
   if (_input_names.size() != inputs.size()) {
     throw std::invalid_argument(
         "Number of inputs in model config does not match number of inputs "
-        "returned from data loader.");
+        "returned from data source.");
   }
 
   PredecessorsMap predecessors;

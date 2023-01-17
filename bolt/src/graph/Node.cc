@@ -3,6 +3,7 @@
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -36,23 +37,15 @@ void Node::prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) {
         "Cannot call prepareForBatchProcessing before calling compile.");
   }
 
-  if (getState() == NodeState::PreparedForBatchProcessing) {
-    throw exceptions::NodeStateMachineError(
-        "Cannot call prepareForBatchProcessing consecutively (must call "
-        "cleanupAfterBatchProcessing in between).");
-  }
-
   prepareForBatchProcessingImpl(batch_size, use_sparsity);
-}
 
-void Node::cleanupAfterBatchProcessing() {
-  if (getState() != Node::PreparedForBatchProcessing) {
-    throw exceptions::NodeStateMachineError(
-        "Can only call cleanupAfterBatchProcessing after "
-        "prepareForBatchProcessing.");
+  if (batch_size > 0 && numNonzerosInOutput() == 0) {
+    throw std::runtime_error(
+        "Node: '" + name() +
+        "' allocated with output dimension=0. Please check that the the "
+        "dimensions of nodes are nonzero, and that the dimension will be "
+        "nonzero after applying sparsity.");
   }
-
-  cleanupAfterBatchProcessingImpl();
 }
 
 std::vector<NodePtr> Node::getPredecessors() const {

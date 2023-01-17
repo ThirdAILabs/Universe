@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/UserCountHistory.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <dataset/src/utils/TimeUtils.h>
@@ -14,7 +15,7 @@ static BoltBatch processBatch(BlockPtr block,
   GenericBatchProcessor processor(
       /* input_blocks= */ {std::move(block)}, /* label_blocks= */ {},
       /* has_header= */ false, /* delimiter= */ ',', /* parallel= */ false);
-  auto [batch, _] = processor.createBatch(input_rows);
+  auto batch = processor.createBatch(input_rows).at(0);
   return std::move(batch);
 }
 
@@ -34,7 +35,7 @@ TEST(UserCountHistoryBlockTest, ExplanationWorks) {
 
   auto batch = processBatch(block, input_rows);
 
-  auto input_row = ProcessorUtils::parseCsvRow(input_rows[5], ',');
+  CsvSampleRef input_row(input_rows[5], ',');
 
   auto explanation_0 =
       block->explainIndex(/* index_within_block= */ 0, input_row);
@@ -184,7 +185,9 @@ TEST(UserCountHistoryBlockTest,
   input_row_view[0] = std::string_view(key.data(), /* len= */ 4);
   input_row_view[1] = std::string_view(val.data(), /* len= */ 1);
   input_row_view[2] = std::string_view(timestamp.data(), /* len= */ 10);
-  block->explainIndex(/* index_within_block= */ 0, input_row_view);
+
+  RowSampleRef input_row_view_ref(input_row_view);
+  block->explainIndex(/* index_within_block= */ 0, input_row_view_ref);
 
   auto count_after =
       count_history->getHistory(key, TimeObject(timestamp).secondsSinceEpoch());
