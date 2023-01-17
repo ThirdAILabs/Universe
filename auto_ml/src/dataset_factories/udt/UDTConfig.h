@@ -65,12 +65,7 @@ struct UDTConfig {
         time_granularity(
             dataset::stringToGranularity(std::move(time_granularity))),
         lookahead(lookahead),
-        delimiter(delimiter) {
-    if (!this->data_types.count(this->target)) {
-      throw std::invalid_argument(
-          "Target column provided was not found in data_types.");
-    }
-  }
+        delimiter(delimiter) {}
 
   ColumnDataTypes data_types;
   UserProvidedTemporalRelationships provided_relationships;

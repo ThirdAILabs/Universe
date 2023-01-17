@@ -31,6 +31,13 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
     const deployment::UserInputMap& options) {
+  // we don't put this check in the config constructor itself because its also
+  // used for metadata which doesn't use this same check
+  if (!data_types.count(target_col)) {
+    throw std::invalid_argument(
+        "Target column provided was not found in data_types.");
+  }
+
   auto dataset_config = std::make_shared<data::UDTConfig>(
       std::move(data_types), std::move(temporal_tracking_relationships),
       std::move(target_col), n_target_classes, integer_target,
