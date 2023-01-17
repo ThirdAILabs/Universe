@@ -1,6 +1,8 @@
+import glob
+
 import numpy as np
 from thirdai import bolt, deployment
-import glob
+
 
 class UDTBenchmarkConfig:
     learning_rate = 0.01
@@ -12,6 +14,7 @@ class UDTBenchmarkConfig:
     model_config = None
     model_config_path = None
     callbacks = []
+
 
 class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     train_file = "/share/data/udt_datasets/yelp_polarity/train.csv"
@@ -27,18 +30,15 @@ class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     experiment_name = "YelpPolarityUDT"
     dataset_name = "yelp_polarity"
 
+
 class Amazon670kUDTConfig(UDTBenchmarkConfig):
-    data_types={
-        "title": bolt.types.text(),
-        "labels": bolt.types.categorical()
-    }
+    data_types = {"title": bolt.types.text(), "labels": bolt.types.categorical()}
     target = "labels"
     n_target_classes = 670091
-    delimiter='\t'
+    delimiter = "\t"
     experiment_name = "Amazon670kUDT"
     dataset_name = "amazon_670k"
-    num_epochs = 1
-
+    num_epochs = 5
 
     train_file = "/share/data/udt_datasets/amazon_670k/train_udt.csv"
     test_file = glob.glob("/share/data/udt_datasets/amazon_670k/test_udt_*.csv")
@@ -64,6 +64,7 @@ class Amazon670kUDTConfig(UDTBenchmarkConfig):
         ],
         loss=bolt.nn.losses.CategoricalCrossEntropy(),
     )
+
 
 class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     train_file = (

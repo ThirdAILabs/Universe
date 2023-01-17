@@ -1,15 +1,15 @@
 import argparse
 import io
 import os
+from contextlib import redirect_stdout
 
 import mlflow
 import numpy as np
 import toml
 import udt_configs
-
-from contextlib import redirect_stdout
 from thirdai import bolt
 from thirdai.experimental import MlflowCallback
+
 from utils import log_machine_info, start_mlflow_helper
 
 
@@ -37,9 +37,10 @@ def get_mlflow_uri():
 
 def parse_metric(stdout_handler, metric_type):
     import re
+
     output = stdout_handler.getvalue()
     metric = re.search(f"{metric_type}\s*:\s*0.[0-9][0-9][0-9]", output).group(0)
-    metric = metric.split(':')[-1]
+    metric = metric.split(":")[-1]
     return metric
 
 
@@ -68,6 +69,7 @@ def evaluate_over_part_files(test_files, model, metric_type):
 
     return sum(totals) / sum(num_lines_list)
 
+
 def run_benchmark(config, run_name):
     if config.model_config is not None:
         print(config.model_config_path)
@@ -82,25 +84,34 @@ def run_benchmark(config, run_name):
     )
 
     mlflow_uri = get_mlflow_uri()
-    mlflow_callback = MlflowCallback(mlflow_uri, config.experiment_name, run_name, config.dataset_name, {},)
-    
+    mlflow_callback = MlflowCallback(
+        mlflow_uri,
+        config.experiment_name,
+        run_name,
+        config.dataset_name,
+        {},
+    )
+
     callbacks = [mlflow_callback]
     callbacks.extend(config.callbacks)
 
     model.train(
-       config.train_file,
-       epochs=config.num_epochs,
-       learning_rate=config.learning_rate,
-       metrics=[config.metric_type],
-       callbacks=callbacks,
+        config.train_file,
+        epochs=config.num_epochs,
+        learning_rate=config.learning_rate,
+        metrics=[config.metric_type],
+        callbacks=callbacks,
     )
-    
+
     if isinstance(config.test_file, list):
-        test_metric = evaluate_over_part_files(config.test_file, model, config.metric_type)
+        test_metric = evaluate_over_part_files(
+            config.test_file, model, config.metric_type
+        )
     else:
         test_metric = evaluate_over_file(config.test_file, model, config.metric_type)
-    
+
     mlflow_callback.log_additional_metric(f"test_{config.metric_type}", test_metric)
+
 
 def main():
     args = parse_args()
