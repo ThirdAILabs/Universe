@@ -31,5 +31,5 @@ class Linear:
         :return: returns True, after functions complete
         :rtype: bool
         """
-
+        averaged_gradients = ray.get(averaged_gradients)
         self.model.gradient_reference().set_gradients(averaged_gradients)

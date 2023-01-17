@@ -234,11 +234,11 @@ class RayTrainingClusterConfig:
         )
 
         self.primary_worker_config = PrimaryWorker.options(
-            num_cpus=num_cpus_to_use, max_concurrency=3
+            num_cpus=num_cpus_to_use, max_concurrency=2
         )
 
         self.replica_worker_configs = [
-            ReplicaWorker.options(num_cpus=num_cpus_to_use, max_concurrency=3)
+            ReplicaWorker.options(num_cpus=num_cpus_to_use, max_concurrency=2)
             for _ in range(self.num_workers - 1)
         ]
 

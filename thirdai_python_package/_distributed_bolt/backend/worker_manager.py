@@ -1,6 +1,7 @@
 import copy
 import numpy as np
 import ray
+from dataclasses import dataclass
 from ray.exceptions import RayActorError, RayError, RayTaskError
 from typing import Any, Callable, Iterator, List, Mapping, Tuple, Union
 
@@ -28,6 +29,7 @@ class ResultOrError:
             return self._result
 
 
+@dataclass
 class CallResult:
 
     worker_id: int
@@ -50,10 +52,10 @@ class RemoteCallResults:
         def __init__(self, call_results: List[CallResult]):
             self._call_results = call_results
 
-        def __iter__(self) -> Iterator[CallResult]:
+        def __iter__(self):
             return self
 
-        def __next__(self) -> CallResult:
+        def __next__(self):
             if not self._call_results:
                 raise StopIteration
             return self._call_results.pop(0)
@@ -64,35 +66,34 @@ class RemoteCallResults:
     def add_result(self, worker_id: int, result_or_error: ResultOrError):
         self.result_or_errors.append(CallResult(worker_id, result_or_error))
 
-    def __iter__(self) -> Iterator[ResultOrError]:
+    def __iter__(self):
         # Shallow copy the list.
         return self._Iterator(copy.copy(self.result_or_errors))
 
-    def ignore_errors(self) -> Iterator[ResultOrError]:
+    def ignore_errors(self):
         return self._Iterator([r for r in self.result_or_errors if r.ok])
 
-    def ignore_ray_errors(self) -> Iterator[ResultOrError]:
+    def ignore_ray_errors(self):
         return self._Iterator(
             [r for r in self.result_or_errors if not isinstance(r.get(), RayActorError)]
         )
 
 
 class FaultTolerantWorkerManager:
+    @dataclass
     class _WorkerState:
         # whether this worker is in healthy state
         is_healthy: bool = True
 
-    def __init__(self, workers, init_id):
-        # starting worker id from 1, so as to leave worker id 0 to primary worker
+    def __init__(self, workers, init_id, logging):
         self.next_id = init_id
 
         self.workers = {}
         self.remote_worker_states = {}
         self.add_workers(workers)
 
-        self.in_flight_req_to_worker_id: Mapping[ray.ObjectRef, int] = {}
-
         self.num_worker_restarts = 0
+        self.logging = logging
 
     def workers(self):
         return self.workers
@@ -100,8 +101,14 @@ class FaultTolerantWorkerManager:
     def add_workers(self, workers):
         for worker in workers:
             self.workers[self.next_id] = worker
-            self.remote_worker_states[self.next_id] = self._WorkerState
+            self.remote_worker_states[self.next_id] = self._WorkerState()
             self.next_id += 1
+
+    def set_worker_state(self, worker_id: int, healthy: bool):
+        if worker_id not in self.remote_worker_states:
+            raise ValueError(f"Unknown worker id: {worker_id}")
+        self.logging.info(f"Worker {worker_id} is being marked as {healthy}")
+        self.remote_worker_states[worker_id].is_healthy = healthy
 
     def num_workers(self):
         return len(self.workers)
@@ -117,24 +124,26 @@ class FaultTolerantWorkerManager:
     def call_workers(
         self,
         func: Union[Callable[[Any], Any], List[Callable[[Any], Any]]],
+        *,
         remote_worker_ids: List[int] = None,
-        *args,
-        **kwargs,
-    ) -> List[ray.ObjectRef]:
+    ):
 
-        assert isinstance(func, list)
-
-        assert len(remote_worker_ids) == len(
-            func
-        ), "Funcs must have the same number of callables as worker indices."
+        if isinstance(func, list):
+            assert len(remote_worker_ids) == len(
+                func
+            ), "Funcs must have the same number of callables as actor indices."
 
         if remote_worker_ids is None:
-            remote_worker_ids = list(self.workers.keys())
+            remote_worker_ids = list(self.worker.keys())
 
-        calls = [
-            self.workers[i].apply.remote(f, args, kwargs)
-            for i, f in zip(remote_worker_ids, func)
-        ]
+        if isinstance(func, list):
+            calls = [
+                self.workers[i].apply.remote(f) for i, f in zip(remote_worker_ids, func)
+            ]
+
+        else:
+            calls = [self.workers[i].apply.remote(func) for i in remote_worker_ids]
+
         return calls
 
     def fetch_result(
@@ -143,7 +152,7 @@ class FaultTolerantWorkerManager:
         remote_worker_ids: List[int],
         remote_calls: List[ray.ObjectRef],
         timeout_seconds: int = None,
-    ) -> Tuple[List[ray.ObjectRef], RemoteCallResults]:
+    ):
         timeout = float(timeout_seconds) if timeout_seconds is not None else None
         ready, _ = ray.wait(
             remote_calls,
@@ -174,13 +183,15 @@ class FaultTolerantWorkerManager:
                     # Take this worker out of service and wait for Ray Core to
                     # restore it.
                     if self.is_worker_healthy(worker_id):
-                        print(
+                        self.logging.warning(
                             f"Ray error, taking worker {worker_id} out of service. "
                             f"{str(e)}"
                         )
                     self.set_worker_state(worker_id, healthy=False)
                 else:
-                    # ActorManager should not handle application level errors.
+                    # WorkerManager should not handle application level errors.
+
+                    self.logging.info(f"Got application level Error:{str(e)}")
                     pass
 
         return ready, remote_results
@@ -188,45 +199,49 @@ class FaultTolerantWorkerManager:
     def foreach_worker(
         self,
         func: Union[Callable[[Any], Any], List[Callable[[Any], Any]]],
+        *,
         remote_worker_ids: List[int] = None,
         timeout_seconds=None,
-        return_obj_refs: bool = False,
-        *args,
-        **kwargs,
-    ) -> RemoteCallResults:
+        probing=False,
+    ):
+        if probing or self.num_healthy_workers() == self.num_workers():
 
-        remote_worker_ids = remote_worker_ids or list(self.workers.keys())
+            remote_worker_ids = remote_worker_ids or list(self.workers.keys())
 
-        remote_calls = self.call_workers(
-            func=func, remote_worker_ids=remote_worker_ids, args=args, kwargs=kwargs
-        )
+            remote_calls = self.call_workers(
+                func=func,
+                remote_worker_ids=remote_worker_ids,
+            )
 
-        _, remote_results = self.fetch_result(
-            remote_worker_ids=remote_worker_ids,
-            remote_calls=remote_calls,
-            timeout_seconds=timeout_seconds,
-            return_obj_refs=return_obj_refs,
-        )
+            _, remote_results = self.fetch_result(
+                remote_worker_ids=remote_worker_ids,
+                remote_calls=remote_calls,
+                timeout_seconds=timeout_seconds,
+            )
 
-        return remote_results
+            return remote_results
+        return RemoteCallResults()
 
-    def probe_unhealthy_workers(self) -> List[int]:
+    def probe_unhealthy_workers(self):
 
         unhealthy_worker_ids = [
             worker_id
-            for worker_id in self.workers().keys()
+            for worker_id in self.workers.keys()
             if not self.is_worker_healthy(worker_id)
         ]
 
+        self.logging.info(f"Probing unhealthy worker={unhealthy_worker_ids}")
         if not unhealthy_worker_ids:
             return []
 
+        self.logging.info("Calling ping on unhealthy worker")
         remote_results = self.foreach_worker(
             func=lambda worker: worker.ping(),
             remote_worker_ids=unhealthy_worker_ids,
-            healthy_only=False,
+            probing=True,
         )
 
+        self.logging.info("Got remote results")
         restored = []
         for result in remote_results:
             worker_id = result.worker_id
@@ -237,4 +252,5 @@ class FaultTolerantWorkerManager:
             else:
                 pass
 
+        self.logging.info(f"Workers restored {restored}")
         return restored

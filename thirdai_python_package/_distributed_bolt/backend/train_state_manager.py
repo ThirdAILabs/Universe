@@ -2,7 +2,7 @@ import time
 import numpy as np
 import ray
 from ray.exceptions import RayError
-from WorkerManager import FaultTolerantWorkerManager
+from .worker_manager import FaultTolerantWorkerManager
 
 
 class TrainStateManager:
@@ -30,6 +30,10 @@ class TrainStateManager:
         self.logging = logging
         self.communication_type = communication_type
         self.logging.info(f"Using {communication_type} method for communication")
+
+        self.worker_manager = FaultTolerantWorkerManager(
+            workers=self.workers, init_id=0, logging=logging
+        )
         # This tracks the total number of batches completed in this epoch for
         # the distributed job.
         # This differs from the batch count on each worker, which just tracks
@@ -38,12 +42,12 @@ class TrainStateManager:
         # something causes a worker to be restarted in the middle of training.
         self.batch_id_within_epoch = 0
         if communication_type == "circular":
-            for i in range(len(self.workers)):
-                ray.get(
-                    self.workers[i].set_friend.remote(
-                        self.workers[(i - 1) % (len(self.workers))]
-                    )
-                )
+            self.worker_manager.foreach_worker(
+                func=lambda worker: worker.set_friend(
+                    self.workers[len(self.workers) - 1]
+                ),
+                remote_worker_ids=[0],
+            )
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0
 
@@ -57,11 +61,12 @@ class TrainStateManager:
         :param workers: batch number for the particular worker with worker id (id).
         :type workers: int
         """
-
-        gradients_list = ray.get(
-            [worker.get_calculated_gradients.remote() for worker in self.workers]
-        )
-
+        gradients_list = []
+        for gradients in self.worker_manager.foreach_worker(
+            lambda worker: worker.get_calculated_gradients()
+        ):
+            if gradients.ok:
+                gradients_list.append(gradients.get())
         # We initialize the sum of gradient variables by setting them equal to the
         # first set of gradients
         self.gradient_averages = np.array(gradients_list[0])
@@ -75,12 +80,10 @@ class TrainStateManager:
         # This allows us to do just a single copy of the gradient array to shared disk, instead
         # of 1 per worker.
         gradient_averages_ref = ray.put(self.gradient_averages)
-        ray.get(
-            [
-                worker.receive_gradients.remote(gradient_averages_ref)
-                for worker in self.workers
-            ]
+        self.worker_manager.foreach_worker(
+            lambda worker: worker.receive_gradients(gradient_averages_ref)
         )
+        del gradient_averages_ref
 
     def run_circular_cluster_communication(self):
         """
@@ -102,39 +105,49 @@ class TrainStateManager:
         ]:
             for node in range(num_workers - 1):
                 should_avg_gradients = node == num_workers - 2
-                ray.get(
-                    [
-                        worker.process_ring.remote(
-                            update_id, avg_gradients=should_avg_gradients, reduce=reduce
-                        )
-                        for worker in self.workers
-                    ]
+                self.worker_manager.foreach_worker(
+                    lambda worker: worker.process_ring(
+                        update_id, avg_gradients=should_avg_gradients, reduce=reduce
+                    )
                 )
                 update_id -= 1
+
+    def check_worker_availability(self, worker_wait_time_out=50):
+        time_waiting = 0
+        while (
+            self.worker_manager.num_healthy_workers()
+            < self.worker_manager.num_workers()
+        ):
+            self.logging.info(
+                f"Probing unhealthy worker!! Total workers:{self.worker_manager.num_workers()}, Unhealthy workers:{self.worker_manager.num_workers()-self.worker_manager.num_healthy_workers()}"
+            )
+            import time
+
+            time.sleep(1)
+            time_waiting += 1
+            self.worker_manager.probe_unhealthy_workers()
+            if time_waiting >= worker_wait_time_out:
+                ray.kill(self.workers)
+                raise f"Worker is not available, waited for {worker_wait_time_out}"
 
     def train_batch(self, epoch):
         """
         Trains the model and returns whether all workers have a next batch.
         """
-        all_workers_have_next_batch = True
-        try:
-            all_workers_have_next_batch = self._compute_and_store_next_batch_gradients()
-            self._communicate()
-            self._update_parameters()
-            self._log_post_batch(epoch)
-            self.batch_id_within_epoch += 1
-        except RayError:
-            print("Some Error happened")
-        else:
-            pass
+        self.check_worker_availability()
+        all_workers_have_next_batch = self._compute_and_store_next_batch_gradients()
+        self._communicate()
+        self._update_parameters()
+        self._log_post_batch(epoch)
+        self.batch_id_within_epoch += 1
         return all_workers_have_next_batch
 
     def move_to_next_epoch(self):
         self.batch_id_within_epoch = 0
-        ray.get([worker.move_to_next_epoch.remote() for worker in self.workers])
+        self.worker_manager.foreach_worker(lambda worker: worker.move_to_next_epoch())
 
     def freeze_hash_tables(self):
-        ray.get([worker.freeze_hash_tables.remote() for worker in self.workers])
+        self.worker_manager.foreach_worker(lambda worker: worker.freeze_hash_tables())
 
     def _compute_and_store_next_batch_gradients(self):
         """
@@ -142,14 +155,11 @@ class TrainStateManager:
         workers and returns whether all workers have a next batch.
         """
         start_calculating_gradients_time = time.time()
-        has_next_batches = ray.get(
-            [
-                worker.compute_and_store_next_batch_gradients.remote()
-                for worker in self.workers
-            ]
+        has_next_batches = self.worker_manager.foreach_worker(
+            lambda worker: worker.compute_and_store_next_batch_gradients()
         )
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
-        return all(has_next_batches)
+        return all([result.get() for result in has_next_batches])
 
     def _communicate(self):
         """
@@ -162,9 +172,13 @@ class TrainStateManager:
             self.run_linear_cluster_communication()
         elif self.communication_type == "circular":
             self.run_circular_cluster_communication()
-            ray.get([worker.receive_gradients.remote() for worker in self.workers])
+            self.worker_manager.foreach_worker(
+                lambda worker: worker.receive_gradients()
+            )
         elif self.communication_type == "gloo":
-            ray.get([worker.receive_gradients.remote() for worker in self.workers])
+            self.worker_manager.foreach_worker(
+                lambda worker: worker.receive_gradients()
+            )
 
         self.averaging_and_communication_time += time.time() - start_communication_time
 
@@ -173,7 +187,7 @@ class TrainStateManager:
         Calls each update_parameters on each worker to update parameters
         """
         start_update_parameter_time = time.time()
-        ray.get([worker.update_parameters.remote() for worker in self.workers])
+        self.worker_manager.foreach_worker(lambda worker: worker.update_parameters())
         self.bolt_computation_time += time.time() - start_update_parameter_time
 
     def _log_post_batch(self, epoch):
