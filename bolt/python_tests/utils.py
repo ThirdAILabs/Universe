@@ -194,9 +194,13 @@ def simple_bolt_model_in_distributed_training_wrapper(
     learning_rate=0.0001,
     hidden_layer_dim=2000,
     batch_size=64,
+    return_train_config=False,
+    passed_bolt_dataset=False,
 ):
-    train_data = dataset.from_numpy(train_data, batch_size=batch_size)
-    train_labels = dataset.from_numpy(train_labels, batch_size=batch_size)
+
+    if not passed_bolt_dataset:
+        train_data = dataset.from_numpy(train_data, batch_size=batch_size)
+        train_labels = dataset.from_numpy(train_labels, batch_size=batch_size)
 
     input_layer = bolt.nn.Input(dim=num_classes)
     hidden_layer = bolt.nn.FullyConnected(
@@ -223,7 +227,10 @@ def simple_bolt_model_in_distributed_training_wrapper(
         worker_id=0,
     )
     wrapper.set_datasets([train_data], train_labels)
-    return wrapper
+    if return_train_config:
+        return wrapper, train_config
+    else:
+        return wrapper
 
 
 # Builds, trains, and does prediction on a model using numpy data and numpy

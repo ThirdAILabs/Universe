@@ -15,7 +15,8 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
       _reduction(config.reduction()),
       _num_tokens_per_input(config.numTokensPerInput()),
       _hash_fn(seed),
-      _disable_sparse_parameter_updates(false) {
+      _disable_sparse_parameter_updates(false),
+      _hard_save(false) {
   switch (_reduction) {
     case EmbeddingReductionType::SUM:
       break;

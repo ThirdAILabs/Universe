@@ -91,6 +91,8 @@ class Input final : public Node {
     return (*_input_batch)[vec_index];
   }
 
+  void nodeSaveType(bool whether_hard_save) final { (void)whether_hard_save; };
+
   void cleanupAfterBatchProcessingImpl() final { _input_batch = nullptr; }
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final;

@@ -210,6 +210,16 @@ void FullyConnectedNode::disableSparseParameterUpdates() {
   _layer->disableSparseParameterUpdates();
 }
 
+void FullyConnectedNode::nodeSaveType(bool whether_hard_save) {
+  if (getState() != NodeState::Compiled &&
+      getState() != NodeState::PreparedForBatchProcessing) {
+    throw exceptions::NodeStateMachineError(
+        "Cannot call disable_sparse_parameter_updates until the model "
+        "containing the node is compiled.");
+  }
+  _layer->nodeSaveType(whether_hard_save);
+}
+
 void FullyConnectedNode::compileImpl() {
   assert(_config.has_value());
   _layer = std::make_shared<FullyConnectedLayer>(_config.value(),

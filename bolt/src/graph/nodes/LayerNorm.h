@@ -61,6 +61,8 @@ class LayerNormNode final : public Node,
 
   bool hasParameters() final { return false; }
 
+  void nodeSaveType(bool whether_hard_save) final { (void)whether_hard_save; };
+
  private:
   void compileImpl() final { _compiled = true; }
 

@@ -278,7 +278,7 @@ class Worker:
 
     def model(self):
         print("Id: ", self.id, " returning model.")
-        return self.model.model
+        return self.model.model()
 
     @timed
     def ping(self):

@@ -70,6 +70,16 @@ void EmbeddingNode::disableSparseParameterUpdates() {
   _embedding_layer->disableSparseParameterUpdates();
 }
 
+void EmbeddingNode::nodeSaveType(bool whether_hard_save) {
+  if (getState() != NodeState::Compiled &&
+      getState() != NodeState::PreparedForBatchProcessing) {
+    throw exceptions::NodeStateMachineError(
+        "Cannot call disable_sparse_parameter_updates until the model "
+        "containing the node is compiled.");
+  }
+  _embedding_layer->nodeSaveType(whether_hard_save);
+}
+
 void EmbeddingNode::compileImpl() {
   assert(_config.has_value());
   _embedding_layer = std::make_shared<EmbeddingLayer>(_config.value());
