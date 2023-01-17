@@ -110,45 +110,44 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
         }
       }
 
-    if (_config->_neighbourhood_context) {
-      tabular_datatypes.resize(original_num_cols + numerical_columns.size());
-      auto values = processNumerical(rows, numerical_columns,
-                                     _config->_kth_neighbourhood);
-      for (uint32_t i = 0; i < rows.size(); i++) {
-        rows[i].insert(rows[i].end(), values[i].begin(), values[i].end());
+      if (_config->_neighbourhood_context) {
+        tabular_datatypes.resize(original_num_cols + numerical_columns.size());
+        auto values = processNumerical(rows, numerical_columns,
+                                       _config->_kth_neighbourhood);
+        for (uint32_t i = 0; i < rows.size(); i++) {
+          rows[i].insert(rows[i].end(), values[i].begin(), values[i].end());
+        }
+        for (uint32_t i = 0; i < numerical_columns.size(); i++) {
+          tabular_datatypes[original_num_cols + i] =
+              dataset::TabularDataType::Numeric;
+          tabular_col_ranges[original_num_cols + i] = {
+              std::get<0>(numerical_required_values[i]),
+              std::get<1>(numerical_required_values[i])};
+          tabular_col_bins[original_num_cols + i] =
+              std::get<2>(numerical_required_values[i]);
+        }
       }
-      for (uint32_t i = 0; i < numerical_columns.size(); i++) {
-        tabular_datatypes[original_num_cols + i] =
-            dataset::TabularDataType::Numeric;
-        tabular_col_ranges[original_num_cols + i] = {
-            std::get<0>(numerical_required_values[i]),
-            std::get<1>(numerical_required_values[i])};
-        tabular_col_bins[original_num_cols + i] =
-            std::get<2>(numerical_required_values[i]);
-      }
-    }
       blocks.push_back(FeatureComposer::makeTabularHashFeaturesBlock(
           tabular_datatypes, tabular_col_ranges,
           _column_number_map->getColumnNumToColNameMap(), false,
           tabular_col_bins));
-  }
+    }
 
-  auto key_vocab = dataset::ThreadSafeVocabulary::make(
-      /* vocab_size= */ 0, /* limit_vocab_size= */ false);
-  auto label_block = dataset::StringLookupCategoricalBlock::make(
-      _column_number_map->at(_config->_source), key_vocab);
+    auto key_vocab = dataset::ThreadSafeVocabulary::make(
+        /* vocab_size= */ 0, /* limit_vocab_size= */ false);
+    auto label_block = dataset::StringLookupCategoricalBlock::make(
+        _column_number_map->at(_config->_source), key_vocab);
 
-  auto graph_processor = dataset::GenericBatchProcessor::make(
-      /* input_blocks= */ std::move(blocks),
-      /* label_blocks= */ {std::move(label_block)},
-      /* has_header= */ false, /* delimiter= */ _config->_delimeter,
-      /* parallel= */ true, /* hash_range= */ 100000);
+    auto graph_processor = dataset::GenericBatchProcessor::make(
+        /* input_blocks= */ std::move(blocks),
+        /* label_blocks= */ {std::move(label_block)},
+        /* has_header= */ false, /* delimiter= */ _config->_delimeter,
+        /* parallel= */ true, /* hash_range= */ 100000);
 
-  
-  auto [vectors, ids] = graph_processor->getBatch(rows);
+    auto [vectors, ids] = graph_processor->getBatch(rows);
 
-  std::unordered_map<std::string, BoltVector> preprocessed_vectors(
-      rows.size());
+    std::unordered_map<std::string, BoltVector> preprocessed_vectors(
+        rows.size());
 
     for (uint32_t vec = 0; vec < vectors.getBatchSize(); vec++) {
       auto id = ids[vec].active_neurons[0];
@@ -157,7 +156,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     }
 
     _vectors = std::make_shared<dataset::PreprocessedVectors>(
-      std::move(preprocessed_vectors), graph_processor->getInputDim());
+        std::move(preprocessed_vectors), graph_processor->getInputDim());
   }
 
   std::vector<std::vector<std::string>> processNumerical(

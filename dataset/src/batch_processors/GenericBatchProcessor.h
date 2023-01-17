@@ -104,7 +104,8 @@ class GenericBatchProcessor : public BatchProcessor {
     return createBatch(input_batch_ref);
   }
 
-  std::tuple<BoltBatch, BoltBatch> getBatch(const std::vector<std::vector<std::string_view>>& rows) {
+  std::tuple<BoltBatch, BoltBatch> getBatch(
+      const std::vector<std::vector<std::string_view>>& rows) {
     std::vector<BoltVector> batch_inputs(rows.size());
     std::vector<BoltVector> batch_labels(rows.size());
 
@@ -121,8 +122,7 @@ class GenericBatchProcessor : public BatchProcessor {
         error_ss << "[ProcessorUtils::parseCsvRow] Expected "
                  << _expected_num_cols << " columns delimited by '"
                  << _delimiter << "' in each row of the dataset. Found row '"
-                 << i << "' with number of columns = " << columns.size()
-                 << ".";
+                 << i << "' with number of columns = " << columns.size() << ".";
 #pragma omp critical
         num_columns_error =
             std::make_exception_ptr(std::invalid_argument(error_ss.str()));
