@@ -27,9 +27,10 @@ class TextClassifier {
 
   py::array_t<float, py::array::c_style> predict(const py::dict& data);
 
-  void save(const std::string& filename);
+  void save_stream(std::ostream& output_stream) const;
 
-  static std::shared_ptr<TextClassifier> load(const std::string& filename);
+  static std::shared_ptr<TextClassifier> load_stream(
+      std::istream& input_stream);
 
  private:
   std::vector<BoltBatch> featurize(const py::dict& data) const;

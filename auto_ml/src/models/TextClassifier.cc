@@ -115,18 +115,14 @@ py::array_t<float, py::array::c_style> TextClassifier::predict(
   return output;
 }
 
-void TextClassifier::save(const std::string& filename) {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  cereal::BinaryOutputArchive oarchive(filestream);
+void TextClassifier::save_stream(std::ostream& output_stream) const {
+  cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);
 }
 
-std::shared_ptr<TextClassifier> TextClassifier::load(
-    const std::string& filename) {
-  std::ifstream filestream =
-      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  cereal::BinaryInputArchive iarchive(filestream);
+std::shared_ptr<TextClassifier> TextClassifier::load_stream(
+    std::istream& input_stream) {
+  cereal::BinaryInputArchive iarchive(input_stream);
   std::shared_ptr<TextClassifier> deserialize_into(new TextClassifier());
   iarchive(*deserialize_into);
 
