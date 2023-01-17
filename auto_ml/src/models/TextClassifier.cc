@@ -215,10 +215,10 @@ TextClassifier::binaryCrossEntropyLoss(const NumpyArray<float>& labels,
       float single_loss =
           label == 1.0 ? std::log(activation) : std::log(1 - activation);
 
-      loss += single_loss;
+      loss -= single_loss;
 
       if (per_class_loss) {
-        per_class_loss->mutable_at(class_id) += single_loss;
+        per_class_loss->mutable_at(class_id) -= single_loss;
       }
     }
 
@@ -251,17 +251,21 @@ void TextClassifier::verifyArrayShape(const NumpyArray<T>& array,
     return;
   }
 
-  std::stringstream error;
-  error << "Expected " << name << " to have shape (" << expected_dims.at(0);
-  for (uint32_t i = 1; i < expected_dims.size(); i++) {
-    error << ", " << expected_dims.at(i);
+  for (uint32_t i = 0; i < expected_dims.size(); i++) {
+    if (array.shape(i) != expected_dims.at(i)) {
+      std::stringstream error;
+      error << "Expected " << name << " to have shape (" << expected_dims.at(0);
+      for (uint32_t j = 1; j < expected_dims.size(); j++) {
+        error << ", " << expected_dims.at(i);
+      }
+      error << "), but recieved array with shape (" << array.shape(0);
+      for (uint32_t j = 1; j < expected_dims.size(); j++) {
+        error << ", " << array.shape(i);
+      }
+      error << ").";
+      throw std::invalid_argument(error.str());
+    }
   }
-  error << "), but recieved array with shape (" << array.shape(0);
-  for (uint32_t i = 1; i < expected_dims.size(); i++) {
-    error << ", " << array.shape(i);
-  }
-  error << ").";
-  throw std::invalid_argument(error.str());
 }
 
 template <class Archive>

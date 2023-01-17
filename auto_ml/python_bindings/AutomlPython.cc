@@ -410,9 +410,11 @@ QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapperTargetOnly(
       /* dataset_size = */ dataset_size);
 }
 
-TextClassifier buildTextClassifier(py::object& obj, uint32_t input_vocab_size,
-                                   uint32_t metadata_dim, uint32_t n_classes,
-                                   const std::string& model_size) {
+TextClassifier UDTFactory::buildTextClassifier(py::object& obj,
+                                               uint32_t input_vocab_size,
+                                               uint32_t metadata_dim,
+                                               uint32_t n_classes,
+                                               const std::string& model_size) {
   (void)obj;
   return TextClassifier(input_vocab_size, metadata_dim, n_classes, model_size);
 }
