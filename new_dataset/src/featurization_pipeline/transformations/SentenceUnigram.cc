@@ -61,8 +61,7 @@ columns::TokenArrayColumnPtr SentenceUnigram::rawUnigramColumn(
 
 std::vector<uint32_t> SentenceUnigram::computeUnigrams(
     const std::string& text) {
-  std::vector<uint32_t> unigrams =
-      dataset::token_encoding::computeUnigrams(text);
+  std::vector<uint32_t> unigrams = dataset::token_encoding::unigrams(text);
   if (_output_range) {
     dataset::token_encoding::mod(unigrams, *_output_range);
   }

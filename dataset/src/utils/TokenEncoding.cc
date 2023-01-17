@@ -9,8 +9,8 @@
 
 namespace thirdai::dataset::token_encoding {
 
-std::vector<uint32_t> computeNGrams(const std::vector<std::string_view>& words,
-                                    uint32_t n) {
+std::vector<uint32_t> ngrams(const std::vector<std::string_view>& words,
+                             uint32_t n) {
   uint32_t num_words = words.size();
 
   std::vector<uint32_t> n_gram_tokens;
@@ -42,39 +42,37 @@ std::vector<uint32_t> computeNGrams(const std::vector<std::string_view>& words,
   return n_gram_tokens;
 }
 
-std::vector<uint32_t> computePairGrams(const std::vector<uint32_t>& unigrams) {
-  std::vector<uint32_t> pairgrams;
+std::vector<uint32_t> pairgrams(const std::vector<uint32_t>& unigrams) {
+  std::vector<uint32_t> tokens;
   for (uint32_t token = 0; token < unigrams.size(); token++) {
     for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
-      pairgrams.push_back(hashing::HashUtils::combineHashes(
-          unigrams[prev_token], unigrams[token]));
+      tokens.push_back(hashing::HashUtils::combineHashes(unigrams[prev_token],
+                                                         unigrams[token]));
     }
   }
 
-  return pairgrams;
+  return tokens;
 }
 
-std::vector<uint32_t> computeNGrams(std::string_view sentence, uint32_t n,
-                                    char delimiter) {
+std::vector<uint32_t> ngrams(std::string_view sentence, uint32_t n,
+                             char delimiter) {
   auto words = thirdai::utils::splitIntoWords(sentence, delimiter);
 
-  return computeNGrams(words, n);
+  return ngrams(words, n);
 }
 
-std::vector<uint32_t> computeUnigrams(std::string_view sentence,
-                                      char delimiter) {
-  return computeNGrams(sentence, /* n= */ 1, delimiter);
+std::vector<uint32_t> unigrams(std::string_view sentence, char delimiter) {
+  return ngrams(sentence, /* n= */ 1, delimiter);
 }
 
-std::vector<uint32_t> computeUnigrams(
-    const std::vector<std::string_view>& words) {
-  return computeNGrams(words, /* n= */ 1);
+std::vector<uint32_t> unigrams(const std::vector<std::string_view>& words) {
+  return ngrams(words, /* n= */ 1);
 }
 
-std::vector<uint32_t> computePairGrams(std::string_view sentence) {
-  std::vector<uint32_t> unigrams = computeUnigrams(sentence);
+std::vector<uint32_t> pairgrams(std::string_view sentence) {
+  std::vector<uint32_t> tokens = unigrams(sentence);
 
-  return computePairGrams(unigrams);
+  return pairgrams(tokens);
 }
 
 void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
@@ -87,14 +85,14 @@ std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
     std::string_view sentence, uint32_t output_range, char delimiter) {
   auto words = thirdai::utils::splitIntoWords(sentence, delimiter);
 
-  auto unigrams = computeUnigrams(words);
+  auto tokens = unigrams(words);
 
-  assert(words.size() == unigrams.size());
+  assert(words.size() == tokens.size());
   uint32_t length = words.size();
 
   std::unordered_map<uint32_t, std::string> index_to_word;
   for (uint32_t i = 0; i < length; i++) {
-    index_to_word[unigrams[i] % output_range] = words[i];
+    index_to_word[tokens[i] % output_range] = words[i];
   }
 
   return index_to_word;

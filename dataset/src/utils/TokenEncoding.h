@@ -28,25 +28,23 @@ inline uint32_t seededMurmurHash(const char* key, uint32_t len) {
  * "Unigrams" are a specific instance of N-grams where N=1, "bigrams" where N=2,
  * and so on.
  */
-std::vector<uint32_t> computeNGrams(const std::vector<std::string_view>& words,
-                                    uint32_t n);
+std::vector<uint32_t> ngrams(const std::vector<std::string_view>& words,
+                             uint32_t n);
 
 /**
  * Given a vector of unigram tokens, compute all ordered pairs of tokens and
  * combine their hashes into new tokens.
  */
-std::vector<uint32_t> computePairGrams(const std::vector<uint32_t>& unigrams);
+std::vector<uint32_t> pairgrams(const std::vector<uint32_t>& unigrams);
 
-std::vector<uint32_t> computeNGrams(std::string_view sentence, uint32_t n,
-                                    char delimiter = ' ');
+std::vector<uint32_t> pairgrams(std::string_view sentence);
 
-std::vector<uint32_t> computeUnigrams(std::string_view sentence,
-                                      char delimiter = ' ');
+std::vector<uint32_t> ngrams(std::string_view sentence, uint32_t n,
+                             char delimiter = ' ');
 
-std::vector<uint32_t> computeUnigrams(
-    const std::vector<std::string_view>& words);
+std::vector<uint32_t> unigrams(std::string_view sentence, char delimiter = ' ');
 
-std::vector<uint32_t> computePairGrams(std::string_view sentence);
+std::vector<uint32_t> unigrams(const std::vector<std::string_view>& words);
 
 /**
  * Mods each of the given tokens by dim.

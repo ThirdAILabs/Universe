@@ -44,7 +44,7 @@ class TokenPairgram : public Transformation {
       std::vector<uint32_t> input_tokens_vector(input_tokens_buffer.begin(),
                                                 input_tokens_buffer.end());
       std::vector<uint32_t> pairgrams =
-          dataset::token_encoding::computePairGrams(input_tokens_vector);
+          dataset::token_encoding::pairgrams(input_tokens_vector);
       dataset::token_encoding::mod(pairgrams, _output_range);
 
       column_values[row_idx] =

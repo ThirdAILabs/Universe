@@ -9,10 +9,10 @@ TEST(TokenEncodingTest, VerifyNumberOfNGrams) {
   uint32_t num_words = 7;
 
   for (uint32_t n = 1; n < 8; n++) {
-    auto n_gram_tokens = token_encoding::computeNGrams(sentence, /* n= */ n);
+    auto n_gram_tokens = token_encoding::ngrams(sentence, /* n= */ n);
 
     uint32_t expected_num_ngrams;
-    // - computeNGrams always includes unigrams regardless of the N value
+    // - ngrams always includes unigrams regardless of the N value
     // - if N is too large we can't make an NGram and will only have unigrams
     if (n == 1 || n > num_words) {
       expected_num_ngrams = num_words;
