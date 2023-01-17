@@ -5,16 +5,33 @@
 
 namespace thirdai::dataset {
 
-class SvmBatchProcessor final : public UnaryBoltBatchProcessor {
+class SvmBatchProcessor final : public BatchProcessor {
  public:
   explicit SvmBatchProcessor(bool softmax_for_multiclass = true)
       : _softmax_for_multiclass(softmax_for_multiclass) {}
 
   bool expectsHeader() const final { return false; }
 
+  std::vector<BoltBatch> createBatch(
+      const std::vector<std::string>& rows) final {
+    std::vector<BoltVector> _data_vecs = std::vector<BoltVector>(rows.size());
+    std::vector<BoltVector> _label_vecs = std::vector<BoltVector>(rows.size());
+
+    // #pragma omp parallel for default(none) shared(rows)
+    for (uint32_t row_id = 0; row_id < rows.size(); row_id++) {
+      auto p = processRow(rows[row_id]);
+
+      _data_vecs[row_id] = std::move(p.first);
+      _label_vecs[row_id] = std::move(p.second);
+    }
+
+    return {BoltBatch(std::move(_data_vecs)),
+            BoltBatch(std::move(_label_vecs))};
+  }
+
   void processHeader(const std::string& header) final { (void)header; }
 
-  std::pair<BoltVector, BoltVector> processRow(const std::string& line) final {
+  std::pair<BoltVector, BoltVector> processRow(const std::string& line) const {
     const char* start = line.c_str();
     const char* const line_end = line.c_str() + line.size();
     char* end;
