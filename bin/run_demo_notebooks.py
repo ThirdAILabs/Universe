@@ -23,8 +23,6 @@ def get_notebook_paths(temp_dir):
 def run_demo_notebooks(notebook_paths, temp_dir):
     errors = []
     for notebook_path in notebook_paths:
-        if Path(notebook_path).stem != "SentimentAnalysis":
-            continue
         with open(notebook_path) as notebook_file:
             # Ref: https://nbformat.readthedocs.io/en/latest/format_description.html
             nb_in = nbformat.read(notebook_file, nbformat.NO_CONVERT)
