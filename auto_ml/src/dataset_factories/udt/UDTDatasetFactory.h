@@ -180,14 +180,14 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   UDTConfigPtr config() { return _config; }
 
+  static ColumnNumberMapPtr makeColumnNumberMap(
+      dataset::DataLoader& data_loader, char delimiter);
+
  private:
   PreprocessedVectorsMap processAllMetadata();
 
   dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
       const std::string& col_name, const CategoricalDataTypePtr& categorical);
-
-  static ColumnNumberMapPtr makeColumnNumberMap(
-      dataset::DataLoader& data_loader, char delimiter);
 
   std::vector<dataset::BlockPtr> buildMetadataInputBlocks(
       const CategoricalMetadataConfig& metadata_config,

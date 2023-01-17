@@ -124,6 +124,49 @@ class GenericBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
                            BoltBatch(std::move(batch_labels)));
   }
 
+  std::tuple<BoltBatch, BoltBatch> getBatch(const std::vector<std::vector<std::string_view>>& rows) {
+    std::vector<BoltVector> batch_inputs(rows.size());
+    std::vector<BoltVector> batch_labels(rows.size());
+
+    std::exception_ptr num_columns_error;
+    std::exception_ptr block_err;
+
+#pragma omp parallel for default(none)                          \
+    shared(rows, batch_inputs, batch_labels, num_columns_error, \
+           block_err) if (_parallel)
+    for (size_t i = 0; i < rows.size(); ++i) {
+      auto columns = rows[i];
+      if (columns.size() < _expected_num_cols) {
+        std::stringstream error_ss;
+        error_ss << "[ProcessorUtils::parseCsvRow] Expected "
+                 << _expected_num_cols << " columns delimited by '"
+                 << _delimiter << "' in each row of the dataset. Found row '"
+                 << i << "' with number of columns = " << columns.size()
+                 << ".";
+#pragma omp critical
+        num_columns_error =
+            std::make_exception_ptr(std::invalid_argument(error_ss.str()));
+        continue;
+      }
+      if (auto err = makeInputVector(columns, batch_inputs[i])) {
+#pragma omp critical
+        block_err = err;
+      }
+      if (auto err = makeLabelVector(columns, batch_labels[i])) {
+#pragma omp critical
+        block_err = err;
+      }
+    }
+    if (block_err) {
+      std::rethrow_exception(block_err);
+    }
+    if (num_columns_error) {
+      std::rethrow_exception(num_columns_error);
+    }
+    return std::make_tuple(BoltBatch(std::move(batch_inputs)),
+                           BoltBatch(std::move(batch_labels)));
+  }
+
   bool expectsHeader() const final { return _expects_header; }
 
   void processHeader(const std::string& header) final { (void)header; }

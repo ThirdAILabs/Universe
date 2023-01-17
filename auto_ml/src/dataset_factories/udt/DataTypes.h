@@ -31,6 +31,8 @@ using CategoricalMetadataConfigPtr = std::shared_ptr<CategoricalMetadataConfig>;
 struct DataType {
   virtual std::string toString() const = 0;
 
+  virtual std::string data_type() const = 0;
+
   virtual ~DataType() = default;
 
  private:
@@ -59,6 +61,8 @@ struct CategoricalDataType : DataType {
     return fmt::format(R"({{"type": "categorical"}})");
   }
 
+  std::string data_type() const final { return "categorical"; }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -78,6 +82,8 @@ struct TextDataType : DataType {
   bool force_pairgram;
 
   std::string toString() const final { return R"({"type": "text"})"; }
+
+  std::string data_type() const final { return "text"; }
 
  private:
   friend class cereal::access;
@@ -106,6 +112,8 @@ struct NumericalDataType : DataType {
         range.first, range.second, granularity);
   }
 
+  std::string data_type() const final { return "numerical"; }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -118,6 +126,8 @@ using NumericalDataTypePtr = std::shared_ptr<NumericalDataType>;
 
 struct DateDataType : DataType {
   std::string toString() const final { return R"({"type": "date"})"; }
+
+  std::string data_type() const final { return "date"; }
 
  private:
   friend class cereal::access;
