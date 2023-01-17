@@ -25,15 +25,14 @@ std::vector<uint32_t> computeNGrams(const std::vector<std::string_view>& words,
 
   // if we have to do more than unigrams and there are enough words to N-gram
   if (n > 1 && n <= num_words) {
-    for (uint32_t start_word_idx = 0; start_word_idx <= num_words - n;
-         start_word_idx++) {
-      std::string_view word = words[start_word_idx];
-      uint32_t n_gram_token = seededMurmurHash(word.data(), word.size());
+    for (uint32_t start_token_idx = 0; start_token_idx <= num_words - n;
+         start_token_idx++) {
+      uint32_t n_gram_token = n_gram_tokens[start_token_idx];
 
       for (uint32_t i = 1; i < n; i++) {
-        word = words[start_word_idx + i];
-        n_gram_token = hashing::HashUtils::combineHashes(
-            n_gram_token, seededMurmurHash(word.data(), word.size()));
+        uint32_t next_token = n_gram_tokens[start_token_idx + i];
+        n_gram_token =
+            hashing::HashUtils::combineHashes(n_gram_token, next_token);
       }
       n_gram_tokens.push_back(n_gram_token);
     }
