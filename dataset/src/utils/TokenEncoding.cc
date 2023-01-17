@@ -7,7 +7,7 @@
 #include <string_view>
 #include <type_traits>
 
-namespace thirdai::dataset::TokenEncoding {
+namespace thirdai::dataset::token_encoding {
 
 std::vector<uint32_t> computeNGrams(const std::vector<std::string_view>& words,
                                     uint32_t n) {
@@ -140,4 +140,4 @@ std::vector<std::pair<uint32_t, float>> sumRepeatedIndices(
   return index_value_pairs;
 }
 
-}  // namespace thirdai::dataset::TokenEncoding
+}  // namespace thirdai::dataset::token_encoding

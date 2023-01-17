@@ -9,7 +9,7 @@ TEST(TokenEncodingTest, VerifyNumberOfNGrams) {
   uint32_t num_words = 7;
 
   for (uint32_t n = 1; n < 8; n++) {
-    auto n_gram_tokens = TokenEncoding::computeNGrams(sentence, /* n= */ n);
+    auto n_gram_tokens = token_encoding::computeNGrams(sentence, /* n= */ n);
 
     uint32_t expected_num_ngrams;
     // - computeNGrams always includes unigrams regardless of the N value
@@ -27,7 +27,7 @@ TEST(TokenEncodingTest, VerifyNumberOfNGrams) {
 TEST(TokenEncodingTest, TestSumRepeatedIndices) {
   std::vector<uint32_t> indices{1, 2, 3, 3, 1, 1};
 
-  auto index_value_pairs = TokenEncoding::sumRepeatedIndices(indices);
+  auto index_value_pairs = token_encoding::sumRepeatedIndices(indices);
 
   ASSERT_EQ(index_value_pairs[0].first, 1);
   ASSERT_EQ(index_value_pairs[0].second, 3.0);

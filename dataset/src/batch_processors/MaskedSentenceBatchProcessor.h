@@ -83,9 +83,9 @@ class MaskedSentenceBatchProcessor final : public BatchProcessor {
     BoltVector label = BoltVector::makeSparseVector(
         masked_word_ids, std::vector<float>(masked_word_ids.size(), 1.0));
 
-    auto pairgrams = TokenEncoding::computePairGrams(row);
-    TokenEncoding::mod(pairgrams, _output_range);
-    auto dedpulicated_pairgrams = TokenEncoding::sumRepeatedIndices(pairgrams);
+    auto pairgrams = token_encoding::computePairGrams(row);
+    token_encoding::mod(pairgrams, _output_range);
+    auto dedpulicated_pairgrams = token_encoding::sumRepeatedIndices(pairgrams);
 
     return {BoltVector::makeSparseVector(dedpulicated_pairgrams),
             BoltVector::makeSparseVector(

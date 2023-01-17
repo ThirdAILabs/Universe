@@ -69,11 +69,11 @@ class PairGramTextBlock final : public TextBlock {
  public:
   explicit PairGramTextBlock(
       ColumnIdentifier col,
-      uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM)
+      uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM)
       : TextBlock(std::move(col), dim) {}
 
   static auto make(ColumnIdentifier col,
-                   uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM) {
+                   uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<PairGramTextBlock>(std::move(col), dim);
   }
 
@@ -88,9 +88,9 @@ class PairGramTextBlock final : public TextBlock {
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
-    std::vector<uint32_t> pairgrams = TokenEncoding::computePairGrams(text);
-    TokenEncoding::mod(pairgrams, _dim);
-    for (auto& [index, value] : TokenEncoding::sumRepeatedIndices(pairgrams)) {
+    std::vector<uint32_t> pairgrams = token_encoding::computePairGrams(text);
+    token_encoding::mod(pairgrams, _dim);
+    for (auto& [index, value] : token_encoding::sumRepeatedIndices(pairgrams)) {
       vec.addSparseFeatureToSegment(index, value);
     }
 
@@ -117,12 +117,12 @@ class NGramTextBlock final : public TextBlock {
  public:
   explicit NGramTextBlock(
       ColumnIdentifier col, uint32_t n = 1,
-      uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
+      uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM,
       char delimiter = ' ')
       : TextBlock(std::move(col), dim), _n(n), _delimiter(delimiter) {}
 
   static auto make(ColumnIdentifier col, uint32_t n = 1,
-                   uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
+                   uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM,
                    char delimiter = ' ') {
     return std::make_shared<NGramTextBlock>(std::move(col), n, dim, delimiter);
   }
@@ -135,7 +135,7 @@ class NGramTextBlock final : public TextBlock {
           "Word explanations not supported for n != 1.");
     }
     std::unordered_map<uint32_t, std::string> index_to_word_map =
-        TokenEncoding::buildUnigramHashToWordMap(text, _dim, _delimiter);
+        token_encoding::buildUnigramHashToWordMap(text, _dim, _delimiter);
     return index_to_word_map.at(index);
   }
 
@@ -143,10 +143,10 @@ class NGramTextBlock final : public TextBlock {
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> unigrams =
-        TokenEncoding::computeNGrams(text, /* n= */ _n, _delimiter);
-    TokenEncoding::mod(unigrams, _dim);
+        token_encoding::computeNGrams(text, /* n= */ _n, _delimiter);
+    token_encoding::mod(unigrams, _dim);
 
-    for (auto& [index, value] : TokenEncoding::sumRepeatedIndices(unigrams)) {
+    for (auto& [index, value] : token_encoding::sumRepeatedIndices(unigrams)) {
       vec.addSparseFeatureToSegment(index, value);
     }
 
@@ -175,11 +175,11 @@ using NGramTextBlockPtr = std::shared_ptr<NGramTextBlock>;
 class CharKGramTextBlock final : public TextBlock {
  public:
   CharKGramTextBlock(ColumnIdentifier col, uint32_t k,
-                     uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM)
+                     uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM)
       : TextBlock(std::move(col), dim), _k(k) {}
 
   static auto make(ColumnIdentifier col, uint32_t k,
-                   uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM) {
+                   uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<CharKGramTextBlock>(std::move(col), k, dim);
   }
 
@@ -204,7 +204,7 @@ class CharKGramTextBlock final : public TextBlock {
     size_t n_kgrams = text.size() >= _k ? text.size() - (_k - 1) : 1;
     size_t len = std::min(text.size(), static_cast<size_t>(_k));
     for (uint32_t offset = 0; offset < n_kgrams; offset++) {
-      uint32_t k_gram_hash = TokenEncoding::seededMurmurHash(
+      uint32_t k_gram_hash = token_encoding::seededMurmurHash(
                                  /* key= */ &lower_case_text.at(offset), len) %
                              _dim;
       char_k_grams.push_back(k_gram_hash);
@@ -216,7 +216,7 @@ class CharKGramTextBlock final : public TextBlock {
       run faster.
     */
     for (auto& [index, value] :
-         TokenEncoding::sumRepeatedIndices(char_k_grams)) {
+         token_encoding::sumRepeatedIndices(char_k_grams)) {
       vec.addSparseFeatureToSegment(index, value);
     }
 

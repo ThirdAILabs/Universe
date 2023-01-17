@@ -11,7 +11,7 @@
  * This namespace should be the source of token encodings across the
  * codebase to ensure consistency in code, implementation, hash seeds, etc.
  */
-namespace thirdai::dataset::TokenEncoding {
+namespace thirdai::dataset::token_encoding {
 
 static constexpr uint32_t HASH_SEED = 341;
 static constexpr uint32_t DEFAULT_TEXT_ENCODING_DIM = 100000;

@@ -80,7 +80,7 @@ std::exception_ptr TabularHashFeatures::buildSegment(
     return e;
   };
 
-  for (auto& [index, value] : TokenEncoding::sumRepeatedIndices(tokens)) {
+  for (auto& [index, value] : token_encoding::sumRepeatedIndices(tokens)) {
     vec.addSparseFeatureToSegment(index, value);
   }
 
@@ -118,7 +118,7 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
       }
       case TabularDataType::Categorical: {
         unigram =
-            TokenEncoding::seededMurmurHash(str_val.data(), str_val.size());
+            token_encoding::seededMurmurHash(str_val.data(), str_val.size());
         break;
       }
     }

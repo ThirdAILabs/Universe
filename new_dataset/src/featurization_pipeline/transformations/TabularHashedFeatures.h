@@ -39,7 +39,7 @@ class TabularHashedFeatures : public Transformation {
     std::vector<uint32_t> column_name_hashes;
     for (const auto& col_name : _input_column_names) {
       columns.push_back(column_map.getTokenColumn(col_name));
-      column_name_hashes.push_back(dataset::TokenEncoding::seededMurmurHash(
+      column_name_hashes.push_back(dataset::token_encoding::seededMurmurHash(
           /* key = */ col_name.c_str(), /* len = */ col_name.size()));
     }
 
@@ -56,7 +56,7 @@ class TabularHashedFeatures : public Transformation {
         // distribution. We cast the uint32_t to char* so we can use murmur hash
         const char* val_to_hash =
             reinterpret_cast<const char*>(&((*column)[row_idx]));
-        uint32_t hashed_col_val = dataset::TokenEncoding::seededMurmurHash(
+        uint32_t hashed_col_val = dataset::token_encoding::seededMurmurHash(
             val_to_hash, /* len = */ 4);
         // to avoid two identical values in different columns from having the
         // same hash value we combine the with the hash of the column name of
@@ -70,8 +70,8 @@ class TabularHashedFeatures : public Transformation {
         // we don't deduplicate pairgrams since we ensure unique hash values
         // above, thus reducing the chance of duplicates.
         std::vector<uint32_t> row_pairgrams =
-            dataset::TokenEncoding::computePairGrams(salted_unigrams);
-        dataset::TokenEncoding::mod(row_pairgrams, _output_range);
+            dataset::token_encoding::computePairGrams(salted_unigrams);
+        dataset::token_encoding::mod(row_pairgrams, _output_range);
         tabular_hash_values[row_idx] = row_pairgrams;
       } else {
         for (uint32_t i = 0; i < salted_unigrams.size(); i++) {
