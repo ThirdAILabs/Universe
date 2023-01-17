@@ -47,20 +47,20 @@ using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
 class UDTDatasetFactory final : public DatasetLoaderFactory {
  public:
-  explicit UDTDatasetFactory(UDTConfigPtr config, bool force_parallel,
+  explicit UDTDatasetFactory(const UDTConfigPtr& config, bool force_parallel,
                              uint32_t text_pairgram_word_limit,
                              bool contextual_columns = false,
                              std::optional<dataset::RegressionBinningStrategy>
                                  regression_binning = std::nullopt);
 
   static std::shared_ptr<UDTDatasetFactory> make(
-      UDTConfigPtr config, bool force_parallel,
+      const UDTConfigPtr& config, bool force_parallel,
       uint32_t text_pairgram_word_limit, bool contextual_columns = false,
       std::optional<dataset::RegressionBinningStrategy> regression_binning =
           std::nullopt) {
     return std::make_shared<UDTDatasetFactory>(
-        std::move(config), force_parallel, text_pairgram_word_limit,
-        contextual_columns, regression_binning);
+        config, force_parallel, text_pairgram_word_limit, contextual_columns,
+        regression_binning);
   }
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(

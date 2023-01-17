@@ -78,4 +78,7 @@ def test_csdisco_text_classifier_training(tokenized_data):
         total += len(pred)
 
     print(correct / total)
+
+    # Accuracy is around 0.86-0.88, the gap between this and our regular clinc model 
+    # is due to using sigmoid and BCE instead of softmax and CCE.
     assert correct / total >= 0.8

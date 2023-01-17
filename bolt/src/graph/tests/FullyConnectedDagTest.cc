@@ -6,7 +6,6 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
-#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <optional>
