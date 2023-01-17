@@ -69,6 +69,6 @@ std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
  * the input decreases.
  */
 std::vector<std::pair<uint32_t, float>> sumRepeatedIndices(
-    std::vector<uint32_t>& indices, float base_value = 1.0);
+    std::vector<uint32_t>& indices);
 
-}  // namespace thirdai::dataset::TokenEncoding
+}  // namespace thirdai::dataset::token_encoding

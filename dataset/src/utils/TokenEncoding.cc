@@ -101,7 +101,7 @@ std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
 }
 
 std::vector<std::pair<uint32_t, float>> sumRepeatedIndices(
-    std::vector<uint32_t>& indices, float base_value) {
+    std::vector<uint32_t>& indices) {
   if (indices.empty()) {
     return {};
   }
@@ -120,7 +120,7 @@ std::vector<std::pair<uint32_t, float>> sumRepeatedIndices(
   for (; i < indices.size() - 1; ++i) {
     uint32_t idx = indices[i];
     uint32_t next_idx = indices[i + 1];
-    summed_val += base_value;
+    summed_val += 1.0;
 
     if (idx != next_idx) {
       index_value_pairs.push_back(std::make_pair(idx, summed_val));
@@ -133,7 +133,7 @@ std::vector<std::pair<uint32_t, float>> sumRepeatedIndices(
    * "different", so we add a sparse feature accordingly.
    */
   if (i == indices.size() - 1) {
-    summed_val += base_value;
+    summed_val += 1.0;
     index_value_pairs.push_back(std::make_pair(indices.back(), summed_val));
   }
 
