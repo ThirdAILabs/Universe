@@ -1,6 +1,6 @@
 import numpy as np
 from thirdai import bolt, deployment
-
+import glob
 
 class UDTBenchmarkConfig:
     learning_rate = 0.01
@@ -12,7 +12,6 @@ class UDTBenchmarkConfig:
     model_config = None
     model_config_path = None
     callbacks = []
-
 
 class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     train_file = "/share/data/udt_datasets/yelp_polarity/train.csv"
@@ -28,6 +27,43 @@ class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     experiment_name = "YelpPolarityUDT"
     dataset_name = "yelp_polarity"
 
+class Amazon670kUDTConfig(UDTBenchmarkConfig):
+    data_types={
+        "title": bolt.types.text(),
+        "labels": bolt.types.categorical()
+    }
+    target = "labels"
+    n_target_classes = 670091
+    delimiter='\t'
+    experiment_name = "Amazon670kUDT"
+    dataset_name = "amazon_670k"
+    num_epochs = 1
+
+
+    train_file = "/share/data/udt_datasets/amazon_670k/train_udt.csv"
+    test_file = glob.glob("/share/data/udt_datasets/amazon_670k/test_udt_*.csv")
+
+    model_config_path = "amazon-670k_udt.config"
+    model_config = deployment.ModelConfig(
+        input_names=["input"],
+        nodes=[
+            deployment.FullyConnectedNodeConfig(
+                name="hidden",
+                dim=deployment.ConstantParameter(512),
+                sparsity=deployment.ConstantParameter(1.0),
+                activation=deployment.ConstantParameter("relu"),
+                predecessor="input",
+            ),
+            deployment.FullyConnectedNodeConfig(
+                name="output",
+                dim=deployment.DatasetLabelDimensionParameter(),
+                sparsity=deployment.ConstantParameter(0.005),
+                activation=deployment.ConstantParameter("softmax"),
+                predecessor="hidden",
+            ),
+        ],
+        loss=bolt.nn.losses.CategoricalCrossEntropy(),
+    )
 
 class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     train_file = (

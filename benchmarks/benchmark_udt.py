@@ -1,12 +1,15 @@
 import argparse
+import io
 import os
 
 import mlflow
+import numpy as np
 import toml
 import udt_configs
+
+from contextlib import redirect_stdout
 from thirdai import bolt
 from thirdai.experimental import MlflowCallback
-
 from utils import log_machine_info, start_mlflow_helper
 
 
@@ -32,8 +35,42 @@ def get_mlflow_uri():
         return parsed_config["tracking"]["uri"]
 
 
+def parse_metric(stdout_handler, metric_type):
+    import re
+    output = stdout_handler.getvalue()
+    metric = re.search(f"{metric_type}\s*:\s*0.[0-9][0-9][0-9]", output).group(0)
+    metric = metric.split(':')[-1]
+    return metric
+
+
+def evaluate_over_file(test_file, model, metric_type):
+    stdout_handler = io.StringIO()
+    with redirect_stdout(stdout_handler):
+        model.evaluate(test_file, metrics=[metric_type])
+        metric = parse_metric(stdout_handler, metric_type)
+        return metric
+
+
+def evaluate_over_part_files(test_files, model, metric_type):
+    """
+    Evaluate over a list of files and then compute an
+    overall average metric
+    """
+    totals = []
+    num_lines_list = [sum(1 for line in open(f)) for f in test_files]
+    for test_file, num_lines in zip(test_files, num_lines_list):
+        stdout_handler = io.StringIO()
+        with redirect_stdout(stdout_handler):
+            model.evaluate(test_file, metrics=[metric_type])
+            metric = parse_metric(stdout_handler, metric_type)
+            weighted_total = float(metric) * num_lines
+            totals.append(weighted_total)
+
+    return sum(totals) / sum(num_lines_list)
+
 def run_benchmark(config, run_name):
     if config.model_config is not None:
+        print(config.model_config_path)
         config.model_config.save(config.model_config_path)
 
     model = bolt.UniversalDeepTransformer(
@@ -45,29 +82,25 @@ def run_benchmark(config, run_name):
     )
 
     mlflow_uri = get_mlflow_uri()
-
-    callbacks = [
-        MlflowCallback(
-            mlflow_uri,
-            config.experiment_name,
-            run_name,
-            config.dataset_name,
-            {},
-        )
-    ]
-
+    mlflow_callback = MlflowCallback(mlflow_uri, config.experiment_name, run_name, config.dataset_name, {},)
+    
+    callbacks = [mlflow_callback]
     callbacks.extend(config.callbacks)
 
     model.train(
-        config.train_file,
-        epochs=config.num_epochs,
-        learning_rate=config.learning_rate,
-        metrics=[config.metric_type],
-        callbacks=callbacks,
+       config.train_file,
+       epochs=config.num_epochs,
+       learning_rate=config.learning_rate,
+       metrics=[config.metric_type],
+       callbacks=callbacks,
     )
-
-    model.evaluate(config.test_file, metrics=[config.metric_type])
-
+    
+    if isinstance(config.test_file, list):
+        test_metric = evaluate_over_part_files(config.test_file, model, config.metric_type)
+    else:
+        test_metric = evaluate_over_file(config.test_file, model, config.metric_type)
+    
+    mlflow_callback.log_additional_metric(f"test_{config.metric_type}", test_metric)
 
 def main():
     args = parse_args()
