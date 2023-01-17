@@ -97,8 +97,6 @@ class FullyConnectedNode final
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final;
 
-  void cleanupAfterBatchProcessingImpl() final;
-
   std::vector<NodePtr> getPredecessorsImpl() const final;
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final;
