@@ -4,6 +4,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
 #include <limits>
@@ -478,6 +479,10 @@ py::object UDTFactory::load(const std::string& filename) {
 
   if (first_byte == UDT_CLASSIFIER_IDENTIFIER) {
     return py::cast(UniversalDeepTransformer::load_stream(filestream));
+  }
+
+  if (first_byte == UDT_TEXT_CLASSIFIER_IDENTIFIER) {
+    return py::cast(TextClassifier::load_stream(filestream));
   }
 
   throw std::invalid_argument("Found an invalid header byte in the saved file");

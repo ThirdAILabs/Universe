@@ -90,7 +90,7 @@ py::dict TextClassifier::validateOnBatch(const py::dict& data,
 
   py::dict output;
   output["mean_loss"] = mean_loss;
-  output["per_class_loss"] = per_class_loss;
+  output["per_class_loss"] = per_class_loss.value();
 
   return output;
 }
@@ -131,19 +131,17 @@ std::shared_ptr<TextClassifier> TextClassifier::load_stream(
 }
 
 std::vector<BoltBatch> TextClassifier::featurize(const py::dict& data) const {
-  NumpyArray<uint32_t> tokens =
-      data["bert_tokens"].cast<NumpyArray<uint32_t>>();
-  verifyArrayHasNDimensions(tokens, 1, "bert_tokens");
+  NumpyArray<uint32_t> tokens = data["tokens"].cast<NumpyArray<uint32_t>>();
+  verifyArrayHasNDimensions(tokens, 1, "tokens");
 
   NumpyArray<uint32_t> metadata = data["metadata"].cast<NumpyArray<uint32_t>>();
   verifyArrayHasNDimensions(metadata, 2, "metadata");
   uint32_t batch_size = metadata.shape(0);
   verifyArrayShape(metadata, {batch_size, _metadata_dim}, "metadata");
 
-  NumpyArray<uint32_t> offsets =
-      data["doc_offsets"].cast<NumpyArray<uint32_t>>();
-  verifyArrayHasNDimensions(offsets, 1, "doc_offsets");
-  verifyArrayShape(offsets, {batch_size + 1}, "doc_offsets");
+  NumpyArray<uint32_t> offsets = data["offsets"].cast<NumpyArray<uint32_t>>();
+  verifyArrayHasNDimensions(offsets, 1, "offsets");
+  verifyArrayShape(offsets, {batch_size + 1}, "offsets");
   verifyOffsets(offsets, tokens.shape(0));
 
   std::vector<BoltVector> vectors(batch_size);
@@ -245,10 +243,13 @@ TextClassifier::binaryCrossEntropyLoss(const NumpyArray<float>& labels,
     for (uint32_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
       float activation =
           _model->output()->getOutputVector(batch_idx).activations[class_id];
+
+      activation = std::clamp(activation, 1e-6F, 1 - 1e-6F);
+
       float label = labels_ptr[batch_idx * _n_classes + class_id];
 
       float single_loss =
-          label == 1.0 ? std::log(activation) : std::log(1 - activation);
+          label * std::log(activation) + (1 - label) * std::log(1 - activation);
 
       loss -= single_loss;
 
@@ -262,7 +263,8 @@ TextClassifier::binaryCrossEntropyLoss(const NumpyArray<float>& labels,
     }
   }
 
-  return std::make_pair(loss / batch_size, std::move(per_class_loss));
+  return std::make_pair(loss / (batch_size * _n_classes),
+                        std::move(per_class_loss));
 }
 
 void TextClassifier::verifyArrayHasNDimensions(
@@ -286,13 +288,13 @@ void TextClassifier::verifyArrayShape(const NumpyArray<uint32_t>& array,
   for (uint32_t i = 0; i < expected_dims.size(); i++) {
     if (array.shape(i) != expected_dims.at(i)) {
       std::stringstream error;
-      error << "Expected " << name << " to have shape (" << expected_dims.at(0);
-      for (uint32_t j = 1; j < expected_dims.size(); j++) {
-        error << ", " << expected_dims.at(i);
+      error << "Expected " << name << " to have shape (";
+      for (uint32_t j = 0; j < expected_dims.size(); j++) {
+        error << expected_dims.at(i) << ", ";
       }
-      error << "), but recieved array with shape (" << array.shape(0);
-      for (uint32_t j = 1; j < expected_dims.size(); j++) {
-        error << ", " << array.shape(i);
+      error << "), but recieved array with shape (";
+      for (uint32_t j = 0; j < expected_dims.size(); j++) {
+        error << array.shape(i) << ", ";
       }
       error << ").";
       throw std::invalid_argument(error.str());

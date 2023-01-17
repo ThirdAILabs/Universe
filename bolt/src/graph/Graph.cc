@@ -257,6 +257,18 @@ void BoltGraph::trainOnBatch(std::vector<BoltBatch>&& inputs,
                              uint32_t reconstruct_hash_functions_interval) {
   SingleBatchDatasetContext dataset_context(std::move(inputs));
   verifyInputForGraph(dataset_context);
+
+  if (!graphCompiled()) {
+    throw std::logic_error("Graph must be compiled before training");
+  }
+
+  if (!_batch_processing_state.isOptimizerInitialized()) {
+    for (auto& node : _nodes) {
+      node->initOptimizer();
+    }
+    _batch_processing_state.markOptimizerInitialized();
+  }
+
   dataset_context.setInputs(/* batch_idx= */ 0, _inputs);
 
   processTrainingBatch(labels, metrics);

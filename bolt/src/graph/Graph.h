@@ -227,16 +227,23 @@ class BoltGraph {
     BatchProcessingState() : _allocated_batch_size(0), _using_sparsity(false) {}
 
     BatchProcessingState(uint32_t batch_size, bool using_sparsity)
-        : _allocated_batch_size(batch_size), _using_sparsity(using_sparsity) {}
+        : _allocated_batch_size(batch_size),
+          _using_sparsity(using_sparsity),
+          _optimizer_initialized(false) {}
 
     bool compatableWith(uint32_t batch_size, bool using_sparsity) const {
       return batch_size <= _allocated_batch_size &&
              using_sparsity == _using_sparsity;
     }
 
+    bool isOptimizerInitialized() const { return _optimizer_initialized; }
+
+    void markOptimizerInitialized() { _optimizer_initialized = true; }
+
    private:
     uint32_t _allocated_batch_size;
     bool _using_sparsity;
+    bool _optimizer_initialized;
   };
   BatchProcessingState _batch_processing_state;
 

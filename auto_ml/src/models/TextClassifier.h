@@ -65,12 +65,12 @@ class TextClassifier {
    * Takes in the input batch and returns the input to the bolt model. The data
    * should be a python dictionary with three fields. Two fields contain the
    * bert tokens for each sample in the batch in CSR format. The field
-   * "bert_tokens" should be a flattened numpy array of uint32 of all the
-   * tokens. The field "doc_offsets" is a numpy array of uint32 of length
-   * (batch_size + 1) that gives the offsets of the tokens for each document.
-   * The tokens for document i should be in the range [offsets[i], offsets[i+1])
-   * in the tokens array. The field "metadata" should be a 2D numpy array of 0/1
-   * values (dtype is uint32) that represent the metadata for each document.
+   * "tokens" should be a flattened numpy array of uint32 of all the tokens. The
+   * field "offsets" is a numpy array of uint32 of length (batch_size + 1) that
+   * gives the offsets of the tokens for each document. The tokens for document
+   * i should be in the range [offsets[i], offsets[i+1]) in the tokens array.
+   * The field "metadata" should be a 2D numpy array of 0/1 values (dtype is
+   * uint32) that represent the metadata for each document.
    */
   std::vector<BoltBatch> featurize(const py::dict& data) const;
 
