@@ -72,22 +72,30 @@ def test_missing_input(field):
     "field, error",
     [  # When we add additional tokens the last offset doesn't match the end of the tokens.
         ("tokens", "The last offset should be the number of tokens + 1."),
-        (  # The batch size is infered from the shape[0] of the metadata.
+        (  # The batch size is infered from the number of offsets.
             "offsets",
-            "Expected offsets to have shape (6, ), but received array with shape (7, ).",
+            "Expected metadata to have shape (6, 100, ), but received array with shape (5, 100, ).",
         ),
-        (  # The batch size is infered from the shape[0] of the metadata.
+        (  # The batch size is infered from the number of offsets.
             "metadata",
-            "Expected offsets to have shape (7, ), but received array with shape (6, ).",
+            "Expected metadata to have shape (5, 100, ), but received array with shape (6, 100, ).",
         ),
     ],
 )
 def test_incorrect_batch_size(field, error):
     batch_size = 5
     input_data = get_input_data(batch_size)
-    bad_input_data = get_input_data(batch_size + 1)
 
-    input_data[field] = bad_input_data[field]
+    if field == "offsets":
+        # We add an extra valid offset so that the batch size is changed.
+        input_data["offsets"] = np.concatenate(
+            [np.array([0], dtype=np.uint32), input_data["offsets"]],
+            axis=None,
+            dtype=np.uint32,
+        )
+    else:
+        bad_input_data = get_input_data(batch_size + 1)
+        input_data[field] = bad_input_data[field]
 
     check_model_operations(
         input_data=input_data, error_msg=re.escape(error), labels=get_labels(batch_size)
@@ -160,6 +168,19 @@ def test_out_of_range_dimensions(field, error):
 
     check_model_operations(
         input_data=input_data, labels=get_labels(batch_size), error_msg=error
+    )
+
+
+def test_error_on_decreasing_offsets():
+    batch_size = 5
+    input_data = get_input_data(batch_size)
+
+    input_data["offsets"][1] = input_data["offsets"][2] + 1
+
+    check_model_operations(
+        input_data=input_data,
+        labels=get_labels(batch_size),
+        error_msg=re.escape("Offsets[i+1] must always be >= offsets[i]."),
     )
 
 

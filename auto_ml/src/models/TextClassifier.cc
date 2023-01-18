@@ -48,8 +48,13 @@ float TextClassifier::trainOnBatch(const py::dict& data,
                                    NumpyArray<float>& labels,
                                    float learning_rate) {
   auto bolt_input = featurize(data);
-  BoltBatch bolt_labels =
-      convertLabelsToBoltBatch(labels, bolt_input[0].getBatchSize());
+
+  uint32_t batch_size = bolt_input[0].getBatchSize();
+
+  verifyArrayHasNDimensions(labels, /* ndim= */ 2, /* name= */ "labels");
+  verifyArrayShape(labels, /* expected_shape= */ {batch_size, _n_classes},
+                   /* name= */ "labels");
+  BoltBatch bolt_labels = convertLabelsToBoltBatch(labels, batch_size);
 
   bolt::MetricAggregator metrics({});
   _model->trainOnBatch(std::move(bolt_input), bolt_labels, learning_rate,
@@ -125,24 +130,19 @@ std::vector<BoltBatch> TextClassifier::featurize(const py::dict& data) const {
 
   NumpyArray<uint32_t> offsets = data["offsets"].cast<NumpyArray<uint32_t>>();
   verifyArrayHasNDimensions(offsets, /* ndim= */ 1, /* name= */ "offsets");
-  uint32_t batch_size = offsets.shape(0);
+  // Minus one because there is an extra index at the end of the offsets for the
+  // last set of tokens.
+  uint32_t batch_size = offsets.shape(0) - 1;
   verifyArrayShape(offsets, /* expected_shape= */ {batch_size + 1},
                    /* name= */ "offsets");
   verifyOffsets(offsets, /* num_tokens= */ tokens.shape(0));
 
-  if (data.contains("metadata")) {
-    NumpyArray<uint32_t> metadata =
-        data["metadata"].cast<NumpyArray<uint32_t>>();
-    verifyArrayHasNDimensions(metadata, /* ndim= */ 2, /* name= */ "metadata");
-    verifyArrayShape(metadata,
-                     /* expected_shape= */ {batch_size, _metadata_dim},
-                     /* name= */ "metadata");
-  }
+  NumpyArray<uint32_t> metadata = data["metadata"].cast<NumpyArray<uint32_t>>();
+  verifyArrayHasNDimensions(metadata, /* ndim= */ 2, /* name= */ "metadata");
+  verifyArrayShape(metadata, /* expected_shape= */ {batch_size, _metadata_dim},
+                   /* name= */ "metadata");
 
   std::vector<BoltVector> vectors(batch_size);
-
-  // We use pointers here because py::array_t access methods throw exceptions
-  // and can't be called within omp loops.
 
   std::exception_ptr error;
 #pragma omp parallel for default(none) \
@@ -171,10 +171,6 @@ std::vector<BoltBatch> TextClassifier::featurize(const py::dict& data) const {
 
 BoltBatch TextClassifier::convertLabelsToBoltBatch(NumpyArray<float>& labels,
                                                    uint32_t batch_size) const {
-  verifyArrayHasNDimensions(labels, /* ndim= */ 2, /* name= */ "labels");
-  verifyArrayShape(labels, /* expected_shape= */ {batch_size, _n_classes},
-                   /* name= */ "labels");
-
   std::vector<BoltVector> label_vectors(batch_size);
 
   for (uint32_t i = 0; i < batch_size; i++) {
@@ -328,6 +324,9 @@ void TextClassifier::verifyOffsets(const NumpyArray<uint32_t>& offsets,
                                   std::to_string(offsets.at(i)) +
                                   " for CSR tokens array of length " +
                                   std::to_string(num_tokens) + ".");
+    }
+    if (offsets.at(i + 1) < offsets.at(i)) {
+      throw std::invalid_argument("Offsets[i+1] must always be >= offsets[i].");
     }
   }
   if (offsets.at(offsets.shape(0) - 1) != num_tokens) {
