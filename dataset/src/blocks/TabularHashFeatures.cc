@@ -51,9 +51,9 @@ TabularHashFeatures::TabularHashFeatures(std::vector<TabularColumn> columns,
   std::uniform_int_distribution<uint32_t> dist(
       0, std::numeric_limits<uint32_t>::max());
 
-  // we precompute random salt values for each column so when we combineHashes
-  // with those values we don't bias the output distribution to have more higher
-  // order bits set to zero
+  // we precompute a random salt value for each column so when we call
+  // combineHashes with those values we don't bias the output distribution to
+  // have more higher order bits set to zero
   for (uint32_t i = 0; i < _columns.size(); i++) {
     _column_salts.push_back(dist(gen));
   }
