@@ -74,12 +74,14 @@ metrics::History Trainer::train(
     }
 
     auto epoch_end = now();
+    int64_t time = between(epoch_start, epoch_end);
 
     train_metrics.updateHistory(_history, /*prefix= */ "train_");
 
-    std::string log_line =
-        formatTrainLogLine(train_metrics.summarizeLastStep(), num_batches,
-                           between(epoch_start, epoch_end));
+    (*_history)["all"]["epoch_times"].push_back(static_cast<double>(time));
+
+    std::string log_line = formatTrainLogLine(train_metrics.summarizeLastStep(),
+                                              num_batches, time);
     bar.close(log_line);
     logging::info(log_line);
 
@@ -121,12 +123,14 @@ void Trainer::validate(const LabeledDataset& validation_data,
   }
 
   auto val_end = now();
+  int64_t time = between(val_start, val_end);
 
   validation_metrics.updateHistory(_history, /* prefix= */ "val_");
 
-  std::string log_line =
-      formatValidateLogLine(validation_metrics.summarizeLastStep(), num_batches,
-                            between(val_start, val_end));
+  (*_history)["all"]["val_time"].push_back(static_cast<double>(time));
+
+  std::string log_line = formatValidateLogLine(
+      validation_metrics.summarizeLastStep(), num_batches, time);
   bar.close(log_line);
   logging::info(log_line);
 
