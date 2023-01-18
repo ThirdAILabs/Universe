@@ -1417,7 +1417,8 @@ scores for each of the N output classes.
 Args:
     input_vocab_size (int): The number of tokens in the input vocabulary. This 
         should be the the number of possible tokens returned by the tokenizer.
-    metadata_dim (int): The dimension of the metadata.
+    metadata_dim (int): The dimension of the metadata. If this is specified as 0
+        the metadata is not used and will be ignored if passed in.
     n_classes (int): The number of output classes the model will predict scores for.
 
 Returns:

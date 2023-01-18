@@ -54,7 +54,7 @@ def check_model_operations(
         model.predict(input_data)
 
 
-@pytest.mark.parametrize("field", ["tokens", "offsets", "metadata"])
+@pytest.mark.parametrize("field", ["tokens", "offsets"])
 def test_missing_input(field):
     batch_size = 5
     input_data = get_input_data(batch_size)
@@ -66,6 +66,38 @@ def test_missing_input(field):
         error_msg=re.escape(field),
         error_type=KeyError,
     )
+
+
+def test_missing_metadata():
+    batch_size = 5
+    input_data = get_input_data(batch_size)
+    del input_data["metadata"]
+
+    check_model_operations(
+        input_data=input_data,
+        labels=get_labels(batch_size),
+        error_msg=re.escape(
+            "Metadata was not provided in the input, but the metadata dimension was specified as nonzero."
+        ),
+        error_type=ValueError,
+    )
+
+
+def test_no_metadata_accepted():
+    model = bolt.UniversalDeepTransformer(
+        input_vocab_size=SIMPLE_VOCAB_SIZE,
+        metadata_dim=0,
+        n_classes=SIMPLE_N_CLASSES,
+        model_size="small",
+    )
+
+    batch_size = 10
+    input_data = get_input_data(batch_size)
+    labels = get_labels(batch_size)
+
+    model.train(input_data, labels, 0.1)
+    model.validate(input_data, labels)
+    model.predict(input_data)
 
 
 @pytest.mark.parametrize(
