@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pytest
 from thirdai import bolt
@@ -32,7 +34,7 @@ def get_labels(batch_size):
 
 
 def check_model_operations(
-    input_data, labels, error_type=ValueError, input_data_corrupted=True
+    input_data, labels, error_msg, error_type=ValueError, input_data_corrupted=True
 ):
     model = bolt.UniversalDeepTransformer(
         input_vocab_size=SIMPLE_VOCAB_SIZE,
@@ -40,13 +42,13 @@ def check_model_operations(
         n_classes=SIMPLE_N_CLASSES,
         model_size="small",
     )
-    with pytest.raises(error_type):
+    with pytest.raises(error_type, match=error_msg):
         model.train(input_data, labels, 0.1)
-    with pytest.raises(error_type):
+    with pytest.raises(error_type, match=error_msg):
         model.validate(input_data, labels)
 
     if input_data_corrupted:
-        with pytest.raises(error_type):
+        with pytest.raises(error_type, match=error_msg):
             model.predict(input_data)
     else:
         model.predict(input_data)
@@ -59,23 +61,57 @@ def test_missing_input(field):
     del input_data[field]
 
     check_model_operations(
-        input_data=input_data, labels=get_labels(batch_size), error_type=KeyError
+        input_data=input_data,
+        labels=get_labels(batch_size),
+        error_msg=re.escape(field),
+        error_type=KeyError,
     )
 
 
-@pytest.mark.parametrize("field", ["tokens", "offsets", "metadata"])
-def test_incorrect_batch_size(field):
+@pytest.mark.parametrize(
+    "field, error",
+    [  # When we add additional tokens the last offset doesn't match the end of the tokens.
+        ("tokens", "The last offset should be the number of tokens + 1."),
+        (  # The batch size is infered from the shape[0] of the metadata.
+            "offsets",
+            "Expected offsets to have shape (6, ), but received array with shape (7, ).",
+        ),
+        (  # The batch size is infered from the shape[0] of the metadata.
+            "metadata",
+            "Expected offsets to have shape (7, ), but received array with shape (6, ).",
+        ),
+    ],
+)
+def test_incorrect_batch_size(field, error):
     batch_size = 5
     input_data = get_input_data(batch_size)
     bad_input_data = get_input_data(batch_size + 1)
 
     input_data[field] = bad_input_data[field]
 
-    check_model_operations(input_data=input_data, labels=get_labels(batch_size))
+    check_model_operations(
+        input_data=input_data, error_msg=re.escape(error), labels=get_labels(batch_size)
+    )
 
 
-@pytest.mark.parametrize("field", ["tokens", "offsets", "metadata"])
-def test_incorrect_ndim(field):
+@pytest.mark.parametrize(
+    "field, error",
+    [
+        (
+            "tokens",
+            "Expected tokens to have 1 dimensions, but received array with 3 dimensions.",
+        ),
+        (
+            "offsets",
+            "Expected offsets to have 1 dimensions, but received array with 3 dimensions.",
+        ),
+        (
+            "metadata",
+            "Expected metadata to have 2 dimensions, but received array with 3 dimensions.",
+        ),
+    ],
+)
+def test_incorrect_ndim(field, error):
     batch_size = 5
     input_data = get_input_data(batch_size)
 
@@ -85,13 +121,28 @@ def test_incorrect_ndim(field):
         0, 10, size=(batch_size, 100, 10), dtype=np.uint32
     )
 
-    check_model_operations(input_data=input_data, labels=get_labels(batch_size))
+    check_model_operations(
+        input_data=input_data, labels=get_labels(batch_size), error_msg=re.escape(error)
+    )
 
 
-@pytest.mark.parametrize("field", ["tokens", "offsets", "metadata"])
-def test_out_of_range_dimensions(field):
+@pytest.mark.parametrize(
+    "field, error",
+    [
+        (
+            "tokens",
+            r"We found an Input BoltVector larger than the expected input dim: Received sparse BoltVector with active_neuron=\d+ but was supposed to have=1100",
+        ),
+        ("offsets", "Invalid offset 1000 for CSR tokens array of length 100."),
+        (
+            "metadata",
+            "Expected metadata to have shape (5, 100, ), but received array with shape (5, 101, ).",
+        ),
+    ],
+)
+def test_out_of_range_dimensions(field, error):
     # This test checks how the model handles out of range issues. The test does this
-    # by either modifying the indices in the tokens or offsets, or the 2nd dimension 
+    # by either modifying the indices in the tokens or offsets, or the 2nd dimension
     # of the metadata array.
 
     batch_size = 5
@@ -103,7 +154,13 @@ def test_out_of_range_dimensions(field):
     else:
         input_data[field] += SIMPLE_VOCAB_SIZE
 
-    check_model_operations(input_data=input_data, labels=get_labels(batch_size))
+    # We need to match on a number using \d+ so we cannot escape the regex in this case.
+    if not field == "tokens":
+        error = re.escape(error)
+
+    check_model_operations(
+        input_data=input_data, labels=get_labels(batch_size), error_msg=error
+    )
 
 
 def test_incorrect_label_batch_size():
@@ -112,6 +169,9 @@ def test_incorrect_label_batch_size():
         input_data=get_input_data(batch_size),
         labels=get_labels(batch_size + 1),
         input_data_corrupted=False,
+        error_msg=re.escape(
+            "Expected labels to have shape (5, 10, ), but received array with shape (6, 10, )."
+        ),
     )
 
 
@@ -124,7 +184,12 @@ def test_incorrect_label_ndim():
     )
 
     check_model_operations(
-        input_data=get_input_data(batch_size), labels=labels, input_data_corrupted=False
+        input_data=get_input_data(batch_size),
+        labels=labels,
+        input_data_corrupted=False,
+        error_msg=re.escape(
+            "Expected labels to have 2 dimensions, but received array with 3 dimensions."
+        ),
     )
 
 
@@ -136,5 +201,10 @@ def test_incorrect_label_dimension():
     )
 
     check_model_operations(
-        input_data=get_input_data(batch_size), labels=labels, input_data_corrupted=False
+        input_data=get_input_data(batch_size),
+        labels=labels,
+        input_data_corrupted=False,
+        error_msg=re.escape(
+            "Expected labels to have shape (5, 10, ), but received array with shape (5, 11, )."
+        ),
     )
