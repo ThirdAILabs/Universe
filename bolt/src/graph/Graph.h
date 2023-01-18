@@ -59,6 +59,11 @@ class BoltGraph {
                    const dataset::BoltDatasetPtr& train_labels,
                    const TrainConfig& train_config);
 
+  void trainOnBatch(std::vector<BoltBatch>&& inputs, const BoltBatch& labels,
+                    float learning_rate, MetricAggregator& metrics,
+                    uint32_t rebuild_hash_tables_interval,
+                    uint32_t reconstruct_hash_functions_interval);
+
   InferenceResult evaluate(
       const std::vector<dataset::BoltDatasetPtr>& test_data,
       const dataset::BoltDatasetPtr& test_labels,
@@ -76,12 +81,6 @@ class BoltGraph {
 
   BoltBatch predictSingleBatch(std::vector<BoltBatch>&& test_data,
                                bool use_sparse_inference);
-
-  BoltVector getLabelVectorExplainPrediction(
-      uint32_t vec_id, bool explain_prediction_using_highest_activation);
-
-  BoltVector getLabelVectorNeuronsToExplain(uint32_t required_index,
-                                            uint32_t vec_id);
 
   std::vector<NodePtr> getNodeTraversalOrder() const {
     std::vector<NodePtr> nodes;
@@ -121,11 +120,12 @@ class BoltGraph {
   void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);
 
-  void logValidateAndSave(uint32_t batch_size, const TrainConfig& train_config,
+  void logValidateAndSave(const TrainConfig& train_config,
                           MetricAggregator& train_metrics);
 
-  void processInferenceBatch(uint64_t batch_size, const BoltBatch* batch_labels,
-                             MetricAggregator& metrics);
+  void processEvaluationBatch(uint64_t batch_size,
+                              const BoltBatch* batch_labels,
+                              MetricAggregator& metrics, bool use_sparsity);
 
   void processOutputCallback(
       const std::optional<std::function<void(const BoltVector&)>>&
@@ -138,9 +138,7 @@ class BoltGraph {
   // Computes the backward pass through the graph.
   void backpropagate(uint32_t vec_index);
 
-  void prepareToProcessBatches(uint32_t batch_size, bool use_sparsity);
-
-  void cleanupAfterBatchProcessing();
+  void prepareToProcessBatch(uint32_t batch_size, bool use_sparsity);
 
   void updateParameters(float learning_rate, uint32_t batch_cnt);
 
@@ -149,6 +147,12 @@ class BoltGraph {
   void updateParametersAndSampling(float learning_rate,
                                    uint32_t rebuild_hash_tables_batch,
                                    uint32_t reconstruct_hash_functions_batch);
+
+  BoltVector getLabelVectorExplainPrediction(
+      uint32_t vec_id, bool explain_prediction_using_highest_activation);
+
+  BoltVector getLabelVectorNeuronsToExplain(uint32_t required_index,
+                                            uint32_t vec_id);
 
   void traverseGraph();
 
@@ -214,6 +218,31 @@ class BoltGraph {
   // them in TrainState
   uint32_t _epoch;
   uint32_t _updates;
+
+  class BatchProcessingState {
+   public:
+    BatchProcessingState() : _allocated_batch_size(0), _using_sparsity(false) {}
+
+    BatchProcessingState(uint32_t batch_size, bool using_sparsity)
+        : _allocated_batch_size(batch_size),
+          _using_sparsity(using_sparsity),
+          _optimizer_initialized(false) {}
+
+    bool compatableWith(uint32_t batch_size, bool using_sparsity) const {
+      return batch_size <= _allocated_batch_size &&
+             using_sparsity == _using_sparsity;
+    }
+
+    bool isOptimizerInitialized() const { return _optimizer_initialized; }
+
+    void markOptimizerInitialized() { _optimizer_initialized = true; }
+
+   private:
+    uint32_t _allocated_batch_size;
+    bool _using_sparsity;
+    bool _optimizer_initialized;
+  };
+  BatchProcessingState _batch_processing_state;
 
   // We need this value saved across training. Reset should be done by force.
   double _best_validation_metric;

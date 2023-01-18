@@ -2,6 +2,7 @@
 
 #include <auto_ml/src/models/Generator.h>
 #include <auto_ml/src/models/ModelPipeline.h>
+#include <auto_ml/src/models/TextClassifier.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <pybind11/pybind11.h>
 
@@ -11,6 +12,7 @@ namespace thirdai::automl::python {
 
 using models::ModelPipeline;
 using models::QueryCandidateGenerator;
+using models::TextClassifier;
 using models::UniversalDeepTransformer;
 
 void defineAutomlInModule(py::module_& module);
@@ -40,11 +42,18 @@ class UDTFactory {
  public:
   static QueryCandidateGenerator buildUDTGeneratorWrapper(
       py::object& obj, const std::string& source_column,
-      const std::string& target_column, const std::string& dataset_size);
+      const std::string& target_column, const std::string& dataset_size,
+      char delimiter);
 
   static QueryCandidateGenerator buildUDTGeneratorWrapperTargetOnly(
       py::object& obj, const std::string& target_column,
-      const std::string& dataset_size);
+      const std::string& dataset_size, char delimiter);
+
+  static TextClassifier buildTextClassifier(py::object& obj,
+                                            uint32_t input_vocab_size,
+                                            uint32_t metadata_dim,
+                                            uint32_t n_classes,
+                                            const std::string& model_size);
 
   static UniversalDeepTransformer buildUDTClassifierWrapper(
       py::object& obj, data::ColumnDataTypes data_types,
@@ -58,12 +67,16 @@ class UDTFactory {
   // getting weird linking errors
   static constexpr uint8_t UDT_GENERATOR_IDENTIFIER = 0;
   static constexpr uint8_t UDT_CLASSIFIER_IDENTIFIER = 1;
+  static constexpr uint8_t UDT_TEXT_CLASSIFIER_IDENTIFIER = 2;
 
   static void save_classifier(const UniversalDeepTransformer& classifier,
                               const std::string& filename);
 
   static void save_generator(const QueryCandidateGenerator& generator,
                              const std::string& filename);
+
+  static void saveTextClassifier(const TextClassifier& text_classifier,
+                                 const std::string& filename);
 
   static py::object makeGeneratorInferenceTuple(
       std::vector<std::vector<std::string>> queries,

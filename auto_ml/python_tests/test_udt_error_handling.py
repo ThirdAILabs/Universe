@@ -35,7 +35,7 @@ def test_too_many_cols_in_train():
 
     with pytest.raises(
         ValueError,
-        match=".*Expected 3 columns delimited by ',' in each row of the dataset. Found row '1,1,1,1' with number of columns = 4.",
+        match='Expected 3 columns in each row of the dataset. Found row with 4 columns: "1" "1" "1" "1"',
     ):
         model.train("too_many_cols", epochs=100)
 
@@ -64,7 +64,7 @@ def test_too_few_cols_in_train():
 
     with pytest.raises(
         ValueError,
-        match=".*Expected 3 columns delimited by ',' in each row of the dataset. Found row '1,1' with number of columns = 2.",
+        match='Expected 3 columns in each row of the dataset. Found row with 2 columns: "1" "1"',
     ):
         model.train("too_few_cols", epochs=100)
 
@@ -93,3 +93,18 @@ def test_header_missing_cols():
         model.train("header_missing_cols", epochs=100)
 
     os.remove("header_missing_cols")
+
+
+def test_target_not_in_data_types():
+    with pytest.raises(
+        ValueError,
+        match="Target column provided was not found in data_types.",
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={
+                "text_col": bolt.types.text(),
+                "some_random_name": bolt.types.categorical(),
+            },
+            target="target",
+            n_target_classes=2,
+        )
