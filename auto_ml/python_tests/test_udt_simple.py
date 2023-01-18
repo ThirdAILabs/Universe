@@ -17,7 +17,10 @@ def write_lines_to_file(file, lines):
 
 
 def make_simple_trained_model(
-    embedding_dim=None, integer_label=False, model_config=None, text_encoding_type="none"
+    embedding_dim=None,
+    integer_label=False,
+    model_config=None,
+    text_encoding_type="none",
 ):
     write_lines_to_file(
         TRAIN_FILE,

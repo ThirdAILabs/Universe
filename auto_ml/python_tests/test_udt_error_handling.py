@@ -111,11 +111,16 @@ def test_target_not_in_data_types():
 
 
 def test_contextual_text_encodings():
-    bolt.UniversalDeepTransformer(
-        data_types={
-            "text_col": bolt.types.text(contextual_encoding="INVALID"),
-            "some_random_name": bolt.types.categorical(),
-        },
-        target="target",
-        n_target_classes=2,
-    )
+    invalid_encoding = "INVALID"
+    with pytest.raises(
+        ValueError,
+        match=f"Created text column with invalid contextual_encoding '{invalid_encoding}' please choose one of 'none', 'local', or 'global'."
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={
+                "text_col": bolt.types.text(contextual_encoding=invalid_encoding),
+                "some_random_name": bolt.types.categorical(),
+            },
+            target="target",
+            n_target_classes=2,
+        )

@@ -1384,9 +1384,9 @@ Args:
         text column in each row. If provided, UDT may make 
         optimizations as appropriate.
     contextual_encoding (int): Optional. Either "local", "global", or "none", 
-        defaults to "none". If not "none", udt is guaranteed to use this attention
+        defaults to "none". If not "none", udt is guaranteed to use this encoding
         type when processing this text column. Otherwise, udt will determine the
-        appropriate attention type.
+        appropriate encoding type.
 
 Example:
     >>> deployment.UniversalDeepTransformer(
