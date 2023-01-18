@@ -46,17 +46,16 @@ TabularHashFeatures::TabularHashFeatures(std::vector<TabularColumn> columns,
                                          bool with_pairgrams)
     : _columns(std::move(columns)),
       _output_range(output_range),
-      _with_pairgrams(with_pairgrams),
-      _column_salts(0, _columns.size()) {
+      _with_pairgrams(with_pairgrams) {
   std::mt19937 gen(time(nullptr));
   std::uniform_int_distribution<uint32_t> dist(
       0, std::numeric_limits<uint32_t>::max());
 
-  // we precompute random salt values for each column because so when we do
-  // combineHashes with the salt values we don't bias the output distribution to
-  // have more higher order bits set to zero
-  for (uint32_t& _column_salt : _column_salts) {
-    _column_salt = dist(gen);
+  // we precompute random salt values for each column so when we combineHashes
+  // with those values we don't bias the output distribution to have more higher
+  // order bits set to zero
+  for (uint32_t i = 0; i < _columns.size(); i++) {
+    _column_salts.push_back(dist(gen));
   }
 }
 
