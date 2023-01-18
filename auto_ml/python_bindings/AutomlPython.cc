@@ -286,9 +286,9 @@ void createUDTTypesSubmodule(py::module_& module) {
 
   py::class_<automl::data::TextDataType, automl::data::DataType,
              automl::data::TextDataTypePtr>(udt_types_submodule, "text")
-      .def(py::init<std::optional<double>, bool>(),
+      .def(py::init<std::optional<double>, std::string>(),
            py::arg("average_n_words") = std::nullopt,
-           py::arg("use_attention") = false, docs::UDT_TEXT_TYPE);
+           py::arg("contextual_encoding") = "none", docs::UDT_TEXT_TYPE);
 
   py::class_<automl::data::DateDataType, automl::data::DataType,
              automl::data::DateDataTypePtr>(udt_types_submodule, "date")

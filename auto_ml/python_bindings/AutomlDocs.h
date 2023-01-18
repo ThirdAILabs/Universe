@@ -1383,9 +1383,10 @@ Args:
     average_n_words (float): Optional. Average number of words in the 
         text column in each row. If provided, UDT may make 
         optimizations as appropriate.
-    use_attention (bool): Optional. If true, udt is guaranteed to
-        use attention when processing this text column. Otherwise, 
-        udt will only use attention when appropriate.
+    contextual_encoding (int): Optional. Either "local", "global", or "none", 
+        defaults to "none". If not "none", udt is guaranteed to use this attention
+        type when processing this text column. Otherwise, udt will determine the
+        appropriate attention type.
 
 Example:
     >>> deployment.UniversalDeepTransformer(

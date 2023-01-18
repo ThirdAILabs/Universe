@@ -108,3 +108,14 @@ def test_target_not_in_data_types():
             target="target",
             n_target_classes=2,
         )
+
+
+def test_contextual_text_encodings():
+    bolt.UniversalDeepTransformer(
+        data_types={
+            "text_col": bolt.types.text(contextual_encoding="INVALID"),
+            "some_random_name": bolt.types.categorical(),
+        },
+        target="target",
+        n_target_classes=2,
+    )

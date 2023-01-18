@@ -71,11 +71,25 @@ using CategoricalDataTypePtr = std::shared_ptr<CategoricalDataType>;
 
 struct TextDataType : DataType {
   explicit TextDataType(std::optional<double> average_n_words = std::nullopt,
-                        bool force_pairgram = false)
-      : average_n_words(average_n_words), force_pairgram(force_pairgram) {}
+                        std::string contextual_encoding = "none")
+      : average_n_words(average_n_words),
+        contextual_encoding(std::move(contextual_encoding)) {
+    std::unordered_map<std::string, std::string> contextual_encodings = {
+        {"none", "unigrams"},
+        {"local", "bigrams"},
+        {"global", "pairgrams"},
+    };
+    if (contextual_encodings.count(this->contextual_encoding) == 0) {
+      throw std::invalid_argument(
+          "Created text column with invalid contextual_encoding '" +
+          this->contextual_encoding +
+          "' please choose one of 'none', 'local', or 'global'.");
+    }
+    this->contextual_encoding = contextual_encodings[this->contextual_encoding];
+  }
 
   std::optional<double> average_n_words;
-  bool force_pairgram;
+  std::string contextual_encoding;
 
   std::string toString() const final { return R"({"type": "text"})"; }
 
@@ -84,7 +98,7 @@ struct TextDataType : DataType {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<DataType>(this), average_n_words,
-            force_pairgram);
+            contextual_encoding);
   }
 };
 

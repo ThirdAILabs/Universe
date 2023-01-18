@@ -17,7 +17,7 @@ def write_lines_to_file(file, lines):
 
 
 def make_simple_trained_model(
-    embedding_dim=None, integer_label=False, model_config=None
+    embedding_dim=None, integer_label=False, model_config=None, text_encoding_type="none"
 ):
     write_lines_to_file(
         TRAIN_FILE,
@@ -75,7 +75,7 @@ def make_simple_trained_model(
             "hoursWatched": bolt.types.numerical(range=(0, 5)),
             "genres": bolt.types.categorical(delimiter="-"),
             "meta": bolt.types.categorical(metadata=metadata, delimiter="-"),
-            "description": bolt.types.text(),
+            "description": bolt.types.text(contextual_encoding=text_encoding_type),
         },
         temporal_tracking_relationships={"userId": ["movieId", "hoursWatched"]},
         target="movieId",
@@ -373,3 +373,8 @@ def test_return_metrics():
         TEST_FILE, metrics=["categorical_accuracy"], return_metrics=True
     )
     assert metrics["categorical_accuracy"] >= 0
+
+
+@pytest.mark.parametrize("encoding", ["none", "local", "global"])
+def test_udt_text_encodings(encoding):
+    make_simple_trained_model(text_encoding_type=encoding)
