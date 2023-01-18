@@ -1,5 +1,6 @@
 #pragma once
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -67,7 +68,7 @@ inline std::vector<std::pair<float, uint32_t>> sortGradientsBySignificance(
 inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
     const std::optional<std::vector<uint32_t>>& gradients_indices,
     const std::vector<float>& gradients_ratio,
-    const std::vector<std::string_view>& input_row,
+    dataset::ColumnarInputSample& input,
     const std::shared_ptr<dataset::GenericBatchProcessor>&
         generic_batch_processor) {
   std::vector<std::pair<float, uint32_t>> gradients_ratio_with_indices =
@@ -89,13 +90,13 @@ inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
   // We rebuild the vector to get the index to segment feature map.
   // TODO(Geordie): Reuse information from the forward pass.
   auto index_to_segment_feature =
-      generic_batch_processor->getIndexToSegmentFeatureMap(input_row);
+      generic_batch_processor->getIndexToSegmentFeatureMap(input);
 
   for (const auto& [ratio, index] : gradients_ratio_with_indices) {
     if (ratio) {
       dataset::Explanation explanation_for_index =
           generic_batch_processor->explainFeature(
-              input_row,
+              input,
               /* segment_feature= */ index_to_segment_feature.at(index));
       explanation_for_index.percentage_significance = (ratio / ratio_sum) * 100;
       explanations.push_back(explanation_for_index);

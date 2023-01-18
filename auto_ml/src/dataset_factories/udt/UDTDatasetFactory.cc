@@ -1,38 +1,43 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
-#include <auto_ml/src/dataset_factories/udt/ColumnNumberMap.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/InputTypes.h>
 #include <stdexcept>
 
 namespace thirdai::automl::data {
 
+UDTDatasetFactory::UDTDatasetFactory(
+    const UDTConfigPtr& config, bool force_parallel,
+    uint32_t text_pairgram_word_limit, bool contextual_columns,
+    std::optional<dataset::RegressionBinningStrategy> regression_binning)
+    : _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
+          config->data_types, config->provided_relationships,
+          config->lookahead)),
+      _config(FeatureComposer::verifyConfigIsValid(config,
+                                                   _temporal_relationships)),
+      _context(std::make_shared<TemporalContext>()),
+      _parallel(_temporal_relationships.empty() || force_parallel),
+      _text_pairgram_word_limit(text_pairgram_word_limit),
+      _contextual_columns(contextual_columns),
+      _normalize_target_categories(false),
+      _regression_binning(regression_binning),
+      _vectors_map(processAllMetadata()),
+      _labeled_history_updating_processor(makeLabeledUpdatingProcessor()),
+      _unlabeled_non_updating_processor(makeUnlabeledNonUpdatingProcessor()) {}
+
 dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     dataset::DataSourcePtr data_source, bool training) {
-  auto current_column_number_map =
-      makeColumnNumberMap(*data_source, _config->delimiter);
-
-  if (!_column_number_map) {
-    _column_number_map = std::move(current_column_number_map);
-    _column_number_to_name = _column_number_map->getColumnNumToColNameMap();
-  } else if (!_column_number_map->equals(*current_column_number_map)) {
-    throw std::invalid_argument("Column positions should not change.");
-  }
-
-  if (!_labeled_history_updating_processor) {
-    _labeled_history_updating_processor =
-        makeLabeledUpdatingProcessor(*_column_number_map);
-  }
-
-  // We initialize the inference batch processor here because we need the
-  // column number map.
-  if (!_unlabeled_non_updating_processor) {
-    _unlabeled_non_updating_processor =
-        makeUnlabeledNonUpdatingProcessor(*_column_number_map);
-  }
+  auto column_number_map =
+      makeColumnNumberMapFromHeader(*data_source, _config->delimiter);
+  _column_number_to_name = column_number_map.getColumnNumToColNameMap();
 
   // The batch processor will treat the next line as a header
   // Restart so batch processor does not skip a sample.
   data_source->restart();
+
+  _labeled_history_updating_processor->updateColumnNumbers(column_number_map);
+  _unlabeled_non_updating_processor->updateColumnNumbers(column_number_map);
 
   return std::make_unique<dataset::DatasetLoader>(
       data_source, _labeled_history_updating_processor,
@@ -105,22 +110,24 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
       dataset::SimpleFileDataSource::make(metadata->metadata_file,
                                           /* target_batch_size= */ 2048);
 
-  _metadata_column_number_maps[col_name] =
-      makeColumnNumberMap(*data_source, metadata->delimiter);
+  auto column_numbers =
+      makeColumnNumberMapFromHeader(*data_source, metadata->delimiter);
+  data_source->restart();
 
-  auto input_blocks = buildMetadataInputBlocks(
-      *metadata, *_metadata_column_number_maps[col_name]);
+  auto input_blocks = buildMetadataInputBlocks(*metadata);
 
   auto key_vocab = dataset::ThreadSafeVocabulary::make(
       /* vocab_size= */ 0, /* limit_vocab_size= */ false);
-  auto label_block = dataset::StringLookupCategoricalBlock::make(
-      _metadata_column_number_maps[col_name]->at(metadata->key), key_vocab);
+  auto label_block =
+      dataset::StringLookupCategoricalBlock::make(metadata->key, key_vocab);
 
   _metadata_processors[col_name] = dataset::GenericBatchProcessor::make(
       /* input_blocks= */ std::move(input_blocks),
       /* label_blocks= */ {std::move(label_block)},
-      /* has_header= */ false, /* delimiter= */ metadata->delimiter,
+      /* has_header= */ true, /* delimiter= */ metadata->delimiter,
       /* parallel= */ true, /* hash_range= */ _config->hash_range);
+
+  _metadata_processors[col_name]->updateColumnNumbers(column_numbers);
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
@@ -132,7 +139,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   return preprocessedVectorsFromDataset(metadata_source, *key_vocab);
 }
 
-ColumnNumberMapPtr UDTDatasetFactory::makeColumnNumberMap(
+ColumnNumberMap UDTDatasetFactory::makeColumnNumberMapFromHeader(
     dataset::DataSource& data_source, char delimiter) {
   auto header = data_source.nextLine();
   if (!header) {
@@ -140,12 +147,11 @@ ColumnNumberMapPtr UDTDatasetFactory::makeColumnNumberMap(
         "The dataset must have a header that contains column names.");
   }
 
-  return std::make_shared<ColumnNumberMap>(*header, delimiter);
+  return {*header, delimiter};
 }
 
 std::vector<dataset::BlockPtr> UDTDatasetFactory::buildMetadataInputBlocks(
-    const CategoricalMetadataConfig& metadata_config,
-    const ColumnNumberMap& column_numbers) const {
+    const CategoricalMetadataConfig& metadata_config) const {
   UDTConfig feature_config(
       /* data_types= */ metadata_config.column_data_types,
       /* temporal_tracking_relationships= */ {},
@@ -156,8 +162,8 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildMetadataInputBlocks(
   PreprocessedVectorsMap empty_vectors_map;
 
   return FeatureComposer::makeNonTemporalFeatureBlocks(
-      feature_config, empty_temporal_relationships, column_numbers,
-      empty_vectors_map, _text_pairgram_word_limit, _contextual_columns);
+      feature_config, empty_temporal_relationships, empty_vectors_map,
+      _text_pairgram_word_limit, _contextual_columns);
 }
 
 dataset::PreprocessedVectorsPtr
@@ -193,9 +199,8 @@ void UDTDatasetFactory::updateMetadata(const std::string& col_name,
 
   auto metadata_config = getColumnMetadataConfig(col_name);
 
-  auto vec = boltVectorFromInput(*_metadata_processors.at(col_name),
-                                 *_metadata_column_number_maps.at(col_name),
-                                 metadata_config->delimiter, update);
+  dataset::MapSampleRef update_ref(update);
+  auto vec = _metadata_processors.at(col_name)->makeInputVector(update_ref);
 
   const auto& key = update.at(metadata_config->key);
   _vectors_map.at(col_name)->vectors[key] = vec;
@@ -206,11 +211,9 @@ void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
   verifyColumnMetadataExists(col_name);
   auto metadata_config = getColumnMetadataConfig(col_name);
 
-  auto batch = _metadata_processors.at(col_name)
-                   ->createBatch(lineInputBatchFromMapInputBatch(
-                       *_metadata_column_number_maps.at(col_name),
-                       metadata_config->delimiter, updates))
-                   .at(0);
+  dataset::MapBatchRef updates_ref(updates);
+  auto batch =
+      _metadata_processors.at(col_name)->createBatch(updates_ref).at(0);
 
   for (uint32_t update_idx = 0; update_idx < updates.size(); update_idx++) {
     const auto& key = updates.at(update_idx).at(metadata_config->key);
@@ -219,17 +222,15 @@ void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
 }
 
 dataset::GenericBatchProcessorPtr
-UDTDatasetFactory::makeLabeledUpdatingProcessor(
-    const ColumnNumberMap& column_number_map) {
+UDTDatasetFactory::makeLabeledUpdatingProcessor() {
   if (!_config->data_types.count(_config->target)) {
     throw std::invalid_argument(
         "data_types parameter must include the target column.");
   }
 
-  dataset::BlockPtr label_block = getLabelBlock(column_number_map);
+  dataset::BlockPtr label_block = getLabelBlock();
 
-  auto input_blocks = buildInputBlocks(/* column_numbers= */ column_number_map,
-                                       /* should_update_history= */ true);
+  auto input_blocks = buildInputBlocks(/* should_update_history= */ true);
 
   auto processor = dataset::GenericBatchProcessor::make(
       std::move(input_blocks), {label_block}, /* has_header= */ true,
@@ -238,10 +239,8 @@ UDTDatasetFactory::makeLabeledUpdatingProcessor(
   return processor;
 }
 
-dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
-    const ColumnNumberMap& column_number_map) {
+dataset::BlockPtr UDTDatasetFactory::getLabelBlock() {
   auto target_type = _config->data_types.at(_config->target);
-  auto target_col_num = column_number_map.at(_config->target);
 
   if (asCategorical(target_type)) {
     auto target_config = asCategorical(target_type);
@@ -251,7 +250,7 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
     }
     if (_config->integer_target) {
       return dataset::NumericalCategoricalBlock::make(
-          /* col= */ target_col_num,
+          /* col= */ _config->target,
           /* n_classes= */ _config->n_target_classes.value(),
           /* delimiter= */ target_config->delimiter,
           /* normalize_categories= */ _normalize_target_categories);
@@ -261,7 +260,7 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
           /* vocab_size= */ _config->n_target_classes.value());
     }
     return dataset::StringLookupCategoricalBlock::make(
-        /* col= */ target_col_num, /* vocab= */ _vocabs.at(_config->target),
+        /* col= */ _config->target, /* vocab= */ _vocabs.at(_config->target),
         /* delimiter= */ target_config->delimiter,
         /* normalize_categories= */ _normalize_target_categories);
   }
@@ -272,7 +271,7 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
     }
 
     return dataset::RegressionCategoricalBlock::make(
-        /* col= */ target_col_num,
+        /* col= */ _config->target,
         /* binning_strategy= */ _regression_binning.value(),
         /* correct_label_radius= */
         UDTConfig::REGRESSION_CORRECT_LABEL_RADIUS,
@@ -283,10 +282,10 @@ dataset::BlockPtr UDTDatasetFactory::getLabelBlock(
 }
 
 std::vector<dataset::BlockPtr> UDTDatasetFactory::buildInputBlocks(
-    const ColumnNumberMap& column_numbers, bool should_update_history) {
+    bool should_update_history) {
   std::vector<dataset::BlockPtr> blocks =
       FeatureComposer::makeNonTemporalFeatureBlocks(
-          *_config, _temporal_relationships, column_numbers, _vectors_map,
+          *_config, _temporal_relationships, _vectors_map,
           _text_pairgram_word_limit, _contextual_columns);
 
   if (_temporal_relationships.empty()) {
@@ -294,36 +293,12 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildInputBlocks(
   }
 
   auto temporal_feature_blocks = FeatureComposer::makeTemporalFeatureBlocks(
-      *_config, _temporal_relationships, column_numbers, _vectors_map,
-      *_context, should_update_history);
+      *_config, _temporal_relationships, _vectors_map, *_context,
+      should_update_history);
 
   blocks.insert(blocks.end(), temporal_feature_blocks.begin(),
                 temporal_feature_blocks.end());
   return blocks;
-}
-
-std::vector<std::string_view> UDTDatasetFactory::toVectorOfStringViews(
-    const ColumnNumberMap& column_number_map, char delimiter,
-    const MapInput& input) {
-  (void)delimiter;
-  std::vector<std::string_view> string_view_input(column_number_map.numCols());
-  for (const auto& [col_name, val] : input) {
-    string_view_input[column_number_map.at(col_name)] =
-        std::string_view(val.data(), val.length());
-  }
-  return string_view_input;
-}
-
-std::vector<std::string> UDTDatasetFactory::lineInputBatchFromMapInputBatch(
-    const ColumnNumberMap& column_number_map, char delimiter,
-    const MapInputBatch& input_maps) {
-  std::vector<std::string> string_batch(input_maps.size());
-  for (uint32_t i = 0; i < input_maps.size(); i++) {
-    auto vals =
-        toVectorOfStringViews(column_number_map, delimiter, input_maps[i]);
-    string_batch[i] = concatenateWithDelimiter(vals, delimiter);
-  }
-  return string_batch;
 }
 
 std::string UDTDatasetFactory::concatenateWithDelimiter(

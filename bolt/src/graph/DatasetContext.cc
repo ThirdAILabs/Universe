@@ -28,7 +28,7 @@ void DatasetContext::setInputs(uint64_t batch_idx,
 }
 
 void DatasetContext::verifyBatchSizes(
-    const dataset::DatasetBaseList& datasets) {
+    const dataset::BoltDatasetList& datasets) {
   uint64_t first_batch_size = datasets.front()->batchSize();
   for (const auto& dataset : datasets) {
     if (dataset->batchSize() != first_batch_size) {
@@ -43,7 +43,7 @@ void DatasetContext::verifyBatchSizes(
 }
 
 void DatasetContext::verifyDatasetLens(
-    const dataset::DatasetBaseList& datasets) {
+    const dataset::BoltDatasetList& datasets) {
   uint64_t first_dataset_len = datasets.front()->len();
   for (const auto& dataset : datasets) {
     if (dataset->len() != first_dataset_len) {

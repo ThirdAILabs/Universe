@@ -79,8 +79,6 @@ class DlrmAttentionNode final
     return (*_outputs)[vec_index];
   }
 
-  void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
-
   std::vector<NodePtr> getPredecessorsImpl() const final {
     return {_fully_connected_node, _embedding_node};
   }

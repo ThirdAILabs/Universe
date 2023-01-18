@@ -4,7 +4,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/BatchProcessor.h>
 #include <dataset/src/Vocabulary.h>
-#include <dataset/src/utils/TextEncodingUtils.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <memory>
 #include <random>
 #include <unordered_map>
@@ -83,8 +83,8 @@ class MaskedSentenceBatchProcessor final : public BatchProcessor {
     BoltVector label = BoltVector::makeSparseVector(
         masked_word_ids, std::vector<float>(masked_word_ids.size(), 1.0));
 
-    auto pairgrams = TextEncodingUtils::computePairgramsFromUnigrams(
-        unigrams, _output_range);
+    auto pairgrams =
+        TokenEncoding::computePairgramsFromUnigrams(unigrams, _output_range);
 
     return {std::move(pairgrams),
             BoltVector::makeSparseVector(

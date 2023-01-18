@@ -43,9 +43,6 @@ class NodeStateMachineTest {
     for (uint32_t i = 0; i < cycle_iterations; i++) {
       moveNodeState3ToState4();
       testBadCallsInState4();
-
-      moveNodeState4ToState3();
-      testBadCallsInState3();
     }
   }
 
@@ -73,11 +70,6 @@ class NodeStateMachineTest {
             /* use_sparsity = */ false));
   }
 
-  void moveNodeState4ToState3() {
-    ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
-        _node->cleanupAfterBatchProcessing());
-  }
-
   // Methods for testing invalid calls within each state.
   void testBadCallsInState1() {
     LayerNameManager manager;
@@ -88,10 +80,6 @@ class NodeStateMachineTest {
         _node->prepareForBatchProcessing(
             /* batch_size = */ 0,
             /* use_sparsity = */ false),
-        exceptions::NodeStateMachineError);
-
-    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-        _node->cleanupAfterBatchProcessing(),
         exceptions::NodeStateMachineError);
   }
 
@@ -104,10 +92,6 @@ class NodeStateMachineTest {
             /* batch_size = */ 0,
             /* use_sparsity = */ false),
         exceptions::NodeStateMachineError);
-
-    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-        _node->cleanupAfterBatchProcessing(),
-        exceptions::NodeStateMachineError);
   }
 
   void testBadCallsInState3() {
@@ -117,10 +101,6 @@ class NodeStateMachineTest {
     LayerNameManager manager;
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
         _node->compile(manager), exceptions::NodeStateMachineError);
-
-    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-        _node->cleanupAfterBatchProcessing(),
-        exceptions::NodeStateMachineError);
   }
 
   void testBadCallsInState4() {
@@ -130,12 +110,6 @@ class NodeStateMachineTest {
     LayerNameManager manager;
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
         _node->compile(manager), exceptions::NodeStateMachineError);
-
-    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-        _node->prepareForBatchProcessing(
-            /* batch_size = */ 0,
-            /* use_sparsity = */ false),
-        exceptions::NodeStateMachineError);
   }
 
   BoltVector _mock_output;
