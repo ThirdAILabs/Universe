@@ -15,7 +15,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 BUCKET = "testing-bucket"
 BLOB = "storage-object-name"
 TEST_FILE = "test_file.csv"
-GCS_CREDENTIALS = "test_credentials.json"
 TEST_DATASET_SIZE = 10
 NUMBER_OF_COLS = 2
 
