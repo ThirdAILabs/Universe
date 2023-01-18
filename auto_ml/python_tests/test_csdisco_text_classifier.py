@@ -7,7 +7,11 @@ from tokenizers import Tokenizer
 
 METADATA_DIM = 10
 
-
+# This function takes in the clinc data and converts it into the format expected
+# by the CSDisco classifier. This means it applies a bert tokenizer to the text,
+# and converts the resulting tokens into a CSR representation. The labels are one
+# hot encoded. It also creates dummy metadata to better simulate the CSDisco use
+# case. Returns the input batches, label batches, and vocab size of the tokenizer.
 def process_data(filename, batch_size):
     df = pd.read_csv(filename).sample(frac=1.0, random_state=8)
 

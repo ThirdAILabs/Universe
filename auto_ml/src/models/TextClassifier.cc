@@ -11,6 +11,7 @@
 #include <utils/StringManipulation.h>
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -25,25 +26,8 @@ TextClassifier::TextClassifier(uint32_t input_vocab_size, uint32_t metadata_dim,
       _n_classes(n_classes) {
   auto input = bolt::Input::make(input_vocab_size + metadata_dim);
 
-  bolt::FullyConnectedNodePtr hidden;
-  if (utils::lower(model_size) == "small") {
-    hidden = bolt::FullyConnectedNode::makeDense(/* dim= */ 512,
-                                                 /* activation= */ "relu")
-                 ->addPredecessor(input);
-  } else if (utils::lower(model_size) == "medium") {
-    hidden = bolt::FullyConnectedNode::make(
-                 /* dim= */ 1024, /* sparsity= */ 0.5, /* activation= */ "relu",
-                 /* sampling_config= */
-                 std::make_shared<bolt::RandomSamplingConfig>())
-                 ->addPredecessor(input);
-  } else if (utils::lower(model_size) == "large") {
-    hidden =
-        bolt::FullyConnectedNode::make(
-            /* dim= */ 2048, /* sparsity= */ 0.35, /* activation= */ "relu",
-            /* sampling_config= */
-            std::make_shared<bolt::RandomSamplingConfig>())
-            ->addPredecessor(input);
-  }
+  bolt::FullyConnectedNodePtr hidden =
+      getHiddenLayer(model_size)->addPredecessor(input);
 
   auto output = bolt::FullyConnectedNode::makeDense(
                     /* dim= */ n_classes, /* activation= */ "sigmoid")
@@ -69,28 +53,27 @@ float TextClassifier::trainOnBatch(const py::dict& data,
                        /* reconstruct_hash_functions_interval= */
                        100);
 
-  auto loss =
-      binaryCrossEntropyLoss(labels, /* return_loss_per_class= */ false);
-  return loss.first;
+  auto mean_loss = binaryCrossEntropyLoss(labels).first;
+  return mean_loss;
 }
 
 py::dict TextClassifier::validateOnBatch(const py::dict& data,
                                          NumpyArray<float>& labels) {
   auto bolt_input = featurize(data);
 
-  verifyArrayHasNDimensions(labels, 2, "labels");
-  verifyArrayShape(labels, {bolt_input[0].getBatchSize(), _n_classes},
-                   "labels");
+  verifyArrayHasNDimensions(labels, /* ndim= */ 2, /* name= */ "labels");
+  verifyArrayShape(
+      labels, /* expected_shape= */ {bolt_input[0].getBatchSize(), _n_classes},
+      /* name= */ "labels");
 
-  _model->predictSingleBatchNoReturn(std::move(bolt_input),
-                                     /* use_sparse_inference= */ false);
+  _model->predictSingleBatch(std::move(bolt_input),
+                             /* use_sparse_inference= */ false);
 
-  auto [mean_loss, per_class_loss] =
-      binaryCrossEntropyLoss(labels, /* return_loss_per_class= */ true);
+  auto [mean_loss, per_class_loss] = binaryCrossEntropyLoss(labels);
 
   py::dict output;
   output["mean_loss"] = mean_loss;
-  output["per_class_loss"] = per_class_loss.value();
+  output["per_class_loss"] = per_class_loss;
 
   return output;
 }
@@ -101,15 +84,16 @@ py::array_t<float, py::array::c_style> TextClassifier::predict(
 
   uint32_t n_samples = bolt_input[0].getBatchSize();
 
-  _model->predictSingleBatchNoReturn(std::move(bolt_input),
-                                     /* use_sparse_inference= */ false);
+  BoltBatch outputs =
+      _model->predictSingleBatch(std::move(bolt_input),
+                                 /* use_sparse_inference= */ false);
 
   uint32_t output_dim = _n_classes;
   py::array_t<float, py::array::c_style> output(
       /* shape= */ {n_samples, output_dim});
 
   for (uint32_t i = 0; i < n_samples; i++) {
-    float* activations = _model->output()->getOutputVector(i).activations;
+    float* activations = outputs[i].activations;
     std::copy(activations, activations + output_dim, output.mutable_data(i));
   }
 
@@ -132,17 +116,19 @@ std::shared_ptr<TextClassifier> TextClassifier::load_stream(
 
 std::vector<BoltBatch> TextClassifier::featurize(const py::dict& data) const {
   NumpyArray<uint32_t> tokens = data["tokens"].cast<NumpyArray<uint32_t>>();
-  verifyArrayHasNDimensions(tokens, 1, "tokens");
+  verifyArrayHasNDimensions(tokens, /* ndim= */ 1, /* name= */ "tokens");
 
   NumpyArray<uint32_t> metadata = data["metadata"].cast<NumpyArray<uint32_t>>();
-  verifyArrayHasNDimensions(metadata, 2, "metadata");
+  verifyArrayHasNDimensions(metadata, /* ndim= */ 2, /* name= */ "metadata");
   uint32_t batch_size = metadata.shape(0);
-  verifyArrayShape(metadata, {batch_size, _metadata_dim}, "metadata");
+  verifyArrayShape(metadata, /* expected_shape= */ {batch_size, _metadata_dim},
+                   /* name= */ "metadata");
 
   NumpyArray<uint32_t> offsets = data["offsets"].cast<NumpyArray<uint32_t>>();
-  verifyArrayHasNDimensions(offsets, 1, "offsets");
-  verifyArrayShape(offsets, {batch_size + 1}, "offsets");
-  verifyOffsets(offsets, tokens.shape(0));
+  verifyArrayHasNDimensions(offsets, /* ndim= */ 1, /* name= */ "offsets");
+  verifyArrayShape(offsets, /* expected_shape= */ {batch_size + 1},
+                   /* name= */ "offsets");
+  verifyOffsets(offsets, /* num_tokens= */ tokens.shape(0));
 
   std::vector<BoltVector> vectors(batch_size);
 
@@ -171,8 +157,9 @@ std::vector<BoltBatch> TextClassifier::featurize(const py::dict& data) const {
 
 BoltBatch TextClassifier::convertLabelsToBoltBatch(NumpyArray<float>& labels,
                                                    uint32_t batch_size) const {
-  verifyArrayHasNDimensions(labels, 2, "labels");
-  verifyArrayShape(labels, {batch_size, _n_classes}, "labels");
+  verifyArrayHasNDimensions(labels, /* ndim= */ 2, /* name= */ "labels");
+  verifyArrayShape(labels, /* expected_shape= */ {batch_size, _n_classes},
+                   /* name= */ "labels");
 
   std::vector<BoltVector> label_vectors(batch_size);
 
@@ -206,7 +193,6 @@ BoltVector TextClassifier::concatTokensAndMetadata(
   BoltVector vector(/* l= */ n_tokens + metadata_nonzeros.size(),
                     /* is_dense= */ false, /* has_gradient= */ false);
 
-  (void)tokens;
   std::copy(tokens, tokens + n_tokens, vector.active_neurons);
 
   std::copy(metadata_nonzeros.begin(), metadata_nonzeros.end(),
@@ -217,29 +203,25 @@ BoltVector TextClassifier::concatTokensAndMetadata(
   return vector;
 }
 
-std::pair<float, std::optional<NumpyArray<float>>>
-TextClassifier::binaryCrossEntropyLoss(const NumpyArray<float>& labels,
-                                       bool return_loss_per_class) {
+std::pair<float, NumpyArray<float>> TextClassifier::binaryCrossEntropyLoss(
+    const NumpyArray<float>& labels) {
   uint32_t batch_size = labels.shape(0);
 
-  std::optional<NumpyArray<float>> per_class_loss;
-  if (return_loss_per_class) {
-    per_class_loss = NumpyArray<float>(_n_classes);
-  }
+  NumpyArray<float> per_class_loss(_n_classes);
 
   float loss = 0.0;
 
   // We use pointers here because py::array_t access methods throw exceptions
   // and can't be called within omp loops.
-  float* per_class_loss_ptr =
-      per_class_loss ? per_class_loss->mutable_data() : nullptr;
+  float* per_class_loss_ptr = per_class_loss.mutable_data();
   const float* labels_ptr = labels.data();
 
+// Reduction will sum up the loss values automatically between all the threads
+// omp uses.
 #pragma omp parallel for default(none) shared(batch_size, per_class_loss_ptr, labels_ptr) reduction(+ : loss)
   for (uint32_t class_id = 0; class_id < _n_classes; class_id++) {
-    if (per_class_loss_ptr) {
-      per_class_loss_ptr[class_id] = 0.0;
-    }
+    per_class_loss_ptr[class_id] = 0.0;
+
     for (uint32_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
       float activation =
           _model->output()->getOutputVector(batch_idx).activations[class_id];
@@ -253,25 +235,46 @@ TextClassifier::binaryCrossEntropyLoss(const NumpyArray<float>& labels,
 
       loss -= single_loss;
 
-      if (per_class_loss_ptr) {
-        per_class_loss_ptr[class_id] -= single_loss;
-      }
+      per_class_loss_ptr[class_id] -= single_loss;
     }
 
-    if (per_class_loss_ptr) {
-      per_class_loss_ptr[class_id] /= batch_size;
-    }
+    per_class_loss_ptr[class_id] /= batch_size;
   }
 
   return std::make_pair(loss / (batch_size * _n_classes),
                         std::move(per_class_loss));
 }
 
+bolt::FullyConnectedNodePtr TextClassifier::getHiddenLayer(
+    const std::string& model_size) {
+  if (model_size == "small") {
+    return bolt::FullyConnectedNode::makeDense(/* dim= */ 512,
+                                               /* activation= */ "relu");
+  }
+
+  if (model_size == "medium") {
+    return bolt::FullyConnectedNode::make(
+        /* dim= */ 1024, /* sparsity= */ 0.5, /* activation= */ "relu",
+        /* sampling_config= */
+        std::make_shared<bolt::RandomSamplingConfig>());
+  }
+
+  if (model_size == "large") {
+    return bolt::FullyConnectedNode::make(
+        /* dim= */ 2048, /* sparsity= */ 0.35, /* activation= */ "relu",
+        /* sampling_config= */
+        std::make_shared<bolt::RandomSamplingConfig>());
+  }
+
+  throw std::invalid_argument("Invalid model size '" + model_size +
+                              "', expected 'small', 'medium', or 'large'.");
+}
+
 void TextClassifier::verifyArrayHasNDimensions(
-    const NumpyArray<uint32_t>& array, uint32_t n, const std::string& name) {
-  if (array.ndim() != n) {
+    const NumpyArray<uint32_t>& array, uint32_t ndim, const std::string& name) {
+  if (array.ndim() != ndim) {
     std::stringstream error;
-    error << "Expected " << name << " to have " << n
+    error << "Expected " << name << " to have " << ndim
           << " dimensions, but received array with " << array.ndim()
           << " dimensions.";
     throw std::invalid_argument(error.str());
@@ -279,23 +282,21 @@ void TextClassifier::verifyArrayHasNDimensions(
 }
 
 void TextClassifier::verifyArrayShape(const NumpyArray<uint32_t>& array,
-                                      std::vector<uint32_t> expected_dims,
+                                      std::vector<uint32_t> expected_shape,
                                       const std::string& name) {
-  if (expected_dims.empty()) {
+  if (expected_shape.empty()) {
     return;
   }
 
-  for (uint32_t i = 0; i < expected_dims.size(); i++) {
-    if (array.shape(i) != expected_dims.at(i)) {
+  for (uint32_t i = 0; i < expected_shape.size(); i++) {
+    if (array.shape(i) != expected_shape.at(i)) {
       std::stringstream error;
       error << "Expected " << name << " to have shape (";
-      for (uint32_t j = 0; j < expected_dims.size(); j++) {
-        error << expected_dims.at(i) << ", ";
-      }
-      error << "), but recieved array with shape (";
-      for (uint32_t j = 0; j < expected_dims.size(); j++) {
-        error << array.shape(i) << ", ";
-      }
+      std::copy(expected_shape.begin(), expected_shape.end(),
+                std::ostream_iterator<uint32_t>(error, ", "));
+      error << "), but received array with shape (";
+      std::copy(array.shape(), array.shape() + array.ndim(),
+                std::ostream_iterator<uint32_t>(error, ", "));
       error << ").";
       throw std::invalid_argument(error.str());
     }
@@ -303,16 +304,16 @@ void TextClassifier::verifyArrayShape(const NumpyArray<uint32_t>& array,
 }
 
 void TextClassifier::verifyOffsets(const NumpyArray<uint32_t>& offsets,
-                                   uint32_t tokens_length) {
+                                   uint32_t num_tokens) {
   for (uint32_t i = 0; i < offsets.shape(0) - 1; i++) {
-    if (offsets.at(i) >= tokens_length) {
+    if (offsets.at(i) >= num_tokens) {
       throw std::invalid_argument("Invalid offset " +
                                   std::to_string(offsets.at(i)) +
                                   " for CSR tokens array of length " +
-                                  std::to_string(tokens_length) + ".");
+                                  std::to_string(num_tokens) + ".");
     }
   }
-  if (offsets.at(offsets.shape(0) - 1) != tokens_length) {
+  if (offsets.at(offsets.shape(0) - 1) != num_tokens) {
     throw std::invalid_argument(
         "The last offset should be the number of tokens + 1.");
   }

@@ -2,6 +2,7 @@
 
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/numpy.h>
@@ -36,7 +37,7 @@ class TextClassifier {
   /**
    * Validates on a single batch. The input data should have the format
    * specified in the featurize method. The labels should have the format
-   * specified by the convertLabelsToBoltBatch method.. Returns a dictionary
+   * specified by the convertLabelsToBoltBatch method. Returns a dictionary
    * containing the average loss over all the classes, and the loss per class
    * for the batch.
    */
@@ -70,14 +71,16 @@ class TextClassifier {
    * gives the offsets of the tokens for each document. The tokens for document
    * i should be in the range [offsets[i], offsets[i+1]) in the tokens array.
    * The field "metadata" should be a 2D numpy array of 0/1 values (dtype is
-   * uint32) that represent the metadata for each document.
+   * uint32) that represent the metadata for each document. This returns a
+   * vector of bolt batches to better match the input the bolt model is
+   * expecting and simplify passing it into bolt later.
    */
   std::vector<BoltBatch> featurize(const py::dict& data) const;
 
   /**
    * Converts the labels to a bolt batch. Does not copy the data but instead
    * uses BoltVectors that refer to data in the numpy array. The labels should
-   * be a 2D numpy arrays of float32.
+   * be a 2D numpy array of float32.
    */
   BoltBatch convertLabelsToBoltBatch(NumpyArray<float>& labels,
                                      uint32_t batch_size) const;
@@ -101,14 +104,20 @@ class TextClassifier {
    * Computes the mean binary cross entropy loss over each output class, and
    * optionally the loss foreach class as well.
    */
-  std::pair<float, std::optional<NumpyArray<float>>> binaryCrossEntropyLoss(
-      const NumpyArray<float>& labels, bool return_loss_per_class);
+  std::pair<float, NumpyArray<float>> binaryCrossEntropyLoss(
+      const NumpyArray<float>& labels);
+
+  /**
+   * Returns the hidden layer for the given model size.
+   */
+  static bolt::FullyConnectedNodePtr getHiddenLayer(
+      const std::string& model_size);
 
   /**
    * Checks that the given array has the correct number of dimensions.
    */
   static void verifyArrayHasNDimensions(const NumpyArray<uint32_t>& array,
-                                        uint32_t n, const std::string& name);
+                                        uint32_t ndim, const std::string& name);
 
   /**
    * Checks that the given array has the correct shape. Assumes that
@@ -116,7 +125,7 @@ class TextClassifier {
    * each dimension of the provided array.
    */
   static void verifyArrayShape(const NumpyArray<uint32_t>& array,
-                               std::vector<uint32_t> expected_dims,
+                               std::vector<uint32_t> expected_shape,
                                const std::string& name);
 
   /**
@@ -124,7 +133,7 @@ class TextClassifier {
    * exceed the number of tokens.
    */
   static void verifyOffsets(const NumpyArray<uint32_t>& offsets,
-                            uint32_t tokens_length);
+                            uint32_t num_tokens);
 
   // Private constructor for cereal.
   TextClassifier() {}

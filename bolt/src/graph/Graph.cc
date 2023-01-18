@@ -571,26 +571,6 @@ BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
   return BoltBatch(std::move(outputs));
 }
 
-void BoltGraph::predictSingleBatchNoReturn(std::vector<BoltBatch>&& test_data,
-                                           bool use_sparse_inference) {
-  SingleBatchDatasetContext single_predict_context(std::move(test_data));
-
-  verifyCanPredict(single_predict_context, /* has_labels = */ false,
-                   /* returning_activations = */ true,
-                   /* num_metrics_tracked = */ 0);
-
-  uint32_t batch_size = single_predict_context.batchSize();
-
-  prepareToProcessBatch(batch_size, use_sparse_inference);
-
-  single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
-
-#pragma omp parallel for default(none) shared(batch_size)
-  for (uint32_t vec_index = 0; vec_index < batch_size; vec_index++) {
-    forward(vec_index, nullptr);
-  }
-}
-
 void BoltGraph::processEvaluationBatch(uint64_t batch_size,
                                        const BoltBatch* batch_labels,
                                        MetricAggregator& metrics,

@@ -82,9 +82,6 @@ class BoltGraph {
   BoltBatch predictSingleBatch(std::vector<BoltBatch>&& test_data,
                                bool use_sparse_inference);
 
-  void predictSingleBatchNoReturn(std::vector<BoltBatch>&& test_data,
-                                  bool use_sparse_inference);
-
   std::vector<NodePtr> getNodeTraversalOrder() const {
     std::vector<NodePtr> nodes;
     nodes.insert(nodes.end(), _inputs.begin(), _inputs.end());
