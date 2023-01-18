@@ -26,7 +26,6 @@ TextClassifier::TextClassifier(uint32_t input_vocab_size, uint32_t metadata_dim,
       _metadata_dim(metadata_dim),
       _n_classes(n_classes) {
   verifyParamIsNonzero(input_vocab_size, "input_vocab_size");
-  verifyParamIsNonzero(metadata_dim, "metadata_dim");
   verifyParamIsNonzero(n_classes, "n_classes");
 
   auto input = bolt::Input::make(input_vocab_size + metadata_dim);
@@ -137,10 +136,18 @@ std::vector<BoltBatch> TextClassifier::featurize(const py::dict& data) const {
                    /* name= */ "offsets");
   verifyOffsets(offsets, /* num_tokens= */ tokens.shape(0));
 
-  NumpyArray<uint32_t> metadata = data["metadata"].cast<NumpyArray<uint32_t>>();
-  verifyArrayHasNDimensions(metadata, /* ndim= */ 2, /* name= */ "metadata");
-  verifyArrayShape(metadata, /* expected_shape= */ {batch_size, _metadata_dim},
-                   /* name= */ "metadata");
+  std::optional<NumpyArray<uint32_t>> metadata = std::nullopt;
+  if (_metadata_dim != 0 && data.contains("metadata")) {
+    metadata = data["metadata"].cast<NumpyArray<uint32_t>>();
+    verifyArrayHasNDimensions(*metadata, /* ndim= */ 2, /* name= */ "metadata");
+    verifyArrayShape(*metadata,
+                     /* expected_shape= */ {batch_size, _metadata_dim},
+                     /* name= */ "metadata");
+  } else if (_metadata_dim != 0) {
+    throw std::invalid_argument(
+        "Metadata was not provided in the input, but the metadata dimension "
+        "was specified as nonzero.");
+  }
 
   std::vector<BoltVector> vectors(batch_size);
 
@@ -183,11 +190,16 @@ BoltBatch TextClassifier::convertLabelsToBoltBatch(NumpyArray<float>& labels,
 }
 
 std::vector<uint32_t> TextClassifier::getMetadataNonzeros(
-    const NumpyArray<uint32_t>& metadata, uint32_t index_in_batch) const {
+    const std::optional<NumpyArray<uint32_t>>& metadata,
+    uint32_t index_in_batch) const {
+  if (!metadata) {
+    return {};
+  }
+
   std::vector<uint32_t> metadata_nonzeros;
 
   for (uint32_t i = 0; i < _metadata_dim; i++) {
-    if (metadata.at(index_in_batch, i) != 0) {
+    if (metadata->at(index_in_batch, i) != 0) {
       metadata_nonzeros.push_back(_input_vocab_size + i);
     }
   }

@@ -91,7 +91,8 @@ class TextClassifier {
    * concatenated with the tokens.
    */
   std::vector<uint32_t> getMetadataNonzeros(
-      const NumpyArray<uint32_t>& metadata, uint32_t index_in_batch) const;
+      const std::optional<NumpyArray<uint32_t>>& metadata,
+      uint32_t index_in_batch) const;
 
   /**
    * Concatenates the berk tokens and metadata nonzeros into a sparse
