@@ -79,6 +79,8 @@ def test_incorrect_ndim(field):
     batch_size = 5
     input_data = get_input_data(batch_size)
 
+    # The metadata is 2D and the tokens and offsets are both 1D so this array will
+    # have invalid dimensions for all inputs.
     input_data[field] = np.random.randint(
         0, 10, size=(batch_size, 100, 10), dtype=np.uint32
     )
@@ -88,8 +90,9 @@ def test_incorrect_ndim(field):
 
 @pytest.mark.parametrize("field", ["tokens", "offsets", "metadata"])
 def test_out_of_range_dimensions(field):
-    # This test checks how the model handles out of range issues by either modifying
-    # the indices in the tokens or offsets, or the 2nd dimension of the metadata array.
+    # This test checks how the model handles out of range issues. The test does this
+    # by either modifying the indices in the tokens or offsets, or the 2nd dimension 
+    # of the metadata array.
 
     batch_size = 5
     input_data = get_input_data(batch_size)
@@ -115,6 +118,7 @@ def test_incorrect_label_batch_size():
 def test_incorrect_label_ndim():
     batch_size = 5
 
+    # Labels should be a 2D matrix so this is invalid.
     labels = np.random.randint(0, 2, size=(batch_size, SIMPLE_N_CLASSES, 10)).astype(
         np.float32
     )
