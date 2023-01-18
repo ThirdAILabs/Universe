@@ -4,6 +4,7 @@
 #include <dataset/src/utils/TokenEncoding.h>
 #include <cmath>
 #include <cstdlib>
+#include <random>
 #include <stdexcept>
 #include <string_view>
 #include <unordered_map>
@@ -39,6 +40,25 @@ struct Token {
   ColumnIdentifier first_column;
   ColumnIdentifier second_column;
 };
+
+TabularHashFeatures::TabularHashFeatures(std::vector<TabularColumn> columns,
+                                         uint32_t output_range,
+                                         bool with_pairgrams)
+    : _columns(std::move(columns)),
+      _output_range(output_range),
+      _with_pairgrams(with_pairgrams),
+      _column_salts(0, _columns.size()) {
+  std::mt19937 gen(time(nullptr));
+  std::uniform_int_distribution<uint32_t> dist(
+      0, std::numeric_limits<uint32_t>::max());
+
+  // we precompute random salt values for each column because so when we do
+  // combineHashes with the salt values we don't bias the output distribution to
+  // have more higher order bits set to zero
+  for (uint32_t& _column_salt : _column_salts) {
+    _column_salt = dist(gen);
+  }
+}
 
 Explanation TabularHashFeatures::explainIndex(uint32_t index_within_block,
                                               ColumnarInputSample& input) {
@@ -95,7 +115,7 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
   UnigramToColumnIdentifier unigram_to_column_identifier;
   std::vector<uint32_t> unigram_hashes;
 
-  uint32_t salt = 0;
+  uint32_t col_index = 0;
   for (const auto& column : _columns) {
     auto column_identifier = column.identifier;
 
@@ -116,8 +136,10 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
         break;
       }
     }
-    // Hash with different salt per column.
-    unigram = hashing::HashUtils::combineHashes(unigram, salt++);
+    // Hash with different salt per column so the same bin in a different
+    // column doesn't just stack on the same index
+    unigram =
+        hashing::HashUtils::combineHashes(unigram, _column_salts[col_index++]);
 
     unigram_to_column_identifier[unigram] = std::move(column_identifier);
     unigram_hashes.push_back(unigram);
