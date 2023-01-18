@@ -238,6 +238,7 @@ std::pair<float, NumpyArray<float>> TextClassifier::binaryCrossEntropyLoss(
       float activation =
           _model->output()->getOutputVector(batch_idx).activations[class_id];
 
+      // For numerical stability to avoid log(0).
       activation = std::clamp(activation, 1e-6F, 1 - 1e-6F);
 
       float label = labels_ptr[batch_idx * _n_classes + class_id];
