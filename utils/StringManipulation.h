@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <string_view>
+#include <vector>
 
 // TODO(any): consolidate string manipulation to this file
 namespace thirdai::utils {

@@ -1,5 +1,4 @@
 #include "StringManipulation.h"
-#include <vector>
 
 namespace thirdai::utils {
 
