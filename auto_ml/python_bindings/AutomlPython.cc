@@ -48,7 +48,8 @@ void defineAutomlInModule(py::module_& module) {
            docs::UDT_GENERATOR_INIT)
       .def("__new__", &UDTFactory::buildTextClassifier,
            py::arg("input_vocab_size"), py::arg("metadata_dim"),
-           py::arg("n_classes"), py::arg("model_size"))
+           py::arg("n_classes"), py::arg("model_size"),
+           docs::TEXT_CLASSIFIER_INIT)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 }
@@ -258,11 +259,14 @@ void createModelsSubmodule(py::module_& module) {
   py::class_<TextClassifier, std::shared_ptr<TextClassifier>>(
       models_submodule, "UDTTextClassifier")
       .def("train", &TextClassifier::trainOnBatch, py::arg("data"),
-           py::arg("labels"), py::arg("learning_rate"))
+           py::arg("labels"), py::arg("learning_rate"),
+           docs::TEXT_CLASSIFIER_TRAIN)
       .def("validate", &TextClassifier::validateOnBatch, py::arg("data"),
-           py::arg("labels"))
-      .def("predict", &TextClassifier::predict, py::arg("data"))
-      .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"));
+           py::arg("labels"), docs::TEXT_CLASSIFIER_VALIDATE)
+      .def("predict", &TextClassifier::predict, py::arg("data"),
+           docs::TEXT_CLASSIFIER_PREDICT)
+      .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"),
+           docs::TEXT_CLASSIFIER_SAVE);
 }
 
 void createUDTTypesSubmodule(py::module_& module) {
