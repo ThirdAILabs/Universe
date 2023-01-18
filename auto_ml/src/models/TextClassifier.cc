@@ -123,17 +123,21 @@ std::vector<BoltBatch> TextClassifier::featurize(const py::dict& data) const {
   NumpyArray<uint32_t> tokens = data["tokens"].cast<NumpyArray<uint32_t>>();
   verifyArrayHasNDimensions(tokens, /* ndim= */ 1, /* name= */ "tokens");
 
-  NumpyArray<uint32_t> metadata = data["metadata"].cast<NumpyArray<uint32_t>>();
-  verifyArrayHasNDimensions(metadata, /* ndim= */ 2, /* name= */ "metadata");
-  uint32_t batch_size = metadata.shape(0);
-  verifyArrayShape(metadata, /* expected_shape= */ {batch_size, _metadata_dim},
-                   /* name= */ "metadata");
-
   NumpyArray<uint32_t> offsets = data["offsets"].cast<NumpyArray<uint32_t>>();
   verifyArrayHasNDimensions(offsets, /* ndim= */ 1, /* name= */ "offsets");
+  uint32_t batch_size = offsets.shape(0);
   verifyArrayShape(offsets, /* expected_shape= */ {batch_size + 1},
                    /* name= */ "offsets");
   verifyOffsets(offsets, /* num_tokens= */ tokens.shape(0));
+
+  if (data.contains("metadata")) {
+    NumpyArray<uint32_t> metadata =
+        data["metadata"].cast<NumpyArray<uint32_t>>();
+    verifyArrayHasNDimensions(metadata, /* ndim= */ 2, /* name= */ "metadata");
+    verifyArrayShape(metadata,
+                     /* expected_shape= */ {batch_size, _metadata_dim},
+                     /* name= */ "metadata");
+  }
 
   std::vector<BoltVector> vectors(batch_size);
 
