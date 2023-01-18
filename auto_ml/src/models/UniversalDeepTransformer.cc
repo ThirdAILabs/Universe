@@ -81,14 +81,20 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
       /* regression_binning= */ regression_binning);
 
   bolt::BoltGraphPtr model;
+
+  std::vector<uint32_t> input_dims = dataset_factory->getInputDims();
+  std::vector<bolt::InputPtr> input_nodes(input_dims.size(), nullptr);
+  for (uint32_t input_dim : input_dims) {
+    input_nodes.push_back(bolt::Input::make(input_dim));
+  }
+
   if (model_config) {
-    model =
-        loadUDTBoltGraph(/* input_nodes= */ dataset_factory->getInputNodes(),
-                         /* output_dim= */ dataset_factory->getLabelDim(),
-                         /* saved_model_config= */ model_config.value());
+    model = loadUDTBoltGraph(/* input_nodes= */ input_nodes,
+                             /* output_dim= */ dataset_factory->getLabelDim(),
+                             /* saved_model_config= */ model_config.value());
   } else {
     model = buildUDTBoltGraph(
-        /* input_nodes= */ dataset_factory->getInputNodes(),
+        /* input_nodes= */ input_nodes,
         /* output_dim= */ dataset_factory->getLabelDim(),
         /* hidden_layer_size= */ embedding_dimension);
   }

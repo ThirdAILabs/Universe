@@ -144,9 +144,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         _unlabeled_non_updating_processor);
   }
 
-  std::vector<bolt::InputPtr> getInputNodes() final {
-    return {
-        bolt::Input::make(_labeled_history_updating_processor->getInputDim())};
+  std::vector<uint32_t> getInputDims() final {
+    return {_labeled_history_updating_processor->getInputDim()};
   }
 
   uint32_t getLabelDim() final {
