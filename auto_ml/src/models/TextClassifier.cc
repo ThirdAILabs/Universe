@@ -11,6 +11,7 @@
 #include <utils/StringManipulation.h>
 #include <algorithm>
 #include <cmath>
+#include <exception>
 #include <iterator>
 #include <sstream>
 #include <stdexcept>
@@ -24,10 +25,14 @@ TextClassifier::TextClassifier(uint32_t input_vocab_size, uint32_t metadata_dim,
     : _input_vocab_size(input_vocab_size),
       _metadata_dim(metadata_dim),
       _n_classes(n_classes) {
+  verifyParamIsNonzero(input_vocab_size, "input_vocab_size");
+  verifyParamIsNonzero(metadata_dim, "metadata_dim");
+  verifyParamIsNonzero(n_classes, "n_classes");
+
   auto input = bolt::Input::make(input_vocab_size + metadata_dim);
 
   bolt::FullyConnectedNodePtr hidden =
-      getHiddenLayer(model_size)->addPredecessor(input);
+      getHiddenLayer(utils::lower(model_size))->addPredecessor(input);
 
   auto output = bolt::FullyConnectedNode::makeDense(
                     /* dim= */ n_classes, /* activation= */ "sigmoid")
@@ -134,20 +139,25 @@ std::vector<BoltBatch> TextClassifier::featurize(const py::dict& data) const {
 
   // We use pointers here because py::array_t access methods throw exceptions
   // and can't be called within omp loops.
-  const uint32_t* tokens_ptr = tokens.data();
-  const uint32_t* offsets_ptr = offsets.data();
-  const uint32_t* metadata_ptr = metadata.data();
 
+  std::exception_ptr error;
 #pragma omp parallel for default(none) \
-    shared(batch_size, metadata_ptr, tokens_ptr, offsets_ptr, vectors)
+    shared(batch_size, metadata, tokens, offsets, vectors, error)
   for (uint32_t i = 0; i < batch_size; i++) {
-    std::vector<uint32_t> metadata_nonzeros =
-        getMetadataNonzeros(metadata_ptr + i * _metadata_dim);
+    try {
+      std::vector<uint32_t> metadata_nonzeros =
+          getMetadataNonzeros(metadata, i);
 
-    uint32_t tokens_start = offsets_ptr[i];
-    uint32_t n_tokens = offsets_ptr[i + 1] - tokens_start;
-    vectors[i] = concatTokensAndMetadata(tokens_ptr + tokens_start, n_tokens,
-                                         metadata_nonzeros);
+      vectors[i] =
+          concatTokensAndMetadata(tokens, offsets, metadata_nonzeros, i);
+    } catch (...) {
+#pragma omp critical
+      error = std::current_exception();
+    }
+  }
+
+  if (error) {
+    std::rethrow_exception(error);
   }
 
   std::vector<BoltBatch> output_batches;
@@ -173,27 +183,29 @@ BoltBatch TextClassifier::convertLabelsToBoltBatch(NumpyArray<float>& labels,
 }
 
 std::vector<uint32_t> TextClassifier::getMetadataNonzeros(
-    const uint32_t* metadata) const {
+    const NumpyArray<uint32_t>& metadata, uint32_t index_in_batch) const {
   std::vector<uint32_t> metadata_nonzeros;
-  try {  // This is to make sure that no exceptions get thrown in omp loops.
-    for (uint32_t i = 0; i < _metadata_dim; i++) {
-      if (metadata[i] != 0) {
-        metadata_nonzeros.push_back(_input_vocab_size + i);
-      }
+
+  for (uint32_t i = 0; i < _metadata_dim; i++) {
+    if (metadata.at(index_in_batch, i) != 0) {
+      metadata_nonzeros.push_back(_input_vocab_size + i);
     }
-  } catch (std::exception& e) {
-    return {};
   }
   return metadata_nonzeros;
 }
 
 BoltVector TextClassifier::concatTokensAndMetadata(
-    const uint32_t* tokens, uint32_t n_tokens,
-    const std::vector<uint32_t>& metadata_nonzeros) {
+    const NumpyArray<uint32_t>& tokens, const NumpyArray<uint32_t>& offsets,
+    const std::vector<uint32_t>& metadata_nonzeros, uint32_t index_in_batch) {
+  uint32_t start = offsets.at(index_in_batch);
+
+  uint32_t n_tokens = offsets.at(index_in_batch + 1) - start;
+
   BoltVector vector(/* l= */ n_tokens + metadata_nonzeros.size(),
                     /* is_dense= */ false, /* has_gradient= */ false);
 
-  std::copy(tokens, tokens + n_tokens, vector.active_neurons);
+  std::copy(tokens.data(start), tokens.data(start) + n_tokens,
+            vector.active_neurons);
 
   std::copy(metadata_nonzeros.begin(), metadata_nonzeros.end(),
             vector.active_neurons + n_tokens);
@@ -316,6 +328,13 @@ void TextClassifier::verifyOffsets(const NumpyArray<uint32_t>& offsets,
   if (offsets.at(offsets.shape(0) - 1) != num_tokens) {
     throw std::invalid_argument(
         "The last offset should be the number of tokens + 1.");
+  }
+}
+
+void TextClassifier::verifyParamIsNonzero(uint32_t param,
+                                          const std::string& name) {
+  if (param == 0) {
+    throw std::invalid_argument("Expected " + name + " to be nonzero.");
   }
 }
 

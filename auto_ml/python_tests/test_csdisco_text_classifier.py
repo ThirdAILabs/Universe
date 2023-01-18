@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -128,3 +130,5 @@ def test_text_classifier_load_save(train_model, tokenized_data):
     train_epoch(model, train_x, train_y, learning_rate=0.01)
 
     assert accuracy(model, test_x, test_y) >= 0.8
+
+    os.remove(path)

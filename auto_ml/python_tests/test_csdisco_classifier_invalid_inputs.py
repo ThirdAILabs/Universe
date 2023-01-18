@@ -98,7 +98,7 @@ def test_out_of_range_dimensions(field):
             0, 2, size=(batch_size, SIMPLE_METADATA_DIM + 1), dtype=np.uint32
         )
     else:
-        input_data["tokens"] += SIMPLE_VOCAB_SIZE
+        input_data[field] += SIMPLE_VOCAB_SIZE
 
     check_model_operations(input_data=input_data, labels=get_labels(batch_size))
 

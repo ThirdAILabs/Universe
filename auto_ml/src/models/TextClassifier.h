@@ -90,15 +90,16 @@ class TextClassifier {
    * dimension to each nonzero so that the returned indices are ready to be
    * concatenated with the tokens.
    */
-  std::vector<uint32_t> getMetadataNonzeros(const uint32_t* metadata) const;
+  std::vector<uint32_t> getMetadataNonzeros(
+      const NumpyArray<uint32_t>& metadata, uint32_t index_in_batch) const;
 
   /**
    * Concatenates the berk tokens and metadata nonzeros into a sparse
    * BoltVector.
    */
   static BoltVector concatTokensAndMetadata(
-      const uint32_t* tokens, uint32_t n_tokens,
-      const std::vector<uint32_t>& metadata_nonzeros);
+      const NumpyArray<uint32_t>& tokens, const NumpyArray<uint32_t>& offsets,
+      const std::vector<uint32_t>& metadata_nonzeros, uint32_t index_in_batch);
 
   /**
    * Computes the mean binary cross entropy loss over each output class, and
@@ -134,6 +135,8 @@ class TextClassifier {
    */
   static void verifyOffsets(const NumpyArray<uint32_t>& offsets,
                             uint32_t num_tokens);
+
+  static void verifyParamIsNonzero(uint32_t param, const std::string& name);
 
   // Private constructor for cereal.
   TextClassifier() {}
