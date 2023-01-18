@@ -42,11 +42,12 @@ class UDTFactory {
  public:
   static QueryCandidateGenerator buildUDTGeneratorWrapper(
       py::object& obj, const std::string& source_column,
-      const std::string& target_column, const std::string& dataset_size);
+      const std::string& target_column, const std::string& dataset_size,
+      char delimiter);
 
   static QueryCandidateGenerator buildUDTGeneratorWrapperTargetOnly(
       py::object& obj, const std::string& target_column,
-      const std::string& dataset_size);
+      const std::string& dataset_size, char delimiter);
 
   static TextClassifier buildTextClassifier(py::object& obj,
                                             uint32_t input_vocab_size,
