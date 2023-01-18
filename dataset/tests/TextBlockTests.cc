@@ -3,6 +3,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <random>
 #include <string>
 #include <unordered_map>

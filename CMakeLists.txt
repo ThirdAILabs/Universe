@@ -342,6 +342,7 @@ set(THIRDAI_SOURCES
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
+    dataset/src/utils/TokenEncoding.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
@@ -364,7 +365,8 @@ set(THIRDAI_SOURCES
     auto_ml/src/deployment_config/dataset_configs/UDTDatasetFactoryConfig.cc
     auto_ml/src/cold_start/ColdStartDataSource.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
-    utils/Logging.cc)
+    utils/Logging.cc
+    utils/StringManipulation.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set

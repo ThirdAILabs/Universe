@@ -32,10 +32,10 @@ TEST(TokenEncodingTest, TestSumRepeatedIndices) {
   ASSERT_EQ(index_value_pairs[0].first, 1);
   ASSERT_EQ(index_value_pairs[0].second, 3.0);
 
-  ASSERT_EQ(index_value_pairs[1].first, 1);
+  ASSERT_EQ(index_value_pairs[1].first, 2);
   ASSERT_EQ(index_value_pairs[1].second, 1.0);
 
-  ASSERT_EQ(index_value_pairs[2].first, 1);
+  ASSERT_EQ(index_value_pairs[2].first, 3);
   ASSERT_EQ(index_value_pairs[2].second, 2.0);
 }
 
