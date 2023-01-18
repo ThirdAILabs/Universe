@@ -325,6 +325,9 @@ void TextClassifier::verifyOffsets(const NumpyArray<uint32_t>& offsets,
                                   " for CSR tokens array of length " +
                                   std::to_string(num_tokens) + ".");
     }
+    if (offsets.at(i + 1) < offsets.at(i)) {
+      throw std::invalid_argument("Offsets[i+1] must always be >= offsets[i].");
+    }
   }
   if (offsets.at(offsets.shape(0) - 1) != num_tokens) {
     throw std::invalid_argument(

@@ -171,6 +171,19 @@ def test_out_of_range_dimensions(field, error):
     )
 
 
+def test_error_on_decreasing_offsets():
+    batch_size = 5
+    input_data = get_input_data(batch_size)
+
+    input_data["offsets"][1] = input_data["offsets"][2] + 1
+
+    check_model_operations(
+        input_data=input_data,
+        labels=get_labels(batch_size),
+        error_msg=re.escape("Offsets[i+1] must always be >= offsets[i]."),
+    )
+
+
 def test_incorrect_label_batch_size():
     batch_size = 5
     check_model_operations(
