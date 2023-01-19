@@ -3,6 +3,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/Vocabulary.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/numpy.h>
@@ -33,15 +34,21 @@ class LSTMClassifier final : public ModelPipeline {
         dataset::ProcessorUtils::parseCsvRow(line.value(), delimiter);
 
     uint32_t batch_count = 0;
-    uint32_t batch_size = train_config->batch_size;
+    uint32_t batch_size = data_source->getMaxBatchSize();
     bool eof = false;
     while (eof) {
       // Buffer in lines, create a batch.
-      while (line = data_source->nextLine() &&
-                    batch_count < max_in_memory_batches) {
-        std::vector<BoltBatch> batches;
-        std::vector<BoltVector> inputs;
-        std::vector<BoltVector> labels;
+      std::vector<BoltBatch> batches;
+      std::vector<BoltVector> inputs;
+      std::vector<BoltVector> labels;
+      while (batch_count < max_in_memory_batches) {
+        sample_count = 0;
+        while (line = data_source->nextLine() && sample_count < batch_count) {
+          std::vector<std::string> rows =
+              dataset::ProcessorUtils::parseCsvRow(line.value(), delimiter);
+          // There are only two rows.
+          // Where do I pull the vector-size from for the model?
+        }
       }
 
       dataset::BoltDatasetPtr dataset;
