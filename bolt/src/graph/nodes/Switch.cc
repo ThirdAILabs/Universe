@@ -1,4 +1,5 @@
 #include "Switch.h"
+#include <bolt/src/graph/nodes/FullyConnected.h>
 
 namespace thirdai::bolt {
 
@@ -127,6 +128,12 @@ BoltVector& SwitchNode::getOutputVectorImpl(uint32_t vec_index) {
 void SwitchNode::cleanupAfterBatchProcessingImpl() {
   for (auto& layer : _layers) {
     layer->cleanupAfterBatchProcessing();
+  }
+}
+
+void SwitchNode::nodeSaveType(bool whether_hard_save) {
+  for (auto& layer : _layers) {
+    layer->nodeSaveType(whether_hard_save);
   }
 }
 

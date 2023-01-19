@@ -52,6 +52,8 @@ class EmbeddingLayer {
     _disable_sparse_parameter_updates = true;
   }
 
+  void nodeSaveType(bool whether_hard_save) { _hard_save = whether_hard_save; }
+
   std::vector<float>& getRawEmbeddingBlock() { return _embedding_block; }
 
   std::vector<float>& getRawEmbeddingBlockGradient() {
@@ -131,7 +133,10 @@ class EmbeddingLayer {
     archive(_num_lookups_per_token, _lookup_size, _total_embedding_dim,
             _log_embedding_block_size, _reduction, _num_tokens_per_input,
             _embedding_block_size, _hash_fn, _embedding_block,
-            _disable_sparse_parameter_updates);
+            _disable_sparse_parameter_updates, _hard_save);
+    if (_hard_save) {
+      archive(_optimizer);
+    }
   }
 
   uint32_t _num_lookups_per_token, _lookup_size, _total_embedding_dim,
@@ -146,6 +151,10 @@ class EmbeddingLayer {
 
   std::optional<AdamOptimizer> _optimizer = std::nullopt;
   bool _disable_sparse_parameter_updates;
+
+  // A flag to determine whether the current network saves the optimizer states
+  // or not. If true, it saves the optimizer states, else doesn't.
+  bool _hard_save;
 
   // This structure stores the embedding block offset for each token in each
   // input. This is used for backpropagation and for update paramters to know

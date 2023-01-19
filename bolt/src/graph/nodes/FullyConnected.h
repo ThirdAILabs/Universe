@@ -74,6 +74,8 @@ class FullyConnectedNode final
   float* getBiasGradientsPtr();
   void disableSparseParameterUpdates() final;
 
+  void nodeSaveType(bool whether_hard_save) final;
+
   bool hasParameters() final { return true; }
 
   std::string type() const final { return "fc"; }

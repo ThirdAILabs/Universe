@@ -681,6 +681,12 @@ void BoltGraph::disableSparseParameterUpdates() {
   }
 }
 
+void BoltGraph::modelSaveType(bool whether_hard_save) {
+  for (NodePtr& node : _nodes) {
+    node->nodeSaveType(whether_hard_save);
+  }
+}
+
 void BoltGraph::traverseGraph() {
   std::queue<NodePtr> queue;
   std::unordered_set<NodePtr> visited;
@@ -867,7 +873,7 @@ template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
   archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
-          _epoch, _updates);
+          _updates);
 }
 
 void BoltGraph::save(const std::string& filename) const {

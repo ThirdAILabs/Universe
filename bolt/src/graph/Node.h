@@ -171,6 +171,8 @@ class Node {
    */
   virtual void disableSparseParameterUpdates() {}
 
+  virtual void nodeSaveType(bool whether_hard_save) = 0;
+
   virtual ~Node() = default;
 
   /**

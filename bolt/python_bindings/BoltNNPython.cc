@@ -593,19 +593,18 @@ That's all for now, folks! More docs coming soon :)
            "been called, the batch sizes of the passed in datasets must be the "
            "same as when this method was called the first time.")
       .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
-      .def_property_readonly(
-          "model",
-          [](DistributedTrainingWrapper& node) { return node.getModel(); },
-          py::return_value_policy::reference_internal,
-          "The underlying Bolt model wrapped by this "
-          "DistributedTrainingWrapper.")
+      .def("model", &DistributedTrainingWrapper::getModel,
+           py::arg("hard_copy") = false,
+           "The underlying Bolt model wrapped by this "
+           "DistributedTrainingWrapper.")
       .def("freeze_hash_tables",
            &thirdai::bolt::DistributedTrainingWrapper::freezeHashTables,
            py::arg("insert_labels_if_not_found"))
       .def(
           "gradient_reference",
           [](DistributedTrainingWrapper& node) {
-            return GradientReference(*node.getModel().get());
+            return GradientReference(
+                *node.getModel(/* hard_copy = */ false).get());
           },
           py::return_value_policy::reference_internal,
           "Returns gradient reference for Distributed Training Wrapper");
@@ -627,15 +626,16 @@ void createLossesSubmodule(py::module_& nn_submodule) {
       .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
 
   py::class_<BinaryCrossEntropyLoss, std::shared_ptr<BinaryCrossEntropyLoss>,
-             LossFunction>(
-      losses_submodule, "BinaryCrossEntropy",
-      "A loss function for multi-label (multiple class labels per each sample) "
-      "classification tasks.")
+             LossFunction>(losses_submodule, "BinaryCrossEntropy",
+                           "A loss function for multi-label (multiple class "
+                           "labels per each sample) "
+                           "classification tasks.")
       .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
 
   py::class_<MeanSquaredError, std::shared_ptr<MeanSquaredError>, LossFunction>(
       losses_submodule, "MeanSquaredError",
-      "A loss function that minimizes mean squared error (MSE) for regression "
+      "A loss function that minimizes mean squared "
+      "error (MSE) for regression "
       "tasks. "
       ":math:`MSE = sum( (actual - prediction)^2 )`")
       .def(py::init<>(), "Constructs a MeanSquaredError object.");
@@ -646,7 +646,8 @@ void createLossesSubmodule(py::module_& nn_submodule) {
       losses_submodule, "WeightedMeanAbsolutePercentageError",
       "A loss function to minimize weighted mean absolute percentage error "
       "(WMAPE) "
-      "for regression tasks. :math:`WMAPE = 100% * sum(|actual - prediction|) "
+      "for regression tasks. :math:`WMAPE = 100% * sum(|actual - "
+      "prediction|) "
       "/ sum(|actual|)`")
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");

@@ -50,7 +50,10 @@ class DistributedTrainingWrapper {
     }
   }
 
-  BoltGraphPtr getModel() { return _bolt_graph; }
+  BoltGraphPtr getModel(bool hard_copy) {
+    _bolt_graph->modelSaveType(hard_copy);
+    return _bolt_graph;
+  }
 
   void finishTraining() {
     requireTrainContext();
