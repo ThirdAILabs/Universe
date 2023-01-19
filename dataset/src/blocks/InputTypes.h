@@ -1,6 +1,5 @@
 #pragma once
 
-#include <_types/_uint32_t.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <optional>
 #include <sstream>
