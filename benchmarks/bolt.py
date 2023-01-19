@@ -19,6 +19,8 @@ from utils import (
 )
 
 
+SPARSITY_LEVELS = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+
 def main():
 
     config, args = start_experiment(
@@ -29,13 +31,20 @@ def main():
         log_to_stderr=args.log_to_stderr, path=args.log_file, level=args.log_level
     )
 
+    for sparsity in SPARSITY_LEVELS:
+        pass 
+        
     model = load_and_compile_model(config)
     datasets = load_all_datasets(config)
     start_mlflow(config, mlflow_args=args)
     run_experiment(model, datasets, config, use_mlflow=mlflow_is_enabled(args))
 
 
-def load_and_compile_model(model_config):
+def load_and_compile_models(model_config, sparsity=1.0):
+    name_to_node = {}
+
+
+def load_and_compile_model(model_config, sparsity=1.0):
     name_to_node = {}
 
     def get_node_by_name(node_name):
