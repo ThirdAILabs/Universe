@@ -8,7 +8,6 @@
 #include <stdexcept>
 #include <string_view>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -163,7 +162,7 @@ std::vector<ColumnIdentifier*>
 TabularHashFeatures::concreteBlockColumnIdentifiers() {
   std::vector<ColumnIdentifier*> identifier_ptrs;
   identifier_ptrs.reserve(_columns.size());
-  for (auto& column : _columns) {
+  for (auto& [column, _] : _columns) {
     identifier_ptrs.push_back(&column.identifier);
   }
   return identifier_ptrs;

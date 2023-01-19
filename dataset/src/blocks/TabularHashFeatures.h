@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <optional>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -116,7 +117,7 @@ class TabularHashFeatures final : public Block {
             _with_pairgrams);
   }
 
-  std::vector<TabularColumn, uint32_t> _columns;
+  std::vector<std::pair<TabularColumn, uint32_t>> _columns;
   uint32_t _output_range;
   bool _with_pairgrams;
 };
