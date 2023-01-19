@@ -90,12 +90,12 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
   // }
 
   if (model_config) {
-    model = loadUDTBoltGraph(/* input_nodes= */ input_dims,
+    model = loadUDTBoltGraph(/* input_dims= */ input_dims,
                              /* output_dim= */ dataset_factory->getLabelDim(),
                              /* saved_model_config= */ model_config.value());
   } else {
     model = buildUDTBoltGraph(
-        /* input_nodes= */ input_dims,
+        /* input_dims= */ input_dims,
         /* output_dim= */ dataset_factory->getLabelDim(),
         /* hidden_layer_size= */ embedding_dimension);
   }
