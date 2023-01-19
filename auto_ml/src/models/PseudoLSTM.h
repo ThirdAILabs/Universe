@@ -32,17 +32,29 @@ class LSTMClassifier final : public ModelPipeline {
     std::vector<std::string> header_columns =
         dataset::ProcessorUtils::parseCsvRow(line.value(), delimiter);
 
-    // Buffer in lines, create a batch.
-    while (line = data_source->nextLine() &&) {
-      std::vector<BoltBatch> batch;
-      std::vector<BoltVector> vector;
-    }
+    uint32_t batch_count = 0;
+    uint32_t batch_size = train_config->batch_size;
+    bool eof = false;
+    while (eof) {
+      // Buffer in lines, create a batch.
+      while (line = data_source->nextLine() &&
+                    batch_count < max_in_memory_batches) {
+        std::vector<BoltBatch> batches;
+        std::vector<BoltVector> inputs;
+        std::vector<BoltVector> labels;
+      }
 
-    if (max_in_memory_batches) {
-      trainOnStream(dataset, train_config, max_in_memory_batches.value(),
-                    validation);
-    } else {
-      trainInMemory(dataset, train_config, validation);
+      dataset::BoltDatasetPtr dataset;
+      if (max_in_memory_batches) {
+        trainOnStream(dataset, train_config, max_in_memory_batches.value(),
+                      validation);
+      } else {
+        trainInMemory(dataset, train_config, validation);
+      }
+
+      if (!line) {
+        eof = true;
+      }
     }
   }
 
