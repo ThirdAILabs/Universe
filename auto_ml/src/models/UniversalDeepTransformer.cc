@@ -298,7 +298,8 @@ bolt::BoltGraphPtr UniversalDeepTransformer::buildUDTBoltGraph(
   auto hidden = bolt::FullyConnectedNode::makeDense(hidden_layer_size,
                                                     /* activation= */ "relu");
 
-  std::vector<bolt::InputPtr> input_nodes(input_dims.size(), nullptr);
+  std::vector<bolt::InputPtr> input_nodes;
+  input_nodes.reserve(input_dims.size());
   for (uint32_t input_dim : input_dims) {
     input_nodes.push_back(bolt::Input::make(input_dim));
   }
