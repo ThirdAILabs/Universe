@@ -41,12 +41,10 @@ struct Token {
   ColumnIdentifier second_column;
 };
 
-TabularHashFeatures::TabularHashFeatures(std::vector<TabularColumn> columns,
-                                         uint32_t output_range,
-                                         bool with_pairgrams)
-    : _columns(std::move(columns)),
-      _output_range(output_range),
-      _with_pairgrams(with_pairgrams) {
+TabularHashFeatures::TabularHashFeatures(
+    const std::vector<TabularColumn>& columns, uint32_t output_range,
+    bool with_pairgrams)
+    : _output_range(output_range), _with_pairgrams(with_pairgrams) {
   std::mt19937 gen(time(nullptr));
   std::uniform_int_distribution<uint32_t> dist(
       0, std::numeric_limits<uint32_t>::max());
@@ -54,8 +52,9 @@ TabularHashFeatures::TabularHashFeatures(std::vector<TabularColumn> columns,
   // we precompute a random salt value for each column so when we call
   // combineHashes with those values we don't bias the output distribution to
   // have more higher order bits set to zero
-  for (uint32_t i = 0; i < _columns.size(); i++) {
-    _column_salts.push_back(dist(gen));
+  for (auto column : columns) {
+    uint32_t salt = dist(gen);
+    _columns.push_back(std::make_pair(column, salt));
   }
 }
 
@@ -114,8 +113,7 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
   UnigramToColumnIdentifier unigram_to_column_identifier;
   std::vector<uint32_t> unigram_hashes;
 
-  uint32_t col_index = 0;
-  for (const auto& column : _columns) {
+  for (const auto& [column, salt] : _columns) {
     auto column_identifier = column.identifier;
 
     std::string str_val(input.column(column_identifier));
@@ -136,9 +134,8 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
       }
     }
     // Hash with different salt per column so the same bin in a different
-    // column doesn't map to the same unigram. 
-    unigram =
-        hashing::HashUtils::combineHashes(unigram, _column_salts[col_index++]);
+    // column doesn't map to the same unigram.
+    unigram = hashing::HashUtils::combineHashes(unigram, salt);
 
     unigram_to_column_identifier[unigram] = std::move(column_identifier);
     unigram_hashes.push_back(unigram);

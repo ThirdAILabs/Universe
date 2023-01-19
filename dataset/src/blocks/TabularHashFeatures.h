@@ -68,8 +68,8 @@ struct TabularColumn {
  */
 class TabularHashFeatures final : public Block {
  public:
-  TabularHashFeatures(std::vector<TabularColumn> columns, uint32_t output_range,
-                      bool with_pairgrams = true);
+  TabularHashFeatures(const std::vector<TabularColumn>& columns,
+                      uint32_t output_range, bool with_pairgrams = true);
 
   uint32_t featureDim() const final { return _output_range; };
 
@@ -113,13 +113,12 @@ class TabularHashFeatures final : public Block {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<Block>(this), _columns, _output_range,
-            _with_pairgrams, _column_salts);
+            _with_pairgrams);
   }
 
-  std::vector<TabularColumn> _columns;
+  std::vector<TabularColumn, uint32_t> _columns;
   uint32_t _output_range;
   bool _with_pairgrams;
-  std::vector<uint32_t> _column_salts;
 };
 
 using TabularHashFeaturesPtr = std::shared_ptr<TabularHashFeatures>;
