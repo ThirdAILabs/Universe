@@ -156,7 +156,7 @@ def init_mlflow(dataset_name, bolt_version, suffix):
         "ram_gb": round(psutil.virtual_memory().total / (1024.0**3)),
         "num_cores": psutil.cpu_count(logical=True),
     }
-    mlflow.set_experiment("Sparse Parameter Update Benchmarking")
+    mlflow.set_experiment("Bolt V2 Benchmarking")
     mlflow.start_run(
         run_name=f"{bolt_version}_{dataset_name}_{suffix}",
         tags={"dataset": dataset_name, "bolt_version": bolt_version},
