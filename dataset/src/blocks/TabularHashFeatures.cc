@@ -136,7 +136,7 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
       }
     }
     // Hash with different salt per column so the same bin in a different
-    // column doesn't just stack on the same index
+    // column doesn't map to the same unigram. 
     unigram =
         hashing::HashUtils::combineHashes(unigram, _column_salts[col_index++]);
 
