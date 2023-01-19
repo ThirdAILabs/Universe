@@ -27,7 +27,7 @@ DeploymentConfig::createDataSourceAndModel(
     input_nodes.push_back(bolt::Input::make(input_dim));
   }
   bolt::BoltGraphPtr model =
-      _model_config->createModel(input_nodes, user_specified_parameters);
+      _model_config->createModel(input_dims, user_specified_parameters);
 
   return {std::move(dataset_factory), std::move(model)};
 }

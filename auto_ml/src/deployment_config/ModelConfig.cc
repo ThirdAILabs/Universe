@@ -5,12 +5,17 @@
 namespace thirdai::automl::deployment {
 
 bolt::BoltGraphPtr ModelConfig::createModel(
-    std::vector<bolt::InputPtr> inputs,
+    const std::vector<uint32_t>& input_dims,
     const UserInputMap& user_specified_parameters) const {
-  if (_input_names.size() != inputs.size()) {
+  if (_input_names.size() != input_dims.size()) {
     throw std::invalid_argument(
         "Number of inputs in model config does not match number of inputs "
         "returned from data source.");
+  }
+
+  std::vector<bolt::InputPtr> inputs(input_dims.size(), nullptr);
+  for (uint32_t input_dim : input_dims) {
+    inputs.push_back(bolt::Input::make(input_dim));
   }
 
   PredecessorsMap predecessors;
