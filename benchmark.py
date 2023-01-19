@@ -271,7 +271,7 @@ def load_wayfair_data(filename, shuffle):
         has_header=False,
         delimiter="\t",
     )
-    
+
     loader = dataset.DatasetLoader(
         data_source=dataset.FileDataSource(filename=filename, batch_size=WayfairConfig.batch_size),
         batch_processor=processor,
@@ -287,7 +287,7 @@ def wayfair_data():
 
     train_x, train_y = load_wayfair_data(train_file, True)
     test_x, test_y = load_wayfair_data(test_file, False)
-    return train_x, train_y, test_x, test_y
+    return train_x[0], train_y, test_x[0], test_y
 
 
 class MnistConfig:
