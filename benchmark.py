@@ -128,7 +128,7 @@ def train_bolt_v2(config: BenchmarkConfig, train_x, train_y, test_x, test_y):
             train_metrics={},
             validation_data=(test_x, test_y),
             validation_metrics={
-                "act_2": [bolt_v2.train.metrics.CategoricalAccuracy()],
+                output.name(): [bolt_v2.train.metrics.CategoricalAccuracy()],
             },
             steps_per_validation=None,
             callbacks=[],
@@ -137,7 +137,7 @@ def train_bolt_v2(config: BenchmarkConfig, train_x, train_y, test_x, test_y):
         metrics = {
             "epoch_time": history["all"]["epoch_times"][0],
             "val_time": history["all"]["val_times"][0],
-            "categorical_accuracy": history["act_2"]["val_categorical_accuracy"][0],
+            "categorical_accuracy": history[output.name()]["val_categorical_accuracy"][0],
         }
         mlflow.log_metrics(metrics)
 

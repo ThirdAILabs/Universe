@@ -60,7 +60,7 @@ void createBoltV2NNSubmodule(py::module_& module) {
           },
           py::return_value_policy::reference_internal);
 
-  py::class_<ops::Op, ops::OpPtr>(nn, "Op");  // NOLINT
+  py::class_<ops::Op, ops::OpPtr>(nn, "Op").def("name", &ops::Op::name);
 
   py::class_<ops::FullyConnected, ops::FullyConnectedPtr, ops::Op>(
       nn, "FullyConnected")
