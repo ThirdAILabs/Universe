@@ -407,6 +407,7 @@ pybind11_add_module(
   auto_ml/python_bindings/DeploymentPython.cc
   auto_ml/src/models/ModelPipeline.cc
   auto_ml/src/models/OutputProcessor.cc
+  auto_ml/src/models/TextClassifier.cc
   auto_ml/src/models/UniversalDeepTransformer.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
