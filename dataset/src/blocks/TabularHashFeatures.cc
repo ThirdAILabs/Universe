@@ -51,7 +51,7 @@ TabularHashFeatures::TabularHashFeatures(
   // we precompute a random salt value for each column so when we call
   // combineHashes with those values we don't bias the output distribution to
   // have more higher order bits set to zero
-  for (auto column : columns) {
+  for (const auto& column : columns) {
     uint32_t salt = dist(gen);
     _columns.push_back(std::make_pair(column, salt));
   }
