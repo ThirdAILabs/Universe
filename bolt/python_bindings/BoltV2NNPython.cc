@@ -41,6 +41,7 @@ void createBoltV2NNSubmodule(py::module_& module) {
 
   py::class_<tensor::ActivationTensor, tensor::ActivationTensorPtr,
              tensor::Tensor>(nn, "ActivationTensor")
+      .def("name", &tensor::ActivationTensor::name)
       .def_property_readonly(
           "active_neurons",
           [](const tensor::ActivationTensor& tensor) {
