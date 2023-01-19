@@ -21,11 +21,6 @@ DeploymentConfig::createDataSourceAndModel(
       UserParameterInput(dataset_factory->getLabelDim()));
 
   auto input_dims = dataset_factory->getInputDims();
-  std::vector<bolt::InputPtr> input_nodes(input_dims.size(), nullptr);
-
-  for (uint32_t input_dim : input_dims) {
-    input_nodes.push_back(bolt::Input::make(input_dim));
-  }
   bolt::BoltGraphPtr model =
       _model_config->createModel(input_dims, user_specified_parameters);
 
