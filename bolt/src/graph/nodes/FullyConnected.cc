@@ -151,7 +151,8 @@ float FullyConnectedNode::getSparsity() {
 
 std::shared_ptr<FullyConnectedNode> FullyConnectedNode::setSparsity(
     float sparsity) {
-  if (getState() != NodeState::Compiled) {
+  if (getState() != NodeState::Compiled &&
+      getState() != NodeState::PreparedForBatchProcessing) {
     throw exceptions::NodeStateMachineError(
         "FullyConnectedNode must be in a compiled state to call "
         "setSparsity");
@@ -270,10 +271,6 @@ void FullyConnectedNode::updateParametersImpl(float learning_rate,
 
 BoltVector& FullyConnectedNode::getOutputVectorImpl(uint32_t vec_index) {
   return (*_outputs)[vec_index];
-}
-
-void FullyConnectedNode::cleanupAfterBatchProcessingImpl() {
-  _outputs = std::nullopt;
 }
 
 std::vector<NodePtr> FullyConnectedNode::getPredecessorsImpl() const {

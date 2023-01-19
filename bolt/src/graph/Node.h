@@ -129,13 +129,6 @@ class Node {
   */
   void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity);
 
-  /*
-   * Do any cleanup to bring the Node into the same state it was in before
-   * prepareForBatchProcessing was called. This moves the node from state 4 to
-   * state 3.
-   */
-  void cleanupAfterBatchProcessing();
-
   // Returns any predecessors of the node. This is used to traverse the graph
   // during compilation.
   std::vector<NodePtr> getPredecessors() const;
@@ -206,8 +199,6 @@ class Node {
                                     uint32_t batch_cnt) = 0;
 
   virtual BoltVector& getOutputVectorImpl(uint32_t vec_index) = 0;
-
-  virtual void cleanupAfterBatchProcessingImpl() = 0;
 
   virtual std::vector<NodePtr> getPredecessorsImpl() const = 0;
 

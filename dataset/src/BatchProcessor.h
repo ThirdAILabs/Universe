@@ -2,16 +2,16 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <exceptions/src/Exceptions.h>
 #include <optional>
 #include <utility>
 #include <vector>
 
 namespace thirdai::dataset {
 
-template <typename... BATCH_Ts>
 class BatchProcessor {
  public:
-  virtual std::tuple<BATCH_Ts...> createBatch(
+  virtual std::vector<BoltBatch> createBatch(
       const std::vector<std::string>& rows) = 0;
 
   virtual bool expectsHeader() const = 0;
@@ -20,6 +20,13 @@ class BatchProcessor {
 
   virtual ~BatchProcessor() = default;
 
+  // Returns a vector of the BoltVector dimensions one would get if they called
+  // createBatch.
+  virtual std::vector<uint32_t> getDimensions() {
+    // By default we assume that this is an unsupported operation
+    throw exceptions::NotImplemented(
+        "Cannot get the dimensions for this batch processor");
+  }
   // Default constructor for cereal.
   BatchProcessor() {}
 
@@ -32,77 +39,6 @@ class BatchProcessor {
   }
 };
 
-class UnaryBoltBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
- public:
-  std::tuple<BoltBatch, BoltBatch> createBatch(
-      const std::vector<std::string>& rows) final {
-    std::vector<BoltVector> _data_vecs = std::vector<BoltVector>(rows.size());
-    std::vector<BoltVector> _label_vecs = std::vector<BoltVector>(rows.size());
-
-    // #pragma omp parallel for default(none) shared(rows)
-    for (uint32_t row_id = 0; row_id < rows.size(); row_id++) {
-      auto p = processRow(rows[row_id]);
-
-      _data_vecs[row_id] = std::move(p.first);
-      _label_vecs[row_id] = std::move(p.second);
-    }
-
-    return std::make_tuple(BoltBatch(std::move(_data_vecs)),
-                           BoltBatch(std::move(_label_vecs)));
-  }
-
- protected:
-  virtual std::pair<BoltVector, BoltVector> processRow(
-      const std::string& row) = 0;
-
-  // Default constructor for cereal.
-  UnaryBoltBatchProcessor() {}
-
- private:
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<BatchProcessor>(this));
-  }
-};
-
-/**
- * This BatchProcessor provides an interface to compute metadata about a dataset
- * in a streaming fashion without creating BoltVectors
- */
-class ComputeBatchProcessor : public BatchProcessor<BoltBatch, BoltBatch> {
- public:
-  std::tuple<BoltBatch, BoltBatch> createBatch(
-      const std::vector<std::string>& rows) final {
-    // TODO(david) enable parallel by making metadata calculation thread safe
-    // #pragma omp parallel for default(none) shared(rows)
-    for (const std::string& row : rows) {
-      processRow(row);
-    }
-
-    return std::make_tuple(BoltBatch(), BoltBatch());
-  }
-
- protected:
-  virtual void processRow(const std::string& row) = 0;
-
-  // Default constructor for cereal.
-  ComputeBatchProcessor() {}
-
- private:
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<BatchProcessor>(this));
-  }
-};
+using BatchProcessorPtr = std::shared_ptr<BatchProcessor>;
 
 }  // namespace thirdai::dataset
-
-CEREAL_REGISTER_TYPE(thirdai::dataset::BatchProcessor<thirdai::BoltBatch>)
-CEREAL_REGISTER_TYPE(thirdai::dataset::UnaryBoltBatchProcessor)
-CEREAL_REGISTER_TYPE(thirdai::dataset::ComputeBatchProcessor)

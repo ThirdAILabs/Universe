@@ -4,13 +4,13 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
 #include <cmath>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
 namespace thirdai::dataset {
 
-class ClickThroughBatchProcessor final
-    : public BatchProcessor<BoltBatch, BoltBatch, BoltBatch> {
+class ClickThroughBatchProcessor final : public BatchProcessor {
  public:
   ClickThroughBatchProcessor(uint32_t num_dense_features,
                              uint32_t max_num_categorical_features,
@@ -20,7 +20,7 @@ class ClickThroughBatchProcessor final
                            1),
         _delimiter(delimiter) {}
 
-  std::tuple<BoltBatch, BoltBatch, BoltBatch> createBatch(
+  std::vector<BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> dense_inputs(rows.size());
     std::vector<BoltVector> token_inputs(rows.size());

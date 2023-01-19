@@ -45,8 +45,7 @@ class DistributedTrainingWrapper {
         _train_config.getReconstructHashFunctionsBatchInterval(
             _train_context->batchSize(), _train_context->len()));
     if (_worker_id == 0) {
-      _bolt_graph->logValidateAndSave(_train_context->batchSize(),
-                                      _train_config, _metric_aggregator);
+      _bolt_graph->logValidateAndSave(_train_config, _metric_aggregator);
     }
   }
 
@@ -55,10 +54,7 @@ class DistributedTrainingWrapper {
     return _bolt_graph;
   }
 
-  void finishTraining() {
-    requireTrainContext();
-    _bolt_graph->cleanupAfterBatchProcessing();
-  }
+  void finishTraining() { requireTrainContext(); }
 
   uint64_t numBatches() {
     if (!_train_context.has_value()) {
@@ -73,8 +69,6 @@ class DistributedTrainingWrapper {
     _bolt_graph->verifyCanTrain(new_context);
 
     if (!_train_context.has_value()) {
-      _bolt_graph->prepareToProcessBatches(new_context.batchSize(),
-                                           /* use_sparsity=*/true);
       _train_context = new_context;
       return;
     }

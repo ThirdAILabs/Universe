@@ -11,7 +11,8 @@ from thirdai import bolt
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
-TRAIN_FILE_PATH = "./query_reformulation.csv"
+TRAIN_SOURCE_TARGET_FILE = "./source_target_query_reformulation.csv"
+TRAIN_TARGET_ONLY_FILE = "./target_only_query_reformulation.csv"
 MODEL_PATH = "udt_generator_model.bolt"
 
 RECALL_THRESHOLD = 0.95
@@ -26,14 +27,7 @@ def read_csv_file(file_name: str) -> List[List[str]]:
     return data
 
 
-def write_input_dataset_to_csv(dataframe: pd.DataFrame, file_path: str) -> None:
-    # Add file header since the "train" and "evaluate" methods assume the
-    # input CSV file has a header.
-    dataframe.columns = ["target_column", "source_column"]
-    dataframe.to_csv(file_path, index=False)
-
-
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def grammar_correction_dataset() -> pd.DataFrame:
     """
     The grammar correction dataset is retrieved from HuggingFace:
@@ -100,21 +94,32 @@ def transform_queries(dataframe: pd.DataFrame) -> pd.DataFrame:
 
         transformed_dataframe.append([correct_query, " ".join(incorrect_query_pair)])
 
-    return pd.DataFrame(transformed_dataframe)
+    output_df = pd.DataFrame(transformed_dataframe)
+    output_df.columns = ["target_column", "source_column"]
+    return output_df
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def prepared_datasets(grammar_correction_dataset) -> None:
     transformed_queries = transform_queries(dataframe=grammar_correction_dataset)
-    write_input_dataset_to_csv(transformed_queries, TRAIN_FILE_PATH)
+
+    # TODO(Geordie): Fix this when the new CSV parser is in
+    transformed_queries = transformed_queries.replace(",", "", regex=True)
+
+    transformed_queries.to_csv(
+        TRAIN_SOURCE_TARGET_FILE,
+        columns=["target_column", "source_column"],
+        index=False,
+    )
+    transformed_queries.to_csv(
+        TRAIN_TARGET_ONLY_FILE, columns=["target_column"], index=False
+    )
 
 
 def delete_created_files() -> None:
-    if os.path.exists(MODEL_PATH):
-        os.remove(MODEL_PATH)
-
-    if os.path.exists(TRAIN_FILE_PATH):
-        os.remove(TRAIN_FILE_PATH)
+    for file in [MODEL_PATH, TRAIN_SOURCE_TARGET_FILE, TRAIN_TARGET_ONLY_FILE]:
+        if os.path.exists(file):
+            os.remove(file)
 
 
 def run_generator_test(
@@ -127,10 +132,10 @@ def run_generator_test(
     flash.
     """
 
-    query_pairs = read_csv_file(file_name=TRAIN_FILE_PATH)
+    query_pairs = read_csv_file(file_name=TRAIN_SOURCE_TARGET_FILE)
 
     queries = [query_pair[source_col_index] for query_pair in query_pairs]
-    generated_candidates = model.predict_batch(queries=queries, top_k=5)
+    (generated_candidates,) = model.predict_batch(queries=queries, top_k=5)
 
     correct_results = 0
     for query_index in range(len(query_pairs)):
@@ -145,36 +150,79 @@ def run_generator_test(
     assert recall > RECALL_THRESHOLD
 
 
-def train_udt_query_reformulation_model() -> bolt.UniversalDeepTransformer:
+def train_udt_query_reformulation_model(
+    train_file_name: str,
+) -> bolt.UniversalDeepTransformer:
     model = bolt.UniversalDeepTransformer(
         source_column="source_column",
         target_column="target_column",
         dataset_size="small",
+        delimiter=",",
     )
-    model.train(filename=TRAIN_FILE_PATH)
+    model.train(filename=train_file_name)
     return model
 
 
-@pytest.mark.filterwarnings("ignore")
-def test_udt_generator(prepared_datasets):
-    model = train_udt_query_reformulation_model()
+# This test is for regular query reformulation with source and target queries.
+def test_udt_generator_source_target(prepared_datasets):
+    model = train_udt_query_reformulation_model(TRAIN_SOURCE_TARGET_FILE)
     run_generator_test(model=model, source_col_index=1, target_col_index=0)
 
 
-@pytest.mark.filterwarnings("ignore")
+# This test is for a query reformuulation model that was created with both the
+# source and target column specified, but trained on a dataset which doesn't contain
+# a source column.
+def test_udt_generator_source_not_specified(prepared_datasets):
+    model = train_udt_query_reformulation_model(TRAIN_TARGET_ONLY_FILE)
+    run_generator_test(model=model, source_col_index=1, target_col_index=0)
+
+
+# This test is for a query reformulation model that was created with only the
+# target column specified, and trained on a dataset which doesn't contain
+# a source column.
+def test_udt_generator_target_only(prepared_datasets):
+    model = bolt.UniversalDeepTransformer(
+        target_column="target_column",
+        dataset_size="small",
+    )
+    model.train(filename=TRAIN_TARGET_ONLY_FILE)
+    run_generator_test(model=model, source_col_index=1, target_col_index=0)
+
+
 def test_udt_generator_load_and_save(prepared_datasets):
-    trained_model = train_udt_query_reformulation_model()
+    trained_model = train_udt_query_reformulation_model(TRAIN_SOURCE_TARGET_FILE)
     run_generator_test(model=trained_model, source_col_index=1, target_col_index=0)
 
     trained_model.save(filename=MODEL_PATH)
 
     deserialized_model = bolt.UniversalDeepTransformer.load(filename=MODEL_PATH)
-    model_eval_outputs = trained_model.evaluate(filename=TRAIN_FILE_PATH, top_k=5)
-    deserialized_model_outputs = deserialized_model.evaluate(
-        filename=TRAIN_FILE_PATH, top_k=5
+    (model_eval_outputs,) = trained_model.evaluate(
+        filename=TRAIN_SOURCE_TARGET_FILE, top_k=5
+    )
+    (deserialized_model_outputs,) = deserialized_model.evaluate(
+        filename=TRAIN_SOURCE_TARGET_FILE, top_k=5
     )
 
     for index in range(len(model_eval_outputs)):
         assert model_eval_outputs[index] == deserialized_model_outputs[index]
+
+
+# This test checks whether the returned scores are sorted and have valid lengths
+def test_udt_generator_return_scores(prepared_datasets):
+    trained_model = train_udt_query_reformulation_model(TRAIN_SOURCE_TARGET_FILE)
+
+    source_col_index = 1
+    query_pairs = read_csv_file(file_name=TRAIN_SOURCE_TARGET_FILE)
+    queries = [query_pair[source_col_index] for query_pair in query_pairs]
+
+    top_k = 5
+    generated_candidates, scores = trained_model.predict_batch(
+        queries=queries, top_k=top_k, return_scores=True
+    )
+
+    assert len(generated_candidates) == len(scores)
+    for index, score in enumerate(scores):
+        assert len(score) == len(generated_candidates[index])
+        assert all(a >= b for a, b in zip(score, score[1:]))
 
     delete_created_files()

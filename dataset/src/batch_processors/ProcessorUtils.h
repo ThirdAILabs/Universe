@@ -51,7 +51,7 @@ class ProcessorUtils {
 
   static std::vector<std::string> aggregateSingleColumnCsvRows(
       const std::string& file_name, uint32_t column_index,
-      bool has_header = false) {
+      bool has_header = false, char delimiter = ',') {
     std::vector<std::string> aggregated_rows;
 
     std::ifstream input_file_stream =
@@ -63,7 +63,7 @@ class ProcessorUtils {
     }
     while (std::getline(input_file_stream, row)) {
       std::string target_column =
-          std::string(parseCsvRow(row, ',')[column_index]);
+          std::string(parseCsvRow(row, delimiter)[column_index]);
       aggregated_rows.emplace_back(std::move(target_column));
     }
 

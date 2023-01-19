@@ -3,7 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
-#include <auto_ml/src/dataset_factories/SingleBlockDatasetFactory.h>
+#include <auto_ml/src/dataset_factories/single_block/SingleBlockDatasetFactory.h>
 #include <auto_ml/src/deployment_config/DatasetConfig.h>
 
 namespace thirdai::automl::deployment {

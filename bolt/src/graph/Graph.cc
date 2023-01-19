@@ -65,8 +65,7 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 #endif
 }
 
-void BoltGraph::logValidateAndSave(uint32_t batch_size,
-                                   const TrainConfig& train_config,
+void BoltGraph::logValidateAndSave(const TrainConfig& train_config,
                                    MetricAggregator& train_metrics) {
   if (train_config.logLossFrequency() != 0 &&
       _updates % train_config.logLossFrequency() == 0) {
@@ -87,19 +86,6 @@ void BoltGraph::logValidateAndSave(uint32_t batch_size,
       train_config.getValidationContext();
   if (validation && validation->frequency() != 0 &&
       (_updates % validation->frequency() == 0)) {
-    // TODO(jerin-thirdai): The implications of doing
-    // cleanupAfterBatchProcessing and prepareToProcessBatches is not
-    // fully understood here. These two functions should not exist, but
-    // not doing this leads to assertion failure on node-state or a
-    // segfault on something set as a nullptr after
-    // cleanupAfterBatchProcessing if prepareToProcessBatches is not
-    // applied.
-    //
-    // Currently unsure of the implications of adding validationMetrics
-    // from mid-batch as well, these will still be logged, but is not
-    // added to the callback export.
-
-    cleanupAfterBatchProcessing();
     auto [validation_metrics, _] = evaluate(
         validation->data(), validation->labels(), validation->config());
 
@@ -121,9 +107,6 @@ void BoltGraph::logValidateAndSave(uint32_t batch_size,
             _tracked_metric->name());
       }
     }
-
-    prepareToProcessBatches(batch_size,
-                            /* use_sparsity=*/true);
   }
 }
 
@@ -188,69 +171,56 @@ MetricData BoltGraph::train(
 
       This is done per epoch so callbacks can call predict during training.
     */
-    prepareToProcessBatches(dataset_context.batchSize(),
-                            /* use_sparsity=*/true);
 
-    // TODO(josh/Nick): This try catch is kind of a hack, we should really use
-    // some sort of RAII training context object whose destructor will
-    // automatically delete the training state
-    try {
-      std::optional<ProgressBar> bar = ProgressBar::makeOptional(
-          /*verbose=*/train_config.verbose(),
-          /*description=*/fmt::format("train epoch {}", _epoch),
-          /*max_steps=*/dataset_context.numBatches());
+    std::optional<ProgressBar> bar = ProgressBar::makeOptional(
+        /*verbose=*/train_config.verbose(),
+        /*description=*/fmt::format("train epoch {}", _epoch),
+        /*max_steps=*/dataset_context.numBatches());
 
-      auto train_start = std::chrono::high_resolution_clock::now();
+    auto train_start = std::chrono::high_resolution_clock::now();
 
-      for (uint64_t batch_idx = 0; batch_idx < dataset_context.numBatches();
-           batch_idx++) {
-        train_state.batch_cnt = batch_idx;
-        callbacks.onBatchBegin(*this, train_state);
+    for (uint64_t batch_idx = 0; batch_idx < dataset_context.numBatches();
+         batch_idx++) {
+      train_state.batch_cnt = batch_idx;
+      callbacks.onBatchBegin(*this, train_state);
 
-        dataset_context.setInputs(batch_idx, _inputs);
+      dataset_context.setInputs(batch_idx, _inputs);
 
-        const BoltBatch& batch_labels = dataset_context.labels()->at(batch_idx);
-        processTrainingBatch(batch_labels, train_metrics);
-        updateParametersAndSampling(
-            train_state.learning_rate, train_state.rebuild_hash_tables_batch,
-            train_state.reconstruct_hash_functions_batch);
-
-        if (bar) {
-          bar->increment();
-        }
-
-        logValidateAndSave(dataset_context.batchSize(), train_config,
-                           train_metrics);
-
-        callbacks.onBatchEnd(*this, train_state);
-      }
-
-      auto train_end = std::chrono::high_resolution_clock::now();
-      int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
-                               train_end - train_start)
-                               .count();
-
-      std::string logline = fmt::format(
-          "train | epoch {} | train_steps {} | {} | train_batches {} | time "
-          "{}s | complete",
-          _epoch, _updates, train_metrics.summary(),
-          dataset_context.numBatches(), epoch_time);
-
-      logging::info(logline);
+      const BoltBatch& batch_labels = dataset_context.labels()->at(batch_idx);
+      processTrainingBatch(batch_labels, train_metrics);
+      updateParametersAndSampling(train_state.learning_rate,
+                                  train_state.rebuild_hash_tables_batch,
+                                  train_state.reconstruct_hash_functions_batch);
 
       if (bar) {
-        bar->close(logline);
+        bar->increment();
       }
 
-      train_metrics.logAndReset();
+      logValidateAndSave(train_config, train_metrics);
 
-      train_state.epoch_times.push_back(static_cast<double>(epoch_time));
-    } catch (const std::exception& e) {
-      cleanupAfterBatchProcessing();
-      throw;
+      callbacks.onBatchEnd(*this, train_state);
     }
 
-    cleanupAfterBatchProcessing();
+    auto train_end = std::chrono::high_resolution_clock::now();
+    int64_t epoch_time =
+        std::chrono::ceil<std::chrono::seconds>(train_end - train_start)
+            .count();
+
+    std::string logline = fmt::format(
+        "train | epoch {} | train_steps {} | {} | train_batches {} | time "
+        "{}s | complete",
+        _epoch, _updates, train_metrics.summary(), dataset_context.numBatches(),
+        epoch_time);
+
+    logging::info(logline);
+
+    if (bar) {
+      bar->close(logline);
+    }
+
+    train_metrics.logAndReset();
+
+    train_state.epoch_times.push_back(static_cast<double>(epoch_time));
 
     const std::optional<ValidationContext>& validation =
         train_config.getValidationContext();
@@ -280,6 +250,33 @@ MetricData BoltGraph::train(
   return metric_data;
 }
 
+void BoltGraph::trainOnBatch(std::vector<BoltBatch>&& inputs,
+                             const BoltBatch& labels, float learning_rate,
+                             MetricAggregator& metrics,
+                             uint32_t rebuild_hash_tables_interval,
+                             uint32_t reconstruct_hash_functions_interval) {
+  SingleBatchDatasetContext dataset_context(std::move(inputs));
+  verifyInputForGraph(dataset_context);
+
+  if (!graphCompiled()) {
+    throw std::logic_error("Graph must be compiled before training");
+  }
+
+  if (!_batch_processing_state.isOptimizerInitialized()) {
+    for (auto& node : _nodes) {
+      node->initOptimizer();
+    }
+    _batch_processing_state.markOptimizerInitialized();
+  }
+
+  dataset_context.setInputs(/* batch_idx= */ 0, _inputs);
+
+  processTrainingBatch(labels, metrics);
+
+  updateParametersAndSampling(learning_rate, rebuild_hash_tables_interval,
+                              reconstruct_hash_functions_interval);
+}
+
 void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
                                      MetricAggregator& metrics) {
   assert(graphCompiled());
@@ -288,6 +285,8 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
       /* num_nonzeros_range = */ std::nullopt,
       /* origin_string = */
       "Passed in label BoltVector is larger than the output dim");
+
+  prepareToProcessBatch(batch_labels.getBatchSize(), /* use_sparsity= */ true);
 
 #pragma omp parallel for default(none) shared(batch_labels, metrics)
   for (uint64_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
@@ -371,81 +370,74 @@ BoltGraph::getInputGradientSingle(
   SingleBatchDatasetContext single_input_gradients_context(
       std::move(input_data));
 
-  prepareToProcessBatches(/*batch_size= */ 1, /* use_sparsity=*/true);
+  prepareToProcessBatch(/*batch_size= */ 1, /* use_sparsity=*/true);
 
   verifyCanGetInputGradientSingle(single_input_gradients_context,
                                   explain_prediction_using_highest_activation,
                                   _output->numNonzerosInOutput());
 
-  try {
-    single_input_gradients_context.setInputs(/* batch_idx = */ 0, _inputs);
+  single_input_gradients_context.setInputs(/* batch_idx = */ 0, _inputs);
 
-    BoltVector& input_vector = _inputs[0]->getOutputVector(/*vec_index= */ 0);
+  BoltVector& input_vector = _inputs[0]->getOutputVector(/*vec_index= */ 0);
 
-    std::vector<float> normalised_vec_grad(input_vector.len, 0.0);
+  std::vector<float> normalised_vec_grad(input_vector.len, 0.0);
 
-    // Assigning the normalised_vec_grad data() to gradients so that we dont
-    // have to worry about initializing and then freeing the memory.
+  // Assigning the normalised_vec_grad data() to gradients so that we dont
+  // have to worry about initializing and then freeing the memory.
 
-    input_vector.gradients = normalised_vec_grad.data();
-    std::vector<uint32_t> input_vector_indices;
+  input_vector.gradients = normalised_vec_grad.data();
+  std::vector<uint32_t> input_vector_indices;
 
-    /*
-    If the required_labels are empty, then we have to find the
-    required_index by output activations, for that we need to do forward
-    pass before creating the batch_label, but if the required_labels are not
-    empty and for some ,If the required label position is not present in the
-    output active neurons , then calculating the gradients with respect to
-    that label doesnot make sense, because loss is only calculated with
-    respect to active neurons, to ensure that output has active neuron at
-    the position of required label we are creating batch_label before
-    forward pass and passing to it, because forward pass ensures to have
-    active neurons at the metioned label index.
-    */
+  /*
+  If the required_labels are empty, then we have to find the
+  required_index by output activations, for that we need to do forward
+  pass before creating the batch_label, but if the required_labels are not
+  empty and for some ,If the required label position is not present in the
+  output active neurons , then calculating the gradients with respect to
+  that label doesnot make sense, because loss is only calculated with
+  respect to active neurons, to ensure that output has active neuron at
+  the position of required label we are creating batch_label before
+  forward pass and passing to it, because forward pass ensures to have
+  active neurons at the metioned label index.
+  */
 
-    BoltVector label_vector;
-    if (!neuron_to_explain) {
-      label_vector = getLabelVectorExplainPrediction(
-          /*vec_id= */ 0, explain_prediction_using_highest_activation);
-    } else {
-      label_vector = getLabelVectorNeuronsToExplain(
-          /*required_index= */ *neuron_to_explain, /*vec_id= */ 0);
-    }
-
-    if (!input_vector.isDense()) {
-      input_vector_indices.assign(
-          input_vector.active_neurons,
-          input_vector.active_neurons + input_vector.len);
-    }
-
-    resetOutputGradients(/* vec_index= */ 0);
-    _loss->lossGradients(_output->getOutputVector(/*vec_index= */ 0),
-                         label_vector, /*batch_size= */ 1);
-    backpropagate(/*vec_index= */ 0);
-
-    // We reset the gradients to nullptr here to prevent the bolt vector
-    // from freeing the memory which is owned by the std::vector we used to
-    // store the gradients
-
-    input_vector.gradients = nullptr;
-    cleanupAfterBatchProcessing();
-
-    // When activations are zero(in some rare cases) normalising will blow up
-    // the value so avoiding it.
-    for (uint32_t i = 0; i < input_vector.len; i++) {
-      if (input_vector.activations[i] != 0) {
-        normalised_vec_grad[i] /= input_vector.activations[i];
-      }
-    }
-
-    if (input_vector_indices.empty()) {
-      return std::make_pair(std::nullopt, normalised_vec_grad);
-    }
-    return std::make_pair(input_vector_indices, normalised_vec_grad);
-  } catch (const std::exception& e) {
-    cleanupAfterBatchProcessing();
-    throw;
+  BoltVector label_vector;
+  if (!neuron_to_explain) {
+    label_vector = getLabelVectorExplainPrediction(
+        /*vec_id= */ 0, explain_prediction_using_highest_activation);
+  } else {
+    label_vector = getLabelVectorNeuronsToExplain(
+        /*required_index= */ *neuron_to_explain, /*vec_id= */ 0);
   }
+
+  if (!input_vector.isDense()) {
+    input_vector_indices.assign(input_vector.active_neurons,
+                                input_vector.active_neurons + input_vector.len);
+  }
+
+  resetOutputGradients(/* vec_index= */ 0);
+  _loss->lossGradients(_output->getOutputVector(/*vec_index= */ 0),
+                       label_vector, /*batch_size= */ 1);
+  backpropagate(/*vec_index= */ 0);
+
+  // We reset the gradients to nullptr here to prevent the bolt vector
+  // from freeing the memory which is owned by the std::vector we used to
+  // store the gradients
+
+  input_vector.gradients = nullptr;
+
+  // When activations are zero(in some rare cases) normalising will blow up
+  // the value so avoiding it.
+  for (uint32_t i = 0; i < input_vector.len; i++) {
+    if (input_vector.activations[i] != 0) {
+      normalised_vec_grad[i] /= input_vector.activations[i];
+    }
+  }
+
+  if (input_vector_indices.empty()) {
+    return std::make_pair(std::nullopt, normalised_vec_grad);
+  }
+  return std::make_pair(input_vector_indices, normalised_vec_grad);
 }
 
 InferenceResult BoltGraph::evaluate(
@@ -468,9 +460,12 @@ InferenceResult BoltGraph::evaluate(
    datastructures to store the activations for every batch during training so
    we need this to be able to support the largest batch size.
   */
-  prepareToProcessBatches(predict_context.batchSize(),
-                          eval_config.sparseInferenceEnabled());
 
+  // We have to prepare for batch processing so that we know the correct number
+  // of nonzeros in the output node and can allocate the InferenceOutputTracker.
+  prepareToProcessBatch(
+      /* batch_size= */ predict_context.batchSize(),
+      /* use_sparsity= */ eval_config.sparseInferenceEnabled());
   InferenceOutputTracker outputTracker(
       _output, eval_config.shouldReturnActivations(),
       /* total_num_samples = */ predict_context.len());
@@ -482,34 +477,25 @@ InferenceResult BoltGraph::evaluate(
 
   auto test_start = std::chrono::high_resolution_clock::now();
 
-  // TODO(josh/Nick): This try catch is kind of a hack, we should really use
-  // some sort of RAII training context object whose destructor will
-  // automatically delete the training state
-  try {
-    for (uint64_t batch_idx = 0; batch_idx < predict_context.numBatches();
-         batch_idx++) {
-      predict_context.setInputs(batch_idx, _inputs);
+  for (uint64_t batch_idx = 0; batch_idx < predict_context.numBatches();
+       batch_idx++) {
+    predict_context.setInputs(batch_idx, _inputs);
 
-      uint64_t batch_size = predict_context.batchSize(batch_idx);
-      const BoltBatch* batch_labels =
-          has_labels ? &predict_context.labels()->at(batch_idx) : nullptr;
+    uint64_t batch_size = predict_context.batchSize(batch_idx);
+    const BoltBatch* batch_labels =
+        has_labels ? &predict_context.labels()->at(batch_idx) : nullptr;
 
-      processInferenceBatch(batch_size, batch_labels, metrics);
+    processEvaluationBatch(batch_size, batch_labels, metrics,
+                           eval_config.sparseInferenceEnabled());
 
-      if (bar) {
-        bar->increment();
-      }
-
-      processOutputCallback(eval_config.outputCallback(), batch_size);
-
-      outputTracker.saveOutputBatch(_output, batch_size);
+    if (bar) {
+      bar->increment();
     }
-  } catch (const std::exception& e) {
-    cleanupAfterBatchProcessing();
-    throw;
-  }
 
-  cleanupAfterBatchProcessing();
+    processOutputCallback(eval_config.outputCallback(), batch_size);
+
+    outputTracker.saveOutputBatch(_output, batch_size);
+  }
 
   auto test_end = std::chrono::high_resolution_clock::now();
   int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -544,28 +530,20 @@ BoltVector BoltGraph::predictSingle(
                    /* returning_activations = */ true,
                    /* num_metrics_tracked = */ 0);
 
-  prepareToProcessBatches(/* batch_size = */ 1, use_sparse_inference);
+  prepareToProcessBatch(/* batch_size = */ 1, use_sparse_inference);
 
-  // TODO(josh/Nick): This try catch is kind of a hack, we should really use
-  // some sort of RAII training context object whose destructor will
-  // automatically delete the training state
-  try {
-    single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
-    forward(/* vec_index = */ 0, nullptr);
-    BoltVector output_copy;
-    if (output_node_name) {
-      output_copy = getNodeByName(*output_node_name)
-                        ->getOutputVector(/* vec_index = */ 0);
-    } else {
-      output_copy = _output->getOutputVector(
-          /* vec_index = */ 0);
-    }
-    cleanupAfterBatchProcessing();
-    return output_copy;
-  } catch (const std::exception& e) {
-    cleanupAfterBatchProcessing();
-    throw;
+  single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
+  forward(/* vec_index = */ 0, nullptr);
+  BoltVector output_copy;
+  if (output_node_name) {
+    output_copy =
+        getNodeByName(*output_node_name)->getOutputVector(/* vec_index = */ 0);
+  } else {
+    output_copy = _output->getOutputVector(
+        /* vec_index = */ 0);
   }
+
+  return output_copy;
 }
 
 BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
@@ -578,35 +556,29 @@ BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
 
   uint32_t batch_size = single_predict_context.batchSize();
 
-  prepareToProcessBatches(batch_size, use_sparse_inference);
+  prepareToProcessBatch(batch_size, use_sparse_inference);
 
-  // TODO(josh/Nick): This try catch is kind of a hack, we should really use
-  // some sort of RAII training context object whose destructor will
-  // automatically delete the training state
-  try {
-    single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
+  single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
 
-    std::vector<BoltVector> outputs(batch_size);
+  std::vector<BoltVector> outputs(batch_size);
 
 #pragma omp parallel for default(none) shared(batch_size, outputs)
-    for (uint32_t vec_index = 0; vec_index < batch_size; vec_index++) {
-      forward(vec_index, nullptr);
-      outputs[vec_index] = _output->getOutputVector(vec_index);
-    }
-
-    cleanupAfterBatchProcessing();
-    return BoltBatch(std::move(outputs));
-  } catch (const std::exception& e) {
-    cleanupAfterBatchProcessing();
-    throw;
+  for (uint32_t vec_index = 0; vec_index < batch_size; vec_index++) {
+    forward(vec_index, nullptr);
+    outputs[vec_index] = _output->getOutputVector(vec_index);
   }
+
+  return BoltBatch(std::move(outputs));
 }
 
-void BoltGraph::processInferenceBatch(uint64_t batch_size,
-                                      const BoltBatch* batch_labels,
-                                      MetricAggregator& metrics) {
+void BoltGraph::processEvaluationBatch(uint64_t batch_size,
+                                       const BoltBatch* batch_labels,
+                                       MetricAggregator& metrics,
+                                       bool use_sparsity) {
   // Either we shouldn't track any metrics or there need to be labels
   assert((metrics.getNumMetricsTracked() == 0) || (batch_labels != nullptr));
+
+  prepareToProcessBatch(batch_size, /* use_sparsity= */ use_sparsity);
 
 #pragma omp parallel for default(none) shared(batch_size, batch_labels, metrics)
   for (uint64_t vec_id = 0; vec_id < batch_size; vec_id++) {
@@ -650,16 +622,16 @@ void BoltGraph::backpropagate(uint32_t vec_index) {
   }
 }
 
-void BoltGraph::prepareToProcessBatches(uint32_t batch_size,
-                                        bool use_sparsity) {
+void BoltGraph::prepareToProcessBatch(uint32_t batch_size, bool use_sparsity) {
+  if (_batch_processing_state.compatableWith(batch_size, use_sparsity)) {
+    // If we have already allocated activation storage for the given batch size
+    // and sparsity we can skip reallocating here.
+    return;
+  }
+  _batch_processing_state = BatchProcessingState(batch_size, use_sparsity);
+
   for (auto& node : _nodes) {
     node->prepareForBatchProcessing(batch_size, use_sparsity);
-  }
-}
-
-void BoltGraph::cleanupAfterBatchProcessing() {
-  for (auto& node : _nodes) {
-    node->cleanupAfterBatchProcessing();
   }
 }
 
@@ -817,8 +789,8 @@ void BoltGraph::verifyCanPredict(const DatasetContextBase& predict_context,
   }
   if (!returning_activations && num_metrics_tracked == 0) {
     throw std::invalid_argument(
-        "Doing inference without returning activations and no metrics is a "
-        "NOOP");
+        "Doing evaluation without metrics or activations is a no-op. "
+        "Did you forget to specify this in the EvalConfig?");
   }
 
   verifyInputForGraph(predict_context);

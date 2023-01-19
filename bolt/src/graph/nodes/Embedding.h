@@ -71,11 +71,8 @@ class EmbeddingNode final : public Node,
   void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final;
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
-    assert(getState() == NodeState::PreparedForBatchProcessing);
     return (*_outputs)[vec_index];
   }
-
-  void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
 
   uint32_t numNonzerosInOutputImpl() const final {
     // The embedding is dense so we can just return the result of outputDim.
