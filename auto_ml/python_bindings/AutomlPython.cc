@@ -4,6 +4,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <auto_ml/src/models/PseudoLSTM.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
@@ -449,6 +450,26 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
       /* options = */ createUserInputMap(options));
 }
 
+UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
+    py::object& obj, data::ColumnDataTypes data_types,
+    data::UserProvidedTemporalRelationships temporal_tracking_relationships,
+    std::string target_col, std::optional<uint32_t> n_target_classes,
+    bool integer_target, std::string time_granularity, uint32_t lookahead,
+    char delimiter, const std::optional<std::string>& model_config,
+    const py::dict& options) {
+  return LSTMClassifier::buildLSTM(
+      /* data_types = */ std::move(data_types),
+      /* temporal_tracking_relationships = */
+      std::move(temporal_tracking_relationships),
+      /* target_col = */ std::move(target_col),
+      /* n_target_classes = */ n_target_classes,
+      /* integer_target = */ integer_target,
+      /* time_granularity = */ std::move(time_granularity),
+      /* lookahead = */ lookahead, /* delimiter = */ delimiter,
+      /* model_config= */ model_config,
+      /* options = */ createUserInputMap(options));
+}
+
 void UDTFactory::save_classifier(const UniversalDeepTransformer& classifier,
                                  const std::string& filename) {
   std::ofstream filestream =
@@ -491,6 +512,10 @@ py::object UDTFactory::load(const std::string& filename) {
 
   if (first_byte == UDT_TEXT_CLASSIFIER_IDENTIFIER) {
     return py::cast(TextClassifier::load_stream(filestream));
+  }
+
+  if (first_byte == UDT_TEXT_CLASSIFIER_IDENTIFIER) {
+    return py::cast(PseudoLSTM::load_stream(filestream));
   }
 
   throw std::invalid_argument("Found an invalid header byte in the saved file");

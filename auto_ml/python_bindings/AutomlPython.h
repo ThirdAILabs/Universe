@@ -2,6 +2,7 @@
 
 #include <auto_ml/src/models/Generator.h>
 #include <auto_ml/src/models/ModelPipeline.h>
+#include <auto_ml/src/models/PseudoLSTM.h>
 #include <auto_ml/src/models/TextClassifier.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <pybind11/pybind11.h>
@@ -63,11 +64,21 @@ class UDTFactory {
       char delimiter, const std::optional<std::string>& model_config,
       const py::dict& options);
 
+  static PseudoLSTM buildPseudoLSTM(
+      py::object& obj, data::ColumnDataTypes data_types, std::string target_col,
+      std::optional<uint32_t> n_target_classes, bool integer_target,
+      uint32_t prediction_depth, char delimiter,
+      const std::optional<std::string>& model_config, const py::dict& options
+
+  );
+  )
+
   // These need to be here instead of inside UDTFactory because otherwise I was
   // getting weird linking errors
   static constexpr uint8_t UDT_GENERATOR_IDENTIFIER = 0;
   static constexpr uint8_t UDT_CLASSIFIER_IDENTIFIER = 1;
   static constexpr uint8_t UDT_TEXT_CLASSIFIER_IDENTIFIER = 2;
+  static constexpr uint8_t UDT_PSEUDO_LSTM_IDENTIFIER = 3;
 
   static void save_classifier(const UniversalDeepTransformer& classifier,
                               const std::string& filename);
