@@ -266,10 +266,9 @@ class CsvBatchRef final : public ColumnarInputBatch {
 class CsvRolledBatch final : public ColumnarInputBatch {
  public:
   explicit CsvRolledBatch(
-      const std::vector<std::vector<std::string_view>>& rows)
-      : _batch_values(rows.size()) {
-    for (uint32_t i = 0; i < rows.size(); i++) {
-      _batch_values[i] = CsvSampleRef(rows[i]);
+      const std::vector<std::vector<std::string_view>>& rows) {
+    for (const auto& row : rows) {
+      _batch_values.push_back(CsvSampleRef(row));
     }
   }
 
