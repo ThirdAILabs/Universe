@@ -1,6 +1,7 @@
 import os
 import platform
 import socket
+import sys
 
 import mlflow
 import psutil
@@ -142,7 +143,7 @@ def train_bolt_v2(config: BenchmarkConfig, train_x, train_y, test_x, test_y):
 
 def init_mlflow(dataset_name, bolt_version, suffix):
     mlflow.set_tracking_uri(
-        "http://deplo-mlflo-15qe25sw8psjr-1d20dd0c302edb1f.elb.us-east-1.amazonaws.com"
+        sys.argv[1]
     )
     machine_info = {
         "load_before_experiment": os.getloadavg()[2],
