@@ -69,27 +69,35 @@ struct CategoricalDataType : DataType {
 
 using CategoricalDataTypePtr = std::shared_ptr<CategoricalDataType>;
 
+enum class TextEncodingType {
+  Unigrams,
+  Bigrams,
+  Pairgrams,
+};
+
+inline TextEncodingType getTextEncodingFromString(const std::string& encoding) {
+  std::unordered_map<std::string, TextEncodingType> contextual_encodings = {
+      {"none", TextEncodingType::Unigrams},
+      {"local", TextEncodingType::Bigrams},
+      {"global", TextEncodingType::Pairgrams},
+  };
+
+  if (contextual_encodings.count(encoding) == 0) {
+    throw std::invalid_argument(
+        "Created text column with invalid contextual_encoding '" + encoding +
+        "' please choose one of 'none', 'local', or 'global'.");
+  };
+  return contextual_encodings[encoding];
+}
+
 struct TextDataType : DataType {
   explicit TextDataType(std::optional<double> average_n_words = std::nullopt,
-                        std::string contextual_encoding = "none")
+                        const std::string& contextual_encoding = "none")
       : average_n_words(average_n_words),
-        contextual_encoding(std::move(contextual_encoding)) {
-    std::unordered_map<std::string, std::string> contextual_encodings = {
-        {"none", "unigrams"},
-        {"local", "bigrams"},
-        {"global", "pairgrams"},
-    };
-    if (contextual_encodings.count(this->contextual_encoding) == 0) {
-      throw std::invalid_argument(
-          "Created text column with invalid contextual_encoding '" +
-          this->contextual_encoding +
-          "' please choose one of 'none', 'local', or 'global'.");
-    }
-    this->contextual_encoding = contextual_encodings[this->contextual_encoding];
-  }
+        contextual_encoding(getTextEncodingFromString(contextual_encoding)) {}
 
   std::optional<double> average_n_words;
-  std::string contextual_encoding;
+  TextEncodingType contextual_encoding;
 
   std::string toString() const final { return R"({"type": "text"})"; }
 
