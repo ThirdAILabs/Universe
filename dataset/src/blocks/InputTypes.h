@@ -1,5 +1,6 @@
 #pragma once
 
+#include <_types/_uint32_t.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <optional>
 #include <sstream>
@@ -7,6 +8,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
 
 namespace thirdai::dataset {
 
@@ -122,8 +124,17 @@ class CsvSampleRef final : public ColumnarInputSample {
     }
   }
 
+  explicit CsvSampleRef(std::vector<std::string_view> line)
+      : _columns(std::move(line)) {}
+
+  std::string_view at(uint32_t index) { return _columns[index]; }
+
   std::string_view column(const ColumnIdentifier& column) final {
     return RowSampleRef(_columns).column(column);
+  }
+
+  void insert(const RowInput& values) {
+    _columns.insert(_columns.end(), values.begin(), values.end());
   }
 
   uint32_t size() final { return _columns.size(); }
@@ -216,6 +227,21 @@ class CsvBatchRef final : public ColumnarInputBatch {
         _expected_num_columns(expected_num_columns) {}
 
   ColumnarInputSample& at(uint32_t index) final {
+    checkCorrectness(index);
+    return *_ref_batch.at(index);
+  }
+
+  CsvSampleRef& get(uint32_t index) {
+    checkCorrectness(index);
+    return *_ref_batch.at(index);
+  }
+
+  void insert(uint32_t index, const RowInput& values) {
+    checkCorrectness(index);
+    _ref_batch.at(index)->insert(values);
+  }
+
+  void checkCorrectness(uint32_t index) {
     assertIndexInRange(index);
     /*
       Constructing CsvSampleRef also parses the CSV string. This is an
@@ -227,7 +253,6 @@ class CsvBatchRef final : public ColumnarInputBatch {
       _ref_batch.at(index) =
           CsvSampleRef(_batch.at(index), _delimiter, _expected_num_columns);
     }
-    return *_ref_batch.at(index);
   }
 
   uint32_t size() const final { return _batch.size(); }
@@ -237,5 +262,23 @@ class CsvBatchRef final : public ColumnarInputBatch {
   std::vector<std::optional<CsvSampleRef>> _ref_batch;
   char _delimiter;
   std::optional<uint32_t> _expected_num_columns;
+};
+
+class CsvRolledBatch final : public ColumnarInputBatch {
+ public:
+  explicit CsvRolledBatch(
+      const std::vector<std::vector<std::string_view>>& rows)
+      : _batch_values(rows.size()) {
+    for (uint32_t i = 0; i < rows.size(); i++) {
+      _batch_values[i] = CsvSampleRef(rows[i]);
+    }
+  }
+
+  ColumnarInputSample& at(uint32_t index) final { return _batch_values[index]; }
+
+  uint32_t size() const final { return _batch_values.size(); }
+
+ private:
+  std::vector<CsvSampleRef> _batch_values;
 };
 }  // namespace thirdai::dataset
