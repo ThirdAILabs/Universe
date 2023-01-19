@@ -102,7 +102,7 @@ def train_bolt_v2(config: BenchmarkConfig, train_x, train_y, test_x, test_y):
     output = bolt_v2.nn.FullyConnected(
         dim=config.output_dim,
         input_dim=config.hidden_dim,
-        sparsity=config.output_sparsity
+        sparsity=config.output_sparsity,
         sampling_config=config.output_sampling_config,
         activation=config.output_activation,
         rebuild_hash_tables=config.batches_per_rebuild_hash_tables,
@@ -246,7 +246,6 @@ class WayfairConfig:
 
     hidden_dim = 1024
     hidden_sparsity = 1.0
-    # TODO: add sparse sparse optimization
 
     output_dim = 931
     output_sparsity = 0.1
