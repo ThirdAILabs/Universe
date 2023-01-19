@@ -11,7 +11,7 @@ void checkLicense();
 
 // If license checking is enabled, verifies that the file is authorized under
 // the license. If license checking is disabled, this is a NOOP.
-void verifyAllowedDataset(const std::string& filename);
+void verifyAllowedDataset(const std::optional<std::string>& filename);
 
 // License verification method 1: Keygen api key
 void activate(const std::string& api_key);

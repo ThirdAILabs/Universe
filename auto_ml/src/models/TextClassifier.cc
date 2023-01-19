@@ -8,6 +8,7 @@
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <licensing/src/CheckLicense.h>
 #include <utils/StringManipulation.h>
 #include <algorithm>
 #include <cmath>
@@ -25,6 +26,8 @@ TextClassifier::TextClassifier(uint32_t input_vocab_size, uint32_t metadata_dim,
     : _input_vocab_size(input_vocab_size),
       _metadata_dim(metadata_dim),
       _n_classes(n_classes) {
+  licensing::checkLicense();
+
   verifyParamIsNonzero(input_vocab_size, "input_vocab_size");
   verifyParamIsNonzero(n_classes, "n_classes");
 
@@ -46,6 +49,8 @@ TextClassifier::TextClassifier(uint32_t input_vocab_size, uint32_t metadata_dim,
 float TextClassifier::trainOnBatch(const py::dict& data,
                                    NumpyArray<float>& labels,
                                    float learning_rate) {
+  licensing::verifyAllowedDataset(std::nullopt);
+
   auto bolt_input = featurize(data);
 
   uint32_t batch_size = bolt_input[0].getBatchSize();
