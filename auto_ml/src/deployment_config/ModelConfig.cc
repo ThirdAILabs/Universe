@@ -13,7 +13,8 @@ bolt::BoltGraphPtr ModelConfig::createModel(
         "returned from data source.");
   }
 
-  std::vector<bolt::InputPtr> inputs(input_dims.size(), nullptr);
+  std::vector<bolt::InputPtr> inputs;
+  inputs.reserve(input_dims.size());
   for (uint32_t input_dim : input_dims) {
     inputs.push_back(bolt::Input::make(input_dim));
   }
