@@ -265,14 +265,17 @@ class WayfairConfig:
 
 
 def load_wayfair_data(filename, shuffle):
-    loader = dataset.DataPipeline(
-        filename=filename,
+    processor = dataset.GenericBatchProcessor(
         input_blocks=[dataset.blocks.TextPairGram(col=1)],
         label_blocks=[dataset.blocks.NumericalId(col=0, n_classes=931, delimiter=",")],
-        batch_size=WayfairConfig.batch_size,
-        shuffle=shuffle,
         has_header=False,
         delimiter="\t",
+    )
+    
+    loader = dataset.DatasetLoader(
+        data_source=dataset.FileDataSource(filename=filename, batch_size=WayfairConfig.batch_size),
+        batch_processor=processor,
+        shuffle=shuffle,
     )
 
     return loader.load_in_memory()
@@ -315,6 +318,6 @@ def mnist_data():
 
 
 if __name__ == "__main__":
-    run_experiment(Amazon670Config, amazon_670_data, "1")
-    run_experiment(AmazonPolarityConfig, amazon_polarity_data, "1")
-    run_experiment(WayfairConfig, wayfair_data, "1")
+    run_experiment(Amazon670Config, amazon_670_data, sys.argv[2])
+    run_experiment(AmazonPolarityConfig, amazon_polarity_data, sys.argv[2])
+    run_experiment(WayfairConfig, wayfair_data, sys.argv[2])
