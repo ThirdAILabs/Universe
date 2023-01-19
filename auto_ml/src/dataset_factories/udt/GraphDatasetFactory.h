@@ -16,10 +16,20 @@
 #include <utility>
 namespace thirdai::automl::data {
 
-class GraphDatasetFactory : public DatasetLoaderFactory {
+class GraphDatasetFactory {
+  static constexpr const uint32_t DEFAULT_BATCH_SIZE = 2048;
+
  public:
   explicit GraphDatasetFactory(GraphConfigPtr conifg)
-      : _config(std::move(conifg)) {}
+      : _config(std::move(conifg)) {
+    auto input_blocks = buildInputBlocks();
+
+    auto label_block = getLabelBlock();
+    if (_config->_neighbourhood_context || _config->_neighbourhood_context ||
+        _config->_kth_neighbourhood) {
+      makePrepocessedProcessedVectors();
+    }
+  }
 
  private:
   dataset::CsvRolledBatch getFinalData() {
@@ -48,7 +58,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   std::vector<std::vector<std::string_view>> getData(uint32_t source_col_num) {
     auto data_loader = dataset::SimpleFileDataSource::make(
         _config->_graph_file_name,
-        /* target_batch_size= */ _config->_batch_size);
+        /* target_batch_size= */ DEFAULT_BATCH_SIZE);
 
     _column_number_map = UDTDatasetFactory::makeColumnNumberMapFromHeader(
         *data_loader, _config->_delimeter);
@@ -65,7 +75,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
 
 #pragma omp parallel for default(none) \
     shared(rows, full_data, nodes, source_col_num)
-    for (uint32_t i = 0; i < _config->_batch_size; i++) {
+    for (uint32_t i = 0; i < full_data.size(); i++) {
       rows[i] = dataset::ProcessorUtils::parseCsvRow(full_data.at(i),
                                                      _config->_delimeter);
 
@@ -77,7 +87,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     return rows;
   }
 
-  std::vector<std::vector<uint32_t>> createGraph(
+  static std::vector<std::vector<uint32_t>> createGraph(
       const std::vector<std::vector<std::string_view>>& rows,
       const std::vector<uint32_t>& relationship_col_nums,
       uint32_t source_col_num) {
@@ -85,8 +95,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
 #pragma omp parallel for default(none) shared(                              \
     relationship_col_nums, rows, adjacency_list_simulation, source_col_num) \
     collapse(2)
-    for (uint32_t i = 0; i < _config->_batch_size; i++) {
-      for (uint32_t j = i + 1; j < _config->_batch_size; j++) {
+    for (uint32_t i = 0; i < rows.size(); i++) {
+      for (uint32_t j = i + 1; j < rows.size(); j++) {
         if (rows[i][source_col_num] != rows[j][source_col_num]) {
           for (unsigned int relationship_col_num : relationship_col_nums) {
             if (rows[i][relationship_col_num] ==
@@ -102,7 +112,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     return adjacency_list_simulation;
   }
 
-  void makePrepocessedProcessor() {
+  void makePrepocessedProcessedVectors() {
     std::vector<dataset::BlockPtr> input_blocks;
     std::vector<dataset::TabularColumn> tabular_columns;
     std::vector<data::NumericalDataTypePtr> numerical_types;
@@ -160,7 +170,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
 
     auto final_data = getFinalData();
 
-    makePreprocessedVectors(processor, *key_vocab, final_data);
+    _vectors = makePreprocessedVectors(processor, *key_vocab, final_data);
   }
 
   std::vector<dataset::BlockPtr> buildInputBlocks() {
@@ -196,9 +206,10 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     rows, k_hop, numerical_columns, processed_numerical_columns) collapse(2)
     for (uint32_t i = 0; i < rows.size(); i++) {
       std::unordered_set<uint32_t> neighbours;
+      std::unordered_set<std::string> neighbours_string;
       std::vector<bool> visited(rows.size(), false);
-      findAllNeighbours(k_hop, i, visited, neighbours);
-      _neighbours[i] = neighbours;
+      findAllNeighbours(k_hop, i, visited, neighbours, neighbours_string);
+      _neighbours[i] = neighbours_string;
       for (uint32_t j = 0; j < numerical_columns.size(); j++) {
         uint32_t value = 0;
         for (unsigned int neighbour : neighbours) {
@@ -214,7 +225,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
 
   void findAllNeighbours(uint32_t k_hop, uint32_t node_id,  // NOLINT
                          std::vector<bool>& visited,
-                         std::unordered_set<uint32_t>& neighbours) {
+                         std::unordered_set<uint32_t>& neighbours,
+                         std::unordered_set<std::string>& neighbours_string) {
     if (k_hop == 0) {
       return;
     }
@@ -223,12 +235,14 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       if (!visited[neighbour]) {
         visited[neighbour] = true;
         neighbours.insert(neighbour);
-        findAllNeighbours(k_hop - 1, neighbour, visited, neighbours);
+        neighbours_string.insert(_node_id_map[neighbour]);
+        findAllNeighbours(k_hop - 1, neighbour, visited, neighbours,
+                          neighbours_string);
       }
     }
   }
 
-  void makePreprocessedVectors(
+  static dataset::PreprocessedVectorsPtr makePreprocessedVectors(
       const dataset::GenericBatchProcessorPtr& processor,
       dataset::ThreadSafeVocabulary& key_vocab, dataset::CsvRolledBatch rows) {
     auto batches = processor->createBatch(rows);
@@ -242,7 +256,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       preprocessed_vectors[key] = std::move(batches[0][vec]);
     }
 
-    _vectors = std::make_shared<dataset::PreprocessedVectors>(
+    return std::make_shared<dataset::PreprocessedVectors>(
         std::move(preprocessed_vectors), processor->getInputDim());
   }
 
@@ -252,7 +266,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   std::vector<std::string> _node_id_map;
   std::vector<std::vector<uint32_t>> _adjacency_list;
   std::optional<std::vector<uint32_t>> _numerical_columns;
-  std::vector<std::unordered_set<uint32_t>> _neighbours;
+  std::vector<std::unordered_set<std::string>> _neighbours;
 };
 
 }  // namespace thirdai::automl::data

@@ -7,6 +7,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <dataset/src/batch_processors/ProcessorUtils.h>
+#include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cstdlib>
@@ -15,6 +16,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace thirdai::dataset {
 
@@ -277,6 +279,40 @@ class MetadataCategoricalBlock final : public CategoricalBlock {
 };
 
 using MetadataCategoricalBlockPtr = std::shared_ptr<MetadataCategoricalBlock>;
+
+class GraphCategoricalBlock : public CategoricalBlock {
+ public:
+  GraphCategoricalBlock(ColumnIdentifier col, PreprocessedVectorsPtr vectors,
+                        std::vector<std::unordered_set<std::string>> neighbours,
+                        std::vector<std::string> node_id_map)
+      : CategoricalBlock(std::move(col), vectors->dim, std::nullopt),
+        _vectors(std::move(vectors)),
+        _neighbours(std::move(neighbours)),
+        _node_id_map(std::move(node_id_map)) {}
+
+  std::string getResponsibleCategory(
+      uint32_t index, const std::string_view& category_value) const final {
+    (void)index;
+    return "Neighbours for the node '" + std::string(category_value) + "'";
+  }
+
+ protected:
+  std::exception_ptr encodeCategory(std::string_view category,
+                                    uint32_t num_categories_in_sample,
+                                    SegmentedFeatureVector& vec) final {
+    (void)num_categories_in_sample;
+    auto it = std::find(_node_id_map.begin(), _node_id_map.end(), category);
+    for (const auto& neighbour : _neighbours[it - _node_id_map.begin()]) {
+      _vectors->appendPreprocessedFeaturesToVector(neighbour, vec);
+    }
+    return nullptr;
+  }
+
+ private:
+  PreprocessedVectorsPtr _vectors;
+  std::vector<std::unordered_set<std::string>> _neighbours;
+  std::vector<std::string> _node_id_map;
+};
 
 /**
  * This class represents the binning logic for a regression as classification
