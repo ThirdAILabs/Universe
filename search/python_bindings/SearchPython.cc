@@ -1,3 +1,4 @@
+#include "BeamSearch.h"
 #include "DocSearchPython.h"
 #include <pybind11/stl.h>
 
@@ -64,6 +65,9 @@ void createSearchSubmodule(py::module_& module) {
       .def_static("deserialize_from_file", &PyDocSearch::deserialize_from_file,
                   py::arg("input_path"),
                   "Deserialize the DocRetrieval index from a file.");
+
+  search_submodule.def("beam_search", &beamSearchBatch, py::arg("probabiliies"),
+                       py::arg("transistion_matrix"), py::arg("k"));
 }
 
 }  // namespace thirdai::search::python
