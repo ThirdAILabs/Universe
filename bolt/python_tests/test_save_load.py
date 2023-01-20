@@ -5,6 +5,7 @@ from thirdai import bolt
 from utils import (
     gen_numpy_training_data,
     simple_bolt_model_in_distributed_training_wrapper,
+    check_parameters_across_two_model,
 )
 
 pytestmark = [pytest.mark.unit]
@@ -122,6 +123,10 @@ def test_save_fully_connected_layer_parameters():
     assert test_metrics3["categorical_accuracy"] >= 0.9
 
 
+# This test saves and loads hard copy(saves optimizer state) for a model
+# and then, trains the loaded model and the earlier model again.
+# If optimizer states are getting saved during hard_copy implies
+# that training the model again should not change the parameters.
 def test_hard_save_and_load():
     n_classes = 100
 
@@ -159,12 +164,7 @@ def test_hard_save_and_load():
     nodes_1 = distributed_training_wrapper_hard_copy.model().nodes()
     nodes_2 = distributed_training_wrapper.model().nodes()
 
-    for layer_1, layer_2 in zip(nodes_1, nodes_2):
-        if hasattr(layer_1, "weights"):
-            assert np.equal(layer_1.weights.get(), layer_2.weights.get()).all()
-        if hasattr(layer_1, "biases"):
-            assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
-
+    check_parameters_across_two_model(nodes_1, nodes_2)
     for batch_id in range(distributed_training_wrapper.num_batches()):
         distributed_training_wrapper_hard_copy.compute_and_store_batch_gradients(
             batch_idx=batch_id
@@ -193,8 +193,4 @@ def test_hard_save_and_load():
     nodes_1 = distributed_training_wrapper_hard_copy.model().nodes()
     nodes_2 = distributed_training_wrapper.model().nodes()
 
-    for layer_1, layer_2 in zip(nodes_1, nodes_2):
-        if hasattr(layer_1, "weights"):
-            assert np.equal(layer_1.weights.get(), layer_2.weights.get()).all()
-        if hasattr(layer_1, "biases"):
-            assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
+    check_parameters_across_two_model(nodes_1, nodes_2)

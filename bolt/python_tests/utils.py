@@ -375,3 +375,12 @@ def compressed_training(
     )
 
     return acc
+
+
+def check_parameters_across_two_model(nodes_1, nodes_2):
+
+    for layer_1, layer_2 in zip(nodes_1, nodes_2):
+        if hasattr(layer_1, "weights"):
+            assert np.equal(layer_1.weights.get(), layer_2.weights.get()).all()
+        if hasattr(layer_1, "biases"):
+            assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
