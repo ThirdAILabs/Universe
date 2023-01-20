@@ -3,9 +3,9 @@ import pytest
 from thirdai import bolt
 
 from utils import (
+    check_parameters_across_two_model,
     gen_numpy_training_data,
     simple_bolt_model_in_distributed_training_wrapper,
-    check_parameters_across_two_model,
 )
 
 pytestmark = [pytest.mark.unit]
