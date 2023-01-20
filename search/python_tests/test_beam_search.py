@@ -5,6 +5,11 @@ from thirdai import search
 
 @pytest.mark.unit
 def test_beam_search_no_transition_matrix():
+    """
+    Because the transition probablity matrix is all ones, this equivalent to the
+    argmax because there is no benefit from choosing anything other than the best
+    class at each point in the sequence.
+    """
     output_dim = 100
     probabilities = np.random.rand(10, 20, output_dim)
 
