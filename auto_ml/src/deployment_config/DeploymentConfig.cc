@@ -20,8 +20,9 @@ DeploymentConfig::createDataSourceAndModel(
       DatasetLabelDimensionParameter::PARAM_NAME,
       UserParameterInput(dataset_factory->getLabelDim()));
 
-  bolt::BoltGraphPtr model = _model_config->createModel(
-      dataset_factory->getInputNodes(), user_specified_parameters);
+  auto input_dims = dataset_factory->getInputDims();
+  bolt::BoltGraphPtr model =
+      _model_config->createModel(input_dims, user_specified_parameters);
 
   return {std::move(dataset_factory), std::move(model)};
 }
