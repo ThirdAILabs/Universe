@@ -83,10 +83,7 @@ class Circular:
         :return: returns True, after functions complete
         :rtype: bool
         """
-        if len(self.gradients) != 0:
-            self.model.gradient_reference().set_gradients(self.gradients)
-        else:
-            print("Gradients are:", self.gradients)
+        self.model.gradient_reference().set_gradients(self.gradients)
 
     def update_partitions(
         self,
