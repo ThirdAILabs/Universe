@@ -126,7 +126,8 @@ def add_distributed_to_udt():
         # initializing freeze-hash-tables=True by default.
         metrics = dist_model.train(freeze_hash_tables=True)
 
-        model = dist_model.get_model()
+        # hard copy should save the optimizer state
+        model = dist_model.get_model(hard_copy=True)
 
         self._set_model(trained_model=model)
 
