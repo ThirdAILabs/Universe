@@ -78,7 +78,8 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
       /* force_parallel= */ parallel_data_processing,
       /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
       /* contextual_columns= */ contextual_columns,
-      /* regression_binning= */ regression_binning);
+      /* regression_binning= */ regression_binning,
+      /*prediction_depth=*/prediction_depth);
 
   bolt::BoltGraphPtr model;
   if (model_config) {

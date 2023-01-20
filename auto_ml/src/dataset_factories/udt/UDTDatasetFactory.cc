@@ -1,16 +1,85 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/InputTypes.h>
+#include <queue>
 #include <stdexcept>
 
 namespace thirdai::automl::data {
 
+namespace {
+
+class WrapForLSTM : public dataset::DataSource {
+ public:
+  WrapForLSTM(dataset::DataSourcePtr source, char delimiter)
+      : DataSource(source->getMaxBatchSize()),
+        _source(source),
+        _header(true),
+        _delimiter(delimiter) {}
+
+  std::optional<std::string> nextLine() final {
+    if (_lines.empty()) {
+      std::optional<std::string> line = _source->nextLine();
+      if (!line) {
+        return std::nullopt;
+      }
+
+      if (_header) {
+        _header = false;  // There can only be one header.
+        return line;
+      }
+
+      std::vector<std::string_view> rows =
+          dataset::ProcessorUtils::parseCsvRow(line.value(), _delimiter);
+      std::string source(rows[0].data(), rows[0].size());
+      std::string target(rows[1].data(), rows[1].size());
+      for (uint32_t i = 0; i < target.size(); i++) {
+        std::string sample =
+            source + target.substr(0, i) + "," + target.substr(i, 1);
+        _lines.push(sample);
+      }
+    }
+
+    std::string result = _lines.front();
+    _lines.pop();
+    return result;
+  }
+
+  std::string resourceName() const final { return _source->resourceName(); }
+
+  std::optional<std::vector<std::string>> nextBatch() final {
+    std::vector<std::string> result;
+    uint32_t batch_size = _source->getMaxBatchSize();
+    std::optional<std::string> line = nextLine();
+    if (!line) {
+      return std::nullopt;
+    }
+
+    while (line && result.size() < batch_size) {
+      result.push_back(line.value());
+      line = nextLine();
+    }
+
+    return result;
+  }
+
+  void restart() final { _source->restart(); }
+
+ private:
+  dataset::DataSourcePtr _source;
+  std::queue<std::string> _lines;
+  bool _header;
+  char _delimiter;
+};
+}  // namespace
+
 UDTDatasetFactory::UDTDatasetFactory(
     const UDTConfigPtr& config, bool force_parallel,
     uint32_t text_pairgram_word_limit, bool contextual_columns,
-    std::optional<dataset::RegressionBinningStrategy> regression_binning)
+    std::optional<dataset::RegressionBinningStrategy> regression_binning,
+    uint32_t prediction_depth /*= 1*/)
     : _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
           config->data_types, config->provided_relationships,
           config->lookahead)),
@@ -24,13 +93,19 @@ UDTDatasetFactory::UDTDatasetFactory(
       _regression_binning(regression_binning),
       _vectors_map(processAllMetadata()),
       _labeled_history_updating_processor(makeLabeledUpdatingProcessor()),
-      _unlabeled_non_updating_processor(makeUnlabeledNonUpdatingProcessor()) {}
+      _unlabeled_non_updating_processor(makeUnlabeledNonUpdatingProcessor()),
+      _prediction_depth(prediction_depth) {}
 
 dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     dataset::DataSourcePtr data_source, bool training) {
   auto column_number_map =
       makeColumnNumberMapFromHeader(*data_source, _config->delimiter);
   _column_number_to_name = column_number_map.getColumnNumToColNameMap();
+
+  if (_prediction_depth > 1) {
+    data_source =
+        std::make_shared<WrapForLSTM>(data_source, _config->delimiter);
+  }
 
   // The batch processor will treat the next line as a header
   // Restart so batch processor does not skip a sample.

@@ -51,16 +51,18 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
                              uint32_t text_pairgram_word_limit,
                              bool contextual_columns = false,
                              std::optional<dataset::RegressionBinningStrategy>
-                                 regression_binning = std::nullopt);
+                                 regression_binning = std::nullopt,
+                             uint32_t prediction_depth = 1);
 
   static std::shared_ptr<UDTDatasetFactory> make(
       const UDTConfigPtr& config, bool force_parallel,
       uint32_t text_pairgram_word_limit, bool contextual_columns = false,
       std::optional<dataset::RegressionBinningStrategy> regression_binning =
-          std::nullopt) {
+          std::nullopt,
+      uint32_t prediction_depth = 1) {
     return std::make_shared<UDTDatasetFactory>(
         config, force_parallel, text_pairgram_word_limit, contextual_columns,
-        regression_binning);
+        regression_binning, prediction_depth);
   }
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
@@ -284,6 +286,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   PreprocessedVectorsMap _vectors_map;
   dataset::GenericBatchProcessorPtr _labeled_history_updating_processor;
   dataset::GenericBatchProcessorPtr _unlabeled_non_updating_processor;
+
+  uint32_t _prediction_depth;
 
   // Private constructor for cereal.
   UDTDatasetFactory() {}
