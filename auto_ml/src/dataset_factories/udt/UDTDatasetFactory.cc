@@ -13,7 +13,7 @@ namespace {
 
 class WrapForLSTM : public dataset::DataSource {
  public:
-  WrapForLSTM(dataset::DataSourcePtr source, char delimiter)
+  WrapForLSTM(const dataset::DataSourcePtr& source, char delimiter)
       : DataSource(source->getMaxBatchSize()),
         _source(source),
         _header(true),
