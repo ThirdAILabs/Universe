@@ -1,9 +1,9 @@
 import os
+import pickle
 import textwrap
 from functools import wraps
 from time import time
 
-import pickle
 import ray
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, logging

@@ -2,6 +2,7 @@ import ray
 from thirdai._distributed_bolt.backend.worker import Worker
 from thirdai._thirdai import bolt
 
+
 # setting max_restarts=-1 implies ray with start this worker automatically
 # with the constructor argument already cached in ray object store. Read more
 # about it here: https://docs.ray.io/en/latest/ray-core/actors/fault-tolerance.html

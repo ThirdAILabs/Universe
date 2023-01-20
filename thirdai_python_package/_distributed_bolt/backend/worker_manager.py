@@ -1,9 +1,10 @@
 import copy
+from dataclasses import dataclass
+from typing import Any, Callable, Iterator, List, Mapping, Tuple, Union
+
 import numpy as np
 import ray
-from dataclasses import dataclass
 from ray.exceptions import RayActorError, RayError, RayTaskError
-from typing import Any, Callable, Iterator, List, Mapping, Tuple, Union
 
 
 class ResultOrError:
