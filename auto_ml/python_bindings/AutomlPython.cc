@@ -450,7 +450,7 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
       /* options = */ createUserInputMap(options));
 }
 
-UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
+UniversalDeepTransformer UDTFactory::buildPseudoLSTM(
     py::object& obj, data::ColumnDataTypes data_types,
     data::UserProvidedTemporalRelationships temporal_tracking_relationships,
     std::string target_col, std::optional<uint32_t> n_target_classes,
@@ -496,6 +496,15 @@ void UDTFactory::saveTextClassifier(const TextClassifier& text_classifier,
   text_classifier.save_stream(filestream);
 }
 
+void UDTFactory::savePseudoLSTM(const TextClassifier& text_classifier,
+                                const std::string& filename) {
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  filestream.write(
+      reinterpret_cast<const char*>(&UDT_PSEUDO_LSTM_IDENTIFIER, 1);
+  text_classifier.save_stream(filestream);
+}
+
 py::object UDTFactory::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
@@ -514,7 +523,7 @@ py::object UDTFactory::load(const std::string& filename) {
     return py::cast(TextClassifier::load_stream(filestream));
   }
 
-  if (first_byte == UDT_TEXT_CLASSIFIER_IDENTIFIER) {
+  if (first_byte == UDT_PSEUDO_LSTM_IDENTIFIER) {
     return py::cast(PseudoLSTM::load_stream(filestream));
   }
 

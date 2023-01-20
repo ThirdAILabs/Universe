@@ -71,7 +71,6 @@ class UDTFactory {
       const std::optional<std::string>& model_config, const py::dict& options
 
   );
-  )
 
   // These need to be here instead of inside UDTFactory because otherwise I was
   // getting weird linking errors

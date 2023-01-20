@@ -5,10 +5,16 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Vocabulary.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
+#include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/InputTypes.h>
+#include <dataset/src/blocks/Text.h>
+#include <dataset/src/utils/SegmentedFeatureVector.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -21,7 +27,11 @@ namespace thirdai::automl::models {
 // data-loading and training internally.
 
 class LSTMClassifier final : public ModelPipeline {
+  static constexpr uint32_t VOCABULARY_SIZE = 10000;
+
  public:
+  LSTMClassifier(uint32_t n_classes = VOCABULARY_SIZE)
+      : _vocab(dataset::ThreadSafeVocabulary::make(n_classes)) {}
   void train(const std::shared_ptr<dataset::DataSource>& data_source,
              bolt::TrainConfig& train_config,
              const std::optional<ValidationOptions>& validation,
@@ -29,25 +39,62 @@ class LSTMClassifier final : public ModelPipeline {
     // Command parsing and dataloading here.
     // LSTM generates multiple batches from a line.
     char delimiter = ',';  // HARDCODE
+
+    // We always expect a header for v1
     std::optional<std::string> line = data_source->nextLine();
     std::vector<std::string> header_columns =
         dataset::ProcessorUtils::parseCsvRow(line.value(), delimiter);
 
     uint32_t batch_count = 0;
+    uint32_t INPUT_DIM = 1024;
     uint32_t batch_size = data_source->getMaxBatchSize();
     bool eof = false;
     while (eof) {
       // Buffer in lines, create a batch.
-      std::vector<BoltBatch> batches;
+      std::vector<BoltBatch> input_batches;
+      std::vector<BoltBatch> label_batches;
       std::vector<BoltVector> inputs;
       std::vector<BoltVector> labels;
-      while (batch_count < max_in_memory_batches) {
-        sample_count = 0;
-        while (line = data_source->nextLine() && sample_count < batch_count) {
-          std::vector<std::string> rows =
+
+      std::shared_ptr<Block> text =
+          std::make_shared<dataset::TextBlock>(0, INPUT_DIM);
+
+      while (input_batches.size() < max_in_memory_batches) {
+        uint32_t sample_count = 0;
+        line = data_source->nextLine();
+        while (line) {
+          std::vector<std::string_view> rows =
               dataset::ProcessorUtils::parseCsvRow(line.value(), delimiter);
-          // There are only two rows.
-          // Where do I pull the vector-size from for the model?
+
+          std::string source = std::string(rows[0].data(), rows[0].size());
+          std::string target = std::string(rows[1].data(), rows[1].size());
+
+          for (size_t i = 0; i < target.size(); i++) {
+            std::string adjusted_source = source + target.substr(0, i);
+            std::string adjusted_target = target.substr(i, 1);
+            std::string sample = adjusted_source + "," + adjusted_target;
+
+            std::vector<std::string_view> sample_rows =
+                dataset::ProcessorUtils::parseCsvRow(line.value(), delimiter);
+
+          std:
+            std::shared_ptr<dataset::SegmentedFeatureVector>
+                segmented_feature_vector =
+                    std::make_shared<dataset::SegmentedDenseFeatureVector>();
+            dataset::RowSampleRef ref(sample_rows);
+            text->buildSegment(sample_rows, *segmented_feature_vector);
+            inputs.push_back(segmented_feature_vector->toBoltVector());
+
+            uint32_t target_id = _vocab->getUid(adjusted_target);
+            labels.push_back(BoltVector::makeSparseVector({target_id}, {1.0}));
+
+            if (sample_count == batch_count) }{
+              // Cleave off a batch.
+              input_batches.emplace_back(std::move(inputs));
+              label_batches.emplace_back(std::move(labels));
+            }
+          
+          line = data_source->nextLine();
         }
       }
 
@@ -63,6 +110,11 @@ class LSTMClassifier final : public ModelPipeline {
         eof = true;
       }
     }
+  }
+
+  template <class... Args>
+  static std::shared_ptr<LSTMClassifier> buildLSTM(Args&&... args) {
+    return std::make_shared<LSTMClassifier>();
   }
 
   py::object predict(const MapInput& sample_in, bool use_sparse_inference,
@@ -162,5 +214,6 @@ class LSTMClassifier final : public ModelPipeline {
 
  private:
   uint32_t _prediction_depth;
+  dataset::ThreadSafeVocabularyPtr vocab_;
 };
 }  // namespace thirdai::automl::models
