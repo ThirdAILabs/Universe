@@ -1,5 +1,4 @@
 import os
-import pickle
 import textwrap
 from functools import wraps
 from time import time
