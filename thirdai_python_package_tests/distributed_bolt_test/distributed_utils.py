@@ -19,7 +19,6 @@ def ray_two_node_cluster_config():
         },
     )
     mini_cluster.add_node(num_cpus=1)
-    mini_cluster.add_node(num_cpus=1)
 
     # directly yielding mini_cluster returns a generator for cluster_config,
     # rather than cluster_config itself and those generators were just using
@@ -41,7 +40,7 @@ def ray_two_node_cluster_config():
             runtime_env={"working_dir": working_dir},
             ignore_reinit_error=True,
         )
-        return cluster_config
+        return cluster_config, mini_cluster
 
     yield _make_cluster_config
 
@@ -58,6 +57,11 @@ def split_into_2(file_to_split, destination_file_1, destination_file_2):
                         f_1.write(line)
                     else:
                         f_2.write(line)
+
+
+def get_non_head_nodes(cluster):
+    """Get all non-head nodes."""
+    return list(filter(lambda x: x.head is False, cluster.list_all_nodes()))
 
 
 def check_models_are_same_on_first_two_nodes(distributed_model):

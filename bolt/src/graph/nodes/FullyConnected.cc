@@ -215,7 +215,7 @@ void FullyConnectedNode::nodeSaveType(bool whether_hard_save) {
   if (getState() != NodeState::Compiled &&
       getState() != NodeState::PreparedForBatchProcessing) {
     throw exceptions::NodeStateMachineError(
-        "Cannot call disable_sparse_parameter_updates until the model "
+        "Cannot call nodeSaveType until the model "
         "containing the node is compiled.");
   }
   _layer->nodeSaveType(whether_hard_save);

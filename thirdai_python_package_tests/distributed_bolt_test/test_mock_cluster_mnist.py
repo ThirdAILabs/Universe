@@ -14,6 +14,7 @@ from distributed_utils import (
     check_models_are_same_on_first_two_nodes,
     ray_two_node_cluster_config,
     split_into_2,
+    get_non_head_nodes,
 )
 from thirdai import bolt, dataset
 
@@ -63,7 +64,7 @@ def get_mnist_model():
     return model
 
 
-def get_distributed_mnist_model(request, ray_two_node_cluster_config):
+def get_distributed_mnist_model(request, ray_two_node_cluster_config, train_config):
     import thirdai.distributed_bolt as db
 
     model = get_mnist_model()
@@ -81,13 +82,14 @@ def get_distributed_mnist_model(request, ray_two_node_cluster_config):
             f"{os.getcwd()}/mnist_data/part2",
         ]
     ]
-    train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=3)
+    cluster_config, mini_cluster = ray_two_node_cluster_config(request.param)
     distributed_model = db.DistributedDataParallel(
-        cluster_config=ray_two_node_cluster_config(request.param),
+        cluster_config=cluster_config,
         model=model,
         train_config=train_config,
         train_sources=train_sources,
     )
+    return distributed_model, mini_cluster
 
 
 def evaluated_distributed_mnist_model(distributed_model):
@@ -106,11 +108,35 @@ def evaluated_distributed_mnist_model(distributed_model):
 @pytest.fixture(scope="module")
 def train_distributed_bolt_check(request, ray_two_node_cluster_config):
 
-    distributed_model = get_distributed_mnist_model(
-        request, ray_two_node_cluster_config
+    train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=3)
+    distributed_model, _ = get_distributed_mnist_model(
+        request, ray_two_node_cluster_config, train_config
     )
     distributed_model.train()
 
+    metrics = evaluated_distributed_mnist_model(distributed_model)
+
+    print(metrics)
+
+    yield metrics
+
+
+@pytest.fixture(scope="module")
+def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config):
+
+    train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=1)
+    distributed_model, mini_cluster = get_distributed_mnist_model(
+        request, ray_two_node_cluster_config, train_config
+    )
+    distributed_model.train()
+    node_to_kill = get_non_head_nodes(mini_cluster)[0]
+    mini_cluster.remove_node(node_to_kill)
+    # adding some waiting time
+    import time
+
+    time.sleep(2)
+    mini_cluster.add_node(num_cpus=1)
+    distributed_model.train()
     metrics = evaluated_distributed_mnist_model(distributed_model)
 
     print(metrics)
@@ -133,3 +159,15 @@ def test_distributed_mnist(train_distributed_bolt_check):
         assert False, "not enough cpus for distributed training"
 
     assert train_distributed_bolt_check[0]["categorical_accuracy"] > 0.9
+
+
+@pytest.mark.parametrize(
+    "train_distributed_bolt_fault_tolerance", ["linear"], indirect=True
+)
+def test_distributed_fault_tolerance(train_distributed_bolt_fault_tolerance):
+    import multiprocessing
+
+    if multiprocessing.cpu_count() < 2:
+        assert False, "not enough cpus for distributed training"
+
+    assert train_distributed_bolt_fault_tolerance[0]["categorical_accuracy"] > 0.9
