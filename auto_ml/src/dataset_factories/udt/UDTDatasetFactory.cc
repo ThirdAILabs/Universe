@@ -65,7 +65,13 @@ class WrapForLSTM : public dataset::DataSource {
     return result;
   }
 
-  void restart() final { _source->restart(); }
+  void restart() final {
+    while (!_lines.empty()) {
+      _lines.pop();
+    }
+    _header = true;
+    _source->restart();
+  }
 
  private:
   dataset::DataSourcePtr _source;
@@ -98,14 +104,14 @@ UDTDatasetFactory::UDTDatasetFactory(
 
 dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     dataset::DataSourcePtr data_source, bool training) {
-  auto column_number_map =
-      makeColumnNumberMapFromHeader(*data_source, _config->delimiter);
-  _column_number_to_name = column_number_map.getColumnNumToColNameMap();
-
   if (_prediction_depth > 1) {
     data_source =
         std::make_shared<WrapForLSTM>(data_source, _config->delimiter);
   }
+
+  auto column_number_map =
+      makeColumnNumberMapFromHeader(*data_source, _config->delimiter);
+  _column_number_to_name = column_number_map.getColumnNumToColNameMap();
 
   // The batch processor will treat the next line as a header
   // Restart so batch processor does not skip a sample.
