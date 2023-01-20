@@ -24,3 +24,30 @@ def test_beam_search_no_transition_matrix():
     correct = np.argmax(probabilities, axis=2)
 
     assert np.array_equal(np.array(best_sequences), correct)
+
+
+@pytest.mark.unit
+def test_beam_search_differs_from_gready_search():
+    """
+    This checks that the search algorithm correctly uses the transition matrix.
+    The probability matrix looks like this (seq length = 3):
+
+        0.9   0.1
+        0.45  0.55
+        0.05  0.95
+
+    And so a simple greedy approach will yield [0, 1, 1]. However when we consider
+    the transition matrix:
+
+        0.9  0.1
+        0.4  0.6
+
+    We see that the best path is [0, 0, 1]
+    """
+    probabilities = np.array([[[0.9, 0.1], [0.45, 0.55], [0.05, 0.95]]])
+
+    transition_matrix = [[0.9, 0.1], [0.4, 0.6]]
+
+    results = search.beam_search(probabilities, transition_matrix, k=2)
+
+    assert np.array_equal(results[0][-1][0], np.array([0, 0, 1]))

@@ -1,11 +1,18 @@
 #include "BeamSearch.h"
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <iostream>
 #include <queue>
 #include <stdexcept>
 
 namespace thirdai::search {
 
+/**
+ * C++ priority queues are structured such that the order the elements so that
+ * the comparator returns true for any queue[i], queue[j] if i < j. The "top" of
+ * the queue is the last element in this sequence. Since we are trying to
+ * minimize the score we use the following comparator.
+ */
 struct Minimize {
   bool operator()(const SeqResult& a, const SeqResult& b) {
     return a.second < b.second;
@@ -15,24 +22,36 @@ struct Minimize {
 using CandidateQueue =
     std::priority_queue<SeqResult, std::vector<SeqResult>, Minimize>;
 
+// Helper function to preform beam search on a single element of the batch.
 std::vector<SeqResult> beamSearch(const float* probabilies, uint32_t seq_len,
                                   uint32_t output_dim,
                                   const NumpyArray& transistion_matrix,
                                   uint32_t k) {
+  // We keep a list of the top-k best scoring partial sequences that we update
+  // at each step up to seq_len. This is what separates this approach from other
+  // search algorithms, we limit the computations by only considering the best k
+  // possible sequences at any point, instead of all possible sequences.
   std::vector<SeqResult> candidate_sequences = {{{}, 0.0}};
 
   for (uint32_t seq_idx = 0; seq_idx < seq_len; seq_idx++) {
+    // This will be ordered such that the worst scoring sequence is on the top
+    // of the queue so we can easily check if a given sequence is better than at
+    // least one of the candidates.
     CandidateQueue top_k;
     for (uint32_t i = 0; i < output_dim; i++) {
       for (const auto& seq : candidate_sequences) {
-        float probability = std::log(probabilies[seq_idx * output_dim + i]);
+        float score =
+            seq.second - std::log(probabilies[seq_idx * output_dim + i]);
 
+        // Don't compute any transition probability for the first element of the
+        // sequence.
         if (!seq.first.empty()) {
-          probability += std::log(transistion_matrix.at(seq.first.back(), i));
+          score -= std::log(transistion_matrix.at(seq.first.back(), i));
         }
 
-        float score = seq.second - probability;
-
+        // If we have not found k sequences yet, add the current sequence to the
+        // set of candidates. If we have found k sequences then add the current
+        // sequence if its score is better than the worst candidate.
         if (top_k.size() < k || score < top_k.top().second) {
           std::vector<uint32_t> new_seq = seq.first;
           new_seq.push_back(i);
@@ -48,6 +67,8 @@ std::vector<SeqResult> beamSearch(const float* probabilies, uint32_t seq_len,
     candidate_sequences.clear();
     candidate_sequences.reserve(top_k.size());
 
+    // Update the candidate sequences with the new sequences that are one item
+    // longer.
     while (!top_k.empty()) {
       candidate_sequences.push_back(top_k.top());
       top_k.pop();
