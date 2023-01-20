@@ -626,10 +626,10 @@ void createLossesSubmodule(py::module_& nn_submodule) {
       .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
 
   py::class_<BinaryCrossEntropyLoss, std::shared_ptr<BinaryCrossEntropyLoss>,
-             LossFunction>(losses_submodule, "BinaryCrossEntropy",
-                           "A loss function for multi-label (multiple class "
-                           "labels per each sample) "
-                           "classification tasks.")
+             LossFunction>(
+      losses_submodule, "BinaryCrossEntropy",
+      "A loss function for multi-label (multiple class labels per each sample) "
+      "classification tasks.")
       .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
 
   py::class_<MeanSquaredError, std::shared_ptr<MeanSquaredError>, LossFunction>(
