@@ -135,9 +135,9 @@ def train_bolt_v2(config: BenchmarkConfig, train_x, train_y, test_x, test_y):
         )
 
         metrics = {
-            "epoch_time": history["all"]["epoch_times"][0],
-            "val_time": history["all"]["val_times"][0],
-            "categorical_accuracy": history[output.name()]["val_categorical_accuracy"][0],
+            "epoch_time": history["all"]["epoch_times"][-1],
+            "val_time": history["all"]["val_times"][-1],
+            "categorical_accuracy": history[output.name()]["val_categorical_accuracy"][-1],
         }
         mlflow.log_metrics(metrics)
 
