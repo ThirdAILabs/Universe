@@ -33,7 +33,7 @@ std::vector<SeqResult> beamSearch(const float* probabilies, uint32_t seq_len,
 
         float score = seq.second - probability;
 
-        if (score < top_k.top().second || top_k.size() < k) {
+        if (top_k.size() < k || score < top_k.top().second) {
           std::vector<uint32_t> new_seq = seq.first;
           new_seq.push_back(i);
 
