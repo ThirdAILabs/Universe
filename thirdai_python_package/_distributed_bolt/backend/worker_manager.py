@@ -63,6 +63,9 @@ class RemoteCallResults:
     def __init__(self):
         self.result_or_errors: List[CallResult] = []
 
+    def get_front(self):
+        return self.result_or_errors[0]
+
     def add_result(self, worker_id: int, result_or_error: ResultOrError):
         self.result_or_errors.append(CallResult(worker_id, result_or_error))
 
@@ -120,6 +123,15 @@ class FaultTolerantWorkerManager:
         if worker_id not in self.remote_worker_states:
             raise ValueError(f"Unknown worker id: {worker_id}")
         return self.remote_worker_states[worker_id].is_healthy
+
+    def get_healthy_worker_id(self):
+
+        remote_worker_ids = list(self.workers.keys())
+        for worker_id in remote_worker_ids:
+            if self.is_worker_healthy(worker_id=worker_id):
+                return worker_id
+
+        return None
 
     def call_workers(
         self,
@@ -183,6 +195,10 @@ class FaultTolerantWorkerManager:
                     # Take this worker out of service and wait for Ray Core to
                     # restore it.
                     if self.is_worker_healthy(worker_id):
+                        print(
+                            f"Ray error, taking worker {worker_id} out of service. "
+                            f"{str(e)}"
+                        )
                         self.logging.warning(
                             f"Ray error, taking worker {worker_id} out of service. "
                             f"{str(e)}"

@@ -3,6 +3,7 @@ import textwrap
 from functools import wraps
 from time import time
 
+import pickle
 import ray
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, logging
@@ -64,31 +65,22 @@ class Worker:
         return func(self, *args, **kwargs)
 
     def prepare_for_training(
-        self, train_source, train_config: bolt.TrainConfig, bolt_graph=None
+        self,
+        train_source,
+        train_config: bolt.TrainConfig,
+        bolt_graph,
+        chunks_to_skip: int = 0,
+        batch_to_run: int = 0,
     ):
         self.train_source = train_source
 
-        if self.id != 0:
-            chunks_to_skip, batch_to_run = ray.get(
-                self.primary_worker.get_train_source_pointers.remote()
-            )
-        else:
-            chunks_to_skip, batch_to_run = 0, 0
-
         self.train_source.load(chunks_to_skip=chunks_to_skip)
         start = time()
-        if self.id == 0:
-            self.model = bolt.DistributedTrainingWrapper(
-                model=self.wrapped_model,
-                train_config=train_config,
-                worker_id=self.id,
-            )
-        else:
-            self.model = bolt.DistributedTrainingWrapper(
-                model=bolt_graph,
-                train_config=train_config,
-                worker_id=self.id,
-            )
+        self.model = bolt.DistributedTrainingWrapper(
+            model=ray.get(bolt_graph),
+            train_config=train_config,
+            worker_id=self.id,
+        )
         end = time()
 
         logging.info(f"func initializing_model | time {(end - start)*1000} ms")
@@ -182,7 +174,6 @@ class Worker:
         logging.info(
             f"func compute_and_store_next_batch_gradients | batch {self.batch_id_within_dataset} completed"
         )
-        print(f"Running Worker Id:{self.id}, Batch Id:{self.batch_id_within_dataset}")
         self.batch_id_within_dataset += 1
         if self.batch_id_within_dataset == self.model.num_batches():
             return self._try_load_new_datasets_into_model()
@@ -278,10 +269,23 @@ class Worker:
         self.model.freeze_hash_tables(True)
 
     @timed
-    def get_model(self):
-        print("Id: ", self.id, " returning model.")
-        return self.model.model()
+    def get_model(self, hard_copy=False):
+        return self.model.model(hard_copy)
 
     @timed
     def ping(self):
         return "ping"
+
+    def get_train_source_pointers(self):
+        """
+        This function returns the current loaded chunk and the batch_id within dataset which is
+        running for loaded dataset on head node.
+
+        Returns:
+            Tuple[int,int]: The first value specifies the id for current loaded chunk, it would be non-zero just in case of streaming scenario.
+        """
+
+        return (
+            self.train_source.get_current_data_chunk_id() - 1,
+            self.batch_id_within_dataset,
+        )

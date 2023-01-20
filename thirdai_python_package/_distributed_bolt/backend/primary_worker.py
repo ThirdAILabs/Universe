@@ -2,8 +2,10 @@ import ray
 from thirdai._distributed_bolt.backend.worker import Worker
 from thirdai._thirdai import bolt
 
-
-@ray.remote(max_restarts=1)
+# setting max_restarts=-1 implies ray with start this worker automatically
+# with the constructor argument already cached in ray object store. Read more
+# about it here: https://docs.ray.io/en/latest/ray-core/actors/fault-tolerance.html
+@ray.remote(max_restarts=-1)
 class PrimaryWorker(Worker):
     """
     This is a ray remote class(Actor). Read about them here.
@@ -11,7 +13,7 @@ class PrimaryWorker(Worker):
 
         PrimaryWorker is a ray actor which inherits all the function from
         Worker class. Apart from acting as a Worker, it also extends the worker
-        class to implement functions to control the training. It controls
+        class to implement functions to control the training. It controlsß
         training on each of the node(which batch number to train) and communication
         between the worker nodes.
 
@@ -22,11 +24,9 @@ class PrimaryWorker(Worker):
     def __init__(
         self,
         num_workers: int,
-        model_to_wrap: bolt.nn.Model,
         communication_type: str,
         log_dir: str,
     ):
-        self.wrapped_model = model_to_wrap
 
         super().__init__(
             num_workers=num_workers,
@@ -55,16 +55,3 @@ class PrimaryWorker(Worker):
         """
         self.weights_biases = self.return_params()
         return self.weights_biases
-
-    def get_train_source_pointers(self):
-        """
-        This function returns the current loaded chunk and the batch_id within dataset which is
-        running for loaded dataset on head node.
-
-        Returns:
-            Tuple[int,int]: The first value specifies the id for current loaded chunk, it would be non-zero just in case of streaming scenario.
-        """
-        return (
-            self.train_source.get_current_data_chunk_id() - 1,
-            self.batch_id_within_dataset,
-        )

@@ -2,7 +2,6 @@ import time
 import numpy as np
 import ray
 from ray.exceptions import RayError
-from .worker_manager import FaultTolerantWorkerManager
 
 
 class TrainStateManager:
@@ -19,6 +18,7 @@ class TrainStateManager:
         communication_type,
         train_source,
         train_config,
+        worker_manager,
     ):
         """
         Initializes the TrainStateManager
@@ -38,10 +38,7 @@ class TrainStateManager:
         self.logging = logging
         self.communication_type = communication_type
         self.logging.info(f"Using {communication_type} method for communication")
-
-        self.worker_manager = FaultTolerantWorkerManager(
-            workers=self.workers, init_id=0, logging=logging
-        )
+        self.worker_manager = worker_manager
         # This tracks the total number of batches completed in this epoch for
         # the distributed job.
         # This differs from the batch count on each worker, which just tracks
@@ -123,11 +120,13 @@ class TrainStateManager:
                 )
                 update_id -= 1
 
-    def check_worker_availability(self, worker_wait_time_out=50):
+    def check_worker_availability(self, worker_wait_time_out=1000):
         time_waiting = 0
+        restored_workers_not_started = []
         while (
             self.worker_manager.num_healthy_workers()
             < self.worker_manager.num_workers()
+            and time_waiting < worker_wait_time_out
         ):
             self.logging.info(
                 f"Probing unhealthy worker!! Total workers:{self.worker_manager.num_workers()}, Unhealthy workers:{self.worker_manager.num_workers()-self.worker_manager.num_healthy_workers()}"
@@ -136,48 +135,66 @@ class TrainStateManager:
 
             time.sleep(1)
             time_waiting += 1
+            # find workers which are restored
             restored_workers = self.worker_manager.probe_unhealthy_workers()
+            restored_workers_not_started.extend(restored_workers)
             self.logging.info(
                 f"Preparing restored workers for training: {restored_workers}"
             )
-            for restored_worker_id in restored_workers:
-                if restored_worker_id != 0:
-                    self.worker_manager.foreach_worker(
-                        lambda worker: worker.prepare_for_training(
-                            self.train_source[restored_worker_id],
-                            self.train_config,
-                            bolt_graph=ray.get(self.workers[0].get_model.remote()),
-                        ),
-                        remote_worker_ids=[restored_worker_id],
-                    )
+            self.logging.info(
+                f"Total workers to start training: {restored_workers_not_started}"
+            )
+            if len(restored_workers_not_started) > 0:
+                # find a worker which is healthy
+                healthy_worker_id = self.worker_manager.get_healthy_worker_id()
+
+                remote_bolt_graph_model = self.worker_manager.foreach_worker(
+                    lambda worker: worker.get_model(hard_copy=True),
+                    remote_worker_ids=[healthy_worker_id],
+                ).get_front()
+                remote_train_source_pointers = self.worker_manager.foreach_worker(
+                    lambda worker: worker.get_train_source_pointers(),
+                    remote_worker_ids=[healthy_worker_id],
+                ).get_front()
+
+                # check whether this healthy worker doesn't fails during model fetch
+                # function is called on only one worker, hence just checking for index 0
+                if remote_train_source_pointers.ok and remote_bolt_graph_model.ok:
+                    chunks_to_skip, batch_to_run = remote_train_source_pointers.get()
+                    bolt_graph_model = remote_bolt_graph_model.get()
                 else:
-                    self.worker_manager.foreach_worker(
-                        lambda worker: worker.prepare_for_training(
-                            self.train_source[restored_worker_id],
-                            self.train_config,
-                        ),
-                        remote_worker_ids=[restored_worker_id],
+                    continue
+
+                bolt_graph_model_ref = ray.put(bolt_graph_model)
+                # we are assuming atleast one of the worker is healthy
+                if healthy_worker_id != None:
+                    # atleast one of the worker is healthy
+                    for restored_worker_id in restored_workers_not_started:
+                        # ask each worker to get model from healthy worker
+                        self.worker_manager.foreach_worker(
+                            lambda worker: worker.prepare_for_training(
+                                self.train_source[restored_worker_id],
+                                self.train_config,
+                                bolt_graph=bolt_graph_model_ref,
+                                chunks_to_skip=chunks_to_skip,
+                                batch_to_run=batch_to_run,
+                            ),
+                            remote_worker_ids=[restored_worker_id],
+                        )
+                else:
+                    raise NotImplementedError(
+                        f"None of the workers are healthy. Distributed BOLT couldn't restart the training. Restart the training again from last saved state."
                     )
-            if time_waiting >= worker_wait_time_out:
-                raise f"Worker is not available, waited for {worker_wait_time_out}"
-
-    def check_models_are_same_on_first_two_nodes(self, model_node_1, model_node_2):
-
-        nodes_1 = model_node_1.nodes()
-        nodes_2 = model_node_2.nodes()
-        for layer_1, layer_2 in zip(nodes_1, nodes_2):
-            if hasattr(layer_1, "weights"):
-                assert np.allclose(layer_1.weights.get(), layer_2.weights.get())
-            if hasattr(layer_1, "biases"):
-                assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
+                # we can clear this list here, because either the workers are prepared
+                # for training, or they have been marked unhealthy by worker_manager
+                # which means they would be probed again.
+                restored_workers_not_started.clear()
 
     def train_batch(self, epoch):
         """
         Trains the model and returns whether all workers have a next batch.
         """
         self.check_worker_availability()
-        models = [ray.get(w.get_model.remote()) for w in self.workers]
-        self.check_models_are_same_on_first_two_nodes(models[0], models[1])
         all_workers_have_next_batch = self._compute_and_store_next_batch_gradients()
         self._communicate()
         self._update_parameters()

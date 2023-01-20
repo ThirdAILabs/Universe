@@ -10,6 +10,8 @@ from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
+
+from thirdai._distributed_bolt.backend.worker_manager import FaultTolerantWorkerManager
 from thirdai._distributed_bolt.dataset_loaders import (
     DistributedDatasetLoader,
     DistributedUDTDatasetLoader,
@@ -289,19 +291,12 @@ class DistributedDataParallel:
         # serializing it for every worker individually. See
         # https://docs.ray.io/en/latest/ray-core/tips-for-first-time.html#tip-3-avoid-passing-same-object-repeatedly-to-remote-tasks
         # for more details.
-        ray_model_ref = ray.put(model)
+        bolt_graph_ref = ray.put(model)
 
         self.primary_worker = cluster_config.primary_worker_config.remote(
             num_workers=cluster_config.num_workers,
-            model_to_wrap=ray_model_ref,
             communication_type=cluster_config.communication_type,
             log_dir=cluster_config.log_dir,
-        )
-        ray.get(
-            self.primary_worker.prepare_for_training.remote(
-                train_source=train_sources[0],
-                train_config=train_config,
-            )
         )
 
         self.replica_workers = []
@@ -329,18 +324,34 @@ class DistributedDataParallel:
                     friend=self.replica_workers[worker_id - 1],
                 )
                 self.replica_workers.append(replica_worker)
-            ray.get(
-                self.replica_workers[-1].prepare_for_training.remote(
-                    train_source=train_sources[worker_id],
-                    train_config=train_config,
-                    bolt_graph=model,
-                )
-            )
 
         self.workers = [self.primary_worker] + self.replica_workers
 
+        self.worker_manager = FaultTolerantWorkerManager(
+            workers=self.workers, init_id=0, logging=self.logging
+        )
+
+        self.worker_manager.foreach_worker(
+            [
+                lambda worker: worker.prepare_for_training(
+                    self.train_sources[worker_id],
+                    self.train_config,
+                    bolt_graph=bolt_graph_ref,
+                )
+                for worker_id in range(len(self.workers))
+            ],
+        )
+
+        num_batches_remote_results = self.worker_manager.foreach_worker(
+            lambda worker: worker.num_of_batches()
+        )
+
         self.num_of_batches = min(
-            ray.get([worker.num_of_batches.remote() for worker in self.workers])
+            [
+                num_batches_ref.get()
+                for num_batches_ref in num_batches_remote_results
+                if num_batches_ref.ok
+            ]
         )
 
         self.logging.info(
@@ -376,6 +387,7 @@ class DistributedDataParallel:
             self.communication_type,
             self.train_sources,
             self.train_config,
+            self.worker_manager,
         )
 
         starting_epoch = 0
@@ -390,6 +402,7 @@ class DistributedDataParallel:
             starting_epoch += 1
 
         for epoch in range(starting_epoch, self.train_config.num_epochs):
+
             self.train_on_epoch(train_state_manager=train_state_manager, epoch=epoch)
 
         return {
