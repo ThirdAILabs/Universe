@@ -169,17 +169,27 @@ class TrainStateManager:
                 # we are assuming atleast one of the worker is healthy
                 if healthy_worker_id != None:
                     # atleast one of the worker is healthy
-                    for restored_worker_id in restored_workers_not_started:
-                        # ask each worker to get model from healthy worker
+                    # ask each worker to get model from healthy worker
+                    self.worker_manager.foreach_worker(
+                        lambda worker: worker.prepare_for_training(
+                            bolt_graph=bolt_graph_model_ref,
+                            chunks_to_skip=chunks_to_skip,
+                            batch_to_run=batch_to_run,
+                        ),
+                        remote_worker_ids=restored_workers_not_started,
+                    )
+                    # primary worker is restored when we are doing circular
+                    # communication, we need to set the friend because we are not
+                    # passing it in constructor
+                    if (
+                        0 in restored_workers_not_started
+                        and self.communication_type == "circular"
+                    ):
                         self.worker_manager.foreach_worker(
-                            lambda worker: worker.prepare_for_training(
-                                self.train_source[restored_worker_id],
-                                self.train_config,
-                                bolt_graph=bolt_graph_model_ref,
-                                chunks_to_skip=chunks_to_skip,
-                                batch_to_run=batch_to_run,
+                            func=lambda worker: worker.set_friend(
+                                self.workers[len(self.workers) - 1]
                             ),
-                            remote_worker_ids=[restored_worker_id],
+                            remote_worker_ids=[0],
                         )
                 else:
                     raise NotImplementedError(

@@ -27,6 +27,8 @@ class ReplicaWorker(Worker):
 
     def __init__(
         self,
+        train_source,
+        train_config,
         num_workers: int,
         id: int,
         primary_worker,
@@ -51,6 +53,8 @@ class ReplicaWorker(Worker):
         :type communication_type: string
         """
         super().__init__(
+            train_source=train_source,
+            train_config=train_config,
             num_workers=num_workers,
             id=id,
             primary_worker=primary_worker,

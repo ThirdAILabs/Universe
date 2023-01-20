@@ -63,8 +63,7 @@ def get_mnist_model():
     return model
 
 
-@pytest.fixture(scope="module")
-def train_distributed_bolt_check(request, ray_two_node_cluster_config):
+def get_distributed_mnist_model(request, ray_two_node_cluster_config):
     import thirdai.distributed_bolt as db
 
     model = get_mnist_model()
@@ -89,8 +88,9 @@ def train_distributed_bolt_check(request, ray_two_node_cluster_config):
         train_config=train_config,
         train_sources=train_sources,
     )
-    distributed_model.train()
 
+
+def evaluated_distributed_mnist_model(distributed_model):
     check_models_are_same_on_first_two_nodes(distributed_model)
 
     eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
@@ -100,6 +100,18 @@ def train_distributed_bolt_check(request, ray_two_node_cluster_config):
     metrics = distributed_model.get_model().evaluate(
         test_data=test_data, test_labels=test_labels, eval_config=eval_config
     )
+    return metrics
+
+
+@pytest.fixture(scope="module")
+def train_distributed_bolt_check(request, ray_two_node_cluster_config):
+
+    distributed_model = get_distributed_mnist_model(
+        request, ray_two_node_cluster_config
+    )
+    distributed_model.train()
+
+    metrics = evaluated_distributed_mnist_model(distributed_model)
 
     print(metrics)
 

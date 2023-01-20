@@ -34,6 +34,8 @@ class Worker:
     @timed
     def __init__(
         self,
+        train_source,
+        train_config: bolt.TrainConfig,
         num_workers: int,
         id: int,
         primary_worker,
@@ -50,6 +52,8 @@ class Worker:
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
 
+        self.train_source = train_source
+        self.train_config = train_config
         self.num_workers = num_workers
         self.id = id
         self.primary_worker = primary_worker
@@ -66,19 +70,16 @@ class Worker:
 
     def prepare_for_training(
         self,
-        train_source,
-        train_config: bolt.TrainConfig,
         bolt_graph,
         chunks_to_skip: int = 0,
         batch_to_run: int = 0,
     ):
-        self.train_source = train_source
 
         self.train_source.load(chunks_to_skip=chunks_to_skip)
         start = time()
         self.model = bolt.DistributedTrainingWrapper(
             model=ray.get(bolt_graph),
-            train_config=train_config,
+            train_config=self.train_config,
             worker_id=self.id,
         )
         end = time()

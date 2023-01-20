@@ -294,6 +294,8 @@ class DistributedDataParallel:
         bolt_graph_ref = ray.put(model)
 
         self.primary_worker = cluster_config.primary_worker_config.remote(
+            train_source=self.train_sources[0],
+            train_config=train_config,
             num_workers=cluster_config.num_workers,
             communication_type=cluster_config.communication_type,
             log_dir=cluster_config.log_dir,
@@ -306,6 +308,8 @@ class DistributedDataParallel:
             if worker_id is 1:
                 self.replica_workers.append(
                     replica_worker_config.remote(
+                        train_source=self.train_sources[worker_id],
+                        train_config=train_config,
                         num_workers=cluster_config.num_workers,
                         id=worker_id,
                         primary_worker=self.primary_worker,
@@ -316,6 +320,8 @@ class DistributedDataParallel:
                 )
             else:
                 replica_worker = replica_worker_config.remote(
+                    train_source=self.train_sources[worker_id],
+                    train_config=train_config,
                     num_workers=cluster_config.num_workers,
                     id=worker_id,
                     primary_worker=self.primary_worker,
@@ -334,8 +340,6 @@ class DistributedDataParallel:
         self.worker_manager.foreach_worker(
             [
                 lambda worker: worker.prepare_for_training(
-                    self.train_sources[worker_id],
-                    self.train_config,
                     bolt_graph=bolt_graph_ref,
                 )
                 for worker_id in range(len(self.workers))

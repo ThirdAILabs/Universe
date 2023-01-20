@@ -23,12 +23,16 @@ class PrimaryWorker(Worker):
 
     def __init__(
         self,
+        train_source,
+        train_config,
         num_workers: int,
         communication_type: str,
         log_dir: str,
     ):
 
         super().__init__(
+            train_source=train_source,
+            train_config=train_config,
             num_workers=num_workers,
             id=0,
             primary_worker=self,
