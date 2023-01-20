@@ -38,20 +38,35 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
         "Target column provided was not found in data_types.");
   }
 
+  auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
+        embedding_dimension, prediction_depth] = processUDTOptions(options);
+
+  if (prediction_depth > 1) {
+    for (const auto& column_name :
+         allRecursiveColumnNames(target_col, prediction_depth)) {
+      data_types[column_name] = std::make_shared<data::CategoricalDataType>();
+    }
+  }
+
   auto dataset_config = std::make_shared<data::UDTConfig>(
       std::move(data_types), std::move(temporal_tracking_relationships),
       std::move(target_col), n_target_classes, integer_target,
       std::move(time_granularity), lookahead, delimiter);
 
-  auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
-        embedding_dimension, prediction_depth] = processUDTOptions(options);
   std::string target_column = dataset_config->target;
 
   if (prediction_depth > 1) {
-    if (!data::asCategorical(dataset_config->data_types.at(target_column))) {
+    auto target =
+        data::asCategorical(dataset_config->data_types.at(target_column));
+    if (!target) {
       throw std::invalid_argument(
           "Expected target column to be categorical if prediction_depth > 1 is "
           "used.");
+    }
+    if (!target->delimiter) {
+      throw std::invalid_argument(
+          "Expected target column to have a delimiter if prediction_depth > 1 "
+          "is used.");
     }
     for (uint32_t i = 1; i < prediction_depth; i++) {
       std::string column_name = target_column + "_" + std::to_string(i);

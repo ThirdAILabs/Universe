@@ -47,11 +47,12 @@ using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
 class UDTDatasetFactory final : public DatasetLoaderFactory {
  public:
-  explicit UDTDatasetFactory(const UDTConfigPtr& config, bool force_parallel,
-                             uint32_t text_pairgram_word_limit,
-                             bool contextual_columns = false,
-                             std::optional<dataset::RegressionBinningStrategy>
-                                 regression_binning = std::nullopt);
+  explicit UDTDatasetFactory(
+      const UDTConfigPtr& config, bool force_parallel,
+      uint32_t text_pairgram_word_limit, bool contextual_columns = false,
+      std::optional<dataset::RegressionBinningStrategy> regression_binning =
+          std::nullopt,
+      std::vector<std::string> recursion_column_names = {});
 
   static std::shared_ptr<UDTDatasetFactory> make(
       const UDTConfigPtr& config, bool force_parallel,
@@ -278,6 +279,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   uint32_t _text_pairgram_word_limit;
   bool _contextual_columns;
   bool _normalize_target_categories;
+  std::vector<std::string> _recursion_column_names;
 
   std::optional<dataset::RegressionBinningStrategy> _regression_binning;
 
@@ -296,7 +298,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
             _column_number_to_name, _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _metadata_processors, _parallel,
             _text_pairgram_word_limit, _contextual_columns,
-            _normalize_target_categories, _regression_binning);
+            _normalize_target_categories, _regression_binning,
+            _recursion_column_names);
   }
 };
 

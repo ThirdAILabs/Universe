@@ -1,6 +1,8 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/RecursiveDataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <stdexcept>
@@ -10,7 +12,8 @@ namespace thirdai::automl::data {
 UDTDatasetFactory::UDTDatasetFactory(
     const UDTConfigPtr& config, bool force_parallel,
     uint32_t text_pairgram_word_limit, bool contextual_columns,
-    std::optional<dataset::RegressionBinningStrategy> regression_binning)
+    std::optional<dataset::RegressionBinningStrategy> regression_binning,
+    std::vector<std::string> recursion_column_names)
     : _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
           config->data_types, config->provided_relationships,
           config->lookahead)),
@@ -21,6 +24,7 @@ UDTDatasetFactory::UDTDatasetFactory(
       _text_pairgram_word_limit(text_pairgram_word_limit),
       _contextual_columns(contextual_columns),
       _normalize_target_categories(false),
+      _recursion_column_names(std::move(recursion_column_names)),
       _regression_binning(regression_binning),
       _vectors_map(processAllMetadata()),
       _labeled_history_updating_processor(makeLabeledUpdatingProcessor()),
@@ -28,6 +32,14 @@ UDTDatasetFactory::UDTDatasetFactory(
 
 dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     dataset::DataSourcePtr data_source, bool training) {
+  if (!_recursion_column_names.empty()) {
+    data_source = dataset::RecursiveDataSource::make(
+        data_source, _config->delimiter,
+        asCategorical(_config->data_types[_config->target])->delimiter.value(),
+        _config->target, _recursion_column_names,
+        data_source->getMaxBatchSize());
+  }
+
   auto column_number_map =
       makeColumnNumberMapFromHeader(*data_source, _config->delimiter);
   _column_number_to_name = column_number_map.getColumnNumToColNameMap();

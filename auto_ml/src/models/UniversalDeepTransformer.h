@@ -16,6 +16,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 
 namespace thirdai::automl::models {
@@ -221,7 +222,21 @@ class UniversalDeepTransformer final : public ModelPipeline {
 
   void setPredictionAtTimestep(MapInput& sample, uint32_t step,
                                const std::string& pred) {
-    sample[_target_column + "_" + std::to_string(step)] = pred;
+    sample[recursiveColumnName(_target_column, step)] = pred;
+  }
+
+  static std::string recursiveColumnName(const std::string& target_column,
+                                         uint32_t step) {
+    return target_column + "_" + std::to_string(step);
+  }
+
+  static std::vector<std::string> allRecursiveColumnNames(
+      const std::string& target_column, uint32_t prediction_depth) {
+    std::vector<std::string> column_names(prediction_depth - 1);
+    for (uint32_t step = 1; step < prediction_depth; step++) {
+      column_names[step - 1] = recursiveColumnName(target_column, step);
+    }
+    return column_names;
   }
 
   std::string _target_column;
