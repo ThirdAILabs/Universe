@@ -78,7 +78,7 @@ metrics::History Trainer::train(
 
     train_metrics.updateHistory(_history, /*prefix= */ "train_");
 
-    (*_history)["all"]["epoch_times"].push_back(static_cast<double>(time));
+    (*_history)["time"]["epoch_times"].push_back(static_cast<double>(time));
 
     std::string log_line = formatTrainLogLine(train_metrics.summarizeLastStep(),
                                               num_batches, time);
@@ -127,7 +127,7 @@ void Trainer::validate(const LabeledDataset& validation_data,
 
   validation_metrics.updateHistory(_history, /* prefix= */ "val_");
 
-  (*_history)["all"]["val_times"].push_back(static_cast<double>(time));
+  (*_history)["time"]["val_times"].push_back(static_cast<double>(time));
 
   std::string log_line = formatValidateLogLine(
       validation_metrics.summarizeLastStep(), num_batches, time);

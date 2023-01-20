@@ -135,17 +135,17 @@ def train_bolt_v2(config: BenchmarkConfig, train_x, train_y, test_x, test_y):
         )
 
         metrics = {
-            "epoch_time": history["all"]["epoch_times"][-1],
-            "val_time": history["all"]["val_times"][-1],
-            "categorical_accuracy": history[output.name()]["val_categorical_accuracy"][-1],
+            "epoch_time": history["time"]["epoch_times"][-1],
+            "val_time": history["time"]["val_times"][-1],
+            "categorical_accuracy": history[output.name()]["val_categorical_accuracy"][
+                -1
+            ],
         }
         mlflow.log_metrics(metrics)
 
 
 def init_mlflow(dataset_name, bolt_version, suffix):
-    mlflow.set_tracking_uri(
-        sys.argv[1]
-    )
+    mlflow.set_tracking_uri(sys.argv[1])
     machine_info = {
         "load_before_experiment": os.getloadavg()[2],
         "platform": platform.platform(),
@@ -273,7 +273,9 @@ def load_wayfair_data(filename, shuffle):
     )
 
     loader = dataset.DatasetLoader(
-        data_source=dataset.FileDataSource(filename=filename, batch_size=WayfairConfig.batch_size),
+        data_source=dataset.FileDataSource(
+            filename=filename, batch_size=WayfairConfig.batch_size
+        ),
         batch_processor=processor,
         shuffle=shuffle,
     )

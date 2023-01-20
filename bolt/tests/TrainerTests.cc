@@ -79,7 +79,7 @@ TEST(TrainerTest, Training) {
       train_metrics, {{val_x, val_y}}, val_metrics,
       /* steps_per_validation= */ 25, {tracking_callback});
 
-  ASSERT_EQ(metrics.size(), 1);
+  ASSERT_EQ(metrics.size(), 2);
 
   const auto& output_metrics = metrics.at(output->name());
 
@@ -89,6 +89,9 @@ TEST(TrainerTest, Training) {
   ASSERT_EQ(output_metrics.at("val_categorical_accuracy").size(), 3 * 2);
   // Accuracy should be around 0.96-0.97
   ASSERT_GE(output_metrics.at("val_categorical_accuracy").back(), 0.9);
+
+  // Epoch, validation times.
+  ASSERT_EQ(metrics.at("time").size(), 2);
 
   std::map<std::string, uint32_t> expected_invocation_counts = {
       {"on_train_begin", 1},      {"on_train_end", 1},
