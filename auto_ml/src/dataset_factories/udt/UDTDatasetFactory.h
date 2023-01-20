@@ -300,7 +300,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
             _column_number_to_name, _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _metadata_processors, _parallel,
             _text_pairgram_word_limit, _contextual_columns,
-            _normalize_target_categories, _regression_binning);
+            _normalize_target_categories, _regression_binning,
+            _prediction_depth);
   }
 };
 
