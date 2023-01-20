@@ -230,7 +230,7 @@ class TrainStateManager:
             lambda worker: worker.compute_and_store_next_batch_gradients()
         )
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
-        return all([result.get() for result in has_next_batches])
+        return all([result.get() for result in has_next_batches if result.ok])
 
     def _communicate(self):
         """
