@@ -342,6 +342,7 @@ set(THIRDAI_SOURCES
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
+    dataset/src/blocks/TabularHashFeatures.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
@@ -398,7 +399,6 @@ pybind11_add_module(
   bolt/python_bindings/BoltNNPython.cc
   bolt/python_bindings/CallbacksPython.cc
   dataset/python_bindings/DatasetPython.cc
-  dataset/src/blocks/TabularHashFeatures.cc
   new_dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
