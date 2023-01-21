@@ -1,7 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/loss/ComparativeLoss.h>
-#include <bolt/src/nn/tensor/ActivationTensor.h>
+#include <bolt/src/nn/ops/Op.h>
 
 namespace thirdai::bolt::nn::loss {
 
@@ -13,18 +13,16 @@ namespace thirdai::bolt::nn::loss {
  */
 class CategoricalCrossEntropy final : public ComparativeLoss {
  public:
-  explicit CategoricalCrossEntropy(tensor::ActivationTensorPtr activations);
+  explicit CategoricalCrossEntropy(autograd::ComputationPtr output);
 
   static std::shared_ptr<CategoricalCrossEntropy> make(
-      tensor::ActivationTensorPtr activations);
+      autograd::ComputationPtr output);
 
  private:
   float singleGradient(float activation, float label,
                        uint32_t batch_size) const final;
 
   float singleLoss(float activation, float label) const final;
-
-  tensor::ActivationTensorPtr _activations;
 };
 
 using CategoricalCrossEntropyPtr = std::shared_ptr<CategoricalCrossEntropy>;

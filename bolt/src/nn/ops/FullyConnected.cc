@@ -1,5 +1,6 @@
 #include "FullyConnected.h"
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <memory>
@@ -40,23 +41,23 @@ std::shared_ptr<FullyConnected> FullyConnected::make(
       rebuild_hash_tables, reconstruct_hash_functions));
 }
 
-void FullyConnected::forward(const tensor::TensorList& inputs,
-                             tensor::ActivationTensor* output,
-                             uint32_t index_in_batch, bool training) {
+void FullyConnected::forward(const autograd::ComputationList& inputs,
+                             tensor::TensorPtr& output, uint32_t index_in_batch,
+                             bool training) {
   // If the op is an output pass in labels during training to ensure labels are
   // in active neuron set.
   const BoltVector* labels = nullptr;
   if (training && inputs.size() == 2) {
-    labels = &inputs[1]->getVector(index_in_batch);
+    labels = &inputs[1]->tensor()->getVector(index_in_batch);
   }
-  _kernel->forward(inputs[0]->getVector(index_in_batch),
+  _kernel->forward(inputs[0]->tensor()->getVector(index_in_batch),
                    output->getVector(index_in_batch), labels);
 }
 
-void FullyConnected::backpropagate(tensor::TensorList& inputs,
-                                   tensor::ActivationTensor* output,
+void FullyConnected::backpropagate(autograd::ComputationList& inputs,
+                                   tensor::TensorPtr& output,
                                    uint32_t index_in_batch) {
-  BoltVector& input = inputs[0]->getVector(index_in_batch);
+  BoltVector& input = inputs[0]->tensor()->getVector(index_in_batch);
 
   if (input.hasGradients()) {
     _kernel->backpropagate(input, output->getVector(index_in_batch));
@@ -82,8 +83,8 @@ void FullyConnected::updateParameters(float learning_rate,
   }
 }
 
-uint32_t FullyConnected::numNonzerosInOutput(const tensor::TensorList& inputs,
-                                             bool use_sparsity) const {
+std::optional<uint32_t> FullyConnected::nonzeros(
+    const autograd::ComputationList& inputs, bool use_sparsity) const {
   // The number of output nonzeros for a FullyConnected op do not depend on its
   // inputs.
   (void)inputs;
@@ -98,8 +99,8 @@ void FullyConnected::disableSparseParameterUpdates() {
 }
 
 void FullyConnected::summary(std::ostream& summary,
-                             const tensor::TensorList& inputs,
-                             const tensor::ActivationTensor* output) const {
+                             const autograd::ComputationList& inputs,
+                             const autograd::Computation* output) const {
   summary << "FullyConnected(" << name() << "): " << inputs[0]->name() << " -> "
           << output->name();
   summary << " [dim=" << _kernel->getDim()
@@ -115,7 +116,7 @@ void FullyConnected::summary(std::ostream& summary,
   summary << "]";
 }
 
-tensor::ActivationTensorPtr FullyConnected::apply(tensor::TensorPtr input) {
+autograd::ComputationPtr FullyConnected::apply(autograd::ComputationPtr input) {
   if (input->dim() != _kernel->getInputDim()) {
     std::stringstream error;
     error << "Cannot apply FullyConnected op with weight matrix of shape ("
@@ -124,8 +125,7 @@ tensor::ActivationTensorPtr FullyConnected::apply(tensor::TensorPtr input) {
 
     throw std::invalid_argument(error.str());
   }
-  return tensor::ActivationTensor::make(_kernel->getDim(), shared_from_this(),
-                                        {std::move(input)});
+  return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
 std::vector<uint32_t> FullyConnected::dimensions() const {

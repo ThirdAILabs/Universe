@@ -32,18 +32,11 @@ class Tensor {
 
   virtual uint32_t batchSize() const = 0;
 
-  /**
-   * Returns the name of the tensor. All tensors in a model must have a unique
-   * name.
-   */
-  const std::string& name() const;
-
   virtual ~Tensor() = default;
 
  private:
   // TODO(Nicholas): Update this to support N dimensions (not required for V0).
   uint32_t _dim;
-  std::string _name;
 };
 
 using TensorPtr = std::shared_ptr<Tensor>;

@@ -2,8 +2,8 @@
 
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/loss/Loss.h>
-#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/model/AllocationManager.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <vector>
 
@@ -83,8 +83,7 @@ class Model {
    * the neurons in the output tensor. Returns nullptr if not such output tensor
    * is found.
    */
-  //   tensor::InputTensorPtr getLabelsForOutput(const std::string&
-  //   output_name);
+  autograd::ComputationPtr getLabelsForOutput(const std::string& output_name);
 
   /**
    * Prints/returns a summary of the model. Throws if no op is found.

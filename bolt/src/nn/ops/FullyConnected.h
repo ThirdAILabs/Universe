@@ -1,8 +1,8 @@
 #pragma once
 
 #include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
-#include <bolt/src/nn/tensor/ActivationTensor.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <limits>
 #include <memory>
@@ -29,28 +29,29 @@ class FullyConnected final
    * ensure that the label neurons are among the active neurons set if it's
    * sparse.
    */
-  void forward(const tensor::TensorList& inputs,
-               tensor::ActivationTensor* output, uint32_t index_in_batch,
+  void forward(const autograd::ComputationList& inputs,
+               tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final;
 
-  void backpropagate(tensor::TensorList& inputs,
-                     tensor::ActivationTensor* output,
-                     uint32_t index_in_batch) final;
+  void backpropagate(autograd::ComputationList& inputs,
+                     tensor::TensorPtr& output, uint32_t index_in_batch) final;
 
   void updateParameters(float learning_rate, uint32_t train_steps) final;
 
-  uint32_t numNonzerosInOutput(const tensor::TensorList& inputs,
-                               bool use_sparsity) const final;
+  uint32_t dim() const final;
+
+  std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
+                                   bool use_sparsity) const final;
 
   void disableSparseParameterUpdates() final;
 
-  void summary(std::ostream& summary, const tensor::TensorList& inputs,
-               const tensor::ActivationTensor* output) const final;
+  void summary(std::ostream& summary, const autograd::ComputationList& inputs,
+               const autograd::Computation* output) const final;
 
   /**
    * Applies the op to an input tensor and yields a new output tensor.
    */
-  tensor::ActivationTensorPtr apply(tensor::TensorPtr input);
+  autograd::ComputationPtr apply(autograd::ComputationPtr input);
 
   /**
    * Returns the dimensions of the layer as {dim, input_dim}.

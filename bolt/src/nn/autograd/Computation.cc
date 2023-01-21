@@ -1,17 +1,26 @@
 #include "Computation.h"
 #include <bolt/src/nn/ops/Op.h>
+#include <string>
 
 namespace thirdai::bolt::nn::autograd {
 
-Computation::Computation(ops::OpPtr op,
-                         std::vector<std::shared_ptr<Computation>> inputs)
-    : _op(std::move(op)), _inputs(std::move(inputs)) {}
+std::string nextComputationName() {
+  static uint32_t constructed = 0;
+  return "tensor_" + std::to_string(++constructed);
+}
+
+Computation::Computation(ops::OpPtr op, ComputationList inputs)
+    : _op(std::move(op)),
+      _inputs(std::move(inputs)),
+      _name(nextComputationName()) {}
+
+ComputationPtr Computation::make(ops::OpPtr op, ComputationList inputs) {
+  return std::make_shared<Computation>(std::move(op), std::move(inputs));
+}
 
 ops::OpPtr Computation::op() const { return _op; }
 
-const std::vector<std::shared_ptr<Computation>>& Computation::inputs() const {
-  return _inputs;
-}
+const ComputationList& Computation::inputs() const { return _inputs; }
 
 tensor::TensorPtr& Computation::tensor() { return _output; }
 
@@ -41,12 +50,14 @@ void Computation::allocate(uint32_t batch_size, bool use_sparsity) {
   }
 }
 
-void Computation::addInput(std::shared_ptr<Computation> input) {
+void Computation::addInput(ComputationPtr input) {
   _inputs.push_back(std::move(input));
 }
 
 void Computation::summary(std::ostream& summary) {
-  _op->summary(summary, _inputs, _output);
+  _op->summary(summary, _inputs, this);
 }
+
+const std::string& Computation::name() const { return _name; }
 
 }  // namespace thirdai::bolt::nn::autograd

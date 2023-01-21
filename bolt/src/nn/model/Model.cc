@@ -2,8 +2,6 @@
 #include <bolt/src/nn/autograd/ComputationGraph.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
-#include <bolt/src/nn/tensor/ActivationTensor.h>
-#include <bolt/src/nn/tensor/InputTensor.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <algorithm>
 #include <memory>
@@ -26,7 +24,7 @@ Model::Model(autograd::ComputationList inputs,
     _label_inputs.push_back(loss->labels());
   }
 
-  _computation_order = autograd::getComputationOrder(_outputs);
+  _computation_order = autograd::getComputationOrder(_inputs, _outputs);
   _allocation_manager = AllocationManager(_computation_order);
 
   std::unordered_set<ops::OpPtr> ops;
@@ -35,7 +33,6 @@ Model::Model(autograd::ComputationList inputs,
   }
   _ops.assign(ops.begin(), ops.end());
 
-  // TODO(Nicholas): check all inputs are present and used.
   checkNoOutputsHaveDependentOps();
   checkAllOutputsAreUsedInLosses();
 
@@ -106,19 +103,19 @@ ops::OpPtr Model::getOp(const std::string& name) const {
   throw std::invalid_argument("Could not find op with name '" + name + "'.");
 }
 
-// tensor::InputTensorPtr Model::getLabelsForOutput(
-//     const std::string& output_name) {
-//   for (const auto& loss : _losses) {
-//     auto outputs_used = loss->outputsUsed();
-//     if (outputs_used.size() == 1) {
-//       if (outputs_used.at(0)->name() == output_name) {
-//         return loss->labels();
-//       }
-//     }
-//   }
+autograd::ComputationPtr Model::getLabelsForOutput(
+    const std::string& output_name) {
+  for (const auto& loss : _losses) {
+    auto outputs_used = loss->outputsUsed();
+    if (outputs_used.size() == 1) {
+      if (outputs_used.at(0)->name() == output_name) {
+        return loss->labels();
+      }
+    }
+  }
 
-//   return nullptr;
-// }
+  return nullptr;
+}
 
 std::string Model::summary(bool print) const {
   std::stringstream summary;
@@ -241,15 +238,15 @@ void Model::setSingleLabel(const tensor::TensorPtr& labels) {
 }
 
 void Model::checkNoOutputsHaveDependentOps() const {
-  // auto out_degrees = getOutDegrees();
+  auto out_degrees = autograd::countDependentComputations(_outputs);
 
-  // for (const auto& output : _outputs) {
-  //   if (out_degrees.count(output)) {
-  //     throw std::invalid_argument(
-  //         "Outputs must not be inputs to any ops. Found output '" +
-  //         output->name() + "' with a dependent op.");
-  //   }
-  // }
+  for (const auto& output : _outputs) {
+    if (out_degrees.count(output)) {
+      throw std::invalid_argument(
+          "Outputs must not be inputs to any ops. Found output '" +
+          output->name() + "' with a dependent op.");
+    }
+  }
 }
 
 void Model::checkAllOutputsAreUsedInLosses() const {
@@ -262,7 +259,7 @@ void Model::checkAllOutputsAreUsedInLosses() const {
         throw std::invalid_argument(
             "Only outputs can be used in losses and outputs cannot be reused "
             "in multiple losses. Found tensor '" +
-            output->tensor()->name() +
+            output->name() +
             "' which is either not an output or or has already been used in "
             "a "
             "loss function.");
@@ -275,7 +272,7 @@ void Model::checkAllOutputsAreUsedInLosses() const {
   if (!outputs_set.empty()) {
     throw std::invalid_argument(
         "All outputs must be used by a loss. Found an output '" +
-        (*outputs_set.begin())->tensor()->name() +
+        (*outputs_set.begin())->name() +
         "' which is not used by any loss function.");
   }
 }

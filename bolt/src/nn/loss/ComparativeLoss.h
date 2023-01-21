@@ -13,13 +13,13 @@ namespace thirdai::bolt::nn::loss {
  */
 class ComparativeLoss : public Loss {
  public:
-  explicit ComparativeLoss(tensor::ActivationTensorPtr activations);
+  explicit ComparativeLoss(autograd::ComputationPtr output);
 
   float loss(uint32_t index_in_batch) const final;
 
   void gradients(uint32_t index_in_batch, uint32_t batch_size) const final;
 
-  std::vector<tensor::ActivationTensorPtr> outputsUsed() const final;
+  autograd::ComputationList outputsUsed() const final;
 
  private:
   /**
@@ -46,7 +46,7 @@ class ComparativeLoss : public Loss {
   virtual float singleGradient(float activation, float label,
                                uint32_t batch_size) const = 0;
 
-  tensor::ActivationTensorPtr _activations;
+  autograd::ComputationPtr _output;
 };
 
 }  // namespace thirdai::bolt::nn::loss

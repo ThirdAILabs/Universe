@@ -1,16 +1,18 @@
 #include "ComparativeLoss.h"
+#include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <optional>
 
 namespace thirdai::bolt::nn::loss {
 
-ComparativeLoss::ComparativeLoss(tensor::ActivationTensorPtr activations)
-    : _activations(std::move(activations)) {
-  _labels = tensor::InputTensor::make(_activations->dim());
+ComparativeLoss::ComparativeLoss(autograd::ComputationPtr output)
+    : _output(std::move(output)) {
+  _labels = ops::Input::make(_output->dim());
 }
 
 float ComparativeLoss::loss(uint32_t index_in_batch) const {
-  const BoltVector& labels = _labels->getVector(index_in_batch);
-  const BoltVector& activations = _activations->getVector(index_in_batch);
+  const BoltVector& labels = _labels->tensor()->getVector(index_in_batch);
+  const BoltVector& activations = _output->tensor()->getVector(index_in_batch);
 
   constexpr bool DENSE = true;
   constexpr bool SPARSE = false;
@@ -29,8 +31,8 @@ float ComparativeLoss::loss(uint32_t index_in_batch) const {
 
 void ComparativeLoss::gradients(uint32_t index_in_batch,
                                 uint32_t batch_size) const {
-  const BoltVector& labels = _labels->getVector(index_in_batch);
-  BoltVector& activations = _activations->getVector(index_in_batch);
+  const BoltVector& labels = _labels->tensor()->getVector(index_in_batch);
+  BoltVector& activations = _output->tensor()->getVector(index_in_batch);
 
   constexpr bool DENSE = true;
   constexpr bool SPARSE = false;
@@ -51,8 +53,8 @@ void ComparativeLoss::gradients(uint32_t index_in_batch,
   }
 }
 
-std::vector<tensor::ActivationTensorPtr> ComparativeLoss::outputsUsed() const {
-  return {_activations};
+autograd::ComputationList ComparativeLoss::outputsUsed() const {
+  return {_output};
 }
 
 template <bool ACT_DENSE, bool LABEL_DENSE>

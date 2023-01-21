@@ -53,7 +53,7 @@ class Op {
    * parallelize the entire forward and/or backward pass through the graph
    * across the batch.
    */
-  virtual void backpropagate(const autograd::ComputationList& inputs,
+  virtual void backpropagate(autograd::ComputationList& inputs,
                              tensor::TensorPtr& output,
                              uint32_t index_in_batch) = 0;
 
@@ -78,8 +78,8 @@ class Op {
    * sparse inputs, then if sparsity is being used the number of nonzeros in the
    * output will depend on the number of nonzeros in the inputs.
    */
-  virtual uint32_t nonzeros(const autograd::ComputationList& inputs,
-                            bool use_sparsity) const = 0;
+  virtual std::optional<uint32_t> nonzeros(
+      const autograd::ComputationList& inputs, bool use_sparsity) const = 0;
 
   /**
    * Disables sparse parameter updates for updateParameters in the op. This is
@@ -94,7 +94,7 @@ class Op {
    */
   virtual void summary(std::ostream& summary,
                        const autograd::ComputationList& inputs,
-                       const tensor::TensorPtr& output) const = 0;
+                       const autograd::Computation* output) const = 0;
 
   /**
    * Returns the name of the op. All of the ops in a model must have a unique

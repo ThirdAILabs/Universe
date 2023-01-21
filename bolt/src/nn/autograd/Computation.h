@@ -4,9 +4,15 @@
 
 namespace thirdai::bolt::nn::autograd {
 
+class Computation;
+using ComputationPtr = std::shared_ptr<Computation>;
+using ComputationList = std::vector<ComputationPtr>;
+
 class Computation {
  public:
-  Computation(ops::OpPtr op, std::vector<std::shared_ptr<Computation>> inputs);
+  Computation(ops::OpPtr op, ComputationList inputs);
+
+  static ComputationPtr make(ops::OpPtr op, ComputationList inputs);
 
   /**
    * Returns the op which operates on the inputs and output of the
@@ -17,7 +23,7 @@ class Computation {
   /**
    * Returns the inputs to the computation.
    */
-  const std::vector<std::shared_ptr<Computation>>& inputs() const;
+  const ComputationList& inputs() const;
 
   /**
    * Returns the output of the computation.
@@ -63,19 +69,20 @@ class Computation {
    * op yields an output and we want the labels to always be in the set of
    * active neurons.
    */
-  void addInput(std::shared_ptr<Computation> input);
+  void addInput(ComputationPtr input);
 
   void summary(std::ostream& summary);
+
+  const std::string& name() const;
 
  private:
   ops::OpPtr _op;
 
-  std::vector<std::shared_ptr<Computation>> _inputs;
+  ComputationList _inputs;
 
   tensor::TensorPtr _output;
-};
 
-using ComputationPtr = std::shared_ptr<Computation>;
-using ComputationList = std::vector<ComputationPtr>;
+  std::string _name;
+};
 
 }  // namespace thirdai::bolt::nn::autograd
