@@ -11,7 +11,16 @@ namespace thirdai::bolt::nn::tensor {
  */
 class Tensor {
  public:
-  explicit Tensor(uint32_t dim, std::string name);
+  Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros);
+
+   Tensor(BoltBatch&& batch, uint32_t dim);
+
+  static std::shared_ptr<Tensor> dense(uint32_t batch_size, uint32_t dim);
+
+  static std::shared_ptr<Tensor> sparse(uint32_t batch_size, uint32_t dim,
+                                        uint32_t nonzeros);
+
+  static std::shared_ptr<Tensor> convert(BoltBatch&& batch, uint32_t dim);
 
   /**
    * Returns the dimension of the vectors in the tensor.
@@ -23,20 +32,25 @@ class Tensor {
    * fixed it will return std::nullopt. If the output is dense then this should
    * be equivalent to calling dim().
    */
-  virtual std::optional<uint32_t> numNonzeros(bool use_sparsity) const = 0;
+  std::optional<uint32_t> nonzeros() const;
 
   /**
    * Returns the ith vector in the tensor.
    */
-  virtual BoltVector& getVector(uint32_t index) = 0;
+  BoltVector& getVector(uint32_t index);
 
-  virtual uint32_t batchSize() const = 0;
-
-  virtual ~Tensor() = default;
+  uint32_t batchSize() const;
 
  private:
   // TODO(Nicholas): Update this to support N dimensions (not required for V0).
   uint32_t _dim;
+  std::optional<uint32_t> _nonzeros;
+
+  std::vector<BoltVector> _vectors;
+
+  std::vector<uint32_t> _active_neurons;
+  std::vector<float> _activations;
+  std::vector<float> _gradients;
 };
 
 using TensorPtr = std::shared_ptr<Tensor>;

@@ -42,11 +42,10 @@ void Computation::allocate(uint32_t batch_size, bool use_sparsity) {
   uint32_t dim = _op->dim();
   uint32_t nonzeros = _op->nonzeros(_inputs, use_sparsity).value();
 
-  if (nonzeros < dim) {
-    // Allocate sparse tensor
-    (void)batch_size;
+  if (nonzeros < dim && use_sparsity) {
+    _output = tensor::Tensor::sparse(batch_size, dim, nonzeros);
   } else {
-    // Allocate dense tensor
+    _output = tensor::Tensor::dense(batch_size, dim);
   }
 }
 
