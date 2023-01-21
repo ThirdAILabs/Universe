@@ -30,6 +30,8 @@ class Tensor {
    */
   virtual BoltVector& getVector(uint32_t index) = 0;
 
+  virtual uint32_t batchSize() const = 0;
+
   /**
    * Returns the name of the tensor. All tensors in a model must have a unique
    * name.

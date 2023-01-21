@@ -3,11 +3,14 @@
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <memory>
 
-namespace thirdai::bolt::nn::tensor {
+namespace thirdai::bolt::nn::autograd {
 
-class ActivationTensor;
+class Computation;
 
-}  // namespace thirdai::bolt::nn::tensor
+using ComputationPtr = std::shared_ptr<Computation>;
+using ComputationList = std::vector<ComputationPtr>;
+
+}  // namespace thirdai::bolt::nn::autograd
 
 namespace thirdai::bolt::nn::ops {
 
@@ -34,9 +37,9 @@ class Op {
    * the computation is for. This allows the model to parallelize the entire
    * forward and/or backward pass through the graph across the batch.
    */
-  virtual void forward(const tensor::TensorList& inputs,
-                       tensor::ActivationTensor* output,
-                       uint32_t index_in_batch, bool training) = 0;
+  virtual void forward(const autograd::ComputationList& inputs,
+                       tensor::TensorPtr& output, uint32_t index_in_batch,
+                       bool training) = 0;
 
   /**
    * Computes the gradients of any parameters in the op and with respect to the
@@ -50,8 +53,8 @@ class Op {
    * parallelize the entire forward and/or backward pass through the graph
    * across the batch.
    */
-  virtual void backpropagate(tensor::TensorList& inputs,
-                             tensor::ActivationTensor* output,
+  virtual void backpropagate(const autograd::ComputationList& inputs,
+                             tensor::TensorPtr& output,
                              uint32_t index_in_batch) = 0;
 
   /**
@@ -61,6 +64,8 @@ class Op {
    * this for bias correction.
    */
   virtual void updateParameters(float learning_rate, uint32_t train_steps) = 0;
+
+  virtual uint32_t dim() const = 0;
 
   /**
    * Returns the number of nonzeros in the ops output for a given list of
@@ -73,8 +78,8 @@ class Op {
    * sparse inputs, then if sparsity is being used the number of nonzeros in the
    * output will depend on the number of nonzeros in the inputs.
    */
-  virtual uint32_t numNonzerosInOutput(const tensor::TensorList& inputs,
-                                       bool use_sparsity) const = 0;
+  virtual uint32_t nonzeros(const autograd::ComputationList& inputs,
+                            bool use_sparsity) const = 0;
 
   /**
    * Disables sparse parameter updates for updateParameters in the op. This is
@@ -87,8 +92,9 @@ class Op {
    * Appends a line to the summary to describe the op when applied to the given
    * inputs and yielding the given output.
    */
-  virtual void summary(std::ostream& summary, const tensor::TensorList& inputs,
-                       const tensor::ActivationTensor* output) const = 0;
+  virtual void summary(std::ostream& summary,
+                       const autograd::ComputationList& inputs,
+                       const tensor::TensorPtr& output) const = 0;
 
   /**
    * Returns the name of the op. All of the ops in a model must have a unique

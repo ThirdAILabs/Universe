@@ -1,8 +1,8 @@
 #pragma once
 
-#include <bolt/src/nn/tensor/ActivationTensor.h>
-#include <bolt/src/nn/tensor/InputTensor.h>
-#include <bolt_vector/src/BoltVector.h>
+#include <bolt/src/nn/autograd/Computation.h>
+#include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/nn/tensor/Tensor.h>
 
 namespace thirdai::bolt::nn::loss {
 
@@ -25,7 +25,7 @@ class Loss {
    * function. This is used to ensure that all of the outputs in the model have
    * gradients computed for them.
    */
-  virtual std::vector<tensor::ActivationTensorPtr> outputsUsed() const = 0;
+  virtual autograd::ComputationList outputsUsed() const = 0;
 
   /**
    * Returns the input tensor for the labels that the loss function is
@@ -33,12 +33,12 @@ class Loss {
    * returned by the loss functions in the order that the loss functions are
    * supplied to the model.
    */
-  tensor::InputTensorPtr labels() const { return _labels; }
+  autograd::ComputationPtr labels() const { return _labels; }
 
   virtual ~Loss() = default;
 
  protected:
-  tensor::InputTensorPtr _labels;
+  autograd::ComputationPtr _labels;
 };
 
 using LossPtr = std::shared_ptr<Loss>;

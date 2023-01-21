@@ -1,10 +1,10 @@
 #include "AllocationManager.h"
+#include <bolt/src/nn/ops/Op.h>
 
 namespace thirdai::bolt::nn::model {
 
-AllocationManager::AllocationManager(
-    std::vector<tensor::ActivationTensorPtr> activation_tensors)
-    : _activation_tensors(std::move(activation_tensors)),
+AllocationManager::AllocationManager(autograd::ComputationList computations)
+    : _computations(std::move(computations)),
       _allocated_batch_size(0),
       _current_batch_size(0),
       _using_sparsity(true) {}
@@ -16,31 +16,15 @@ void AllocationManager::reallocateForBatch(uint32_t batch_size,
     return;
   }
 
-  for (auto& tensor : _activation_tensors) {
-    tensor->allocate(batch_size, use_sparsity);
+  for (auto& comp : _computations) {
+    comp->allocate(batch_size, use_sparsity);
   }
-}
-
-const std::vector<tensor::ActivationTensorPtr>&
-AllocationManager::activationTensors() const {
-  return _activation_tensors;
 }
 
 void AllocationManager::resetOutputGradients(uint32_t index_in_batch) {
-  for (auto& tensor : _activation_tensors) {
-    tensor->getVector(index_in_batch).zeroOutGradients();
+  for (auto& comp : _computations) {
+    comp->tensor()->getVector(index_in_batch).zeroOutGradients();
   }
-}
-
-tensor::ActivationTensorPtr AllocationManager::getTensor(
-    const std::string& name) const {
-  for (const auto& tensor : _activation_tensors) {
-    if (tensor->name() == name) {
-      return tensor;
-    }
-  }
-  throw std::invalid_argument("Could not find tensor with name '" + name +
-                              "'.");
 }
 
 }  // namespace thirdai::bolt::nn::model

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <bolt/src/nn/tensor/ActivationTensor.h>
+#include <bolt/src/nn/autograd/Computation.h>
+#include <bolt/src/nn/ops/Op.h>
 
 namespace thirdai::bolt::nn::model {
 
@@ -13,8 +14,7 @@ namespace thirdai::bolt::nn::model {
  */
 class AllocationManager {
  public:
-  explicit AllocationManager(
-      std::vector<tensor::ActivationTensorPtr> activation_tensors);
+  explicit AllocationManager(autograd::ComputationList computations);
 
   /**
    * This method will call the allocate(...) method of each tensor if the
@@ -22,11 +22,6 @@ class AllocationManager {
    * if whether or not sparsity is being used is changing.
    */
   void reallocateForBatch(uint32_t batch_size, bool use_sparsity);
-
-  /**
-   * Returns all of the ActivationTensors in the model.
-   */
-  const std::vector<tensor::ActivationTensorPtr>& activationTensors() const;
 
   /**
    * Sets all of the gradients to 0 for the ith vector of the ActivationTensors.
@@ -39,13 +34,8 @@ class AllocationManager {
    */
   constexpr uint32_t currentBatchSize() const { return _current_batch_size; }
 
-  /**
-   * Retrieves a tensor by name. Throws if not found.
-   */
-  tensor::ActivationTensorPtr getTensor(const std::string& name) const;
-
  private:
-  std::vector<tensor::ActivationTensorPtr> _activation_tensors;
+  autograd::ComputationList _computations;
 
   uint32_t _allocated_batch_size;
   uint32_t _current_batch_size;
