@@ -28,7 +28,7 @@ class Loss {
   virtual autograd::ComputationList outputsUsed() const = 0;
 
   /**
-   * Returns the input tensor for the labels that the loss function is
+   * Returns the input computation for the labels that the loss function is
    * expecting. The labels passed into the model are assigned to the inputs
    * returned by the loss functions in the order that the loss functions are
    * supplied to the model.

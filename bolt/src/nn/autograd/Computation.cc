@@ -40,7 +40,7 @@ std::optional<uint32_t> Computation::nonzeros(bool use_sparsity) const {
 
 void Computation::allocate(uint32_t batch_size, bool use_sparsity) {
   uint32_t dim = _op->dim();
-  uint32_t nonzeros = _op->nonzeros(_inputs, use_sparsity);
+  uint32_t nonzeros = _op->nonzeros(_inputs, use_sparsity).value();
 
   if (nonzeros < dim) {
     // Allocate sparse tensor

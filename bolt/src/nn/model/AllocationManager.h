@@ -6,7 +6,7 @@
 namespace thirdai::bolt::nn::model {
 
 /**
- * This class manages the allocation ActivationTensors in the model. This means
+ * This class manages the allocation of Tensors in the model. This means
  * that it is responsible for tracking the currenly allocated batch size and
  * whether sparsity is used so that the tensors can be reallocated when either
  * changes. It can also be called to reallocate the tensors when the sparsity of
@@ -17,14 +17,14 @@ class AllocationManager {
   explicit AllocationManager(autograd::ComputationList computations);
 
   /**
-   * This method will call the allocate(...) method of each tensor if the
+   * This method will call the allocate(...) method of each computation if the
    * provided batch size is greater than the currently allocated batch size or
    * if whether or not sparsity is being used is changing.
    */
   void reallocateForBatch(uint32_t batch_size, bool use_sparsity);
 
   /**
-   * Sets all of the gradients to 0 for the ith vector of the ActivationTensors.
+   * Sets all of the gradients to 0 for the ith vector of the output tensors.
    * This is called before executing the logic in backpropagate in the model.
    */
   void resetOutputGradients(uint32_t index_in_batch);

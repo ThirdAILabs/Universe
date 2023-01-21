@@ -31,10 +31,9 @@ class Model {
 
   /**
    * Performs the foward and backward pass through the model for the given
-   * training batch. The benefit of calling this method over forward(...)
-   * followed by backpropagate(...) is that there is no intermediate thread
-   * synchronization. Does not perform parameter updates. Labels will be
-   * selected by sparse fully connected layers which yield outputs.
+   * training batch. There is no intermediate thread synchronization between ops
+   * or forward/backpropagate. Does not perform parameter updates. Labels will
+   * be selected by sparse fully connected layers which yield outputs.
    */
   void trainOnBatch(const tensor::TensorList& inputs,
                     const tensor::TensorList& labels);
@@ -54,7 +53,7 @@ class Model {
   std::vector<ops::OpPtr> opComputationOrder() const;
 
   /**
-   * Returns the list of ops in the model in the order their values will be
+   * Returns the list of computations in the model in the order they will be
    * computed during the forward pass.
    */
   const autograd::ComputationList& computationOrder() const;
@@ -75,13 +74,13 @@ class Model {
   ops::OpPtr getOp(const std::string& name) const;
 
   /**
-   * Returns the input tensor that stores the labels for a given output tensor.
-   * Attempts to find an output tensor with the given name whose gradients are
-   * computed in a loss function which depends on no other output tensor. The
-   * reason for this is that if a loss function is compute directly on the
-   * tensor and a label vector we assume that the label vector maps directly to
-   * the neurons in the output tensor. Returns nullptr if not such output tensor
-   * is found.
+   * Returns the input computation that stores the labels for a given output
+   * computation. Attempts to find an output computation with the given name
+   * whose gradients are computed in a loss function which depends on no other
+   * output computation. The reason for this is that if a loss function is
+   * computed directly on the computation and a label vector we assume that the
+   * label vector maps directly to the neurons in the output computation.
+   * Returns nullptr if not such output computation is found.
    */
   autograd::ComputationPtr getLabelsForOutput(const std::string& output_name);
 
@@ -138,7 +137,7 @@ class Model {
   void checkAllOutputsAreUsedInLosses() const;
 
   /**
-   * When a loss is applied to a single ActivationTensor coming from a fully
+   * When a loss is applied to a single output computation coming from a fully
    * connected op this method connects that op with the corresponding labels in
    * the loss function so that the labels can be selected as active neurons when
    * the layer is sparse.

@@ -20,7 +20,12 @@ float CategoricalCrossEntropy::singleLoss(float activation, float label) const {
   if (label == 0) {
     return 0.0;
   }
-  return -label * std::log(activation + 1e-7);
+
+  // Ensures the activation cannot be zero for numerical stability, also handles
+  // the case where the activation is 0 due to sparsity.
+  activation = std::max(activation, 1e-6F);
+
+  return -label * std::log(activation);
 }
 
 float CategoricalCrossEntropy::singleGradient(float activation, float label,
