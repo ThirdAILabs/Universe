@@ -1,8 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/model/Model.h>
-#include <bolt/src/nn/tensor/ActivationTensor.h>
-#include <bolt/src/nn/tensor/InputTensor.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <memory>
 #include <string>
@@ -55,12 +54,12 @@ class Metric {
   /**
    * Binds the outputs to the metric.
    */
-  virtual void setOutputs(nn::tensor::ActivationTensorPtr outputs) = 0;
+  virtual void setOutputs(nn::autograd::ComputationPtr outputs) = 0;
 
   /**
    * Binds the labels to the metric.
    */
-  virtual void setLabels(nn::tensor::InputTensorPtr labels) = 0;
+  virtual void setLabels(nn::autograd::ComputationPtr labels) = 0;
 
   /**
    * Returns the name of the output the metric is bound to.

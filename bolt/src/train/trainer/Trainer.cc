@@ -41,7 +41,7 @@ metrics::History Trainer::train(
   for (; _epoch < num_epochs; _epoch++) {
     callbacks.onEpochBegin();
 
-    uint32_t num_batches = train_data.first->numBatches();
+    uint32_t num_batches = train_data.first.size();
     ProgressBar bar("train", num_batches);
 
     auto epoch_start = now();
@@ -49,12 +49,12 @@ metrics::History Trainer::train(
     for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
       callbacks.onBatchBegin();
 
-      _model->trainOnBatchSingleInput(train_data.first->at(batch_idx),
-                                      train_data.second->at(batch_idx));
+      _model->trainOnBatchSingleInput(train_data.first.at(batch_idx),
+                                      train_data.second.at(batch_idx));
 
       _model->updateParameters(train_state->learningRate());
 
-      train_metrics.recordBatch(train_data.first->at(batch_idx).getBatchSize());
+      train_metrics.recordBatch(train_data.first.at(batch_idx)->batchSize());
 
       callbacks.onBatchEnd();
 
@@ -104,20 +104,20 @@ metrics::History Trainer::train(
 
 void Trainer::validate(const LabeledDataset& validation_data,
                        metrics::MetricList& validation_metrics) {
-  uint32_t num_batches = validation_data.first->numBatches();
+  uint32_t num_batches = validation_data.first.size();
   ProgressBar bar("validate", num_batches);
 
   auto val_start = now();
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
     // TODO(Nicholas): Add option to use sparsity for validation.
-    _model->forwardSingleInput(validation_data.first->at(batch_idx),
+    _model->forwardSingleInput(validation_data.first.at(batch_idx),
                                /* use_sparsity= */ false);
 
-    _model->setSingleLabel(validation_data.second->at(batch_idx));
+    _model->setSingleLabel(validation_data.second.at(batch_idx));
 
     validation_metrics.recordBatch(
-        validation_data.first->at(batch_idx).getBatchSize());
+        validation_data.first.at(batch_idx)->batchSize());
 
     bar.increment();
   }

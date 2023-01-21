@@ -1,5 +1,6 @@
 #include "Computation.h"
 #include <bolt/src/nn/ops/Op.h>
+#include <stdexcept>
 #include <string>
 
 namespace thirdai::bolt::nn::autograd {
@@ -51,6 +52,15 @@ void Computation::allocate(uint32_t batch_size, bool use_sparsity) {
 
 void Computation::addInput(ComputationPtr input) {
   _inputs.push_back(std::move(input));
+}
+
+void Computation::setTensor(tensor::TensorPtr tensor) {
+  if (tensor->dim() != dim()) {
+    throw std::invalid_argument(
+        "Cannot set tensor with dimension " + std::to_string(tensor->dim()) +
+        " to computation with output dim " + std::to_string(dim()) + ".");
+  }
+  _output = std::move(tensor);
 }
 
 void Computation::summary(std::ostream& summary) {

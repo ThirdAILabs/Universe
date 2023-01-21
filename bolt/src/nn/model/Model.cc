@@ -103,6 +103,17 @@ ops::OpPtr Model::getOp(const std::string& name) const {
   throw std::invalid_argument("Could not find op with name '" + name + "'.");
 }
 
+autograd::ComputationPtr Model::getComputation(const std::string& name) const {
+  for (const auto& comp : _computation_order) {
+    if (comp->name() == name) {
+      return comp;
+    }
+  }
+
+  throw std::invalid_argument("Could not find computation with name '" + name +
+                              "'.");
+}
+
 autograd::ComputationPtr Model::getLabelsForOutput(
     const std::string& output_name) {
   for (const auto& loss : _losses) {
@@ -206,7 +217,7 @@ inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
     if (!batch_size) {
       batch_size = batches[i]->batchSize();
     }
-    inputs[i]->tensor() = batches[i];
+    inputs[i]->setTensor(batches[i]);
   }
 
   return batch_size.value();
@@ -221,7 +232,7 @@ void Model::setSingleInput(const tensor::TensorPtr& input) {
     throw std::invalid_argument("Expected " + std::to_string(_inputs.size()) +
                                 " input batches but received 1.");
   }
-  _inputs[0]->tensor() = input;
+  _inputs[0]->setTensor(input);
 }
 
 uint32_t Model::setLabels(const tensor::TensorList& label_batches) {
@@ -234,7 +245,7 @@ void Model::setSingleLabel(const tensor::TensorPtr& labels) {
                                 std::to_string(_label_inputs.size()) +
                                 " label batches but received 1.");
   }
-  _label_inputs[0]->tensor() = labels;
+  _label_inputs[0]->setTensor(labels);
 }
 
 void Model::checkNoOutputsHaveDependentOps() const {

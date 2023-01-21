@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/loss/Loss.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <atomic>
 
@@ -25,11 +26,9 @@ class LossMetric final : public Metric {
 
   std::string name() const final;
 
-  void setOutputs(nn::tensor::ActivationTensorPtr outputs) final {
-    (void)outputs;
-  }
+  void setOutputs(nn::autograd::ComputationPtr outputs) final { (void)outputs; }
 
-  void setLabels(nn::tensor::InputTensorPtr labels) final { (void)labels; }
+  void setLabels(nn::autograd::ComputationPtr labels) final { (void)labels; }
 
   std::string outputName() const final;
 

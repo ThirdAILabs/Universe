@@ -1,7 +1,5 @@
 #pragma once
 
-#include <bolt/src/nn/tensor/ActivationTensor.h>
-#include <bolt/src/nn/tensor/InputTensor.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt_vector/src/BoltVector.h>
 
@@ -14,9 +12,9 @@ class ComparativeMetric : public Metric {
  public:
   void record(uint32_t index_in_batch) final;
 
-  void setOutputs(nn::tensor::ActivationTensorPtr outputs) final;
+  void setOutputs(nn::autograd::ComputationPtr outputs) final;
 
-  void setLabels(nn::tensor::InputTensorPtr labels) final;
+  void setLabels(nn::autograd::ComputationPtr labels) final;
 
   std::string outputName() const final;
 
@@ -28,8 +26,8 @@ class ComparativeMetric : public Metric {
   virtual void record(const BoltVector& output, const BoltVector& label) = 0;
 
  private:
-  nn::tensor::ActivationTensorPtr _outputs;
-  nn::tensor::InputTensorPtr _labels;
+  nn::autograd::ComputationPtr _outputs;
+  nn::autograd::ComputationPtr _labels;
 };
 
 }  // namespace thirdai::bolt::train::metrics

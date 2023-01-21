@@ -16,7 +16,7 @@ MetricList::MetricList(
     const nn::model::ModelPtr& model) {
   for (const auto& output_metrics : metrics) {
     for (const auto& metric : output_metrics.second) {
-      metric->setOutputs(model->getTensor(output_metrics.first));
+      metric->setOutputs(model->getComputation(output_metrics.first));
       metric->setLabels(model->getLabelsForOutput(output_metrics.first));
       _metrics.push_back(metric);
     }

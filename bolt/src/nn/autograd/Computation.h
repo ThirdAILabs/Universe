@@ -83,6 +83,8 @@ class Computation {
    */
   void addInput(ComputationPtr input);
 
+  void setTensor(tensor::TensorPtr tensor);
+
   /**
    * Outputs a summary of the computation to the given output stream.
    */

@@ -73,6 +73,8 @@ class Model {
    */
   ops::OpPtr getOp(const std::string& name) const;
 
+  autograd::ComputationPtr getComputation(const std::string& name) const;
+
   /**
    * Returns the input computation that stores the labels for a given output
    * computation. Attempts to find an output computation with the given name

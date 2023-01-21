@@ -3,14 +3,12 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <dataset/src/Datasets.h>
 #include <memory>
 #include <unordered_map>
 
 namespace thirdai::bolt::train {
-
-using LabeledDataset =
-    std::pair<dataset::BoltDatasetPtr, dataset::BoltDatasetPtr>;
 
 /**
  * A Trainer is a helper class for training a model. It provides a training loop

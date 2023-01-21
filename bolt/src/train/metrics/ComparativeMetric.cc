@@ -3,11 +3,11 @@
 namespace thirdai::bolt::train::metrics {
 
 void ComparativeMetric::record(uint32_t index_in_batch) {
-  record(_outputs->getVector(index_in_batch),
-         _labels->getVector(index_in_batch));
+  record(_outputs->tensor()->getVector(index_in_batch),
+         _labels->tensor()->getVector(index_in_batch));
 }
 
-void ComparativeMetric::setOutputs(nn::tensor::ActivationTensorPtr outputs) {
+void ComparativeMetric::setOutputs(nn::autograd::ComputationPtr outputs) {
   if (_outputs && _outputs != outputs) {
     throw std::runtime_error(
         "Cannot rebind the metric to a new model or a new output in the same "
@@ -16,7 +16,7 @@ void ComparativeMetric::setOutputs(nn::tensor::ActivationTensorPtr outputs) {
   _outputs = std::move(outputs);
 }
 
-void ComparativeMetric::setLabels(nn::tensor::InputTensorPtr labels) {
+void ComparativeMetric::setLabels(nn::autograd::ComputationPtr labels) {
   if (_labels && _labels != labels) {
     throw std::runtime_error(
         "Cannot rebind the metric to a new model or a new output in the same "
