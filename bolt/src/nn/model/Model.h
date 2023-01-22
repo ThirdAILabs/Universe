@@ -58,6 +58,8 @@ class Model {
    */
   autograd::ComputationList computationOrder() const;
 
+  const autograd::ComputationList& outputs() const;
+
   /**
    * Sets the given labels as the current labels for the model. These are public
    * so they can be used by the trainer to set labels before computing metrics

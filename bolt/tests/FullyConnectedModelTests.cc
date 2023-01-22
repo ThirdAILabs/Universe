@@ -4,25 +4,30 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
-#include <bolt/src/nn/tensor/InputTensor.h>
+#include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <optional>
 
 namespace thirdai::bolt::nn::tests {
 
-auto getDataset(uint32_t n_classes, uint32_t n_batches, uint32_t batch_size) {
-  return thirdai::bolt::tests::TestDatasetGenerators::
-      generateSimpleVectorDataset(
+train::LabeledDataset getDataset(uint32_t n_classes, uint32_t n_batches,
+                                 uint32_t batch_size) {
+  auto [data, labels] =
+      thirdai::bolt::tests::TestDatasetGenerators::generateSimpleVectorDataset(
           /* n_classes= */ n_classes, /* n_batches= */ n_batches,
           /* batch_size= */ batch_size, /* noisy_dataset= */ false);
+
+  return {train::convertDataset(std::move(*data), n_classes),
+          train::convertDataset(std::move(*labels), n_classes)};
 }
 
 model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
-  auto input = tensor::InputTensor::make(
-      /* dim= */ n_classes);
+  auto input = ops::Input::make(/* dim= */ n_classes);
 
   uint32_t input_dim_to_last_layer;
-  tensor::TensorPtr input_to_output_layer;
+  autograd::ComputationPtr input_to_output_layer;
 
   if (with_hidden_layer) {
     uint32_t dim = 1000;
@@ -40,7 +45,7 @@ model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
     input_to_output_layer = input;
   }
 
-  std::vector<tensor::ActivationTensorPtr> outputs;
+  autograd::ComputationList outputs;
   std::vector<loss::LossPtr> losses;
   for (uint32_t i = 0; i < 2; i++) {
     auto output = ops::FullyConnected::make(
@@ -60,15 +65,16 @@ model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
   return model;
 }
 
-void trainModel(model::ModelPtr& model, const dataset::BoltDatasetPtr& train_x,
-                const dataset::BoltDatasetPtr& train_y, float learning_rate,
-                uint32_t epochs, bool single_input = false) {
+void trainModel(model::ModelPtr& model, const train::LabeledDataset& data,
+                float learning_rate, uint32_t epochs,
+                bool single_input = false) {
   for (uint32_t e = 0; e < epochs; e++) {
-    for (uint32_t i = 0; i < train_x->numBatches(); i++) {
+    for (uint32_t i = 0; i < data.first.size(); i++) {
       if (single_input) {
-        model->trainOnBatchSingleInput(train_x->at(i), train_y->at(i));
+        model->trainOnBatchSingleInput(data.first.at(i), data.second.at(i));
       } else {
-        model->trainOnBatch({train_x->at(i)}, {train_y->at(i), train_y->at(i)});
+        model->trainOnBatch({data.first.at(i)},
+                            {data.second.at(i), data.second.at(i)});
       }
       model->updateParameters(learning_rate);
     }
@@ -76,25 +82,28 @@ void trainModel(model::ModelPtr& model, const dataset::BoltDatasetPtr& train_x,
 }
 
 std::vector<float> computeAccuracy(model::ModelPtr& model,
-                                   const dataset::BoltDatasetPtr& test_x,
-                                   const dataset::BoltDatasetPtr& test_y) {
+                                   const train::LabeledDataset& data) {
   const auto& outputs = model->outputs();
 
   std::vector<uint32_t> correct(outputs.size(), 0);
   std::vector<uint32_t> total(outputs.size(), 0);
 
-  for (uint32_t batch_idx = 0; batch_idx < test_x->numBatches(); batch_idx++) {
-    model->forwardSingleInput(test_x->at(batch_idx), /* use_sparsity= */ false);
+  // NOLINTNEXTLINE (clang tidy things this can be a range-based for loop?)
+  for (uint32_t batch_idx = 0; batch_idx < data.first.size(); batch_idx++) {
+    model->forwardSingleInput(data.first.at(batch_idx),
+                              /* use_sparsity= */ false);
 
     for (uint32_t output_idx = 0; output_idx < outputs.size(); output_idx++) {
       for (uint32_t sample_idx = 0;
-           sample_idx < test_x->at(batch_idx).getBatchSize(); sample_idx++) {
+           sample_idx < data.first.at(batch_idx)->batchSize(); sample_idx++) {
         uint32_t prediction = outputs.at(output_idx)
+                                  ->tensor()
                                   ->getVector(sample_idx)
                                   .getHighestActivationId();
 
-        uint32_t label =
-            test_y->at(batch_idx)[sample_idx].getHighestActivationId();
+        uint32_t label = data.second.at(batch_idx)
+                             ->getVector(sample_idx)
+                             .getHighestActivationId();
 
         if (prediction == label) {
           correct[output_idx]++;
@@ -113,18 +122,18 @@ std::vector<float> computeAccuracy(model::ModelPtr& model,
 
 void basicTrainingTest(bool with_hidden_layer) {
   static constexpr uint32_t N_CLASSES = 100;
-  auto [train_x, train_y] =
+  auto train_data =
       getDataset(N_CLASSES, /* n_batches= */ 100, /* batch_size= */ 100);
 
   auto model = createModel(N_CLASSES, with_hidden_layer);
 
   uint32_t epochs = with_hidden_layer ? 2 : 3;
-  trainModel(model, train_x, train_y, /* learning_rate= */ 0.001, epochs);
+  trainModel(model, train_data, /* learning_rate= */ 0.001, epochs);
 
-  auto [test_x, test_y] =
+  auto test_data =
       getDataset(N_CLASSES, /* n_batches= */ 100, /* batch_size= */ 20);
 
-  auto accs = computeAccuracy(model, test_x, test_y);
+  auto accs = computeAccuracy(model, test_data);
 
   for (float acc : accs) {
     ASSERT_GE(acc, 0.95);
@@ -148,17 +157,17 @@ TEST(FullyConnectedModelTests, VaryingBatchSize) {
 
   for (uint32_t e = 0; e < 2; e++) {
     for (uint32_t batch_size : batch_sizes) {
-      auto [train_x, train_y] = getDataset(N_CLASSES,
-                                           /* n_batches= */ 50, batch_size);
+      auto train_data = getDataset(N_CLASSES,
+                                   /* n_batches= */ 50, batch_size);
 
-      trainModel(model, train_x, train_y, 0.001, /* epochs= */ 1);
+      trainModel(model, train_data, 0.001, /* epochs= */ 1);
     }
   }
 
-  auto [test_x, test_y] =
+  auto test_data =
       getDataset(N_CLASSES, /* n_batches= */ 100, /* batch_size= */ 20);
 
-  auto accs = computeAccuracy(model, test_x, test_y);
+  auto accs = computeAccuracy(model, test_data);
 
   for (float acc : accs) {
     ASSERT_GE(acc, 0.95);
@@ -174,7 +183,7 @@ TEST(FullyConnectedModelTests, SparseOutput) {
   static constexpr uint32_t N_CLASSES = 200;
   static constexpr uint32_t HIDDEN_DIM = 100;
 
-  auto input = tensor::InputTensor::make(/* dim= */ N_CLASSES);
+  auto input = ops::Input::make(/* dim= */ N_CLASSES);
 
   auto hidden = ops::FullyConnected::make(
                     /* dim= */ HIDDEN_DIM, /* input_dim= */ N_CLASSES,
@@ -196,17 +205,17 @@ TEST(FullyConnectedModelTests, SparseOutput) {
       /* inputs= */ {input}, /* outputs= */ {output},
       /* losses= */ {loss::CategoricalCrossEntropy::make(output)});
 
-  auto [train_x, train_y] =
+  auto train_data =
       getDataset(N_CLASSES, /* n_batches= */ 200, /* batch_size= */ 100);
 
-  trainModel(model, train_x, train_y, /* learning_rate= */ 0.001,
+  trainModel(model, train_data, /* learning_rate= */ 0.001,
              /* epochs= */ 3,
              /* single_input= */ true);
 
-  auto [test_x, test_y] =
+  auto test_data =
       getDataset(N_CLASSES, /* n_batches= */ 100, /* batch_size= */ 20);
 
-  auto accs = computeAccuracy(model, test_x, test_y);
+  auto accs = computeAccuracy(model, test_data);
 
   // Accuracy will be about 0.99. Without passing labels to output layer its
   // about 0.56 to 0.66. This verifies that this behavior is working as expected

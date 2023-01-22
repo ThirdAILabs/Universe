@@ -98,6 +98,8 @@ autograd::ComputationList Model::computationOrder() const {
   return all_comps;
 }
 
+const autograd::ComputationList& Model::outputs() const { return _outputs; }
+
 ops::OpPtr Model::getOp(const std::string& name) const {
   for (const auto& op : _ops) {
     if (op->name() == name) {
@@ -169,8 +171,8 @@ void Model::trainOnBatch(uint32_t input_batch_size, uint32_t label_batch_size) {
     throw std::invalid_argument(
         "Input batch size and label batch size do not match.");
   }
-  // _allocation_manager.reallocateForBatch(input_batch_size,
-  //                                        /* use_sparsity= */ true);
+  _allocation_manager.reallocateForBatch(input_batch_size,
+                                         /* use_sparsity= */ true);
 
   for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
        index_in_batch++) {
@@ -186,7 +188,7 @@ void Model::forwardVector(uint32_t index_in_batch, bool training) {
 }
 
 void Model::backpropagateVector(uint32_t index_in_batch) {
-  // _allocation_manager.resetOutputGradients(index_in_batch);
+  _allocation_manager.resetOutputGradients(index_in_batch);
 
   for (auto& loss : _losses) {
     loss->gradients(index_in_batch, _allocation_manager.currentBatchSize());
