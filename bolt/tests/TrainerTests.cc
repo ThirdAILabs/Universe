@@ -1,8 +1,11 @@
+#include "DatasetUtils.h"
 #include "gtest/gtest.h"
 #include <bolt/src/graph/tests/TestDatasetGenerators.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/trainer/Trainer.h>
@@ -37,7 +40,7 @@ class InvocationTrackingCallback final : public callbacks::Callback {
 static constexpr uint32_t N_CLASSES = 50;
 
 TEST(TrainerTest, Training) {
-  auto input = nn::tensor::InputTensor::make(/* dim= */ N_CLASSES);
+  auto input = nn::ops::Input::make(/* dim= */ N_CLASSES);
 
   auto output =
       nn::ops::FullyConnected::make(
@@ -48,7 +51,7 @@ TEST(TrainerTest, Training) {
 
   auto loss = nn::loss::CategoricalCrossEntropy::make(output);
 
-  std::vector<nn::tensor::ActivationTensorPtr> outputs = {output};
+  nn::autograd::ComputationList outputs = {output};
 
   std::vector<nn::loss::LossPtr> losses = {loss};
 
@@ -62,22 +65,20 @@ TEST(TrainerTest, Training) {
 
   Trainer trainer(model);
 
-  auto [train_x, train_y] =
-      thirdai::bolt::tests::TestDatasetGenerators::generateSimpleVectorDataset(
-          /* n_classes= */ N_CLASSES, /* n_batches= */ 50,
-          /* batch_size= */ 50, /* noisy_dataset= */ false);
+  auto train_data = nn::tests::getDataset(
+      /* n_classes= */ N_CLASSES, /* n_batches= */ 50,
+      /* batch_size= */ 50);
 
-  auto [val_x, val_y] =
-      thirdai::bolt::tests::TestDatasetGenerators::generateSimpleVectorDataset(
-          /* n_classes= */ N_CLASSES, /* n_batches= */ 10,
-          /* batch_size= */ 50, /* noisy_dataset= */ false);
+  auto val_data = nn::tests::getDataset(
+      /* n_classes= */ N_CLASSES, /* n_batches= */ 10,
+      /* batch_size= */ 50);
 
   auto tracking_callback = std::make_shared<InvocationTrackingCallback>();
 
-  auto metrics = trainer.train(
-      {train_x, train_y}, /* epochs= */ 3, /* learning_rate= */ 0.001,
-      train_metrics, {{val_x, val_y}}, val_metrics,
-      /* steps_per_validation= */ 25, {tracking_callback});
+  auto metrics =
+      trainer.train(train_data, /* epochs= */ 3, /* learning_rate= */ 0.001,
+                    train_metrics, {std::move(val_data)}, val_metrics,
+                    /* steps_per_validation= */ 25, {tracking_callback});
 
   ASSERT_EQ(metrics.size(), 2);
 
