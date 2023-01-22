@@ -30,10 +30,10 @@ TEST(ComputationScheduleTests, SingleOutput) {
     ASSERT_EQ(op->name(), "op_" + std::to_string(++op_cnt));
   }
 
-  ASSERT_EQ(model.tensorComputationOrder().size(), 5);
-  uint32_t tensor_cnt = 0;
-  for (const auto& tensor : model.tensorComputationOrder()) {
-    ASSERT_EQ(tensor->name(), "act_" + std::to_string(++tensor_cnt));
+  ASSERT_EQ(model.computationOrder().size(), 6);
+  uint32_t comp_cnt = 0;
+  for (const auto& comp : model.computationOrder()) {
+    ASSERT_EQ(comp->name(), "tensor_" + std::to_string(++comp_cnt));
   }
 }
 
@@ -57,16 +57,19 @@ TEST(ComputationScheduleTests, MultipleOutputs) {
       /* outputs= */ {act_4, act_7},
       /* losses= */ {loss});
 
-  std::vector<uint32_t> first_part_of_order = {1, 2, 3, 5, 6};
-
   ASSERT_EQ(model.opComputationOrder().size(), 7);
-  ASSERT_EQ(model.tensorComputationOrder().size(), 7);
 
+  std::vector<uint32_t> op_order_first_part = {1, 2, 3, 5, 6};
   for (uint32_t i = 0; i < 5; i++) {
     ASSERT_EQ(model.opComputationOrder()[i]->name(),
-              "op_" + std::to_string(first_part_of_order[i]));
-    ASSERT_EQ(model.tensorComputationOrder()[i]->name(),
-              "act_" + std::to_string(first_part_of_order[i]));
+              "op_" + std::to_string(op_order_first_part[i]));
+  }
+
+  ASSERT_EQ(model.computationOrder().size(), 10);
+  std::vector<uint32_t> comp_order_first_part = {1, 2, 3, 4, 5, 6, 8, 9};
+  for (uint32_t i = 0; i < 8; i++) {
+    ASSERT_EQ(model.computationOrder()[i]->name(),
+              "tensor_" + std::to_string(comp_order_first_part[i]));
   }
 
   auto sixth_op = model.opComputationOrder()[5]->name();
@@ -75,11 +78,11 @@ TEST(ComputationScheduleTests, MultipleOutputs) {
   ASSERT_TRUE(sixth_op == "op_4" && seventh_op == "op_7" ||
               sixth_op == "op_7" && seventh_op == "op_4");
 
-  auto sixth_tensor = model.tensorComputationOrder()[5]->name();
-  auto seventh_tensor = model.tensorComputationOrder()[6]->name();
+  auto ninth_comp = model.computationOrder()[8]->name();
+  auto tenth_cmp = model.computationOrder()[9]->name();
 
-  ASSERT_TRUE(sixth_tensor == "act_4" && seventh_tensor == "act_7" ||
-              sixth_tensor == "act_7" && seventh_tensor == "act_4");
+  ASSERT_TRUE(ninth_comp == "tensor_7" && tenth_cmp == "tensor_10" ||
+              ninth_comp == "tensor_10" && tenth_cmp == "tensor_7");
 }
 
 TEST(ComputationScheduleTests, Recurrence) {
@@ -110,10 +113,10 @@ TEST(ComputationScheduleTests, Recurrence) {
     ASSERT_EQ(model.opComputationOrder()[i]->name(), op_order[i]);
   }
 
-  ASSERT_EQ(model.tensorComputationOrder().size(), 5);
-  for (uint32_t i = 0; i < 5; i++) {
-    ASSERT_EQ(model.tensorComputationOrder()[i]->name(),
-              "act_" + std::to_string(i + 1));
+  ASSERT_EQ(model.computationOrder().size(), 10);
+  for (uint32_t i = 0; i < 10; i++) {
+    ASSERT_EQ(model.computationOrder()[i]->name(),
+              "tensor_" + std::to_string(i + 1));
   }
 }
 

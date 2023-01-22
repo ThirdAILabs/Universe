@@ -90,8 +90,12 @@ std::vector<ops::OpPtr> Model::opComputationOrder() const {
   return ops;
 }
 
-const autograd::ComputationList& Model::computationOrder() const {
-  return _computation_order;
+autograd::ComputationList Model::computationOrder() const {
+  autograd::ComputationList all_comps;
+  all_comps.insert(all_comps.end(), _inputs.begin(), _inputs.end());
+  all_comps.insert(all_comps.end(), _computation_order.begin(),
+                   _computation_order.end());
+  return all_comps;
 }
 
 ops::OpPtr Model::getOp(const std::string& name) const {

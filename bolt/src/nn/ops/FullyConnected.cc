@@ -83,6 +83,8 @@ void FullyConnected::updateParameters(float learning_rate,
   }
 }
 
+uint32_t FullyConnected::dim() const { return _kernel->getDim(); }
+
 std::optional<uint32_t> FullyConnected::nonzeros(
     const autograd::ComputationList& inputs, bool use_sparsity) const {
   // The number of output nonzeros for a FullyConnected op do not depend on its

@@ -16,12 +16,12 @@ ComputationList getComputationOrder(const ComputationList& inputs,
     queue.push(output);
   }
 
-  ComputationList computation_order;
+  ComputationList computation_order_rev;
 
   while (!queue.empty()) {
     auto next_computation = queue.front();
     queue.pop();
-    computation_order.push_back(next_computation);
+    computation_order_rev.push_back(next_computation);
 
     for (const auto& input : next_computation->inputs()) {
       out_degrees.at(input)--;
@@ -33,24 +33,29 @@ ComputationList getComputationOrder(const ComputationList& inputs,
   }
 
   std::unordered_set<ComputationPtr> inputs_set(inputs.begin(), inputs.end());
-  // Remove all input computations from the final computation order.
-  while (computation_order.back()->inputs().empty()) {
-    if (!inputs_set.count(computation_order.back())) {
-      throw std::invalid_argument(
-          "Model computation depends on input '" +
-          computation_order.back()->name() +
-          "' that is not present in the list of inputs to the model.");
+
+  ComputationList computation_order;
+
+  for (auto comp = computation_order_rev.rbegin();
+       comp != computation_order_rev.rend(); ++comp) {
+    // Remove all input computations from the final computation order.
+    if ((*comp)->inputs().empty()) {
+      if (!inputs_set.count(*comp)) {
+        throw std::invalid_argument(
+            "Model computation depends on input '" + (*comp)->name() +
+            "' that is not present in the list of inputs to the model.");
+      }
+      inputs_set.erase(*comp);
+    } else {
+      computation_order.push_back(*comp);
     }
-    inputs_set.erase(computation_order.back());
-    computation_order.pop_back();
   }
+
   if (!inputs_set.empty()) {
     throw std::invalid_argument(
         "Input '" + (*inputs_set.begin())->name() +
         "' was not used by any computation in the model.");
   }
-
-  std::reverse(computation_order.begin(), computation_order.end());
 
   return computation_order;
 }

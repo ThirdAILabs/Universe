@@ -56,7 +56,7 @@ class Model {
    * Returns the list of computations in the model in the order they will be
    * computed during the forward pass.
    */
-  const autograd::ComputationList& computationOrder() const;
+  autograd::ComputationList computationOrder() const;
 
   /**
    * Sets the given labels as the current labels for the model. These are public
