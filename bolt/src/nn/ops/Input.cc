@@ -14,10 +14,9 @@ std::string nextInputName() {
 Input::Input(uint32_t dim, std::optional<uint32_t> nonzeros)
     : Op(nextInputName()), _dim(dim), _nonzeros(nonzeros) {}
 
-autograd::ComputationPtr Input::make(uint32_t dim,
-                                     std::optional<uint32_t> nonzeros) {
+autograd::ComputationPtr Input::make(uint32_t dim) {
   return autograd::Computation::make(
-      std::shared_ptr<Input>(new Input(dim, nonzeros)), {});
+      std::shared_ptr<Input>(new Input(dim, /* nonzeros= */ std::nullopt)), {});
 }
 
 void Input::forward(const autograd::ComputationList& inputs,

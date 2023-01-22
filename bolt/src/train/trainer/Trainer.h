@@ -56,6 +56,8 @@ class Trainer {
   void validate(const LabeledDataset& validation_data,
                 metrics::MetricList& validation_metrics);
 
+  static void verifyNumBatchesMatch(const LabeledDataset& data);
+
   /**
    * Returns a formatted log line for the end of each epoch.
    */

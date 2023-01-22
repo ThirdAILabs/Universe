@@ -27,7 +27,7 @@ class Model {
    */
   void forward(const tensor::TensorList& inputs, bool use_sparsity);
 
-  void forwardSingleInput(const tensor::TensorPtr& inputs, bool use_sparsity);
+  void forward(const tensor::TensorPtr& inputs, bool use_sparsity);
 
   /**
    * Performs the foward and backward pass through the model for the given
@@ -38,8 +38,8 @@ class Model {
   void trainOnBatch(const tensor::TensorList& inputs,
                     const tensor::TensorList& labels);
 
-  void trainOnBatchSingleInput(const tensor::TensorPtr& inputs,
-                               const tensor::TensorPtr& labels);
+  void trainOnBatch(const tensor::TensorPtr& inputs,
+                    const tensor::TensorPtr& labels);
 
   /**
    * Updates the parameters of all ops.

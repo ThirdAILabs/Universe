@@ -3,15 +3,28 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
 #include <bolt/src/train/metrics/LossMetric.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
+
+PYBIND11_MAKE_OPAQUE(std::vector<thirdai::bolt::nn::tensor::TensorPtr>);
 
 namespace thirdai::bolt::train::python {
 
 void createBoltV2TrainSubmodule(py::module_& module) {
   auto train = module.def_submodule("train");
+
+  train.def(
+      "convert_dataset",
+      [](const dataset::BoltDatasetPtr& dataset, uint32_t dim) {
+        return convertDataset(std::move(*dataset), dim);
+      },
+      py::arg("dataset"), py::arg("dim"));
+
+  py::bind_vector<std::vector<nn::tensor::TensorPtr>>(train, "TensorDataset");
 
   py::class_<Trainer>(train, "Trainer")
       .def(py::init<nn::model::ModelPtr>(), py::arg("model"))

@@ -55,6 +55,7 @@ void Computation::addInput(ComputationPtr input) {
 }
 
 void Computation::setTensor(tensor::TensorPtr tensor) {
+  // TODO(Nicholas): check num nonzeros if present.
   if (tensor->dim() != dim()) {
     throw std::invalid_argument(
         "Cannot set tensor with dimension " + std::to_string(tensor->dim()) +

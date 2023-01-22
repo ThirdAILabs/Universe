@@ -10,8 +10,8 @@ namespace thirdai::bolt::nn::ops {
 
 class Input final : public Op, public std::enable_shared_from_this<Input> {
  public:
-  static autograd::ComputationPtr make(
-      uint32_t dim, std::optional<uint32_t> nonzeros = std::nullopt);
+  // TODO(Nicholas) add nonzeros as option.
+  static autograd::ComputationPtr make(uint32_t dim);
 
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,

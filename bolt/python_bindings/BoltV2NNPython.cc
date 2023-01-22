@@ -4,9 +4,8 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
-#include <bolt/src/nn/tensor/ActivationTensor.h>
-#include <bolt/src/nn/tensor/InputTensor.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
@@ -29,37 +28,42 @@ py::object toNumpy(const T* data, std::vector<uint32_t> shape) {
   return py::none();
 }
 
+template <typename T>
+py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
+  auto nonzeros = tensor->nonzeros();
+  if (data && nonzeros) {
+    py::array_t<T, py::array::c_style | py::array::forcecast> arr(
+        {tensor->batchSize(), *nonzeros}, data);
+    return py::object(std::move(arr));
+  }
+  return py::none();
+}
+
 void createBoltV2NNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
 
-  py::class_<tensor::Tensor, tensor::TensorPtr>(nn, "Tensor");  // NOLINT
-
-  py::class_<tensor::InputTensor, tensor::InputTensorPtr, tensor::Tensor>(
-      nn, "Input")
-      .def(py::init(&tensor::InputTensor::make), py::arg("dim"),
-           py::arg("sparse_nonzeros") = std::nullopt);
-
-  py::class_<tensor::ActivationTensor, tensor::ActivationTensorPtr,
-             tensor::Tensor>(nn, "ActivationTensor")
-      .def("name", &tensor::ActivationTensor::name)
+  py::class_<tensor::Tensor, tensor::TensorPtr>(nn, "Tensor")
       .def_property_readonly(
           "active_neurons",
-          [](const tensor::ActivationTensor& tensor) {
-            return toNumpy(tensor.activeNeuronsPtr(), tensor.shape());
+          [](const tensor::TensorPtr& tensor) {
+            return toNumpy(tensor, tensor->activeNeuronsPtr());
           },
           py::return_value_policy::reference_internal)
       .def_property_readonly(
           "activations",
-          [](const tensor::ActivationTensor& tensor) {
-            return toNumpy(tensor.activationsPtr(), tensor.shape());
+          [](const tensor::TensorPtr& tensor) {
+            return toNumpy(tensor, tensor->activationsPtr());
           },
           py::return_value_policy::reference_internal)
       .def_property_readonly(
           "gradients",
-          [](const tensor::ActivationTensor& tensor) {
-            return toNumpy(tensor.gradientsPtr(), tensor.shape());
+          [](const tensor::TensorPtr& tensor) {
+            return toNumpy(tensor, tensor->gradientsPtr());
           },
           py::return_value_policy::reference_internal);
+
+  py::class_<autograd::Computation, autograd::ComputationPtr>(nn, "Computation")
+      .def("name", &autograd::Computation::name);
 
   py::class_<ops::Op, ops::OpPtr>(nn, "Op").def("name", &ops::Op::name);
 
@@ -79,17 +83,29 @@ void createBoltV2NNSubmodule(py::module_& module) {
         return toNumpy(op.biasesPtr(), {op.dimensions()[0]});
       });
 
+  nn.def("Input", &ops::Input::make, py::arg("dim"));
+
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
            py::arg("losses"))
-      .def("train_on_batch", &model::Model::trainOnBatchSingleInput,
+      .def(
+          "train_on_batch",
+          py::overload_cast<const tensor::TensorPtr&, const tensor::TensorPtr&>(
+              &model::Model::trainOnBatch),
+          py::arg("inputs"), py::arg("labels"))
+      .def("train_on_batch",
+           py::overload_cast<const tensor::TensorList&,
+                             const tensor::TensorList&>(
+               &model::Model::trainOnBatch),
            py::arg("inputs"), py::arg("labels"))
-      .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
-           py::arg("labels"))
-      .def("forward", &model::Model::forwardSingleInput, py::arg("inputs"),
-           py::arg("use_sparsity"))
-      .def("forward", &model::Model::forward, py::arg("inputs"),
-           py::arg("use_sparsity"))
+      .def("forward",
+           py::overload_cast<const tensor::TensorPtr&, bool>(
+               &model::Model::forward),
+           py::arg("inputs"), py::arg("use_sparsity"))
+      .def("forward",
+           py::overload_cast<const tensor::TensorList&, bool>(
+               &model::Model::forward),
+           py::arg("inputs"), py::arg("use_sparsity"))
       .def("update_parameters", &model::Model::updateParameters,
            py::arg("learning_rate"))
       .def("__getitem__", &model::Model::getOp, py::arg("name"))

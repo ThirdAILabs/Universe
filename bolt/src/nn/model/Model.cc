@@ -52,8 +52,7 @@ void Model::forward(const tensor::TensorList& inputs, bool use_sparsity) {
   forward(input_batch_size, use_sparsity);
 }
 
-void Model::forwardSingleInput(const tensor::TensorPtr& inputs,
-                               bool use_sparsity) {
+void Model::forward(const tensor::TensorPtr& inputs, bool use_sparsity) {
   setSingleInput(inputs);
 
   forward(inputs->batchSize(), use_sparsity);
@@ -67,8 +66,8 @@ void Model::trainOnBatch(const tensor::TensorList& inputs,
   trainOnBatch(input_batch_size, label_batch_size);
 }
 
-void Model::trainOnBatchSingleInput(const tensor::TensorPtr& inputs,
-                                    const tensor::TensorPtr& labels) {
+void Model::trainOnBatch(const tensor::TensorPtr& inputs,
+                         const tensor::TensorPtr& labels) {
   setSingleInput(inputs);
   setSingleLabel(labels);
 
@@ -174,6 +173,7 @@ void Model::trainOnBatch(uint32_t input_batch_size, uint32_t label_batch_size) {
   _allocation_manager.reallocateForBatch(input_batch_size,
                                          /* use_sparsity= */ true);
 
+#pragma omp parallel for default(none) shared(input_batch_size)
   for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
        index_in_batch++) {
     forwardVector(index_in_batch, /* training= */ true);

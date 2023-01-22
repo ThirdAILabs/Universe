@@ -14,8 +14,14 @@ LEARNING_RATE = 0.0001
 
 def load_mnist():
     train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
+    train_x = bolt.train.convert_dataset(train_x, dim=784)
+    train_y = bolt.train.convert_dataset(train_y, dim=10)
+
     test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
-    return train_x, train_y, test_x, test_y
+    test_x = bolt.train.convert_dataset(test_x, dim=784)
+    test_y = bolt.train.convert_dataset(test_y, dim=10)
+
+    return (train_x, train_y), (test_x, test_y)
 
 
 def setup_module():
@@ -54,20 +60,20 @@ def test_bolt_on_mnist():
 
     model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
 
-    train_x, train_y, test_x, test_y = load_mnist()
+    train_data, test_data = load_mnist()
 
     trainer = bolt.train.Trainer(model)
 
     history = trainer.train(
-        train_data=(train_x, train_y),
+        train_data=train_data,
         epochs=3,
         learning_rate=0.0001,
         train_metrics={
-            "act_2": [bolt.train.metrics.LossMetric(loss)],
+            "tensor_3": [bolt.train.metrics.LossMetric(loss)],
         },
-        validation_data=(test_x, test_y),
+        validation_data=test_data,
         validation_metrics={
-            "act_2": [
+            "tensor_3": [
                 bolt.train.metrics.LossMetric(loss),
                 bolt.train.metrics.CategoricalAccuracy(),
             ],
@@ -76,4 +82,4 @@ def test_bolt_on_mnist():
         callbacks=[],
     )
 
-    assert history["act_2"]["val_categorical_accuracy"][-1] >= 0.9
+    assert history["tensor_3"]["val_categorical_accuracy"][-1] >= 0.9

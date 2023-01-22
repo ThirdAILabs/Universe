@@ -23,6 +23,11 @@ metrics::History Trainer::train(
     const metrics::InputMetrics& validation_metrics_in,
     std::optional<uint32_t> steps_per_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks_in) {
+  verifyNumBatchesMatch(train_data);
+  if (validation_data) {
+    verifyNumBatchesMatch(*validation_data);
+  }
+
   // TODO(Nicholas): Check datasets have same number of batches and batchsize.
 
   auto train_state = TrainState::make(learning_rate);
@@ -49,8 +54,8 @@ metrics::History Trainer::train(
     for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
       callbacks.onBatchBegin();
 
-      _model->trainOnBatchSingleInput(train_data.first.at(batch_idx),
-                                      train_data.second.at(batch_idx));
+      _model->trainOnBatch(train_data.first.at(batch_idx),
+                           train_data.second.at(batch_idx));
 
       _model->updateParameters(train_state->learningRate());
 
@@ -111,8 +116,8 @@ void Trainer::validate(const LabeledDataset& validation_data,
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
     // TODO(Nicholas): Add option to use sparsity for validation.
-    _model->forwardSingleInput(validation_data.first.at(batch_idx),
-                               /* use_sparsity= */ false);
+    _model->forward(validation_data.first.at(batch_idx),
+                    /* use_sparsity= */ false);
 
     _model->setSingleLabel(validation_data.second.at(batch_idx));
 
@@ -135,6 +140,13 @@ void Trainer::validate(const LabeledDataset& validation_data,
   logging::info(log_line);
 
   validation_metrics.reset();
+}
+
+void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {
+  if (data.first.size() != data.second.size()) {
+    throw std::invalid_argument(
+        "Data and labels must have same number of batches.");
+  }
 }
 
 std::string Trainer::formatTrainLogLine(const std::string& metric_summary,
