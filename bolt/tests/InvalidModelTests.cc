@@ -19,72 +19,97 @@ namespace thirdai::bolt::nn::tests {
 TEST(InvalidModelTests, OutputWithDependentOps) {
   auto input = emptyInput();
 
-  auto act_1 = Noop::make("act_1")->apply({input});
-  auto act_2 = Noop::make("act_2")->apply({act_1});
+  auto act_2 = Noop::make("op_1")->apply({input});
+  auto act_3 = Noop::make("op_2")->apply({act_2});
 
-  auto loss = MockLoss::make({act_1, act_2});
+  auto loss = MockLoss::make({act_2, act_3});
 
-  // NOLINTNEXTLINE (clang-tidy doesn't like ASSERT_THROW)
   CHECK_MODEL_EXCEPTION(
-      model::Model(/* inputs= */ {input}, /* outputs= */ {act_1, act_2},
+      model::Model(/* inputs= */ {input}, /* outputs= */ {act_2, act_3},
                    /* losses= */ {loss}),
-      "Outputs must not be inputs to any ops. Found output 'act_1' with a "
+      "Outputs must not be inputs to any ops. Found output 'tensor_2' with a "
       "dependent op.");
 }
 
 TEST(InvalidModelTests, AllOutputsUsedInLoss) {
   auto input = emptyInput();
 
-  auto act_1 = Noop::make("act_1")->apply({input});
-  auto act_2 = Noop::make("act_2")->apply({act_1});
-  auto act_3 = Noop::make("act_3")->apply({act_1});
+  auto act_1 = Noop::make("op_1")->apply({input});
+  auto act_2 = Noop::make("op_2")->apply({act_1});
+  auto act_3 = Noop::make("op_3")->apply({act_1});
 
   auto loss = MockLoss::make({act_2});
 
-  // NOLINTNEXTLINE (clang-tidy doesn't like ASSERT_THROW)
   CHECK_MODEL_EXCEPTION(
       model::Model(/* inputs= */ {input}, /* outputs= */ {act_2, act_3},
                    /* losses= */ {loss}),
-      "All outputs must be used by a loss. Found an output 'act_3' which is "
+      "All outputs must be used by a loss. Found an output 'tensor_4' which is "
       "not used by any loss function.");
 }
 
 TEST(InvalidModelTests, OnlyOutputsUsedInLoss) {
   auto input = emptyInput();
 
-  auto act_1 = Noop::make("act_1")->apply({input});
-  auto act_2 = Noop::make("act_2")->apply({act_1});
-  auto act_3 = Noop::make("act_3")->apply({act_1});
+  auto act_1 = Noop::make("op_1")->apply({input});
+  auto act_2 = Noop::make("op_2")->apply({act_1});
+  auto act_3 = Noop::make("op_3")->apply({act_1});
 
   auto loss_1 = MockLoss::make({act_1, act_2});
   auto loss_2 = MockLoss::make({act_3});
 
-  // NOLINTNEXTLINE (clang-tidy doesn't like ASSERT_THROW)
   CHECK_MODEL_EXCEPTION(
       model::Model(/* inputs= */ {input}, /* outputs= */ {act_2, act_3},
                    /* losses= */ {loss_1, loss_2}),
       "Only outputs can be used in losses and outputs cannot be reused in "
-      "multiple losses. Found tensor 'act_1' which is either not an output or "
+      "multiple losses. Found output 'tensor_2' which is either not an output "
       "or has already been used in a loss function.");
 }
 
 TEST(InvalidModelTests, OutputsCannotBeReusedInLosses) {
   auto input = emptyInput();
 
-  auto act_1 = Noop::make("act_1")->apply({input});
-  auto act_2 = Noop::make("act_1")->apply({act_1});
-  auto act_3 = Noop::make("act_1")->apply({act_1});
+  auto act_1 = Noop::make("op_1")->apply({input});
+  auto act_2 = Noop::make("op_1")->apply({act_1});
+  auto act_3 = Noop::make("op_1")->apply({act_1});
 
   auto loss_1 = MockLoss::make({act_2});
   auto loss_2 = MockLoss::make({act_2, act_3});
 
-  // NOLINTNEXTLINE (clang-tidy doesn't like ASSERT_THROW)
   CHECK_MODEL_EXCEPTION(
       model::Model(/* inputs= */ {input}, /* outputs= */ {act_2, act_3},
                    /* losses= */ {loss_1, loss_2}),
       "Only outputs can be used in losses and outputs cannot be reused in "
-      "multiple losses. Found tensor 'act_2' which is either not an output or "
+      "multiple losses. Found output 'tensor_3' which is either not an output "
       "or has already been used in a loss function.");
+}
+
+TEST(InvalidModelTests, UnusedInput) {
+  auto input_1 = emptyInput();
+  auto input_2 = emptyInput();
+
+  auto act_1 = Noop::make("op_1")->apply({input_1});
+
+  auto loss = MockLoss::make({act_1});
+
+  CHECK_MODEL_EXCEPTION(
+      model::Model(/* inputs= */ {input_1, input_2}, /* outputs= */ {act_1},
+                   /* losses= */ {loss}),
+      "Input 'tensor_2' was not used by any computation in the model.");
+}
+
+TEST(InvalidModelTests, MissingInput) {
+  auto input_1 = emptyInput();
+  auto input_2 = emptyInput();
+
+  auto act_1 = Noop::make("op_1")->apply({input_1, input_2});
+
+  auto loss = MockLoss::make({act_1});
+
+  CHECK_MODEL_EXCEPTION(
+      model::Model(/* inputs= */ {input_1}, /* outputs= */ {act_1},
+                   /* losses= */ {loss}),
+      "Model computation depends on input 'tensor_2' that is not present in "
+      "the list of inputs to the model.");
 }
 
 }  // namespace thirdai::bolt::nn::tests

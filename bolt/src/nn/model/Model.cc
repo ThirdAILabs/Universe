@@ -24,6 +24,9 @@ Model::Model(autograd::ComputationList inputs,
     _label_inputs.push_back(loss->labels());
   }
 
+  checkNoOutputsHaveDependentOps();
+  checkAllOutputsAreUsedInLosses();
+
   _computation_order = autograd::getComputationOrder(_inputs, _outputs);
   _allocation_manager = AllocationManager(_computation_order);
 
@@ -32,9 +35,6 @@ Model::Model(autograd::ComputationList inputs,
     ops.insert(comp->op());
   }
   _ops.assign(ops.begin(), ops.end());
-
-  checkNoOutputsHaveDependentOps();
-  checkAllOutputsAreUsedInLosses();
 
   matchOutputFullyConnectedLayersWithLabels();
 }
@@ -275,10 +275,9 @@ void Model::checkAllOutputsAreUsedInLosses() const {
       if (!outputs_set.count(output)) {
         throw std::invalid_argument(
             "Only outputs can be used in losses and outputs cannot be reused "
-            "in multiple losses. Found tensor '" +
+            "in multiple losses. Found output '" +
             output->name() +
-            "' which is either not an output or or has already been used in "
-            "a "
+            "' which is either not an output or has already been used in a "
             "loss function.");
       }
 
