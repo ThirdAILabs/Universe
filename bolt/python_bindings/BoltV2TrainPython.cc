@@ -10,7 +10,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MAKE_OPAQUE(std::vector<thirdai::bolt::nn::tensor::TensorPtr>);
+PYBIND11_MAKE_OPAQUE(std::vector<thirdai::bolt::nn::tensor::TensorPtr>)
 
 namespace thirdai::bolt::train::python {
 
