@@ -1,6 +1,8 @@
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 #include <bolt/src/nn/loss/ComparativeLoss.h>
+#include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/Op.h>
 
 namespace thirdai::bolt::nn::tests {
 
@@ -17,7 +19,7 @@ namespace thirdai::bolt::nn::tests {
 
 class LossTracker final : public loss::ComparativeLoss {
  public:
-  explicit LossTracker(tensor::ActivationTensorPtr activations)
+  explicit LossTracker(autograd::ComputationPtr activations)
       : loss::ComparativeLoss(std::move(activations)) {}
 
   const auto& lossCalledWith() const { return _loss_called_with; }
@@ -51,12 +53,9 @@ BoltVector denseLabel() {
   return BoltVector::makeDenseVector({0.0, 1.0, 0.0, 0.0, 2.0, 0.0, 3.0, 0.0});
 }
 
-tensor::ActivationTensorPtr sparseOutput() {
-  auto output = Noop::make("noop", /* dim= */ 8, /* num_nonzeros= */ 4)
-                    ->apply({emptyInput()});
-  // auto output = tensor::ActivationTensor::make(
-  //     /* dim= */ 8, /* sparse_nonzeros= */ 4, /* source= */ nullptr);
-  output->allocate(/* batch_size= */ 1, /* use_sparsity= */ true);
+tensor::TensorPtr sparseOutput() {
+  auto output = tensor::Tensor::sparse(/* batch_size= */ 1, /* dim= */ 8,
+                                       /* nonzeros= */ 4);
 
   std::vector<uint32_t> indices = {0, 1, 4, 7};
   std::vector<float> values = {0.0, 4.0, 5.0, 6.0};
@@ -70,10 +69,8 @@ tensor::ActivationTensorPtr sparseOutput() {
   return output;
 }
 
-tensor::ActivationTensorPtr denseOutput() {
-  auto output = Noop::make("noop", /* dim= */ 8, /* num_nonzeros= */ 8)
-                    ->apply({emptyInput()});
-  output->allocate(/* batch_size= */ 1, /* use_sparsity= */ true);
+tensor::TensorPtr denseOutput() {
+  auto output = tensor::Tensor::dense(/* batch_size= */ 1, /* dim= */ 8);
 
   std::vector<float> values = {0.0, 4.0, 0.0, 0.0, 5.0, 0.0, 0.0, 6.0};
 
@@ -85,15 +82,18 @@ tensor::ActivationTensorPtr denseOutput() {
 
 void runTest(bool output_sparse, bool label_sparse, bool test_loss,
              const std::vector<std::pair<float, float>>& expected_called_with) {
-  auto output = output_sparse ? sparseOutput() : denseOutput();
+  auto output_tensor = output_sparse ? sparseOutput() : denseOutput();
+
+  auto output = ops::Input::make(/* dim= */ 8);
+  output->setTensor(output_tensor);
 
   BoltVector label = label_sparse ? sparseLabel() : denseLabel();
 
-  BoltBatch label_batch({label});
+  auto label_tensor = tensor::Tensor::convert(BoltBatch({label}), /* dim= */ 8);
 
   LossTracker loss(output);
 
-  loss.labels()->setInputs(label_batch);
+  loss.labels()->setTensor(label_tensor);
 
   std::vector<std::pair<float, float>> called_with;
   if (test_loss) {
