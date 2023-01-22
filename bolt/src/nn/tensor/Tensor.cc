@@ -51,6 +51,11 @@ Tensor::Tensor(BoltBatch&& batch, uint32_t dim)
 
     for (uint32_t i = 0; i < vec.len; i++) {
       if (!is_dense) {
+        if (vec.active_neurons[i] >= dim) {
+          throw std::invalid_argument(
+              "Found sparse index " + std::to_string(vec.active_neurons[i]) +
+              " that exceeded dimension " + std::to_string(dim) + ".");
+        }
         _active_neurons.push_back(vec.active_neurons[i]);
       }
       _activations.push_back(vec.activations[i]);
@@ -88,5 +93,15 @@ std::optional<uint32_t> Tensor::nonzeros() const { return _nonzeros; }
 BoltVector& Tensor::getVector(uint32_t index) { return _vectors[index]; }
 
 uint32_t Tensor::batchSize() const { return _vectors.size(); }
+
+const uint32_t* Tensor::activeNeuronsPtr() const {
+  return _active_neurons.empty() ? nullptr : _active_neurons.data();
+}
+
+const float* Tensor::activationsPtr() const { return _activations.data(); }
+
+const float* Tensor::gradientsPtr() const {
+  return _gradients.empty() ? nullptr : _gradients.data();
+}
 
 }  // namespace thirdai::bolt::nn::tensor

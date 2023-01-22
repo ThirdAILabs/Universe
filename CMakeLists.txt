@@ -321,6 +321,7 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/ComparativeMetric.cc
     bolt/src/train/metrics/CategoricalAccuracy.cc
     bolt/src/train/trainer/Trainer.cc
+    bolt/src/train/trainer/Dataset.cc
     bolt/src/graph/Graph.cc
     bolt/src/graph/ExecutionConfig.cc
     bolt/src/graph/nodes/FullyConnected.cc

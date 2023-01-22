@@ -13,7 +13,7 @@ class Tensor {
  public:
   Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros);
 
-   Tensor(BoltBatch&& batch, uint32_t dim);
+  Tensor(BoltBatch&& batch, uint32_t dim);
 
   static std::shared_ptr<Tensor> dense(uint32_t batch_size, uint32_t dim);
 
@@ -39,7 +39,16 @@ class Tensor {
    */
   BoltVector& getVector(uint32_t index);
 
+  /**
+   * Returns the batch size of the data in the tensor.
+   */
   uint32_t batchSize() const;
+
+  const uint32_t* activeNeuronsPtr() const;
+
+  const float* activationsPtr() const;
+
+  const float* gradientsPtr() const;
 
  private:
   // TODO(Nicholas): Update this to support N dimensions (not required for V0).

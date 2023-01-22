@@ -1,5 +1,6 @@
 #include "Input.h"
 #include <bolt/src/nn/ops/Op.h>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -15,8 +16,8 @@ Input::Input(uint32_t dim, std::optional<uint32_t> nonzeros)
 
 autograd::ComputationPtr Input::make(uint32_t dim,
                                      std::optional<uint32_t> nonzeros) {
-  return autograd::Computation::make(std::make_shared<Input>(dim, nonzeros),
-                                     {});
+  return autograd::Computation::make(
+      std::shared_ptr<Input>(new Input(dim, nonzeros)), {});
 }
 
 void Input::forward(const autograd::ComputationList& inputs,

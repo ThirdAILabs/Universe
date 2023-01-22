@@ -1,26 +1,18 @@
 #include "TestUtils.h"
 #include "gtest/gtest.h"
-#include <bolt/src/nn/tensor/ActivationTensor.h>
-#include <bolt/src/nn/tensor/InputTensor.h>
+#include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <bolt_vector/tests/BoltVectorTestUtils.h>
 #include <optional>
+#include <stdexcept>
 
 namespace thirdai::bolt::nn::tests {
-
-void assertShapeEq(const std::vector<uint32_t>& shape,
-                   const std::vector<uint32_t>& expected_shape) {
-  ASSERT_EQ(shape.size(), expected_shape.size());
-
-  for (uint32_t i = 0; i < shape.size(); i++) {
-    ASSERT_EQ(shape.at(i), expected_shape.at(i));
-  }
-}
 
 // Helper function. Fills the active neurons and activations for each vector
 // with the index of the vector in the tensor and the gradients with 2 * the
 // index of the vector in the tensor.
-void fillTensor(tensor::ActivationTensorPtr& tensor) {
-  for (uint32_t i = 0; i < tensor->shape()[0]; i++) {
+void fillTensor(tensor::TensorPtr& tensor) {
+  for (uint32_t i = 0; i < tensor->batchSize(); i++) {
     auto& vec = tensor->getVector(i);
 
     if (!vec.isDense()) {
@@ -35,102 +27,129 @@ void fillTensor(tensor::ActivationTensorPtr& tensor) {
 
 // Helper function. Checks that the pointers returned by the tensor point to
 // memory that matches the result of call fillTensor on the tensor.
-void checkTensorContents(const tensor::ActivationTensorPtr& tensor) {
-  for (uint32_t i = 0; i < tensor->shape()[0]; i++) {
-    for (uint32_t j = 0; j < tensor->shape()[1]; j++) {
-      if (tensor->shape()[1] < tensor->dim()) {
-        uint32_t active_neuron =
-            tensor->activeNeuronsPtr()[i * tensor->shape()[1] + j];
+void checkTensorContents(const tensor::TensorPtr& tensor) {
+  uint32_t nonzeros = tensor->nonzeros().value();
+  for (uint32_t i = 0; i < tensor->batchSize(); i++) {
+    for (uint32_t j = 0; j < nonzeros; j++) {
+      if (nonzeros < tensor->dim()) {
+        uint32_t active_neuron = tensor->activeNeuronsPtr()[i * nonzeros + j];
         ASSERT_EQ(active_neuron, i);
       }
 
-      float activation = tensor->activationsPtr()[i * tensor->shape()[1] + j];
+      float activation = tensor->activationsPtr()[i * nonzeros + j];
       ASSERT_EQ(activation, static_cast<float>(i));
 
-      float gradient = tensor->gradientsPtr()[i * tensor->shape()[1] + j];
+      float gradient = tensor->gradientsPtr()[i * nonzeros + j];
       ASSERT_EQ(gradient, 2 * static_cast<float>(i));
     }
   }
 }
 
-// This test checks that the ActivationTensor allocates state correctly as the
-// batch size and sparsity change.
-TEST(TensorTests, ActivationTensor) {
-  auto op = Noop::make("noop", /* dim= */ 8, /* num_nonzeros= */ 4);
-  auto tensor = op->apply({emptyInput()});
-  // auto tensor = tensor::ActivationTensor::make(
-  //     /* dim= */ 8, /* sparse_nonzeros= */ 4, /* source= */ nullptr);
+TEST(TensorTests, DenseTensor) {
+  auto tensor = tensor::Tensor::dense(/* batch_size= */ 4, /* dim= */ 10);
 
-  /**
-   * Start with sparse tensor with batch size 3.
-   */
+  EXPECT_EQ(tensor->batchSize(), 4);
+  EXPECT_EQ(tensor->dim(), 10);
+  EXPECT_TRUE(tensor->nonzeros().has_value());
+  EXPECT_EQ(tensor->nonzeros().value(), 10);
 
-  tensor->allocate(/* batch_size= */ 3, /* use_sparsity= */ true);
-
-  ASSERT_EQ(tensor->numNonzeros(/* use_sparsity= */ true), 4);
-  ASSERT_EQ(tensor->numNonzeros(/* use_sparsity= */ false), 8);
-  assertShapeEq(tensor->shape(), {3, 4});
-
-  fillTensor(tensor);
-  checkTensorContents(tensor);
-
-  /**
-   * Increase the batch size.
-   */
-
-  tensor->allocate(/* batch_size= */ 5, /* use_sparsity= */ false);
-
-  ASSERT_EQ(tensor->numNonzeros(/* use_sparsity= */ true), 4);
-  ASSERT_EQ(tensor->numNonzeros(/* use_sparsity= */ false), 8);
-  assertShapeEq(tensor->shape(), {5, 8});
-
-  fillTensor(tensor);
-  checkTensorContents(tensor);
-
-  /**
-   * Update the sparsity but don't change the batch size, nothing should change.
-   */
-
-  op->updateNumNonzeros(/* new_num_nonzeros= */ 6);
-
-  tensor->allocate(/* batch_size= */ 5, /* use_sparsity= */ false);
-
-  ASSERT_EQ(tensor->numNonzeros(/* use_sparsity= */ true), 6);
-  ASSERT_EQ(tensor->numNonzeros(/* use_sparsity= */ false), 8);
-  assertShapeEq(tensor->shape(), {5, 8});
-
-  fillTensor(tensor);
-  checkTensorContents(tensor);
-
-  /**
-   * Now use the new sparsity value.
-   */
-
-  tensor->allocate(/* batch_size= */ 5, /* use_sparsity= */ true);
-
-  ASSERT_EQ(tensor->numNonzeros(/* use_sparsity= */ true), 6);
-  ASSERT_EQ(tensor->numNonzeros(/* use_sparsity= */ false), 8);
-  assertShapeEq(tensor->shape(), {5, 6});
+  EXPECT_EQ(tensor->activeNeuronsPtr(), nullptr);
+  EXPECT_NE(tensor->activationsPtr(), nullptr);
+  EXPECT_NE(tensor->gradientsPtr(), nullptr);
 
   fillTensor(tensor);
   checkTensorContents(tensor);
 }
 
-TEST(TensorTests, InputTensor) {
+TEST(TensorTests, SparseTensor) {
+  auto tensor = tensor::Tensor::sparse(/* batch_size= */ 4, /* dim= */ 10,
+                                       /* nonzeros= */ 5);
+
+  EXPECT_EQ(tensor->batchSize(), 4);
+  EXPECT_EQ(tensor->dim(), 10);
+  EXPECT_TRUE(tensor->nonzeros().has_value());
+  EXPECT_EQ(tensor->nonzeros().value(), 5);
+
+  EXPECT_NE(tensor->activeNeuronsPtr(), nullptr);
+  EXPECT_NE(tensor->activationsPtr(), nullptr);
+  EXPECT_NE(tensor->gradientsPtr(), nullptr);
+
+  fillTensor(tensor);
+  checkTensorContents(tensor);
+}
+
+TEST(TensorTests, DenseBoltBatchToTensor) {
   std::vector<BoltVector> vectors = {
       BoltVector::makeDenseVector({1.0, 2.0, 3.0, 4.0}),
-      BoltVector::makeSparseVector({1, 2, 3}, {1.0, 2.0, 3.0})};
+      BoltVector::makeDenseVector({5.0, 6.0, 7.0, 8.0}),
+      BoltVector::makeDenseVector({9.0, 10.0, 11.0, 12.0})};
 
-  BoltBatch batch(std::move(vectors));
+  auto vectors_copy = vectors;
+  BoltBatch batch(std::move(vectors_copy));
 
-  auto tensor = tensor::InputTensor::make(/* dim= */ 4);
+  auto tensor = tensor::Tensor::convert(std::move(batch), 4);
 
-  tensor->setInputs(batch);
+  EXPECT_EQ(tensor->batchSize(), 3);
+  EXPECT_EQ(tensor->dim(), 4);
+  EXPECT_FALSE(tensor->nonzeros().has_value());
 
-  for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
+  EXPECT_EQ(tensor->activeNeuronsPtr(), nullptr);
+  EXPECT_NE(tensor->activationsPtr(), nullptr);
+  EXPECT_EQ(tensor->gradientsPtr(), nullptr);
+
+  for (uint32_t i = 0; i < 4; i++) {
     thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
-        batch[i], tensor->getVector(i));
+        tensor->getVector(i), vectors[i]);
   }
+}
+
+TEST(TensorTests, SparseBoltBatchToTensor) {
+  std::vector<BoltVector> vectors = {
+      BoltVector::makeSparseVector({3, 0, 5, 7}, {1.0, 2.0, 3.0, 4.0}),
+      BoltVector::makeSparseVector({1, 3, 6, 4, 4}, {5.0, 6.0, 7.0, 8.0, 9.0}),
+      BoltVector::makeSparseVector({5, 2, 0}, {10.0, 11.0, 12.0})};
+
+  auto vectors_copy = vectors;
+  BoltBatch batch(std::move(vectors_copy));
+
+  auto tensor = tensor::Tensor::convert(std::move(batch), 8);
+
+  EXPECT_EQ(tensor->batchSize(), 3);
+  EXPECT_EQ(tensor->dim(), 8);
+  EXPECT_FALSE(tensor->nonzeros().has_value());
+
+  EXPECT_NE(tensor->activeNeuronsPtr(), nullptr);
+  EXPECT_NE(tensor->activationsPtr(), nullptr);
+  EXPECT_EQ(tensor->gradientsPtr(), nullptr);
+
+  for (uint32_t i = 0; i < 4; i++) {
+    thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
+        tensor->getVector(i), vectors[i]);
+  }
+}
+
+TEST(TensorTests, MismatchedSparseDenseVectorsError) {
+  BoltBatch batch({BoltVector::makeSparseVector({1}, {1.0}),
+                   BoltVector::makeDenseVector({1.0, 2.0})});
+  // NOLINTNEXTLINE
+  ASSERT_THROW(tensor::Tensor::convert(std::move(batch), 2),
+               std::invalid_argument);
+}
+
+TEST(TensorTests, DenseVectorDimMismatch) {
+  BoltBatch batch({BoltVector::makeDenseVector({1.0, 2.0})});
+
+  // NOLINTNEXTLINE
+  ASSERT_THROW(tensor::Tensor::convert(std::move(batch), 3),
+               std::invalid_argument);
+}
+
+TEST(TensorTests, SparseVectorDimMismatch) {
+  BoltBatch batch({BoltVector::makeSparseVector({1, 4}, {1.0})});
+
+  // NOLINTNEXTLINE
+  ASSERT_THROW(tensor::Tensor::convert(std::move(batch), 2),
+               std::invalid_argument);
 }
 
 }  // namespace thirdai::bolt::nn::tests

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/loss/Loss.h>
+#include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
 
 namespace thirdai::bolt::nn::tests {
@@ -16,12 +17,12 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
     return std::shared_ptr<Noop>(new Noop(std::move(name), dim, num_nonzeros));
   }
 
-  tensor::ActivationTensorPtr apply(const tensor::TensorList& inputs) {
-    return tensor::ActivationTensor::make(_dim, shared_from_this(), inputs);
+  autograd::ComputationPtr apply(const autograd::ComputationList& inputs) {
+    return autograd::Computation::make(shared_from_this(), inputs);
   }
 
-  void forward(const tensor::TensorList& inputs,
-               tensor::ActivationTensor* output, uint32_t index_in_batch,
+  void forward(const autograd::ComputationList& inputs,
+               tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final {
     (void)inputs;
     (void)output;
@@ -29,9 +30,8 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
     (void)training;
   }
 
-  void backpropagate(tensor::TensorList& inputs,
-                     tensor::ActivationTensor* output,
-                     uint32_t index_in_batch) final {
+  void backpropagate(autograd::ComputationList& inputs,
+                     tensor::TensorPtr& output, uint32_t index_in_batch) final {
     (void)inputs;
     (void)output;
     (void)index_in_batch;
@@ -42,8 +42,10 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
     (void)t;
   }
 
-  uint32_t numNonzerosInOutput(const tensor::TensorList& inputs,
-                               bool use_sparsity) const final {
+  uint32_t dim() const final { return _dim; }
+
+  std::optional<uint32_t> nonzeros(const autograd::ComputationList& inputs,
+                                   bool use_sparsity) const final {
     (void)inputs;
     if (use_sparsity) {
       return _num_nonzeros;
@@ -53,8 +55,8 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
 
   void disableSparseParameterUpdates() final {}
 
-  void summary(std::ostream& summary, const tensor::TensorList& inputs,
-               const tensor::ActivationTensor* output) const final {
+  void summary(std::ostream& summary, const autograd::ComputationList& inputs,
+               const autograd::Computation* output) const final {
     (void)inputs;
     (void)output;
     summary << "Noop";
@@ -70,10 +72,10 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
 
 class MockLoss final : public loss::Loss {
  public:
-  explicit MockLoss(std::vector<tensor::ActivationTensorPtr> outputs_used)
+  explicit MockLoss(autograd::ComputationList outputs_used)
       : _outputs_used(std::move(outputs_used)) {}
 
-  static auto make(std::vector<tensor::ActivationTensorPtr> outputs_used) {
+  static auto make(autograd::ComputationList outputs_used) {
     return std::make_shared<MockLoss>(std::move(outputs_used));
   }
 
@@ -87,16 +89,14 @@ class MockLoss final : public loss::Loss {
     (void)batch_size;
   }
 
-  std::vector<tensor::ActivationTensorPtr> outputsUsed() const final {
-    return _outputs_used;
-  }
+  autograd::ComputationList outputsUsed() const final { return _outputs_used; }
 
  private:
-  std::vector<tensor::ActivationTensorPtr> _outputs_used;
+  autograd::ComputationList _outputs_used;
 };
 
-inline tensor::InputTensorPtr emptyInput() {
-  return tensor::InputTensor::make(/* dim= */ 1);
+inline autograd::ComputationPtr emptyInput() {
+  return ops::Input::make(/* dim= */ 1);
 }
 
 }  // namespace thirdai::bolt::nn::tests
