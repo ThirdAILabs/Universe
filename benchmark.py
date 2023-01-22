@@ -81,13 +81,19 @@ def train_bolt_v1(config: BenchmarkConfig, train_x, train_y, test_x, test_y):
 
         metrics = {
             "epoch_time": train_metrics["epoch_times"][0],
-            "val_time": test_metrics["test_time"],
+            "val_time": test_metrics["test_time"] // 1000,
             "categorical_accuracy": test_metrics["categorical_accuracy"],
         }
         mlflow.log_metrics(metrics)
 
 
 def train_bolt_v2(config: BenchmarkConfig, train_x, train_y, test_x, test_y):
+    train_x = bolt_v2.train.convert_dataset(train_x, dim=config.input_dim)
+    train_y = bolt_v2.train.convert_dataset(train_y, dim=config.output_dim)
+
+    test_x = bolt_v2.train.convert_dataset(test_x, dim=config.input_dim)
+    test_y = bolt_v2.train.convert_dataset(test_y, dim=config.output_dim)
+
     input_layer = bolt_v2.nn.Input(dim=config.input_dim)
 
     hidden = bolt_v2.nn.FullyConnected(
@@ -174,7 +180,9 @@ def run_experiment(config: BenchmarkConfig, data_load_fn, suffix):
     train_bolt_v1(config, train_x, train_y, test_x, test_y)
     mlflow.end_run()
 
-    init_mlflow(dataset_name=config.dataset_name, bolt_version="bolt_v2", suffix=suffix)
+    init_mlflow(
+        dataset_name=config.dataset_name, bolt_version="bolt_v2_v2", suffix=suffix
+    )
     train_bolt_v2(config, train_x, train_y, test_x, test_y)
     mlflow.end_run()
 
