@@ -1,6 +1,7 @@
 #include "BeamSearch.h"
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <algorithm>
 #include <iostream>
 #include <queue>
 #include <stdexcept>
@@ -74,6 +75,8 @@ std::vector<SeqResult> beamSearch(const float* probabilies, uint32_t seq_len,
       top_k.pop();
     }
   }
+
+  std::reverse(candidate_sequences.begin(), candidate_sequences.end());
 
   return candidate_sequences;
 }

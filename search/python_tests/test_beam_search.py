@@ -19,12 +19,7 @@ def test_beam_search_no_transition_matrix():
 
     best_sequences = []
     for top_k in results:
-        best_score = float("inf")
-        best_seq = None
-        for seq, score in top_k:
-            if score < best_score:
-                best_seq = seq
-        best_sequences.append(best_seq)
+        best_sequences.append(top_k[0][0])
 
     correct = np.argmax(probabilities, axis=2)
 
@@ -55,4 +50,4 @@ def test_beam_search_differs_from_gready_search():
 
     results = search.beam_search(probabilities, transition_matrix, k=2)
 
-    assert np.array_equal(results[0][-1][0], np.array([0, 0, 1]))
+    assert np.array_equal(results[0][0][0], np.array([0, 0, 1]))
