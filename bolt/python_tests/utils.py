@@ -288,7 +288,7 @@ def get_compressed_weight_gradients(
     seed_for_hashing,
     sample_population_size,
 ):
-    model = wrapped_model.model
+    model = wrapped_model.model()
     compressed_weight_grads = []
     for layer in model.nodes():
         if hasattr(layer, "weight_gradients"):
@@ -308,7 +308,7 @@ def set_compressed_weight_gradients(
     wrapped_model,
     compressed_weight_grads,
 ):
-    model = wrapped_model.model
+    model = wrapped_model.model()
     nodes_with_weight_gradients = [
         layer for layer in model.nodes() if hasattr(layer, "weight_gradients")
     ]
@@ -367,7 +367,7 @@ def compressed_training(
 
     wrapped_model.finish_training()
 
-    model = wrapped_model.model
+    model = wrapped_model.model()
     acc = model.evaluate(
         test_data=dataset.from_numpy(test_data, batch_size=64),
         test_labels=dataset.from_numpy(test_labels, batch_size=64),
