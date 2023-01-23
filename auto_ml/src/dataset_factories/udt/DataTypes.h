@@ -11,7 +11,6 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
-#include <_types/_uint32_t.h>
 #include <utils/Logging.h>
 #include <utils/StringManipulation.h>
 #include <iostream>
