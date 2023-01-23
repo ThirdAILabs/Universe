@@ -12,10 +12,10 @@ import numpy as np
 import pytest
 from distributed_utils import (
     check_models_are_same_on_first_two_nodes,
+    clear_ray_workers,
     get_non_head_nodes,
     ray_two_node_cluster_config,
     split_into_2,
-    clear_ray_workers,
 )
 from thirdai import bolt, dataset
 
