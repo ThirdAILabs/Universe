@@ -381,15 +381,13 @@ def test_recursive_data_loading():
         f.write("input,target\n")
         f.write("a b c d e,f g h i j\n")
 
-
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "input": bolt.types.sequence(),
-            "target": bolt.types.sequence(),
+            "input": bolt.types.text(),
+            "target": bolt.types.sequence(length=5, delimiter=" "),
         },
         target="target",
         n_target_classes=5,
-        options={"prediction_depth": 5},
     )
 
     model.train(mock_filename)

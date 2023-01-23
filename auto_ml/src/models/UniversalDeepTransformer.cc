@@ -9,6 +9,7 @@
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/OutputProcessor.h>
+#include <auto_ml/src/models/UDTRecursionManager.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.h>
@@ -38,16 +39,9 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
         "Target column provided was not found in data_types.");
   }
 
-  auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
-        embedding_dimension, prediction_depth] = processUDTOptions(options);
-
-  auto recursive_column_names =
-      allRecursiveColumnNames(target_col, prediction_depth);
-
-  if (prediction_depth > 1) {
-    for (const auto& column_name : recursive_column_names) {
-      data_types[column_name] = std::make_shared<data::CategoricalDataType>();
-    }
+  UDTRecursionManager recursion_manager(data_types, target_col, delimiter);
+  if (recursion_manager.targetIsRecursive()) {
+    data_types = recursion_manager.modifiedDataTypes();
   }
 
   auto dataset_config = std::make_shared<data::UDTConfig>(
@@ -55,37 +49,8 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
       std::move(target_col), n_target_classes, integer_target,
       std::move(time_granularity), lookahead, delimiter);
 
-  std::string target_column = dataset_config->target;
-
-  if (prediction_depth > 1) {
-    auto target =
-        data::asCategorical(dataset_config->data_types.at(target_column));
-    if (!target) {
-      throw std::invalid_argument(
-          "Expected target column to be categorical if prediction_depth > 1 is "
-          "used.");
-    }
-    if (!target->delimiter) {
-      throw std::invalid_argument(
-          "Expected target column to have a delimiter if prediction_depth > 1 "
-          "is used.");
-    }
-    for (uint32_t i = 1; i < prediction_depth; i++) {
-      std::string column_name = target_column + "_" + std::to_string(i);
-
-      if (!dataset_config->data_types.count(column_name)) {
-        std::stringstream error;
-        error << "Expected column '" << column_name
-              << "' to be defined if prediction_depth=" << prediction_depth
-              << ".";
-        throw std::invalid_argument(error.str());
-      }
-      if (!asCategorical(dataset_config->data_types.at(column_name))) {
-        throw std::invalid_argument("Expected column '" + column_name +
-                                    "' to be categorical.");
-      }
-    }
-  }
+  auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
+        embedding_dimension] = processUDTOptions(options);
 
   auto [output_processor, regression_binning] =
       getOutputProcessor(dataset_config);
@@ -95,8 +60,7 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
       /* force_parallel= */ parallel_data_processing,
       /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
       /* contextual_columns= */ contextual_columns,
-      /* regression_binning= */ regression_binning,
-      /* recursion_column_names= */ recursive_column_names);
+      /* regression_binning= */ regression_binning);
 
   bolt::BoltGraphPtr model;
   if (model_config) {
@@ -132,107 +96,102 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
 
   return UniversalDeepTransformer({std::move(dataset_factory), std::move(model),
                                    output_processor, train_eval_parameters},
-                                  target_column, prediction_depth);
+                                  std::move(recursion_manager));
 }
 
-py::object UniversalDeepTransformer::predict(const MapInput& sample_in,
+void UniversalDeepTransformer::train(
+    const std::shared_ptr<dataset::DataSource>& data_source_in,
+    bolt::TrainConfig& train_config,
+    const std::optional<ValidationOptions>& validation,
+    std::optional<uint32_t> max_in_memory_batches) {
+  auto data_source = _recursion_manager.targetIsRecursive()
+                         ? _recursion_manager.wrapDataSource(data_source_in)
+                         : data_source_in;
+
+  ModelPipeline::train(data_source, train_config, validation,
+                       max_in_memory_batches);
+}
+
+py::object UniversalDeepTransformer::evaluate(
+    const dataset::DataSourcePtr& data_source_in,
+    std::optional<bolt::EvalConfig>& eval_config_opt,
+    bool return_predicted_class, bool return_metrics) {
+  auto data_source = _recursion_manager.targetIsRecursive()
+                         ? _recursion_manager.wrapDataSource(data_source_in)
+                         : data_source_in;
+  return ModelPipeline::evaluate(data_source, eval_config_opt,
+                                 return_predicted_class, return_metrics);
+}
+
+py::object UniversalDeepTransformer::predict(const MapInput& sample,
                                              bool use_sparse_inference,
                                              bool return_predicted_class) {
-  if (_prediction_depth == 1) {
-    return ModelPipeline::predict(sample_in, use_sparse_inference,
+  if (!_recursion_manager.targetIsRecursive()) {
+    return ModelPipeline::predict(sample, use_sparse_inference,
                                   return_predicted_class);
   }
 
-  // Copy the sample to add the recursive predictions without modifying the
-  // original.
-  MapInput sample = sample_in;
+  NumpyArray<uint32_t> output_predictions(_recursion_manager.depth());
+  uint32_t step = 0;
 
-  // The previous predictions of the model are initialized as empty. The are
-  // filled in after each call to predict.
-  for (uint32_t t = 1; t < _prediction_depth; t++) {
-    setPredictionAtTimestep(sample, t, "");
-  }
-
-  NumpyArray<uint32_t> output_predictions(_prediction_depth);
-
-  for (uint32_t t = 1; t <= _prediction_depth; t++) {
+  // Makes a prediction and updates output_predictions with the latest output.
+  auto predict_with_model = [&](const MapInput& sample) {
     py::object prediction =
         ModelPipeline::predict(sample, use_sparse_inference,
                                /* return_predicted_class= */ true);
 
-    // For V0 we are only supporting this feature for categorical tasks, not
-    // regression.
-    if (py::isinstance<py::int_>(prediction)) {
-      // Update the sample with the current prediction. When the sample is
-      // featurized in the next call to predict the information of this
-      // prediction will then be passed into the model.
-      uint32_t predicted_class = prediction.cast<uint32_t>();
-      setPredictionAtTimestep(sample, t, className(predicted_class));
+    uint32_t predicted_class = prediction.cast<uint32_t>();
+    output_predictions.mutable_at(step) = predicted_class;
+    step++;
 
-      // Update the array of returned predictions.
-      output_predictions.mutable_at(t - 1) = predicted_class;
-    } else {
-      throw std::invalid_argument(
-          "Unsupported prediction type for recursive predictions '" +
-          py::str(prediction.get_type()).cast<std::string>() + "'.");
-    }
-  }
+    return className(predicted_class);
+  };
+
+  _recursion_manager.callPredictRecursively(sample, predict_with_model);
 
   return py::object(std::move(output_predictions));
 }
 
-py::object UniversalDeepTransformer::predictBatch(
-    const MapInputBatch& samples_in, bool use_sparse_inference,
-    bool return_predicted_class) {
-  if (_prediction_depth == 1) {
-    return ModelPipeline::predictBatch(samples_in, use_sparse_inference,
+py::object UniversalDeepTransformer::predictBatch(const MapInputBatch& samples,
+                                                  bool use_sparse_inference,
+                                                  bool return_predicted_class) {
+  if (!_recursion_manager.targetIsRecursive()) {
+    return ModelPipeline::predictBatch(samples, use_sparse_inference,
                                        return_predicted_class);
   }
 
-  // Copy the sample to add the recursive predictions without modifying the
-  // original.
-  MapInputBatch samples = samples_in;
-
-  // The previous predictions of the model are initialized as empty. The are
-  // filled in after each call to predictBatch.
-  for (auto& sample : samples) {
-    for (uint32_t t = 1; t < _prediction_depth; t++) {
-      setPredictionAtTimestep(sample, t, "");
-    }
-  }
-
   NumpyArray<uint32_t> output_predictions(
-      /* shape= */ {samples.size(), static_cast<size_t>(_prediction_depth)});
+      /* shape= */ {samples.size(),
+                    static_cast<size_t>(_recursion_manager.depth())});
+  uint32_t step = 0;
 
-  for (uint32_t t = 1; t <= _prediction_depth; t++) {
+  auto predict_batch = [&](const MapInputBatch& samples) {
     py::object predictions =
         ModelPipeline::predictBatch(samples, use_sparse_inference,
                                     /* return_predicted_class= */ true);
 
-    // For V0 we are only supporting this feature for categorical tasks, not
-    // regression.
-    if (py::isinstance<NumpyArray<uint32_t>>(predictions)) {
-      NumpyArray<uint32_t> predictions_np =
-          predictions.cast<NumpyArray<uint32_t>>();
+    NumpyArray<uint32_t> predictions_np =
+        predictions.cast<NumpyArray<uint32_t>>();
 
-      assert(predictions_np.ndim() == 1);
-      assert(static_cast<uint32_t>(predictions_np.shape(0)) == samples.size());
+    assert(predictions_np.ndim() == 1);
+    assert(static_cast<uint32_t>(predictions_np.shape(0)) == samples.size());
 
-      for (uint32_t i = 0; i < predictions_np.shape(0); i++) {
-        // Update each sample with the current predictions. When the samples are
-        // featurized in the next call to predictBatch the information of these
-        // predictions will then be passed into the model.
-        setPredictionAtTimestep(samples[i], t, className(predictions_np.at(i)));
-
-        // Update the list of returned predictions.
-        output_predictions.mutable_at(i, t - 1) = predictions_np.at(i);
-      }
-    } else {
-      throw std::invalid_argument(
-          "Unsupported prediction type for recursive predictions '" +
-          py::str(predictions.get_type()).cast<std::string>() + "'.");
+    for (uint32_t i = 0; i < predictions_np.shape(0); i++) {
+      // Update the list of returned predictions.
+      output_predictions.mutable_at(i, step) = predictions_np.at(i);
     }
-  }
+    step++;
+
+    return predictions_np;
+  };
+
+  auto get_ith_prediction = [&](const NumpyArray<uint32_t>& predictions_np,
+                                uint32_t idx) {
+    return className(predictions_np.at(idx));
+  };
+
+  _recursion_manager.callPredictBatchRecursively(samples, predict_batch,
+                                                 get_ith_prediction);
 
   return py::object(std::move(output_predictions));
 }
@@ -351,17 +310,6 @@ UniversalDeepTransformer::processUDTOptions(
           option_value.resolveIntegerParam("embedding_dimension");
       if (int_value != 0) {
         options.embedding_dimension = int_value;
-      } else {
-        std::stringstream error;
-        error << "Invalid value for option '" << option_name
-              << "'. Received value '" << std::to_string(int_value) + "'.";
-
-        throw std::invalid_argument(error.str());
-      }
-    } else if (option_name == "prediction_depth") {
-      uint32_t int_value = option_value.resolveIntegerParam("prediction_depth");
-      if (int_value != 0) {
-        options.prediction_depth = int_value;
       } else {
         std::stringstream error;
         error << "Invalid value for option '" << option_name

@@ -44,8 +44,8 @@ def _create_data_source(path, batch_size, **kwargs):
 # interface is clean.
 def modify_udt_classifier():
 
-    original_train_method = bolt.models.Pipeline.train_with_source
-    original_eval_method = bolt.models.Pipeline.evaluate_with_source
+    original_train_method = bolt.models.UDTClassifier.train_with_source
+    original_eval_method = bolt.models.UDTClassifier.evaluate_with_source
     original_cold_start_method = bolt.models.UDTClassifier.cold_start
 
     def wrapped_train(

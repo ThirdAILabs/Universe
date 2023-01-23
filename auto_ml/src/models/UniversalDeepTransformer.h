@@ -12,6 +12,7 @@
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/models/ModelPipeline.h>
+#include <auto_ml/src/models/UDTRecursionManager.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <memory>
 #include <optional>
@@ -57,6 +58,15 @@ class UniversalDeepTransformer final : public ModelPipeline {
       uint32_t lookahead = 0, char delimiter = ',',
       const std::optional<std::string>& model_config = std::nullopt,
       const deployment::UserInputMap& options = {});
+
+  void train(const std::shared_ptr<dataset::DataSource>& data_source_in,
+             bolt::TrainConfig& train_config,
+             const std::optional<ValidationOptions>& validation,
+             std::optional<uint32_t> max_in_memory_batches);
+
+  py::object evaluate(const dataset::DataSourcePtr& data_source_in,
+                      std::optional<bolt::EvalConfig>& eval_config_opt,
+                      bool return_predicted_class, bool return_metrics);
 
   /**
    * This wraps the predict method of the ModelPipeline to handle recusive
@@ -167,11 +177,8 @@ class UniversalDeepTransformer final : public ModelPipeline {
 
  private:
   explicit UniversalDeepTransformer(ModelPipeline&& model,
-                                    std::string target_column,
-                                    uint32_t prediction_depth)
-      : ModelPipeline(model),
-        _target_column(std::move(target_column)),
-        _prediction_depth(prediction_depth) {}
+                                    UDTRecursionManager&& recursion_manager)
+      : ModelPipeline(model), _recursion_manager(recursion_manager) {}
 
   /**
    * Returns the output processor to use to create the ModelPipeline. Also
@@ -205,7 +212,6 @@ class UniversalDeepTransformer final : public ModelPipeline {
     bool force_parallel = false;
     bool freeze_hash_tables = true;
     uint32_t embedding_dimension = DEFAULT_HIDDEN_DIM;
-    uint32_t prediction_depth = 1;
   };
 
   static UDTOptions processUDTOptions(
@@ -220,27 +226,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
         " but received value '" + given_option_value + "'.");
   }
 
-  void setPredictionAtTimestep(MapInput& sample, uint32_t step,
-                               const std::string& pred) {
-    sample[recursiveColumnName(_target_column, step)] = pred;
-  }
-
-  static std::string recursiveColumnName(const std::string& target_column,
-                                         uint32_t step) {
-    return target_column + "_" + std::to_string(step);
-  }
-
-  static std::vector<std::string> allRecursiveColumnNames(
-      const std::string& target_column, uint32_t prediction_depth) {
-    std::vector<std::string> column_names(prediction_depth - 1);
-    for (uint32_t step = 1; step < prediction_depth; step++) {
-      column_names[step - 1] = recursiveColumnName(target_column, step);
-    }
-    return column_names;
-  }
-
-  std::string _target_column;
-  uint32_t _prediction_depth;
+  UDTRecursionManager _recursion_manager;
 
   // Private constructor for cereal.
   UniversalDeepTransformer() {}
@@ -248,8 +234,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<ModelPipeline>(this), _target_column,
-            _prediction_depth);
+    archive(cereal::base_class<ModelPipeline>(this), _recursion_manager);
   }
 };
 

@@ -3,6 +3,7 @@
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -156,6 +157,18 @@ void createModelsSubmodule(py::module_& module) {
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
+      .def("train_with_source", &UniversalDeepTransformer::train,
+           py::arg("data_source"), py::arg("train_config"),
+           py::arg("validation") = std::nullopt,
+           py::arg("max_in_memory_batches") = std::nullopt,
+           docs::MODEL_PIPELINE_TRAIN_DATA_SOURCE,
+           bolt::python::OutputRedirect())
+      .def("evaluate_with_source", &UniversalDeepTransformer::evaluate,
+           py::arg("data_source"), py::arg("eval_config") = std::nullopt,
+           py::arg("return_predicted_class") = false,
+           py::arg("return_metrics") = false,
+           docs::MODEL_PIPELINE_EVALUATE_DATA_SOURCE,
+           bolt::python::OutputRedirect())
       .def("predict",
            py::overload_cast<const MapInput&, bool, bool>(
                &UniversalDeepTransformer::predict),
@@ -312,6 +325,11 @@ void createUDTTypesSubmodule(py::module_& module) {
   py::class_<automl::data::DateDataType, automl::data::DataType,
              automl::data::DateDataTypePtr>(udt_types_submodule, "date")
       .def(py::init<>(), docs::UDT_DATE_TYPE);
+
+  py::class_<automl::data::SequenceDataType, automl::data::DataType,
+             automl::data::SequenceDataTypePtr>(udt_types_submodule, "sequence")
+      .def(py::init<uint32_t, char>(), py::arg("length"),
+           py::arg("delimiter") = ' ', docs::UDT_SEQUENCE_TYPE);
 }
 
 void createUDTTemporalSubmodule(py::module_& module) {

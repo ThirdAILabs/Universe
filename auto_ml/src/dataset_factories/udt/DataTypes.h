@@ -11,6 +11,7 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
+#include <_types/_uint32_t.h>
 #include <utils/Logging.h>
 #include <utils/StringManipulation.h>
 #include <iostream>
@@ -129,6 +130,27 @@ struct DateDataType : DataType {
 
 using DateDataTypePtr = std::shared_ptr<DateDataType>;
 
+struct SequenceDataType : DataType {
+  explicit SequenceDataType(uint32_t length, char delimiter)
+      : length(length), delimiter(delimiter) {}
+
+  uint32_t length;
+  char delimiter;
+
+  std::string toString() const final { return R"({"type": "sequence"})"; }
+
+  SequenceDataType() {}
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<DataType>(this));
+  }
+};
+
+using SequenceDataTypePtr = std::shared_ptr<SequenceDataType>;
+
 CategoricalDataTypePtr asCategorical(const DataTypePtr& data_type);
 
 NumericalDataTypePtr asNumerical(const DataTypePtr& data_type);
@@ -136,6 +158,8 @@ NumericalDataTypePtr asNumerical(const DataTypePtr& data_type);
 TextDataTypePtr asText(const DataTypePtr& data_type);
 
 DateDataTypePtr asDate(const DataTypePtr& data_type);
+
+SequenceDataTypePtr asSequence(const DataTypePtr& data_type);
 
 using ColumnDataTypes = std::map<std::string, DataTypePtr>;
 

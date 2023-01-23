@@ -91,3 +91,6 @@ tags
 
 # Ignore log files
 *.log
+
+# Downloaded OpenMP Dependency
+deps/openmp/*

@@ -1410,6 +1410,10 @@ Example:
         )
 )pbdoc";
 
+const char* const UDT_SEQUENCE_TYPE = R"pbdoc(
+Sequential column type. TODO
+)pbdoc";
+
 const char* const TEXT_CLASSIFIER_INIT = R"pbdoc(
 Constructs a text classifier which takes in bert tokens and metadata and returns 
 scores for each of the N output classes.

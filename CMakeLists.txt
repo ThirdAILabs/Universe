@@ -399,6 +399,7 @@ pybind11_add_module(
   bolt/python_bindings/CallbacksPython.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
+  dataset/src/RecursionWrapper.cc
   new_dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
@@ -409,6 +410,7 @@ pybind11_add_module(
   auto_ml/src/models/OutputProcessor.cc
   auto_ml/src/models/TextClassifier.cc
   auto_ml/src/models/UniversalDeepTransformer.cc
+  auto_ml/src/models/UDTRecursionManager.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 
