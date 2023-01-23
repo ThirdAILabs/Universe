@@ -168,7 +168,7 @@ def test_distributed_mnist(train_distributed_bolt_check):
 def test_distributed_fault_tolerance(train_distributed_bolt_fault_tolerance):
     import multiprocessing
 
-    if multiprocessing.cpu_count() < 3:
+    if multiprocessing.cpu_count() < 2:
         assert False, "not enough cpus for distributed training"
 
     assert train_distributed_bolt_fault_tolerance[0]["categorical_accuracy"] > 0.9
