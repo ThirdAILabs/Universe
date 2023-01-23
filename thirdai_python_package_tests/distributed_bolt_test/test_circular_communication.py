@@ -17,8 +17,12 @@ def test_all_reduce_circular_communication():
     )
 
     num_workers = 16
+    # Adding friends manually later
     circular_communicating_workers = [
-        Circular(None, i, None, num_workers) for i in range(num_workers)
+        Circular(
+            model=None, id=i, primary_worker=None, num_workers=num_workers, friend=None
+        )
+        for i in range(num_workers)
     ]
 
     for i in range(num_workers):

@@ -20,6 +20,7 @@ from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.distributed]
 
+
 # TODO(Josh): This is quite a bit of duplicated code, but we can't easily share
 # it until we change the structure of our python tests
 def setup_module():
@@ -29,7 +30,7 @@ def setup_module():
     if not os.path.exists(path):
         os.makedirs(path)
 
-    if not os.path.exists("mnist_data/xaa") or not os.path.exists("mnist_data/xab"):
+    if not os.path.exists("mnist_data/part1") or not os.path.exists("mnist_data/part2"):
         os.system(
             "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
         )
