@@ -66,8 +66,9 @@ void createSearchSubmodule(py::module_& module) {
                   py::arg("input_path"),
                   "Deserialize the DocRetrieval index from a file.");
 
-  search_submodule.def("beam_search", &beamSearchBatch, py::arg("probabiliies"),
-                       py::arg("transistion_matrix"), py::arg("k"));
+  search_submodule.def("beam_search", &beamSearchBatch,
+                       py::arg("probabilities"), py::arg("transition_matrix"),
+                       py::arg("beam_size"));
 }
 
 }  // namespace thirdai::search::python
