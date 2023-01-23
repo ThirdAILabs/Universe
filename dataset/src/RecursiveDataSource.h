@@ -71,7 +71,6 @@ class RecursiveDataSource final : public DataSource {
       _leftovers.pop_front();
     }
 
-    std::cout << "AUGMENTED BATCH: " << std::endl;
     for (const auto& line : augmented_batch) {
       std::cout << line << std::endl;
     }
@@ -89,7 +88,6 @@ class RecursiveDataSource final : public DataSource {
       }
       auto next_line = std::move(_leftovers.front());
       _leftovers.pop_front();
-      std::cout << "NEXT LINE FORM RECURSIVE: " << next_line << std::endl;
       return next_line;
     }
 
@@ -110,6 +108,7 @@ class RecursiveDataSource final : public DataSource {
     for (const auto& column_name : _recursive_column_names) {
       augmented_header << _column_delimiter << column_name;
     }
+    std::cout << augmented_header.str() << std::endl;
     return augmented_header.str();
   }
 
@@ -129,6 +128,7 @@ class RecursiveDataSource final : public DataSource {
           augmented_line << sequence[r];
         }
       }
+      augmented[i] = augmented_line.str();
     }
     return augmented;
   }
@@ -137,9 +137,13 @@ class RecursiveDataSource final : public DataSource {
                                 std::vector<std::string_view>& columns,
                                 std::string_view sequence_column) const {
     columns[_sequence_column_number] = sequence_column;
-    std::copy(
-        columns.begin(), columns.begin() + _sequence_column_number,
-        std::ostream_iterator<std::string_view>(stream, &_column_delimiter));
+    if (columns.empty()) {
+      return;
+    }
+    stream << columns.front();
+    for (uint32_t i = 1; i < columns.size(); i++) {
+      stream << _column_delimiter << columns[i];
+    }
   }
 
   char _column_delimiter;

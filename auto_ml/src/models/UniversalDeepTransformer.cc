@@ -41,9 +41,11 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
   auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
         embedding_dimension, prediction_depth] = processUDTOptions(options);
 
+  auto recursive_column_names =
+      allRecursiveColumnNames(target_col, prediction_depth);
+
   if (prediction_depth > 1) {
-    for (const auto& column_name :
-         allRecursiveColumnNames(target_col, prediction_depth)) {
+    for (const auto& column_name : recursive_column_names) {
       data_types[column_name] = std::make_shared<data::CategoricalDataType>();
     }
   }
@@ -93,7 +95,8 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
       /* force_parallel= */ parallel_data_processing,
       /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
       /* contextual_columns= */ contextual_columns,
-      /* regression_binning= */ regression_binning);
+      /* regression_binning= */ regression_binning,
+      /* recursion_column_names= */ recursive_column_names);
 
   bolt::BoltGraphPtr model;
   if (model_config) {

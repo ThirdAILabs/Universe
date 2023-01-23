@@ -58,10 +58,11 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const UDTConfigPtr& config, bool force_parallel,
       uint32_t text_pairgram_word_limit, bool contextual_columns = false,
       std::optional<dataset::RegressionBinningStrategy> regression_binning =
-          std::nullopt) {
+          std::nullopt,
+      std::vector<std::string> recursion_column_names = {}) {
     return std::make_shared<UDTDatasetFactory>(
         config, force_parallel, text_pairgram_word_limit, contextual_columns,
-        regression_binning);
+        regression_binning, recursion_column_names);
   }
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
