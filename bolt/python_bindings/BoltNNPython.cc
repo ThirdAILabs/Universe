@@ -621,8 +621,7 @@ void createLossesSubmodule(py::module_& nn_submodule) {
   py::class_<CategoricalCrossEntropyLoss,
              std::shared_ptr<CategoricalCrossEntropyLoss>, LossFunction>(
       losses_submodule, "CategoricalCrossEntropy",
-      "A loss function for multi-class (one label per sample) classification "
-      "tasks.")
+      "A loss function that minimizes mean squared error (MSE) for regression ")
       .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
 
   py::class_<BinaryCrossEntropyLoss, std::shared_ptr<BinaryCrossEntropyLoss>,
@@ -646,8 +645,7 @@ void createLossesSubmodule(py::module_& nn_submodule) {
       losses_submodule, "WeightedMeanAbsolutePercentageError",
       "A loss function to minimize weighted mean absolute percentage error "
       "(WMAPE) "
-      "for regression tasks. :math:`WMAPE = 100% * sum(|actual - "
-      "prediction|) "
+      "for regression tasks. :math:`WMAPE = 100% * sum(|actual - prediction|) "
       "/ sum(|actual|)`")
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
