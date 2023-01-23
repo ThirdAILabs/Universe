@@ -44,7 +44,6 @@ def ray_two_node_cluster_config():
 
     yield _make_cluster_config
 
-    ray.shutdown()
     mini_cluster.shutdown()
 
 

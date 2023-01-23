@@ -1,7 +1,11 @@
 import os
 
 import pytest
-from distributed_utils import ray_two_node_cluster_config, remove_files
+from distributed_utils import (
+    ray_two_node_cluster_config,
+    remove_files,
+    clear_ray_workers,
+)
 from thirdai import bolt
 from thirdai.demos import download_clinc_dataset
 
@@ -45,6 +49,8 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
         metrics=["mean_squared_error"],
         verbose=True,
     )
+
+    clear_ray_workers()
 
     assert (
         udt_model.evaluate(

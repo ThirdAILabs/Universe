@@ -143,6 +143,7 @@ def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config)
     distributed_model.train()
     metrics = evaluated_distributed_mnist_model(distributed_model)
 
+    clear_ray_workers()
     return metrics
 
 
