@@ -38,9 +38,7 @@ template <typename LABEL_T>
 void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
                               const std::vector<LABEL_T>& labels,
                               licensing::FinegrainedAccessToken token) {
-  // Similar to FastAPI, the mere existence of this token here means that we
-  // are authorized to run this method, so we can ignore the value of the token.
-  (void)token;
+  token.verifyCanTrain();
 
   if (batch.getBatchSize() != labels.size()) {
     throw std::invalid_argument("Batch size and number of labels must match.");

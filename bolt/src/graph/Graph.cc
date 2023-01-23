@@ -114,9 +114,7 @@ MetricData BoltGraph::train(
     const std::vector<dataset::BoltDatasetPtr>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
     const TrainConfig& train_config, licensing::FinegrainedAccessToken token) {
-  // Similar to FastAPI, the mere existence of this token here means that we
-  // are authorized to run this method, so we can ignore the value of the token.
-  (void)token;
+  token.verifyCanTrain();
 
   DatasetContext dataset_context(train_data, train_labels);
 
@@ -260,9 +258,7 @@ void BoltGraph::trainOnBatch(std::vector<BoltBatch>&& inputs,
                              uint32_t rebuild_hash_tables_interval,
                              uint32_t reconstruct_hash_functions_interval,
                              licensing::FinegrainedAccessToken token) {
-  // Similar to FastAPI, the mere existence of this token here means that we
-  // are authorized to run this method, so we can ignore the value of the token.
-  (void)token;
+  token.verifyCanTrain();
 
   SingleBatchDatasetContext dataset_context(std::move(inputs));
   verifyInputForGraph(dataset_context);

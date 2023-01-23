@@ -6,17 +6,30 @@
 
 namespace thirdai::licensing {
 
+/**
+ * This class is required by methods in the Bolt and Flash APIs that we want
+ * to restrict access to in a pattern similar to FastAPI dependency injection.
+ * Since the constructors of FinegrainedAccessToken themselves throw an
+ * exception if the user doesn't have the correct permissions, we force the user
+ * to callers of methods that take in FinegrainedAccessToken to have
+ * permissions.
+ */
 class FinegrainedAccessToken {
  public:
-  // Creates a general FinegrainedAccessToken. This will throw an error
-  // if the user does not have a full access entitlement. If licensing is
-  // disabled, this will always succeed.
+  /** Creates a general FinegrainedAccessToken. This will throw an error
+   * if the user does not have a full access entitlement. If licensing is
+   * disabled, this will always succeed.
+   */
   FinegrainedAccessToken();
 
-  // Creates a FinegrainedAccessToken corresponding to a passed in training
-  // file path. If the user does not have an entitlement allowing them to
-  // train on the file, this will throw an error. If licensing is
-  // disabled, this will always succeed.
+  /**
+   * Creates a FinegrainedAccessToken corresponding to a passed in training
+   * file path. If the user does not have an entitlement allowing them to
+   * train on the file, this will throw an error. If licensing is
+   * disabled, this will always succeed. To prevent unauthorized API use, you
+   * should only use this access token to train models with the passed in
+   * training file.
+   */
   explicit FinegrainedAccessToken(const std::string& train_file_path);
 
   void verifyCanSaveAndLoad() const {
@@ -24,6 +37,11 @@ class FinegrainedAccessToken {
       throw exceptions::LicenseCheckException(
           "Cannot save or load with this license");
     }
+  }
+
+  void verifyCanTrain() const {
+    // For now this is a NOOP because we always allow training if the
+    // FinegrainedAccessToken was created successfully
   }
 
  private:
