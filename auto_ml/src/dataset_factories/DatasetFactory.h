@@ -79,7 +79,7 @@ class DatasetLoaderFactory {
         "a list of strings instead.");
   }
 
-  virtual std::vector<bolt::InputPtr> getInputNodes() = 0;
+  virtual std::vector<uint32_t> getInputDims() = 0;
 
   virtual uint32_t getLabelDim() = 0;
 
