@@ -57,12 +57,16 @@ class BoltGraph {
 
   MetricData train(const std::vector<dataset::BoltDatasetPtr>& train_data,
                    const dataset::BoltDatasetPtr& train_labels,
-                   const TrainConfig& train_config);
+                   const TrainConfig& train_config,
+                   licensing::FinegrainedAccessToken token =
+                       licensing::FinegrainedAccessToken());
 
   void trainOnBatch(std::vector<BoltBatch>&& inputs, const BoltBatch& labels,
                     float learning_rate, MetricAggregator& metrics,
                     uint32_t rebuild_hash_tables_interval,
-                    uint32_t reconstruct_hash_functions_interval);
+                    uint32_t reconstruct_hash_functions_interval,
+                    licensing::FinegrainedAccessToken token =
+                        licensing::FinegrainedAccessToken());
 
   InferenceResult evaluate(
       const std::vector<dataset::BoltDatasetPtr>& test_data,
@@ -95,13 +99,21 @@ class BoltGraph {
   // This only saves the graph in the compiled state, that is any parameters and
   // graph structure are preserved, but any state related to train or predict is
   // discarded.
-  void save(const std::string& filename) const;
+  void save(const std::string& filename,
+            licensing::FinegrainedAccessToken token =
+                licensing::FinegrainedAccessToken()) const;
 
-  void save_stream(std::ostream& output_stream) const;
+  void save_stream(std::ostream& output_stream,
+                   licensing::FinegrainedAccessToken token =
+                       licensing::FinegrainedAccessToken()) const;
 
-  static BoltGraphPtr load(const std::string& filename);
+  static BoltGraphPtr load(const std::string& filename,
+                           licensing::FinegrainedAccessToken token =
+                               licensing::FinegrainedAccessToken());
 
-  static BoltGraphPtr load_stream(std::istream& input_stream);
+  static BoltGraphPtr load_stream(std::istream& input_stream,
+                                  licensing::FinegrainedAccessToken token =
+                                      licensing::FinegrainedAccessToken());
 
   std::string summarize(bool print, bool detailed) const;
 

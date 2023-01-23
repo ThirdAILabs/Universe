@@ -1,19 +1,17 @@
 
 #include "CheckLicense.h"
 #include <dataset/src/DataSource.h>
-#include <optional>
-#include <stdexcept>
-#include <unordered_set>
-#if THIRDAI_CHECK_LICENSE
 #include <licensing/src/file/SignedLicense.h>
 #include <licensing/src/heartbeat/Heartbeat.h>
 #include <licensing/src/keygen/KeygenCommunication.h>
 #include <licensing/src/utils.h>
-#endif
+#include <optional>
+#include <stdexcept>
+#include <unordered_set>
+
+// This file is only linked when the feature flag THIRDAI_CHECK_LICENSE is True
 
 namespace thirdai::licensing {
-
-#if THIRDAI_CHECK_LICENSE
 
 static const std::string FULL_ACCESS_ENTITLEMENT = "FULL_ACCESS";
 
@@ -22,6 +20,26 @@ static std::optional<std::string> _api_key = {};
 static std::unordered_set<std::string> _entitlements = {};
 
 static std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
+
+FinegrainedAccessToken::FinegrainedAccessToken(
+    const std::string& train_file_path)
+    : _can_save_and_load(false) {
+  if (_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
+    return;
+  }
+
+  if (!_entitlements.count(sha256File(train_file_path))) {
+    throw std::runtime_error(
+        "This dataset is not authorized under this license.");
+  }
+}
+
+FinegrainedAccessToken::FinegrainedAccessToken() : _can_save_and_load(true) {
+  if (!_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
+    throw std::runtime_error(
+        "You must have a full license to perform this operation.");
+  }
+}
 
 void checkLicense() {
 #pragma message( \
@@ -39,17 +57,6 @@ void checkLicense() {
 
   SignedLicense::findVerifyAndCheckLicense(_license_path);
   _entitlements.insert(FULL_ACCESS_ENTITLEMENT);
-}
-
-void verifyAllowedDataset(const std::optional<std::string>& filename) {
-  if (_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
-    return;
-  }
-
-  if (!filename || !_entitlements.count(sha256File(*filename))) {
-    throw std::runtime_error(
-        "This dataset is not authorized under this license.");
-  }
 }
 
 void activate(const std::string& api_key) { _api_key = api_key; }
@@ -71,27 +78,4 @@ void setLicensePath(const std::string& license_path) {
   _license_path = license_path;
 }
 
-#else
-
-void checkLicense() {}
-
-void verifyAllowedDataset(const std::optional<std::string>& filename) {
-  (void)filename;
-}
-
-void activate(const std::string& api_key) { (void)api_key; }
-
-void deactivate() {}
-
-void startHeartbeat(const std::string& heartbeat_url,
-                    const std::optional<uint32_t>& heartbeat_timeout) {
-  (void)heartbeat_url;
-  (void)heartbeat_timeout;
-}
-
-void endHeartbeat() {}
-
-void setLicensePath(const std::string& license_path) { (void)license_path; }
-
-#endif
 }  // namespace thirdai::licensing

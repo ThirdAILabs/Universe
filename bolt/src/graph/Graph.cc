@@ -113,7 +113,11 @@ void BoltGraph::logValidateAndSave(const TrainConfig& train_config,
 MetricData BoltGraph::train(
     const std::vector<dataset::BoltDatasetPtr>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
-    const TrainConfig& train_config) {
+    const TrainConfig& train_config, licensing::FinegrainedAccessToken token) {
+  // Similar to FastAPI, the mere existence of this token here means that we
+  // are authorized to run this method, so we can ignore the value of the token.
+  (void)token;
+
   DatasetContext dataset_context(train_data, train_labels);
 
   verifyCanTrain(dataset_context);
@@ -254,7 +258,12 @@ void BoltGraph::trainOnBatch(std::vector<BoltBatch>&& inputs,
                              const BoltBatch& labels, float learning_rate,
                              MetricAggregator& metrics,
                              uint32_t rebuild_hash_tables_interval,
-                             uint32_t reconstruct_hash_functions_interval) {
+                             uint32_t reconstruct_hash_functions_interval,
+                             licensing::FinegrainedAccessToken token) {
+  // Similar to FastAPI, the mere existence of this token here means that we
+  // are authorized to run this method, so we can ignore the value of the token.
+  (void)token;
+
   SingleBatchDatasetContext dataset_context(std::move(inputs));
   verifyInputForGraph(dataset_context);
 
@@ -842,13 +851,17 @@ void BoltGraph::serialize(Archive& archive) {
           _epoch, _updates);
 }
 
-void BoltGraph::save(const std::string& filename) const {
+void BoltGraph::save(const std::string& filename,
+                     licensing::FinegrainedAccessToken token) const {
+  token.verifyCanSaveAndLoad();
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
 }
 
-void BoltGraph::save_stream(std::ostream& output_stream) const {
+void BoltGraph::save_stream(std::ostream& output_stream,
+                            licensing::FinegrainedAccessToken token) const {
+  token.verifyCanSaveAndLoad();
   if (!graphCompiled()) {
     throw exceptions::NodeStateMachineError(
         "Cannot save graph that is not compiled.");
@@ -857,13 +870,17 @@ void BoltGraph::save_stream(std::ostream& output_stream) const {
   oarchive(*this);
 }
 
-BoltGraphPtr BoltGraph::load(const std::string& filename) {
+BoltGraphPtr BoltGraph::load(const std::string& filename,
+                             licensing::FinegrainedAccessToken token) {
+  token.verifyCanSaveAndLoad();
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(filestream);
 }
 
-BoltGraphPtr BoltGraph::load_stream(std::istream& input_stream) {
+BoltGraphPtr BoltGraph::load_stream(std::istream& input_stream,
+                                    licensing::FinegrainedAccessToken token) {
+  token.verifyCanSaveAndLoad();
   cereal::BinaryInputArchive iarchive(input_stream);
   std::shared_ptr<BoltGraph> deserialize_into(new BoltGraph());
   iarchive(*deserialize_into);

@@ -3,6 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <licensing/src/CheckLicense.h>
 #include <pybind11/stl.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <iostream>
@@ -19,7 +20,8 @@ void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
                           bolt::TrainConfig& train_config,
                           const std::optional<ValidationOptions>& validation,
                           std::optional<uint32_t> max_in_memory_batches) {
-  licensing::verifyAllowedDataset(data_source->resourceName());
+  licensing::FinegrainedAccessToken token =
+      licensing::FinegrainedAccessToken(data_source->resourceName());
 
   auto start_time = std::chrono::system_clock::now();
 
@@ -30,9 +32,9 @@ void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
 
   if (max_in_memory_batches) {
     trainOnStream(dataset, train_config, max_in_memory_batches.value(),
-                  validation);
+                  validation, token);
   } else {
-    trainInMemory(dataset, train_config, validation);
+    trainInMemory(dataset, train_config, validation, token);
   }
 
   // If the model is for binary classification then at the end of each call to
@@ -204,7 +206,8 @@ std::vector<dataset::Explanation> ModelPipeline::explain(
 // epochs.
 void ModelPipeline::trainInMemory(
     dataset::DatasetLoaderPtr& dataset_loader, bolt::TrainConfig train_config,
-    const std::optional<ValidationOptions>& validation) {
+    const std::optional<ValidationOptions>& validation,
+    licensing::FinegrainedAccessToken token) {
   auto loaded_data = dataset_loader->loadInMemory(ALL_BATCHES);
   if (!loaded_data) {
     throw std::invalid_argument("No data passed to train.");
@@ -237,7 +240,7 @@ void ModelPipeline::trainInMemory(
     train_config.setEpochs(/* new_epochs= */ epochs - 1);
   }
 
-  _model->train(train_data, train_labels, train_config);
+  _model->train(train_data, train_labels, train_config, token);
 }
 
 // We take in the TrainConfig by value to copy it so we can modify the number
@@ -245,7 +248,8 @@ void ModelPipeline::trainInMemory(
 void ModelPipeline::trainOnStream(
     dataset::DatasetLoaderPtr& dataset_loader, bolt::TrainConfig train_config,
     uint32_t max_in_memory_batches,
-    const std::optional<ValidationOptions>& validation) {
+    const std::optional<ValidationOptions>& validation,
+    licensing::FinegrainedAccessToken token) {
   /**
    * If there are temporal relationships then we cannot do validation because
    * loading the validation data before all of the training data could lead to
@@ -285,7 +289,7 @@ void ModelPipeline::trainOnStream(
 
   if (_train_eval_config.freezeHashTables() && epochs > 1) {
     trainSingleEpochOnStream(dataset_loader, train_config,
-                             max_in_memory_batches);
+                             max_in_memory_batches, token);
     _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
     --epochs;
@@ -293,17 +297,18 @@ void ModelPipeline::trainOnStream(
 
   for (uint32_t e = 0; e < epochs; e++) {
     trainSingleEpochOnStream(dataset_loader, train_config,
-                             max_in_memory_batches);
+                             max_in_memory_batches, token);
   }
 }
 
 void ModelPipeline::trainSingleEpochOnStream(
     dataset::DatasetLoaderPtr& dataset_loader,
-    const bolt::TrainConfig& train_config, uint32_t max_in_memory_batches) {
+    const bolt::TrainConfig& train_config, uint32_t max_in_memory_batches,
+    licensing::FinegrainedAccessToken token) {
   while (auto datasets = dataset_loader->loadInMemory(max_in_memory_batches)) {
     auto& [data, labels] = datasets.value();
 
-    _model->train({data}, labels, train_config);
+    _model->train({data}, labels, train_config, token);
   }
 
   dataset_loader->restart();

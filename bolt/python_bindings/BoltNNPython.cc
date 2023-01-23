@@ -362,9 +362,16 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
           },
           py::arg("train_data"), py::arg("train_labels"),
           py::arg("train_config"), bolt::python::OutputRedirect())
-      .def("train", &BoltGraph::train, py::arg("train_data"),
-           py::arg("train_labels"), py::arg("train_config"),
-           R"pbdoc(  
+      .def(
+          "train",
+          [](BoltGraph& model, const dataset::BoltDatasetList& data,
+             const dataset::BoltDatasetPtr& labels,
+             const TrainConfig& train_config) {
+            model.train(data, labels, train_config);
+          },
+          py::arg("train_data"), py::arg("train_labels"),
+          py::arg("train_config"),
+          R"pbdoc(  
 Trains the network on the given training data and labels with the given training
 config.
 
@@ -411,7 +418,7 @@ Examples:
 That's all for now, folks! More docs coming soon :)
 
 )pbdoc",
-           bolt::python::OutputRedirect())
+          bolt::python::OutputRedirect())
       .def(
           "get_input_gradients_single",
           [](BoltGraph& model, std::vector<BoltVector>&& input_data,
@@ -526,8 +533,16 @@ That's all for now, folks! More docs coming soon :)
           "The third element, the active neuron matrix, is only present if "
           "we are returning activations AND the ouptut is sparse.",
           bolt::python::OutputRedirect())
-      .def("save", &BoltGraph::save, py::arg("filename"))
-      .def_static("load", &BoltGraph::load, py::arg("filename"))
+      .def(
+          "save",
+          [](BoltGraph& model, const std::string& filename) {
+            model.save(filename);
+          },
+          py::arg("filename"))
+      .def_static(
+          "load",
+          [](const std::string& filename) { return BoltGraph::load(filename); },
+          py::arg("filename"))
       .def("__str__",
            [](const BoltGraph& model) {
              return model.summarize(/* print = */ false,

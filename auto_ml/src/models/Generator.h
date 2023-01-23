@@ -261,7 +261,7 @@ class QueryCandidateGenerator {
    * @param file_name
    */
   void buildFlashIndex(const std::string& filename) {
-    licensing::verifyAllowedDataset(filename);
+    licensing::FinegrainedAccessToken{filename};
 
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
         /* file_name = */ filename);
