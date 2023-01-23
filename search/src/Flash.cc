@@ -2,7 +2,6 @@
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
 #include <dataset/src/InMemoryDataset.h>
-#include <licensing/src/CheckLicense.h>
 #include <search/src/Flash.h>
 #include <utils/Logging.h>
 #include <algorithm>
@@ -37,7 +36,12 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
 
 template <typename LABEL_T>
 void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
-                              const std::vector<LABEL_T>& labels) {
+                              const std::vector<LABEL_T>& labels,
+                              licensing::FinegrainedAccessToken token) {
+  // Similar to FastAPI, the mere existence of this token here means that we
+  // are authorized to run this method, so we can ignore the value of the token.
+  (void)token;
+
   if (batch.getBatchSize() != labels.size()) {
     throw std::invalid_argument("Batch size and number of labels must match.");
   }

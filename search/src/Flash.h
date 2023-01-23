@@ -8,6 +8,7 @@
 #include <hashtable/src/HashTable.h>
 #include <hashtable/src/VectorHashTable.h>
 #include <dataset/src/Datasets.h>
+#include <licensing/src/CheckLicense.h>
 
 namespace thirdai::search {
 
@@ -51,7 +52,9 @@ class Flash {
   /**
    * Insert this batch into the Flash data structure.
    */
-  void addBatch(const BoltBatch& batch, const std::vector<LABEL_T>& labels);
+  void addBatch(const BoltBatch& batch, const std::vector<LABEL_T>& labels,
+                licensing::FinegrainedAccessToken token =
+                    licensing::FinegrainedAccessToken());
 
   /**
    * Perform a batch query on the Flash structure, for now on a Batch object.

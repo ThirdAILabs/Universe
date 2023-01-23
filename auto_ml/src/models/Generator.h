@@ -257,6 +257,9 @@ class QueryCandidateGenerator {
    * and there is a source column in the passed in filename.
    */
   void train(const std::string& filename, bool use_supervised = true) {
+    licensing::FinegrainedAccessToken token =
+        licensing::FinegrainedAccessToken(filename);
+
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
         /* file_name = */ filename);
 
@@ -288,11 +291,11 @@ class QueryCandidateGenerator {
     auto train_start = std::chrono::high_resolution_clock::now();
 
     // Unsupervised training
-    addDatasetToIndex(unsupervised_data, labels, bar);
+    addDatasetToIndex(unsupervised_data, labels, bar, token);
 
     // Supervised training
     if (use_supervised) {
-      addDatasetToIndex(supervised_data, labels, bar);
+      addDatasetToIndex(supervised_data, labels, bar, token);
     }
 
     auto train_end = std::chrono::high_resolution_clock::now();
@@ -443,7 +446,8 @@ class QueryCandidateGenerator {
 
   void addDatasetToIndex(const dataset::BoltDatasetPtr& data,
                          const std::vector<std::vector<uint32_t>>& labels,
-                         std::optional<ProgressBar>& bar) {
+                         std::optional<ProgressBar>& bar,
+                         licensing::FinegrainedAccessToken token) {
     if (!_flash_index) {
       auto hash_function = _query_generator_config->hashFunction();
       if (_query_generator_config->reservoirSize().has_value()) {
@@ -456,7 +460,7 @@ class QueryCandidateGenerator {
 
     for (uint32_t batch_id = 0; batch_id < data->numBatches(); batch_id++) {
       _flash_index->addBatch(/* batch = */ data->at(batch_id),
-                             /* labels = */ labels.at(batch_id));
+                             /* labels = */ labels.at(batch_id), token);
       if (bar) {
         bar->increment();
       }
