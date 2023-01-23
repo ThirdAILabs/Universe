@@ -15,6 +15,7 @@ from distributed_utils import (
     get_non_head_nodes,
     ray_two_node_cluster_config,
     split_into_2,
+    clear_ray_workers,
 )
 from thirdai import bolt, dataset
 
@@ -110,7 +111,7 @@ def evaluated_distributed_mnist_model(distributed_model):
 def train_distributed_bolt_check(request, ray_two_node_cluster_config):
 
     train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=3)
-    distributed_model, _ = get_distributed_mnist_model(
+    distributed_model, mini_cluster = get_distributed_mnist_model(
         request, ray_two_node_cluster_config, train_config
     )
     distributed_model.train()
@@ -119,7 +120,8 @@ def train_distributed_bolt_check(request, ray_two_node_cluster_config):
 
     print(metrics)
 
-    yield metrics
+    clear_ray_workers()
+    return metrics
 
 
 @pytest.fixture(scope="module")
@@ -141,9 +143,8 @@ def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config)
     distributed_model.train()
     metrics = evaluated_distributed_mnist_model(distributed_model)
 
-    print(metrics)
-
-    yield metrics
+    clear_ray_workers()
+    return metrics
 
 
 # This test requires the Ray library, but we don't skip it if Ray isn't
@@ -151,9 +152,7 @@ def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config)
 # Ray install is working at all. Marking it only with
 # pytestmark.mark.distributed prevents it from running in our normal unit and
 # integration test pipeline where ray isn't a dependency.
-@pytest.mark.parametrize(
-    "train_distributed_bolt_check", ["linear", "linear"], indirect=True
-)
+@pytest.mark.parametrize("train_distributed_bolt_check", ["linear"], indirect=True)
 def test_distributed_mnist(train_distributed_bolt_check):
     import multiprocessing
 

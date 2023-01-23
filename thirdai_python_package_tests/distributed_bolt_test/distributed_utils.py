@@ -43,9 +43,7 @@ def ray_two_node_cluster_config():
         return cluster_config, mini_cluster
 
     yield _make_cluster_config
-
     mini_cluster.shutdown()
-    ray.shutdown()
 
 
 def split_into_2(file_to_split, destination_file_1, destination_file_2):
@@ -81,3 +79,10 @@ def remove_files(file_names):
     for file in file_names:
         if os.path.exists(file):
             os.remove(file)
+
+
+def clear_ray_workers():
+
+    import ray
+
+    ray.shutdown()
