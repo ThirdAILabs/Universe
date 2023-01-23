@@ -15,7 +15,7 @@ def test_beam_search_no_transition_matrix():
 
     transition_matrix = np.ones(shape=(output_dim, output_dim), dtype=np.float32)
 
-    results = search.beam_search(probabilities, transition_matrix, k=10)
+    results = search.beam_search(probabilities, transition_matrix, beam_size=10)
 
     best_sequences = []
     for top_k in results:
@@ -48,6 +48,6 @@ def test_beam_search_differs_from_gready_search():
 
     transition_matrix = [[0.9, 0.1], [0.4, 0.6]]
 
-    results = search.beam_search(probabilities, transition_matrix, k=2)
+    results = search.beam_search(probabilities, transition_matrix, beam_size=2)
 
     assert np.array_equal(results[0][0][0], np.array([0, 0, 1]))
