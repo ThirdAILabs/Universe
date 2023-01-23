@@ -52,12 +52,6 @@ class UDTRecursion {
 
   template <typename PredictFn>
   void callPredictRecursively(MapInput sample, PredictFn predict) const {
-    // The previous predictions of the model are initialized as empty. The are
-    // filled in after each call to predict.
-    for (const auto& column_name : _intermediate_column_names) {
-      sample[column_name] = "";
-    }
-
     for (const auto& column_name : _intermediate_column_names) {
       sample[column_name] = predict(sample);
     }
@@ -67,14 +61,6 @@ class UDTRecursion {
   void callPredictBatchRecursively(
       MapInputBatch samples, PredictBatchFn predict_batch,
       PredictionGetterFn get_ith_prediction) const {
-    // The previous predictions of the model are initialized as empty. The are
-    // filled in after each call to predictBatch.
-    for (auto& sample : samples) {
-      for (const auto& column_name : _intermediate_column_names) {
-        sample[column_name] = "";
-      }
-    }
-
     for (const auto& column_name : _intermediate_column_names) {
       auto predictions = predict_batch(samples);
       for (uint32_t i = 0; i < samples.size(); i++) {
