@@ -7,6 +7,7 @@
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
@@ -28,15 +29,34 @@ class GraphDatasetFactory {
     if (_config->_neighbourhood_context || _config->_neighbourhood_context ||
         _config->_kth_neighbourhood) {
       makePrepocessedProcessedVectors();
+
+      auto graph_block = dataset::GraphCategoricalBlock::make(
+          _config->_source, _vectors, _neighbours, _node_id_map);
+
+      input_blocks.push_back(graph_block);
     }
+
+    _batch_processor = dataset::GenericBatchProcessor::make(
+        /* input_blocks= */ std::move(input_blocks),
+        /* label_blocks= */ {std::move(label_block)},
+        /* has_header= */ true, /* delimiter= */ _config->_delimeter,
+        /* parallel= */ true, /* hash_range= */ 100000);
+  }
+
+  std::vector<uint32_t> getInputDim() {
+    return {_batch_processor->getInputDim()};
+  }
+
+  uint32_t getLabelDim() { return _batch_processor->getLabelDim(); }
+
+  dataset::GenericBatchProcessorPtr getBatchProcessor() {
+    return _batch_processor;
   }
 
  private:
   dataset::CsvRolledBatch getFinalData() {
+    auto rows = getData();
     uint32_t source_col_num = _column_number_map.at(_config->_source);
-
-    auto rows = getData(source_col_num);
-
     std::vector<uint32_t> relationship_col_nums;
     for (const auto& column : _config->_relationship_columns) {
       relationship_col_nums.push_back(_column_number_map.at(column));
@@ -55,13 +75,15 @@ class GraphDatasetFactory {
     return input;
   }
 
-  std::vector<std::vector<std::string_view>> getData(uint32_t source_col_num) {
+  std::vector<std::vector<std::string_view>> getData() {
     auto data_loader = dataset::SimpleFileDataSource::make(
         _config->_graph_file_name,
         /* target_batch_size= */ DEFAULT_BATCH_SIZE);
 
     _column_number_map = UDTDatasetFactory::makeColumnNumberMapFromHeader(
         *data_loader, _config->_delimeter);
+
+    uint32_t source_col_num = _column_number_map.at(_config->_source);
 
     std::vector<std::string> full_data;
 
@@ -113,6 +135,7 @@ class GraphDatasetFactory {
   }
 
   void makePrepocessedProcessedVectors() {
+    auto final_data = getFinalData();
     std::vector<dataset::BlockPtr> input_blocks;
     std::vector<dataset::TabularColumn> tabular_columns;
     std::vector<data::NumericalDataTypePtr> numerical_types;
@@ -167,8 +190,6 @@ class GraphDatasetFactory {
         /* label_blocks= */ {std::move(label_block)},
         /* has_header= */ false, /* delimiter= */ _config->_delimeter,
         /* parallel= */ true, /* hash_range= */ 100000);
-
-    auto final_data = getFinalData();
 
     _vectors = makePreprocessedVectors(processor, *key_vocab, final_data);
   }
@@ -267,6 +288,9 @@ class GraphDatasetFactory {
   std::vector<std::vector<uint32_t>> _adjacency_list;
   std::optional<std::vector<uint32_t>> _numerical_columns;
   std::vector<std::unordered_set<std::string>> _neighbours;
+  dataset::GenericBatchProcessorPtr _batch_processor;
 };
+
+using GraphDatasetFactoryPtr = std::shared_ptr<GraphDatasetFactory>;
 
 }  // namespace thirdai::automl::data

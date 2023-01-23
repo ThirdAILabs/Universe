@@ -1,6 +1,7 @@
 #pragma once
 
 #include <auto_ml/src/models/Generator.h>
+#include <auto_ml/src/models/GraphUDT.h>
 #include <auto_ml/src/models/ModelPipeline.h>
 #include <auto_ml/src/models/TextClassifier.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>

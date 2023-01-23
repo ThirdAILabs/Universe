@@ -296,6 +296,14 @@ class GraphCategoricalBlock : public CategoricalBlock {
     return "Neighbours for the node '" + std::string(category_value) + "'";
   }
 
+  static auto make(ColumnIdentifier col, PreprocessedVectorsPtr vectors,
+                   std::vector<std::unordered_set<std::string>> neighbours,
+                   std::vector<std::string> node_id_map) {
+    return std::make_shared<GraphCategoricalBlock>(
+        std::move(col), std::move(vectors), std::move(neighbours),
+        std::move(node_id_map));
+  }
+
  protected:
   std::exception_ptr encodeCategory(std::string_view category,
                                     uint32_t num_categories_in_sample,
