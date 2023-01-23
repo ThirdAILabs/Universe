@@ -12,7 +12,7 @@
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/models/ModelPipeline.h>
-#include <auto_ml/src/models/UDTRecursionManager.h>
+#include <auto_ml/src/models/UDTRecursion.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <memory>
 #include <optional>
@@ -177,8 +177,8 @@ class UniversalDeepTransformer final : public ModelPipeline {
 
  private:
   explicit UniversalDeepTransformer(ModelPipeline&& model,
-                                    UDTRecursionManager&& recursion_manager)
-      : ModelPipeline(model), _recursion_manager(recursion_manager) {}
+                                    UDTRecursion&& recursion)
+      : ModelPipeline(model), _recursion(recursion) {}
 
   /**
    * Returns the output processor to use to create the ModelPipeline. Also
@@ -226,7 +226,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
         " but received value '" + given_option_value + "'.");
   }
 
-  UDTRecursionManager _recursion_manager;
+  UDTRecursion _recursion;
 
   // Private constructor for cereal.
   UniversalDeepTransformer() {}
@@ -234,7 +234,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<ModelPipeline>(this), _recursion_manager);
+    archive(cereal::base_class<ModelPipeline>(this), _recursion);
   }
 };
 

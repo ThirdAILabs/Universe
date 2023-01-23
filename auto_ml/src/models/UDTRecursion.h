@@ -14,10 +14,10 @@
 
 namespace thirdai::automl::models {
 
-class UDTRecursionManager {
+class UDTRecursion {
  public:
-  UDTRecursionManager(data::ColumnDataTypes data_types,
-                      std::string target_column, char column_delimiter)
+  UDTRecursion(data::ColumnDataTypes data_types, std::string target_column,
+               char column_delimiter)
       : _target_sequence(data::asSequence(data_types.at(target_column))),
         _udt_data_types(std::move(data_types)),
         _target_column(std::move(target_column)),
@@ -39,7 +39,7 @@ class UDTRecursionManager {
     }
   }
 
-  UDTRecursionManager() {}
+  UDTRecursion() {}
 
   bool targetIsRecursive() const { return !!_target_sequence; }
 

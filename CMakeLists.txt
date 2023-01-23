@@ -410,7 +410,7 @@ pybind11_add_module(
   auto_ml/src/models/OutputProcessor.cc
   auto_ml/src/models/TextClassifier.cc
   auto_ml/src/models/UniversalDeepTransformer.cc
-  auto_ml/src/models/UDTRecursionManager.cc
+  auto_ml/src/models/UDTRecursion.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 

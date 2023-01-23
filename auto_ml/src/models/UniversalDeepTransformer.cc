@@ -9,7 +9,7 @@
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/OutputProcessor.h>
-#include <auto_ml/src/models/UDTRecursionManager.h>
+#include <auto_ml/src/models/UDTRecursion.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.h>
@@ -39,9 +39,9 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
         "Target column provided was not found in data_types.");
   }
 
-  UDTRecursionManager recursion_manager(data_types, target_col, delimiter);
-  if (recursion_manager.targetIsRecursive()) {
-    data_types = recursion_manager.modifiedDataTypes();
+  UDTRecursion recursion(data_types, target_col, delimiter);
+  if (recursion.targetIsRecursive()) {
+    data_types = recursion.modifiedDataTypes();
   }
 
   auto dataset_config = std::make_shared<data::UDTConfig>(
@@ -96,7 +96,7 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
 
   return UniversalDeepTransformer({std::move(dataset_factory), std::move(model),
                                    output_processor, train_eval_parameters},
-                                  std::move(recursion_manager));
+                                  std::move(recursion));
 }
 
 void UniversalDeepTransformer::train(
@@ -104,8 +104,8 @@ void UniversalDeepTransformer::train(
     bolt::TrainConfig& train_config,
     const std::optional<ValidationOptions>& validation,
     std::optional<uint32_t> max_in_memory_batches) {
-  auto data_source = _recursion_manager.targetIsRecursive()
-                         ? _recursion_manager.wrapDataSource(data_source_in)
+  auto data_source = _recursion.targetIsRecursive()
+                         ? _recursion.wrapDataSource(data_source_in)
                          : data_source_in;
 
   ModelPipeline::train(data_source, train_config, validation,
@@ -116,8 +116,8 @@ py::object UniversalDeepTransformer::evaluate(
     const dataset::DataSourcePtr& data_source_in,
     std::optional<bolt::EvalConfig>& eval_config_opt,
     bool return_predicted_class, bool return_metrics) {
-  auto data_source = _recursion_manager.targetIsRecursive()
-                         ? _recursion_manager.wrapDataSource(data_source_in)
+  auto data_source = _recursion.targetIsRecursive()
+                         ? _recursion.wrapDataSource(data_source_in)
                          : data_source_in;
   return ModelPipeline::evaluate(data_source, eval_config_opt,
                                  return_predicted_class, return_metrics);
@@ -126,12 +126,12 @@ py::object UniversalDeepTransformer::evaluate(
 py::object UniversalDeepTransformer::predict(const MapInput& sample,
                                              bool use_sparse_inference,
                                              bool return_predicted_class) {
-  if (!_recursion_manager.targetIsRecursive()) {
+  if (!_recursion.targetIsRecursive()) {
     return ModelPipeline::predict(sample, use_sparse_inference,
                                   return_predicted_class);
   }
 
-  NumpyArray<uint32_t> output_predictions(_recursion_manager.depth());
+  NumpyArray<uint32_t> output_predictions(_recursion.depth());
   uint32_t step = 0;
 
   // Makes a prediction and updates output_predictions with the latest output.
@@ -147,7 +147,7 @@ py::object UniversalDeepTransformer::predict(const MapInput& sample,
     return className(predicted_class);
   };
 
-  _recursion_manager.callPredictRecursively(sample, predict_with_model);
+  _recursion.callPredictRecursively(sample, predict_with_model);
 
   return py::object(std::move(output_predictions));
 }
@@ -155,14 +155,13 @@ py::object UniversalDeepTransformer::predict(const MapInput& sample,
 py::object UniversalDeepTransformer::predictBatch(const MapInputBatch& samples,
                                                   bool use_sparse_inference,
                                                   bool return_predicted_class) {
-  if (!_recursion_manager.targetIsRecursive()) {
+  if (!_recursion.targetIsRecursive()) {
     return ModelPipeline::predictBatch(samples, use_sparse_inference,
                                        return_predicted_class);
   }
 
   NumpyArray<uint32_t> output_predictions(
-      /* shape= */ {samples.size(),
-                    static_cast<size_t>(_recursion_manager.depth())});
+      /* shape= */ {samples.size(), static_cast<size_t>(_recursion.depth())});
   uint32_t step = 0;
 
   auto predict_batch = [&](const MapInputBatch& samples) {
@@ -190,8 +189,8 @@ py::object UniversalDeepTransformer::predictBatch(const MapInputBatch& samples,
     return className(predictions_np.at(idx));
   };
 
-  _recursion_manager.callPredictBatchRecursively(samples, predict_batch,
-                                                 get_ith_prediction);
+  _recursion.callPredictBatchRecursively(samples, predict_batch,
+                                         get_ith_prediction);
 
   return py::object(std::move(output_predictions));
 }

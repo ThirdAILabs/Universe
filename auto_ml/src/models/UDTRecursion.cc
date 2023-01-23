@@ -1,17 +1,17 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/OutputProcessor.h>
-#include <auto_ml/src/models/UDTRecursionManager.h>
+#include <auto_ml/src/models/UDTRecursion.h>
 #include <dataset/src/RecursionWrapper.h>
 #include <memory>
 #include <string>
 
 namespace thirdai::automl::models {
 
-data::ColumnDataTypes UDTRecursionManager::modifiedDataTypes() const {
+data::ColumnDataTypes UDTRecursion::modifiedDataTypes() const {
   return _udt_data_types;
 }
 
-dataset::DataSourcePtr UDTRecursionManager::wrapDataSource(
+dataset::DataSourcePtr UDTRecursion::wrapDataSource(
     dataset::DataSourcePtr source) const {
   auto target_batch_size = source->getMaxBatchSize();
   return dataset::RecursionWrapper::make(
@@ -23,7 +23,7 @@ dataset::DataSourcePtr UDTRecursionManager::wrapDataSource(
       /* target_batch_size= */ target_batch_size);
 }
 
-std::vector<std::string> UDTRecursionManager::intermediateColumnNames() const {
+std::vector<std::string> UDTRecursion::intermediateColumnNames() const {
   std::vector<std::string> column_names;
 
   for (uint32_t step = 1; step < _target_sequence->length; step++) {
@@ -33,7 +33,7 @@ std::vector<std::string> UDTRecursionManager::intermediateColumnNames() const {
   return column_names;
 }
 
-void UDTRecursionManager::expandTargetSequenceIntoCategoricalColumns() {
+void UDTRecursion::expandTargetSequenceIntoCategoricalColumns() {
   for (const auto& column_name : _intermediate_column_names) {
     _udt_data_types[column_name] =
         std::make_shared<data::CategoricalDataType>();
