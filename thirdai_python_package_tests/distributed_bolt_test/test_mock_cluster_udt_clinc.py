@@ -2,9 +2,9 @@ import os
 
 import pytest
 from distributed_utils import (
+    clear_ray_workers,
     ray_two_node_cluster_config,
     remove_files,
-    clear_ray_workers,
 )
 from thirdai import bolt
 from thirdai.demos import download_clinc_dataset
