@@ -23,7 +23,7 @@ using CandidateQueue = std::priority_queue<Path, std::vector<Path>, Minimize>;
 // Helper function to preform beam search on a single element of the batch.
 std::vector<Path> beamSearch(const float* probabilities, uint32_t seq_len,
                              uint32_t output_dim,
-                             const NumpyArray& transition_matrix,
+                             const float* transition_matrix,
                              uint32_t beam_size) {
   // We keep a list of the top-k best scoring partial sequences that we update
   // at each step up to seq_len. This is what separates this approach from other
@@ -45,7 +45,8 @@ std::vector<Path> beamSearch(const float* probabilities, uint32_t seq_len,
         // Don't compute any transition probability for the first element of the
         // sequence.
         if (!seq.first.empty()) {
-          score -= std::log(transition_matrix.at(seq.first.back(), i));
+          uint32_t last_output = seq.first.back();
+          score -= std::log(transition_matrix[last_output * output_dim + i]);
         }
 
         // If we have not found beam_size sequences yet, add the current
@@ -108,7 +109,7 @@ std::vector<std::vector<Path>> beamSearchBatch(
            beam_size, results)
   for (uint32_t i = 0; i < batch_size; i++) {
     results[i] = beamSearch(probabilities.data(i), seq_len, output_dim,
-                            transition_matrix, beam_size);
+                            transition_matrix.data(), beam_size);
   }
 
   return results;
