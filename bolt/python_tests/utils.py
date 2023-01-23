@@ -324,12 +324,17 @@ def compressed_training(
     epochs=30,
     batch_size=64,
 ):
+    train_samples = 1000
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=n_classes, n_samples=1000
+        n_classes=n_classes,
+        n_samples=train_samples,
+        batch_size_for_conversion=batch_size,
     )
-    test_data, test_labels = gen_numpy_training_data(n_classes=n_classes, n_samples=100)
+    test_data, test_labels = gen_numpy_training_data(
+        n_classes=n_classes, n_samples=100, batch_size_for_conversion=batch_size
+    )
 
-    num_training_batches = math.ceil(len(train_data) / batch_size)
+    num_training_batches = math.ceil(train_samples / batch_size)
 
     wrapped_model = simple_bolt_model_in_distributed_training_wrapper(
         train_data=train_data,
