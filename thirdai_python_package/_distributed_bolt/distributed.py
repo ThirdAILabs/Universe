@@ -413,5 +413,5 @@ class DistributedDataParallel:
             "total_batches_trained": self.total_batches_trained,
         }
 
-    def get_model(self, worker_id=0):
-        return ray.get(self.workers[worker_id].get_model.remote())
+    def get_model(self, worker_id=0, hard_copy=False):
+        return ray.get(self.workers[worker_id].get_model.remote(hard_copy))
