@@ -86,13 +86,13 @@ def add_distributed_to_udt():
 
         data_processor = self.get_data_processor()
 
-        # checks and raises an error if the given UDT is not supported in distributed context
+        # Checks and raises an error if the given UDT is not supported in distributed context
         data_processor.verify_can_distribute()
 
         if batch_size is None:
             batch_size = self.default_train_batch_size
 
-        # calculating batch size per node
+        # Calculating batch size per node
         batch_size = batch_size // cluster_config.num_workers
 
         train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
@@ -406,7 +406,6 @@ class DistributedDataParallel:
             starting_epoch += 1
 
         for epoch in range(starting_epoch, self.train_config.num_epochs):
-
             self.train_on_epoch(train_state_manager=train_state_manager, epoch=epoch)
 
         return {
