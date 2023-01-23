@@ -362,8 +362,8 @@ def compressed_training(
 
     model = wrapped_model.model()
     acc = model.evaluate(
-        test_data=dataset.from_numpy(test_data, batch_size=64),
-        test_labels=dataset.from_numpy(test_labels, batch_size=64),
+        test_data=test_data,
+        test_labels=test_labels,
         eval_config=eval_config,
     )
 
