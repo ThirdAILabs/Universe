@@ -95,8 +95,8 @@ class GraphDatasetFactory {
 
     std::vector<std::string> nodes(rows.size());
 
-#pragma omp parallel for default(none) \
-    shared(rows, full_data, nodes, source_col_num)
+    // #pragma omp parallel for default(none)
+    //     shared(rows, full_data, nodes, source_col_num)
     for (uint32_t i = 0; i < full_data.size(); i++) {
       rows[i] = dataset::ProcessorUtils::parseCsvRow(full_data.at(i),
                                                      _config->_delimeter);
@@ -114,9 +114,9 @@ class GraphDatasetFactory {
       const std::vector<uint32_t>& relationship_col_nums,
       uint32_t source_col_num) {
     std::vector<std::vector<uint32_t>> adjacency_list_simulation(rows.size());
-#pragma omp parallel for default(none) shared(                              \
-    relationship_col_nums, rows, adjacency_list_simulation, source_col_num) \
-    collapse(2)
+    // #pragma omp parallel for default(none) shared(
+    //     relationship_col_nums, rows, adjacency_list_simulation,
+    //     source_col_num) collapse(2)
     for (uint32_t i = 0; i < rows.size(); i++) {
       for (uint32_t j = i + 1; j < rows.size(); j++) {
         if (rows[i][source_col_num] != rows[j][source_col_num]) {
@@ -223,8 +223,8 @@ class GraphDatasetFactory {
     _neighbours.reserve(rows.size());
     std::vector<std::vector<std::string>> processed_numerical_columns(
         rows.size(), std::vector<std::string>(numerical_columns.size()));
-#pragma omp parallel for default(none) shared( \
-    rows, k_hop, numerical_columns, processed_numerical_columns) collapse(2)
+    // #pragma omp parallel for default(none) shared(
+    //     rows, k_hop, numerical_columns, processed_numerical_columns)
     for (uint32_t i = 0; i < rows.size(); i++) {
       std::unordered_set<uint32_t> neighbours;
       std::unordered_set<std::string> neighbours_string;

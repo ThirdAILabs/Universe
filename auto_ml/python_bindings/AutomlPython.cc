@@ -57,6 +57,16 @@ void defineAutomlInModule(py::module_& module) {
            docs::TEXT_CLASSIFIER_INIT)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
+
+  py::class_<GraphUDT, std::shared_ptr<GraphUDT>>(module, "UDTGraph")
+      .def(py::init(&GraphUDT::buildGraphUDT), py::arg("data_types"),
+           py::arg("graph_file_name"), py::arg("source"), py::arg("target"),
+           py::arg("relationship_columns"), py::arg("n_target_classes"),
+           py::arg("neighbourhood_context") = false,
+           py::arg("label_context") = false, py::arg("kth_neighbourhood") = 0,
+           py::arg("delimeter") = ',')
+      .def("train", &GraphUDT::train, py::arg("file_name"), py::arg("epochs"),
+           py::arg("learning_rate"), py::arg("batch_size"));
 }
 
 void createModelsSubmodule(py::module_& module) {
@@ -145,16 +155,6 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', docs::UDT_CONFIG_INIT,
            bolt::python::OutputRedirect());
-
-  py::class_<GraphUDT, std::shared_ptr<GraphUDT>>(models_submodule, "UDTGraph")
-      .def(py::init(&GraphUDT::buildGraphUDT), py::arg("data_types"),
-           py::arg("graph_file_name"), py::arg("source"), py::arg("target"),
-           py::arg("relationship_columns"), py::arg("n_target_classes"),
-           py::arg("neighbourhood_context") = false,
-           py::arg("label_context") = false, py::arg("kth_neighbourhood") = 0,
-           py::arg("delimeter") = ',')
-      .def("train", &GraphUDT::train, py::arg("file_name"), py::arg("epochs"),
-           py::arg("learning_rate"), py::arg("batch_size"));
 
   py::class_<UniversalDeepTransformer, ModelPipeline,
              std::shared_ptr<UniversalDeepTransformer>>(models_submodule,

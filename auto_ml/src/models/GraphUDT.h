@@ -4,7 +4,6 @@
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/dataset_factories/udt/GraphConfig.h>
 #include <auto_ml/src/dataset_factories/udt/GraphDatasetFactory.h>
 #include <auto_ml/src/models/ModelPipeline.h>
