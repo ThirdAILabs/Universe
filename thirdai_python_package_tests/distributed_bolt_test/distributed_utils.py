@@ -19,7 +19,6 @@ def ray_two_node_cluster_config():
         },
     )
     mini_cluster.add_node(num_cpus=1)
-    mini_cluster.add_node(num_cpus=1)
 
     # directly yielding mini_cluster returns a generator for cluster_config,
     # rather than cluster_config itself and those generators were just using

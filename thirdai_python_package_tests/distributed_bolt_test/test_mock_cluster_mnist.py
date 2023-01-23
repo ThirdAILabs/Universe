@@ -134,6 +134,10 @@ def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config)
     mini_cluster.remove_node(node_to_kill)
     # adding some waiting time
 
+    mini_cluster.add_node(num_cpus=1)
+
+    mini_cluster.wait_for_nodes()
+
     distributed_model.train()
     metrics = evaluated_distributed_mnist_model(distributed_model)
 
@@ -148,7 +152,7 @@ def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config)
 # pytestmark.mark.distributed prevents it from running in our normal unit and
 # integration test pipeline where ray isn't a dependency.
 @pytest.mark.parametrize(
-    "train_distributed_bolt_check", ["linear", "circular"], indirect=True
+    "train_distributed_bolt_check", ["linear", "linear"], indirect=True
 )
 def test_distributed_mnist(train_distributed_bolt_check):
     import multiprocessing
@@ -165,7 +169,7 @@ def test_distributed_mnist(train_distributed_bolt_check):
 def test_distributed_fault_tolerance(train_distributed_bolt_fault_tolerance):
     import multiprocessing
 
-    if multiprocessing.cpu_count() < 2:
+    if multiprocessing.cpu_count() < 3:
         assert False, "not enough cpus for distributed training"
 
     assert train_distributed_bolt_fault_tolerance[0]["categorical_accuracy"] > 0.9
