@@ -116,12 +116,6 @@ def prepared_datasets(grammar_correction_dataset) -> None:
     )
 
 
-def delete_created_files() -> None:
-    for file in [MODEL_PATH, TRAIN_SOURCE_TARGET_FILE, TRAIN_TARGET_ONLY_FILE]:
-        if os.path.exists(file):
-            os.remove(file)
-
-
 def run_generator_test(
     model: bolt.models.UDTGenerator, source_col_index: int, target_col_index: int
 ) -> None:
@@ -232,5 +226,3 @@ def test_udt_generator_return_scores(prepared_datasets):
     for index, score in enumerate(scores):
         assert len(score) == len(generated_candidates[index])
         assert all(a >= b for a, b in zip(score, score[1:]))
-
-    delete_created_files()
