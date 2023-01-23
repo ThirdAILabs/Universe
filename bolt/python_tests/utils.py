@@ -195,12 +195,7 @@ def simple_bolt_model_in_distributed_training_wrapper(
     hidden_layer_dim=2000,
     batch_size=64,
     return_train_config=False,
-    passed_bolt_dataset=False,
 ):
-
-    if not passed_bolt_dataset:
-        train_data = dataset.from_numpy(train_data, batch_size=batch_size)
-        train_labels = dataset.from_numpy(train_labels, batch_size=batch_size)
 
     input_layer = bolt.nn.Input(dim=num_classes)
     hidden_layer = bolt.nn.FullyConnected(
@@ -330,11 +325,9 @@ def compressed_training(
     batch_size=64,
 ):
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=n_classes, n_samples=1000, convert_to_bolt_dataset=False
+        n_classes=n_classes, n_samples=1000
     )
-    test_data, test_labels = gen_numpy_training_data(
-        n_classes=n_classes, n_samples=100, convert_to_bolt_dataset=False
-    )
+    test_data, test_labels = gen_numpy_training_data(n_classes=n_classes, n_samples=100)
 
     num_training_batches = math.ceil(len(train_data) / batch_size)
 

@@ -136,7 +136,11 @@ def test_hard_save_and_load():
         distributed_training_wrapper,
         train_config,
     ) = simple_bolt_model_in_distributed_training_wrapper(
-        data, labels, 1, n_classes, return_train_config=True, passed_bolt_dataset=True
+        data,
+        labels,
+        sparsity=1,
+        num_classes=n_classes,
+        return_train_config=True,
     )
 
     for batch_id in range(distributed_training_wrapper.num_batches()):
