@@ -101,7 +101,7 @@ class TextBlockTest : public testing::Test {
     std::unordered_map<uint32_t, float> feats;
     for (const auto& word : words) {
       auto hash = hashing::MurmurHash(word.c_str(), word.length(),
-                                      TextEncodingUtils::HASH_SEED) %
+                                      TokenEncoding::HASH_SEED) %
                       dim +
                   offset;
       feats[hash]++;
@@ -117,13 +117,12 @@ class TextBlockTest : public testing::Test {
       for (uint32_t second_word_idx = first_word_idx;
            second_word_idx < words.size(); second_word_idx++) {
         const auto& first_word = words[first_word_idx];
-        uint32_t first_word_hash =
-            hashing::MurmurHash(first_word.c_str(), first_word.length(),
-                                TextEncodingUtils::HASH_SEED);
+        uint32_t first_word_hash = hashing::MurmurHash(
+            first_word.c_str(), first_word.length(), TokenEncoding::HASH_SEED);
         const auto& second_word = words[second_word_idx];
         uint32_t second_word_hash =
             hashing::MurmurHash(second_word.c_str(), second_word.length(),
-                                TextEncodingUtils::HASH_SEED);
+                                TokenEncoding::HASH_SEED);
         auto pairgram_hash = (hashing::HashUtils::combineHashes(
                                   first_word_hash, second_word_hash) %
                               dim) +
@@ -139,8 +138,7 @@ class TextBlockTest : public testing::Test {
     std::unordered_map<uint32_t, float> feats;
     for (uint32_t i = 0; i < sentence.size() - (k - 1); i++) {
       auto hash =
-          hashing::MurmurHash(&sentence[i], k, TextEncodingUtils::HASH_SEED) %
-              dim +
+          hashing::MurmurHash(&sentence[i], k, TokenEncoding::HASH_SEED) % dim +
           offset;
       feats[hash]++;
     }

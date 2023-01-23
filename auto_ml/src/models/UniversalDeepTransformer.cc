@@ -31,6 +31,13 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
     const deployment::UserInputMap& options) {
+  // we don't put this check in the config constructor itself because its also
+  // used for metadata which doesn't use this same check
+  if (!data_types.count(target_col)) {
+    throw std::invalid_argument(
+        "Target column provided was not found in data_types.");
+  }
+
   auto dataset_config = std::make_shared<data::UDTConfig>(
       std::move(data_types), std::move(temporal_tracking_relationships),
       std::move(target_col), n_target_classes, integer_target,
@@ -67,21 +74,23 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
       getOutputProcessor(dataset_config);
 
   auto dataset_factory = data::UDTDatasetFactory::make(
-      /* config= */ std::move(dataset_config),
+      /* config= */ dataset_config,
       /* force_parallel= */ parallel_data_processing,
       /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
       /* contextual_columns= */ contextual_columns,
       /* regression_binning= */ regression_binning);
 
   bolt::BoltGraphPtr model;
+
+  std::vector<uint32_t> input_dims = dataset_factory->getInputDims();
+
   if (model_config) {
-    model =
-        loadUDTBoltGraph(/* input_nodes= */ dataset_factory->getInputNodes(),
-                         /* output_dim= */ dataset_factory->getLabelDim(),
-                         /* saved_model_config= */ model_config.value());
+    model = loadUDTBoltGraph(/* input_dims= */ input_dims,
+                             /* output_dim= */ dataset_factory->getLabelDim(),
+                             /* saved_model_config= */ model_config.value());
   } else {
     model = buildUDTBoltGraph(
-        /* input_nodes= */ dataset_factory->getInputNodes(),
+        /* input_dims= */ input_dims,
         /* output_dim= */ dataset_factory->getLabelDim(),
         /* hidden_layer_size= */ embedding_dimension);
   }
@@ -270,7 +279,7 @@ UniversalDeepTransformer::getOutputProcessor(
 }
 
 bolt::BoltGraphPtr UniversalDeepTransformer::loadUDTBoltGraph(
-    const std::vector<bolt::InputPtr>& input_nodes, uint32_t output_dim,
+    const std::vector<uint32_t>& input_dims, uint32_t output_dim,
     const std::string& saved_model_config) {
   auto model_config = deployment::ModelConfig::load(saved_model_config);
 
@@ -280,14 +289,21 @@ bolt::BoltGraphPtr UniversalDeepTransformer::loadUDTBoltGraph(
       {deployment::DatasetLabelDimensionParameter::PARAM_NAME,
        deployment::UserParameterInput(output_dim)}};
 
-  return model_config->createModel(input_nodes, parameters);
+  return model_config->createModel(input_dims, parameters);
 }
 
 bolt::BoltGraphPtr UniversalDeepTransformer::buildUDTBoltGraph(
-    std::vector<bolt::InputPtr> input_nodes, uint32_t output_dim,
+    const std::vector<uint32_t>& input_dims, uint32_t output_dim,
     uint32_t hidden_layer_size) {
   auto hidden = bolt::FullyConnectedNode::makeDense(hidden_layer_size,
                                                     /* activation= */ "relu");
+
+  std::vector<bolt::InputPtr> input_nodes;
+  input_nodes.reserve(input_dims.size());
+  for (uint32_t input_dim : input_dims) {
+    input_nodes.push_back(bolt::Input::make(input_dim));
+  }
+
   hidden->addPredecessor(input_nodes[0]);
 
   auto sparsity =

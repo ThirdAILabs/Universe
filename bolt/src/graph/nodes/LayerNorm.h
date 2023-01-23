@@ -96,8 +96,6 @@ class LayerNormNode final : public Node,
     return (*_batch)[vec_index];
   }
 
-  void cleanupAfterBatchProcessingImpl() final { _batch = std::nullopt; }
-
   uint32_t numNonzerosInOutputImpl() const final {
     return _node_to_normalize->numNonzerosInOutput();
   }

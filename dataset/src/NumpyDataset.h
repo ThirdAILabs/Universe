@@ -18,11 +18,6 @@ namespace thirdai::dataset::numpy {
 
 namespace py = pybind11;
 
-template <typename BATCH_T>
-class NumpyDataset;
-
-using WrappedNumpyVectors = NumpyDataset<BoltBatch>;
-
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
@@ -39,12 +34,11 @@ using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
  * increments the reference counter and prevents python from deleting those
  * objects until this object is deleted.
  */
-template <typename BATCH_T>
-class NumpyDataset final : public InMemoryDataset<BATCH_T> {
+class NumpyInMemoryDataset final : public InMemoryDataset {
  public:
-  NumpyDataset(std::vector<BATCH_T>&& batches,
-               std::vector<py::object>&& objects_to_keep_alive)
-      : InMemoryDataset<BATCH_T>(std::move(batches)),
+  NumpyInMemoryDataset(std::vector<BoltBatch>&& batches,
+                       std::vector<py::object>&& objects_to_keep_alive)
+      : InMemoryDataset(std::move(batches)),
         _objects_to_keep_alive(std::move(objects_to_keep_alive)) {}
 
  private:
@@ -113,7 +107,7 @@ inline BoltDatasetPtr denseNumpyToBoltVectorDataset(
 
   std::vector<py::object> objects_to_keep_alive = {examples};
 
-  return std::make_shared<WrappedNumpyVectors>(
+  return std::make_shared<NumpyInMemoryDataset>(
       std::move(batches), std::move(objects_to_keep_alive));
 }
 
@@ -158,7 +152,7 @@ inline BoltDatasetPtr numpyTokensToBoltDataset(
   // Since we only do copies we don't need to worry about owning objects
   std::vector<py::object> objects_to_keep_alive = {};
 
-  return std::make_shared<WrappedNumpyVectors>(
+  return std::make_shared<NumpyInMemoryDataset>(
       std::move(batches), std::move(objects_to_keep_alive));
 }
 
@@ -251,7 +245,7 @@ inline BoltDatasetPtr numpyArraysToSparseBoltDataset(
 
   std::vector<py::object> objects_to_keep_alive = {indices, values, offsets};
 
-  return std::make_shared<WrappedNumpyVectors>(
+  return std::make_shared<NumpyInMemoryDataset>(
       std::move(batches), std::move(objects_to_keep_alive));
 }
 

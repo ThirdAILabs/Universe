@@ -157,6 +157,7 @@ def train_udt_query_reformulation_model(
         source_column="source_column",
         target_column="target_column",
         dataset_size="small",
+        delimiter=",",
     )
     model.train(filename=train_file_name)
     return model
