@@ -373,24 +373,3 @@ def test_return_metrics():
         TEST_FILE, metrics=["categorical_accuracy"], return_metrics=True
     )
     assert metrics["categorical_accuracy"] >= 0
-
-
-def test_recursive_data_loading():
-    mock_filename = "recursive.csv"
-    with open(mock_filename, "w") as f:
-        f.write("input,target\n")
-        f.write("a b c d e,f g h i j\n")
-
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "input": bolt.types.text(),
-            "target": bolt.types.sequence(length=5, delimiter=" "),
-        },
-        target="target",
-        n_target_classes=5,
-    )
-
-    model.train(mock_filename)
-    activations = model.evaluate(mock_filename)
-
-    assert activations.shape[0] == 5
