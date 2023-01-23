@@ -132,10 +132,11 @@ def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config)
     node_to_kill = get_non_head_nodes(mini_cluster)[0]
     mini_cluster.remove_node(node_to_kill)
     # adding some waiting time
-    import time
 
-    time.sleep(2)
     mini_cluster.add_node(num_cpus=1)
+
+    mini_cluster.wait_for_nodes()
+
     distributed_model.train()
     metrics = evaluated_distributed_mnist_model(distributed_model)
 

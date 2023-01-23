@@ -44,8 +44,9 @@ def ray_two_node_cluster_config():
 
     yield _make_cluster_config
 
-    ray.shutdown()
+    print("shutting down the cluster")
     mini_cluster.shutdown()
+    ray.shutdown()
 
 
 def split_into_2(file_to_split, destination_file_1, destination_file_2):
