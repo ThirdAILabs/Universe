@@ -52,6 +52,8 @@ class TrainStateManager:
                 func=lambda worker: worker.set_friend(
                     self.workers[len(self.workers) - 1]
                 ),
+                # remote_worker_ids=[0] implies this function will
+                # only run for worker with id=0/primary worker
                 remote_worker_ids=[0],
             )
 
@@ -132,11 +134,10 @@ class TrainStateManager:
             self.logging.info(
                 f"Probing unhealthy worker!! Total workers:{self.worker_manager.num_workers()}, Unhealthy workers:{self.worker_manager.num_workers()-self.worker_manager.num_healthy_workers()}"
             )
-            import time
 
             time.sleep(1)
             time_waiting += 1
-            # find workers which are restored
+            # Find workers which are restored
             restored_workers = self.worker_manager.probe_unhealthy_workers()
             restored_workers_not_started.extend(restored_workers)
             self.logging.info(
@@ -146,7 +147,7 @@ class TrainStateManager:
                 f"Total workers to start training: {restored_workers_not_started}"
             )
             if len(restored_workers_not_started) > 0:
-                # find a worker which is healthy
+                # Find a worker which is healthy
                 healthy_worker_id = self.worker_manager.get_healthy_worker_id()
 
                 remote_bolt_graph_model = self.worker_manager.foreach_worker(
@@ -158,7 +159,7 @@ class TrainStateManager:
                     remote_worker_ids=[healthy_worker_id],
                 ).get_front()
 
-                # check whether this healthy worker doesn't fails during model fetch
+                # Check whether this healthy worker doesn't fails during model fetch
                 # function is called on only one worker, hence just checking for index 0
                 if remote_train_source_pointers.ok and remote_bolt_graph_model.ok:
                     chunks_to_skip, batch_to_run = remote_train_source_pointers.get()
@@ -167,9 +168,9 @@ class TrainStateManager:
                     continue
 
                 bolt_graph_model_ref = ray.put(bolt_graph_model)
-                # we are assuming atleast one of the worker is healthy
+                # We are assuming atleast one of the worker is healthy
                 if healthy_worker_id != None:
-                    # atleast one of the worker is healthy
+                    # At least one of the worker is healthy
                     # ask each worker to get model from healthy worker
                     self.worker_manager.foreach_worker(
                         lambda worker: worker.prepare_for_training(
@@ -179,7 +180,7 @@ class TrainStateManager:
                         ),
                         remote_worker_ids=restored_workers_not_started,
                     )
-                    # primary worker is restored when we are doing circular
+                    # Primary worker is restored when we are doing circular
                     # communication, we need to set the friend because we are not
                     # passing it in constructor
                     if (
@@ -196,7 +197,7 @@ class TrainStateManager:
                     raise NotImplementedError(
                         f"None of the workers are healthy. Distributed BOLT couldn't restart the training. Restart the training again from last saved state."
                     )
-                # we can clear this list here, because either the workers are prepared
+                # We can clear this list here, because either the workers are prepared
                 # for training, or they have been marked unhealthy by worker_manager
                 # which means they would be probed again.
                 restored_workers_not_started.clear()
