@@ -9,12 +9,11 @@
 namespace thirdai::licensing {
 
 FinegrainedAccessToken::FinegrainedAccessToken(
-    const std::string& train_file_path)
-    : _can_save_and_load(true) {
+    const std::string& train_file_path) {
   (void)train_file_path;
 }
 
-FinegrainedAccessToken::FinegrainedAccessToken() : _can_save_and_load(true) {}
+FinegrainedAccessToken::FinegrainedAccessToken() {}
 
 void checkLicense() {}
 
@@ -35,5 +34,7 @@ void startHeartbeat(const std::string& heartbeat_url,
 void endHeartbeat() {}
 
 void setLicensePath(const std::string& license_path) { (void)license_path; }
+
+void verifyCanSaveAndLoad() {}
 
 }  // namespace thirdai::licensing

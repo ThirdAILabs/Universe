@@ -843,21 +843,18 @@ template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
+  licensing::verifyCanSaveAndLoad();
   archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
           _epoch, _updates);
 }
 
-void BoltGraph::save(const std::string& filename,
-                     licensing::FinegrainedAccessToken token) const {
-  token.verifyCanSaveAndLoad();
+void BoltGraph::save(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(filestream);
 }
 
-void BoltGraph::save_stream(std::ostream& output_stream,
-                            licensing::FinegrainedAccessToken token) const {
-  token.verifyCanSaveAndLoad();
+void BoltGraph::save_stream(std::ostream& output_stream) const {
   if (!graphCompiled()) {
     throw exceptions::NodeStateMachineError(
         "Cannot save graph that is not compiled.");
@@ -866,17 +863,13 @@ void BoltGraph::save_stream(std::ostream& output_stream,
   oarchive(*this);
 }
 
-BoltGraphPtr BoltGraph::load(const std::string& filename,
-                             licensing::FinegrainedAccessToken token) {
-  token.verifyCanSaveAndLoad();
+BoltGraphPtr BoltGraph::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   return load_stream(filestream);
 }
 
-BoltGraphPtr BoltGraph::load_stream(std::istream& input_stream,
-                                    licensing::FinegrainedAccessToken token) {
-  token.verifyCanSaveAndLoad();
+BoltGraphPtr BoltGraph::load_stream(std::istream& input_stream) {
   cereal::BinaryInputArchive iarchive(input_stream);
   std::shared_ptr<BoltGraph> deserialize_into(new BoltGraph());
   iarchive(*deserialize_into);

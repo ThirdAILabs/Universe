@@ -32,20 +32,10 @@ class FinegrainedAccessToken {
    */
   explicit FinegrainedAccessToken(const std::string& train_file_path);
 
-  void verifyCanSaveAndLoad() const {
-    if (!_can_save_and_load) {
-      throw exceptions::LicenseCheckException(
-          "Cannot save or load with this license");
-    }
-  }
-
   void verifyCanTrain() const {
     // For now this is a NOOP because we always allow training if the
     // FinegrainedAccessToken was created successfully
   }
-
- private:
-  bool _can_save_and_load;
 };
 
 // If license checking is enabled, verifies the license is valid and throws an
@@ -63,5 +53,9 @@ void endHeartbeat();
 
 // License verification method 3: license file
 void setLicensePath(const std::string& license_path);
+
+// If the user has the full access entitlement or license checking is disabled,
+// this is a NOOP. Otherwise, this throws an exception.
+void verifyCanSaveAndLoad();
 
 }  // namespace thirdai::licensing

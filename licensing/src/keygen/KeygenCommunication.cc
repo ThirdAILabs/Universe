@@ -1,5 +1,6 @@
 // This enables ssl support (which is required for https links), see
 // https://github.com/yhirose/cpp-httplib for more details.
+#include <exceptions/src/Exceptions.h>
 #include <string>
 #include <unordered_set>
 #define CPPHTTPLIB_OPENSSL_SUPPORT
@@ -62,7 +63,7 @@ std::string getOriginalKeygenMessage(const httplib::Result& res,
                                      const std::string& request_type,
                                      const std::string& api_path) {
   if (!res->has_header("date")) {
-    throw std::runtime_error(
+    throw exceptions::LicenseCheckException(
         "License was found to be valid, but did not find a date in the"
         "response (necessary to verify that the response came from Keygen).");
   }
@@ -89,7 +90,7 @@ std::string getOriginalKeygenMessage(const httplib::Result& res,
  */
 std::string getSignature(const httplib::Result& res) {
   if (!res->has_header("Keygen-Signature")) {
-    throw std::runtime_error(
+    throw exceptions::LicenseCheckException(
         "License was found to be valid, but did not find a Keygen signature "
         "verifying that the response came from Keygen.");
   }
@@ -149,20 +150,21 @@ void verifyKeygenResponse(const httplib::Result& res,
       signature.size());
 
   if (!valid) {
-    throw std::runtime_error(
+    throw exceptions::LicenseCheckException(
         "We were not able to verify the response from the Keygen server.");
   }
 }
 
 void assertResponse200(const httplib::Result& response) {
   if (!response) {
-    throw std::runtime_error("Licensing check failed with HTTP error: " +
-                             httplib::to_string(response.error()) +
-                             ". Make sure you're connected to the internet.");
+    throw exceptions::LicenseCheckException(
+        "Licensing check failed with HTTP error: " +
+        httplib::to_string(response.error()) +
+        ". Make sure you're connected to the internet.");
   }
 
   if (response->status != 200) {
-    throw std::runtime_error(
+    throw exceptions::LicenseCheckException(
         "The licensing check failed with the response HTTP error code " +
         std::to_string(response->status) + " and body " + response->body);
   }
@@ -227,7 +229,7 @@ std::unordered_set<std::string> verifyWithKeygen(
   std::string detail = response_body["meta"]["detail"];
 
   if (!license_is_valid) {
-    throw std::runtime_error(
+    throw exceptions::LicenseCheckException(
         "The licensing server says that your license is invalid. It returned "
         "the following message: " +
         detail);

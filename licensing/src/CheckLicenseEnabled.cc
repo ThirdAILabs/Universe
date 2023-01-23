@@ -1,6 +1,7 @@
 
 #include "CheckLicense.h"
 #include <dataset/src/DataSource.h>
+#include <exceptions/src/Exceptions.h>
 #include <licensing/src/file/SignedLicense.h>
 #include <licensing/src/heartbeat/Heartbeat.h>
 #include <licensing/src/keygen/KeygenCommunication.h>
@@ -22,19 +23,18 @@ static std::unordered_set<std::string> _entitlements = {};
 static std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
 
 FinegrainedAccessToken::FinegrainedAccessToken(
-    const std::string& train_file_path)
-    : _can_save_and_load(false) {
+    const std::string& train_file_path) {
   if (_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
     return;
   }
 
   if (!_entitlements.count(sha256File(train_file_path))) {
-    throw std::runtime_error(
+    throw exceptions::LicenseCheckException(
         "This dataset is not authorized under this license.");
   }
 }
 
-FinegrainedAccessToken::FinegrainedAccessToken() : _can_save_and_load(true) {
+FinegrainedAccessToken::FinegrainedAccessToken() {
   if (!_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
     throw std::runtime_error(
         "You must have a full license to perform this operation.");
@@ -76,6 +76,13 @@ void endHeartbeat() { _heartbeat_thread = nullptr; }
 
 void setLicensePath(const std::string& license_path) {
   _license_path = license_path;
+}
+
+void verifyCanSaveAndLoad() {
+  if (!_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
+    throw exceptions::LicenseCheckException(
+        "You must have a full license to save and load models.");
+  }
 }
 
 }  // namespace thirdai::licensing

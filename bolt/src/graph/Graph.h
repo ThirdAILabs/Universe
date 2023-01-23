@@ -99,21 +99,13 @@ class BoltGraph {
   // This only saves the graph in the compiled state, that is any parameters and
   // graph structure are preserved, but any state related to train or predict is
   // discarded.
-  void save(const std::string& filename,
-            licensing::FinegrainedAccessToken token =
-                licensing::FinegrainedAccessToken()) const;
+  void save(const std::string& filename) const;
 
-  void save_stream(std::ostream& output_stream,
-                   licensing::FinegrainedAccessToken token =
-                       licensing::FinegrainedAccessToken()) const;
+  void save_stream(std::ostream& output_stream) const;
 
-  static BoltGraphPtr load(const std::string& filename,
-                           licensing::FinegrainedAccessToken token =
-                               licensing::FinegrainedAccessToken());
+  static BoltGraphPtr load(const std::string& filename);
 
-  static BoltGraphPtr load_stream(std::istream& input_stream,
-                                  licensing::FinegrainedAccessToken token =
-                                      licensing::FinegrainedAccessToken());
+  static BoltGraphPtr load_stream(std::istream& input_stream);
 
   std::string summarize(bool print, bool detailed) const;
 

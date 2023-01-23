@@ -92,9 +92,7 @@ class Flash {
 
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_hash_function, _num_tables, _range, _hashtable);
-  }
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::search

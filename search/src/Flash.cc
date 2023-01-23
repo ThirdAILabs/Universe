@@ -1,3 +1,4 @@
+#include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
@@ -133,6 +134,18 @@ Flash<LABEL_T>::getTopKUsingPriorityQueue(std::vector<LABEL_T>& query_result,
   std::reverse(result.begin(), result.end());
   std::reverse(scores.begin(), scores.end());
   return {result, scores};
+}
+
+template void Flash<uint32_t>::serialize(cereal::BinaryInputArchive&);
+template void Flash<uint32_t>::serialize(cereal::BinaryOutputArchive&);
+template void Flash<uint64_t>::serialize(cereal::BinaryInputArchive&);
+template void Flash<uint64_t>::serialize(cereal::BinaryOutputArchive&);
+
+template <typename LABEL_T>
+template <class Archive>
+void Flash<LABEL_T>::serialize(Archive& archive) {
+  licensing::verifyCanSaveAndLoad();
+  archive(_hash_function, _num_tables, _range, _hashtable);
 }
 
 template class Flash<uint32_t>;
