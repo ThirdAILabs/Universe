@@ -50,8 +50,6 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
         verbose=True,
     )
 
-    clear_ray_workers()
-
     assert (
         udt_model.evaluate(
             f"{os.getcwd()}/{TEST_FILE}",
