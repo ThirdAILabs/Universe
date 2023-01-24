@@ -125,17 +125,8 @@ inline void ShuffleBuffer::swapShuffle(
 
   for (size_t new_vec_id = n_old_vecs; new_vec_id < n_vecs; new_vec_id++) {
     size_t swap_with = dist(gen);
-    /*
-      Only swap with vectors in old batches for two reasons:
-      1. Swapping with elements in the same batch is effectively a no-op
-         since vectors in the same batch are processed by bolt in parallel
-      2. This ensures that each element in the new batch to has an equal
-         probability of being swapped out of this batch.
-    */
-    if (swap_with < n_old_vecs) {
-      for (auto& buffer : buffers) {
-        std::swap(buffer.at(new_vec_id), buffer.at(swap_with));
-      }
+    for (auto& buffer : buffers) {
+      std::swap(buffer.at(new_vec_id), buffer.at(swap_with));
     }
   }
 }

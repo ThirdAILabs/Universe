@@ -132,8 +132,8 @@ class DatasetLoaderTests : public ::testing::Test {
       /*
         The probability that a vector stays in its
         original batch is ~roughly~ 1 / number of
-        batches in shuffle buffer. We set the length
-        of the buffer to 10, so we expect ~10% of the
+        batches in shuffle buffer. We set the minimum length
+        of the buffer to 10, so we expect at most 10% of the
         batch to be its original contents.
       */
       const float percent_original_vectors_threshold = 0.2;
