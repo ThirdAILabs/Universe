@@ -22,7 +22,7 @@ TextGenerationProcessor::featurize(
   std::vector<std::pair<std::vector<BoltVector>, std::vector<BoltVector>>>
       featurized_samples(lines.size());
 
-#pragma omp parallel for default(none) shared(lines, featurized_samples)
+  // #pragma omp parallel for default(none) shared(lines, featurized_samples)
   for (uint32_t i = 0; i < lines.size(); i++) {
     featurized_samples[i] = featurizeText(lines[i]);
   }

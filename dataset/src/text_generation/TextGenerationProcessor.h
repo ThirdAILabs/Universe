@@ -1,7 +1,6 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
-#include <dataset/src/utils/TokenEncoding.h>
 
 namespace thirdai::dataset {
 

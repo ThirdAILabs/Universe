@@ -15,7 +15,8 @@ set(DATASET_TESTS
     MlmBatchProcessorTests
     SaveLoadInMemoryDatasetTest
     DatasetLoaderTests
-    TokenEncodingTests)
+    TokenEncodingTests
+    TextGenerationProcessorTest)
 
 include(GoogleTest)
 

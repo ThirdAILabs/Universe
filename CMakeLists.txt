@@ -120,12 +120,12 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   else(THIRDAI_BUILD_OPENSSL_FROM_SOURCE)
     find_package(OpenSSL 1.1.1 REQUIRED)
   endif()
-
-  set(JSON_BuildTests
-      OFF
-      CACHE INTERNAL "")
-  add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 endif()
+
+set(JSON_BuildTests
+OFF
+CACHE INTERNAL "")
+add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 
 if(MSVC)
   if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
@@ -387,6 +387,8 @@ if(${LICENSE_BUILD_FLAG_FOUND})
     thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto OpenSSL::SSL
                    nlohmann_json::nlohmann_json)
 endif()
+
+target_link_libraries(thirdai PUBLIC nlohmann_json::nlohmann_json)
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
