@@ -86,33 +86,27 @@ class FaultTolerantWorkerManager:
 
         self.workers = {}
         self.remote_worker_states = {}
-        self.add_workers(workers)
+        self._add_workers(workers)
 
         self.num_worker_restarts = 0
         self.logging = logging
 
-    def workers(self):
-        return self.workers
-
-    def add_workers(self, workers):
+    def _add_workers(self, workers):
         for worker in workers:
             self.workers[self.next_id] = worker
             self.remote_worker_states[self.next_id] = self._WorkerState()
             self.next_id += 1
 
-    def set_worker_state(self, worker_id: int, healthy: bool):
+    def _set_worker_state(self, worker_id: int, healthy: bool):
         if worker_id not in self.remote_worker_states:
             raise ValueError(f"Unknown worker id: {worker_id}")
         self.logging.info(f"Worker {worker_id} is being marked as {healthy}")
         self.remote_worker_states[worker_id].is_healthy = healthy
 
-    def num_workers(self):
-        return len(self.workers)
-
     def num_healthy_workers(self):
         return sum([s.is_healthy for s in self.remote_worker_states.values()])
 
-    def is_worker_healthy(self, worker_id):
+    def _is_worker_healthy(self, worker_id):
         if worker_id not in self.remote_worker_states:
             raise ValueError(f"Unknown worker id: {worker_id}")
         return self.remote_worker_states[worker_id].is_healthy
@@ -131,7 +125,7 @@ class FaultTolerantWorkerManager:
 
         return None
 
-    def call_workers(
+    def _call_workers(
         self,
         func: Union[Callable[[Any], Any], List[Callable[[Any], Any]]],
         *,
@@ -156,7 +150,7 @@ class FaultTolerantWorkerManager:
 
         return calls
 
-    def fetch_result(
+    def _fetch_result(
         self,
         *,
         remote_worker_ids: List[int],
@@ -194,7 +188,7 @@ class FaultTolerantWorkerManager:
                 if isinstance(e, RayError):
                     # Take this worker out of service and wait for Ray Core to
                     # restore it.
-                    if self.is_worker_healthy(worker_id):
+                    if self._is_worker_healthy(worker_id):
                         print(
                             f"Ray error, taking worker {worker_id} out of service. "
                             f"{str(e)}"
@@ -203,7 +197,7 @@ class FaultTolerantWorkerManager:
                             f"Ray error, taking worker {worker_id} out of service. "
                             f"{str(e)}"
                         )
-                    self.set_worker_state(worker_id, healthy=False)
+                    self._set_worker_state(worker_id, healthy=False)
                 else:
                     # WorkerManager should not handle application level errors.
 
@@ -224,12 +218,12 @@ class FaultTolerantWorkerManager:
 
         remote_worker_ids = remote_worker_ids or list(self.workers.keys())
 
-        remote_calls = self.call_workers(
+        remote_calls = self._call_workers(
             func=func,
             remote_worker_ids=remote_worker_ids,
         )
 
-        remote_results = self.fetch_result(
+        remote_results = self._fetch_result(
             remote_worker_ids=remote_worker_ids,
             remote_calls=remote_calls,
             timeout_seconds=timeout_seconds,
@@ -243,7 +237,7 @@ class FaultTolerantWorkerManager:
         unhealthy_worker_ids = [
             worker_id
             for worker_id in self.workers.keys()
-            if not self.is_worker_healthy(worker_id)
+            if not self._is_worker_healthy(worker_id)
         ]
 
         self.logging.info(f"Probing unhealthy worker={unhealthy_worker_ids}")
@@ -262,7 +256,7 @@ class FaultTolerantWorkerManager:
             worker_id = result.worker_id
             if result.ok:
                 restored.append(worker_id)
-                self.set_worker_state(worker_id, healthy=True)
+                self._set_worker_state(worker_id, healthy=True)
                 self.num_worker_restarts += 1
             else:
                 pass

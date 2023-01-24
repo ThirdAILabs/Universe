@@ -74,7 +74,9 @@ class TrainStateManager:
         """
         gradients_list = []
         # fetch_local = false, for linear communication to make sure, we don't
-        # spill gradients during communication
+        # spill gradients during communication, and do communication one by one
+        # this doesn't hurt our performance as communication would anyway get queued
+        # However, if we spill the ray objects, it would significantly hurt our performance
         for gradients in self.worker_manager.foreach_worker(
             lambda worker: worker.get_calculated_gradients(), fetch_local=False
         ):
