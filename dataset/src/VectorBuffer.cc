@@ -51,7 +51,7 @@ std::optional<std::vector<BoltBatch>> VectorBuffer::popBatch(
   std::vector<BoltBatch> batches_to_return(_buffers.size());
   for (size_t buffer_id = 0; buffer_id < _buffers.size(); buffer_id++) {
     batches_to_return.at(buffer_id) =
-        BoltBatch(std::move(batches_to_return.at(buffer_id)));
+        BoltBatch(std::move(vecs_to_return.at(buffer_id)));
   }
 
   return batches_to_return;
