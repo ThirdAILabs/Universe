@@ -21,7 +21,7 @@ Model::Model(autograd::ComputationList inputs,
       _allocation_manager({}),
       _train_steps(0) {
   for (const auto& loss : _losses) {
-    _label_inputs.push_back(loss->labels());
+    _labels.push_back(loss->labels());
   }
 
   checkNoOutputsHaveDependentOps();
@@ -242,16 +242,15 @@ void Model::setSingleInput(const tensor::TensorPtr& input) {
 }
 
 uint32_t Model::setLabels(const tensor::TensorList& label_batches) {
-  return setBatchHelper(_label_inputs, label_batches, "labels");
+  return setBatchHelper(_labels, label_batches, "labels");
 }
 
 void Model::setSingleLabel(const tensor::TensorPtr& labels) {
-  if (_label_inputs.size() != 1) {
-    throw std::invalid_argument("Expected " +
-                                std::to_string(_label_inputs.size()) +
+  if (_labels.size() != 1) {
+    throw std::invalid_argument("Expected " + std::to_string(_labels.size()) +
                                 " label batches but received 1.");
   }
-  _label_inputs[0]->setTensor(labels);
+  _labels[0]->setTensor(labels);
 }
 
 void Model::checkNoOutputsHaveDependentOps() const {

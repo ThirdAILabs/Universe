@@ -6,10 +6,11 @@
 namespace thirdai::bolt::nn::loss {
 
 /**
- * Subclass of Loss for loss functions that are performing an elementwise
- * comparison of two vectors of equal dimension. Implementing a loss function of
- * this form just requires inheriting from this class and implmementing a method
- * for returning the gradient given the activation and label for the ith neuron.
+ * Subclass of Loss for loss functions that consist only of an elementwise
+ * comparison of an output activation vector and a label vector of equal
+ * dimension. Implementing a loss function of this form just requires inheriting
+ * from this class and implmementing a method for returning the gradient given
+ * the activation and label for the ith neuron.
  */
 class ComparativeLoss : public Loss {
  public:

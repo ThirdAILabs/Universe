@@ -59,7 +59,7 @@ class Computation {
 
   /**
    * Returns the number of nonzeros the output tensor will contain depending on
-   * wether or not sparsity is being used and the inputs. Calls the nonzeros
+   * whether or not sparsity is being used and the inputs. Calls the nonzeros
    * method of the source op.
    */
   std::optional<uint32_t> nonzeros(bool use_sparsity) const;
@@ -69,8 +69,8 @@ class Computation {
    * either a change in the batch size the model is processing, a change in
    * whether sparsity is being used for the computations, or a change in the
    * sparsity of some op in the model. This method obtains its number of
-   * nonzeros from its source op by passing in the inputs and wether sparsity is
-   * enabled.
+   * nonzeros from its source op by passing in the inputs and whether sparsity
+   * is enabled.
    */
   void allocate(uint32_t batch_size, bool use_sparsity);
 

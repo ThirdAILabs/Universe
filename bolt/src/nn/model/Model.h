@@ -42,28 +42,33 @@ class Model {
                     const tensor::TensorPtr& labels);
 
   /**
-   * Updates the parameters of all ops.
+   * Updates the parameters in the model. Loops through all ops in the model and
+   * calls updateParameters on each so that each op performs one optimizer step
+   * on all of its trainable parameters.
    */
   void updateParameters(float learning_rate);
 
   /**
    * Returns the list of ops in the model in the order they will be executed
-   * during the forward pass.
+   * during the forward pass. Ops that are used multiple times will occur
+   * multiple times in this list at each of the points in which they would be
+   * executed.
    */
   std::vector<ops::OpPtr> opComputationOrder() const;
 
   /**
    * Returns the list of computations in the model in the order they will be
-   * computed during the forward pass.
+   * computed during the forward pass. Differs from opComputationOrder because
+   * ops may be reused by all computations are unique.
    */
   autograd::ComputationList computationOrder() const;
 
   const autograd::ComputationList& outputs() const;
 
   /**
-   * Sets the given labels as the current labels for the model. These are public
-   * so they can be used by the trainer to set labels before computing metrics
-   * during validation.
+   * Sets the given labels as the current labels for the model. These methods
+   * are public so they can be used by the trainer to set labels before
+   * computing metrics during validation.
    * TODO(Nicholas) expose validate on batch to get around this.
    */
   uint32_t setLabels(const tensor::TensorList& label_batches);
@@ -91,7 +96,6 @@ class Model {
   /**
    * Prints/returns a summary of the model. Throws if no op is found.
    */
-
   std::string summary(bool print = true) const;
 
   /**
@@ -149,7 +153,7 @@ class Model {
   void matchOutputFullyConnectedLayersWithLabels();
 
   autograd::ComputationList _inputs;
-  autograd::ComputationList _label_inputs;
+  autograd::ComputationList _labels;
   autograd::ComputationList _outputs;
   std::vector<loss::LossPtr> _losses;
 

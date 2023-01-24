@@ -29,8 +29,8 @@ class Tensor {
 
   /**
    * Returns the number of nonzeros in each vector in the tensor. If this is not
-   * fixed it will return std::nullopt. If the output is dense then this should
-   * be equivalent to calling dim().
+   * fixed (e.g. for a sparse input tensor) it will return std::nullopt. If the
+   * output is dense then this is equivalent to calling dim().
    */
   std::optional<uint32_t> nonzeros() const;
 

@@ -40,7 +40,9 @@ class Callback {
   virtual void onBatchEnd() {}
 
   /**
-   * Binds the model to a callback.
+   * Sets the model field in the callback so it can access the model. Cannot be
+   * called more than once on a given callback object, i.e. a callback cannot be
+   * used for multiple models.
    */
   void setModel(nn::model::ModelPtr model);
 
@@ -50,7 +52,10 @@ class Callback {
   void setTrainState(TrainStatePtr train_state);
 
   /**
-   * Binds the callback to the history (metric values).
+   * Sets the history field in the callback so that the callback can access
+   * metrics computed during training and validation. Cannot be called more than
+   * once on a given callback object, i.e. a callback cannot be used for
+   * multiple histories for different trainers.
    */
   void setHistory(metrics::HistoryPtr history);
 

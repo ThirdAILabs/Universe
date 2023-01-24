@@ -3,6 +3,9 @@
 namespace thirdai::bolt::train::metrics {
 
 void ComparativeMetric::record(uint32_t index_in_batch) {
+  assert(_outputs->tensor());
+  assert(_labels->tensor());
+
   record(_outputs->tensor()->getVector(index_in_batch),
          _labels->tensor()->getVector(index_in_batch));
 }

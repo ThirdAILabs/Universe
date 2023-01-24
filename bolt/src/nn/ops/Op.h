@@ -35,7 +35,9 @@ class Op {
    * the given set of input tensors and store the result in the given output
    * tensor. The parameter index_in_batch indicates which sample of the batch
    * the computation is for. This allows the model to parallelize the entire
-   * forward and/or backward pass through the graph across the batch.
+   * forward and/or backward pass through the graph across the batch. Thus, this
+   * function should be thread safe to being called with different values for
+   * index_in_batch at the same time.
    */
   virtual void forward(const autograd::ComputationList& inputs,
                        tensor::TensorPtr& output, uint32_t index_in_batch,
@@ -51,7 +53,9 @@ class Op {
    * that output have done so. The parameter index_in_batch indicates which
    * sample of the batch the computation is for. This allows the model to
    * parallelize the entire forward and/or backward pass through the graph
-   * across the batch.
+   * across the batch. Thus, this function should be thread safe to being called
+   * with different values for index_in_batch at the same time (though benign
+   * race conditions to e.g. weight array are sometimes okay for performance).
    */
   virtual void backpropagate(autograd::ComputationList& inputs,
                              tensor::TensorPtr& output,
