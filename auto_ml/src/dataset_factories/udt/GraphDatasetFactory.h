@@ -8,6 +8,7 @@
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
@@ -22,11 +23,13 @@ class GraphDatasetFactory {
 
  public:
   explicit GraphDatasetFactory(GraphConfigPtr conifg)
-      : _config(std::move(conifg)) {
+      : _config(std::move(conifg)) {}
+
+  void prepareTheBatchProcessor() {
     auto input_blocks = buildInputBlocks();
 
     auto label_block = getLabelBlock();
-    if (_config->_neighbourhood_context || _config->_neighbourhood_context ||
+    if (_config->_neighbourhood_context || _config->_label_context ||
         _config->_kth_neighbourhood) {
       makePrepocessedProcessedVectors();
 
@@ -41,6 +44,7 @@ class GraphDatasetFactory {
         /* label_blocks= */ {std::move(label_block)},
         /* has_header= */ true, /* delimiter= */ _config->_delimeter,
         /* parallel= */ true, /* hash_range= */ 100000);
+    _batch_processor->updateColumnNumbers(_column_number_map);
   }
 
   std::vector<uint32_t> getInputDim() {
@@ -53,64 +57,8 @@ class GraphDatasetFactory {
     return _batch_processor;
   }
 
- private:
-  dataset::CsvRolledBatch getFinalData() {
-    auto rows = getData();
-    uint32_t source_col_num = _column_number_map.at(_config->_source);
-    std::vector<uint32_t> relationship_col_nums;
-    for (const auto& column : _config->_relationship_columns) {
-      relationship_col_nums.push_back(_column_number_map.at(column));
-    }
-
-    _adjacency_list = createGraph(rows, relationship_col_nums, source_col_num);
-
-    auto values = processNumerical(rows, *_numerical_columns,
-                                   _config->_kth_neighbourhood);
-    for (uint32_t i = 0; i < rows.size(); i++) {
-      rows[i].insert(rows[i].end(), values[i].begin(), values[i].end());
-    }
-
-    dataset::CsvRolledBatch input(rows);
-
-    return input;
-  }
-
-  std::vector<std::vector<std::string_view>> getData() {
-    auto data_loader = dataset::SimpleFileDataSource::make(
-        _config->_graph_file_name,
-        /* target_batch_size= */ DEFAULT_BATCH_SIZE);
-
-    _column_number_map = UDTDatasetFactory::makeColumnNumberMapFromHeader(
-        *data_loader, _config->_delimeter);
-
-    uint32_t source_col_num = _column_number_map.at(_config->_source);
-
-    std::vector<std::string> full_data;
-
-    while (auto data = data_loader->nextBatch()) {
-      full_data.insert(full_data.end(), data->begin(), data->end());
-    }
-
-    std::vector<std::vector<std::string_view>> rows(full_data.size());
-
-    std::vector<std::string> nodes(rows.size());
-
-    // #pragma omp parallel for default(none)
-    //     shared(rows, full_data, nodes, source_col_num)
-    for (uint32_t i = 0; i < full_data.size(); i++) {
-      rows[i] = dataset::ProcessorUtils::parseCsvRow(full_data.at(i),
-                                                     _config->_delimeter);
-
-      nodes[i] = rows[i][source_col_num];
-    }
-
-    _node_id_map = nodes;
-
-    return rows;
-  }
-
-  static std::vector<std::vector<uint32_t>> createGraph(
-      const std::vector<std::vector<std::string_view>>& rows,
+  static std::vector<std::vector<uint32_t>> createGraph(  // upto now correct
+      const std::vector<std::vector<std::string>>& rows,
       const std::vector<uint32_t>& relationship_col_nums,
       uint32_t source_col_num) {
     std::vector<std::vector<uint32_t>> adjacency_list_simulation(rows.size());
@@ -134,8 +82,117 @@ class GraphDatasetFactory {
     return adjacency_list_simulation;
   }
 
+  std::vector<std::unordered_set<uint32_t>> findNeighboursForAllNodes(
+      uint32_t num_nodes,
+      const std::vector<std::vector<uint32_t>>& adjacency_list,
+      uint32_t k_hop) {
+    std::vector<std::unordered_set<uint32_t>> neighbours(num_nodes);
+    for (uint32_t i = 0; i < num_nodes; i++) {
+      std::unordered_set<uint32_t> neighbours_for_node;
+      std::vector<bool> visited(num_nodes, false);
+      findAllNeighboursForNode(k_hop, i, visited, neighbours_for_node,
+                               adjacency_list);
+      neighbours[i] = neighbours_for_node;
+    }
+    return neighbours;
+  }
+
+  static std::vector<std::vector<std::string>> processNumerical(
+      const std::vector<std::vector<std::string>>& rows,
+      const std::vector<uint32_t>& numerical_columns,
+      const std::vector<std::unordered_set<uint32_t>>& neighbours) {
+    std::vector<std::vector<std::string>> processed_numerical_columns(
+        rows.size(), std::vector<std::string>(numerical_columns.size()));
+    // #pragma omp parallel for default(none) shared(
+    //     rows, k_hop, numerical_columns, processed_numerical_columns)
+    for (uint32_t i = 0; i < rows.size(); i++) {
+      for (uint32_t j = 0; j < numerical_columns.size(); j++) {
+        int value = 0;
+        for (auto neighbour : neighbours[i]) {
+          value += stoi(rows[neighbour][numerical_columns[j]]);
+        }
+        processed_numerical_columns[i][j] =
+            std::to_string(value / neighbours.size());
+      }
+    }
+
+    return processed_numerical_columns;
+  }
+
+ private:
+  static std::vector<uint32_t> getRelationshipColumns(
+      const std::vector<std::string>& columns,
+      const dataset::ColumnNumberMap& column_number_map) {
+    std::vector<uint32_t> relationship_col_nums(columns.size());
+    for (const auto& column : columns) {
+      relationship_col_nums.push_back(column_number_map.at(column));
+    }
+    return relationship_col_nums;
+  }
+  dataset::CsvRolledBatch getFinalData(
+      const std::vector<std::vector<std::string>>& rows,
+      const std::vector<uint32_t>& numerical_columns) {
+    uint32_t source_col_num = _column_number_map.at(_config->_source);
+    std::vector<uint32_t> relationship_col_nums = getRelationshipColumns(
+        _config->_relationship_columns, _column_number_map);
+
+    _adjacency_list = createGraph(rows, relationship_col_nums, source_col_num);
+
+    _neighbours = findNeighboursForAllNodes(rows.size(), _adjacency_list,
+                                            _config->_kth_neighbourhood);
+
+    auto values = processNumerical(rows, numerical_columns, _neighbours);
+
+    auto copied_rows = rows;
+
+    for (uint32_t i = 0; i < rows.size(); i++) {
+      copied_rows[i].insert(copied_rows[i].end(), values[i].begin(),
+                            values[i].end());
+    }
+
+    dataset::CsvRolledBatch input(copied_rows);
+
+    return input;
+  }
+
+  std::vector<std::vector<std::string>> getRawData() {
+    auto data_loader = dataset::SimpleFileDataSource::make(
+        _config->_graph_file_name,
+        /* target_batch_size= */ DEFAULT_BATCH_SIZE);
+
+    _column_number_map = UDTDatasetFactory::makeColumnNumberMapFromHeader(
+        *data_loader, _config->_delimeter);
+
+    uint32_t source_col_num = _column_number_map.at(_config->_source);
+
+    std::vector<std::string> full_data;
+
+    while (auto data = data_loader->nextBatch()) {
+      full_data.insert(full_data.end(), data->begin(), data->end());
+    }
+
+    std::vector<std::vector<std::string>> rows;
+
+    std::unordered_map<std::string, uint32_t> nodes;
+
+    // #pragma omp parallel for default(none)
+    //     shared(rows, full_data, nodes, source_col_num)
+    for (uint32_t i = 0; i < full_data.size(); i++) {
+      auto temp = dataset::ProcessorUtils::parseCsvRow(full_data[i],
+                                                       _config->_delimeter);
+      std::vector<std::string> v(temp.begin(), temp.end());
+      rows.push_back(v);
+
+      nodes[v[source_col_num]] = i;
+    }
+
+    _node_id_map = ColumnNumberMap(nodes);
+
+    return rows;
+  }
+
   void makePrepocessedProcessedVectors() {
-    auto final_data = getFinalData();
+    auto rows = getRawData();
     std::vector<dataset::BlockPtr> input_blocks;
     std::vector<dataset::TabularColumn> tabular_columns;
     std::vector<data::NumericalDataTypePtr> numerical_types;
@@ -153,7 +210,7 @@ class GraphDatasetFactory {
                 *categorical->delimiter));
           } else {
             tabular_columns.push_back(dataset::TabularColumn::Categorical(
-                /* identifier= */ col_name));
+                /* identifier= */ col_num));
           }
         }
       }
@@ -172,9 +229,6 @@ class GraphDatasetFactory {
             /* num_bins= */
             FeatureComposer::getNumberOfBins(numerical_types[i]->granularity)));
       }
-      if (!numerical_columns.empty()) {
-        _numerical_columns = numerical_columns;
-      }
       input_blocks.push_back(std::make_shared<dataset::TabularHashFeatures>(
           /* columns= */ tabular_columns,
           /* output_range= */ std::numeric_limits<uint32_t>::max(),
@@ -190,7 +244,7 @@ class GraphDatasetFactory {
         /* label_blocks= */ {std::move(label_block)},
         /* has_header= */ false, /* delimiter= */ _config->_delimeter,
         /* parallel= */ true, /* hash_range= */ 100000);
-
+    auto final_data = getFinalData(rows, numerical_columns);
     _vectors = makePreprocessedVectors(processor, *key_vocab, final_data);
   }
 
@@ -213,52 +267,24 @@ class GraphDatasetFactory {
   dataset::BlockPtr getLabelBlock() {
     auto key_vocab = dataset::ThreadSafeVocabulary::make(
         /* vocab_size= */ _config->_n_target_classes);
-    return dataset::StringLookupCategoricalBlock::make(
-        _column_number_map.at(_config->_target), key_vocab);
+    return dataset::StringLookupCategoricalBlock::make(_config->_target,
+                                                       key_vocab);
   }
 
-  std::vector<std::vector<std::string>> processNumerical(
-      const std::vector<std::vector<std::string_view>>& rows,
-      const std::vector<uint32_t>& numerical_columns, uint32_t k_hop) {
-    _neighbours.reserve(rows.size());
-    std::vector<std::vector<std::string>> processed_numerical_columns(
-        rows.size(), std::vector<std::string>(numerical_columns.size()));
-    // #pragma omp parallel for default(none) shared(
-    //     rows, k_hop, numerical_columns, processed_numerical_columns)
-    for (uint32_t i = 0; i < rows.size(); i++) {
-      std::unordered_set<uint32_t> neighbours;
-      std::unordered_set<std::string> neighbours_string;
-      std::vector<bool> visited(rows.size(), false);
-      findAllNeighbours(k_hop, i, visited, neighbours, neighbours_string);
-      _neighbours[i] = neighbours_string;
-      for (uint32_t j = 0; j < numerical_columns.size(); j++) {
-        uint32_t value = 0;
-        for (unsigned int neighbour : neighbours) {
-          value += stoi(std::string(rows[neighbour][numerical_columns[j]]));
-        }
-        processed_numerical_columns[i][j] =
-            std::to_string(value / neighbours.size());
-      }
-    }
-
-    return processed_numerical_columns;
-  }
-
-  void findAllNeighbours(uint32_t k_hop, uint32_t node_id,  // NOLINT
-                         std::vector<bool>& visited,
-                         std::unordered_set<uint32_t>& neighbours,
-                         std::unordered_set<std::string>& neighbours_string) {
+  void findAllNeighboursForNode(  // NOLINT
+      uint32_t k_hop, uint32_t node_id, std::vector<bool>& visited,
+      std::unordered_set<uint32_t>& neighbours,
+      const std::vector<std::vector<uint32_t>>& adjacency_list) {
     if (k_hop == 0) {
       return;
     }
 
-    for (const auto& neighbour : _adjacency_list[node_id]) {
+    for (const auto& neighbour : adjacency_list[node_id]) {
       if (!visited[neighbour]) {
         visited[neighbour] = true;
         neighbours.insert(neighbour);
-        neighbours_string.insert(_node_id_map[neighbour]);
-        findAllNeighbours(k_hop - 1, neighbour, visited, neighbours,
-                          neighbours_string);
+        findAllNeighboursForNode(k_hop - 1, neighbour, visited, neighbours,
+                                 adjacency_list);
       }
     }
   }
@@ -284,10 +310,9 @@ class GraphDatasetFactory {
   GraphConfigPtr _config;
   dataset::PreprocessedVectorsPtr _vectors;
   ColumnNumberMap _column_number_map;
-  std::vector<std::string> _node_id_map;
+  ColumnNumberMap _node_id_map;
   std::vector<std::vector<uint32_t>> _adjacency_list;
-  std::optional<std::vector<uint32_t>> _numerical_columns;
-  std::vector<std::unordered_set<std::string>> _neighbours;
+  std::vector<std::unordered_set<uint32_t>> _neighbours;
   dataset::GenericBatchProcessorPtr _batch_processor;
 };
 

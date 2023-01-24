@@ -68,6 +68,31 @@ class MapSampleRef final : public ColumnarInputSample {
   const MapInput& _columns;
 };
 
+class GraphSampleRef final : public ColumnarInputSample {
+ public:
+  explicit GraphSampleRef(const std::vector<std::string>& columns)
+      : _columns(columns) {}
+
+  std::string_view column(const ColumnIdentifier& column) final {
+    if (column.number() >= _columns.size()) {
+      std::stringstream error;
+      error << "Tried to access " << column.number()
+            << "-th column but this row only has " << _columns.size()
+            << " columns:" << std::endl;
+      for (const auto& column : _columns) {
+        error << " \"" << column << "\"";
+      }
+      throw std::invalid_argument(error.str());
+    }
+    return _columns.at(column.number());
+  }
+
+  uint32_t size() final { return _columns.size(); }
+
+ private:
+  const std::vector<std::string>& _columns;
+};
+
 /**
  * A wrapper around a reference to a columnar sample represented by a vector
  * of string views. Implements the ColumnarInputSample interface.
@@ -122,9 +147,6 @@ class CsvSampleRef final : public ColumnarInputSample {
       throw std::invalid_argument(error.str());
     }
   }
-
-  explicit CsvSampleRef(std::vector<std::string_view> line)
-      : _columns(std::move(line)) {}
 
   std::string_view at(uint32_t index) { return _columns[index]; }
 
@@ -265,10 +287,11 @@ class CsvBatchRef final : public ColumnarInputBatch {
 
 class CsvRolledBatch final : public ColumnarInputBatch {
  public:
-  explicit CsvRolledBatch(
-      const std::vector<std::vector<std::string_view>>& rows) {
-    for (const auto& row : rows) {
-      _batch_values.push_back(CsvSampleRef(row));
+  explicit CsvRolledBatch(std::vector<std::vector<std::string>> rows)
+      : _rows(std::move(rows)) {
+    for (const auto& row : _rows) {
+      // std::cout<<ro
+      _batch_values.push_back(GraphSampleRef(row));
     }
   }
 
@@ -277,6 +300,7 @@ class CsvRolledBatch final : public ColumnarInputBatch {
   uint32_t size() const final { return _batch_values.size(); }
 
  private:
-  std::vector<CsvSampleRef> _batch_values;
+  std::vector<std::vector<std::string>> _rows;
+  std::vector<GraphSampleRef> _batch_values;
 };
 }  // namespace thirdai::dataset

@@ -24,6 +24,10 @@ class ColumnNumberMap {
     }
   }
 
+  explicit ColumnNumberMap(
+      std::unordered_map<std::string, uint32_t> name_to_num)
+      : _name_to_num(std::move(name_to_num)), _n_cols(_name_to_num.size()) {}
+
   ColumnNumberMap() {}
 
   uint32_t at(const std::string& col_name) const {

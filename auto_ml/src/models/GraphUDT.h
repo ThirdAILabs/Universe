@@ -36,6 +36,8 @@ class GraphUDT {
     auto graph_dataset_factory =
         std::make_shared<data::GraphDatasetFactory>(dataset_config);
 
+    graph_dataset_factory->prepareTheBatchProcessor();
+
     bolt::BoltGraphPtr model;
     model = buildGraphBoltGraph(
         /* input_dims= */ graph_dataset_factory->getInputDim(),
