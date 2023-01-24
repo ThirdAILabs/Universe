@@ -18,8 +18,12 @@ namespace thirdai::automl::models {
 void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
                           bolt::TrainConfig& train_config,
                           const std::optional<ValidationOptions>& validation,
-                          std::optional<uint32_t> max_in_memory_batches) {
+                          std::optional<uint32_t> max_in_memory_batches,
+                          std::optional<size_t> batch_size_opt) {
   licensing::verifyAllowedDataset(data_source->resourceName());
+
+  size_t batch_size =
+      batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
 
   auto start_time = std::chrono::system_clock::now();
 
@@ -45,7 +49,7 @@ void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
           tuneBinaryClassificationPredictionThreshold(
               /* data_source= */ dataset::SimpleFileDataSource::make(
                   validation->filename(), DEFAULT_EVALUATE_BATCH_SIZE),
-              /* metric_name= */ validation->metrics().at(0));
+              /* metric_name= */ validation->metrics().at(0), batch_size);
 
       binary_output->setPredictionTheshold(threshold);
     } else if (!train_config.metrics().empty()) {
@@ -55,7 +59,7 @@ void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
       std::optional<float> threshold =
           tuneBinaryClassificationPredictionThreshold(
               /* data_source= */ data_source,
-              /* metric_name= */ train_config.metrics().at(0));
+              /* metric_name= */ train_config.metrics().at(0), batch_size);
 
       binary_output->setPredictionTheshold(threshold);
     }
@@ -323,9 +327,9 @@ void ModelPipeline::updateRehashRebuildInTrainConfig(
 }
 
 std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
-    const dataset::DataSourcePtr& data_source, const std::string& metric_name) {
-  uint32_t num_batches =
-      MAX_SAMPLES_FOR_THRESHOLD_TUNING / data_source->getMaxBatchSize();
+    const dataset::DataSourcePtr& data_source, const std::string& metric_name,
+    size_t batch_size) {
+  uint32_t num_batches = MAX_SAMPLES_FOR_THRESHOLD_TUNING / batch_size;
 
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
       data_source, /* training= */ false);

@@ -292,7 +292,6 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<DataSource, PyDataSource, DataSourcePtr>(dataset_submodule,
                                                       "DataSource")
-      .def(py::init<uint32_t>(), py::arg("target_batch_size"))
       .def("next_batch", &DataSource::nextBatch)
       .def("next_line", &DataSource::nextLine)
       .def("resource_name", &DataSource::resourceName)
@@ -301,8 +300,7 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<SimpleFileDataSource, DataSource,
              std::shared_ptr<SimpleFileDataSource>>(dataset_submodule,
                                                     "FileDataSource")
-      .def(py::init<const std::string&, uint32_t>(), py::arg("filename"),
-           py::arg("batch_size"));
+      .def(py::init<const std::string&>(), py::arg("filename"));
 
   dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
                         py::arg("indices"), py::arg("values"));

@@ -9,12 +9,14 @@ namespace thirdai::dataset {
 
 DatasetLoader::DatasetLoader(DataSourcePtr data_source,
                              dataset::FeaturizerPtr featurizer, bool shuffle,
-                             DatasetShuffleConfig shuffle_config)
+                             DatasetShuffleConfig shuffle_config,
+                             size_t internal_featurization_batch_size)
     : _data_source(std::move(data_source)),
       _featurizer(std::move(featurizer)),
       _shuffle(shuffle),
       _buffer_size(shuffle_config.buffer_size),
-      _buffer(shuffle_config.seed) {
+      _buffer(shuffle_config.seed),
+      _featurization_batch_size(internal_featurization_batch_size) {
   // Different formats of data may or may not contain headers. Thus we
   // delegate to the particular featurizer to determine if a header is
   // needed. The first row is interpreted as the header. The featurizer
@@ -122,7 +124,8 @@ void DatasetLoader::restart() {
 
 void DatasetLoader::fillShuffleBuffer(size_t num_rows) {
   while (_buffer.size() <= num_rows) {
-    auto rows = _data_source->nextBatch();
+    auto rows = _data_source->nextBatch(
+        /* target_batch_size = */ _featurization_batch_size);
     if (!rows) {
       return;
     }

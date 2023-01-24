@@ -27,7 +27,8 @@ class DatasetLoader final {
  public:
   DatasetLoader(std::shared_ptr<dataset::DataSource> data_source,
                 dataset::FeaturizerPtr featurizer, bool shuffle,
-                DatasetShuffleConfig shuffle_config = DatasetShuffleConfig());
+                DatasetShuffleConfig shuffle_config = DatasetShuffleConfig(),
+                size_t internal_featurization_batch_size = 1024);
 
   // TODO(Josh/Geordie/Nick/David): We should generalize these next two load
   // methods to return a vector of BoltDatasets, and figure out which are
@@ -69,6 +70,10 @@ class DatasetLoader final {
   // when we  return shuffled values
   size_t _buffer_size;
   ShuffleBuffer _buffer;
+
+  // Batch size we use for loading from the data source and passing to the
+  // Featurizer
+  size_t _featurization_batch_size;
 };
 
 using DatasetLoaderPtr = std::unique_ptr<DatasetLoader>;
