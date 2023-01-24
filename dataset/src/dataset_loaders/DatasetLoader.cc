@@ -74,12 +74,8 @@ DatasetLoader::streamInMemory(size_t batch_size, size_t num_batches,
                                    : (num_batches + _buffer_size) * batch_size;
   fillShuffleBuffer(fill_size);
 
-<<<<<<< HEAD
   auto batch_lists =
       _buffer.popBatches(num_batches, /* target_batch_size = */ batch_size);
-=======
-  auto batch_lists = _buffer.popBatches(num_batches, /* target_batch_size = */ batch_size);
->>>>>>> dd8da2ca79d009a90d6ee9664148be100f759289
   auto end = std::chrono::high_resolution_clock::now();
   auto duration =
       std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
