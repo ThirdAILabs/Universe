@@ -9,17 +9,19 @@
 namespace thirdai::dataset {
 
 struct DatasetShuffleConfig {
-  DatasetShuffleConfig() : buffer_size(64000), seed(time(NULL)) {}
+  DatasetShuffleConfig() : min_buffer_size(64000), seed(time(NULL)) {}
 
-  explicit DatasetShuffleConfig(size_t n_vecs_in_buffer)
-      : buffer_size(n_vecs_in_buffer), seed(time(NULL)) {}
+  explicit DatasetShuffleConfig(size_t min_vecs_in_buffer)
+      : min_buffer_size(min_vecs_in_buffer), seed(time(NULL)) {}
 
-  DatasetShuffleConfig(size_t n_vecs_in_buffer, uint32_t seed)
-      : buffer_size(n_vecs_in_buffer), seed(seed) {}
+  DatasetShuffleConfig(size_t min_vecs_in_buffer, uint32_t seed)
+      : min_buffer_size(min_vecs_in_buffer), seed(seed) {}
 
-  size_t buffer_size;
+  size_t min_buffer_size;
   uint32_t seed;
 };
+
+const uint32_t DEFAULT_FEATURIZATION_BATCH_SIZE = 2048;
 
 using InputDatasets = std::vector<dataset::BoltDatasetPtr>;
 using LabelDataset = dataset::BoltDatasetPtr;
@@ -28,7 +30,8 @@ class DatasetLoader final {
   DatasetLoader(std::shared_ptr<dataset::DataSource> data_source,
                 dataset::FeaturizerPtr featurizer, bool shuffle,
                 DatasetShuffleConfig shuffle_config = DatasetShuffleConfig(),
-                size_t internal_featurization_batch_size = 1024);
+                size_t internal_featurization_batch_size =
+                    DEFAULT_FEATURIZATION_BATCH_SIZE);
 
   // TODO(Josh/Geordie/Nick/David): We should generalize these next two load
   // methods to return a vector of BoltDatasets, and figure out which are

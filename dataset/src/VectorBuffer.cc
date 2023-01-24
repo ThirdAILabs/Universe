@@ -19,9 +19,9 @@ void VectorBuffer::insertBatch(std::vector<BoltBatch>&& batches, bool shuffle) {
 
   initializeBuffersIfNeeded(batches);
 
-  for (uint32_t i = 0; i < batches.size(); i++) {
-    for (auto& vector : batches.at(i)) {
-      _buffers.at(i).push_back(std::move(vector));
+  for (uint32_t buffer_id = 0; buffer_id < _buffers.size(); buffer_id++) {
+    for (auto& vector : batches.at(buffer_id)) {
+      _buffers.at(buffer_id).push_back(std::move(vector));
     }
   }
 
@@ -36,25 +36,25 @@ std::optional<std::vector<BoltBatch>> VectorBuffer::popBatch(
     return std::nullopt;
   }
 
-  std::vector<std::vector<BoltVector>> batches(_buffers.size());
+  std::vector<std::vector<BoltVector>> vecs_to_return(_buffers.size());
   for (size_t buffer_id = 0; buffer_id < _buffers.size(); buffer_id++) {
-    for (size_t i = 0; i < target_batch_size; i++) {
-      if (_buffers.at(buffer_id).empty()) {
+    auto& buffer = _buffers.at(buffer_id);
+    for (size_t vec_id = 0; vec_id < target_batch_size; vec_id++) {
+      if (buffer.empty()) {
         break;
       }
-      batches.at(buffer_id).push_back(
-          std::move(_buffers.at(buffer_id).front()));
-      _buffers.at(buffer_id).pop_front();
+      vecs_to_return.at(buffer_id).push_back(std::move(buffer.front()));
+      buffer.pop_front();
     }
   }
 
-  std::vector<BoltBatch> bolt_batches;
-  bolt_batches.reserve(batches.size());
-  for (auto& batch : batches) {
-    bolt_batches.emplace_back(std::move(batch));
+  std::vector<BoltBatch> batches_to_return(_buffers.size());
+  for (size_t buffer_id = 0; buffer_id < _buffers.size(); buffer_id++) {
+    batches_to_return.at(buffer_id) =
+        BoltBatch(std::move(batches_to_return.at(buffer_id)));
   }
 
-  return bolt_batches;
+  return batches_to_return;
 }
 
 /**
@@ -69,8 +69,9 @@ std::vector<std::vector<BoltBatch>> VectorBuffer::popBatches(
     auto next_batches = *popBatch(target_batch_size);
     assert(next_batches.size() == _buffers.size());
 
-    for (size_t i = 0; i < next_batches.size(); i++) {
-      exported_batch_lists.at(i).push_back(std::move(next_batches.at(i)));
+    for (size_t buffer_id = 0; buffer_id < _buffers.size(); buffer_id++) {
+      exported_batch_lists.at(buffer_id).push_back(
+          std::move(next_batches.at(buffer_id)));
     }
   }
   return exported_batch_lists;
@@ -117,6 +118,7 @@ inline void VectorBuffer::swapShuffle(
     std::vector<std::deque<BoltVector>>& buffers, size_t batch_size_added,
     std::mt19937& gen) {
   assert(buffers.at(0).size() > 0);
+
   size_t n_vecs = buffers.at(0).size();
   size_t n_old_vecs = n_vecs - batch_size_added;
   std::uniform_int_distribution<> dist(
@@ -129,13 +131,5 @@ inline void VectorBuffer::swapShuffle(
     }
   }
 }
-
-std::mt19937 _gen;
-/**
- * Besides during calls to addBatch or popBatch, this data structure thus
- * maintains the invariant that every deque contains the same number of
- * vectors.
- */
-std::vector<std::deque<BoltVector>> _buffers;
 
 }  // namespace thirdai::dataset

@@ -14,7 +14,7 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
     : _data_source(std::move(data_source)),
       _featurizer(std::move(featurizer)),
       _shuffle(shuffle),
-      _buffer_size(shuffle_config.buffer_size),
+      _buffer_size(shuffle_config.min_buffer_size),
       _buffer(shuffle_config.seed),
       _featurization_batch_size(internal_featurization_batch_size) {
   // Different formats of data may or may not contain headers. Thus we
@@ -58,18 +58,16 @@ DatasetLoader::streamInMemory(size_t batch_size, size_t num_batches,
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  // TODO(Josh): Fix these calculations
-  // We fill the buffer with num_batches + _batch_buffer_size number of batches
+  // We fill the buffer with num_batches * batch_size + _buffer_size vectors
   // so that after exporting num_batches from the buffer we still have
-  // _batch_buffer_size number of batches left for future shuffling.
-  // We also much check if the sum overflows, since in the frequent case we
-  // want to load all batches we pass in std::numeric_limits<size_t> which will
-  // cause an overflow. For the source of this overflow check, see:
-  // https://stackoverflow.com/q/199333/how-do-i-detect-unsigned-integer-overflow
+  // _buffer_size vectors left for future shuffling.
+  // We also must check if anything in this multiplication and sum overflows and
+  // use std::numeric_limits<size_t>::max() in that case, since frequently we
+  // pass in std::numeric_limits<size_t>::max() as some of these terms.
   bool will_overflow =
-      (std::numeric_limits<size_t>::max() - num_batches <= _buffer_size) ||
-      (std::numeric_limits<size_t>::max() / batch_size <=
-       num_batches + _buffer_size);
+      (std::numeric_limits<size_t>::max() / num_batches <= batch_size) ||
+      (std::numeric_limits<size_t>::max() - _buffer_size <=
+       num_batches * batch_size);
   size_t fill_size = will_overflow ? std::numeric_limits<size_t>::max()
                                    : (num_batches + _buffer_size) * batch_size;
   fillVectorBuffer(fill_size);

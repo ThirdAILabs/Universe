@@ -250,8 +250,7 @@ void createDatasetSubmodule(py::module_& module) {
            "features.");
 
   py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleConfig")
-      .def(py::init<size_t, uint32_t>(),
-           py::arg("num_batches_in_buffer") = 1000,
+      .def(py::init<size_t, uint32_t>(), py::arg("min_vecs_in_buffer") = 64000,
            py::arg("seed") = time(NULL));
 
   py::class_<Featurizer, FeaturizerPtr>(dataset_submodule, "Featurizer")

@@ -169,10 +169,9 @@ dataset::PreprocessedVectorsPtr
 UDTDatasetFactory::preprocessedVectorsFromDataset(
     dataset::DatasetLoader& dataset_loader,
     dataset::ThreadSafeVocabulary& key_vocab) {
-  // TODO(Josh): investigate this
-  // The batch size does not matter here because we loop through all of the
-  // vectors disregarding batch size anyways. Thus, we choose the arbitrary
-  // value 2048
+  // The batch size does not really matter here because we are storing these
+  // vectors as metadata, not training on them. Thus, we choose the somewhat
+  // arbitrary value 2048 since it is large enough to use all threads.
   auto [datasets, ids] = dataset_loader.loadInMemory(/* batch_size = */ 2048);
 
   if (datasets.size() != 1) {

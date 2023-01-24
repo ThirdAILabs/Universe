@@ -337,8 +337,6 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
       data_source, /* training= */ false);
 
-  // The batch size isn't really important here, so we can arbitrarily choose
-  // DEFAULT_EVALUATE_BATCH_SIZE
   auto loaded_data_opt =
       dataset->streamInMemory(/* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
                               num_batches, /* verbose = */ false);

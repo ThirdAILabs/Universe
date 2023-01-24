@@ -8,7 +8,6 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
 #include <limits>
-#include <optional>
 
 namespace thirdai::automl::python {
 
