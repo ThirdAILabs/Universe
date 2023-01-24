@@ -27,7 +27,6 @@ class CSVDataSource(DataSource):
     def __init__(
         self,
         storage_path: str,
-        batch_size: int = 10000,
         gcs_credentials_path: str = None,
     ) -> None:
 
@@ -36,9 +35,7 @@ class CSVDataSource(DataSource):
             # to authenticate a read request from a GCS bucket
             import gcsfs
 
-        super().__init__(target_batch_size=batch_size)
         self._storage_path = storage_path
-        self._target_batch_size = batch_size
         self._gcs_credentials = gcs_credentials_path
         self._storage_options = (
             {"token": gcs_credentials_path} if gcs_credentials_path else None
@@ -64,9 +61,9 @@ class CSVDataSource(DataSource):
             for _, row in chunk.iterrows():
                 yield ",".join(row.astype(str).values.flatten())
 
-    def next_batch(self) -> Optional[List[str]]:
+    def next_batch(self, target_batch_size) -> Optional[List[str]]:
         lines = []
-        while len(lines) < self._target_batch_size:
+        while len(lines) < target_batch_size:
             next_line = self.next_line()
             if next_line == None:
                 break

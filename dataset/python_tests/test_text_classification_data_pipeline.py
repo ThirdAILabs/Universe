@@ -33,11 +33,11 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
         delimiter=delim,
     )
     pipeline = DatasetLoader(
-        data_source=FileDataSource(filename, batch_size=256),
+        data_source=FileDataSource(filename),
         featurizer=featurizer,
         shuffle=True,
     )
-    [data, labels] = pipeline.load_in_memory()
+    [data, labels] = pipeline.load_in_memory(batch_size=256)
 
     input_layer = bolt.nn.Input(dim=pipeline.get_input_dim())
     hidden_layer = bolt.nn.FullyConnected(dim=1000, sparsity=0.1, activation="relu")(

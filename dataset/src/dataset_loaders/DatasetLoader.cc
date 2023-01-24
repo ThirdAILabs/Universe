@@ -32,8 +32,8 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
 
 // Loads the entire data source at once
 std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory(
-    bool verbose) {
-  auto datasets = streamInMemory(std::numeric_limits<size_t>::max(), verbose);
+    size_t batch_size, bool verbose) {
+  auto datasets = streamInMemory(/* batch_size = */ batch_size, /* num_batches = */ std::numeric_limits<size_t>::max(), /* verbose = */ verbose);
   if (!datasets) {
     throw std::invalid_argument(
         "Did not find any data to load from the data source.");
@@ -42,7 +42,7 @@ std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory(
 }
 
 std::optional<std::pair<InputDatasets, LabelDataset>>
-DatasetLoader::streamInMemory(size_t num_batches, bool verbose) {
+DatasetLoader::streamInMemory(size_t batch_size, size_t num_batches, bool verbose) {
 #if THIRDAI_EXPOSE_ALL
   if (verbose) {
     // This is useful internally but we don't want to expose it to keep the
@@ -54,6 +54,7 @@ DatasetLoader::streamInMemory(size_t num_batches, bool verbose) {
 
   auto start = std::chrono::high_resolution_clock::now();
 
+  // TODO(Josh): Fix these calculations
   // We fill the buffer with num_batches + _batch_buffer_size number of batches
   // so that after exporting num_batches from the buffer we still have
   // _batch_buffer_size number of batches left for future shuffling.
@@ -68,8 +69,7 @@ DatasetLoader::streamInMemory(size_t num_batches, bool verbose) {
   }
   fillShuffleBuffer(fill_size);
 
-  // TODO(Josh): Fix this
-  auto batch_lists = _buffer.popBatches(num_batches, 0);
+  auto batch_lists = _buffer.popBatches(num_batches, /* target_batch_size = */ batch_size);
   auto end = std::chrono::high_resolution_clock::now();
   auto duration =
       std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
