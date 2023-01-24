@@ -1,12 +1,12 @@
 #pragma once
 
-#include "BatchProcessor.h"
 #include "Datasets.h"
+#include "Featurizer.h"
 #include "InMemoryDataset.h"
 #include <bolt_vector/src/BoltVector.h>
-#include <dataset/src/batch_processors/ClickThroughBatchProcessor.h>
-#include <dataset/src/batch_processors/SvmBatchProcessor.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/featurizers/ClickThroughFeaturizer.h>
+#include <dataset/src/featurizers/SvmFeaturizer.h>
 #include <memory>
 #include <utility>
 
@@ -23,9 +23,8 @@ struct SvmDatasetLoader {
 
   static std::tuple<BoltDatasetPtr, BoltDatasetPtr> loadDataset(
       const DataSourcePtr& data_source, bool softmax_for_multiclass = true) {
-    auto batch_processor =
-        std::make_shared<SvmBatchProcessor>(softmax_for_multiclass);
-    auto dataset_loader = DatasetLoader(data_source, batch_processor,
+    auto featurizer = std::make_shared<SvmFeaturizer>(softmax_for_multiclass);
+    auto dataset_loader = DatasetLoader(data_source, featurizer,
                                         /* shuffle = */ false);
     auto datasets = dataset_loader.loadInMemory();
     return {datasets.first.at(0), datasets.second};
@@ -46,9 +45,9 @@ struct ClickThroughDatasetLoader {
   static std::tuple<BoltDatasetPtr, BoltDatasetPtr, BoltDatasetPtr> loadDataset(
       const DataSourcePtr& data_source, uint32_t num_dense_features,
       uint32_t max_num_categorical_features, char delimiter) {
-    auto batch_processor = std::make_shared<ClickThroughBatchProcessor>(
+    auto featurizer = std::make_shared<ClickThroughFeaturizer>(
         num_dense_features, max_num_categorical_features, delimiter);
-    auto dataset_loader = DatasetLoader(data_source, batch_processor,
+    auto dataset_loader = DatasetLoader(data_source, featurizer,
                                         /* shuffle = */ false);
     auto datasets = dataset_loader.loadInMemory();
     return {datasets.first.at(0), datasets.first.at(1), datasets.second};

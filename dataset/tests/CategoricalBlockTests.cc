@@ -1,8 +1,8 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/featurizers/GenericFeaturizer.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
 #include <cstdlib>
@@ -163,14 +163,14 @@ TEST_F(CategoricalBlockTest, TestMultiLabelParsing) {
                                       /* n_classes= */ 100,
                                       /* delimiter= */ ',')};
 
-  GenericBatchProcessor batch_processor(
+  GenericFeaturizer featurizer(
       /* input_blocks= */ {}, /* label_blocks= */ multi_label_blocks,
       /* has_header= */ false, /* delimiter= */ ' ');
 
   std::vector<std::string> rows = {"4,90,77 21,43,18,0", "55,67,82 49,2",
                                    "36 84,59,6"};
 
-  auto batch = batch_processor.createBatch(rows);
+  auto batch = featurizer.createBatch(rows);
 
   auto labels = std::move(batch).at(1);
 
@@ -189,14 +189,14 @@ TEST_F(CategoricalBlockTest, RegressionCategoricalBlock) {
                                 /* num_bins= */ 20),
       /* correct_label_radius= */ 1, /* labels_sum_to_one= */ false)};
 
-  GenericBatchProcessor batch_processor(
+  GenericFeaturizer featurizer(
       /* input_blocks= */ {}, /* label_blocks= */ blocks,
       /* has_header= */ false, /* delimiter= */ ',');
 
   std::vector<std::string> rows = {"3.7", "2.8",  "9.2",  "5.9",
                                    "1.3", "10.8", "12.1", "-3.2"};
 
-  auto labels = batch_processor.createBatch(rows).at(1);
+  auto labels = featurizer.createBatch(rows).at(1);
 
   std::vector<std::vector<uint32_t>> expected_labels = {
       {4, 5, 6}, {2, 3, 4}, {15, 16, 17}, {8, 9, 10},

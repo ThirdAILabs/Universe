@@ -21,20 +21,20 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
     from thirdai.dataset import (
         DatasetLoader,
         FileDataSource,
-        GenericBatchProcessor,
+        GenericFeaturizer,
         blocks,
     )
 
     filename = "test_text_classification.csv"
     generate_text_classification_dataset(filename, delim)
-    batch_processor = GenericBatchProcessor(
+    featurizer = GenericFeaturizer(
         input_blocks=[text_block],
         label_blocks=[blocks.NumericalId(col=0, n_classes=3)],
         delimiter=delim,
     )
     pipeline = DatasetLoader(
         data_source=FileDataSource(filename, batch_size=256),
-        batch_processor=batch_processor,
+        featurizer=featurizer,
         shuffle=True,
     )
     [data, labels] = pipeline.load_in_memory()

@@ -1,8 +1,8 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Date.h>
+#include <dataset/src/featurizers/GenericFeaturizer.h>
 #include <sstream>
 
 namespace thirdai::dataset {
@@ -10,7 +10,7 @@ namespace thirdai::dataset {
 class DateBlockTests : public testing::Test {
  protected:
   static auto featurize(const std::vector<std::string>& input_rows) {
-    GenericBatchProcessor processor(
+    GenericFeaturizer processor(
         /* input_blocks = */ {std::make_shared<DateBlock>(/* col = */ 0)},
         /* label_blocks = */ {});
     return processor.createBatch(input_rows).at(0);

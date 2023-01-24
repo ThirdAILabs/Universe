@@ -9,7 +9,7 @@
 
 namespace thirdai::dataset {
 
-class BatchProcessor {
+class Featurizer {
  public:
   virtual std::vector<BoltBatch> createBatch(
       const std::vector<std::string>& rows) = 0;
@@ -18,17 +18,17 @@ class BatchProcessor {
 
   virtual void processHeader(const std::string& header) = 0;
 
-  virtual ~BatchProcessor() = default;
+  virtual ~Featurizer() = default;
 
   // Returns a vector of the BoltVector dimensions one would get if they called
   // createBatch.
   virtual std::vector<uint32_t> getDimensions() {
     // By default we assume that this is an unsupported operation
     throw exceptions::NotImplemented(
-        "Cannot get the dimensions for this batch processor");
+        "Cannot get the dimensions for this featurizer");
   }
   // Default constructor for cereal.
-  BatchProcessor() {}
+  Featurizer() {}
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
@@ -39,6 +39,6 @@ class BatchProcessor {
   }
 };
 
-using BatchProcessorPtr = std::shared_ptr<BatchProcessor>;
+using FeaturizerPtr = std::shared_ptr<Featurizer>;
 
 }  // namespace thirdai::dataset

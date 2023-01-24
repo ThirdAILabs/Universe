@@ -1,7 +1,6 @@
 #include "DatasetLoader.h"
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/ShuffleBatchBuffer.h>
 #include <utils/Logging.h>
 #include <limits>
 #include <utility>
@@ -9,23 +8,23 @@
 namespace thirdai::dataset {
 
 DatasetLoader::DatasetLoader(DataSourcePtr data_source,
-                             dataset::BatchProcessorPtr batch_processor,
-                             bool shuffle, DatasetShuffleConfig shuffle_config)
+                             dataset::FeaturizerPtr featurizer, bool shuffle,
+                             DatasetShuffleConfig shuffle_config)
     : _data_source(std::move(data_source)),
-      _batch_processor(std::move(batch_processor)),
+      _featurizer(std::move(featurizer)),
       _shuffle(shuffle),
-      _batch_buffer_size(shuffle_config.n_batches),
-      _buffer(shuffle_config.seed, _data_source->getMaxBatchSize()) {
+      _buffer_size(shuffle_config.buffer_size),
+      _buffer(shuffle_config.seed) {
   // Different formats of data may or may not contain headers. Thus we
-  // delegate to the particular batch processor to determine if a header is
-  // needed. The first row is interpreted as the header. The batch processor
+  // delegate to the particular featurizer to determine if a header is
+  // needed. The first row is interpreted as the header. The featurizer
   // is responsible for checking that the header is properly formatted.
-  if (_batch_processor->expectsHeader()) {
+  if (_featurizer->expectsHeader()) {
     auto header = _data_source->nextLine();
     if (!header) {
       throw std::invalid_argument("Cannot read empty file.");
     }
-    _batch_processor->processHeader(*header);
+    _featurizer->processHeader(*header);
   }
 }
 
@@ -60,14 +59,15 @@ DatasetLoader::streamInMemory(size_t num_batches, bool verbose) {
   // want to load all batches we pass in std::numeric_limits<size_t> which will
   // cause an overflow. For the source of this overflow check, see:
   // https://stackoverflow.com/q/199333/how-do-i-detect-unsigned-integer-overflow
-  size_t fill_size = num_batches + _batch_buffer_size;
-  bool overflowed = fill_size < (num_batches | _batch_buffer_size);
+  size_t fill_size = num_batches + _buffer_size;
+  bool overflowed = fill_size < (num_batches | _buffer_size);
   if (overflowed) {
     fill_size = std::numeric_limits<size_t>::max();
   }
   fillShuffleBuffer(fill_size);
 
-  auto batch_lists = _buffer.exportBuffer(num_batches);
+  // TODO(Josh): Fix this
+  auto batch_lists = _buffer.popBatches(num_batches, 0);
   auto end = std::chrono::high_resolution_clock::now();
   auto duration =
       std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
@@ -109,8 +109,8 @@ DatasetLoader::streamInMemory(size_t num_batches, bool verbose) {
 void DatasetLoader::restart() {
   _data_source->restart();
 
-  // When we restart we need to make sure we don't reread the header. s
-  if (_batch_processor->expectsHeader()) {
+  // When we restart we need to make sure we don't reread the header.
+  if (_featurizer->expectsHeader()) {
     auto header = _data_source->nextLine();
     if (!header) {
       throw std::invalid_argument("Cannot read empty file.");
@@ -120,14 +120,14 @@ void DatasetLoader::restart() {
   _buffer.clear();
 }
 
-void DatasetLoader::fillShuffleBuffer(size_t fill_size) {
-  while (_buffer.size() <= fill_size) {
+void DatasetLoader::fillShuffleBuffer(size_t num_rows) {
+  while (_buffer.size() <= num_rows) {
     auto rows = _data_source->nextBatch();
     if (!rows) {
       return;
     }
 
-    auto batch = _batch_processor->createBatch(*rows);
+    auto batch = _featurizer->createBatch(*rows);
     _buffer.insertBatch(std::move(batch), _shuffle);
   }
 }

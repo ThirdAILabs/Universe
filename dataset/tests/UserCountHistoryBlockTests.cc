@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
-#include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/UserCountHistory.h>
+#include <dataset/src/featurizers/GenericFeaturizer.h>
+#include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <cmath>
@@ -12,7 +12,7 @@ namespace thirdai::dataset {
 
 static BoltBatch processBatch(BlockPtr block,
                               const std::vector<std::string>& input_rows) {
-  GenericBatchProcessor processor(
+  GenericFeaturizer processor(
       /* input_blocks= */ {std::move(block)}, /* label_blocks= */ {},
       /* has_header= */ false, /* delimiter= */ ',', /* parallel= */ false);
   auto batch = processor.createBatch(input_rows).at(0);

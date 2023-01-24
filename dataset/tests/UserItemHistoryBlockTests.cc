@@ -1,7 +1,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/UserItemHistory.h>
+#include <dataset/src/featurizers/GenericFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <sys/types.h>
@@ -98,7 +98,7 @@ auto processSamples(std::vector<std::string>& samples, uint32_t track_last_n,
       /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2, records,
       track_last_n, ITEM_HASH_RANGE);
 
-  GenericBatchProcessor processor(
+  GenericFeaturizer processor(
       /* input_blocks = */ {user_item_history_block},
       /* label_blocks = */ {}, /* has_header= */ false, /* delimiter= */ ',',
       /* parallel= */ parallel);
@@ -234,7 +234,7 @@ TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
 
   auto records = ItemHistoryCollection::make();
 
-  GenericBatchProcessor processor(
+  GenericFeaturizer processor(
       /* input_blocks= */ {UserItemHistoryBlock::make(
           /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
           /* records= */ records, /* track_last_n= */ 3,
@@ -270,7 +270,7 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
 
   auto records = ItemHistoryCollection::make();
 
-  GenericBatchProcessor processor(
+  GenericFeaturizer processor(
       /* input_blocks= */ {UserItemHistoryBlock::make(
           /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
           /* records= */ records, /* track_last_n= */ 3,
@@ -290,9 +290,9 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
   ASSERT_EQ(batch[4].len, 3);
 }
 
-GenericBatchProcessor makeItemHistoryBatchProcessor(
-    ItemHistoryCollectionPtr history, uint32_t track_last_n,
-    bool should_update_history) {
+GenericFeaturizer makeItemHistoryFeaturizer(ItemHistoryCollectionPtr history,
+                                            uint32_t track_last_n,
+                                            bool should_update_history) {
   return {/* input_blocks= */ {UserItemHistoryBlock::make(
               /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
               std::move(history), track_last_n, ITEM_HASH_RANGE,
@@ -318,10 +318,10 @@ TEST(UserItemHistoryBlockTests, HandlesNoUpdateCaseProperly) {
 
   auto history = ItemHistoryCollection::make();
 
-  auto updating_processor = makeItemHistoryBatchProcessor(
-      history,
-      /* track_last_n= */ updating_samples.size() + 1,
-      /* should_update_history= */ true);
+  auto updating_processor =
+      makeItemHistoryFeaturizer(history,
+                                /* track_last_n= */ updating_samples.size() + 1,
+                                /* should_update_history= */ true);
   updating_processor.createBatch(updating_samples);
 
   std::vector<std::string> items_in_history;
@@ -330,10 +330,10 @@ TEST(UserItemHistoryBlockTests, HandlesNoUpdateCaseProperly) {
   }
   ASSERT_EQ(items_in_history.size(), updating_samples.size());
 
-  auto non_updating_processor = makeItemHistoryBatchProcessor(
-      history,
-      /* track_last_n= */ updating_samples.size() + 1,
-      /* should_update_history= */ false);
+  auto non_updating_processor =
+      makeItemHistoryFeaturizer(history,
+                                /* track_last_n= */ updating_samples.size() + 1,
+                                /* should_update_history= */ false);
   auto non_updating_batch =
       non_updating_processor.createBatch(non_updating_sample);
 

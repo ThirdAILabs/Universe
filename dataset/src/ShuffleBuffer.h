@@ -1,0 +1,164 @@
+#pragma once
+
+#include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/Datasets.h>
+#include <ctime>
+#include <deque>
+#include <iterator>
+#include <optional>
+#include <random>
+#include <sstream>
+#include <stdexcept>
+
+namespace thirdai::dataset {
+
+class ShuffleBuffer {
+ public:
+  explicit ShuffleBuffer(uint32_t shuffle_seed) : _gen(shuffle_seed) {}
+
+  void insertBatch(std::vector<BoltBatch>&& batches, bool shuffle) {
+    checkConsistentBatchSize(batches);
+
+    size_t batch_size = batches.at(0).getBatchSize();
+
+    initializeBuffersIfNeeded(batches);
+
+    for (uint32_t i = 0; i < batches.size(); i++) {
+      for (auto& vector : batches.at(i)) {
+        _buffers.at(i).push_back(std::move(vector));
+      }
+    }
+
+    if (shuffle) {
+      swapShuffle(_buffers, /* batch_size_added = */ batch_size, _gen);
+    }
+  }
+
+  std::optional<std::vector<BoltBatch>> popBatch(size_t target_batch_size) {
+    if (empty()) {
+      return std::nullopt;
+    }
+
+    std::vector<std::vector<BoltVector>> batches(_buffers.size());
+    for (auto& buffer : _buffers) {
+      for (size_t i = 0; i < target_batch_size; i++) {
+        if (buffer.empty()) {
+          break;
+        }
+        batches.at(i).push_back(std::move(buffer.front()));
+        buffer.pop_front();
+      }
+    }
+
+    std::vector<BoltBatch> bolt_batches;
+    bolt_batches.reserve(batches.size());
+    for (auto& batch : batches) {
+      bolt_batches.emplace_back(std::move(batch));
+    }
+
+    return bolt_batches;
+  }
+
+  /**
+   * Pops min(num_batches, size()) batches into a vector of vector of
+   * BoltBatch (with batch size target_batch_size, except possible the last
+   * entry in each vector which may be smaller)
+   */
+  std::vector<std::vector<BoltBatch>> popBatches(size_t num_batches,
+                                                 size_t target_batch_size) {
+    std::vector<std::vector<BoltBatch>> exported_batch_lists(_buffers.size());
+    while (!_buffers.empty() && exported_batch_lists.size() < num_batches) {
+      auto next_batches = *popBatch(target_batch_size);
+      for (size_t i = 0; i < next_batches.size(); i++) {
+        exported_batch_lists.at(i).push_back(std::move(next_batches.at(i)));
+      }
+    }
+    return exported_batch_lists;
+  }
+
+  inline bool empty() const {
+    return _buffers.empty() || _buffers.at(0).empty();
+  }
+
+  size_t size() const {
+    if (empty()) {
+      return 0;
+    }
+    return _buffers.at(0).size();
+  }
+
+  void clear() { _buffers.clear(); }
+
+ private:
+  void initializeBuffersIfNeeded(const std::vector<BoltBatch>& batches) {
+    if (_buffers.empty()) {
+      _buffers = std::vector<std::deque<BoltVector>>(batches.size());
+    }
+
+    if (_buffers.size() != batches.size()) {
+      std::stringstream error_ss;
+      error_ss << "[ShuffleBuffer::insertBatch] Attempted to insert "
+                  "a different number of corresponding batches than originally "
+                  "inserted into the buffer (originally inserted "
+               << _buffers.size() << ", trying to insert " << batches.size()
+               << ").";
+      throw std::runtime_error(error_ss.str());
+    }
+  }
+
+  static inline void checkConsistentBatchSize(
+      const std::vector<BoltBatch>& batches) {
+    if (batches.empty()) {
+      throw std::runtime_error(
+          "[ShuffleBuffer::insertBatch] Expected at least one "
+          "batch to be inserted for shuffling but found 0.");
+    }
+    uint32_t first_data_batch_size = batches.at(0).getBatchSize();
+    for (uint32_t i = 1; i < batches.size(); i++) {
+      if (batches.at(i).getBatchSize() != first_data_batch_size) {
+        std::stringstream error_ss;
+        error_ss << "[ShuffleBuffer::insertBatch] Attempted to insert "
+                    "corresponding batches with different sizes (one size = "
+                 << first_data_batch_size
+                 << ", the other size = " << batches.at(i).getBatchSize()
+                 << ").";
+        throw std::runtime_error(error_ss.str());
+      }
+    }
+  }
+
+  static inline void swapShuffle(std::vector<std::deque<BoltVector>>& buffers,
+                                 size_t batch_size_added, std::mt19937& gen) {
+    assert(buffers.at(0).size() > 0);
+    size_t n_vecs = buffers.at(0).size();
+    size_t n_old_vecs = n_vecs - batch_size_added;
+    std::uniform_int_distribution<> dist(
+        0, n_vecs - 1);  // Accepts a closed interval
+
+    for (size_t new_vec_id = n_old_vecs; new_vec_id < n_vecs; new_vec_id++) {
+      size_t swap_with = dist(gen);
+      /*
+        Only swap with vectors in old batches for two reasons:
+        1. Swapping with elements in the same batch is effectively a no-op
+           since vectors in the same batch are processed by bolt in parallel
+        2. This ensures that each element in the new batch to has an equal
+           probability of being swapped out of this batch.
+      */
+      if (swap_with < n_old_vecs) {
+        for (auto& buffer : buffers) {
+          std::swap(buffer.at(new_vec_id), buffer.at(swap_with));
+        }
+      }
+    }
+  }
+
+  std::mt19937 _gen;
+  /**
+   * Besides during calls to addBatch or popBatch, this data structure thus
+   * maintains the invariant that every deque contains the same number of
+   * vectors.
+   */
+  std::vector<std::deque<BoltVector>> _buffers;
+};
+
+}  // namespace thirdai::dataset

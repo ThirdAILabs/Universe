@@ -2,7 +2,7 @@
 
 #include "ProcessorUtils.h"
 #include <bolt_vector/src/BoltVector.h>
-#include <dataset/src/BatchProcessor.h>
+#include <dataset/src/Featurizer.h>
 #include <cmath>
 #include <optional>
 #include <stdexcept>
@@ -10,11 +10,11 @@
 
 namespace thirdai::dataset {
 
-class ClickThroughBatchProcessor final : public BatchProcessor {
+class ClickThroughFeaturizer final : public Featurizer {
  public:
-  ClickThroughBatchProcessor(uint32_t num_dense_features,
-                             uint32_t max_num_categorical_features,
-                             char delimiter = '\t')
+  ClickThroughFeaturizer(uint32_t num_dense_features,
+                         uint32_t max_num_categorical_features,
+                         char delimiter = '\t')
       : _num_dense_features(num_dense_features),
         _expected_num_cols(num_dense_features + max_num_categorical_features +
                            1),

@@ -32,8 +32,8 @@ dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
       makeColumnNumberMapFromHeader(*data_source, _config->delimiter);
   _column_number_to_name = column_number_map.getColumnNumToColNameMap();
 
-  // The batch processor will treat the next line as a header
-  // Restart so batch processor does not skip a sample.
+  // The featurizer will treat the next line as a header
+  // Restart so featurizer does not skip a sample.
   data_source->restart();
 
   _labeled_history_updating_processor->updateColumnNumbers(column_number_map);
@@ -121,7 +121,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   auto label_block =
       dataset::StringLookupCategoricalBlock::make(metadata->key, key_vocab);
 
-  _metadata_processors[col_name] = dataset::GenericBatchProcessor::make(
+  _metadata_processors[col_name] = dataset::GenericFeaturizer::make(
       /* input_blocks= */ std::move(input_blocks),
       /* label_blocks= */ {std::move(label_block)},
       /* has_header= */ true, /* delimiter= */ metadata->delimiter,
@@ -174,7 +174,7 @@ UDTDatasetFactory::preprocessedVectorsFromDataset(
 
   if (datasets.size() != 1) {
     throw std::runtime_error(
-        "For now, the batch processor should return just a single input "
+        "For now, the featurizer should return just a single input "
         "dataset.");
   }
   auto vectors = datasets.at(0);
@@ -221,7 +221,7 @@ void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
   }
 }
 
-dataset::GenericBatchProcessorPtr
+dataset::GenericFeaturizerPtr
 UDTDatasetFactory::makeLabeledUpdatingProcessor() {
   if (!_config->data_types.count(_config->target)) {
     throw std::invalid_argument(
@@ -232,7 +232,7 @@ UDTDatasetFactory::makeLabeledUpdatingProcessor() {
 
   auto input_blocks = buildInputBlocks(/* should_update_history= */ true);
 
-  auto processor = dataset::GenericBatchProcessor::make(
+  auto processor = dataset::GenericFeaturizer::make(
       std::move(input_blocks), {label_block}, /* has_header= */ true,
       /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
       /* hash_range= */ _config->hash_range);

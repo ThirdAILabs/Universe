@@ -7,7 +7,7 @@
 #include <cereal/types/vector.hpp>
 #include "ProcessorUtils.h"
 #include <bolt_vector/src/BoltVector.h>
-#include <dataset/src/BatchProcessor.h>
+#include <dataset/src/Featurizer.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
@@ -23,9 +23,9 @@
 namespace thirdai::dataset {
 
 // TODO(Geordie / David): Rename to BatchFeaturizer?
-class GenericBatchProcessor : public BatchProcessor {
+class GenericFeaturizer : public Featurizer {
  public:
-  GenericBatchProcessor(
+  GenericFeaturizer(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
       char delimiter = ',', bool parallel = true,
@@ -135,7 +135,7 @@ class GenericBatchProcessor : public BatchProcessor {
 
   /**
    * This function is used in RCA.
-   * The Generic batch processor creates input vectors by dispatching an input
+   * The Generic featurizer creates input vectors by dispatching an input
    * sample through featurization blocks and combining these features using a
    * SegmentedFeatureVector. This function identifies the blocks that are
    * responsible for each feature in an input vector and maps them back to the
@@ -162,14 +162,14 @@ class GenericBatchProcessor : public BatchProcessor {
     return relevant_block->explainIndex(segment_feature.feature_idx, input);
   }
 
-  static std::shared_ptr<GenericBatchProcessor> make(
+  static std::shared_ptr<GenericFeaturizer> make(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
       char delimiter = ',', bool parallel = true,
       std::optional<uint32_t> hash_range = std::nullopt) {
-    return std::make_shared<GenericBatchProcessor>(input_blocks, label_blocks,
-                                                   has_header, delimiter,
-                                                   parallel, hash_range);
+    return std::make_shared<GenericFeaturizer>(input_blocks, label_blocks,
+                                               has_header, delimiter, parallel,
+                                               hash_range);
   }
 
  private:
@@ -231,13 +231,13 @@ class GenericBatchProcessor : public BatchProcessor {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<BatchProcessor>(this), _expects_header,
-            _delimiter, _parallel, _hash_range, _num_cols_in_header,
-            _expected_num_cols, _input_blocks, _label_blocks);
+    archive(cereal::base_class<Featurizer>(this), _expects_header, _delimiter,
+            _parallel, _hash_range, _num_cols_in_header, _expected_num_cols,
+            _input_blocks, _label_blocks);
   }
 
   // Private constructor for cereal.
-  GenericBatchProcessor() {}
+  GenericFeaturizer() {}
 
   bool _expects_header;
   char _delimiter;
@@ -260,8 +260,8 @@ class GenericBatchProcessor : public BatchProcessor {
   uint32_t _expected_num_cols;
 };
 
-using GenericBatchProcessorPtr = std::shared_ptr<GenericBatchProcessor>;
+using GenericFeaturizerPtr = std::shared_ptr<GenericFeaturizer>;
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::GenericBatchProcessor)
+CEREAL_REGISTER_TYPE(thirdai::dataset::GenericFeaturizer)

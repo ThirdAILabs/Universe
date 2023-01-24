@@ -12,10 +12,10 @@
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
-#include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
+#include <dataset/src/featurizers/GenericFeaturizer.h>
+#include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
@@ -435,12 +435,11 @@ class QueryCandidateGenerator {
         constructInputBlocks(_query_generator_config->nGrams(),
                              /* column_index = */ 0);
 
-    _inference_batch_processor =
-        std::make_shared<dataset::GenericBatchProcessor>(
-            /* input_blocks = */ inference_input_blocks,
-            /* labels_blocks = */ std::vector<dataset::BlockPtr>{},
-            /* has_header = */ false,
-            /* delimiter = */ _query_generator_config->delimiter());
+    _inference_featurizer = std::make_shared<dataset::GenericFeaturizer>(
+        /* input_blocks = */ inference_input_blocks,
+        /* labels_blocks = */ std::vector<dataset::BlockPtr>{},
+        /* has_header = */ false,
+        /* delimiter = */ _query_generator_config->delimiter());
   }
 
   void addDatasetToIndex(const dataset::BoltDatasetPtr& data,
@@ -465,12 +464,12 @@ class QueryCandidateGenerator {
     }
   }
 
-  std::shared_ptr<dataset::GenericBatchProcessor>
-  constructGenericBatchProcessor(uint32_t column_index) {
+  std::shared_ptr<dataset::GenericFeaturizer> constructGenericFeaturizer(
+      uint32_t column_index) {
     auto input_blocks = constructInputBlocks(_query_generator_config->nGrams(),
                                              /* column_index = */ column_index);
 
-    return std::make_shared<dataset::GenericBatchProcessor>(
+    return std::make_shared<dataset::GenericFeaturizer>(
         /* input_blocks = */ input_blocks,
         /* label_blocks = */ std::vector<dataset::BlockPtr>{},
         /* has_header = */ true,
@@ -586,18 +585,18 @@ class QueryCandidateGenerator {
     std::vector<std::string_view> input_vector{
         std::string_view(query.data(), query.length())};
     dataset::RowSampleRef input_vector_ref(input_vector);
-    return _inference_batch_processor->makeInputVector(input_vector_ref);
+    return _inference_featurizer->makeInputVector(input_vector_ref);
   }
 
   std::shared_ptr<dataset::BoltDataset> loadDatasetInMemory(
       const std::string& file_name, uint32_t col_to_hash, bool verbose = true) {
-    auto batch_processor = constructGenericBatchProcessor(
+    auto featurizer = constructGenericFeaturizer(
         /* column_index = */ col_to_hash);
     auto file_data_source = dataset::SimpleFileDataSource::make(
         file_name, _query_generator_config->batchSize());
 
     auto dataset_loader = std::make_unique<dataset::DatasetLoader>(
-        file_data_source, batch_processor, /* shuffle = */ false);
+        file_data_source, featurizer, /* shuffle = */ false);
 
     return dataset_loader->loadInMemory(verbose).first.at(0);
   }
@@ -633,7 +632,7 @@ class QueryCandidateGenerator {
 
   std::shared_ptr<QueryCandidateGeneratorConfig> _query_generator_config;
   std::unique_ptr<Flash<uint32_t>> _flash_index;
-  std::shared_ptr<dataset::GenericBatchProcessor> _inference_batch_processor;
+  std::shared_ptr<dataset::GenericFeaturizer> _inference_featurizer;
 
   /**
    * Maintains a mapping from the assigned labels to the original
@@ -652,7 +651,7 @@ class QueryCandidateGenerator {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_query_generator_config, _flash_index, _inference_batch_processor,
+    archive(_query_generator_config, _flash_index, _inference_featurizer,
             _labels_to_queries_map, _queries_to_labels_map);
   }
 };

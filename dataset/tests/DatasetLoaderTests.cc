@@ -2,8 +2,8 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/featurizers/GenericFeaturizer.h>
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -42,11 +42,11 @@ class DatasetLoaderTests : public ::testing::Test {
     auto data_source =
         std::make_shared<SimpleFileDataSource>(_mock_file_name, batch_size);
 
-    auto batch_processor =
-        std::make_shared<GenericBatchProcessor>(input_blocks, label_blocks);
+    auto featurizer =
+        std::make_shared<GenericFeaturizer>(input_blocks, label_blocks);
 
     return DatasetLoader(
-        data_source, batch_processor, shuffle,
+        data_source, featurizer, shuffle,
         DatasetShuffleConfig(n_batches_in_shuffle_buffer, seed));
   }
 

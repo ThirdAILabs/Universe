@@ -1,16 +1,14 @@
 #include "DatasetPython.h"
 #include "PyDataSource.h"
 #include <bolt_vector/src/BoltVector.h>
-#include <dataset/src/BatchProcessor.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/DatasetLoaderWrappers.h>
 #include <dataset/src/Datasets.h>
+#include <dataset/src/Featurizer.h>
 #include <dataset/src/InMemoryDataset.h>
 #include <dataset/src/NumpyDataset.h>
-#include <dataset/src/ShuffleBatchBuffer.h>
+#include <dataset/src/ShuffleBuffer.h>
 #include <dataset/src/Vocabulary.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
-#include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
@@ -18,6 +16,8 @@
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/featurizers/GenericFeaturizer.h>
+#include <dataset/src/featurizers/MaskedSentenceFeaturizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -254,16 +254,14 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("num_batches_in_buffer") = 1000,
            py::arg("seed") = time(NULL));
 
-  py::class_<BatchProcessor, BatchProcessorPtr>(dataset_submodule,
-                                                "BatchProcessor")
-      .def("create_batch", &BatchProcessor::createBatch, py::arg("rows"));
+  py::class_<Featurizer, FeaturizerPtr>(dataset_submodule, "Featurizer")
+      .def("create_batch", &Featurizer::createBatch, py::arg("rows"));
 
   py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
                                               "DatasetLoader")
       .def(py::init<std::shared_ptr<dataset::DataSource>,
-                    dataset::BatchProcessorPtr, bool, DatasetShuffleConfig>(),
-           py::arg("data_source"), py::arg("batch_processor"),
-           py::arg("shuffle"),
+                    dataset::FeaturizerPtr, bool, DatasetShuffleConfig>(),
+           py::arg("data_source"), py::arg("featurizer"), py::arg("shuffle"),
            py::arg("shuffle_config") = DatasetShuffleConfig())
       .def("get_input_dim", &DatasetLoader::getInputDim)
       .def("get_label_dim", &DatasetLoader::getLabelDim)
@@ -273,8 +271,8 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("num_batches"), py::arg("verbose") = true)
       .def("restart", &dataset::DatasetLoader::restart);
 
-  py::class_<GenericBatchProcessor, BatchProcessor, GenericBatchProcessorPtr>(
-      dataset_submodule, "GenericBatchProcessor")
+  py::class_<GenericFeaturizer, Featurizer, GenericFeaturizerPtr>(
+      dataset_submodule, "GenericFeaturizer")
       .def(py::init<std::vector<std::shared_ptr<Block>>,
                     std::vector<std::shared_ptr<Block>>, bool, char, bool,
                     std::optional<uint32_t>>(),
@@ -282,9 +280,8 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("has_header") = false, py::arg("delimiter") = ',',
            py::arg("parallel") = true, py::arg("hash_range") = std::nullopt);
 
-  py::class_<MaskedSentenceBatchProcessor, BatchProcessor,
-             MaskedSentenceBatchProcessorPtr>(dataset_submodule,
-                                              "MLMBatchProcessor")
+  py::class_<MaskedSentenceFeaturizer, Featurizer, MaskedSentenceFeaturizerPtr>(
+      dataset_submodule, "MLMFeaturizer")
       .def(py::init<std::shared_ptr<Vocabulary>, uint32_t>(),
            py::arg("vocabulary"), py::arg("pairgram_range"))
       .def(py::init<std::shared_ptr<Vocabulary>, uint32_t, float>(),

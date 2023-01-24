@@ -1,13 +1,13 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
-#include <dataset/src/BatchProcessor.h>
+#include <dataset/src/Featurizer.h>
 
 namespace thirdai::dataset {
 
-class SvmBatchProcessor final : public BatchProcessor {
+class SvmFeaturizer final : public Featurizer {
  public:
-  explicit SvmBatchProcessor(bool softmax_for_multiclass = true)
+  explicit SvmFeaturizer(bool softmax_for_multiclass = true)
       : _softmax_for_multiclass(softmax_for_multiclass) {}
 
   bool expectsHeader() const final { return false; }

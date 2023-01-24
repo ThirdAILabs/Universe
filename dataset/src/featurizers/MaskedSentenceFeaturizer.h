@@ -2,7 +2,7 @@
 
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/MurmurHash.h>
-#include <dataset/src/BatchProcessor.h>
+#include <dataset/src/Featurizer.h>
 #include <dataset/src/Vocabulary.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <memory>
@@ -12,19 +12,19 @@
 
 namespace thirdai::dataset {
 
-class MaskedSentenceBatchProcessor final : public BatchProcessor {
+class MaskedSentenceFeaturizer final : public Featurizer {
  public:
-  explicit MaskedSentenceBatchProcessor(std::shared_ptr<Vocabulary> vocab,
-                                        uint32_t output_range)
+  explicit MaskedSentenceFeaturizer(std::shared_ptr<Vocabulary> vocab,
+                                    uint32_t output_range)
       : _vocab(std::move(vocab)),
         _output_range(output_range),
         _rand(723204),
         _masked_tokens_percentage(std::nullopt) {}
 
-  MaskedSentenceBatchProcessor(std::shared_ptr<Vocabulary> vocab,
-                               uint32_t output_range,
-                               const float masked_tokens_percentage)
-      : MaskedSentenceBatchProcessor(std::move(vocab), output_range) {
+  MaskedSentenceFeaturizer(std::shared_ptr<Vocabulary> vocab,
+                           uint32_t output_range,
+                           const float masked_tokens_percentage)
+      : MaskedSentenceFeaturizer(std::move(vocab), output_range) {
     _masked_tokens_percentage = masked_tokens_percentage;
   }
 
@@ -103,7 +103,6 @@ class MaskedSentenceBatchProcessor final : public BatchProcessor {
   std::optional<float> _masked_tokens_percentage;
 };  // namespace thirdai::dataset
 
-using MaskedSentenceBatchProcessorPtr =
-    std::shared_ptr<MaskedSentenceBatchProcessor>;
+using MaskedSentenceFeaturizerPtr = std::shared_ptr<MaskedSentenceFeaturizer>;
 
 }  // namespace thirdai::dataset
