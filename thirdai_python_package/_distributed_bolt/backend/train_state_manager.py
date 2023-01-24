@@ -73,8 +73,10 @@ class TrainStateManager:
         :type workers: int
         """
         gradients_list = []
+        # fetch_local = false, for linear communication to make sure, we don't
+        # spill gradients during communication
         for gradients in self.worker_manager.foreach_worker(
-            lambda worker: worker.get_calculated_gradients()
+            lambda worker: worker.get_calculated_gradients(), fetch_local=False
         ):
             if gradients.ok:
                 gradients_list.append(gradients.get())

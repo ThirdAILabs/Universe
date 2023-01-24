@@ -74,14 +74,6 @@ class RemoteCallResults:
         # Shallow copy the list.
         return self._Iterator(copy.copy(self.result_or_errors))
 
-    def ignore_errors(self):
-        return self._Iterator([r for r in self.result_or_errors if r.ok])
-
-    def ignore_ray_errors(self):
-        return self._Iterator(
-            [r for r in self.result_or_errors if not isinstance(r.get(), RayActorError)]
-        )
-
 
 class FaultTolerantWorkerManager:
     @dataclass
@@ -170,6 +162,7 @@ class FaultTolerantWorkerManager:
         remote_worker_ids: List[int],
         remote_calls: List[ray.ObjectRef],
         timeout_seconds: int = None,
+        fetch_local: bool = True,
     ):
         timeout = float(timeout_seconds) if timeout_seconds is not None else None
         ready, _ = ray.wait(
@@ -177,7 +170,7 @@ class FaultTolerantWorkerManager:
             num_returns=len(remote_calls),
             timeout=timeout,
             # Make sure remote results are fetched locally in parallel.
-            fetch_local=True,
+            fetch_local=fetch_local,
         )
 
         # Remote data should already be fetched to local object store at this point.
@@ -191,6 +184,7 @@ class FaultTolerantWorkerManager:
             try:
                 result = ray.get(r)
                 remote_results.add_result(worker_id, ResultOrError(result=result))
+
             except Exception as e:
                 # Return error to the user.
                 remote_results.add_result(worker_id, ResultOrError(error=e))
@@ -216,7 +210,7 @@ class FaultTolerantWorkerManager:
                     self.logging.info(f"Got application level Error:{str(e)}")
                     pass
 
-        return ready, remote_results
+        return remote_results
 
     def foreach_worker(
         self,
@@ -224,6 +218,7 @@ class FaultTolerantWorkerManager:
         *,
         remote_worker_ids: List[int] = None,
         timeout_seconds=None,
+        fetch_local: bool = True,
     ):
 
         remote_worker_ids = remote_worker_ids or list(self.workers.keys())
@@ -233,10 +228,11 @@ class FaultTolerantWorkerManager:
             remote_worker_ids=remote_worker_ids,
         )
 
-        _, remote_results = self.fetch_result(
+        remote_results = self.fetch_result(
             remote_worker_ids=remote_worker_ids,
             remote_calls=remote_calls,
             timeout_seconds=timeout_seconds,
+            fetch_local=fetch_local,
         )
 
         return remote_results
