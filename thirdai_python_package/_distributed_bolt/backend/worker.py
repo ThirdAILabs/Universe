@@ -269,8 +269,8 @@ class Worker:
         self.model.freeze_hash_tables(True)
 
     @timed
-    def get_model(self, hard_copy=False):
-        return self.model.model(hard_copy)
+    def get_model(self, should_save_optimizer=False):
+        return self.model.model(should_save_optimizer)
 
     @timed
     def ping(self):

@@ -49,8 +49,8 @@ class DistributedTrainingWrapper {
     }
   }
 
-  BoltGraphPtr getModel(bool hard_copy) {
-    _bolt_graph->modelSaveType(hard_copy);
+  BoltGraphPtr getModel(bool should_save_optimizer) {
+    _bolt_graph->saveWithOptimizer(should_save_optimizer);
     return _bolt_graph;
   }
 

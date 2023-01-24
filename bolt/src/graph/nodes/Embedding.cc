@@ -70,14 +70,14 @@ void EmbeddingNode::disableSparseParameterUpdates() {
   _embedding_layer->disableSparseParameterUpdates();
 }
 
-void EmbeddingNode::nodeSaveType(bool whether_hard_save) {
+void EmbeddingNode::saveWithOptimizer(bool should_save_optimizer) {
   if (getState() != NodeState::Compiled &&
       getState() != NodeState::PreparedForBatchProcessing) {
     throw exceptions::NodeStateMachineError(
-        "Cannot call nodeSaveType until the model "
+        "Cannot call saveWithOptimizer until the model "
         "containing the node is compiled.");
   }
-  _embedding_layer->nodeSaveType(whether_hard_save);
+  _embedding_layer->saveWithOptimizer(should_save_optimizer);
 }
 
 void EmbeddingNode::compileImpl() {

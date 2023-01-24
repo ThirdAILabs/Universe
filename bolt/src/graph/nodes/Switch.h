@@ -67,7 +67,7 @@ class SwitchNode final : public Node,
 
   void disableSparseParameterUpdates() final;
 
-  void nodeSaveType(bool whether_hard_save) final;
+  void saveWithOptimizer(bool should_save_optimizer) final;
 
   bool hasParameters() final { return false; }
 

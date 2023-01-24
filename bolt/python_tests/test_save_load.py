@@ -125,9 +125,9 @@ def test_save_fully_connected_layer_parameters():
 
 # This test saves and loads hard copy(saves optimizer state) for a model
 # and then, trains the loaded model and the earlier model again.
-# If optimizer states are getting saved during hard_copy implies
+# If optimizer states are getting saved during should_save_optimizer implies
 # that training the model again should not change the parameters.
-def test_hard_save_and_load():
+def test_should_save_optimizer_and_load():
     n_classes = 100
 
     data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=1000)
@@ -149,28 +149,34 @@ def test_hard_save_and_load():
         )
         distributed_training_wrapper.update_parameters()
 
-    hard_copy_bolt_model = distributed_training_wrapper.model(hard_copy=True)
+    should_save_optimizer_bolt_model = distributed_training_wrapper.model(
+        should_save_optimizer=True
+    )
 
-    save_loc = "./hard_copy_save.model"
-    hard_copy_bolt_model.save(filename=save_loc)
+    save_loc = "./should_save_optimizer_save.model"
+    should_save_optimizer_bolt_model.save(filename=save_loc)
 
-    new_hard_copy_bolt_model = bolt.nn.Model.load(filename=save_loc)
+    new_should_save_optimizer_bolt_model = bolt.nn.Model.load(filename=save_loc)
 
-    distributed_training_wrapper_hard_copy = bolt.DistributedTrainingWrapper(
-        model=new_hard_copy_bolt_model, train_config=train_config, worker_id=1
+    distributed_training_wrapper_should_save_optimizer = (
+        bolt.DistributedTrainingWrapper(
+            model=new_should_save_optimizer_bolt_model,
+            train_config=train_config,
+            worker_id=1,
+        )
     )
 
     data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=1000)
 
-    distributed_training_wrapper_hard_copy.set_datasets([data], labels)
+    distributed_training_wrapper_should_save_optimizer.set_datasets([data], labels)
     distributed_training_wrapper.set_datasets([data], labels)
 
-    nodes_1 = distributed_training_wrapper_hard_copy.model().nodes()
+    nodes_1 = distributed_training_wrapper_should_save_optimizer.model().nodes()
     nodes_2 = distributed_training_wrapper.model().nodes()
 
     check_parameters_across_two_model(nodes_1, nodes_2)
     for batch_id in range(distributed_training_wrapper.num_batches()):
-        distributed_training_wrapper_hard_copy.compute_and_store_batch_gradients(
+        distributed_training_wrapper_should_save_optimizer.compute_and_store_batch_gradients(
             batch_idx=batch_id
         )
         distributed_training_wrapper.compute_and_store_batch_gradients(
@@ -178,7 +184,7 @@ def test_hard_save_and_load():
         )
 
         gradients_a = np.array(
-            distributed_training_wrapper_hard_copy.gradient_reference().get_gradients()
+            distributed_training_wrapper_should_save_optimizer.gradient_reference().get_gradients()
         )
         gradients_b = np.array(
             distributed_training_wrapper.gradient_reference().get_gradients()
@@ -186,15 +192,15 @@ def test_hard_save_and_load():
 
         gradients_avg = (gradients_a + gradients_b) / 2
 
-        distributed_training_wrapper_hard_copy.gradient_reference().set_gradients(
+        distributed_training_wrapper_should_save_optimizer.gradient_reference().set_gradients(
             gradients_avg
         )
         distributed_training_wrapper.gradient_reference().set_gradients(gradients_avg)
 
-        distributed_training_wrapper_hard_copy.update_parameters()
+        distributed_training_wrapper_should_save_optimizer.update_parameters()
         distributed_training_wrapper.update_parameters()
 
-    nodes_1 = distributed_training_wrapper_hard_copy.model().nodes()
+    nodes_1 = distributed_training_wrapper_should_save_optimizer.model().nodes()
     nodes_2 = distributed_training_wrapper.model().nodes()
 
     check_parameters_across_two_model(nodes_1, nodes_2)

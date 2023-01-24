@@ -92,7 +92,9 @@ class Input final : public Node {
     return (*_input_batch)[vec_index];
   }
 
-  void nodeSaveType(bool whether_hard_save) final { (void)whether_hard_save; };
+  void saveWithOptimizer(bool should_save_optimizer) final {
+    (void)should_save_optimizer;
+  };
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final;
 

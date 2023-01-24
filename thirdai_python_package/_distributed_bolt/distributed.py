@@ -127,7 +127,7 @@ def add_distributed_to_udt():
         metrics = dist_model.train(freeze_hash_tables=True)
 
         # hard copy should save the optimizer state
-        model = dist_model.get_model(hard_copy=True)
+        model = dist_model.get_model(should_save_optimizer=True)
 
         self._set_model(trained_model=model)
 
@@ -413,5 +413,5 @@ class DistributedDataParallel:
             "total_batches_trained": self.total_batches_trained,
         }
 
-    def get_model(self, worker_id=0, hard_copy=False):
-        return ray.get(self.workers[worker_id].get_model.remote(hard_copy))
+    def get_model(self, worker_id=0, should_save_optimizer=False):
+        return ray.get(self.workers[worker_id].get_model.remote(should_save_optimizer))

@@ -39,7 +39,9 @@ class ConcatenateNode final
 
   bool hasParameters() final { return false; }
 
-  void nodeSaveType(bool whether_hard_save) final { (void)whether_hard_save; };
+  void saveWithOptimizer(bool should_save_optimizer) final {
+    (void)should_save_optimizer;
+  };
 
  private:
   void compileImpl() final { _compiled = true; }

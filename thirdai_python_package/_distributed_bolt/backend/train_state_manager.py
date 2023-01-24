@@ -147,7 +147,7 @@ class TrainStateManager:
 
                 # function is called on only one worker, hence just checking for index 0
                 remote_bolt_graph_model = self.worker_manager.foreach_worker(
-                    lambda worker: worker.get_model(hard_copy=True),
+                    lambda worker: worker.get_model(should_save_optimizer=True),
                     remote_worker_ids=[worker_with_model],
                 ).get_front()
                 remote_train_source_pointers = self.worker_manager.foreach_worker(

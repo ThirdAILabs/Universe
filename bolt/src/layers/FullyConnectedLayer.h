@@ -53,7 +53,9 @@ class FullyConnectedLayer final {
     _disable_sparse_parameter_updates = true;
   };
 
-  void nodeSaveType(bool whether_hard_save) { _hard_save = whether_hard_save; }
+  void saveWithOptimizer(bool should_save_optimizer) {
+    _should_save_optimizer = should_save_optimizer;
+  }
 
   BoltBatch createBatchState(const uint32_t batch_size,
                              bool use_sparsity) const {
@@ -163,7 +165,7 @@ class FullyConnectedLayer final {
 
   // A flag to determine whether the current network saves the optimizer states
   // or not. If true, it saves the optimizer states, else doesn't.
-  bool _hard_save;
+  bool _should_save_optimizer;
 
   BoltSamplingMode _sampling_mode;
 
@@ -276,8 +278,9 @@ class FullyConnectedLayer final {
   void save(Archive& archive) const {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
-            _disable_sparse_parameter_updates, _sampling_mode, _hard_save);
-    if (_hard_save) {
+            _disable_sparse_parameter_updates, _sampling_mode,
+            _should_save_optimizer);
+    if (_should_save_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }
   }
@@ -301,8 +304,9 @@ class FullyConnectedLayer final {
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
-            _disable_sparse_parameter_updates, _sampling_mode, _hard_save);
-    if (_hard_save) {
+            _disable_sparse_parameter_updates, _sampling_mode,
+            _should_save_optimizer);
+    if (_should_save_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }
 
