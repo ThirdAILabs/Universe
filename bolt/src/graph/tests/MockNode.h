@@ -18,7 +18,8 @@ class MockNode : public Node {
 
   MOCK_METHOD(bool, hasParameters, (), (override));
 
-  MOCK_METHOD(void, nodeSaveType, (bool whether_hard_save), (override));
+  MOCK_METHOD(void, saveWithOptimizer, (bool should_save_optimizer),
+              (override));
 
  private:
   MOCK_METHOD(void, compileImpl, (), (override));

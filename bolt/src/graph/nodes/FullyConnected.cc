@@ -211,14 +211,14 @@ void FullyConnectedNode::disableSparseParameterUpdates() {
   _layer->disableSparseParameterUpdates();
 }
 
-void FullyConnectedNode::nodeSaveType(bool whether_hard_save) {
+void FullyConnectedNode::saveWithOptimizer(bool should_save_optimizer) {
   if (getState() != NodeState::Compiled &&
       getState() != NodeState::PreparedForBatchProcessing) {
     throw exceptions::NodeStateMachineError(
-        "Cannot call nodeSaveType until the model "
+        "Cannot call saveWithOptimizer until the model "
         "containing the node is compiled.");
   }
-  _layer->nodeSaveType(whether_hard_save);
+  _layer->saveWithOptimizer(should_save_optimizer);
 }
 
 void FullyConnectedNode::compileImpl() {

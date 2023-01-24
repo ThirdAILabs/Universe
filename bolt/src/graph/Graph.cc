@@ -653,9 +653,9 @@ void BoltGraph::disableSparseParameterUpdates() {
   }
 }
 
-void BoltGraph::modelSaveType(bool whether_hard_save) {
+void BoltGraph::saveWithOptimizer(bool should_save_optimizer) {
   for (NodePtr& node : _nodes) {
-    node->nodeSaveType(whether_hard_save);
+    node->saveWithOptimizer(should_save_optimizer);
   }
 }
 

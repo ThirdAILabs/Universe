@@ -594,7 +594,7 @@ That's all for now, folks! More docs coming soon :)
            "same as when this method was called the first time.")
       .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
       .def("model", &DistributedTrainingWrapper::getModel,
-           py::arg("hard_copy") = false,
+           py::arg("should_save_optimizer") = false,
            "The underlying Bolt model wrapped by this "
            "DistributedTrainingWrapper.")
       .def("freeze_hash_tables",
@@ -604,7 +604,7 @@ That's all for now, folks! More docs coming soon :)
           "gradient_reference",
           [](DistributedTrainingWrapper& node) {
             return GradientReference(
-                *node.getModel(/* hard_copy = */ false).get());
+                *node.getModel(/* should_save_optimizer = */ false).get());
           },
           py::return_value_policy::reference_internal,
           "Returns gradient reference for Distributed Training Wrapper");

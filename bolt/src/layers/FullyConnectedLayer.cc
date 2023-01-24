@@ -30,7 +30,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _weights(config.getDim() * prev_dim),
       _biases(config.getDim()),
       _disable_sparse_parameter_updates(disable_sparse_parameter_updates),
-      _hard_save(false),
+      _should_save_optimizer(false),
       _sampling_mode(BoltSamplingMode::LSH),
       _prev_is_active(prev_dim, false),
       _is_active(config.getDim(), false) {

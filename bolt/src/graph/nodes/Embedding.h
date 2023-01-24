@@ -46,7 +46,7 @@ class EmbeddingNode final : public Node,
 
   void disableSparseParameterUpdates() final;
 
-  void nodeSaveType(bool whether_hard_save) final;
+  void saveWithOptimizer(bool should_save_optimizer) final;
 
   std::vector<float>& getRawEmbeddingBlock() {
     return _embedding_layer->getRawEmbeddingBlock();

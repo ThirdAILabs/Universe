@@ -67,7 +67,7 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.dataset_finished = False
 
         # book-keeping for fault-tolerance
-        self.next_count = 0
+        self.current_chunk_id = 0
 
     def load(self, chunks_to_skip):
         self.generator = self.data_processor.get_dataset_loader(
@@ -84,7 +84,7 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
             self.next()
 
     def next(self):
-        self.next_count += 1
+        self.current_chunk_id += 1
         if self.dataset_finished:
             return None
 
@@ -97,10 +97,10 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         return load
 
     def get_current_data_chunk_id(self) -> int:
-        return self.next_count
+        return self.current_chunk_id
 
     def restart(self):
-        self.next_count = 0
+        self.current_chunk_id = 0
 
 
 class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
@@ -126,7 +126,7 @@ class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
         self.generated_for_this_epoch = False
 
         # book-keeping for fault-tolerance
-        self.next_count = 0
+        self.current_chunk_id = 0
 
     def load(self, chunks_to_skip):
 
@@ -135,7 +135,7 @@ class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
             self.next()
 
     def next(self):
-        self.next_count += 1
+        self.current_chunk_id += 1
 
         if self.generated_for_this_epoch:
             return None
@@ -150,10 +150,10 @@ class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
         return self.current_dataset, self.current_labels
 
     def get_current_data_chunk_id(self) -> int:
-        return self.next_count
+        return self.current_chunk_id
 
     def restart(self):
-        self.next_count = 0
+        self.current_chunk_id = 0
         self.generated_for_this_epoch = False
 
 
@@ -192,7 +192,7 @@ class DistributedTabularDatasetLoader(DistributedDatasetLoader):
         self.batch_size = batch_size
 
         # book-keeping for fault-tolerance
-        self.next_count = 0
+        self.current_chunk_id = 0
 
     def load(self, chunks_to_skip):
 
@@ -201,7 +201,7 @@ class DistributedTabularDatasetLoader(DistributedDatasetLoader):
             self.next()
 
     def next(self):
-        self.next_count += 1
+        self.current_chunk_id += 1
 
         load = self.column_map_generator.next()
         if load == None:
@@ -227,8 +227,8 @@ class DistributedTabularDatasetLoader(DistributedDatasetLoader):
         return [x_data], y_data
 
     def get_current_data_chunk_id(self) -> int:
-        return self.next_count
+        return self.current_chunk_id
 
     def restart(self):
-        self.next_count = 0
+        self.current_chunk_id = 0
         self.column_map_generator.restart()
