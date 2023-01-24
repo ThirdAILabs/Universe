@@ -123,6 +123,43 @@ class TrainStateManager:
                 )
                 update_id -= 1
 
+    def get_remote_worker_state(self, worker_with_model):
+
+        # function is called on only one worker, hence just checking for index 0
+        remote_bolt_graph_model = self.worker_manager.foreach_worker(
+            lambda worker: worker.get_model(should_save_optimizer=True),
+            remote_worker_ids=[worker_with_model],
+        ).get_front()
+        remote_train_source_pointers = self.worker_manager.foreach_worker(
+            lambda worker: worker.get_train_source_pointers(),
+            remote_worker_ids=[worker_with_model],
+        ).get_front()
+        return remote_bolt_graph_model, remote_train_source_pointers
+
+    def prepare_restored_worker_for_training(
+        self, bolt_graph_model_ref, chunks_to_skip, batch_to_run, restored_workers
+    ):
+        # At least one of the worker is have model
+        # ask each worker to get model from that worker
+        self.worker_manager.foreach_worker(
+            lambda worker: worker.prepare_for_training(
+                bolt_graph=bolt_graph_model_ref,
+                chunks_to_skip=chunks_to_skip,
+                batch_to_run=batch_to_run,
+            ),
+            remote_worker_ids=restored_workers,
+        )
+        # Primary worker is restored when we are doing circular
+        # communication, we need to set the friend because we are not
+        # passing it in constructor
+        if 0 in restored_workers and self.communication_type == "circular":
+            self.worker_manager.foreach_worker(
+                func=lambda worker: worker.set_friend(
+                    self.workers[len(self.workers) - 1]
+                ),
+                remote_worker_ids=[0],
+            )
+
     def check_worker_availability(self, worker_wait_time_out=1000):
         time_waiting = 0
         while (
@@ -142,18 +179,14 @@ class TrainStateManager:
                 f"Preparing restored workers for training: {restored_workers}"
             )
             if len(restored_workers) > 0:
+
                 # Find a worker which have model
                 worker_with_model = self.worker_manager.get_worker_with_model()
 
-                # function is called on only one worker, hence just checking for index 0
-                remote_bolt_graph_model = self.worker_manager.foreach_worker(
-                    lambda worker: worker.get_model(should_save_optimizer=True),
-                    remote_worker_ids=[worker_with_model],
-                ).get_front()
-                remote_train_source_pointers = self.worker_manager.foreach_worker(
-                    lambda worker: worker.get_train_source_pointers(),
-                    remote_worker_ids=[worker_with_model],
-                ).get_front()
+                (
+                    remote_bolt_graph_model,
+                    remote_train_source_pointers,
+                ) = self.get_remote_worker_state(worker_with_model)
 
                 # Check whether this worker doesn't fails during model fetch
                 if remote_train_source_pointers.ok and remote_bolt_graph_model.ok:
@@ -165,26 +198,12 @@ class TrainStateManager:
                 bolt_graph_model_ref = ray.put(bolt_graph_model)
                 # We are assuming atleast one of the worker have model
                 if worker_with_model != None:
-                    # At least one of the worker is have model
-                    # ask each worker to get model from that worker
-                    self.worker_manager.foreach_worker(
-                        lambda worker: worker.prepare_for_training(
-                            bolt_graph=bolt_graph_model_ref,
-                            chunks_to_skip=chunks_to_skip,
-                            batch_to_run=batch_to_run,
-                        ),
-                        remote_worker_ids=restored_workers,
+                    self.prepare_restored_worker_for_training(
+                        bolt_graph_model_ref,
+                        chunks_to_skip,
+                        batch_to_run,
+                        restored_workers,
                     )
-                    # Primary worker is restored when we are doing circular
-                    # communication, we need to set the friend because we are not
-                    # passing it in constructor
-                    if 0 in restored_workers and self.communication_type == "circular":
-                        self.worker_manager.foreach_worker(
-                            func=lambda worker: worker.set_friend(
-                                self.workers[len(self.workers) - 1]
-                            ),
-                            remote_worker_ids=[0],
-                        )
                 else:
                     raise NotImplementedError(
                         f"None of the workers are healthy. Distributed BOLT couldn't restart the training. Restart the training again from last saved state."
