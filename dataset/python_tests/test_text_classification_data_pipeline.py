@@ -18,12 +18,7 @@ def generate_text_classification_dataset(filename, delim):
 
 
 def helper_for_text_classification_data_pipeline(text_block, delim):
-    from thirdai.dataset import (
-        DatasetLoader,
-        FileDataSource,
-        GenericFeaturizer,
-        blocks,
-    )
+    from thirdai.dataset import DatasetLoader, FileDataSource, GenericFeaturizer, blocks
 
     filename = "test_text_classification.csv"
     generate_text_classification_dataset(filename, delim)

@@ -72,7 +72,6 @@ DatasetLoader::streamInMemory(size_t batch_size, size_t num_batches,
        num_batches + _buffer_size);
   size_t fill_size = will_overflow ? std::numeric_limits<size_t>::max()
                                    : (num_batches + _buffer_size) * batch_size;
-  std::cout << "HERE " << fill_size << " " << num_batches << " " << _buffer_size << std::endl;
   fillShuffleBuffer(fill_size);
 
   auto batch_lists =

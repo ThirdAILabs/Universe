@@ -76,7 +76,9 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
             load = self.generator.load_in_memory(batch_size=self.batch_size)
             self.dataset_finished = True
         else:
-            load = self.generator.stream_in_memory(self.max_in_memory_batches, batch_size=self.batch_size)
+            load = self.generator.stream_in_memory(
+                self.max_in_memory_batches, batch_size=self.batch_size
+            )
 
         return load
 

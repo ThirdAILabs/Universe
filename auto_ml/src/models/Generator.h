@@ -592,20 +592,21 @@ class QueryCandidateGenerator {
       const std::string& file_name, uint32_t col_to_hash, bool verbose = true) {
     auto featurizer = constructGenericFeaturizer(
         /* column_index = */ col_to_hash);
-    auto file_data_source = dataset::SimpleFileDataSource::make(
-        file_name, _query_generator_config->batchSize());
+    auto file_data_source = dataset::SimpleFileDataSource::make(file_name);
 
     auto dataset_loader = std::make_unique<dataset::DatasetLoader>(
         file_data_source, featurizer, /* shuffle = */ false);
 
-    return dataset_loader->loadInMemory(verbose).first.at(0);
+    return dataset_loader
+        ->loadInMemory(/* batch_size = */ _query_generator_config->batchSize(),
+                       /* verbose = */ verbose)
+        .first.at(0);
   }
 
   std::tuple<uint32_t, uint32_t> mapColumnNamesToIndices(
       const std::string& file_name) {
     auto file_data_source = dataset::SimpleFileDataSource::make(
-        /* filename = */ file_name,
-        /* target_batch_size = */ _query_generator_config->batchSize());
+        /* filename = */ file_name);
     auto file_header = file_data_source->nextLine();
 
     if (!file_header) {

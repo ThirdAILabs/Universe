@@ -31,8 +31,7 @@ class SimpleFileDataSource final : public DataSource {
       : _file(SafeFileIO::ifstream(filename)), _filename(filename) {}
 
   static std::shared_ptr<SimpleFileDataSource> make(
-      const std::string& filename, uint32_t target_batch_size) {
-    (void)target_batch_size;  // TODO(JOSH): Fix
+      const std::string& filename) {
     return std::make_shared<SimpleFileDataSource>(filename);
   }
 

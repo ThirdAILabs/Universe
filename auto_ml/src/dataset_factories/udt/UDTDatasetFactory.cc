@@ -107,8 +107,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   auto metadata = categorical->metadata_config;
 
   auto data_source =
-      dataset::SimpleFileDataSource::make(metadata->metadata_file,
-                                          /* target_batch_size= */ 2048);
+      dataset::SimpleFileDataSource::make(metadata->metadata_file);
 
   auto column_numbers =
       makeColumnNumberMapFromHeader(*data_source, metadata->delimiter);
@@ -170,10 +169,11 @@ dataset::PreprocessedVectorsPtr
 UDTDatasetFactory::preprocessedVectorsFromDataset(
     dataset::DatasetLoader& dataset_loader,
     dataset::ThreadSafeVocabulary& key_vocab) {
+  // TODO(Josh): investigate this
   // The batch size does not matter here because we loop through all of the
   // vectors disregarding batch size anyways. Thus, we choose the arbitrary
-  // value 256
-  auto [datasets, ids] = dataset_loader.loadInMemory(/* batch_size = */ 256);
+  // value 2048
+  auto [datasets, ids] = dataset_loader.loadInMemory(/* batch_size = */ 2048);
 
   if (datasets.size() != 1) {
     throw std::runtime_error(
