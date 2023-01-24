@@ -276,6 +276,10 @@ class Worker:
     def ping(self):
         return "ping"
 
+    @timed
+    def have_model(self):
+        return hasattr(self, "model")
+
     def get_train_source_pointers(self):
         """
         This function returns the current loaded chunk and the batch_id within dataset which is

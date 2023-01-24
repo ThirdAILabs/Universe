@@ -125,12 +125,17 @@ class FaultTolerantWorkerManager:
             raise ValueError(f"Unknown worker id: {worker_id}")
         return self.remote_worker_states[worker_id].is_healthy
 
-    def get_healthy_worker_id(self):
+    def get_worker_with_model(self):
 
         remote_worker_ids = list(self.workers.keys())
-        for worker_id in remote_worker_ids:
-            if self.is_worker_healthy(worker_id=worker_id):
-                return worker_id
+        remote_have_model = self.foreach_worker(
+            func=lambda worker: worker.have_model(), remote_worker_ids=remote_worker_ids
+        )
+
+        for remote_result, worker_id in zip(remote_have_model, remote_worker_ids):
+            if remote_result.ok:
+                if remote_result.get() is True:
+                    return worker_id
 
         return None
 
