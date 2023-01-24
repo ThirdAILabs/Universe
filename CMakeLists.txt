@@ -343,6 +343,7 @@ set(THIRDAI_SOURCES
     dataset/src/InMemoryDataset.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
     dataset/src/utils/TokenEncoding.cc
+    dataset/src/text_generation/TextGenerationProcessor.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
