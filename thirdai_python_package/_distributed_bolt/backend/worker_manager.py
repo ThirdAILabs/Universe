@@ -74,14 +74,6 @@ class RemoteCallResults:
         # Shallow copy the list.
         return self._Iterator(copy.copy(self.result_or_errors))
 
-    def ignore_errors(self):
-        return self._Iterator([r for r in self.result_or_errors if r.ok])
-
-    def ignore_ray_errors(self):
-        return self._Iterator(
-            [r for r in self.result_or_errors if not isinstance(r.get(), RayActorError)]
-        )
-
 
 class FaultTolerantWorkerManager:
     @dataclass
