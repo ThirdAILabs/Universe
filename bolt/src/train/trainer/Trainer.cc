@@ -1,15 +1,10 @@
 #include "Trainer.h"
 #include <bolt/src/utils/ProgressBar.h>
+#include <bolt/src/utils/Timer.h>
 #include <utils/Logging.h>
 #include <chrono>
 
 namespace thirdai::bolt::train {
-
-static auto now() { return std::chrono::high_resolution_clock::now(); }
-
-// NOLINTNEXTLINE
-#define between(start, end) \
-  std::chrono::duration_cast<std::chrono::seconds>((end) - (start)).count()
 
 Trainer::Trainer(nn::model::ModelPtr model)
     : _model(std::move(model)), _epoch(0) {
@@ -27,8 +22,6 @@ metrics::History Trainer::train(
   if (validation_data) {
     verifyNumBatchesMatch(*validation_data);
   }
-
-  // TODO(Nicholas): Check datasets have same number of batches and batchsize.
 
   auto train_state = TrainState::make(learning_rate);
 
@@ -49,7 +42,7 @@ metrics::History Trainer::train(
     uint32_t num_batches = train_data.first.size();
     ProgressBar bar("train", num_batches);
 
-    auto epoch_start = now();
+    utils::Timer epoch_timer;
 
     for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
       callbacks.onBatchBegin();
@@ -78,15 +71,14 @@ metrics::History Trainer::train(
       }
     }
 
-    auto epoch_end = now();
-    int64_t time = between(epoch_start, epoch_end);
+    epoch_timer.stop();
 
     train_metrics.updateHistory(_history, /*prefix= */ "train_");
 
-    (*_history)["time"]["epoch_times"].push_back(static_cast<double>(time));
+    (*_history)["time"]["epoch_times"].push_back(epoch_timer.seconds());
 
-    std::string log_line = formatTrainLogLine(train_metrics.summarizeLastStep(),
-                                              num_batches, time);
+    std::string log_line = formatTrainLogLine(
+        train_metrics.summarizeLastStep(), num_batches, epoch_timer.seconds());
     bar.close(log_line);
     logging::info(log_line);
 
@@ -112,7 +104,7 @@ void Trainer::validate(const LabeledDataset& validation_data,
   uint32_t num_batches = validation_data.first.size();
   ProgressBar bar("validate", num_batches);
 
-  auto val_start = now();
+  utils::Timer val_timer;
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
     // TODO(Nicholas): Add option to use sparsity for validation.
@@ -127,15 +119,14 @@ void Trainer::validate(const LabeledDataset& validation_data,
     bar.increment();
   }
 
-  auto val_end = now();
-  int64_t time = between(val_start, val_end);
+  val_timer.stop();
 
   validation_metrics.updateHistory(_history, /* prefix= */ "val_");
 
-  (*_history)["time"]["val_times"].push_back(static_cast<double>(time));
+  (*_history)["time"]["val_times"].push_back(val_timer.seconds());
 
   std::string log_line = formatValidateLogLine(
-      validation_metrics.summarizeLastStep(), num_batches, time);
+      validation_metrics.summarizeLastStep(), num_batches, val_timer.seconds());
   bar.close(log_line);
   logging::info(log_line);
 
