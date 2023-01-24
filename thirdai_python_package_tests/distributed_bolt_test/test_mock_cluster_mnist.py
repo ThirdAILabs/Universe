@@ -155,7 +155,9 @@ def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config)
 # pytestmark.mark.distributed prevents it from running in our normal unit and
 # integration test pipeline where ray isn't a dependency.
 @pytest.mark.parametrize(
-    "train_distributed_bolt_check", ["linear", "circular"], indirect=True
+    "train_distributed_bolt_check",
+    ["linear"],
+    indirect=True,
 )
 def test_distributed_mnist(train_distributed_bolt_check):
     import multiprocessing

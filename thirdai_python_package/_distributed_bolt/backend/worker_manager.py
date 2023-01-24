@@ -97,6 +97,9 @@ class FaultTolerantWorkerManager:
             self.remote_worker_states[self.next_id] = self._WorkerState()
             self.next_id += 1
 
+    def num_workers(self):
+        return len(self.workers)
+
     def _set_worker_state(self, worker_id: int, healthy: bool):
         if worker_id not in self.remote_worker_states:
             raise ValueError(f"Unknown worker id: {worker_id}")
