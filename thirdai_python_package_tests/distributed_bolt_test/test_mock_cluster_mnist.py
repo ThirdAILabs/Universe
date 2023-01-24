@@ -117,8 +117,6 @@ def train_distributed_bolt_check(request, ray_two_node_cluster_config):
 
     metrics = evaluated_distributed_mnist_model(distributed_model)
 
-    print(metrics)
-
     clear_ray_workers()
     return metrics
 
