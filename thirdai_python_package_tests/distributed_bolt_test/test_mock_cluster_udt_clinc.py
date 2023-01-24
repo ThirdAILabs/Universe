@@ -1,7 +1,11 @@
 import os
 
 import pytest
-from distributed_utils import ray_two_node_cluster_config, remove_files
+from distributed_utils import (
+    clear_ray_workers,
+    ray_two_node_cluster_config,
+    remove_files,
+)
 from thirdai import bolt
 from thirdai.demos import download_clinc_dataset
 
@@ -34,9 +38,10 @@ def get_clinc_udt_model(integer_target=False):
 def test_distributed_udt_clinc(ray_two_node_cluster_config):
 
     udt_model = get_clinc_udt_model(integer_target=True)
+    cluster_config, _ = ray_two_node_cluster_config("linear")
 
     udt_model.train_distributed(
-        cluster_config=ray_two_node_cluster_config("linear"),
+        cluster_config=cluster_config,
         filenames=[f"{os.getcwd()}/{TRAIN_FILE_1}", f"{os.getcwd()}/{TRAIN_FILE_2}"],
         batch_size=256,
         epochs=1,
