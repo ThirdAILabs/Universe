@@ -156,7 +156,7 @@ def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config)
 # integration test pipeline where ray isn't a dependency.
 @pytest.mark.parametrize(
     "train_distributed_bolt_check",
-    ["linear"],
+    ["linear", "circular"],
     indirect=True,
 )
 def test_distributed_mnist(train_distributed_bolt_check):
