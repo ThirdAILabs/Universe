@@ -280,7 +280,7 @@ class Worker:
     def have_model(self):
         return hasattr(self, "model")
 
-    def get_train_source_pointers(self):
+    def get_current_chunk_and_batch(self):
         """
         This function returns the current loaded chunk and the batch_id within dataset which is
         running for loaded dataset on head node.

@@ -208,7 +208,8 @@ class FaultTolerantWorkerManager:
                     # WorkerManager should not handle application level errors.
 
                     self.logging.info(f"Got application level Error:{str(e)}")
-                    pass
+                    print(f"Unexpected {e=}, {type(e)=}")
+                    raise
 
         return remote_results
 

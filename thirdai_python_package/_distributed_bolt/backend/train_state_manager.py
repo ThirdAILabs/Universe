@@ -133,7 +133,7 @@ class TrainStateManager:
             remote_worker_ids=[worker_with_model],
         ).get_front()
         remote_train_source_pointers = self.worker_manager.foreach_worker(
-            lambda worker: worker.get_train_source_pointers(),
+            lambda worker: worker.get_current_chunk_and_batch(),
             remote_worker_ids=[worker_with_model],
         ).get_front()
         return remote_bolt_graph_model, remote_train_source_pointers
