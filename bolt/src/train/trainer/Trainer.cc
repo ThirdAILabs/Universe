@@ -108,10 +108,9 @@ void Trainer::validate(const LabeledDataset& validation_data,
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
     // TODO(Nicholas): Add option to use sparsity for validation.
-    _model->forward(validation_data.first.at(batch_idx),
-                    /* use_sparsity= */ false);
-
-    _model->setSingleLabel(validation_data.second.at(batch_idx));
+    _model->validateOnBatch(validation_data.first.at(batch_idx),
+                            validation_data.second.at(batch_idx),
+                            /* use_sparsity= */ false);
 
     validation_metrics.recordBatch(
         validation_data.first.at(batch_idx)->batchSize());

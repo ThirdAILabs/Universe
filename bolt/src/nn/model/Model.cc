@@ -74,6 +74,20 @@ void Model::trainOnBatch(const tensor::TensorPtr& inputs,
   trainOnBatch(inputs->batchSize(), labels->batchSize());
 }
 
+void Model::validateOnBatch(const tensor::TensorList& inputs,
+                            const tensor::TensorList& labels,
+                            bool use_sparsity) {
+  setLabels(labels);
+  forward(inputs, use_sparsity);
+}
+
+void Model::validateOnBatch(const tensor::TensorPtr& inputs,
+                            const tensor::TensorPtr& labels,
+                            bool use_sparsity) {
+  setSingleLabel(labels);
+  forward(inputs, use_sparsity);
+}
+
 void Model::updateParameters(float learning_rate) {
   ++_train_steps;
   for (auto& op : _ops) {

@@ -42,9 +42,20 @@ class Model {
                     const tensor::TensorPtr& labels);
 
   /**
-   * Updates the parameters in the model. Loops through all ops in the model and
-   * calls updateParameters on each so that each op performs one optimizer step
-   * on all of its trainable parameters.
+   * Performs the forward pass through the model on a given batch. Differs from
+   * forward because the labels can be provided so that they are set and can
+   * thus be used in metrics during validation.
+   */
+  void validateOnBatch(const tensor::TensorList& inputs,
+                       const tensor::TensorList& labels, bool use_sparsity);
+
+  void validateOnBatch(const tensor::TensorPtr& inputs,
+                       const tensor::TensorPtr& labels, bool use_sparsity);
+
+  /**
+   * Updates the parameters in the model. Loops through all ops in the model
+   * and calls updateParameters on each so that each op performs one
+   * optimizer step on all of its trainable parameters.
    */
   void updateParameters(float learning_rate);
 
@@ -63,17 +74,10 @@ class Model {
    */
   autograd::ComputationList computationOrder() const;
 
-  const autograd::ComputationList& outputs() const;
-
   /**
-   * Sets the given labels as the current labels for the model. These methods
-   * are public so they can be used by the trainer to set labels before
-   * computing metrics during validation.
-   * TODO(Nicholas) expose validate on batch to get around this.
+   * Returns the outputs of the outputs of the model.
    */
-  uint32_t setLabels(const tensor::TensorList& label_batches);
-
-  void setSingleLabel(const tensor::TensorPtr& labels);
+  const autograd::ComputationList& outputs() const;
 
   /**
    * Retrieves on op by name. Throws if not found.
@@ -136,6 +140,13 @@ class Model {
   uint32_t setInputs(const tensor::TensorList& input_batches);
 
   void setSingleInput(const tensor::TensorPtr& input);
+
+  /**
+   * Sets the given labels as the current labels for the model.
+   */
+  uint32_t setLabels(const tensor::TensorList& label_batches);
+
+  void setSingleLabel(const tensor::TensorPtr& labels);
 
   /**
    * These methods perform checks to make sure that model is valid.
