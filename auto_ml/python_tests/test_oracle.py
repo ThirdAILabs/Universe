@@ -177,11 +177,3 @@ def test_context_serialization():
         original_model_result_after_context_update
         == saved_model_result_after_context_update
     ).any()
-
-
-test_udt_save_load()
-test_multiple_predict_returns_same()
-test_explanations_total_percentage()
-test_index_changes_predict()
-test_index_changes_predict()
-test_context_serialization()

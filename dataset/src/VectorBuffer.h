@@ -5,9 +5,9 @@
 
 namespace thirdai::dataset {
 
-class ShuffleBuffer {
+class VectorBuffer {
  public:
-  explicit ShuffleBuffer(uint32_t shuffle_seed) : _gen(shuffle_seed) {}
+  explicit VectorBuffer(uint32_t shuffle_seed) : _gen(shuffle_seed) {}
 
   void insertBatch(std::vector<BoltBatch>&& batches, bool shuffle);
 

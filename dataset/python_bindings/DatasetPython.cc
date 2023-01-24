@@ -7,7 +7,7 @@
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/InMemoryDataset.h>
 #include <dataset/src/NumpyDataset.h>
-#include <dataset/src/ShuffleBuffer.h>
+#include <dataset/src/VectorBuffer.h>
 #include <dataset/src/Vocabulary.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>

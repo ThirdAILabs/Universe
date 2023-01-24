@@ -341,7 +341,7 @@ set(THIRDAI_SOURCES
     licensing/src/CheckLicense.cc
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
-    dataset/src/ShuffleBuffer.cc
+    dataset/src/VectorBuffer.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc

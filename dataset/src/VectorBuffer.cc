@@ -1,5 +1,5 @@
 
-#include "ShuffleBuffer.h"
+#include "VectorBuffer.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <ctime>
@@ -12,8 +12,7 @@
 
 namespace thirdai::dataset {
 
-void ShuffleBuffer::insertBatch(std::vector<BoltBatch>&& batches,
-                                bool shuffle) {
+void VectorBuffer::insertBatch(std::vector<BoltBatch>&& batches, bool shuffle) {
   checkConsistentBatchSize(batches);
 
   size_t batch_size = batches.at(0).getBatchSize();
@@ -31,7 +30,7 @@ void ShuffleBuffer::insertBatch(std::vector<BoltBatch>&& batches,
   }
 }
 
-std::optional<std::vector<BoltBatch>> ShuffleBuffer::popBatch(
+std::optional<std::vector<BoltBatch>> VectorBuffer::popBatch(
     size_t target_batch_size) {
   if (empty()) {
     return std::nullopt;
@@ -63,7 +62,7 @@ std::optional<std::vector<BoltBatch>> ShuffleBuffer::popBatch(
  * BoltBatch (with batch size target_batch_size, except possible the last
  * entry in each vector which may be smaller)
  */
-std::vector<std::vector<BoltBatch>> ShuffleBuffer::popBatches(
+std::vector<std::vector<BoltBatch>> VectorBuffer::popBatches(
     size_t num_batches, size_t target_batch_size) {
   std::vector<std::vector<BoltBatch>> exported_batch_lists(_buffers.size());
   while (!empty() && exported_batch_lists.at(0).size() < num_batches) {
@@ -77,7 +76,7 @@ std::vector<std::vector<BoltBatch>> ShuffleBuffer::popBatches(
   return exported_batch_lists;
 }
 
-void ShuffleBuffer::initializeBuffersIfNeeded(
+void VectorBuffer::initializeBuffersIfNeeded(
     const std::vector<BoltBatch>& batches) {
   if (_buffers.empty()) {
     _buffers = std::vector<std::deque<BoltVector>>(batches.size());
@@ -85,7 +84,7 @@ void ShuffleBuffer::initializeBuffersIfNeeded(
 
   if (_buffers.size() != batches.size()) {
     std::stringstream error_ss;
-    error_ss << "[ShuffleBuffer::insertBatch] Attempted to insert "
+    error_ss << "[VectorBuffer::insertBatch] Attempted to insert "
                 "a different number of corresponding batches than originally "
                 "inserted into the buffer (originally inserted "
              << _buffers.size() << ", trying to insert " << batches.size()
@@ -94,18 +93,18 @@ void ShuffleBuffer::initializeBuffersIfNeeded(
   }
 }
 
-inline void ShuffleBuffer::checkConsistentBatchSize(
+inline void VectorBuffer::checkConsistentBatchSize(
     const std::vector<BoltBatch>& batches) {
   if (batches.empty()) {
     throw std::runtime_error(
-        "[ShuffleBuffer::insertBatch] Expected at least one "
+        "[VectorBuffer::insertBatch] Expected at least one "
         "batch to be inserted for shuffling but found 0.");
   }
   uint32_t first_data_batch_size = batches.at(0).getBatchSize();
   for (uint32_t i = 1; i < batches.size(); i++) {
     if (batches.at(i).getBatchSize() != first_data_batch_size) {
       std::stringstream error_ss;
-      error_ss << "[ShuffleBuffer::insertBatch] Attempted to insert "
+      error_ss << "[VectorBuffer::insertBatch] Attempted to insert "
                   "corresponding batches with different sizes (one size = "
                << first_data_batch_size
                << ", the other size = " << batches.at(i).getBatchSize() << ").";
@@ -114,7 +113,7 @@ inline void ShuffleBuffer::checkConsistentBatchSize(
   }
 }
 
-inline void ShuffleBuffer::swapShuffle(
+inline void VectorBuffer::swapShuffle(
     std::vector<std::deque<BoltVector>>& buffers, size_t batch_size_added,
     std::mt19937& gen) {
   assert(buffers.at(0).size() > 0);

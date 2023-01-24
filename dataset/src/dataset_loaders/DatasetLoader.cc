@@ -72,7 +72,7 @@ DatasetLoader::streamInMemory(size_t batch_size, size_t num_batches,
        num_batches + _buffer_size);
   size_t fill_size = will_overflow ? std::numeric_limits<size_t>::max()
                                    : (num_batches + _buffer_size) * batch_size;
-  fillShuffleBuffer(fill_size);
+  fillVectorBuffer(fill_size);
 
   auto batch_lists =
       _buffer.popBatches(num_batches, /* target_batch_size = */ batch_size);
@@ -128,7 +128,7 @@ void DatasetLoader::restart() {
   _buffer.clear();
 }
 
-void DatasetLoader::fillShuffleBuffer(size_t num_rows) {
+void DatasetLoader::fillVectorBuffer(size_t num_rows) {
   while (_buffer.size() <= num_rows) {
     auto rows = _data_source->nextBatch(
         /* target_batch_size = */ _featurization_batch_size);

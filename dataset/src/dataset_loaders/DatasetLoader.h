@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dataset/src/Datasets.h>
-#include <dataset/src/ShuffleBuffer.h>
+#include <dataset/src/VectorBuffer.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/featurizers/GenericFeaturizer.h>
 #include <stdexcept>
@@ -57,20 +57,16 @@ class DatasetLoader final {
  private:
   // Adds batches to the buffer until the data source is finished or the buffer
   // reaches the passed in number of rows
-  void fillShuffleBuffer(size_t num_rows);
+  void fillVectorBuffer(size_t num_rows);
 
   DataSourcePtr _data_source;
   std::shared_ptr<Featurizer> _featurizer;
 
-  // Even if the value of _shuffle is false, we still use a ShuffleBuffer,
-  // since we pass in the value of _shuffle.
-  // TODO(Josh/Geordie): This is a bit confusing, if we aren't shuffling we
-  // probably shouldn't use a ShuffleBuffer
   bool _shuffle;
   // We try to ensure at least this many batches are in the buffer and shuffled
-  // when we  return shuffled values
+  // when we return shuffled values
   size_t _buffer_size;
-  ShuffleBuffer _buffer;
+  VectorBuffer _buffer;
 
   // Batch size we use for loading from the data source and passing to the
   // Featurizer

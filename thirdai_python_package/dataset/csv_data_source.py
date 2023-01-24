@@ -29,6 +29,7 @@ class CSVDataSource(DataSource):
         storage_path: str,
         gcs_credentials_path: str = None,
     ) -> None:
+        DataSource.__init__(self)
 
         if gcs_credentials_path:
             # Pandas requires the GCS file system in order
