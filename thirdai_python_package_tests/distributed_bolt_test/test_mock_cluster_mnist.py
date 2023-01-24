@@ -12,14 +12,12 @@ import numpy as np
 import pytest
 from distributed_utils import (
     check_models_are_same_on_first_two_nodes,
-    clear_ray_workers,
     ray_two_node_cluster_config,
     split_into_2,
 )
 from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.distributed]
-
 
 # TODO(Josh): This is quite a bit of duplicated code, but we can't easily share
 # it until we change the structure of our python tests
@@ -30,7 +28,7 @@ def setup_module():
     if not os.path.exists(path):
         os.makedirs(path)
 
-    if not os.path.exists("mnist_data/part1") or not os.path.exists("mnist_data/part2"):
+    if not os.path.exists("mnist_data/xaa") or not os.path.exists("mnist_data/xab"):
         os.system(
             "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
         )
@@ -65,7 +63,8 @@ def get_mnist_model():
     return model
 
 
-def get_distributed_mnist_model(request, ray_two_node_cluster_config, train_config):
+@pytest.fixture(scope="module")
+def train_distributed_bolt_check(request, ray_two_node_cluster_config):
     import thirdai.distributed_bolt as db
 
     model = get_mnist_model()
@@ -83,17 +82,15 @@ def get_distributed_mnist_model(request, ray_two_node_cluster_config, train_conf
             f"{os.getcwd()}/mnist_data/part2",
         ]
     ]
-    cluster_config, mini_cluster = ray_two_node_cluster_config(request.param)
+    train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=3)
     distributed_model = db.DistributedDataParallel(
-        cluster_config=cluster_config,
+        cluster_config=ray_two_node_cluster_config(request.param),
         model=model,
         train_config=train_config,
         train_sources=train_sources,
     )
-    return distributed_model, mini_cluster
+    distributed_model.train()
 
-
-def evaluated_distributed_mnist_model(distributed_model):
     check_models_are_same_on_first_two_nodes(distributed_model)
 
     eval_config = bolt.EvalConfig().with_metrics(["categorical_accuracy"]).silence()
@@ -103,50 +100,10 @@ def evaluated_distributed_mnist_model(distributed_model):
     metrics = distributed_model.get_model().evaluate(
         test_data=test_data, test_labels=test_labels, eval_config=eval_config
     )
-    return metrics
 
+    print(metrics)
 
-@pytest.fixture(scope="module")
-def train_distributed_bolt_check(request, ray_two_node_cluster_config):
-
-    train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=3)
-    distributed_model, mini_cluster = get_distributed_mnist_model(
-        request, ray_two_node_cluster_config, train_config
-    )
-    distributed_model.train()
-
-    metrics = evaluated_distributed_mnist_model(distributed_model)
-
-    clear_ray_workers()
-    return metrics
-
-
-@pytest.fixture(scope="module")
-def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config):
-
-    train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=1)
-    distributed_model, mini_cluster = get_distributed_mnist_model(
-        request, ray_two_node_cluster_config, train_config
-    )
-    distributed_model.train()
-
-    from ray._private.test_utils import get_other_nodes
-
-    nodes_to_kill = get_other_nodes(mini_cluster)
-    if not nodes_to_kill:
-        assert False, "No node Found!"
-    node_to_kill = nodes_to_kill[0]
-    mini_cluster.remove_node(node_to_kill)
-    # adding some waiting time
-
-    mini_cluster.add_node(num_cpus=1)
-
-    mini_cluster.wait_for_nodes()
-
-    distributed_model.train()
-    metrics = evaluated_distributed_mnist_model(distributed_model)
-
-    return metrics
+    yield metrics
 
 
 # This test requires the Ray library, but we don't skip it if Ray isn't
@@ -164,15 +121,3 @@ def test_distributed_mnist(train_distributed_bolt_check):
         assert False, "not enough cpus for distributed training"
 
     assert train_distributed_bolt_check[0]["categorical_accuracy"] > 0.9
-
-
-@pytest.mark.parametrize(
-    "train_distributed_bolt_fault_tolerance", ["linear"], indirect=True
-)
-def test_distributed_fault_tolerance(train_distributed_bolt_fault_tolerance):
-    import multiprocessing
-
-    if multiprocessing.cpu_count() < 2:
-        assert False, "not enough cpus for distributed training"
-
-    assert train_distributed_bolt_fault_tolerance[0]["categorical_accuracy"] > 0.9

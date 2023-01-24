@@ -40,12 +40,11 @@ def ray_two_node_cluster_config():
             runtime_env={"working_dir": working_dir},
             ignore_reinit_error=True,
         )
-        return cluster_config, mini_cluster
+        return cluster_config
 
     yield _make_cluster_config
 
-    if ray.is_initialized():
-        ray.shutdown()
+    ray.shutdown()
     mini_cluster.shutdown()
 
 
@@ -77,10 +76,3 @@ def remove_files(file_names):
     for file in file_names:
         if os.path.exists(file):
             os.remove(file)
-
-
-def clear_ray_workers():
-
-    import ray
-
-    ray.shutdown()
