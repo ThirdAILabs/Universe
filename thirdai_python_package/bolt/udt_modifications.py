@@ -25,16 +25,14 @@ def _create_data_source(path, batch_size, **kwargs):
     if path.startswith("s3://"):
         return thirdai.dataset.CSVDataSource(
             storage_path=path,
-            batch_size=batch_size,
         )
     elif path.startswith("gcs://"):
         return thirdai.dataset.CSVDataSource(
             storage_path=path,
-            batch_size=batch_size,
             gcs_credentials_path=gcs_credentials_path,
         )
 
-    return thirdai.dataset.FileDataSource(path, batch_size)
+    return thirdai.dataset.FileDataSource(path)
 
 
 # This function defines train and eval methods that wrap the UDT train and

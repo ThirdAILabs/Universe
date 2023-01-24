@@ -60,7 +60,6 @@ def test_csv_source_from_gcs(
     # create a csv data source
     source = dataset.CSVDataSource(
         storage_path=f"gcs://{BUCKET}",
-        batch_size=5,
     )
 
     all_records = []

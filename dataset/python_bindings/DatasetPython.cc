@@ -266,9 +266,10 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_input_dim", &DatasetLoader::getInputDim)
       .def("get_label_dim", &DatasetLoader::getLabelDim)
       .def("load_in_memory", &DatasetLoader::loadInMemory,
-           py::arg("verbose") = true)
+           py::arg("batch_size"), py::arg("verbose") = true)
       .def("stream_in_memory", &dataset::DatasetLoader::streamInMemory,
-           py::arg("num_batches"), py::arg("verbose") = true)
+           py::arg("batch_size"), py::arg("num_batches"),
+           py::arg("verbose") = true)
       .def("restart", &dataset::DatasetLoader::restart);
 
   py::class_<GenericFeaturizer, Featurizer, GenericFeaturizerPtr>(
@@ -429,7 +430,8 @@ void createDatasetSubmodule(py::module_& module) {
       "a BoltDataset storing the labels.");
   dataset_submodule.def(
       "load_bolt_svm_dataset", SvmDatasetLoader::loadDataset,
-      py::arg("data_source"), py::arg("softmax_for_multiclass") = true,
+      py::arg("data_source"), py::arg("batch_size"),
+      py::arg("softmax_for_multiclass") = true,
       "The same as the other implementation of this method, but takes in a "
       "custom data source instead of a file name.");
 

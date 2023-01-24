@@ -170,7 +170,10 @@ dataset::PreprocessedVectorsPtr
 UDTDatasetFactory::preprocessedVectorsFromDataset(
     dataset::DatasetLoader& dataset_loader,
     dataset::ThreadSafeVocabulary& key_vocab) {
-  auto [datasets, ids] = dataset_loader.loadInMemory();
+  // The batch size does not matter here because we loop through all of the
+  // vectors disregarding batch size anyways. Thus, we choose the arbitrary
+  // value 256
+  auto [datasets, ids] = dataset_loader.loadInMemory(/* batch_size = */ 256);
 
   if (datasets.size() != 1) {
     throw std::runtime_error(
