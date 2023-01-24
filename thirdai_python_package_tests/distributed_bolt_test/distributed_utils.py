@@ -44,6 +44,8 @@ def ray_two_node_cluster_config():
 
     yield _make_cluster_config
 
+    if ray.is_initialized():
+        ray.shutdown()
     mini_cluster.shutdown()
 
 
@@ -56,11 +58,6 @@ def split_into_2(file_to_split, destination_file_1, destination_file_2):
                         f_1.write(line)
                     else:
                         f_2.write(line)
-
-
-def get_non_head_nodes(cluster):
-    """Get all non-head nodes."""
-    return list(filter(lambda x: x.head is False, cluster.list_all_nodes()))
 
 
 def check_models_are_same_on_first_two_nodes(distributed_model):

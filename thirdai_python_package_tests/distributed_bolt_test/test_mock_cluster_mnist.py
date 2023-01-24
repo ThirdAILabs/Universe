@@ -13,7 +13,6 @@ import pytest
 from distributed_utils import (
     check_models_are_same_on_first_two_nodes,
     clear_ray_workers,
-    get_non_head_nodes,
     ray_two_node_cluster_config,
     split_into_2,
 )
@@ -132,7 +131,13 @@ def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config)
         request, ray_two_node_cluster_config, train_config
     )
     distributed_model.train()
-    node_to_kill = get_non_head_nodes(mini_cluster)[0]
+
+    from ray._private.test_utils import get_other_nodes
+
+    nodes_to_kill = get_other_nodes(mini_cluster)
+    if not nodes_to_kill:
+        assert False, "No node Found!"
+    node_to_kill = nodes_to_kill[0]
     mini_cluster.remove_node(node_to_kill)
     # adding some waiting time
 
@@ -143,7 +148,6 @@ def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config)
     distributed_model.train()
     metrics = evaluated_distributed_mnist_model(distributed_model)
 
-    clear_ray_workers()
     return metrics
 
 
