@@ -12,24 +12,25 @@ def _create_parquet_source(path):
     return thirdai.dataset.ParquetSource(parquet_path=path)
 
 
-def _create_data_source(path, **kwargs):
+def _create_data_source(path):
+    """
+    Reading data from S3 and GCS assumes that the credentials are already
+    set. For S3, pandas.read_csv method in the data loader will look for
+    credentials in ~/.aws/credentials while for GCS the path will be assumed to be
+    ~/.config/gcloud/credentials or ~/.config/gcloud/application_default_credentials.json.
+    If neither file is present, the CSVDataSource can be constructed by providing a
+    custom path to a JSON credentials file.
+    """
+
     # This also handles parquet on s3, so it comes before the general s3 and gcs
     # handling and file handling below which assume the target files are
-    # CSVs
+    # CSVs.
     if path.endswith(".parquet") or path.endswith(".pqt"):
         return _create_parquet_source(path)
 
-    gcs_credentials_path = (
-        kwargs["gcs_credentials_path"] if "gcs_crentials_file" in kwargs else None
-    )
-    if path.startswith("s3://"):
+    if path.startswith("s3://") or path.startswith("gcs://"):
         return thirdai.dataset.CSVDataSource(
             storage_path=path,
-        )
-    elif path.startswith("gcs://"):
-        return thirdai.dataset.CSVDataSource(
-            storage_path=path,
-            gcs_credentials_path=gcs_credentials_path,
         )
 
     return thirdai.dataset.FileDataSource(path)
@@ -58,7 +59,6 @@ def modify_udt_classifier():
         callbacks: List[bolt.callbacks.Callback] = [],
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
-        gcp_credentials_path: Optional[str] = None,
     ):
         if batch_size is None:
             batch_size = self.default_train_batch_size
@@ -74,10 +74,7 @@ def modify_udt_classifier():
         if logging_interval:
             train_config.with_log_loss_frequency(logging_interval)
 
-        data_source = _create_data_source(
-            filename,
-            gcs_credentials_path=gcp_credentials_path,
-        )
+        data_source = _create_data_source(filename)
 
         return original_train_method(
             self,
@@ -97,7 +94,6 @@ def modify_udt_classifier():
         return_predicted_class: bool = False,
         return_metrics: bool = False,
         verbose: bool = True,
-        gcs_credentials_path: Optional[str] = None,
     ):
         eval_config = bolt.EvalConfig()
         if not verbose:
@@ -107,10 +103,7 @@ def modify_udt_classifier():
         if use_sparse_inference:
             eval_config.enable_sparse_inference()
 
-        data_source = _create_data_source(
-            filename,
-            gcs_credentials_path=gcs_credentials_path,
-        )
+        data_source = _create_data_source(filename)
 
         return original_eval_method(
             self,
