@@ -1,7 +1,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/featurizers/GenericFeaturizer.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <sys/types.h>
 #include <algorithm>
@@ -111,7 +111,7 @@ TEST(ThreadSafeVocabularyTests, InBlock) {
   auto lookup_block = StringLookupCategoricalBlock::make(
       /* col = */ 0, vocab);
 
-  GenericFeaturizer processor(/* input_blocks = */ {lookup_block},
+  TabularFeaturizer processor(/* input_blocks = */ {lookup_block},
                               /* label_blocks = */ {});
   auto batch = processor.createBatch(strings).at(0);
 
@@ -132,7 +132,7 @@ TEST(ThreadSafeVocabularyTests, InMultipleBlocks) {
   auto lookup_block_3 = StringLookupCategoricalBlock::make(
       /* col = */ 0, vocab);
 
-  GenericFeaturizer processor(
+  TabularFeaturizer processor(
       /* input_blocks = */ {lookup_block_1, lookup_block_2, lookup_block_3},
       /* label_blocks = */ {});
   auto batch = processor.createBatch(strings).at(0);

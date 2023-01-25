@@ -22,10 +22,9 @@
 
 namespace thirdai::dataset {
 
-// TODO(Geordie / David): Rename to BatchFeaturizer?
-class GenericFeaturizer : public Featurizer {
+class TabularFeaturizer : public Featurizer {
  public:
-  GenericFeaturizer(
+  TabularFeaturizer(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
       char delimiter = ',', bool parallel = true,
@@ -162,12 +161,12 @@ class GenericFeaturizer : public Featurizer {
     return relevant_block->explainIndex(segment_feature.feature_idx, input);
   }
 
-  static std::shared_ptr<GenericFeaturizer> make(
+  static std::shared_ptr<TabularFeaturizer> make(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
       char delimiter = ',', bool parallel = true,
       std::optional<uint32_t> hash_range = std::nullopt) {
-    return std::make_shared<GenericFeaturizer>(input_blocks, label_blocks,
+    return std::make_shared<TabularFeaturizer>(input_blocks, label_blocks,
                                                has_header, delimiter, parallel,
                                                hash_range);
   }
@@ -237,7 +236,7 @@ class GenericFeaturizer : public Featurizer {
   }
 
   // Private constructor for cereal.
-  GenericFeaturizer() {}
+  TabularFeaturizer() {}
 
   bool _expects_header;
   char _delimiter;
@@ -260,8 +259,8 @@ class GenericFeaturizer : public Featurizer {
   uint32_t _expected_num_cols;
 };
 
-using GenericFeaturizerPtr = std::shared_ptr<GenericFeaturizer>;
+using TabularFeaturizerPtr = std::shared_ptr<TabularFeaturizer>;
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::GenericFeaturizer)
+CEREAL_REGISTER_TYPE(thirdai::dataset::TabularFeaturizer)

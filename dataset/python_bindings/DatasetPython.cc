@@ -16,8 +16,8 @@
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
-#include <dataset/src/featurizers/GenericFeaturizer.h>
 #include <dataset/src/featurizers/MaskedSentenceFeaturizer.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -271,8 +271,8 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("verbose") = true)
       .def("restart", &dataset::DatasetLoader::restart);
 
-  py::class_<GenericFeaturizer, Featurizer, GenericFeaturizerPtr>(
-      dataset_submodule, "GenericFeaturizer")
+  py::class_<TabularFeaturizer, Featurizer, TabularFeaturizerPtr>(
+      dataset_submodule, "TabularFeaturizer")
       .def(py::init<std::vector<std::shared_ptr<Block>>,
                     std::vector<std::shared_ptr<Block>>, bool, char, bool,
                     std::optional<uint32_t>>(),

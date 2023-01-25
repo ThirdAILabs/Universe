@@ -69,7 +69,7 @@ DatasetLoader::streamInMemory(size_t batch_size, size_t num_batches,
       (std::numeric_limits<size_t>::max() - _buffer_size <=
        num_batches * batch_size);
   size_t fill_size = will_overflow ? std::numeric_limits<size_t>::max()
-                                   : (num_batches + _buffer_size) * batch_size;
+                                   : num_batches * batch_size + _buffer_size;
   fillVectorBuffer(fill_size);
 
   auto batch_lists =

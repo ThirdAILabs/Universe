@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
-#include <dataset/src/featurizers/GenericFeaturizer.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -42,7 +42,7 @@ class DatasetLoaderTests : public ::testing::Test {
     auto data_source = std::make_shared<SimpleFileDataSource>(_mock_file_name);
 
     auto featurizer =
-        std::make_shared<GenericFeaturizer>(input_blocks, label_blocks);
+        std::make_shared<TabularFeaturizer>(input_blocks, label_blocks);
 
     return DatasetLoader(
         data_source, featurizer, shuffle,

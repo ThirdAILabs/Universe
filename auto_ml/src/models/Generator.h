@@ -14,8 +14,8 @@
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
-#include <dataset/src/featurizers/GenericFeaturizer.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
@@ -435,7 +435,7 @@ class QueryCandidateGenerator {
         constructInputBlocks(_query_generator_config->nGrams(),
                              /* column_index = */ 0);
 
-    _inference_featurizer = std::make_shared<dataset::GenericFeaturizer>(
+    _inference_featurizer = std::make_shared<dataset::TabularFeaturizer>(
         /* input_blocks = */ inference_input_blocks,
         /* labels_blocks = */ std::vector<dataset::BlockPtr>{},
         /* has_header = */ false,
@@ -464,12 +464,12 @@ class QueryCandidateGenerator {
     }
   }
 
-  std::shared_ptr<dataset::GenericFeaturizer> constructGenericFeaturizer(
+  std::shared_ptr<dataset::TabularFeaturizer> constructTabularFeaturizer(
       uint32_t column_index) {
     auto input_blocks = constructInputBlocks(_query_generator_config->nGrams(),
                                              /* column_index = */ column_index);
 
-    return std::make_shared<dataset::GenericFeaturizer>(
+    return std::make_shared<dataset::TabularFeaturizer>(
         /* input_blocks = */ input_blocks,
         /* label_blocks = */ std::vector<dataset::BlockPtr>{},
         /* has_header = */ true,
@@ -590,7 +590,7 @@ class QueryCandidateGenerator {
 
   std::shared_ptr<dataset::BoltDataset> loadDatasetInMemory(
       const std::string& file_name, uint32_t col_to_hash, bool verbose = true) {
-    auto featurizer = constructGenericFeaturizer(
+    auto featurizer = constructTabularFeaturizer(
         /* column_index = */ col_to_hash);
     auto file_data_source = dataset::SimpleFileDataSource::make(file_name);
 
@@ -633,7 +633,7 @@ class QueryCandidateGenerator {
 
   std::shared_ptr<QueryCandidateGeneratorConfig> _query_generator_config;
   std::unique_ptr<Flash<uint32_t>> _flash_index;
-  std::shared_ptr<dataset::GenericFeaturizer> _inference_featurizer;
+  std::shared_ptr<dataset::TabularFeaturizer> _inference_featurizer;
 
   /**
    * Maintains a mapping from the assigned labels to the original

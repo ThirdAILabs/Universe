@@ -120,7 +120,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   auto label_block =
       dataset::StringLookupCategoricalBlock::make(metadata->key, key_vocab);
 
-  _metadata_processors[col_name] = dataset::GenericFeaturizer::make(
+  _metadata_processors[col_name] = dataset::TabularFeaturizer::make(
       /* input_blocks= */ std::move(input_blocks),
       /* label_blocks= */ {std::move(label_block)},
       /* has_header= */ true, /* delimiter= */ metadata->delimiter,
@@ -223,7 +223,7 @@ void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
   }
 }
 
-dataset::GenericFeaturizerPtr
+dataset::TabularFeaturizerPtr
 UDTDatasetFactory::makeLabeledUpdatingProcessor() {
   if (!_config->data_types.count(_config->target)) {
     throw std::invalid_argument(
@@ -234,7 +234,7 @@ UDTDatasetFactory::makeLabeledUpdatingProcessor() {
 
   auto input_blocks = buildInputBlocks(/* should_update_history= */ true);
 
-  auto processor = dataset::GenericFeaturizer::make(
+  auto processor = dataset::TabularFeaturizer::make(
       std::move(input_blocks), {label_block}, /* has_header= */ true,
       /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
       /* hash_range= */ _config->hash_range);

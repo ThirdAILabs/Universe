@@ -3,7 +3,7 @@
 #include <dataset/src/Datasets.h>
 #include <dataset/src/VectorBuffer.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/featurizers/GenericFeaturizer.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <stdexcept>
 
 namespace thirdai::dataset {

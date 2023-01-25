@@ -24,7 +24,6 @@ InMemoryDataset::InMemoryDataset(std::vector<BoltBatch>&& batches)
   for (uint64_t i = 1; i < _batches.size() - 1; i++) {
     uint64_t current_batch_size = _batches.at(i).getBatchSize();
     if (current_batch_size != _batch_size) {
-      std::cout << current_batch_size << " " << _batch_size << std::endl;
       throw std::invalid_argument(
           "All batches but the last batch must have the same size.");
     }

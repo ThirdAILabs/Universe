@@ -3,7 +3,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/featurizers/GenericFeaturizer.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <stdexcept>
 #include <utility>
 
@@ -69,7 +69,7 @@ inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
     const std::optional<std::vector<uint32_t>>& gradients_indices,
     const std::vector<float>& gradients_ratio,
     dataset::ColumnarInputSample& input,
-    const std::shared_ptr<dataset::GenericFeaturizer>& generic_featurizer) {
+    const std::shared_ptr<dataset::TabularFeaturizer>& generic_featurizer) {
   std::vector<std::pair<float, uint32_t>> gradients_ratio_with_indices =
       sortGradientsBySignificance(gradients_ratio, gradients_indices);
 

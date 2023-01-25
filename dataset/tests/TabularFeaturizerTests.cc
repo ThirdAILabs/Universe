@@ -3,7 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/featurizers/GenericFeaturizer.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <sstream>
 #include <string>
 
@@ -47,11 +47,11 @@ void checkMatrixAndProcessedBatchEquality(
   }
 }
 
-TEST(GenericFeaturizerTests, DenseInputDenseLabel) {
+TEST(TabularFeaturizerTests, DenseInputDenseLabel) {
   auto float_batch = FeaturizerTestUtils::makeRandomDenseMatrix(
       /* n_rows = */ 256, /* n_cols = */ 3);
   auto string_batch = makeCsvRows(float_batch);
-  GenericFeaturizer processor(
+  TabularFeaturizer processor(
       FeaturizerTestUtils::makeMockBlocks({true, true, true}),
       FeaturizerTestUtils::makeMockBlocks({true, true, true}));
   auto processed_batch = processor.createBatch(string_batch);
@@ -60,11 +60,11 @@ TEST(GenericFeaturizerTests, DenseInputDenseLabel) {
                                        /* expect_label_dense = */ true);
 }
 
-TEST(GenericFeaturizerTests, SparseInputDenseLabel) {
+TEST(TabularFeaturizerTests, SparseInputDenseLabel) {
   auto float_batch = FeaturizerTestUtils::makeRandomDenseMatrix(
       /* n_rows = */ 256, /* n_cols = */ 3);
   auto string_batch = makeCsvRows(float_batch);
-  GenericFeaturizer processor(
+  TabularFeaturizer processor(
       FeaturizerTestUtils::makeMockBlocks({false, false, false}),
       FeaturizerTestUtils::makeMockBlocks({true, true, true}));
   auto processed_batch = processor.createBatch(string_batch);
@@ -73,11 +73,11 @@ TEST(GenericFeaturizerTests, SparseInputDenseLabel) {
                                        /* expect_label_dense = */ true);
 }
 
-TEST(GenericFeaturizerTests, SparseInputSparseLabel) {
+TEST(TabularFeaturizerTests, SparseInputSparseLabel) {
   auto float_batch = FeaturizerTestUtils::makeRandomDenseMatrix(
       /* n_rows = */ 256, /* n_cols = */ 3);
   auto string_batch = makeCsvRows(float_batch);
-  GenericFeaturizer processor(
+  TabularFeaturizer processor(
       FeaturizerTestUtils::makeMockBlocks({false, false, false}),
       FeaturizerTestUtils::makeMockBlocks({false, false, false}));
   auto processed_batch = processor.createBatch(string_batch);
@@ -86,11 +86,11 @@ TEST(GenericFeaturizerTests, SparseInputSparseLabel) {
                                        /* expect_label_dense = */ false);
 }
 
-TEST(GenericFeaturizerTests, DenseInputSparseLabel) {
+TEST(TabularFeaturizerTests, DenseInputSparseLabel) {
   auto float_batch = FeaturizerTestUtils::makeRandomDenseMatrix(
       /* n_rows = */ 256, /* n_cols = */ 3);
   auto string_batch = makeCsvRows(float_batch);
-  GenericFeaturizer processor(
+  TabularFeaturizer processor(
       FeaturizerTestUtils::makeMockBlocks({true, true, true}),
       FeaturizerTestUtils::makeMockBlocks({false, false, false}));
   auto processed_batch = processor.createBatch(string_batch);
@@ -99,11 +99,11 @@ TEST(GenericFeaturizerTests, DenseInputSparseLabel) {
                                        /* expect_label_dense = */ false);
 }
 
-TEST(GenericFeaturizerTests, Mix) {
+TEST(TabularFeaturizerTests, Mix) {
   auto float_batch = FeaturizerTestUtils::makeRandomDenseMatrix(
       /* n_rows = */ 256, /* n_cols = */ 3);
   auto string_batch = makeCsvRows(float_batch);
-  GenericFeaturizer processor(
+  TabularFeaturizer processor(
       FeaturizerTestUtils::makeMockBlocks({true, false, true}),
       FeaturizerTestUtils::makeMockBlocks({false, true, false}));
   auto processed_batch = processor.createBatch(string_batch);

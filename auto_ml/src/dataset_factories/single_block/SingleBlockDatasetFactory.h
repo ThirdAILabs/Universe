@@ -26,11 +26,11 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
                             dataset::BlockPtr unlabeled_data_block,
                             dataset::BlockPtr label_block, bool shuffle,
                             char delimiter, bool has_header)
-      : _labeled_featurizer(std::make_shared<dataset::GenericFeaturizer>(
+      : _labeled_featurizer(std::make_shared<dataset::TabularFeaturizer>(
             std::vector<dataset::BlockPtr>{std::move(data_block)},
             std::vector<dataset::BlockPtr>{std::move(label_block)},
             /* has_header= */ has_header, delimiter)),
-        _unlabeled_featurizer(std::make_shared<dataset::GenericFeaturizer>(
+        _unlabeled_featurizer(std::make_shared<dataset::TabularFeaturizer>(
             std::vector<dataset::BlockPtr>{std::move(unlabeled_data_block)},
             std::vector<dataset::BlockPtr>{},
             /* has_header= */ has_header, delimiter)),
@@ -64,8 +64,8 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
   bool hasTemporalTracking() const final { return false; }
 
  private:
-  dataset::GenericFeaturizerPtr _labeled_featurizer;
-  dataset::GenericFeaturizerPtr _unlabeled_featurizer;
+  dataset::TabularFeaturizerPtr _labeled_featurizer;
+  dataset::TabularFeaturizerPtr _unlabeled_featurizer;
   bool _shuffle;
   char _delimiter;
 

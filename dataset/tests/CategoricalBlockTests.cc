@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/featurizers/GenericFeaturizer.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
 #include <cstdlib>
@@ -163,7 +163,7 @@ TEST_F(CategoricalBlockTest, TestMultiLabelParsing) {
                                       /* n_classes= */ 100,
                                       /* delimiter= */ ',')};
 
-  GenericFeaturizer featurizer(
+  TabularFeaturizer featurizer(
       /* input_blocks= */ {}, /* label_blocks= */ multi_label_blocks,
       /* has_header= */ false, /* delimiter= */ ' ');
 
@@ -189,7 +189,7 @@ TEST_F(CategoricalBlockTest, RegressionCategoricalBlock) {
                                 /* num_bins= */ 20),
       /* correct_label_radius= */ 1, /* labels_sum_to_one= */ false)};
 
-  GenericFeaturizer featurizer(
+  TabularFeaturizer featurizer(
       /* input_blocks= */ {}, /* label_blocks= */ blocks,
       /* has_header= */ false, /* delimiter= */ ',');
 
