@@ -4,7 +4,7 @@ from thirdai._thirdai.dataset import DataSource
 
 
 class ParquetSource(DataSource):
-    def __init__(self, parquet_path, batch_size):
+    def __init__(self, parquet_path):
         DataSource.__init__(self)
 
         # By importing here, we make it so that pyarrow isn't a dependency.
@@ -15,7 +15,6 @@ class ParquetSource(DataSource):
 
         self._parquet_path = parquet_path
         self._parquet_table = pq.read_table(parquet_path)
-        self._batch_size = batch_size
         self.restart()
 
     def restart(self):
@@ -42,9 +41,9 @@ class ParquetSource(DataSource):
                 first = False
             yield data_line + "\n"
 
-    def next_batch(self):
+    def next_batch(self, target_batch_size):
         lines = []
-        while len(lines) < self._batch_size:
+        while len(lines) < target_batch_size:
             next_line = self.next_line()
             if next_line == None:
                 break

@@ -8,16 +8,16 @@ import thirdai._thirdai.bolt as bolt
 from .udt_docs import *
 
 
-def _create_parquet_source(path, batch_size):
-    return thirdai.dataset.ParquetSource(parquet_path=path, batch_size=batch_size)
+def _create_parquet_source(path):
+    return thirdai.dataset.ParquetSource(parquet_path=path)
 
 
-def _create_data_source(path, batch_size, **kwargs):
+def _create_data_source(path, **kwargs):
     # This also handles parquet on s3, so it comes before the general s3 and gcs
     # handling and file handling below which assume the target files are
     # CSVs
     if path.endswith(".parquet") or path.endswith(".pqt"):
-        return _create_parquet_source(path, batch_size)
+        return _create_parquet_source(path)
 
     gcs_credentials_path = (
         kwargs["gcs_credentials_path"] if "gcs_crentials_file" in kwargs else None
@@ -76,7 +76,6 @@ def modify_udt_classifier():
 
         data_source = _create_data_source(
             filename,
-            batch_size,
             gcs_credentials_path=gcp_credentials_path,
         )
 
@@ -110,7 +109,6 @@ def modify_udt_classifier():
 
         data_source = _create_data_source(
             filename,
-            bolt.models.UDTClassifier.default_evaluate_batch_size,
             gcs_credentials_path=gcs_credentials_path,
         )
 

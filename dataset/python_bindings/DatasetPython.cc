@@ -292,6 +292,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<DataSource, PyDataSource, DataSourcePtr>(dataset_submodule,
                                                       "DataSource")
+      .def(py::init<>())
       .def("next_batch", &DataSource::nextBatch)
       .def("next_line", &DataSource::nextLine)
       .def("resource_name", &DataSource::resourceName)
