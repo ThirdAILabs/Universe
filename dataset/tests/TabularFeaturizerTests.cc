@@ -25,10 +25,11 @@ std::vector<std::string> makeCsvRows(std::vector<std::vector<float>>& matrix) {
 }
 
 void checkMatrixAndProcessedBatchEquality(
-    std::vector<std::vector<float>>& matrix, std::vector<BoltBatch>& processed,
-    bool expect_input_dense, bool expect_label_dense) {
-  const BoltBatch& input = processed.at(0);
-  const BoltBatch& labels = processed.at(1);
+    std::vector<std::vector<float>>& matrix,
+    std::vector<std::vector<BoltVector>>& processed, bool expect_input_dense,
+    bool expect_label_dense) {
+  const std::vector<BoltVector>& input = processed.at(0);
+  const std::vector<BoltVector>& labels = processed.at(1);
   for (uint32_t i = 0; i < matrix.size(); i++) {
     for (uint32_t j = 0; j < matrix[i].size(); j++) {
       ASSERT_EQ(expect_input_dense, input[0].isDense());
@@ -54,7 +55,7 @@ TEST(TabularFeaturizerTests, DenseInputDenseLabel) {
   TabularFeaturizer processor(
       FeaturizerTestUtils::makeMockBlocks({true, true, true}),
       FeaturizerTestUtils::makeMockBlocks({true, true, true}));
-  auto processed_batch = processor.createBatch(string_batch);
+  auto processed_batch = processor.featurize(string_batch);
   checkMatrixAndProcessedBatchEquality(float_batch, processed_batch,
                                        /* expect_input_dense = */ true,
                                        /* expect_label_dense = */ true);
@@ -67,7 +68,7 @@ TEST(TabularFeaturizerTests, SparseInputDenseLabel) {
   TabularFeaturizer processor(
       FeaturizerTestUtils::makeMockBlocks({false, false, false}),
       FeaturizerTestUtils::makeMockBlocks({true, true, true}));
-  auto processed_batch = processor.createBatch(string_batch);
+  auto processed_batch = processor.featurize(string_batch);
   checkMatrixAndProcessedBatchEquality(float_batch, processed_batch,
                                        /* expect_input_dense = */ false,
                                        /* expect_label_dense = */ true);
@@ -80,7 +81,7 @@ TEST(TabularFeaturizerTests, SparseInputSparseLabel) {
   TabularFeaturizer processor(
       FeaturizerTestUtils::makeMockBlocks({false, false, false}),
       FeaturizerTestUtils::makeMockBlocks({false, false, false}));
-  auto processed_batch = processor.createBatch(string_batch);
+  auto processed_batch = processor.featurize(string_batch);
   checkMatrixAndProcessedBatchEquality(float_batch, processed_batch,
                                        /* expect_input_dense = */ false,
                                        /* expect_label_dense = */ false);
@@ -93,7 +94,7 @@ TEST(TabularFeaturizerTests, DenseInputSparseLabel) {
   TabularFeaturizer processor(
       FeaturizerTestUtils::makeMockBlocks({true, true, true}),
       FeaturizerTestUtils::makeMockBlocks({false, false, false}));
-  auto processed_batch = processor.createBatch(string_batch);
+  auto processed_batch = processor.featurize(string_batch);
   checkMatrixAndProcessedBatchEquality(float_batch, processed_batch,
                                        /* expect_input_dense = */ true,
                                        /* expect_label_dense = */ false);
@@ -106,7 +107,7 @@ TEST(TabularFeaturizerTests, Mix) {
   TabularFeaturizer processor(
       FeaturizerTestUtils::makeMockBlocks({true, false, true}),
       FeaturizerTestUtils::makeMockBlocks({false, true, false}));
-  auto processed_batch = processor.createBatch(string_batch);
+  auto processed_batch = processor.featurize(string_batch);
   checkMatrixAndProcessedBatchEquality(float_batch, processed_batch,
                                        /* expect_input_dense = */ false,
                                        /* expect_label_dense = */ false);

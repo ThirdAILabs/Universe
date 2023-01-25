@@ -28,7 +28,7 @@ class MaskedSentenceFeaturizer final : public Featurizer {
     _masked_tokens_percentage = masked_tokens_percentage;
   }
 
-  std::vector<BoltBatch> createBatch(
+  std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> vectors(rows.size());
     std::vector<BoltVector> masked_indices(rows.size());
@@ -43,8 +43,7 @@ class MaskedSentenceFeaturizer final : public Featurizer {
       labels[i] = std::move(label);
     }
 
-    return {BoltBatch(std::move(vectors)), BoltBatch(std::move(masked_indices)),
-            BoltBatch(std::move(labels))};
+    return {std::move(vectors), std::move(masked_indices), std::move(labels)};
   }
 
   bool expectsHeader() const final { return false; }

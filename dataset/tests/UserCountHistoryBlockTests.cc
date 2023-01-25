@@ -1,3 +1,4 @@
+#include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/UserCountHistory.h>
@@ -10,12 +11,12 @@
 
 namespace thirdai::dataset {
 
-static BoltBatch processBatch(BlockPtr block,
-                              const std::vector<std::string>& input_rows) {
+static std::vector<BoltVector> processBatch(
+    BlockPtr block, const std::vector<std::string>& input_rows) {
   TabularFeaturizer processor(
       /* input_blocks= */ {std::move(block)}, /* label_blocks= */ {},
       /* has_header= */ false, /* delimiter= */ ',', /* parallel= */ false);
-  auto batch = processor.createBatch(input_rows).at(0);
+  auto batch = processor.featurize(input_rows).at(0);
   return std::move(batch);
 }
 

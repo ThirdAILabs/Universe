@@ -253,8 +253,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<size_t, uint32_t>(), py::arg("min_vecs_in_buffer") = 64000,
            py::arg("seed") = time(NULL));
 
-  py::class_<Featurizer, FeaturizerPtr>(dataset_submodule, "Featurizer")
-      .def("create_batch", &Featurizer::createBatch, py::arg("rows"));
+  py::class_<Featurizer, FeaturizerPtr>(dataset_submodule,  // NOLINT
+                                        "Featurizer");
 
   py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
                                               "DatasetLoader")

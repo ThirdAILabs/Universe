@@ -61,7 +61,8 @@ class TabularFeaturizer : public Featurizer {
                                   _label_blocks.expectedNumColumns());
   }
 
-  std::vector<BoltBatch> createBatch(ColumnarInputBatch& input_batch) {
+  std::vector<std::vector<BoltVector>> featurize(
+      ColumnarInputBatch& input_batch) {
     std::vector<BoltVector> batch_inputs(input_batch.size());
     std::vector<BoltVector> batch_labels(input_batch.size());
 
@@ -88,11 +89,11 @@ class TabularFeaturizer : public Featurizer {
     if (featurization_err) {
       std::rethrow_exception(featurization_err);
     }
-    return {BoltBatch(std::move(batch_inputs)),
-            BoltBatch(std::move(batch_labels))};
+    return {std::move(batch_inputs), std::move(batch_labels)};
   }
 
-  std::vector<BoltBatch> createBatch(const LineInputBatch& input_batch) final {
+  std::vector<std::vector<BoltVector>> featurize(
+      const LineInputBatch& input_batch) final {
     // If there isn't a header, we are forced to assume that every row will
     // have exactly as many columns as expected. Otherwise, we can assume that
     // every row will have the same number of columns as the header
@@ -100,7 +101,7 @@ class TabularFeaturizer : public Featurizer {
         _num_cols_in_header.value_or(_expected_num_cols);
     CsvBatchRef input_batch_ref(input_batch, _delimiter,
                                 expected_num_cols_in_batch);
-    return createBatch(input_batch_ref);
+    return featurize(input_batch_ref);
   }
 
   bool expectsHeader() const final { return _expects_header; }

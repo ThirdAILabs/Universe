@@ -16,7 +16,7 @@ std::vector<BoltVector> SingleBlockDatasetFactory::featurizeInput(
 
 std::vector<BoltBatch> SingleBlockDatasetFactory::featurizeInputBatch(
     const std::vector<std::string>& inputs) {
-  auto batches = _unlabeled_featurizer->createBatch(inputs);
+  auto batches = _unlabeled_featurizer->featurize(inputs);
 
   // We cannot use the initializer list because the copy constructor is
   // deleted for BoltBatch.

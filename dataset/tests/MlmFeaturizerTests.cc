@@ -49,16 +49,16 @@ TEST(MaskedSentenceFeaturizer, TestCreateBatch) {
 
   dataset::MaskedSentenceFeaturizer processor(vocab, RANGE);
 
-  auto datasets = processor.createBatch(rows);
+  auto datasets = processor.featurize(rows);
   auto data = datasets.at(0);
   auto masked_indices = datasets.at(1);
   auto labels = datasets.at(2);
 
   std::unordered_set<uint32_t> masked_word_hashes;
 
-  EXPECT_EQ(data.getBatchSize(), 4);
-  EXPECT_EQ(masked_indices.getBatchSize(), 4);
-  EXPECT_EQ(labels.getBatchSize(), 4);
+  EXPECT_EQ(data.size(), 4);
+  EXPECT_EQ(masked_indices.size(), 4);
+  EXPECT_EQ(labels.size(), 4);
 
   for (uint32_t i = 0; i < 4; i++) {
     auto unigrams = ids_from_words(vocab, tokenized_sentences[i]);
@@ -91,14 +91,14 @@ TEST(MaskedSentenceFeaturizer, TestCreateBatchMultipleMaskedTokens) {
   dataset::MaskedSentenceFeaturizer processor(
       vocab, RANGE, /* masked_tokens_percentage= */ 0.3);
 
-  auto datasets = processor.createBatch(rows);
+  auto datasets = processor.featurize(rows);
   auto data = datasets.at(0);
   auto masked_indices = datasets.at(1);
   auto labels = datasets.at(2);
 
-  EXPECT_EQ(data.getBatchSize(), 4);
-  EXPECT_EQ(masked_indices.getBatchSize(), 4);
-  EXPECT_EQ(labels.getBatchSize(), 4);
+  EXPECT_EQ(data.size(), 4);
+  EXPECT_EQ(masked_indices.size(), 4);
+  EXPECT_EQ(labels.size(), 4);
 
   for (uint32_t index = 0; index < 4; index++) {
     // Only unit-test here is that percentage works.

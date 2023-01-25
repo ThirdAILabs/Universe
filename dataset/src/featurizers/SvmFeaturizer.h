@@ -12,7 +12,7 @@ class SvmFeaturizer final : public Featurizer {
 
   bool expectsHeader() const final { return false; }
 
-  std::vector<BoltBatch> createBatch(
+  std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> _data_vecs = std::vector<BoltVector>(rows.size());
     std::vector<BoltVector> _label_vecs = std::vector<BoltVector>(rows.size());
@@ -25,8 +25,7 @@ class SvmFeaturizer final : public Featurizer {
       _label_vecs[row_id] = std::move(p.second);
     }
 
-    return {BoltBatch(std::move(_data_vecs)),
-            BoltBatch(std::move(_label_vecs))};
+    return {std::move(_data_vecs), std::move(_label_vecs)};
   }
 
   void processHeader(const std::string& header) final { (void)header; }

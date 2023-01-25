@@ -9,11 +9,12 @@ namespace thirdai::dataset {
 
 class DateBlockTests : public testing::Test {
  protected:
-  static auto featurize(const std::vector<std::string>& input_rows) {
+  static std::vector<BoltVector> featurize(
+      const std::vector<std::string>& input_rows) {
     TabularFeaturizer processor(
         /* input_blocks = */ {std::make_shared<DateBlock>(/* col = */ 0)},
         /* label_blocks = */ {});
-    return processor.createBatch(input_rows).at(0);
+    return processor.featurize(input_rows).at(0);
   }
 
   static std::optional<uint32_t> dayOfWeek(const BoltVector& vector) {

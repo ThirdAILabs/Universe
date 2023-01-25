@@ -20,7 +20,7 @@ class ClickThroughFeaturizer final : public Featurizer {
                            1),
         _delimiter(delimiter) {}
 
-  std::vector<BoltBatch> createBatch(
+  std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> dense_inputs(rows.size());
     std::vector<BoltVector> token_inputs(rows.size());
@@ -34,8 +34,8 @@ class ClickThroughFeaturizer final : public Featurizer {
       labels[i] = std::move(label);
     }
 
-    return {BoltBatch(std::move(dense_inputs)),
-            BoltBatch(std::move(token_inputs)), BoltBatch(std::move(labels))};
+    return {std::move(dense_inputs), std::move(token_inputs),
+            std::move(labels)};
   }
 
   bool expectsHeader() const final { return false; }

@@ -11,7 +11,12 @@ namespace thirdai::dataset {
 
 class Featurizer {
  public:
-  virtual std::vector<BoltBatch> createBatch(
+  // Featurizes a list of input rows into N different "datasets". Each dataset
+  // is simply a vector of BoltVectors. Each "dataset" should have the same
+  // number of BoltVectors. BoltVectors with the same index are "corresponding",
+  // and usually this means that they can be trained on as corresponding
+  // examples.
+  virtual std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& rows) = 0;
 
   virtual bool expectsHeader() const = 0;
@@ -21,7 +26,7 @@ class Featurizer {
   virtual ~Featurizer() = default;
 
   // Returns a vector of the BoltVector dimensions one would get if they called
-  // createBatch.
+  // featurize.
   virtual std::vector<uint32_t> getDimensions() {
     // By default we assume that this is an unsupported operation
     throw exceptions::NotImplemented(

@@ -97,7 +97,12 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> featurizeInputBatch(
       const LineInputBatch& inputs) final {
-    return getProcessor(/* should_update_history= */ false).createBatch(inputs);
+    std::vector<BoltBatch> result;
+    for (auto& batch :
+         getProcessor(/* should_update_history= */ false).featurize(inputs)) {
+      result.emplace_back(std::move(batch));
+    }
+    return result;
   }
 
   std::vector<BoltBatch> featurizeInputBatch(
@@ -113,7 +118,12 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> batchUpdateTemporalTrackers(
       const LineInputBatch& inputs) {
-    return getProcessor(/* should_update_history= */ true).createBatch(inputs);
+    std::vector<BoltBatch> result;
+    for (auto& batch :
+         getProcessor(/* should_update_history= */ true).featurize(inputs)) {
+      result.emplace_back(std::move(batch));
+    }
+    return result;
   }
 
   std::vector<BoltBatch> batchUpdateTemporalTrackers(
@@ -190,7 +200,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> featurizeInputBatchImpl(
       dataset::ColumnarInputBatch& inputs, bool should_update_history) {
-    auto batches = getProcessor(should_update_history).createBatch(inputs);
+    auto batches = getProcessor(should_update_history).featurize(inputs);
 
     // We cannot use the initializer list because the copy constructor is
     // deleted for BoltBatch.
