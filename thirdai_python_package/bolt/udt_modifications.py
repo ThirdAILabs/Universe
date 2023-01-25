@@ -16,7 +16,12 @@ def _create_data_source(path, batch_size):
     # This also handles parquet on s3, so it comes before the general s3 and gcs
     # handling and file handling below which assume the target files are
     # CSVs. Reading data from S3 and GCS assumes that the credentials are already
-    # set.
+    # set. For S3, pandas.read_csv method in the data loader will look for
+    # credentials in ~/.aws/credentials while for GCS the path will be assumed to be
+    # ~/.config/gcloud/credentials or ~/.config/gcloud/application_default_credentials.json.
+    # If neither file is present, the CSVDataSource can be constructed by providing a
+    # custom path to a JSON credentials file.
+
     if path.endswith(".parquet") or path.endswith(".pqt"):
         return _create_parquet_source(path, batch_size)
 
