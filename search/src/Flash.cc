@@ -1,4 +1,3 @@
-#include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
@@ -34,34 +33,6 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
       _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, true>>(
           _num_tables, reservoir_size, _range)) {
   thirdai::licensing::checkLicense();
-}
-
-template <typename LABEL_T>
-void Flash<LABEL_T>::addDataset(const dataset::InMemoryDataset& dataset,
-                                const std::vector<std::vector<LABEL_T>>& labels,
-                                bool verbose) {
-  if (dataset.numBatches() != labels.size()) {
-    throw std::invalid_argument(
-        "Number of data and label batches must be same.");
-  }
-  auto num_batches = dataset.numBatches();
-  std::optional<ProgressBar> bar = ProgressBar::makeOptional(
-      /* verbose = */ verbose,
-      /* description = */ fmt::format("train"),
-      /* max_steps = */ dataset.numBatches());
-  for (uint64_t batch_index = 0; batch_index < num_batches; batch_index++) {
-    const auto& batch = dataset[batch_index];
-
-    addBatch(batch, labels[batch_index]);
-    if (bar) {
-      bar->increment();
-    }
-  }
-  if (bar) {
-    bar->close(
-        /* comment = */ fmt::format("train | batches {} | complete",
-                                    num_batches));
-  }
 }
 
 template <typename LABEL_T>
