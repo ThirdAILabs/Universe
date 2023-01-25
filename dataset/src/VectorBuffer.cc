@@ -89,7 +89,7 @@ void VectorBuffer::initializeBuffersIfNeeded(
 }
 
 void VectorBuffer::shuffleNewVectors() {
-  assert(buffers.at(0).size() > 0);
+  assert(_buffers.at(0).size() > 0);
 
   size_t buffer_size = _buffers.at(0).size();
   std::uniform_int_distribution<> dist(

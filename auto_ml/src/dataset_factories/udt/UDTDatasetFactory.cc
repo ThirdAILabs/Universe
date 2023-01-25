@@ -1,5 +1,6 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/InputTypes.h>
@@ -214,11 +215,12 @@ void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
   auto metadata_config = getColumnMetadataConfig(col_name);
 
   dataset::MapBatchRef updates_ref(updates);
-  auto batch = _metadata_processors.at(col_name)->featurize(updates_ref).at(0);
+  std::vector<BoltVector> batch =
+      _metadata_processors.at(col_name)->featurize(updates_ref).at(0);
 
   for (uint32_t update_idx = 0; update_idx < updates.size(); update_idx++) {
     const auto& key = updates.at(update_idx).at(metadata_config->key);
-    _vectors_map.at(col_name)->vectors.at(key) = batch.at(update_idx);
+    _vectors_map.at(col_name)->vectors[key] = batch.at(update_idx);
   }
 }
 
