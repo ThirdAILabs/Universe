@@ -1,14 +1,14 @@
 #include "ComparativeLoss.h"
+#include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <optional>
 
 namespace thirdai::bolt::nn::loss {
 
-ComparativeLoss::ComparativeLoss(autograd::ComputationPtr output)
-    : _output(std::move(output)) {
-  _labels = ops::Input::make(_output->dim());
-}
+ComparativeLoss::ComparativeLoss(autograd::ComputationPtr output,
+                                 autograd::ComputationPtr _labels)
+    : _output(std::move(output)), _labels(std::move(_labels)) {}
 
 float ComparativeLoss::loss(uint32_t index_in_batch) const {
   const BoltVector& labels = _labels->tensor()->getVector(index_in_batch);
@@ -56,6 +56,8 @@ void ComparativeLoss::gradients(uint32_t index_in_batch,
 autograd::ComputationList ComparativeLoss::outputsUsed() const {
   return {_output};
 }
+
+autograd::ComputationList ComparativeLoss::labels() const { return {_labels}; }
 
 template <bool ACT_DENSE, bool LABEL_DENSE>
 float ComparativeLoss::loss(const BoltVector& activations,

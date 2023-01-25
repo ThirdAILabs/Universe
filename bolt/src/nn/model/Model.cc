@@ -21,13 +21,18 @@ Model::Model(autograd::ComputationList inputs,
       _allocation_manager({}),
       _train_steps(0) {
   for (const auto& loss : _losses) {
-    _labels.push_back(loss->labels());
+    auto labels = loss->labels();
+    _labels.insert(_labels.end(), labels.begin(), labels.end());
   }
 
   checkNoOutputsHaveDependentOps();
-  checkAllOutputsAreUsedInLosses();
+  checkNoOutputsUsedInMultipleLosses();
 
-  _computation_order = autograd::getComputationOrder(_inputs, _outputs);
+  _computation_order =
+      autograd::getComputationOrder(_inputs, outputsUsedInLossFunctions());
+
+  checkAllOutputsInComputationOrder();
+
   _allocation_manager = AllocationManager(_computation_order);
 
   std::unordered_set<ops::OpPtr> ops;
@@ -131,20 +136,6 @@ autograd::ComputationPtr Model::getComputation(const std::string& name) const {
 
   throw std::invalid_argument("Could not find computation with name '" + name +
                               "'.");
-}
-
-autograd::ComputationPtr Model::getLabelsForOutput(
-    const std::string& output_name) {
-  for (const auto& loss : _losses) {
-    auto outputs_used = loss->outputsUsed();
-    if (outputs_used.size() == 1) {
-      if (outputs_used.at(0)->name() == output_name) {
-        return loss->labels();
-      }
-    }
-  }
-
-  return nullptr;
 }
 
 std::string Model::summary(bool print) const {
@@ -267,19 +258,43 @@ void Model::setSingleLabel(const tensor::TensorPtr& labels) {
   _labels[0]->setTensor(labels);
 }
 
+autograd::ComputationList Model::outputsUsedInLossFunctions() const {
+  autograd::ComputationList comps;
+
+  for (const auto& loss : _losses) {
+    auto comps_in_loss = loss->outputsUsed();
+    comps.insert(comps.end(), comps_in_loss.begin(), comps_in_loss.end());
+  }
+
+  return comps;
+}
+
 void Model::checkNoOutputsHaveDependentOps() const {
   auto out_degrees = autograd::countDependentComputations(_outputs);
 
-  for (const auto& output : _outputs) {
+  for (const auto& output : outputsUsedInLossFunctions()) {
     if (out_degrees.count(output)) {
       throw std::invalid_argument(
-          "Outputs must not be inputs to any ops. Found output '" +
+          "Outputs used in loss functions must not be inputs to any further "
+          "ops. Found output '" +
           output->name() + "' with a dependent op.");
     }
   }
 }
 
-void Model::checkAllOutputsAreUsedInLosses() const {
+void Model::checkAllOutputsInComputationOrder() const {
+  for (const auto& output : _outputs) {
+    if (std::find(_computation_order.begin(), _computation_order.end(),
+                  output) == _computation_order.end()) {
+      throw std::invalid_argument(
+          "Specified output '" + output->name() +
+          "' is not found in the computation graph created from traversing "
+          "backward from the specified loss functions.");
+    }
+  }
+}
+
+void Model::checkNoOutputsUsedInMultipleLosses() const {
   std::unordered_set<autograd::ComputationPtr> outputs_set(_outputs.begin(),
                                                            _outputs.end());
 
@@ -297,24 +312,18 @@ void Model::checkAllOutputsAreUsedInLosses() const {
       outputs_set.erase(output);
     }
   }
-
-  if (!outputs_set.empty()) {
-    throw std::invalid_argument(
-        "All outputs must be used by a loss. Found an output '" +
-        (*outputs_set.begin())->name() +
-        "' which is not used by any loss function.");
-  }
 }
 
 void Model::matchOutputFullyConnectedLayersWithLabels() {
   for (const auto& loss : _losses) {
     auto outputs_used = loss->outputsUsed();
-    if (outputs_used.size() == 1) {
+    auto loss_labels = loss->labels();
+    if (outputs_used.size() == 1 && loss_labels.size() == 1) {
       auto fully_connected = std::dynamic_pointer_cast<ops::FullyConnected>(
           outputs_used.at(0)->op());
 
       if (fully_connected) {
-        outputs_used.at(0)->addInput(loss->labels());
+        outputs_used.at(0)->addInput(loss_labels.at(0));
       }
     }
   }

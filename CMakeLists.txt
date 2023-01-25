@@ -318,7 +318,6 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/Metric.cc
     bolt/src/train/callbacks/Callback.cc
     bolt/src/train/metrics/LossMetric.cc
-    bolt/src/train/metrics/ComparativeMetric.cc
     bolt/src/train/metrics/CategoricalAccuracy.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc

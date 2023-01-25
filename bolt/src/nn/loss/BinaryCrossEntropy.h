@@ -10,10 +10,11 @@ namespace thirdai::bolt::nn::loss {
  */
 class BinaryCrossEntropy final : public ComparativeLoss {
  public:
-  explicit BinaryCrossEntropy(autograd::ComputationPtr output);
+  explicit BinaryCrossEntropy(autograd::ComputationPtr output,
+                              autograd::ComputationPtr labels);
 
   static std::shared_ptr<BinaryCrossEntropy> make(
-      autograd::ComputationPtr output);
+      autograd::ComputationPtr output, autograd::ComputationPtr labels);
 
  private:
   float singleGradient(float activation, float label,

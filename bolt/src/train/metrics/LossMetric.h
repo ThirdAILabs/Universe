@@ -24,14 +24,6 @@ class LossMetric final : public Metric {
 
   bool betterThan(float a, float b) const final;
 
-  std::string name() const final;
-
-  void setOutputs(nn::autograd::ComputationPtr outputs) final { (void)outputs; }
-
-  void setLabels(nn::autograd::ComputationPtr labels) final { (void)labels; }
-
-  std::string outputName() const final;
-
  private:
   nn::loss::LossPtr _loss_fn;
 

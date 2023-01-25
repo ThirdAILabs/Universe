@@ -19,8 +19,9 @@ namespace thirdai::bolt::nn::tests {
 
 class LossTracker final : public loss::ComparativeLoss {
  public:
-  explicit LossTracker(autograd::ComputationPtr activations)
-      : loss::ComparativeLoss(std::move(activations)) {}
+  explicit LossTracker(autograd::ComputationPtr activations,
+                       autograd::ComputationPtr labels)
+      : loss::ComparativeLoss(std::move(activations), std::move(labels)) {}
 
   const auto& lossCalledWith() const { return _loss_called_with; }
 
@@ -87,13 +88,15 @@ void runTest(bool output_sparse, bool label_sparse, bool test_loss,
   auto output = ops::Input::make(/* dim= */ 8);
   output->setTensor(output_tensor);
 
-  BoltVector label = label_sparse ? sparseLabel() : denseLabel();
+  BoltVector label_vector = label_sparse ? sparseLabel() : denseLabel();
+  auto label_tensor =
+      tensor::Tensor::convert(BoltBatch({label_vector}), /* dim= */ 8);
 
-  auto label_tensor = tensor::Tensor::convert(BoltBatch({label}), /* dim= */ 8);
+  auto label = ops::Input::make(/* dim= */ 8);
 
-  LossTracker loss(output);
+  LossTracker loss(output, label);
 
-  loss.labels()->setTensor(label_tensor);
+  label->setTensor(label_tensor);
 
   std::vector<std::pair<float, float>> called_with;
   if (test_loss) {

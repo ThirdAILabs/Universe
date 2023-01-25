@@ -44,7 +44,9 @@ void createBoltV2TrainSubmodule(py::module_& module) {
   py::class_<metrics::CategoricalAccuracy,
              std::shared_ptr<metrics::CategoricalAccuracy>, metrics::Metric>(
       metrics, "CategoricalAccuracy")
-      .def(py::init<>());
+      .def(py::init<nn::autograd::ComputationPtr,
+                    nn::autograd::ComputationPtr>(),
+           py::arg("outputs"), py::arg("metrics"));
 
   auto callbacks = train.def_submodule("callbacks");
 

@@ -29,18 +29,13 @@ class Loss {
   virtual autograd::ComputationList outputsUsed() const = 0;
 
   /**
-   * Returns the input computation for the labels that the loss function is
-   * expecting. The labels passed into the model are assigned to the inputs
-   * returned by the loss functions in the order that the loss functions are
-   * supplied to the model. This input should be set with a new label tensor
-   * before training on a batch.
+   * Returns the labels that the loss function is expecting. These are any
+   * inputs to the loss function that do not come from the model itself. For
+   * instance a classical label vector, or even per sample weights for the loss.
    */
-  autograd::ComputationPtr labels() const { return _labels; }
+  virtual autograd::ComputationList labels() const = 0;
 
   virtual ~Loss() = default;
-
- protected:
-  autograd::ComputationPtr _labels;
 };
 
 using LossPtr = std::shared_ptr<Loss>;

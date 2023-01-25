@@ -91,6 +91,8 @@ class MockLoss final : public loss::Loss {
 
   autograd::ComputationList outputsUsed() const final { return _outputs_used; }
 
+  autograd::ComputationList labels() const final { return {}; }
+
  private:
   autograd::ComputationList _outputs_used;
 };

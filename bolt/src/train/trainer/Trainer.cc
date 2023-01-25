@@ -15,7 +15,7 @@ metrics::History Trainer::train(
     const LabeledDataset& train_data, uint32_t epochs, float learning_rate,
     const metrics::InputMetrics& train_metrics_in,
     const std::optional<LabeledDataset>& validation_data,
-    const metrics::InputMetrics& validation_metrics_in,
+    const metrics::InputMetrics& validation_metrics,
     std::optional<uint32_t> steps_per_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks_in) {
   verifyNumBatchesMatch(train_data);
@@ -25,8 +25,7 @@ metrics::History Trainer::train(
 
   auto train_state = TrainState::make(learning_rate);
 
-  metrics::MetricList train_metrics(train_metrics_in, _model);
-  metrics::MetricList validation_metrics(validation_metrics_in, _model);
+  metrics::MetricCollection train_metrics(train_metrics_in);
 
   callbacks::CallbackList callbacks(callbacks_in, _model, train_state,
                                     _history);
@@ -75,7 +74,7 @@ metrics::History Trainer::train(
 
     train_metrics.updateHistory(_history, /*prefix= */ "train_");
 
-    (*_history)["time"]["epoch_times"].push_back(epoch_timer.seconds());
+    (*_history)["epoch_times"].push_back(epoch_timer.seconds());
 
     std::string log_line = formatTrainLogLine(
         train_metrics.summarizeLastStep(), num_batches, epoch_timer.seconds());
@@ -100,7 +99,9 @@ metrics::History Trainer::train(
 }
 
 void Trainer::validate(const LabeledDataset& validation_data,
-                       metrics::MetricList& validation_metrics) {
+                       const metrics::InputMetrics& validation_metrics_in) {
+  metrics::MetricCollection validation_metrics(validation_metrics_in);
+
   uint32_t num_batches = validation_data.first.size();
   ProgressBar bar("validate", num_batches);
 
@@ -122,7 +123,7 @@ void Trainer::validate(const LabeledDataset& validation_data,
 
   validation_metrics.updateHistory(_history, /* prefix= */ "val_");
 
-  (*_history)["time"]["val_times"].push_back(val_timer.seconds());
+  (*_history)["val_times"].push_back(val_timer.seconds());
 
   std::string log_line = formatValidateLogLine(
       validation_metrics.summarizeLastStep(), num_batches, val_timer.seconds());

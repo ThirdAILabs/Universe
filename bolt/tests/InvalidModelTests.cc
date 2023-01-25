@@ -16,7 +16,7 @@ namespace thirdai::bolt::nn::tests {
     FAIL() << "Expected std::invalid_argument to be thrown."; \
   }
 
-TEST(InvalidModelTests, OutputWithDependentOps) {
+TEST(InvalidModelTests, OutputInLossWithDependentOps) {
   auto input = emptyInput();
 
   auto act_2 = Noop::make("op_1")->apply({input});
@@ -27,8 +27,8 @@ TEST(InvalidModelTests, OutputWithDependentOps) {
   CHECK_MODEL_EXCEPTION(
       model::Model(/* inputs= */ {input}, /* outputs= */ {act_2, act_3},
                    /* losses= */ {loss}),
-      "Outputs must not be inputs to any ops. Found output 'tensor_2' with a "
-      "dependent op.");
+      "Outputs used in loss functions must not be inputs to any further ops. "
+      "Found output 'tensor_2' with a dependent op.");
 }
 
 TEST(InvalidModelTests, AllOutputsUsedInLoss) {
@@ -43,26 +43,8 @@ TEST(InvalidModelTests, AllOutputsUsedInLoss) {
   CHECK_MODEL_EXCEPTION(
       model::Model(/* inputs= */ {input}, /* outputs= */ {act_2, act_3},
                    /* losses= */ {loss}),
-      "All outputs must be used by a loss. Found an output 'tensor_4' which is "
-      "not used by any loss function.");
-}
-
-TEST(InvalidModelTests, OnlyOutputsUsedInLoss) {
-  auto input = emptyInput();
-
-  auto act_1 = Noop::make("op_1")->apply({input});
-  auto act_2 = Noop::make("op_2")->apply({act_1});
-  auto act_3 = Noop::make("op_3")->apply({act_1});
-
-  auto loss_1 = MockLoss::make({act_1, act_2});
-  auto loss_2 = MockLoss::make({act_3});
-
-  CHECK_MODEL_EXCEPTION(
-      model::Model(/* inputs= */ {input}, /* outputs= */ {act_2, act_3},
-                   /* losses= */ {loss_1, loss_2}),
-      "Only outputs can be used in losses and outputs cannot be reused in "
-      "multiple losses. Found output 'tensor_2' which is either not an output "
-      "or has already been used in a loss function.");
+      "Specified output 'tensor_4' is not found in the computation graph "
+      "created from traversing backward from the specified loss functions.");
 }
 
 TEST(InvalidModelTests, OutputsCannotBeReusedInLosses) {

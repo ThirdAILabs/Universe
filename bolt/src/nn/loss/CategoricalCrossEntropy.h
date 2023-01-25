@@ -13,10 +13,11 @@ namespace thirdai::bolt::nn::loss {
  */
 class CategoricalCrossEntropy final : public ComparativeLoss {
  public:
-  explicit CategoricalCrossEntropy(autograd::ComputationPtr output);
+  explicit CategoricalCrossEntropy(autograd::ComputationPtr output,
+                                   autograd::ComputationPtr labels);
 
   static std::shared_ptr<CategoricalCrossEntropy> make(
-      autograd::ComputationPtr output);
+      autograd::ComputationPtr output, autograd::ComputationPtr labels);
 
  private:
   float singleGradient(float activation, float label,

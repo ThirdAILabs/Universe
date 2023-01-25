@@ -87,17 +87,6 @@ class Model {
   autograd::ComputationPtr getComputation(const std::string& name) const;
 
   /**
-   * Returns the input computation that stores the labels for a given output
-   * computation. Attempts to find an output computation with the given name
-   * whose gradients are computed in a loss function which depends on no other
-   * output computation. The reason for this is that if a loss function is
-   * computed directly on the computation and a label vector we assume that the
-   * label vector maps directly to the neurons in the output computation.
-   * Returns nullptr if not such output computation is found.
-   */
-  autograd::ComputationPtr getLabelsForOutput(const std::string& output_name);
-
-  /**
    * Prints/returns a summary of the model. Throws if no op is found.
    */
   std::string summary(bool print = true) const;
@@ -149,11 +138,9 @@ class Model {
   void setSingleLabel(const tensor::TensorPtr& labels);
 
   /**
-   * These methods perform checks to make sure that model is valid.
+   * Returns the computations in the model that are used in loss functions.
    */
-  void checkNoOutputsHaveDependentOps() const;
-
-  void checkAllOutputsAreUsedInLosses() const;
+  autograd::ComputationList outputsUsedInLossFunctions() const;
 
   /**
    * When a loss is applied to a single output computation coming from a fully
@@ -163,9 +150,18 @@ class Model {
    */
   void matchOutputFullyConnectedLayersWithLabels();
 
+  /**
+   * These methods perform checks to make sure that model is valid.
+   */
+  void checkNoOutputsHaveDependentOps() const;
+
+  void checkAllOutputsInComputationOrder() const;
+
+  void checkNoOutputsUsedInMultipleLosses() const;
+
   autograd::ComputationList _inputs;
-  autograd::ComputationList _labels;
   autograd::ComputationList _outputs;
+  autograd::ComputationList _labels;
   std::vector<loss::LossPtr> _losses;
 
   std::vector<ops::OpPtr> _ops;

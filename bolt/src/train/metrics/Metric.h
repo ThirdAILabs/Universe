@@ -49,22 +49,9 @@ class Metric {
   /**
    * Returns the name of the metric.
    */
-  virtual std::string name() const = 0;
+  std::string name() const { return _name; }
 
-  /**
-   * Binds the outputs to the metric.
-   */
-  virtual void setOutputs(nn::autograd::ComputationPtr outputs) = 0;
-
-  /**
-   * Binds the labels to the metric.
-   */
-  virtual void setLabels(nn::autograd::ComputationPtr labels) = 0;
-
-  /**
-   * Returns the name of the output the metric is bound to.
-   */
-  virtual std::string outputName() const = 0;
+  void setName(const std::string& name) { _name = name; }
 
   virtual ~Metric() = default;
 
@@ -72,29 +59,30 @@ class Metric {
    * Helper method for incrementing an atomic float.
    */
   static void incrementAtomicFloat(std::atomic<float>& value, float increment);
+
+ private:
+  std::string _name;
 };
 
 using MetricPtr = std::shared_ptr<Metric>;
 
-// Maps outputs to metrics to values.
-using History =
-    std::unordered_map<std::string,
-                       std::unordered_map<std::string, std::vector<float>>>;
+// Maps metric names to values. Names are supplied by the user when initially
+// specifying the metrics.
+using History = std::unordered_map<std::string, std::vector<float>>;
 
 using HistoryPtr = std::shared_ptr<History>;
 
 // How metrics are provided to the trainer. Maps output names to lists of
 // metrics.
-using InputMetrics =
-    std::unordered_map<std::string, std::vector<metrics::MetricPtr>>;
+using InputMetrics = std::unordered_map<std::string, metrics::MetricPtr>;
 
 /**
  * Represents a collection of metrics. Binds the metrics their given output and
  * label in its constructor.
  */
-class MetricList {
+class MetricCollection {
  public:
-  MetricList(const InputMetrics& metrics, const nn::model::ModelPtr& model);
+  explicit MetricCollection(const InputMetrics& metrics);
 
   /**
    * Updates the values of the metrics based on the current batch.

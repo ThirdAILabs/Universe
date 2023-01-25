@@ -49,17 +49,18 @@ TEST(TrainerTest, Training) {
           /* sampling=*/nullptr)
           ->apply(input);
 
-  auto loss = nn::loss::CategoricalCrossEntropy::make(output);
+  auto label = nn::ops::Input::make(/* dim= */ N_CLASSES);
+  auto loss = nn::loss::CategoricalCrossEntropy::make(output, label);
 
   nn::autograd::ComputationList outputs = {output};
 
   std::vector<nn::loss::LossPtr> losses = {loss};
 
   metrics::InputMetrics train_metrics = {
-      {output->name(), {std::make_shared<metrics::LossMetric>(loss)}}};
+      {"loss", std::make_shared<metrics::LossMetric>(loss)}};
 
   metrics::InputMetrics val_metrics = {
-      {output->name(), {std::make_shared<metrics::CategoricalAccuracy>()}}};
+      {"acc", std::make_shared<metrics::CategoricalAccuracy>(output, label)}};
 
   auto model = nn::model::Model::make({input}, outputs, losses);
 
@@ -80,19 +81,18 @@ TEST(TrainerTest, Training) {
                     train_metrics, {std::move(val_data)}, val_metrics,
                     /* steps_per_validation= */ 25, {tracking_callback});
 
-  ASSERT_EQ(metrics.size(), 2);
+  ASSERT_EQ(metrics.size(), 4);
 
-  const auto& output_metrics = metrics.at(output->name());
-
-  ASSERT_EQ(output_metrics.size(), 2);
-  ASSERT_EQ(output_metrics.at("train_loss").size(), 3);
+  ASSERT_EQ(metrics.at("train_loss").size(), 3);
   // 3 epochs, validation twice per epoch.
-  ASSERT_EQ(output_metrics.at("val_categorical_accuracy").size(), 3 * 2);
-  // Accuracy should be around 0.96-0.97
-  ASSERT_GE(output_metrics.at("val_categorical_accuracy").back(), 0.9);
+  ASSERT_EQ(metrics.at("val_acc").size(), 3 * 2);
 
-  // Epoch, validation times.
-  ASSERT_EQ(metrics.at("time").size(), 2);
+  ASSERT_EQ(metrics.at("epoch_times").size(), 3);
+
+  ASSERT_EQ(metrics.at("val_times").size(), 3 * 2);
+
+  // Accuracy should be around 0.96-0.97
+  ASSERT_GE(metrics.at("val_acc").back(), 0.9);
 
   std::map<std::string, uint32_t> expected_invocation_counts = {
       {"on_train_begin", 1},      {"on_train_end", 1},

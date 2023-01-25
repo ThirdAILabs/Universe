@@ -118,11 +118,12 @@ void createBoltV2NNSubmodule(py::module_& module) {
   py::class_<loss::CategoricalCrossEntropy, loss::CategoricalCrossEntropyPtr,
              loss::Loss>(loss, "CategoricalCrossEntropy")
       .def(py::init(&loss::CategoricalCrossEntropy::make),
-           py::arg("activations"));
+           py::arg("activations"), py::arg("labels"));
 
   py::class_<loss::BinaryCrossEntropy, loss::BinaryCrossEntropyPtr, loss::Loss>(
       loss, "BinaryCrossEntropy")
-      .def(py::init(&loss::BinaryCrossEntropy::make), py::arg("activations"));
+      .def(py::init(&loss::BinaryCrossEntropy::make), py::arg("activations"),
+           py::arg("labels"));
 }
 
 }  // namespace thirdai::bolt::nn::python

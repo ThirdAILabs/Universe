@@ -46,7 +46,9 @@ model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
 
     outputs.push_back(output->apply(input_to_output_layer));
 
-    losses.push_back(loss::CategoricalCrossEntropy::make(outputs.back()));
+    auto label = ops::Input::make(/* dim= */ n_classes);
+    losses.push_back(
+        loss::CategoricalCrossEntropy::make(outputs.back(), label));
   }
 
   auto model = model::Model::make(/* inputs= */ {input}, /* outputs= */ outputs,
@@ -61,7 +63,7 @@ void trainModel(model::ModelPtr& model, const train::LabeledDataset& data,
   for (uint32_t e = 0; e < epochs; e++) {
     for (uint32_t i = 0; i < data.first.size(); i++) {
       if (single_input) {
-        model->trainOnBatchSingleInput(data.first.at(i), data.second.at(i));
+        model->trainOnBatch(data.first.at(i), data.second.at(i));
       } else {
         model->trainOnBatch({data.first.at(i)},
                             {data.second.at(i), data.second.at(i)});
@@ -80,8 +82,7 @@ std::vector<float> computeAccuracy(model::ModelPtr& model,
 
   // NOLINTNEXTLINE (clang tidy things this can be a range-based for loop?)
   for (uint32_t batch_idx = 0; batch_idx < data.first.size(); batch_idx++) {
-    model->forwardSingleInput(data.first.at(batch_idx),
-                              /* use_sparsity= */ false);
+    model->forward(data.first.at(batch_idx), /* use_sparsity= */ false);
 
     for (uint32_t output_idx = 0; output_idx < outputs.size(); output_idx++) {
       for (uint32_t sample_idx = 0;
@@ -191,9 +192,10 @@ TEST(FullyConnectedModelTests, SparseOutput) {
           /* rebuild_hash_tables= */ 4, /* reconstruct_hash_functions= */ 20)
           ->apply(hidden);
 
+  auto label = ops::Input::make(/* dim= */ N_CLASSES);
   auto model = model::Model::make(
       /* inputs= */ {input}, /* outputs= */ {output},
-      /* losses= */ {loss::CategoricalCrossEntropy::make(output)});
+      /* losses= */ {loss::CategoricalCrossEntropy::make(output, label)});
 
   auto train_data =
       getDataset(N_CLASSES, /* n_batches= */ 200, /* batch_size= */ 100);

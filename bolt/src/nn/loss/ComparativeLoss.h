@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/nn/loss/Loss.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
 
 namespace thirdai::bolt::nn::loss {
@@ -14,13 +15,16 @@ namespace thirdai::bolt::nn::loss {
  */
 class ComparativeLoss : public Loss {
  public:
-  explicit ComparativeLoss(autograd::ComputationPtr output);
+  ComparativeLoss(autograd::ComputationPtr output,
+                  autograd::ComputationPtr _labels);
 
   float loss(uint32_t index_in_batch) const final;
 
   void gradients(uint32_t index_in_batch, uint32_t batch_size) const final;
 
   autograd::ComputationList outputsUsed() const final;
+
+  autograd::ComputationList labels() const final;
 
  private:
   /**
@@ -48,6 +52,7 @@ class ComparativeLoss : public Loss {
                                uint32_t batch_size) const = 0;
 
   autograd::ComputationPtr _output;
+  autograd::ComputationPtr _labels;
 };
 
 }  // namespace thirdai::bolt::nn::loss

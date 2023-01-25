@@ -5,12 +5,14 @@
 
 namespace thirdai::bolt::nn::loss {
 
-BinaryCrossEntropy::BinaryCrossEntropy(autograd::ComputationPtr output)
-    : ComparativeLoss(std::move(output)) {}
+BinaryCrossEntropy::BinaryCrossEntropy(autograd::ComputationPtr output,
+                                       autograd::ComputationPtr labels)
+    : ComparativeLoss(std::move(output), std::move(labels)) {}
 
 std::shared_ptr<BinaryCrossEntropy> BinaryCrossEntropy::make(
-    autograd::ComputationPtr output) {
-  return std::make_shared<BinaryCrossEntropy>(std::move(output));
+    autograd::ComputationPtr output, autograd::ComputationPtr labels) {
+  return std::make_shared<BinaryCrossEntropy>(std::move(output),
+                                              std::move(labels));
 }
 
 float BinaryCrossEntropy::singleLoss(float activation, float label) const {

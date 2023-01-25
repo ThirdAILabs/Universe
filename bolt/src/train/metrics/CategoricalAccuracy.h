@@ -1,6 +1,7 @@
 #pragma once
 
-#include <bolt/src/train/metrics/ComparativeMetric.h>
+#include <bolt/src/nn/ops/Op.h>
+#include <bolt/src/train/metrics/Metric.h>
 #include <atomic>
 
 namespace thirdai::bolt::train::metrics {
@@ -8,9 +9,12 @@ namespace thirdai::bolt::train::metrics {
 /**
  * Computes the categorical accuracy (precision@1) for the given output.
  */
-class CategoricalAccuracy final : public ComparativeMetric {
+class CategoricalAccuracy final : public Metric {
  public:
-  CategoricalAccuracy();
+  CategoricalAccuracy(nn::autograd::ComputationPtr outputs,
+                      nn::autograd::ComputationPtr labels);
+
+  void record(uint32_t index_in_batch) final;
 
   void reset() final;
 
@@ -20,12 +24,10 @@ class CategoricalAccuracy final : public ComparativeMetric {
 
   bool betterThan(float a, float b) const final;
 
-  std::string name() const final;
-
- protected:
-  void record(const BoltVector& output, const BoltVector& label) final;
-
  private:
+  nn::autograd::ComputationPtr _outputs;
+  nn::autograd::ComputationPtr _labels;
+
   std::atomic_uint32_t _correct;
   std::atomic_uint32_t _num_samples;
 };

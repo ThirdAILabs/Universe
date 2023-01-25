@@ -54,7 +54,7 @@ class Trainer {
    * metrics.
    */
   void validate(const LabeledDataset& validation_data,
-                metrics::MetricList& validation_metrics);
+                const metrics::InputMetrics& validation_metrics);
 
   static void verifyNumBatchesMatch(const LabeledDataset& data);
 

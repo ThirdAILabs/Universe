@@ -11,19 +11,14 @@ void Metric::incrementAtomicFloat(std::atomic<float>& value, float increment) {
   }
 }
 
-MetricList::MetricList(
-    const std::unordered_map<std::string, std::vector<MetricPtr>>& metrics,
-    const nn::model::ModelPtr& model) {
-  for (const auto& output_metrics : metrics) {
-    for (const auto& metric : output_metrics.second) {
-      metric->setOutputs(model->getComputation(output_metrics.first));
-      metric->setLabels(model->getLabelsForOutput(output_metrics.first));
-      _metrics.push_back(metric);
-    }
+MetricCollection::MetricCollection(const InputMetrics& metrics) {
+  for (const auto& [name, metric] : metrics) {
+    metric->setName(name);
+    _metrics.push_back(metric);
   }
 }
 
-void MetricList::recordBatch(uint32_t batch_size) {
+void MetricCollection::recordBatch(uint32_t batch_size) {
 #pragma omp parallel for default(none) shared(batch_size)
   for (uint32_t i = 0; i < batch_size; i++) {
     for (const auto& metric : _metrics) {
@@ -32,26 +27,24 @@ void MetricList::recordBatch(uint32_t batch_size) {
   }
 }
 
-void MetricList::updateHistory(std::shared_ptr<History>& history,
-                               const std::string& prefix) {
+void MetricCollection::updateHistory(std::shared_ptr<History>& history,
+                                     const std::string& prefix) {
   for (const auto& metric : _metrics) {
-    (*history)[metric->outputName()][prefix + metric->name()].push_back(
-        metric->value());
+    (*history)[prefix + metric->name()].push_back(metric->value());
   }
 }
 
-std::string MetricList::summarizeLastStep() const {
+std::string MetricCollection::summarizeLastStep() const {
   std::stringstream summary;
 
   for (const auto& metric : _metrics) {
-    summary << metric->outputName() << "::" << metric->name() << "=";
-    summary << metric->value() << " ";
+    summary << metric->name() << "=" << metric->value() << " ";
   }
 
   return summary.str();
 }
 
-void MetricList::reset() {
+void MetricCollection::reset() {
   for (auto& metric : _metrics) {
     metric->reset();
   }

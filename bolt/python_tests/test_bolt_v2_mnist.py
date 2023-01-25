@@ -56,7 +56,8 @@ def test_bolt_on_mnist():
         hidden_layer
     )
 
-    loss = bolt.nn.losses.CategoricalCrossEntropy(output)
+    labels = bolt.nn.Input(dim=10)
+    loss = bolt.nn.losses.CategoricalCrossEntropy(output, labels)
 
     model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
 
@@ -69,17 +70,15 @@ def test_bolt_on_mnist():
         epochs=3,
         learning_rate=0.0001,
         train_metrics={
-            "tensor_3": [bolt.train.metrics.LossMetric(loss)],
+            "loss": bolt.train.metrics.LossMetric(loss),
         },
         validation_data=test_data,
         validation_metrics={
-            "tensor_3": [
-                bolt.train.metrics.LossMetric(loss),
-                bolt.train.metrics.CategoricalAccuracy(),
-            ],
+            "loss": bolt.train.metrics.LossMetric(loss),
+            "acc": bolt.train.metrics.CategoricalAccuracy(output, labels),
         },
         steps_per_validation=None,
         callbacks=[],
     )
 
-    assert history["tensor_3"]["val_categorical_accuracy"][-1] >= 0.9
+    assert history["val_acc"][-1] >= 0.9

@@ -5,12 +5,13 @@
 namespace thirdai::bolt::nn::loss {
 
 CategoricalCrossEntropy::CategoricalCrossEntropy(
-    autograd::ComputationPtr output)
-    : ComparativeLoss(std::move(output)) {}
+    autograd::ComputationPtr output, autograd::ComputationPtr labels)
+    : ComparativeLoss(std::move(output), std::move(labels)) {}
 
 std::shared_ptr<CategoricalCrossEntropy> CategoricalCrossEntropy::make(
-    autograd::ComputationPtr output) {
-  return std::make_shared<CategoricalCrossEntropy>(std::move(output));
+    autograd::ComputationPtr output, autograd::ComputationPtr labels) {
+  return std::make_shared<CategoricalCrossEntropy>(std::move(output),
+                                                   std::move(labels));
 }
 
 float CategoricalCrossEntropy::singleLoss(float activation, float label) const {
