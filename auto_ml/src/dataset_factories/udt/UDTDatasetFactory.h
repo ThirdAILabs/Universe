@@ -16,7 +16,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
-#include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/ProcessorUtils.h>
@@ -144,8 +143,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         _unlabeled_non_updating_processor);
   }
 
-  std::vector<uint32_t> getInputDims() final {
-    return {_labeled_history_updating_processor->getInputDim()};
+  std::unordered_map<std::string, uint32_t> getInputDims() final {
+    return {{"input", _labeled_history_updating_processor->getInputDim()}};
   }
 
   uint32_t getLabelDim() final {

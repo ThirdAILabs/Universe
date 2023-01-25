@@ -2,6 +2,7 @@
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
@@ -60,14 +61,6 @@ void createModelsSubmodule(py::module_& module) {
 
   py::class_<ModelPipeline, std::shared_ptr<ModelPipeline>>(models_submodule,
                                                             "Pipeline")
-      .def(py::init(&createPipeline), py::arg("deployment_config"),
-           py::arg("parameters") = py::dict(),
-           docs::MODEL_PIPELINE_INIT_FROM_CONFIG,
-           bolt::python::OutputRedirect())
-      .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
-           py::arg("parameters") = py::dict(),
-           docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG,
-           bolt::python::OutputRedirect())
       .def("train_with_source", &ModelPipeline::train, py::arg("data_source"),
            py::arg("train_config"), py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
@@ -152,7 +145,7 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
-           py::arg("options") = deployment::UserInputMap{}, docs::UDT_INIT,
+           py::arg("options") = config::ParameterInputMap{}, docs::UDT_INIT,
            bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
@@ -334,8 +327,18 @@ void createUDTTemporalSubmodule(py::module_& module) {
                              docs::UDT_NUMERICAL_TEMPORAL);
 }
 
-deployment::UserInputMap createUserInputMap(const py::dict& parameters) {
-  deployment::UserInputMap cpp_parameters;
+void createDeploymentSubmodule(py::module_& module) {
+#if THIRDAI_EXPOSE_ALL
+  auto deployment = module.def_submodule("deployment");
+
+  deployment.def("load_config", &config::loadConfig, py::arg("filename"));
+  deployment.def("dump_config", &config::dumpConfig, py::arg("config"),
+                 py::arg("filename"));
+#endif
+}
+
+config::ParameterInputMap createUserInputMap(const py::dict& parameters) {
+  config::ParameterInputMap cpp_parameters;
   for (const auto& [k, v] : parameters) {
     if (!py::isinstance<py::str>(k)) {
       throw std::invalid_argument("Keys of parameters map must be strings.");
@@ -344,19 +347,16 @@ deployment::UserInputMap createUserInputMap(const py::dict& parameters) {
 
     if (py::isinstance<py::bool_>(v)) {
       bool value = v.cast<bool>();
-      cpp_parameters.emplace(name, deployment::UserParameterInput(value));
+      cpp_parameters.insert(name, value);
     } else if (py::isinstance<py::int_>(v)) {
       uint32_t value = v.cast<uint32_t>();
-      cpp_parameters.emplace(name, deployment::UserParameterInput(value));
+      cpp_parameters.insert(name, value);
     } else if (py::isinstance<py::float_>(v)) {
       float value = v.cast<float>();
-      cpp_parameters.emplace(name, deployment::UserParameterInput(value));
+      cpp_parameters.insert(name, value);
     } else if (py::isinstance<py::str>(v)) {
       std::string value = v.cast<std::string>();
-      cpp_parameters.emplace(name, deployment::UserParameterInput(value));
-    } else if (py::isinstance<data::UDTConfig>(v)) {
-      data::UDTConfigPtr value = v.cast<data::UDTConfigPtr>();
-      cpp_parameters.emplace(name, deployment::UserParameterInput(value));
+      cpp_parameters.insert(name, value);
     } else {
       throw std::invalid_argument("Invalid type '" +
                                   py::str(v.get_type()).cast<std::string>() +
@@ -366,19 +366,6 @@ deployment::UserInputMap createUserInputMap(const py::dict& parameters) {
   }
 
   return cpp_parameters;
-}
-
-ModelPipeline createPipeline(const deployment::DeploymentConfigPtr& config,
-                             const py::dict& parameters) {
-  deployment::UserInputMap cpp_parameters = createUserInputMap(parameters);
-  return ModelPipeline::make(config, cpp_parameters);
-}
-
-ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
-                                            const py::dict& parameters) {
-  auto config = deployment::DeploymentConfig::load(config_path);
-
-  return createPipeline(config, parameters);
 }
 
 py::object predictTokensWrapper(ModelPipeline& model,

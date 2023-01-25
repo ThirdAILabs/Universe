@@ -7,10 +7,10 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/config/ParameterInputMap.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
-#include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/models/ModelPipeline.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <memory>
@@ -55,7 +55,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
       bool integer_target = false, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::optional<std::string>& model_config = std::nullopt,
-      const deployment::UserInputMap& options = {});
+      const config::ParameterInputMap& options = {});
 
   /**
    * This wraps the predict method of the ModelPipeline to handle recusive
@@ -182,12 +182,12 @@ class UniversalDeepTransformer final : public ModelPipeline {
   getOutputProcessor(const data::UDTConfigPtr& dataset_config);
 
   static bolt::BoltGraphPtr loadUDTBoltGraph(
-      const std::vector<uint32_t>& input_dims, uint32_t output_dim,
-      const std::string& saved_model_config);
+      const std::unordered_map<std::string, uint32_t>& input_dims,
+      uint32_t output_dim, const std::string& saved_model_config);
 
   static bolt::BoltGraphPtr buildUDTBoltGraph(
-      const std::vector<uint32_t>& input_dims, uint32_t output_dim,
-      uint32_t hidden_layer_size);
+      const std::unordered_map<std::string, uint32_t>& input_dims,
+      uint32_t output_dim, uint32_t hidden_layer_size);
 
   data::UDTDatasetFactory& udtDatasetFactory() const {
     /*
@@ -208,7 +208,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
   };
 
   static UDTOptions processUDTOptions(
-      const deployment::UserInputMap& options_map);
+      const config::ParameterInputMap& options_map);
 
   static void throwOptionError(const std::string& option_name,
                                const std::string& given_option_value,

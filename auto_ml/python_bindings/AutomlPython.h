@@ -23,15 +23,11 @@ void createUDTTypesSubmodule(py::module_& module);
 
 void createUDTTemporalSubmodule(py::module_& module);
 
+void createDeploymentSubmodule(py::module_& module);
+
 // Python wrappers for ModelPipline methods
 
-deployment::UserInputMap createUserInputMap(const py::dict& parameters);
-
-ModelPipeline createPipeline(const deployment::DeploymentConfigPtr& config,
-                             const py::dict& parameters);
-
-ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
-                                            const py::dict& parameters);
+config::ParameterInputMap createUserInputMap(const py::dict& parameters);
 
 py::object predictTokensWrapper(ModelPipeline& model,
                                 const std::vector<uint32_t>& tokens,
