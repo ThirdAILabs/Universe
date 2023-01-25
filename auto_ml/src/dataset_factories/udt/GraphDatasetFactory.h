@@ -29,9 +29,15 @@ class GraphDatasetFactory {
     auto input_blocks = buildInputBlocks();
 
     auto label_block = getLabelBlock();
+    auto data_loader = dataset::SimpleFileDataSource::make(
+        _config->_graph_file_name,
+        /* target_batch_size= */ DEFAULT_BATCH_SIZE);
+
+    _column_number_map = UDTDatasetFactory::makeColumnNumberMapFromHeader(
+        *data_loader, _config->_delimeter);
     if (_config->_neighbourhood_context || _config->_label_context ||
         _config->_kth_neighbourhood) {
-      makePrepocessedProcessedVectors();
+      _vectors = makeFinalProcessedVectors(*data_loader);
 
       auto graph_block = dataset::GraphCategoricalBlock::make(
           _config->_source, _vectors, _neighbours, _node_id_map);
@@ -51,6 +57,22 @@ class GraphDatasetFactory {
     return {_batch_processor->getInputDim()};
   }
 
+  dataset::DatasetLoaderPtr getLabeledDatasetLoader(
+      const dataset::DataSourcePtr& data_source, bool training) {
+    _column_number_map = UDTDatasetFactory::makeColumnNumberMapFromHeader(
+        *data_source, _config->_delimeter);
+
+    // The batch processor will treat the next line as a header
+    // Restart so batch processor does not skip a sample.
+    data_source->restart();
+
+    _batch_processor->updateColumnNumbers(_column_number_map);
+
+    return std::make_unique<dataset::DatasetLoader>(data_source,
+                                                    _batch_processor,
+                                                    /* shuffle= */ training);
+  }
+
   uint32_t getLabelDim() { return _batch_processor->getLabelDim(); }
 
   dataset::GenericBatchProcessorPtr getBatchProcessor() {
@@ -59,22 +81,18 @@ class GraphDatasetFactory {
 
   static std::vector<std::vector<uint32_t>> createGraph(  // upto now correct
       const std::vector<std::vector<std::string>>& rows,
-      const std::vector<uint32_t>& relationship_col_nums,
-      uint32_t source_col_num) {
+      const std::vector<uint32_t>& relationship_col_nums) {
     std::vector<std::vector<uint32_t>> adjacency_list_simulation(rows.size());
     // #pragma omp parallel for default(none) shared(
     //     relationship_col_nums, rows, adjacency_list_simulation,
     //     source_col_num) collapse(2)
     for (uint32_t i = 0; i < rows.size(); i++) {
       for (uint32_t j = i + 1; j < rows.size(); j++) {
-        if (rows[i][source_col_num] != rows[j][source_col_num]) {
-          for (unsigned int relationship_col_num : relationship_col_nums) {
-            if (rows[i][relationship_col_num] ==
-                rows[j][relationship_col_num]) {
-              adjacency_list_simulation[i].push_back(j);
-              adjacency_list_simulation[j].push_back(i);
-              break;
-            }
+        for (unsigned int relationship_col_num : relationship_col_nums) {
+          if (rows[i][relationship_col_num] == rows[j][relationship_col_num]) {
+            adjacency_list_simulation[i].push_back(j);
+            adjacency_list_simulation[j].push_back(i);
+            break;
           }
         }
       }
@@ -82,7 +100,7 @@ class GraphDatasetFactory {
     return adjacency_list_simulation;
   }
 
-  std::vector<std::unordered_set<uint32_t>> findNeighboursForAllNodes(
+  static std::vector<std::unordered_set<uint32_t>> findNeighboursForAllNodes(
       uint32_t num_nodes,
       const std::vector<std::vector<uint32_t>>& adjacency_list,
       uint32_t k_hop) {
@@ -108,11 +126,15 @@ class GraphDatasetFactory {
     for (uint32_t i = 0; i < rows.size(); i++) {
       for (uint32_t j = 0; j < numerical_columns.size(); j++) {
         int value = 0;
-        for (auto neighbour : neighbours[i]) {
-          value += stoi(rows[neighbour][numerical_columns[j]]);
+        if (!neighbours[i].empty()) {
+          for (auto neighbour : neighbours[i]) {
+            value += stoi(rows[neighbour][numerical_columns[j]]);
+          }
+          processed_numerical_columns[i][j] =
+              std::to_string(static_cast<float>(value) / neighbours[i].size());
+        } else {
+          processed_numerical_columns[i][j] = "0";
         }
-        processed_numerical_columns[i][j] =
-            std::to_string(value / neighbours.size());
       }
     }
 
@@ -132,11 +154,10 @@ class GraphDatasetFactory {
   dataset::CsvRolledBatch getFinalData(
       const std::vector<std::vector<std::string>>& rows,
       const std::vector<uint32_t>& numerical_columns) {
-    uint32_t source_col_num = _column_number_map.at(_config->_source);
     std::vector<uint32_t> relationship_col_nums = getRelationshipColumns(
         _config->_relationship_columns, _column_number_map);
 
-    _adjacency_list = createGraph(rows, relationship_col_nums, source_col_num);
+    _adjacency_list = createGraph(rows, relationship_col_nums);
 
     _neighbours = findNeighboursForAllNodes(rows.size(), _adjacency_list,
                                             _config->_kth_neighbourhood);
@@ -155,19 +176,13 @@ class GraphDatasetFactory {
     return input;
   }
 
-  std::vector<std::vector<std::string>> getRawData() {
-    auto data_loader = dataset::SimpleFileDataSource::make(
-        _config->_graph_file_name,
-        /* target_batch_size= */ DEFAULT_BATCH_SIZE);
-
-    _column_number_map = UDTDatasetFactory::makeColumnNumberMapFromHeader(
-        *data_loader, _config->_delimeter);
-
+  std::vector<std::vector<std::string>> getRawData(
+      dataset::DataSource& data_loader) {
     uint32_t source_col_num = _column_number_map.at(_config->_source);
 
     std::vector<std::string> full_data;
 
-    while (auto data = data_loader->nextBatch()) {
+    while (auto data = data_loader.nextBatch()) {
       full_data.insert(full_data.end(), data->begin(), data->end());
     }
 
@@ -191,12 +206,13 @@ class GraphDatasetFactory {
     return rows;
   }
 
-  void makePrepocessedProcessedVectors() {
-    auto rows = getRawData();
+  dataset::PreprocessedVectorsPtr makeFinalProcessedVectors(
+      dataset::DataSource& data_loader) {
+    auto rows = getRawData(data_loader);
+    std::vector<uint32_t> numerical_columns;
     std::vector<dataset::BlockPtr> input_blocks;
     std::vector<dataset::TabularColumn> tabular_columns;
     std::vector<data::NumericalDataTypePtr> numerical_types;
-    std::vector<uint32_t> numerical_columns;
     uint32_t original_num_cols = _column_number_map.numCols();
 
     for (const auto& [col_name, data_type] : _config->_data_types) {
@@ -245,7 +261,7 @@ class GraphDatasetFactory {
         /* has_header= */ false, /* delimiter= */ _config->_delimeter,
         /* parallel= */ true, /* hash_range= */ 100000);
     auto final_data = getFinalData(rows, numerical_columns);
-    _vectors = makePreprocessedVectors(processor, *key_vocab, final_data);
+    return makePreprocessedVectors(processor, *key_vocab, final_data);
   }
 
   std::vector<dataset::BlockPtr> buildInputBlocks() {
@@ -265,23 +281,25 @@ class GraphDatasetFactory {
   }
 
   dataset::BlockPtr getLabelBlock() {
-    auto key_vocab = dataset::ThreadSafeVocabulary::make(
-        /* vocab_size= */ _config->_n_target_classes);
+    if (!_target_vocab) {
+      _target_vocab = dataset::ThreadSafeVocabulary::make(
+          /* vocab_size= */ _config->_n_target_classes);
+    }
     return dataset::StringLookupCategoricalBlock::make(_config->_target,
-                                                       key_vocab);
+                                                       _target_vocab);
   }
 
-  void findAllNeighboursForNode(  // NOLINT
+  static void findAllNeighboursForNode(  // NOLINT
       uint32_t k_hop, uint32_t node_id, std::vector<bool>& visited,
       std::unordered_set<uint32_t>& neighbours,
       const std::vector<std::vector<uint32_t>>& adjacency_list) {
     if (k_hop == 0) {
       return;
     }
+    visited[node_id] = true;
 
     for (const auto& neighbour : adjacency_list[node_id]) {
       if (!visited[neighbour]) {
-        visited[neighbour] = true;
         neighbours.insert(neighbour);
         findAllNeighboursForNode(k_hop - 1, neighbour, visited, neighbours,
                                  adjacency_list);
@@ -314,6 +332,7 @@ class GraphDatasetFactory {
   std::vector<std::vector<uint32_t>> _adjacency_list;
   std::vector<std::unordered_set<uint32_t>> _neighbours;
   dataset::GenericBatchProcessorPtr _batch_processor;
+  dataset::ThreadSafeVocabularyPtr _target_vocab;
 };
 
 using GraphDatasetFactoryPtr = std::shared_ptr<GraphDatasetFactory>;
