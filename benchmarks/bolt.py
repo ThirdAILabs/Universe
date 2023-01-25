@@ -20,8 +20,7 @@ from utils import (
 
 
 def create_models(benchmark_config):
-    pass 
-
+    pass
 
 
 def main():
@@ -40,18 +39,19 @@ def main():
     for model in models:
         run_experiment(model, datasets, config, use_mlflow=mlflow_is_enabled(args))
 
+
 def create_models(benchmark_config):
     name_to_node = {}
 
     def get_node_by_name(node_name):
         if node_name in name_to_node:
             return name_to_node[node_name]
-        
+
         raise ValueError(f"{node_name} not found in previously defined nodes")
 
     sparsities = config_get_required(benchmark_config, "sparsities")
 
-    # determine how many models to create. 
+    # determine how many models to create.
     node_names = list(sparsities.keys())
     node_name_sparsity_length = len(sparsities[node_names[0]])
     num_models = node_name_sparsity_length ** len(node_names)
@@ -73,7 +73,7 @@ def create_models(benchmark_config):
 
             if node_type == "Input":
                 inputs.append(node)
-            elif "pred" in node_config: 
+            elif "pred" in node_config:
                 pred_name = node_config["pred"]
                 pred_node = get_node_by_name(pred_name)
                 nodes_with_no_successor.remove(pred_name)
@@ -95,8 +95,8 @@ def create_models(benchmark_config):
                     " predecessor(s) as pred/preds"
                 )
             nodes_with_no_successor.add(node_name)
-            name_to_node[node_name] = node 
-        
+            name_to_node[node_name] = node
+
         if len(nodes_with_no_successor) != 1:
             raise ValueError(
                 "There shoudl only be one output node (nodes with no successors), "
@@ -110,7 +110,8 @@ def create_models(benchmark_config):
         models.append(model)
         name_to_node.clear()
 
-    return models 
+    return models
+
 
 # Returns a map from
 # ["train_data", "train_labels", "test_data", "test_labels"]
