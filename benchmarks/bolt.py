@@ -19,10 +19,12 @@ from utils import (
 )
 
 
-SPARSITY_LEVELS = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+def create_models(benchmark_config):
+    pass 
+
+
 
 def main():
-
     config, args = start_experiment(
         description="Creates, trains, and tests a bolt network on the specified config."
     )
@@ -31,71 +33,84 @@ def main():
         log_to_stderr=args.log_to_stderr, path=args.log_file, level=args.log_level
     )
 
-    for sparsity in SPARSITY_LEVELS:
-        pass 
-        
-    model = load_and_compile_model(config)
+    models = create_models(config)
     datasets = load_all_datasets(config)
     start_mlflow(config, mlflow_args=args)
-    run_experiment(model, datasets, config, use_mlflow=mlflow_is_enabled(args))
 
+    for model in models:
+        run_experiment(model, datasets, config, use_mlflow=mlflow_is_enabled(args))
 
-def load_and_compile_models(model_config, sparsity=1.0):
-    name_to_node = {}
-
-
-def load_and_compile_model(model_config, sparsity=1.0):
+def create_models(benchmark_config):
     name_to_node = {}
 
     def get_node_by_name(node_name):
         if node_name in name_to_node:
             return name_to_node[node_name]
+        
         raise ValueError(f"{node_name} not found in previously defined nodes")
 
-    nodes_with_no_successor = set()
-    inputs = []
-    for node_config in config_get_required(model_config, "nodes"):
-        node = construct_node(node_config)
-        node_name = config_get_required(node_config, "name")
-        node_type = config_get_required(node_config, "type")
+    sparsities = config_get_required(benchmark_config, "sparsities")
 
-        if node_type == "Input":
-            inputs.append(node)
-        elif "pred" in node_config:
-            pred_name = node_config["pred"]
-            pred_node = get_node_by_name(pred_name)
-            nodes_with_no_successor.remove(pred_name)
-            node(pred_node)
-        elif "preds" in node_config:
-            pred_names = node_config["preds"]
-            pred_nodes = [get_node_by_name(pred_name) for pred_name in pred_names]
-            for pred_name in pred_names:
-                if pred_name in nodes_with_no_successor:
-                    nodes_with_no_successor.remove(pred_name)
-            if config_get_required(node_config, "type") == "Switch":
-                node(pred_nodes[0], pred_nodes[1])
-            elif config_get_required(node_config, "type") == "DlrmAttention":
-                node(pred_nodes[0], pred_nodes[1])
+    # determine how many models to create. 
+    node_names = list(sparsities.keys())
+    node_name_sparsity_length = len(sparsities[node_names[0]])
+    num_models = node_name_sparsity_length ** len(node_names)
+
+    models = []
+    node_sparsities_with_counts = {}
+
+    for _ in range(num_models):
+        nodes_with_no_successor = set()
+        inputs = []
+
+        for node_config in config_get_required(benchmark_config, "nodes"):
+            node_name = config_get_required(node_config, "name")
+            current_sparsity = sparsities[node_name][-1]
+
+            node = construct_node(node_config, current_sparsity)
+            node_name = config_get_required(node_config, "name")
+            node_type = config_get_required(node_config, "type")
+
+            if node_type == "Input":
+                inputs.append(node)
+            elif "pred" in node_config: 
+                pred_name = node_config["pred"]
+                pred_node = get_node_by_name(pred_name)
+                nodes_with_no_successor.remove(pred_name)
+                node(pred_node)
+            elif "preds" in node_config:
+                pred_names = node_config["preds"]
+                pred_nodes = [get_node_by_name(pred_name) for pred_name in pred_names]
+
+                for pred_name in pred_names:
+                    if pred_name in nodes_with_no_successor:
+                        nodes_with_no_successor.remove(pred_name)
+                if config_get_required(node_config, "type") == "Switch":
+                    node(pred_nodes[0], pred_nodes[1])
+                else:
+                    node(pred_nodes)
             else:
-                node(pred_nodes)
-        else:
-            raise ValueError("Node should either be an Input or specify pred/preds")
+                raise ValueError(
+                    f"node {node_name} should either be an Input node or specify"
+                    " predecessor(s) as pred/preds"
+                )
+            nodes_with_no_successor.add(node_name)
+            name_to_node[node_name] = node 
+        
+        if len(nodes_with_no_successor) != 1:
+            raise ValueError(
+                "There shoudl only be one output node (nodes with no successors), "
+                + f"but found {len(nodes_with_no_successor)}"
+            )
+        output_node = name_to_node[list(nodes_with_no_successor)[0]]
+        model = bolt.nn.Model(inputs=inputs, output=output_node)
+        model.compile(loss=get_loss(benchmark_config), print_when_done=False)
+        model.summary(detailed=True)
 
-        nodes_with_no_successor.add(node_name)
-        name_to_node[node_name] = node
+        models.append(model)
+        name_to_node.clear()
 
-    if len(nodes_with_no_successor) != 1:
-        raise ValueError(
-            "There should only be one output node (nodes with no successors), "
-            + f"but found {len(nodes_with_no_successor)}"
-        )
-
-    output_node = name_to_node[list(nodes_with_no_successor)[0]]
-    model = bolt.nn.Model(inputs=inputs, output=output_node)
-    model.compile(loss=get_loss(model_config), print_when_done=False)
-    model.summary(detailed=True)
-    return model
-
+    return models 
 
 # Returns a map from
 # ["train_data", "train_labels", "test_data", "test_labels"]
@@ -213,9 +228,8 @@ def construct_input_node(input_config):
     return bolt.nn.Input(dim=dim)
 
 
-def construct_fully_connected_node(fc_config):
+def construct_fully_connected_node(fc_config, sparsity=1.0):
     use_default_sampling = fc_config.get("use_default_sampling", False)
-    sparsity = fc_config.get("sparsity", 1)
 
     if use_default_sampling or sparsity == 1:
         layer = bolt.nn.FullyConnected(
@@ -254,9 +268,8 @@ def construct_embedding_node(embedding_config):
     )
 
 
-def construct_switch_node(switch_config):
+def construct_switch_node(switch_config, sparsity=1.0):
     use_default_sampling = switch_config.get("use_default_sampling", False)
-    sparsity = switch_config.get("sparsity", 1)
 
     if use_default_sampling or sparsity == 1:
         return bolt.nn.Switch(
@@ -279,18 +292,18 @@ def construct_dlrm_attention_node(node_config):
     return bolt.nn.DlrmAttention()
 
 
-def construct_node(node_config):
+def construct_node(node_config, sparsity=1.0):
     node_type = config_get_required(node_config, "type")
     if node_type == "Input":
         return construct_input_node(node_config)
     if node_type == "Concatenate":
         return bolt.nn.Concatenate()
     if node_type == "FullyConnected":
-        return construct_fully_connected_node(node_config)
+        return construct_fully_connected_node(node_config, sparsity)
     if node_type == "Embedding":
         return construct_embedding_node(node_config)
     if node_type == "Switch":
-        return construct_switch_node(node_config)
+        return construct_switch_node(node_config, sparsity)
     if node_type == "DlrmAttention":
         return construct_dlrm_attention_node(node_config)
     raise ValueError(f"{node_type} is not a valid node type.")

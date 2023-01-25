@@ -1,6 +1,6 @@
-experiment_identifier = "Amazon670k Product Recommendation"
-model_identifier = "amazon670_dense_hidden"
-dataset_identifier = "amazon_670k"
+experiment_identifier = "Amazon131k Product Recommendation"
+model_identifier = "Amazon131k"
+dataset_identifier = "amazon_131k"
 
 
 train_metrics = []
@@ -15,13 +15,13 @@ test_metrics = ["categorical_accuracy"]
 [[datasets]]
 format = "svm"
 type_list = ["train_data", "train_labels"]
-path = "amazon-670k/train_shuffled_noHeader.txt"
+path = "amazon-131k/train_shuffled_noHeader.txt"
 batch_size = 256
 
 [[datasets]]
 format = "svm"
 type_list = ["test_data", "test_labels"]
-path = "amazon-670k/test_shuffled_noHeader_sampled.txt"
+path = "amazon-131k/test_shuffled_noHeader_sampled.txt"
 batch_size = 256
 
 
@@ -35,7 +35,6 @@ type = "FullyConnected"
 name = "second"
 pred = "first"
 dim = 256
-sparsity = [0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 activation = "ReLU"
 
 [[nodes]]
@@ -44,7 +43,6 @@ name = "third"
 pred = "second"
 dim = 670091
 activation = 'Softmax'
-sparsity = 0.005
 use_default_sampling = true
 
 
