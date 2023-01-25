@@ -18,18 +18,19 @@ class VectorBuffer {
   explicit VectorBuffer(uint32_t shuffle_seed) : _gen(shuffle_seed) {}
 
   /**
-   * Inserts a corresponding vector of batches (one from each dataset this
-   * buffer is tracking, i.e. the first batch in the vector is from the "first"
-   * dataset, the second from the "second", and so on). If shuffle is true,
-   * each new vector is shuffled with other vectors in the buffer.
+   * Inserts a corresponding vector of BoltVectors (one for each BoltVector
+   * stream this buffer is tracking, i.e. the first BoltVector in the vector is
+   * from the "first" stream, the second from the "second", and so on). If
+   * shuffle is true, each new vector is shuffled with other vectors in its
+   * corresponding buffer.
    */
-  void insertBatch(std::vector<BoltBatch>&& batches, bool shuffle);
+  void insert(std::vector<BoltVector>&& vectors, bool shuffle);
 
   /**
-   * Pops a vector of batches (one from each dataset this
-   * buffer is tracking, i.e. the first batch in the vector is from the "first"
-   * dataset, the second from the "second", and so on). Each will be the same
-   * size (target_batch_size unless the buffer is low on vectors, which is
+   * Pops a vector of corresponding batches (one from each BoltVector stream
+   * this buffer is tracking, i.e. the first batch in the vector is from the
+   * "first" stream, the second from the "second", and so on). Each will be the
+   * same size (target_batch_size unless the buffer is low on vectors, which is
    * usually because the source has been exhausted).
    */
   std::optional<std::vector<BoltBatch>> popBatch(size_t target_batch_size);
@@ -58,26 +59,25 @@ class VectorBuffer {
   void clear() { _buffers.clear(); }
 
  private:
-  void initializeBuffersIfNeeded(const std::vector<BoltBatch>& batches);
-
-  static inline void checkConsistentBatchSize(
-      const std::vector<BoltBatch>& batches);
+  void initializeBuffersIfNeeded(const std::vector<BoltVector>& vectors);
 
   /**
-   * Shuffles only the vectors we have just added in the passed in buffers
-   * by swapping them with other vectors in the buffer. If this method is called
-   * every time new vectors are added to the buffer, the buffer should be
+   * Helper method that shuffles the last vector in each buffer with a random
+   * other vector in that buffer. If this method is called
+   * every time new vectors are added to the buffers, the buffers should be
    * completely shuffled.
    */
-  static inline void swapShuffle(std::vector<std::deque<BoltVector>>& buffers,
-                                 size_t batch_size_added, std::mt19937& gen);
+  void shuffleNewVectors();
 
   std::mt19937 _gen;
   /**
-   * This data structure consists of a deque for every dataset this VectorBuffer
-   * is tracking. Thus, besides during calls to insertBatch or popBatch, this
-   * data structure thus maintains the invariant that every deque contains the
-   * same number of vectors.
+   * This data structure consists of a deque storing the currently buffered
+   * BoltVectors for every BoltVector stream this VectorBuffer is tracking.
+   * Besides during calls to insertBatch or popBatch, this data structure
+   * maintains the invariant that BoltVectors with the same index across the
+   * buffers are "corresponding"; that is, they were inserted together in a call
+   * to insert (additionally, it also maintains the invariant that each deque
+   * contains the same number of vectors).
    */
   std::vector<std::deque<BoltVector>> _buffers;
 };

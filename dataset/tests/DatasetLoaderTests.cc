@@ -44,9 +44,8 @@ class DatasetLoaderTests : public ::testing::Test {
     auto featurizer =
         std::make_shared<TabularFeaturizer>(input_blocks, label_blocks);
 
-    return DatasetLoader(
-        data_source, featurizer, shuffle,
-        DatasetShuffleConfig(n_batches_in_shuffle_buffer, seed));
+    return DatasetLoader(data_source, featurizer, shuffle,
+                         DatasetShuffleConfig(n_vecs_in_shuffle_buffer, seed));
   }
 
   static std::vector<BoltDatasetPtr> streamToInMemoryDataset(
@@ -233,9 +232,12 @@ class DatasetLoaderTests : public ::testing::Test {
   */
   static constexpr uint32_t mock_file_lines = 10100;
 
-  static constexpr uint32_t batch_size = 200;
+  static constexpr uint32_t batch_size = 400;
 
   static constexpr uint32_t n_batches_in_shuffle_buffer = 10;
+
+  static constexpr uint32_t n_vecs_in_shuffle_buffer =
+      n_batches_in_shuffle_buffer * batch_size;
 };
 
 TEST_F(DatasetLoaderTests, CorrectUnshuffledInMemoryData) {
