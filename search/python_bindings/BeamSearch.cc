@@ -20,7 +20,7 @@ struct Minimize {
 
 using CandidateQueue = std::priority_queue<Path, std::vector<Path>, Minimize>;
 
-// Helper function to preform beam search on a single element of the batch.
+// Helper function to perform beam search on a single element of the batch.
 std::vector<Path> beamSearch(const float* probabilities, uint32_t seq_len,
                              uint32_t output_dim,
                              const float* transition_matrix,
