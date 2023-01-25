@@ -264,9 +264,9 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("shuffle_config") = DatasetShuffleConfig())
       .def("get_input_dim", &DatasetLoader::getInputDim)
       .def("get_label_dim", &DatasetLoader::getLabelDim)
-      .def("load_in_memory", &DatasetLoader::loadInMemory,
-           py::arg("batch_size"), py::arg("verbose") = true)
-      .def("stream_in_memory", &dataset::DatasetLoader::streamInMemory,
+      .def("load_all", &DatasetLoader::loadAll, py::arg("batch_size"),
+           py::arg("verbose") = true)
+      .def("load_some", &dataset::DatasetLoader::loadSome,
            py::arg("batch_size"), py::arg("num_batches"),
            py::arg("verbose") = true)
       .def("restart", &dataset::DatasetLoader::restart);

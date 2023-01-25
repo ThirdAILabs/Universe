@@ -84,8 +84,8 @@ py::object ModelPipeline::evaluate(
       eval_config_opt.value_or(bolt::EvalConfig::makeConfig());
 
   auto [data, labels] =
-      dataset->loadInMemory(/* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
-                            /* verbose = */ eval_config.verbose());
+      dataset->loadAll(/* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
+                       /* verbose = */ eval_config.verbose());
 
   eval_config.returnActivations();
 
@@ -211,7 +211,7 @@ std::vector<dataset::Explanation> ModelPipeline::explain(
 void ModelPipeline::trainInMemory(
     dataset::DatasetLoaderPtr& dataset_loader, bolt::TrainConfig train_config,
     const std::optional<ValidationOptions>& validation, size_t batch_size) {
-  auto loaded_data = dataset_loader->loadInMemory(
+  auto loaded_data = dataset_loader->loadAll(
       /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
   auto [train_data, train_labels] = std::move(loaded_data);
 
@@ -220,7 +220,7 @@ void ModelPipeline::trainInMemory(
         dataset::SimpleFileDataSource::make(validation->filename()),
         /* training= */ false);
 
-    auto [val_data, val_labels] = validation_dataset->loadInMemory(
+    auto [val_data, val_labels] = validation_dataset->loadAll(
         /* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
         /* verbose = */ train_config.verbose());
 
@@ -268,7 +268,7 @@ void ModelPipeline::trainOnStream(
         dataset::SimpleFileDataSource::make(validation->filename()),
         /* training= */ false);
 
-    auto [val_data, val_labels] = validation_dataset->loadInMemory(
+    auto [val_data, val_labels] = validation_dataset->loadAll(
         /* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
         /* verbose = */ validation->validationConfig().verbose());
 
@@ -305,7 +305,7 @@ void ModelPipeline::trainSingleEpochOnStream(
     dataset::DatasetLoaderPtr& dataset_loader,
     const bolt::TrainConfig& train_config, uint32_t max_in_memory_batches,
     size_t batch_size) {
-  while (auto datasets = dataset_loader->streamInMemory(
+  while (auto datasets = dataset_loader->loadSome(
              batch_size, /* num_batches = */ max_in_memory_batches,
              /* verbose = */ train_config.verbose())) {
     auto& [data, labels] = datasets.value();
@@ -338,8 +338,8 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
       data_source, /* training= */ false);
 
   auto loaded_data_opt =
-      dataset->streamInMemory(/* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
-                              num_batches, /* verbose = */ false);
+      dataset->loadSome(/* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
+                        num_batches, /* verbose = */ false);
   if (!loaded_data_opt.has_value()) {
     throw std::invalid_argument("No data found for training.");
   }

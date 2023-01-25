@@ -172,7 +172,7 @@ UDTDatasetFactory::preprocessedVectorsFromDataset(
   // The batch size does not really matter here because we are storing these
   // vectors as metadata, not training on them. Thus, we choose the somewhat
   // arbitrary value 2048 since it is large enough to use all threads.
-  auto [datasets, ids] = dataset_loader.loadInMemory(/* batch_size = */ 2048);
+  auto [datasets, ids] = dataset_loader.loadAll(/* batch_size = */ 2048);
 
   if (datasets.size() != 1) {
     throw std::runtime_error(

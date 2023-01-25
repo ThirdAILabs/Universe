@@ -26,7 +26,7 @@ struct SvmDatasetLoader {
     auto featurizer = std::make_shared<SvmFeaturizer>(softmax_for_multiclass);
     auto dataset_loader = DatasetLoader(data_source, featurizer,
                                         /* shuffle = */ false);
-    auto datasets = dataset_loader.loadInMemory(batch_size);
+    auto datasets = dataset_loader.loadAll(batch_size);
     return {datasets.first.at(0), datasets.second};
   }
 };
@@ -49,7 +49,7 @@ struct ClickThroughDatasetLoader {
         num_dense_features, max_num_categorical_features, delimiter);
     auto dataset_loader = DatasetLoader(data_source, featurizer,
                                         /* shuffle = */ false);
-    auto datasets = dataset_loader.loadInMemory(batch_size);
+    auto datasets = dataset_loader.loadAll(batch_size);
     return {datasets.first.at(0), datasets.first.at(1), datasets.second};
   }
 };

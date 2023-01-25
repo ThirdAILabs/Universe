@@ -30,13 +30,12 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
   }
 }
 
-// Loads the entire data source at once
-std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory(
-    size_t batch_size, bool verbose) {
+std::pair<InputDatasets, LabelDataset> DatasetLoader::loadAll(size_t batch_size,
+                                                              bool verbose) {
   auto datasets =
-      streamInMemory(/* batch_size = */ batch_size,
-                     /* num_batches = */ std::numeric_limits<size_t>::max(),
-                     /* verbose = */ verbose);
+      loadSome(/* batch_size = */ batch_size,
+               /* num_batches = */ std::numeric_limits<size_t>::max(),
+               /* verbose = */ verbose);
   if (!datasets) {
     throw std::invalid_argument(
         "Did not find any data to load from the data source.");
@@ -44,9 +43,8 @@ std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory(
   return datasets.value();
 }
 
-std::optional<std::pair<InputDatasets, LabelDataset>>
-DatasetLoader::streamInMemory(size_t batch_size, size_t num_batches,
-                              bool verbose) {
+std::optional<std::pair<InputDatasets, LabelDataset>> DatasetLoader::loadSome(
+    size_t batch_size, size_t num_batches, bool verbose) {
 #if THIRDAI_EXPOSE_ALL
   if (verbose) {
     // This is useful internally but we don't want to expose it to keep the

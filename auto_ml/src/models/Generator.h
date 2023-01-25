@@ -598,8 +598,8 @@ class QueryCandidateGenerator {
         file_data_source, featurizer, /* shuffle = */ false);
 
     return dataset_loader
-        ->loadInMemory(/* batch_size = */ _query_generator_config->batchSize(),
-                       /* verbose = */ verbose)
+        ->loadAll(/* batch_size = */ _query_generator_config->batchSize(),
+                  /* verbose = */ verbose)
         .first.at(0);
   }
 
