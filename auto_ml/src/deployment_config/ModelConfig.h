@@ -35,7 +35,7 @@ class ModelConfig {
         _loss(std::move(loss)) {}
 
   bolt::BoltGraphPtr createModel(
-      std::vector<bolt::InputPtr> inputs,
+      const std::vector<uint32_t>& input_dims,
       const UserInputMap& user_specified_parameters) const;
 
   void save(const std::string& filename);

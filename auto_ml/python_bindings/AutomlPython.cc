@@ -233,8 +233,8 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("source_column"), py::arg("target_column"),
            py::arg("dataset_size"), py::arg("delimiter") = ',',
            docs::UDT_GENERATOR_INIT)
-      .def("train", &QueryCandidateGenerator::buildFlashIndex,
-           py::arg("filename"), docs::UDT_GENERATOR_TRAIN)
+      .def("train", &QueryCandidateGenerator::train, py::arg("filename"),
+           py::arg("use_supervised") = true, docs::UDT_GENERATOR_TRAIN)
       .def(
           "evaluate",
           [](QueryCandidateGenerator& udt_generator_model,

@@ -177,6 +177,14 @@ def test_udt_generator_source_not_specified(prepared_datasets):
     run_generator_test(model=model, source_col_index=1, target_col_index=0)
 
 
+def test_udt_generator_eval_no_source(prepared_datasets):
+    model = train_udt_query_reformulation_model(TRAIN_TARGET_ONLY_FILE)
+    result = model.evaluate(filename=TRAIN_TARGET_ONLY_FILE, top_k=5)
+
+    # This assertion ensures that the result is in the format we expect
+    assert len(result) == 1 and len(result[0]) > 0
+
+
 # This test is for a query reformulation model that was created with only the
 # target column specified, and trained on a dataset which doesn't contain
 # a source column.

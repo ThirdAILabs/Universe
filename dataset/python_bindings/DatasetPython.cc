@@ -267,10 +267,10 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("shuffle_config") = DatasetShuffleConfig())
       .def("get_input_dim", &DatasetLoader::getInputDim)
       .def("get_label_dim", &DatasetLoader::getLabelDim)
-      .def("load_in_memory", py::overload_cast<>(&DatasetLoader::loadInMemory))
-      .def("load_in_memory",
-           py::overload_cast<size_t>(&dataset::DatasetLoader::loadInMemory),
-           py::arg("num_batches") = std::numeric_limits<uint32_t>::max())
+      .def("load_in_memory", &DatasetLoader::loadInMemory,
+           py::arg("verbose") = true)
+      .def("stream_in_memory", &dataset::DatasetLoader::streamInMemory,
+           py::arg("num_batches"), py::arg("verbose") = true)
       .def("restart", &dataset::DatasetLoader::restart);
 
   py::class_<GenericBatchProcessor, BatchProcessor, GenericBatchProcessorPtr>(
