@@ -8,6 +8,7 @@
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <fstream>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -119,9 +120,22 @@ bolt::BoltGraphPtr buildModel(const json& config,
   return model;
 }
 
+std::string xorConfig(const std::string& config) {
+  std::mt19937 rand(8256387);
+  std::uniform_int_distribution<uint8_t> dist;
+
+  std::string output;
+
+  for (char c : config) {
+    output.push_back(c ^ dist(rand));
+  }
+
+  return output;
+}
+
 void dumpConfig(const std::string& config, const std::string& filename) {
   std::ofstream file(filename);
-  file << config;
+  file << xorConfig(config);
 }
 
 std::string loadConfig(const std::string& filename) {
@@ -130,7 +144,7 @@ std::string loadConfig(const std::string& filename) {
   std::stringstream buffer;
   buffer << file.rdbuf();
 
-  return buffer.str();
+  return xorConfig(buffer.str());
 }
 
 }  // namespace thirdai::automl::config

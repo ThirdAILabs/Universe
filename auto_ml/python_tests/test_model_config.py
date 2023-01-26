@@ -95,3 +95,19 @@ def test_config_dump_load():
     deployment.dump_config(json.dumps(config), CONFIG_FILE)
 
     assert json.loads(deployment.load_config(CONFIG_FILE)) == config
+
+    os.remove(CONFIG_FILE)
+
+
+@pytest.mark.unit
+def test_config_encryption():
+    config_str = json.dumps(get_config())
+
+    CONFIG_FILE = "./encrypted_model_config"
+
+    deployment.dump_config(config_str, CONFIG_FILE)
+
+    with open(CONFIG_FILE, "rb") as file:
+        encrypted_config_str = file.read()
+        assert len(encrypted_config_str) == len(config_str)
+        assert encrypted_config_str != config_str
