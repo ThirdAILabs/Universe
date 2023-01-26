@@ -7,6 +7,7 @@ namespace thirdai::automl::config {
 
 void verifyContains(const json& object, const std::string& key) {
   if (!object.contains(key)) {
+    std::cout << "OBJECT" << object << std::endl;
     throw std::invalid_argument("Expect object to contain key '" + key + "'.");
   }
 }
@@ -38,9 +39,9 @@ json arrayValue(const json& object, const std::string& key) {
 }
 
 template <typename T>
-T resolveType(const json& object, const std::string& key,
-              const ParameterInputMap& user_input,
-              const std::string& type_name) {
+T resolveParameter(const json& object, const std::string& key,
+                   const ParameterInputMap& user_input,
+                   const std::string& type_name) {
   if (!object[key].is_object()) {
     throw std::invalid_argument(
         "Expected either an object containing the user input parameter name if "
@@ -48,13 +49,13 @@ T resolveType(const json& object, const std::string& key,
         key + "' is not specified as a literal.");
   }
 
-  std::string param_name = stringValue(object, "param_name");
+  std::string param_name = stringValue(object[key], "param_name");
 
   if (object[key].contains("param_values")) {
     std::string value_identifier =
         user_input.get<std::string>(param_name, "string");
 
-    return objectValue(object, "param_values")[value_identifier].get<T>();
+    return objectValue(object[key], "param_values")[value_identifier].get<T>();
   }
 
   return user_input.get<T>(param_name, type_name);
@@ -68,7 +69,7 @@ bool booleanParameter(const json& object, const std::string& key,
     return object[key].get<bool>();
   }
 
-  return resolveType<bool>(object, key, user_input, "boolean");
+  return resolveParameter<bool>(object, key, user_input, "boolean");
 }
 
 uint32_t integerParameter(const json& object, const std::string& key,
@@ -79,7 +80,7 @@ uint32_t integerParameter(const json& object, const std::string& key,
     return object[key].get<uint32_t>();
   }
 
-  return resolveType<uint32_t>(object, key, user_input, "integer");
+  return resolveParameter<uint32_t>(object, key, user_input, "integer");
 }
 
 float floatParameter(const json& object, const std::string& key,
@@ -90,7 +91,7 @@ float floatParameter(const json& object, const std::string& key,
     return object[key].get<float>();
   }
 
-  return resolveType<float>(object, key, user_input, "float");
+  return resolveParameter<float>(object, key, user_input, "float");
 }
 
 std::string stringParameter(const json& object, const std::string& key,
@@ -101,7 +102,7 @@ std::string stringParameter(const json& object, const std::string& key,
     return object[key].get<std::string>();
   }
 
-  return resolveType<std::string>(object, key, user_input, "string");
+  return resolveParameter<std::string>(object, key, user_input, "string");
 }
 
 }  // namespace thirdai::automl::config

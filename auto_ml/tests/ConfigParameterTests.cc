@@ -9,7 +9,7 @@ TEST(ConfigParameterTests, ConstantBoolean) {
     {"key": true}
   )"_json;
 
-  ASSERT_EQ(parameter::boolean(config, "key", {}), true);
+  ASSERT_EQ(booleanParameter(config, "key", {}), true);
 }
 
 TEST(ConfigParameterTests, UserSpecifiedBoolean) {
@@ -20,7 +20,7 @@ TEST(ConfigParameterTests, UserSpecifiedBoolean) {
   ParameterInputMap inputs;
   inputs.insert<bool>("user_key", false);
 
-  ASSERT_EQ(parameter::boolean(config, "key", inputs), false);
+  ASSERT_EQ(booleanParameter(config, "key", inputs), false);
 }
 
 TEST(ConfigParameterTests, OptionMappedBoolean) {
@@ -39,13 +39,13 @@ TEST(ConfigParameterTests, OptionMappedBoolean) {
   {
     ParameterInputMap inputs;
     inputs.insert<std::string>("user_key", "good");
-    ASSERT_EQ(parameter::boolean(config, "key", inputs), true);
+    ASSERT_EQ(booleanParameter(config, "key", inputs), true);
   }
 
   {
     ParameterInputMap inputs;
     inputs.insert<std::string>("user_key", "bad");
-    ASSERT_EQ(parameter::boolean(config, "key", inputs), false);
+    ASSERT_EQ(booleanParameter(config, "key", inputs), false);
   }
 }
 
@@ -54,7 +54,7 @@ TEST(ConfigParameterTests, ConstantInteger) {
     {"key": 249824}
   )"_json;
 
-  ASSERT_EQ(parameter::integer(config, "key", {}), 249824);
+  ASSERT_EQ(integerParameter(config, "key", {}), 249824);
 }
 
 TEST(ConfigParameterTests, UserSpecifiedInteger) {
@@ -65,7 +65,7 @@ TEST(ConfigParameterTests, UserSpecifiedInteger) {
   ParameterInputMap inputs;
   inputs.insert<uint32_t>("user_key", 64092);
 
-  ASSERT_EQ(parameter::integer(config, "key", inputs), 64092);
+  ASSERT_EQ(integerParameter(config, "key", inputs), 64092);
 }
 
 TEST(ConfigParameterTests, OptionMappedInteger) {
@@ -84,13 +84,13 @@ TEST(ConfigParameterTests, OptionMappedInteger) {
   {
     ParameterInputMap inputs;
     inputs.insert<std::string>("user_key", "one");
-    ASSERT_EQ(parameter::integer(config, "key", inputs), 1);
+    ASSERT_EQ(integerParameter(config, "key", inputs), 1);
   }
 
   {
     ParameterInputMap inputs;
     inputs.insert<std::string>("user_key", "two");
-    ASSERT_EQ(parameter::integer(config, "key", inputs), 2);
+    ASSERT_EQ(integerParameter(config, "key", inputs), 2);
   }
 }
 
@@ -99,7 +99,7 @@ TEST(ConfigParameterTests, ConstantFloat) {
     {"key": 9248.429}
   )"_json;
 
-  ASSERT_FLOAT_EQ(parameter::decimal(config, "key", {}), 9248.429);
+  ASSERT_FLOAT_EQ(floatParameter(config, "key", {}), 9248.429);
 }
 
 TEST(ConfigParameterTests, UserSpecifiedFloat) {
@@ -110,7 +110,7 @@ TEST(ConfigParameterTests, UserSpecifiedFloat) {
   ParameterInputMap inputs;
   inputs.insert<float>("user_key", 72340.428);
 
-  ASSERT_FLOAT_EQ(parameter::decimal(config, "key", inputs), 72340.428);
+  ASSERT_FLOAT_EQ(floatParameter(config, "key", inputs), 72340.428);
 }
 
 TEST(ConfigParameterTests, OptionMappedFloat) {
@@ -129,13 +129,13 @@ TEST(ConfigParameterTests, OptionMappedFloat) {
   {
     ParameterInputMap inputs;
     inputs.insert<std::string>("user_key", "half");
-    ASSERT_FLOAT_EQ(parameter::decimal(config, "key", inputs), 0.5);
+    ASSERT_FLOAT_EQ(floatParameter(config, "key", inputs), 0.5);
   }
 
   {
     ParameterInputMap inputs;
     inputs.insert<std::string>("user_key", "third");
-    ASSERT_FLOAT_EQ(parameter::decimal(config, "key", inputs), 0.33);
+    ASSERT_FLOAT_EQ(floatParameter(config, "key", inputs), 0.33);
   }
 }
 
@@ -144,7 +144,7 @@ TEST(ConfigParameterTests, ConstantString) {
     {"key": "something"}
   )"_json;
 
-  ASSERT_EQ(parameter::str(config, "key", {}), "something");
+  ASSERT_EQ(stringParameter(config, "key", {}), "something");
 }
 
 TEST(ConfigParameterTests, UserSpecifiedString) {
@@ -155,7 +155,7 @@ TEST(ConfigParameterTests, UserSpecifiedString) {
   ParameterInputMap inputs;
   inputs.insert<std::string>("user_key", "hello");
 
-  ASSERT_EQ(parameter::str(config, "key", inputs), "hello");
+  ASSERT_EQ(stringParameter(config, "key", inputs), "hello");
 }
 
 TEST(ConfigParameterTests, OptionMappedString) {
@@ -174,13 +174,13 @@ TEST(ConfigParameterTests, OptionMappedString) {
   {
     ParameterInputMap inputs;
     inputs.insert<std::string>("user_key", "long");
-    ASSERT_EQ(parameter::str(config, "key", inputs), "12345678");
+    ASSERT_EQ(stringParameter(config, "key", inputs), "12345678");
   }
 
   {
     ParameterInputMap inputs;
     inputs.insert<std::string>("user_key", "short");
-    ASSERT_EQ(parameter::str(config, "key", inputs), "123");
+    ASSERT_EQ(stringParameter(config, "key", inputs), "123");
   }
 }
 

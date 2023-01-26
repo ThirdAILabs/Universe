@@ -320,11 +320,24 @@ void createUDTTemporalSubmodule(py::module_& module) {
 
 void createDeploymentSubmodule(py::module_& module) {
 #if THIRDAI_EXPOSE_ALL
+
   auto deployment = module.def_submodule("deployment");
 
   deployment.def("load_config", &config::loadConfig, py::arg("filename"));
+
   deployment.def("dump_config", &config::dumpConfig, py::arg("config"),
                  py::arg("filename"));
+
+  deployment.def(
+      "load_model_from_config",
+      [](const std::string& config_file, const py::dict& parameters,
+         const std::vector<uint32_t>& input_dims) {
+        auto json_config = json::parse(config::loadConfig(config_file));
+        auto user_input = createUserInputMap(parameters);
+
+        return config::buildModel(json_config, user_input, input_dims);
+      });
+
 #endif
 }
 
