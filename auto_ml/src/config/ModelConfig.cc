@@ -7,6 +7,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <auto_ml/src/config/ParameterInputMap.h>
 #include <fstream>
 #include <random>
 #include <sstream>
@@ -16,26 +17,16 @@
 
 namespace thirdai::automl::config {
 
-bolt::NodePtr buildFullyConnectedNode(
-    const json& config, const ParameterInputMap& user_input,
-    const std::unordered_map<std::string, bolt::NodePtr>& created_nodes) {
-  uint32_t dim = integerParameter(config, "dim", user_input);
-
-  float sparsity = floatParameter(config, "sparsity", user_input);
-
-  std::string activation = stringParameter(config, "activation", user_input);
-
-  bolt::FullyConnectedNodePtr node;
+bolt::SamplingConfigPtr getSamplingConfig(const json& config,
+                                          const ParameterInputMap& user_input) {
   if (config.contains("sampling_config")) {
     const auto& sampling_json = config["sampling_config"];
 
     if (sampling_json.is_string() &&
         sampling_json.get<std::string>() == "random") {
-      node = bolt::FullyConnectedNode::make(
-          dim, sparsity, activation,
-          std::make_shared<bolt::RandomSamplingConfig>());
-
-    } else if (sampling_json.is_object()) {
+      return std::make_shared<bolt::RandomSamplingConfig>();
+    }
+    if (sampling_json.is_object()) {
       uint32_t num_tables =
           integerParameter(sampling_json, "num_tables", user_input);
       uint32_t hashes_per_table =
@@ -43,35 +34,47 @@ bolt::NodePtr buildFullyConnectedNode(
       uint32_t reservoir_size =
           integerParameter(sampling_json, "reservoir_size", user_input);
 
-      node = bolt::FullyConnectedNode::make(
-          dim, sparsity, activation,
-          std::make_shared<bolt::DWTASamplingConfig>(
-              num_tables, hashes_per_table, reservoir_size));
-
-    } else {
-      throw std::invalid_argument(
-          "sampling_config must be a string 'random' or an object providing "
-          "sampling parameters.");
+      return std::make_shared<bolt::DWTASamplingConfig>(
+          num_tables, hashes_per_table, reservoir_size);
     }
-  } else {
-    node = bolt::FullyConnectedNode::makeAutotuned(dim, sparsity, activation);
+    throw std::invalid_argument(
+        "Parameter 'sampling_config' must be a string 'random' indicating "
+        "random sampling is used or an object providing sampling parameters.");
   }
 
-  std::string predecessor = stringValue(config, "predecessor");
+  return nullptr;
+}
+
+bolt::NodePtr buildFullyConnectedNode(
+    const json& config, const ParameterInputMap& user_input,
+    const std::unordered_map<std::string, bolt::NodePtr>& created_nodes) {
+  uint32_t dim = integerParameter(config, "dim", user_input);
+  float sparsity = floatParameter(config, "sparsity", user_input);
+  std::string activation = stringParameter(config, "activation", user_input);
+
+  auto sampling_config = getSamplingConfig(config, user_input);
+
+  bolt::FullyConnectedNodePtr layer;
+  if (sampling_config) {
+    layer = bolt::FullyConnectedNode::make(dim, sparsity, activation,
+                                           sampling_config);
+  } else {
+    layer = bolt::FullyConnectedNode::makeAutotuned(dim, sparsity, activation);
+  }
+
+  std::string predecessor = getString(config, "predecessor");
   if (!created_nodes.count(predecessor)) {
     throw std::invalid_argument("Could not find node '" + predecessor + "'.");
   }
-  node->addPredecessor(created_nodes.at(predecessor));
+  layer->addPredecessor(created_nodes.at(predecessor));
 
-  return node;
+  return layer;
 }
 
-bolt::BoltGraphPtr buildModel(const json& config,
-                              const ParameterInputMap& user_input,
-                              const std::vector<uint32_t>& input_dims) {
-  std::unordered_map<std::string, bolt::NodePtr> created_nodes;
-
-  auto json_inputs = arrayValue(config, "inputs");
+std::vector<bolt::InputPtr> getInputs(
+    const json& config, const std::vector<uint32_t>& input_dims,
+    std::unordered_map<std::string, bolt::NodePtr>& created_nodes) {
+  auto json_inputs = getArray(config, "inputs");
   if (config["inputs"].size() != input_dims.size()) {
     throw std::invalid_argument(
         "Expected inputs to be an array of input names of equal size to the "
@@ -87,15 +90,24 @@ bolt::BoltGraphPtr buildModel(const json& config,
     }
     created_nodes[json_inputs[i].get<std::string>()] = inputs.back();
   }
+  return inputs;
+}
 
-  for (const auto& node_config : arrayValue(config, "nodes")) {
+bolt::BoltGraphPtr buildModel(const json& config,
+                              const ParameterInputMap& user_input,
+                              const std::vector<uint32_t>& input_dims) {
+  std::unordered_map<std::string, bolt::NodePtr> created_nodes;
+
+  auto inputs = getInputs(config, input_dims, created_nodes);
+
+  for (const auto& node_config : getArray(config, "nodes")) {
     if (!node_config.is_object()) {
       throw std::invalid_argument("Node config must be an json object.");
     }
 
-    std::string name = stringValue(node_config, "name");
+    std::string name = getString(node_config, "name");
 
-    std::string type = stringValue(node_config, "type");
+    std::string type = getString(node_config, "type");
     if (type == "fully_connected") {
       created_nodes[name] =
           buildFullyConnectedNode(node_config, user_input, created_nodes);
@@ -105,12 +117,12 @@ bolt::BoltGraphPtr buildModel(const json& config,
     }
   }
 
-  std::string output = stringValue(config, "output");
+  std::string output = getString(config, "output");
   if (!created_nodes.count(output)) {
     throw std::invalid_argument("Could not find node '" + output + "'.");
   }
 
-  auto loss = bolt::getLossFunction(stringValue(config, "loss"));
+  auto loss = bolt::getLossFunction(getString(config, "loss"));
 
   auto model =
       std::make_shared<bolt::BoltGraph>(inputs, created_nodes.at(output));

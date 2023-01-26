@@ -9,6 +9,10 @@ namespace thirdai::automl::config {
 
 using ParameterInput = std::variant<bool, uint32_t, float, std::string>;
 
+/**
+ * Represents the values that a user passes in from python. This is used for
+ * specified parameters in model configs or specifying options in UDT.
+ */
 class ParameterInputMap {
  public:
   template <typename T>

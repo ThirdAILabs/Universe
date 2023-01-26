@@ -6,7 +6,7 @@ import pytest
 from thirdai import bolt, deployment
 
 
-def get_config(have_user_specified_parameters: bool):
+def get_config(have_user_specified_parameters: bool = False):
 
     if have_user_specified_parameters:
         layer_2_sparsity = {
@@ -99,9 +99,7 @@ def test_load_model_from_config():
 def test_udt_model_config_override():
     CONFIG_FILE = "./model_config"
 
-    config = get_config(have_user_specified_parameters=False)
-
-    deployment.dump_config(json.dumps(config), CONFIG_FILE)
+    deployment.dump_config(json.dumps(get_config()), CONFIG_FILE)
 
     udt_model = bolt.UniversalDeepTransformer(
         data_types={"col": bolt.types.categorical()},
