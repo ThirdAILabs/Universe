@@ -55,7 +55,7 @@ std::vector<uint32_t> pairgrams(const std::vector<uint32_t>& unigrams) {
 
 std::vector<uint32_t> ngrams(std::string_view sentence, uint32_t n,
                              char delimiter) {
-  auto words = thirdai::utils::splitIntoWords(sentence, delimiter);
+  auto words = thirdai::text::split(sentence, delimiter);
 
   return ngrams(words, n);
 }
@@ -82,7 +82,7 @@ void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
 
 std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
     std::string_view sentence, uint32_t output_range, char delimiter) {
-  auto words = thirdai::utils::splitIntoWords(sentence, delimiter);
+  auto words = thirdai::text::split(sentence, delimiter);
 
   auto tokens = unigrams(words);
 
@@ -129,10 +129,8 @@ std::vector<std::pair<uint32_t, float>> sumRepeatedIndices(
    * If we're looking at the last element, the next element is clearly
    * "different", so we add a sparse feature accordingly.
    */
-  if (i == indices.size() - 1) {
-    summed_val += 1.0;
-    index_value_pairs.push_back(std::make_pair(indices.back(), summed_val));
-  }
+  summed_val += 1.0;
+  index_value_pairs.push_back(std::make_pair(indices.back(), summed_val));
 
   return index_value_pairs;
 }

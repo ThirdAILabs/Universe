@@ -197,7 +197,7 @@ class CharKGramTextBlock final : public TextBlock {
     if (text.empty()) {
       return nullptr;
     }
-    std::string lower_case_text = utils::lower(text);
+    std::string lower_case_text = text::lower(text);
 
     std::vector<uint32_t> char_k_grams;
 

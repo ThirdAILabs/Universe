@@ -57,7 +57,7 @@ class QueryCandidateGeneratorConfig {
         _target_column_name(std::move(target_column_name)),
         _default_text_encoding_dim(default_text_encoding_dim) {
     _hash_function = getHashFunction(
-        /* hash_function = */ thirdai::utils::lower(hash_function));
+        /* hash_function = */ thirdai::text::lower(hash_function));
   }
 
   // Overloaded operator mainly for testing
@@ -120,7 +120,7 @@ class QueryCandidateGeneratorConfig {
     uint32_t reservoir_size = 256;
     uint32_t hash_table_range = 100000;
 
-    auto size = thirdai::utils::lower(dataset_size);
+    auto size = thirdai::text::lower(dataset_size);
 
     if (size == "small") {
       num_tables = 64;

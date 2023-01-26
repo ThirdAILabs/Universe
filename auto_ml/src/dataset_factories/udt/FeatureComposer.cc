@@ -170,7 +170,7 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeTemporalFeatureBlocks(
 }
 
 uint32_t FeatureComposer::getNumberOfBins(const std::string& granularity_size) {
-  auto lower_size = utils::lower(granularity_size);
+  auto lower_size = text::lower(granularity_size);
   if (lower_size == "xs" || lower_size == "extrasmall") {
     return 10;
   }

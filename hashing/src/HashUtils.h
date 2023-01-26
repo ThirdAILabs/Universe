@@ -32,26 +32,6 @@ constexpr uint32_t fastDoubleHash(uint32_t n1, uint32_t n2,
 }
 
 /**
- * Performs a default hash compaction by assigning hashes_per_output_value
- * hashes to each of the length_output output hashes. If
- * length_output * hashes_per_output_value >= len(hashes), this will segfault,
- * so don't do that.
- */
-inline void defaultCompactHashesMethod(const uint32_t* hashes,
-                                       uint32_t* output_hashes,
-                                       uint32_t length_output,
-                                       uint32_t hashes_per_output_value) {
-  for (uint32_t i = 0; i < length_output; i++) {
-    uint32_t index = 0;
-    for (uint32_t j = 0; j < hashes_per_output_value; j++) {
-      uint32_t h = hashes[i * hashes_per_output_value + j];
-      index += h << (hashes_per_output_value - 1 - j);
-    }
-    output_hashes[i] = index;
-  }
-}
-
-/**
  * Performas a default hash compaction by compacting hashes into each of the
  * output bins. If length_output *  hashes_per_output_value >= len(hashes),
  * this will segfault, so don't do that. The range of this is UINT32_MAX.

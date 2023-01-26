@@ -1,8 +1,8 @@
 #include "StringManipulation.h"
 
-namespace thirdai::utils {
+namespace thirdai::text {
 
-std::vector<std::string_view> splitIntoWords(std::string_view sentence,
+std::vector<std::string_view> split(std::string_view sentence,
                                              char delimiter) {
   std::vector<std::string_view> words;
 
