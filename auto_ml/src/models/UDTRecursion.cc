@@ -43,23 +43,4 @@ dataset::DataSourcePtr UDTRecursion::wrapDataSource(
       /* target_batch_size= */ target_batch_size);
 }
 
-std::vector<std::string> UDTRecursion::intermediateColumnNames() const {
-  std::vector<std::string> column_names;
-
-  for (uint32_t step = 1; step < _target_sequence->length; step++) {
-    column_names.push_back(_target_column + "_" + std::to_string(step));
-  }
-
-  return column_names;
-}
-
-void UDTRecursion::expandTargetSequenceIntoCategoricalColumns() {
-  for (const auto& column_name : _intermediate_column_names) {
-    _udt_data_types[column_name] =
-        std::make_shared<data::CategoricalDataType>();
-  }
-  _udt_data_types[_target_column] =
-      std::make_shared<data::CategoricalDataType>();
-}
-
 }  // namespace thirdai::automl::models

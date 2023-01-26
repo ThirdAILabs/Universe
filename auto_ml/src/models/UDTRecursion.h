@@ -50,10 +50,6 @@ class UDTRecursion {
   }
 
  private:
-  std::vector<std::string> intermediateColumnNames() const;
-
-  void expandTargetSequenceIntoCategoricalColumns();
-
   data::SequenceDataTypePtr _target_sequence;
   data::ColumnDataTypes _udt_data_types;
   std::string _target_column;
