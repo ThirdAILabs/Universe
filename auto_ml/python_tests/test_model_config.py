@@ -111,3 +111,5 @@ def test_config_encryption():
         encrypted_config_str = file.read()
         assert len(encrypted_config_str) == len(config_str)
         assert encrypted_config_str != config_str
+
+    os.remove(CONFIG_FILE)
