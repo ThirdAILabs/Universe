@@ -13,10 +13,10 @@ def get_config(have_user_specified_parameters: bool = False):
             "param_name": "use_sparsity",
             "param_values": {"sparse": 0.25, "dense": 1.0},
         }
-        output_dim = {"param_name": "output_dim"}
+        layer_3_activation = {"param_name": "act"}
     else:
         layer_2_sparsity = 0.5
-        output_dim = 40
+        layer_3_activation = "relu"
     config = {
         "inputs": ["input"],
         "nodes": [
@@ -42,13 +42,13 @@ def get_config(have_user_specified_parameters: bool = False):
                 "type": "fully_connected",
                 "dim": 30,
                 "sparsity": 0.3,
-                "activation": "relu",
+                "activation": layer_3_activation,
                 "predecessor": "fc_2",
             },
             {
                 "name": "fc_4",
                 "type": "fully_connected",
-                "dim": output_dim,
+                "dim": {"param_name": "output_dim"},
                 "sparsity": 0.1,
                 "activation": "softmax",
                 "sampling_config": {
@@ -75,7 +75,9 @@ def test_load_model_from_config():
     deployment.dump_config(json.dumps(config), CONFIG_FILE)
 
     model = deployment.load_model_from_config(
-        CONFIG_FILE, {"use_sparsity": "sparse", "output_dim": 50}, [100]
+        config_file=CONFIG_FILE,
+        parameters={"use_sparsity": "sparse", "act": "tanh", "output_dim": 50},
+        input_dims=[100],
     )
 
     summary = model.summary(detailed=True, print=False)
@@ -85,7 +87,7 @@ def test_load_model_from_config():
     input_1 (Input): dim=100
     input_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=Tanh
     fc_1 -> fc_2 (FullyConnected): dim=20, sparsity=0.25, act_func=ReLU (using random sampling)
-    fc_2 -> fc_3 (FullyConnected): dim=30, sparsity=0.3, act_func=ReLU (hash_function=DWTA, num_tables=154, range=512, reservoir_size=4)
+    fc_2 -> fc_3 (FullyConnected): dim=30, sparsity=0.3, act_func=Tanh (hash_function=DWTA, num_tables=154, range=512, reservoir_size=4)
     fc_3 -> fc_4 (FullyConnected): dim=50, sparsity=0.1, act_func=Softmax (hash_function=DWTA, num_tables=4, range=64, reservoir_size=10)
     ============================================================
     """
@@ -104,7 +106,7 @@ def test_udt_model_config_override():
     udt_model = bolt.UniversalDeepTransformer(
         data_types={"col": bolt.types.categorical()},
         target="col",
-        n_target_classes=10,
+        n_target_classes=40,
         model_config=CONFIG_FILE,
     )
 

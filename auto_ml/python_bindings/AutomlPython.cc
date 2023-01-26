@@ -336,7 +336,8 @@ void createDeploymentSubmodule(py::module_& module) {
         auto user_input = createUserInputMap(parameters);
 
         return config::buildModel(json_config, user_input, input_dims);
-      });
+      },
+      py::arg("config_file"), py::arg("parameters"), py::arg("input_dims"));
 
 #endif
 }
