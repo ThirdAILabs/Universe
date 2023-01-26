@@ -143,8 +143,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         _unlabeled_non_updating_processor);
   }
 
-  std::unordered_map<std::string, uint32_t> getInputDims() final {
-    return {{"input", _labeled_history_updating_processor->getInputDim()}};
+  std::vector<uint32_t> getInputDims() final {
+    return {_labeled_history_updating_processor->getInputDim()};
   }
 
   uint32_t getLabelDim() final {

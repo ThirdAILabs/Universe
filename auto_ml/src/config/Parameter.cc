@@ -1,70 +1,107 @@
 #include "Parameter.h"
+#include <iostream>
 #include <stdexcept>
 #include <string>
 
-namespace thirdai::automl::config::parameter {
+namespace thirdai::automl::config {
 
-const std::string USER_INPUT_IDENTIFIER = "[[user_input]]";
+void verifyContains(const json& object, const std::string& key) {
+  if (!object.contains(key)) {
+    throw std::invalid_argument("Expect object to contain key '" + key + "'.");
+  }
+}
+
+std::string stringValue(const json& object, const std::string& key) {
+  verifyContains(object, key);
+  if (!object[key].is_string()) {
+    throw std::invalid_argument("Expected '" + key + "' to be a string.");
+  }
+  return object[key].get<std::string>();
+}
+
+json objectValue(const json& object, const std::string& key) {
+  verifyContains(object, key);
+
+  if (!object[key].is_object()) {
+    throw std::invalid_argument("Expected '" + key + "' to be an object.");
+  }
+  return object[key];
+}
+
+json arrayValue(const json& object, const std::string& key) {
+  verifyContains(object, key);
+
+  if (!object[key].is_array()) {
+    throw std::invalid_argument("Expected '" + key + "' to be an array.");
+  }
+  return object[key];
+}
 
 template <typename T>
-T resolveType(const json& config, const std::string& key,
+T resolveType(const json& object, const std::string& key,
               const ParameterInputMap& user_input,
               const std::string& type_name) {
-  if (config[key].is_string()) {
-    if (config[key].get<std::string>() == USER_INPUT_IDENTIFIER) {
-      return user_input.get<T>(key, type_name);
-    }
+  if (!object[key].is_object()) {
+    throw std::invalid_argument(
+        "Expected either an object containing the user input parameter name if "
+        "parameter '" +
+        key + "' is not specified as a literal.");
   }
 
-  if (config[key].is_object()) {
-    std::string option_key = config[key]["option_key"].get<std::string>();
+  std::string param_name = stringValue(object, "param_name");
 
-    std::string option_val = user_input.get<std::string>(option_key, "string");
+  if (object[key].contains("param_values")) {
+    std::string value_identifier =
+        user_input.get<std::string>(param_name, "string");
 
-    return config[key]["option_values"][option_val].get<T>();
+    return objectValue(object, "param_values")[value_identifier].get<T>();
   }
 
-  throw std::invalid_argument(
-      "Expected either user_input or an map of options to values.");
+  return user_input.get<T>(param_name, type_name);
 }
 
-bool boolean(const json& config, const std::string& key,
-             const ParameterInputMap& user_input) {
-  if (config[key].is_boolean()) {
-    return config[key].get<bool>();
+bool booleanParameter(const json& object, const std::string& key,
+                      const ParameterInputMap& user_input) {
+  verifyContains(object, key);
+
+  if (object[key].is_boolean()) {
+    return object[key].get<bool>();
   }
 
-  return resolveType<bool>(config, key, user_input, "boolean");
+  return resolveType<bool>(object, key, user_input, "boolean");
 }
 
-uint32_t integer(const json& config, const std::string& key,
-                 const ParameterInputMap& user_input) {
-  if (config[key].is_number_integer()) {
-    return config[key].get<uint32_t>();
+uint32_t integerParameter(const json& object, const std::string& key,
+                          const ParameterInputMap& user_input) {
+  verifyContains(object, key);
+
+  if (object[key].is_number_integer()) {
+    return object[key].get<uint32_t>();
   }
 
-  return resolveType<uint32_t>(config, key, user_input, "integer");
+  return resolveType<uint32_t>(object, key, user_input, "integer");
 }
 
-float decimal(const json& config, const std::string& key,
-              const ParameterInputMap& user_input) {
-  if (config[key].is_number_float()) {
-    return config[key].get<float>();
+float floatParameter(const json& object, const std::string& key,
+                     const ParameterInputMap& user_input) {
+  verifyContains(object, key);
+
+  if (object[key].is_number_float()) {
+    return object[key].get<float>();
   }
 
-  return resolveType<float>(config, key, user_input, "float");
+  return resolveType<float>(object, key, user_input, "float");
 }
 
-std::string str(const json& config, const std::string& key,
-                const ParameterInputMap& user_input) {
-  if (config[key].is_string()) {
-    std::string value = config[key].get<std::string>();
-    if (value != USER_INPUT_IDENTIFIER) {
-      return value;
-    }
+std::string stringParameter(const json& object, const std::string& key,
+                            const ParameterInputMap& user_input) {
+  verifyContains(object, key);
+
+  if (object[key].is_string()) {
+    return object[key].get<std::string>();
   }
 
-  return resolveType<std::string>(config, key, user_input, "string");
+  return resolveType<std::string>(object, key, user_input, "string");
 }
 
-}  // namespace thirdai::automl::config::parameter
+}  // namespace thirdai::automl::config

@@ -138,15 +138,6 @@ void createModelsSubmodule(py::module_& module) {
   py::class_<UniversalDeepTransformer, ModelPipeline,
              std::shared_ptr<UniversalDeepTransformer>>(models_submodule,
                                                         "UDTClassifier")
-      .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
-           py::arg("temporal_tracking_relationships") =
-               data::UserProvidedTemporalRelationships(),
-           py::arg("target"), py::arg("n_target_classes") = std::nullopt,
-           py::arg("integer_target") = false,
-           py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
-           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
-           py::arg("options") = config::ParameterInputMap{}, docs::UDT_INIT,
-           bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
       .def("predict",

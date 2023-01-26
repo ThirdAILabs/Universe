@@ -5,20 +5,28 @@
 
 using json = nlohmann::json;
 
-namespace thirdai::automl::config::parameter {
+namespace thirdai::automl::config {
 
-extern const std::string USER_INPUT_IDENTIFIER;
+/**
+ * Returns the string value of the given key in the given object. If the value
+ * is not a string it throws.
+ */
+std::string stringValue(const json& object, const std::string& key);
 
-bool boolean(const json& config, const std::string& key,
-             const ParameterInputMap& user_input);
+json objectValue(const json& object, const std::string& key);
 
-uint32_t integer(const json& config, const std::string& key,
-                 const ParameterInputMap& user_input);
+json arrayValue(const json& object, const std::string& key);
 
-float decimal(const json& config, const std::string& key,
-              const ParameterInputMap& user_input);
+bool booleanParameter(const json& object, const std::string& key,
+                      const ParameterInputMap& user_input);
 
-std::string str(const json& config, const std::string& key,
-                const ParameterInputMap& user_input);
+uint32_t integerParameter(const json& object, const std::string& key,
+                          const ParameterInputMap& user_input);
 
-}  // namespace thirdai::automl::config::parameter
+float floatParameter(const json& object, const std::string& key,
+                     const ParameterInputMap& user_input);
+
+std::string stringParameter(const json& object, const std::string& key,
+                            const ParameterInputMap& user_input);
+
+}  // namespace thirdai::automl::config

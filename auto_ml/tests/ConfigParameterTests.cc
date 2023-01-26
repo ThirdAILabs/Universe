@@ -1,0 +1,187 @@
+#include "gtest/gtest.h"
+#include <auto_ml/src/config/Parameter.h>
+#include <auto_ml/src/config/ParameterInputMap.h>
+
+namespace thirdai::automl::config::tests {
+
+TEST(ConfigParameterTests, ConstantBoolean) {
+  json config = R"(
+    {"key": true}
+  )"_json;
+
+  ASSERT_EQ(parameter::boolean(config, "key", {}), true);
+}
+
+TEST(ConfigParameterTests, UserSpecifiedBoolean) {
+  json config = R"(
+    {"key": {"param_name": "user_key"}}
+  )"_json;
+
+  ParameterInputMap inputs;
+  inputs.insert<bool>("user_key", false);
+
+  ASSERT_EQ(parameter::boolean(config, "key", inputs), false);
+}
+
+TEST(ConfigParameterTests, OptionMappedBoolean) {
+  json config = R"(
+    {
+      "key": {
+        "param_name": "user_key",
+        "param_values": {
+          "good": true,
+          "bad": false
+        }
+      }
+    }
+  )"_json;
+
+  {
+    ParameterInputMap inputs;
+    inputs.insert<std::string>("user_key", "good");
+    ASSERT_EQ(parameter::boolean(config, "key", inputs), true);
+  }
+
+  {
+    ParameterInputMap inputs;
+    inputs.insert<std::string>("user_key", "bad");
+    ASSERT_EQ(parameter::boolean(config, "key", inputs), false);
+  }
+}
+
+TEST(ConfigParameterTests, ConstantInteger) {
+  json config = R"(
+    {"key": 249824}
+  )"_json;
+
+  ASSERT_EQ(parameter::integer(config, "key", {}), 249824);
+}
+
+TEST(ConfigParameterTests, UserSpecifiedInteger) {
+  json config = R"(
+    {"key": {"param_name": "user_key"}}
+  )"_json;
+
+  ParameterInputMap inputs;
+  inputs.insert<uint32_t>("user_key", 64092);
+
+  ASSERT_EQ(parameter::integer(config, "key", inputs), 64092);
+}
+
+TEST(ConfigParameterTests, OptionMappedInteger) {
+  json config = R"(
+    {
+      "key": {
+        "param_name": "user_key",
+        "param_values": {
+          "one": 1,
+          "two": 2
+        }
+      }
+    }
+  )"_json;
+
+  {
+    ParameterInputMap inputs;
+    inputs.insert<std::string>("user_key", "one");
+    ASSERT_EQ(parameter::integer(config, "key", inputs), 1);
+  }
+
+  {
+    ParameterInputMap inputs;
+    inputs.insert<std::string>("user_key", "two");
+    ASSERT_EQ(parameter::integer(config, "key", inputs), 2);
+  }
+}
+
+TEST(ConfigParameterTests, ConstantFloat) {
+  json config = R"(
+    {"key": 9248.429}
+  )"_json;
+
+  ASSERT_FLOAT_EQ(parameter::decimal(config, "key", {}), 9248.429);
+}
+
+TEST(ConfigParameterTests, UserSpecifiedFloat) {
+  json config = R"(
+    {"key": {"param_name": "user_key"}}
+  )"_json;
+
+  ParameterInputMap inputs;
+  inputs.insert<float>("user_key", 72340.428);
+
+  ASSERT_FLOAT_EQ(parameter::decimal(config, "key", inputs), 72340.428);
+}
+
+TEST(ConfigParameterTests, OptionMappedFloat) {
+  json config = R"(
+    {
+      "key": {
+        "param_name": "user_key",
+        "param_values": {
+          "half": 0.5,
+          "third": 0.33
+        }
+      }
+    }
+  )"_json;
+
+  {
+    ParameterInputMap inputs;
+    inputs.insert<std::string>("user_key", "half");
+    ASSERT_FLOAT_EQ(parameter::decimal(config, "key", inputs), 0.5);
+  }
+
+  {
+    ParameterInputMap inputs;
+    inputs.insert<std::string>("user_key", "third");
+    ASSERT_FLOAT_EQ(parameter::decimal(config, "key", inputs), 0.33);
+  }
+}
+
+TEST(ConfigParameterTests, ConstantString) {
+  json config = R"(
+    {"key": "something"}
+  )"_json;
+
+  ASSERT_EQ(parameter::str(config, "key", {}), "something");
+}
+
+TEST(ConfigParameterTests, UserSpecifiedString) {
+  json config = R"(
+    {"key": {"param_name": "user_key"}}
+  )"_json;
+
+  ParameterInputMap inputs;
+  inputs.insert<std::string>("user_key", "hello");
+
+  ASSERT_EQ(parameter::str(config, "key", inputs), "hello");
+}
+
+TEST(ConfigParameterTests, OptionMappedString) {
+  json config = R"(
+    {
+      "key": {
+        "param_name": "user_key",
+        "param_values": {
+          "long": "12345678",
+          "short": "123"
+        }
+      }
+    }
+  )"_json;
+
+  {
+    ParameterInputMap inputs;
+    inputs.insert<std::string>("user_key", "long");
+    ASSERT_EQ(parameter::str(config, "key", inputs), "12345678");
+  }
+
+  {
+    ParameterInputMap inputs;
+    inputs.insert<std::string>("user_key", "short");
+    ASSERT_EQ(parameter::str(config, "key", inputs), "123");
+  }
+}
+
+}  // namespace thirdai::automl::config::tests

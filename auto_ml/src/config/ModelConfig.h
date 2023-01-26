@@ -6,13 +6,13 @@
 #include <string>
 #include <unordered_map>
 
-namespace thirdai::automl::config {
-
 using json = nlohmann::json;
 
-bolt::BoltGraphPtr buildModel(
-    const json& config, const ParameterInputMap& user_input,
-    const std::unordered_map<std::string, uint32_t>& input_dims);
+namespace thirdai::automl::config {
+
+bolt::BoltGraphPtr buildModel(const json& config,
+                              const ParameterInputMap& user_input,
+                              const std::vector<uint32_t>& input_dims);
 
 void dumpConfig(const std::string& config, const std::string& filename);
 
