@@ -17,27 +17,7 @@ namespace thirdai::automl::models {
 class UDTRecursion {
  public:
   UDTRecursion(data::ColumnDataTypes data_types, std::string target_column,
-               char column_delimiter)
-      : _target_sequence(data::asSequence(data_types.at(target_column))),
-        _udt_data_types(std::move(data_types)),
-        _target_column(std::move(target_column)),
-        _column_delimiter(column_delimiter) {
-    if (_target_sequence) {
-      _intermediate_column_names = intermediateColumnNames();
-      expandTargetSequenceIntoCategoricalColumns();
-    }
-
-    // Here, the target sequence type has been converted into categorical
-    // columns. Remaining sequences in the data types map must be input columns.
-    for (const auto& [column_name, column_type] : _udt_data_types) {
-      if (data::asSequence(column_type)) {
-        throw std::invalid_argument(
-            "The sequence data type can only be used for targets columns. For "
-            "input columns, please use categorical, text, numerical, or date "
-            "instead.");
-      }
-    }
-  }
+               char column_delimiter);
 
   UDTRecursion() {}
 
