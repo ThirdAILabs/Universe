@@ -88,7 +88,8 @@ class PairGramTextBlock final : public TextBlock {
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
-    std::vector<uint32_t> pairgrams = token_encoding::pairgrams(text);
+    std::vector<uint32_t> pairgrams =
+        token_encoding::pairgrams(token_encoding::tokenize(text::split(text)));
     token_encoding::mod(pairgrams, _dim);
     for (auto& [index, value] : token_encoding::sumRepeatedIndices(pairgrams)) {
       vec.addSparseFeatureToSegment(index, value);
@@ -142,11 +143,11 @@ class NGramTextBlock final : public TextBlock {
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
-    std::vector<uint32_t> unigrams =
+    std::vector<uint32_t> ngrams =
         token_encoding::ngrams(text, /* n= */ _n, _delimiter);
-    token_encoding::mod(unigrams, _dim);
+    token_encoding::mod(ngrams, _dim);
 
-    for (auto& [index, value] : token_encoding::sumRepeatedIndices(unigrams)) {
+    for (auto& [index, value] : token_encoding::sumRepeatedIndices(ngrams)) {
       vec.addSparseFeatureToSegment(index, value);
     }
 
