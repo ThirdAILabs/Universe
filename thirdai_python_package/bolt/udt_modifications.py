@@ -18,8 +18,6 @@ def _create_data_source(path):
     set. For S3, pandas.read_csv method in the data loader will look for
     credentials in ~/.aws/credentials while for GCS the path will be assumed to be
     ~/.config/gcloud/credentials or ~/.config/gcloud/application_default_credentials.json.
-    If neither file is present, the CSVDataSource can be constructed by providing a
-    custom path to a JSON credentials file.
     """
 
     # This also handles parquet on s3, so it comes before the general s3 and gcs
