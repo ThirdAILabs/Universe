@@ -47,8 +47,8 @@ std::vector<std::string_view> ProcessorUtils::parseCsvRow(
 }
 
 std::vector<std::string> ProcessorUtils::aggregateSingleColumnCsvRows(
-    const std::string& file_name, uint32_t column_index,
-    bool has_header, char delimiter) {
+    const std::string& file_name, uint32_t column_index, bool has_header,
+    char delimiter) {
   std::vector<std::string> aggregated_rows;
 
   std::ifstream input_file_stream =

@@ -1,14 +1,9 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
-#include <hashing/src/MurmurHash.h>
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/Vocabulary.h>
-#include <dataset/src/utils/TokenEncoding.h>
-#include <memory>
 #include <random>
-#include <unordered_map>
-#include <unordered_set>
 
 namespace thirdai::dataset {
 
