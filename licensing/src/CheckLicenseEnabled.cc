@@ -78,10 +78,10 @@ void setLicensePath(const std::string& license_path) {
   _license_path = license_path;
 }
 
-void verifyCanSaveAndLoad() {
+void verifyLicenseNotDemo() {
   if (!_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
     throw exceptions::LicenseCheckException(
-        "You must have a full license to save and load models.");
+        "You must have a full license to perform this operation.");
   }
 }
 

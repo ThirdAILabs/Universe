@@ -56,6 +56,6 @@ void setLicensePath(const std::string& license_path);
 
 // If the user has the full access entitlement or license checking is disabled,
 // this is a NOOP. Otherwise, this throws an exception.
-void verifyCanSaveAndLoad();
+void verifyLicenseNotDemo();
 
 }  // namespace thirdai::licensing
