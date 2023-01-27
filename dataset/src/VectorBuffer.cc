@@ -13,7 +13,7 @@
 namespace thirdai::dataset {
 
 void VectorBuffer::insert(std::vector<BoltVector>&& vectors) {
-  initializeBuffersIfNeeded(vectors);
+  verifyCorrectNumberOfVectors(vectors);
 
   for (uint32_t buffer_id = 0; buffer_id < _buffers.size(); buffer_id++) {
     _buffers.at(buffer_id).push_back(std::move(vectors.at(buffer_id)));
@@ -38,7 +38,7 @@ std::optional<std::vector<BoltVector>> VectorBuffer::pop() {
   return vecs_to_return;
 }
 
-void VectorBuffer::initializeBuffersIfNeeded(
+void VectorBuffer::verifyCorrectNumberOfVectors(
     const std::vector<BoltVector>& vectors) {
   assert(!_buffers.empty());
 

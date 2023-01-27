@@ -125,8 +125,6 @@ void DatasetLoader::restart() {
       throw std::invalid_argument("Cannot read empty file.");
     }
   }
-
-  _buffer.clear();
 }
 
 void DatasetLoader::fillVectorBuffer(size_t num_rows) {
@@ -158,7 +156,7 @@ std::vector<DatasetSlice> DatasetLoader::popFromBuffer(
     std::vector<std::vector<BoltVector>> batch(num_datasets);
     for (size_t vec_id = 0; vec_id < target_batch_size; vec_id++) {
       if (auto next_vectors = _buffer.pop()) {
-        assert(next_vectors.size() == num_datasets);
+        assert(next_vectors->size() == num_datasets);
         for (size_t dataset_id = 0; dataset_id < num_datasets; dataset_id++) {
           batch.at(dataset_id).push_back(next_vectors->at(dataset_id));
         }

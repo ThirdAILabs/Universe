@@ -44,19 +44,12 @@ class VectorBuffer {
    */
   std::optional<std::vector<BoltVector>> pop();
 
-  inline bool empty() const { return _buffers.at(0).empty(); }
+  inline bool empty() const { return size() == 0; }
 
-  size_t size() const {
-    if (empty()) {
-      return 0;
-    }
-    return _buffers.at(0).size();
-  }
-
-  void clear() { _buffers.clear(); }
+  size_t size() const { return _buffers.at(0).size(); }
 
  private:
-  void initializeBuffersIfNeeded(const std::vector<BoltVector>& vectors);
+  void verifyCorrectNumberOfVectors(const std::vector<BoltVector>& vectors);
 
   /**
    * Helper method that shuffles the last vector in each buffer with a random
