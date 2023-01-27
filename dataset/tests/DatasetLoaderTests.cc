@@ -54,7 +54,7 @@ class DatasetLoaderTests : public ::testing::Test {
       DatasetLoader&& pipeline) {
     std::vector<BoltBatch> input_batches;
     std::vector<BoltBatch> label_batches;
-    while (auto batch = pipeline.loadInMemory(1)) {
+    while (auto batch = pipeline.streamInMemory(1)) {
       input_batches.push_back(std::move(batch->first.at(0)->at(0)));
       label_batches.push_back(std::move(batch->second->at(0)));
     }

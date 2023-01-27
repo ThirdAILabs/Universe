@@ -1,3 +1,4 @@
+import os
 from io import BytesIO
 from typing import List, Optional
 from urllib.parse import urlparse
@@ -14,15 +15,27 @@ class CSVDataSource(DataSource):
         storage_path: Path to the CSV file.
         batch_size: Batch size
         gcs_credentials_path: Path to a file containing GCS credentials.
-            This is typically a credentials.json file. For the authorization
+            This is typically a credentials file. For the authorization
             protocol to work, the credentials file must contain a project ID,
             client E-mail, a token URI and a private key.
 
     Note: To read a file from s3, Pandas will expect a credentials file
-        containing an AWS access key id and an AWS secret key.
+        containing an AWS access key id and an AWS secret key located at
+        ~/aws/credentials. For GCS, the gcloud CLI typically stores the
+        credentials file in locations, such as ~/.config/gcloud/credentials
+        or ~/.config/gcloud/application_default_credentials.json.
+        https://gcsfs.readthedocs.io/en/latest/api.html
     """
 
     DEFAULT_CHUNK_SIZE = 1000
+
+    # These are provided here since pandas.read_csv does not implicitly use these
+    # paths although google cloud recommends storing credentials in either one of them.
+    # It is only for s3 that pandas.read_csv implicitly searches for a ~/.aws/credentials file.
+    FIRST_DEFAULT_GCS_CREDS_PATH = (
+        "~/.config/gcloud/application_default_credentials.json"
+    )
+    SECOND_DEFAULT_GCS_CREDS_PATH = "~/.config/gcloud/credentials"
 
     def __init__(
         self,
@@ -40,9 +53,17 @@ class CSVDataSource(DataSource):
         self._storage_path = storage_path
         self._target_batch_size = batch_size
         self._gcs_credentials = gcs_credentials_path
-        self._storage_options = (
-            {"token": gcs_credentials_path} if gcs_credentials_path else None
-        )
+
+        token = None
+        if gcs_credentials_path:
+            token = gcs_credentials_path
+        else:
+            if os.path.exists(self.FIRST_DEFAULT_GCS_CREDS_PATH):
+                token = self.FIRST_DEFAULT_GCS_CREDS_PATH
+            elif os.path.exists(self.SECOND_DEFAULT_GCS_CREDS_PATH):
+                token = self.SECOND_DEFAULT_GCS_CREDS_PATH
+
+        self._storage_options = {"token": token}
 
         parsed_path = urlparse(self._storage_path, allow_fragments=False)
         self._cloud_instance_type = parsed_path.scheme

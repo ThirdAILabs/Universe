@@ -33,10 +33,10 @@ class DatasetLoader final {
   // methods to return a vector of BoltDatasets, and figure out which are
   // inputs and which are labels in UDT
 
-  std::pair<InputDatasets, LabelDataset> loadInMemory();
+  std::pair<InputDatasets, LabelDataset> loadInMemory(bool verbose = true);
 
-  std::optional<std::pair<InputDatasets, LabelDataset>> loadInMemory(
-      size_t num_batches);
+  std::optional<std::pair<InputDatasets, LabelDataset>> streamInMemory(
+      size_t num_batches, bool verbose = true);
 
   void restart();
 

@@ -57,8 +57,8 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
       const std::vector<float>& gradients_ratio,
       const std::string& sample) final;
 
-  std::vector<bolt::InputPtr> getInputNodes() final {
-    return {bolt::Input::make(_unlabeled_batch_processor->getInputDim())};
+  std::vector<uint32_t> getInputDims() final {
+    return {_unlabeled_batch_processor->getInputDim()};
   }
 
   uint32_t getLabelDim() final {

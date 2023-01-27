@@ -190,11 +190,11 @@ class UniversalDeepTransformer final : public ModelPipeline {
   getOutputProcessor(const data::UDTConfigPtr& dataset_config);
 
   static bolt::BoltGraphPtr loadUDTBoltGraph(
-      const std::vector<bolt::InputPtr>& input_nodes, uint32_t output_dim,
+      const std::vector<uint32_t>& input_dims, uint32_t output_dim,
       const std::string& saved_model_config);
 
   static bolt::BoltGraphPtr buildUDTBoltGraph(
-      std::vector<bolt::InputPtr> input_nodes, uint32_t output_dim,
+      const std::vector<uint32_t>& input_dims, uint32_t output_dim,
       uint32_t hidden_layer_size);
 
   data::UDTDatasetFactory& udtDatasetFactory() const {

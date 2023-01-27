@@ -92,7 +92,7 @@ TEST(QueryCandidateGeneratorTest, GeneratorAssignsUniqueLabels) {
 
   assertQueryingWithoutTrainingThrowsException(query_candidate_generator);
 
-  query_candidate_generator.buildFlashIndex(/* file_name = */ QUERIES_FILE);
+  query_candidate_generator.train(/* file_name = */ QUERIES_FILE);
   auto queries_to_labels_map =
       query_candidate_generator.getQueriesToLabelsMap();
 

@@ -63,14 +63,16 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
       /* regression_binning= */ regression_binning);
 
   bolt::BoltGraphPtr model;
+
+  std::vector<uint32_t> input_dims = dataset_factory->getInputDims();
+
   if (model_config) {
-    model =
-        loadUDTBoltGraph(/* input_nodes= */ dataset_factory->getInputNodes(),
-                         /* output_dim= */ dataset_factory->getLabelDim(),
-                         /* saved_model_config= */ model_config.value());
+    model = loadUDTBoltGraph(/* input_dims= */ input_dims,
+                             /* output_dim= */ dataset_factory->getLabelDim(),
+                             /* saved_model_config= */ model_config.value());
   } else {
     model = buildUDTBoltGraph(
-        /* input_nodes= */ dataset_factory->getInputNodes(),
+        /* input_dims= */ input_dims,
         /* output_dim= */ dataset_factory->getLabelDim(),
         /* hidden_layer_size= */ embedding_dimension);
   }
@@ -253,7 +255,7 @@ UniversalDeepTransformer::getOutputProcessor(
 }
 
 bolt::BoltGraphPtr UniversalDeepTransformer::loadUDTBoltGraph(
-    const std::vector<bolt::InputPtr>& input_nodes, uint32_t output_dim,
+    const std::vector<uint32_t>& input_dims, uint32_t output_dim,
     const std::string& saved_model_config) {
   auto model_config = deployment::ModelConfig::load(saved_model_config);
 
@@ -263,14 +265,21 @@ bolt::BoltGraphPtr UniversalDeepTransformer::loadUDTBoltGraph(
       {deployment::DatasetLabelDimensionParameter::PARAM_NAME,
        deployment::UserParameterInput(output_dim)}};
 
-  return model_config->createModel(input_nodes, parameters);
+  return model_config->createModel(input_dims, parameters);
 }
 
 bolt::BoltGraphPtr UniversalDeepTransformer::buildUDTBoltGraph(
-    std::vector<bolt::InputPtr> input_nodes, uint32_t output_dim,
+    const std::vector<uint32_t>& input_dims, uint32_t output_dim,
     uint32_t hidden_layer_size) {
   auto hidden = bolt::FullyConnectedNode::makeDense(hidden_layer_size,
                                                     /* activation= */ "relu");
+
+  std::vector<bolt::InputPtr> input_nodes;
+  input_nodes.reserve(input_dims.size());
+  for (uint32_t input_dim : input_dims) {
+    input_nodes.push_back(bolt::Input::make(input_dim));
+  }
+
   hidden->addPredecessor(input_nodes[0]);
 
   auto sparsity =
