@@ -17,13 +17,13 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <dataset/src/DataSource.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
-#include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/featurizers/ProcessorUtils.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
@@ -96,7 +96,12 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> featurizeInputBatch(
       const LineInputBatch& inputs) final {
-    return getProcessor(/* should_update_history= */ false).createBatch(inputs);
+    std::vector<BoltBatch> result;
+    for (auto& batch :
+         getProcessor(/* should_update_history= */ false).featurize(inputs)) {
+      result.emplace_back(std::move(batch));
+    }
+    return result;
   }
 
   std::vector<BoltBatch> featurizeInputBatch(
@@ -112,7 +117,12 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> batchUpdateTemporalTrackers(
       const LineInputBatch& inputs) {
-    return getProcessor(/* should_update_history= */ true).createBatch(inputs);
+    std::vector<BoltBatch> result;
+    for (auto& batch :
+         getProcessor(/* should_update_history= */ true).featurize(inputs)) {
+      result.emplace_back(std::move(batch));
+    }
+    return result;
   }
 
   std::vector<BoltBatch> batchUpdateTemporalTrackers(
@@ -189,7 +199,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> featurizeInputBatchImpl(
       dataset::ColumnarInputBatch& inputs, bool should_update_history) {
-    auto batches = getProcessor(should_update_history).createBatch(inputs);
+    auto batches = getProcessor(should_update_history).featurize(inputs);
 
     // We cannot use the initializer list because the copy constructor is
     // deleted for BoltBatch.
@@ -203,7 +213,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
    * automatically updates the temporal context, as well as for manually
    * updating the temporal context.
    */
-  dataset::GenericBatchProcessorPtr makeLabeledUpdatingProcessor();
+  dataset::TabularFeaturizerPtr makeLabeledUpdatingProcessor();
 
   dataset::BlockPtr getLabelBlock();
 
@@ -215,8 +225,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
    * movie that he ends up watching is not available during inference. Thus, we
    * should not update the history.
    */
-  dataset::GenericBatchProcessorPtr makeUnlabeledNonUpdatingProcessor() {
-    auto processor = dataset::GenericBatchProcessor::make(
+  dataset::TabularFeaturizerPtr makeUnlabeledNonUpdatingProcessor() {
+    auto processor = dataset::TabularFeaturizer::make(
         buildInputBlocks(
             /* should_update_history= */ false),
         /* label_blocks= */ {}, /* has_header= */ false,
@@ -241,7 +251,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<dataset::BlockPtr> buildInputBlocks(bool should_update_history);
 
-  dataset::GenericBatchProcessor& getProcessor(bool should_update_history) {
+  dataset::TabularFeaturizer& getProcessor(bool should_update_history) {
     return should_update_history ? *_labeled_history_updating_processor
                                  : *_unlabeled_non_updating_processor;
   }
@@ -269,7 +279,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     up watching is not available during inference, so we should not update the
     history.
   */
-  std::unordered_map<std::string, dataset::GenericBatchProcessorPtr>
+  std::unordered_map<std::string, dataset::TabularFeaturizerPtr>
       _metadata_processors;
 
   bool _parallel;
@@ -280,8 +290,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   std::optional<dataset::RegressionBinningStrategy> _regression_binning;
 
   PreprocessedVectorsMap _vectors_map;
-  dataset::GenericBatchProcessorPtr _labeled_history_updating_processor;
-  dataset::GenericBatchProcessorPtr _unlabeled_non_updating_processor;
+  dataset::TabularFeaturizerPtr _labeled_history_updating_processor;
+  dataset::TabularFeaturizerPtr _unlabeled_non_updating_processor;
 
   // Private constructor for cereal.
   UDTDatasetFactory() {}

@@ -8,7 +8,7 @@
 #include <vector>
 namespace thirdai::dataset {
 
-class BatchProcessorTestUtils {
+class FeaturizerTestUtils {
  public:
   /**
    * Helper function to generate random matrix of floating point

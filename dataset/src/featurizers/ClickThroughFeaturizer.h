@@ -2,7 +2,7 @@
 
 #include "ProcessorUtils.h"
 #include <bolt_vector/src/BoltVector.h>
-#include <dataset/src/BatchProcessor.h>
+#include <dataset/src/Featurizer.h>
 #include <cmath>
 #include <optional>
 #include <stdexcept>
@@ -10,17 +10,17 @@
 
 namespace thirdai::dataset {
 
-class ClickThroughBatchProcessor final : public BatchProcessor {
+class ClickThroughFeaturizer final : public Featurizer {
  public:
-  ClickThroughBatchProcessor(uint32_t num_dense_features,
-                             uint32_t max_num_categorical_features,
-                             char delimiter = '\t')
+  ClickThroughFeaturizer(uint32_t num_dense_features,
+                         uint32_t max_num_categorical_features,
+                         char delimiter = '\t')
       : _num_dense_features(num_dense_features),
         _expected_num_cols(num_dense_features + max_num_categorical_features +
                            1),
         _delimiter(delimiter) {}
 
-  std::vector<BoltBatch> createBatch(
+  std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> dense_inputs(rows.size());
     std::vector<BoltVector> token_inputs(rows.size());
@@ -34,13 +34,15 @@ class ClickThroughBatchProcessor final : public BatchProcessor {
       labels[i] = std::move(label);
     }
 
-    return {BoltBatch(std::move(dense_inputs)),
-            BoltBatch(std::move(token_inputs)), BoltBatch(std::move(labels))};
+    return {std::move(dense_inputs), std::move(token_inputs),
+            std::move(labels)};
   }
 
   bool expectsHeader() const final { return false; }
 
   void processHeader(const std::string& header) final { (void)header; }
+
+  size_t getNumDatasets() final { return 3; }
 
  private:
   std::tuple<BoltVector, BoltVector, BoltVector> processRow(

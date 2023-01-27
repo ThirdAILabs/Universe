@@ -1,18 +1,18 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
-#include <dataset/src/BatchProcessor.h>
+#include <dataset/src/Featurizer.h>
 
 namespace thirdai::dataset {
 
-class SvmBatchProcessor final : public BatchProcessor {
+class SvmFeaturizer final : public Featurizer {
  public:
-  explicit SvmBatchProcessor(bool softmax_for_multiclass = true)
+  explicit SvmFeaturizer(bool softmax_for_multiclass = true)
       : _softmax_for_multiclass(softmax_for_multiclass) {}
 
   bool expectsHeader() const final { return false; }
 
-  std::vector<BoltBatch> createBatch(
+  std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& rows) final {
     std::vector<BoltVector> _data_vecs = std::vector<BoltVector>(rows.size());
     std::vector<BoltVector> _label_vecs = std::vector<BoltVector>(rows.size());
@@ -25,11 +25,12 @@ class SvmBatchProcessor final : public BatchProcessor {
       _label_vecs[row_id] = std::move(p.second);
     }
 
-    return {BoltBatch(std::move(_data_vecs)),
-            BoltBatch(std::move(_label_vecs))};
+    return {std::move(_data_vecs), std::move(_label_vecs)};
   }
 
   void processHeader(const std::string& header) final { (void)header; }
+
+  size_t getNumDatasets() final { return 2; }
 
   std::pair<BoltVector, BoltVector> processRow(const std::string& line) const {
     const char* start = line.c_str();

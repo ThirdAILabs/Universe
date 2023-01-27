@@ -246,7 +246,6 @@ void UniversalDeepTransformer::coldStartPretraining(
       /* column_map= */ augmented_data,
       /* text_column_name= */ metadata.text_column_name,
       /* label_column_name= */ dataset_config->target,
-      /* batch_size= */ _train_eval_config.defaultBatchSize(),
       /* column_delimiter= */ dataset_config->delimiter,
       /* label_delimiter= */ metadata.label_delimiter);
 
@@ -255,7 +254,8 @@ void UniversalDeepTransformer::coldStartPretraining(
                                     /* epochs= */ 1);
 
   train(data_source, train_config, /* validation= */ std::nullopt,
-        /* max_in_memory_batches= */ std::nullopt);
+        /* max_in_memory_batches= */ std::nullopt,
+        /* batch_size = */ _train_eval_config.defaultBatchSize());
 }
 
 std::pair<OutputProcessorPtr, std::optional<dataset::RegressionBinningStrategy>>
