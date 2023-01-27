@@ -25,6 +25,7 @@ const uint32_t DEFAULT_FEATURIZATION_BATCH_SIZE = 2048;
 
 using InputDatasets = std::vector<dataset::BoltDatasetPtr>;
 using LabelDataset = dataset::BoltDatasetPtr;
+using DatasetSlice = std::vector<BoltBatch>;
 class DatasetLoader final {
  public:
   DatasetLoader(std::shared_ptr<dataset::DataSource> data_source,
@@ -62,11 +63,12 @@ class DatasetLoader final {
   // reaches the passed in number of rows
   void fillVectorBuffer(size_t num_rows);
 
-  // Pops corresponding vectors from the buffer and turns them into
-  // corresponding BoltBatches. Tries to return target_num_batches each of size
-  // target_batch_size.
-  std::vector<std::vector<BoltBatch>> popBatchesFromBuffer(
-      size_t target_num_batches, size_t target_batch_size);
+  // Pops _featurizer.numDatasets() DatasetSlices from _buffer. The ith
+  // DatasetSlice corresponds to the ith BoltDataset this DatasetLoader is
+  // loading (out of _featurizer.numDatasets() total datasets). Each
+  // DatasetSlice will have the same number of batches and the same batch sizes.
+  std::vector<DatasetSlice> popFromBuffer(size_t target_num_batches,
+                                          size_t target_batch_size);
 
   DataSourcePtr _data_source;
   std::shared_ptr<Featurizer> _featurizer;

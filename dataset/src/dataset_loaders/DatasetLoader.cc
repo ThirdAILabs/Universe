@@ -74,14 +74,13 @@ std::optional<std::pair<InputDatasets, LabelDataset>> DatasetLoader::loadSome(
                                    : num_batches * batch_size + _buffer_size;
   fillVectorBuffer(fill_size);
 
-  auto batch_lists =
-      popBatchesFromBuffer(/* target_num_batches = */ num_batches,
-                           /* target_batch_size = */ batch_size);
+  auto dataset_slices = popFromBuffer(/* target_num_batches = */ num_batches,
+                                      /* target_batch_size = */ batch_size);
   auto end = std::chrono::high_resolution_clock::now();
   auto duration =
       std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
-  if (batch_lists.at(0).empty()) {
+  if (dataset_slices.at(0).empty()) {
 #if THIRDAI_EXPOSE_ALL
     if (verbose) {
       // This is to ensure that it always prints complete if it prints that it
@@ -99,10 +98,11 @@ std::optional<std::pair<InputDatasets, LabelDataset>> DatasetLoader::loadSome(
   // TODO(any): Once we have Bolt V2, fix this to work with an arbitrary
   // number of datasets and labels in arbitrary positions
   BoltDatasetPtr labels =
-      std::make_shared<BoltDataset>(std::move(batch_lists.back()));
+      std::make_shared<BoltDataset>(std::move(dataset_slices.back()));
   std::vector<BoltDatasetPtr> data;
-  for (uint32_t i = 0; i < batch_lists.size() - 1; i++) {
-    data.push_back(std::make_shared<BoltDataset>(std::move(batch_lists.at(i))));
+  for (uint32_t i = 0; i < dataset_slices.size() - 1; i++) {
+    data.push_back(
+        std::make_shared<BoltDataset>(std::move(dataset_slices.at(i))));
   }
 
   if (verbose) {
@@ -149,10 +149,11 @@ void DatasetLoader::fillVectorBuffer(size_t num_rows) {
   }
 }
 
-std::vector<std::vector<BoltBatch>> DatasetLoader::popBatchesFromBuffer(
+std::vector<DatasetSlice> DatasetLoader::popFromBuffer(
     size_t target_num_batches, size_t target_batch_size) {
   size_t num_datasets = _featurizer->getNumDatasets();
   std::vector<std::vector<BoltBatch>> batches(num_datasets);
+
   for (size_t batch_id = 0; batch_id < target_num_batches; batch_id++) {
     std::vector<std::vector<BoltVector>> batch(num_datasets);
     for (size_t vec_id = 0; vec_id < target_batch_size; vec_id++) {

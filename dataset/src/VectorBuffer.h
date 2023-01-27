@@ -2,41 +2,49 @@
 
 #include <bolt_vector/src/BoltVector.h>
 #include <random>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
 /**
- * This class manages a buffer for N different corresponding BoltVector streams.
- * When adding to the buffers, it takes in N lists that each have M BoltVectors,
- * where M is  arbitrary. When removing from the buffer, it returns N batches
- * at a time that each have K vectors, where K is specified by the user.
- * Optionally, this class will also shuffle vectors in the buffers (while
- * keeping each corresponding set of vectors the same),
+ * This class manages a buffer for num_datasets different corresponding
+ * BoltVector streams. When inserting, the user should pass in lists of size
+ * num_datasets of corresponding BoltVectors, and when popping the user will
+ * also receive lists of size num_datasets of corresponding BoltVectors.
+ * The main utility of this class is that it can maintain a shuffled state for
+ * all vectors currently inserted (while keeping each corresponding set of
+ * vectors the same); if should_shuffle is false then this shuffling is not done
+ * and this class serves as a simple FIFO queue.
  */
 class VectorBuffer {
  public:
   explicit VectorBuffer(bool should_shuffle, uint32_t shuffle_seed,
                         size_t num_datasets)
-      : _shuffle(should_shuffle), _gen(shuffle_seed), _buffers(num_datasets) {}
+      : _shuffle(should_shuffle), _gen(shuffle_seed), _buffers(num_datasets) {
+    if (num_datasets == 0) {
+      throw std::invalid_argument(
+          "The buffer must be for at least 1 dataset, but was constructed with "
+          "a value of 0 for num_datasets.");
+    }
+  }
 
   /**
-   * Inserts a corresponding vector of BoltVectors (one for each BoltVector
-   * stream this buffer is tracking, i.e. the first BoltVector in the vector is
-   * from the "first" stream, the second from the "second", and so on).
+   * Inserts a corresponding vector of num_datasets BoltVectors (one for each
+   * BoltVector dataset/stream this buffer is tracking, i.e. the first
+   * BoltVector in the vector is from the "first" stream, the second from the
+   * "second", and so on).
    */
   void insert(std::vector<BoltVector>&& vectors);
 
   /**
-   * Pops a vector of corresponding of BoltVectors (one for each BoltVector
-   * stream this buffer is tracking, i.e. the first BoltVector in the vector is
-   * from the "first" stream, the second from the "second", and so on). Returns
-   * std::nullopt if the streams are empty.
+   * Pops a corresponding vector of num_datasets BoltVectors (one for each
+   * BoltVector stream this buffer is tracking, i.e. the first BoltVector in the
+   * vector is from the "first" stream, the second from the "second", and so
+   * on). Returns std::nullopt if the buffers are empty.
    */
   std::optional<std::vector<BoltVector>> pop();
 
-  inline bool empty() const {
-    return _buffers.empty() || _buffers.at(0).empty();
-  }
+  inline bool empty() const { return _buffers.at(0).empty(); }
 
   size_t size() const {
     if (empty()) {
@@ -67,7 +75,7 @@ class VectorBuffer {
   /**
    * This data structure consists of a deque storing the currently buffered
    * BoltVectors for every BoltVector stream this VectorBuffer is tracking.
-   * Besides during calls to insert or popBatch, this data structure
+   * Besides during calls to insert or pop, this data structure
    * maintains the invariant that BoltVectors with the same index across the
    * buffers are "corresponding"; that is, they were inserted together in a call
    * to insert (additionally, it also maintains the invariant that each deque
