@@ -11,7 +11,8 @@ namespace thirdai::dataset {
 
 class Featurizer {
  public:
-  /** Featurizes a list of input rows into N different "datasets". Each dataset
+  /**
+   * Featurizes a list of input rows into N different "datasets". Each dataset
    * is simply a vector of BoltVectors. Each "dataset" should have the same
    * number of BoltVectors. BoltVectors with the same index are "corresponding",
    * and usually this means that they can be trained on as corresponding

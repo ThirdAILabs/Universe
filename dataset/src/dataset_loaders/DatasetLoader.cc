@@ -153,6 +153,8 @@ std::vector<DatasetSlice> DatasetLoader::popFromBuffer(
   std::vector<std::vector<BoltBatch>> batches(num_datasets);
 
   for (size_t batch_id = 0; batch_id < target_num_batches; batch_id++) {
+    // The ith element in this list contains BoltVectors corresponding to the
+    // ith Dataset this DatasetLoader is loading
     std::vector<std::vector<BoltVector>> batch(num_datasets);
     for (size_t vec_id = 0; vec_id < target_batch_size; vec_id++) {
       if (auto next_vectors = _buffer.pop()) {

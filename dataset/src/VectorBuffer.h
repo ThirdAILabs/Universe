@@ -12,8 +12,8 @@ namespace thirdai::dataset {
  * num_datasets of corresponding BoltVectors, and when popping the user will
  * also receive lists of size num_datasets of corresponding BoltVectors.
  * The main utility of this class is that it can maintain a shuffled state for
- * all vectors currently inserted (while keeping each corresponding set of
- * vectors the same); if should_shuffle is false then this shuffling is not done
+ * all vectors currently inserted (while maintaining the correspondence between
+ * vectors); if should_shuffle is false then this shuffling is not done
  * and this class serves as a simple FIFO queue.
  */
 class VectorBuffer {
@@ -29,7 +29,7 @@ class VectorBuffer {
   }
 
   /**
-   * Inserts a corresponding vector of num_datasets BoltVectors (one for each
+   * Inserts a vector of num_datasets corresponding BoltVectors (one for each
    * BoltVector dataset/stream this buffer is tracking, i.e. the first
    * BoltVector in the vector is from the "first" stream, the second from the
    * "second", and so on).
@@ -37,7 +37,7 @@ class VectorBuffer {
   void insert(std::vector<BoltVector>&& vectors);
 
   /**
-   * Pops a corresponding vector of num_datasets BoltVectors (one for each
+   * Pops a vector of num_datasets corresponding BoltVectors (one for each
    * BoltVector stream this buffer is tracking, i.e. the first BoltVector in the
    * vector is from the "first" stream, the second from the "second", and so
    * on). Returns std::nullopt if the buffers are empty.

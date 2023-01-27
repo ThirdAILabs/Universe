@@ -45,7 +45,7 @@ void VectorBuffer::verifyCorrectNumberOfVectors(
   if (_buffers.size() != vectors.size()) {
     std::stringstream error_ss;
     error_ss
-        << "[VectorBuffer::insertBatch] Attempted to insert "
+        << "[VectorBuffer::insert] Attempted to insert "
            "a different number of corresponding vectors than the "
            "buffer was configured with (the buffer was configured to track "
         << _buffers.size() << "datasets, trying to insert " << vectors.size()
