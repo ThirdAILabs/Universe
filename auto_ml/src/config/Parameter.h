@@ -59,7 +59,7 @@ json getArray(const json& object, const std::string& key);
  *
  * Example:
  * {
- *   "my_param": { "param_name": "var", "param_options": { "one": 1, "two": 2 } }
+ *   "my_param": { "param_name": "var", "param_options": {"one": 1, "two": 2} }
  * }
  *
  * Along with the user input { "var": "one" } or { "var": "two" }
