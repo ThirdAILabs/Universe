@@ -222,8 +222,9 @@ py::object UniversalDeepTransformer::predictBatch(
 void UniversalDeepTransformer::coldStartPretraining(
     thirdai::data::ColumnMap dataset,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, float learning_rate,
-    uint32_t epochs, std::vector<std::string>& metrics) {
+    const std::vector<std::string>& weak_column_names,
+    bolt::TrainConfig& train_config,
+    const std::optional<ValidationOptions>& validation) {
   auto dataset_config = udtDatasetFactory().config();
 
   auto metadata = cold_start::getColdStartMetadata(dataset_config);
@@ -247,12 +248,14 @@ void UniversalDeepTransformer::coldStartPretraining(
       /* column_delimiter= */ dataset_config->delimiter,
       /* label_delimiter= */ metadata.label_delimiter);
 
-  auto train_config =
-      bolt::TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
-                                    /* epochs= */ epochs)
-          .withMetrics(metrics);
-
-  train(data_source, train_config, /* validation= */ std::nullopt,
+  // TODO(david): reconsider validation. Instead of forcing users to pass in a
+  // supervised dataset of query product pairs, can we create a synthetic
+  // validation set based on the product catalog? This synthetic validation set
+  // should NOT exactly model the cold start augmentation strategy but should
+  // use a new strategy that can emulate real user queries without data leakage.
+  // One idea here is to, for each product, generate a couple of fake user
+  // queries which are just phrases of 3-4 consecutive words.
+  train(data_source, train_config, /* validation= */ validation,
         /* max_in_memory_batches= */ std::nullopt);
 }
 

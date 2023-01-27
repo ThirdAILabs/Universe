@@ -313,6 +313,13 @@ std::string ColdStartTextAugmentation::concatenateStringColumnEntries(
 void ColdStartTextAugmentation::mergeStrongWithWeak(
     ColdStartTextAugmentation::PhraseCollection& weak_phrases,
     Phrase& strong_phrase) const {
+  if (weak_phrases.empty()) {
+    // TODO(any) evaluate alternatives for if we have no weak phrases. Maybe
+    // sampling from the title?
+    weak_phrases = {strong_phrase};
+    return;
+  }
+
   ColdStartTextAugmentation::PhraseCollection downsampled_strong_phrases;
   if (_strong_sample_num_words) {
     // If we have to sample from the strong phrase, we create N independently

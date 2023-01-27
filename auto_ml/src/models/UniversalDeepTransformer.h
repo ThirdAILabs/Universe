@@ -117,11 +117,12 @@ class UniversalDeepTransformer final : public ModelPipeline {
    * the augmentation refer to the comments in:
    * new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h
    */
-  void coldStartPretraining(thirdai::data::ColumnMap dataset,
-                            const std::vector<std::string>& strong_column_names,
-                            const std::vector<std::string>& weak_column_names,
-                            float learning_rate, uint32_t epochs,
-                            std::vector<std::string>& metrics);
+  void coldStartPretraining(
+      thirdai::data::ColumnMap dataset,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      bolt::TrainConfig& train_config,
+      const std::optional<ValidationOptions>& validation = std::nullopt);
 
   void resetTemporalTrackers() { udtDatasetFactory().resetTemporalTrackers(); }
 

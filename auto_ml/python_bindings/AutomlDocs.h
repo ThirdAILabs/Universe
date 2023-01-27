@@ -654,6 +654,69 @@ Example:
     
 )pbdoc";
 
+const char* const UDT_COLD_START = R"pbdoc(
+This method will perform cold start pretraining for UDT assuming it's configured
+with exactly two columns: one text column as input and one of either a categorical
+or multicategorical column as the target. 
+
+The cold start pretraining typically takes in an unsupervised dataset of objects
+where each object contains one or more columns of textual metadata. This could 
+be something like a product catalog (with product ids as objects and titles, 
+descriptions, and tags as metadata). The goal is to pre-train UDT on this 
+unsupervised data so in the future it may be able to answer text search queries 
+and return the relevant objects. 
+
+You may cold_start the model and train with supervised data afterwards, typically
+leading to faster convergence on the supervised data.
+
+Args:
+    filename (str): The file to 
+    strong_column_names (List[str]): A list of column names containing "strong" 
+    representative data of each sample. This is open to interpretation but 
+    typically this might be something like product/document titles.
+    weak_column_names (List[str]): A list of column names containing "weak" 
+    representative data of each sample. This includes anything not included in 
+    the strong columns, typically attributes like descriptions, tags, 
+    bullet points, etc. 
+    learning_rate (float): Learning rate. 
+    epochs (int): Number of epochs to pre-train for.
+    metrics (List[str]) = []: List of pre-training metric names to record.
+    validation (Optional[bolt.Validation]) = None: Optional validation object. 
+        Note that this validation data should have the format as specified in 
+        the UDT constructor (ie categorical) and not the same format passed in 
+        to cold start. In the product catalog example this would be query, 
+        product_id pairs. 
+    callbacks (List[bolt.callbacks.Callback] = []: Callbacks to use during training.
+
+Returns:
+    None
+
+Example:
+
+>>> model = bolt.UniversalDeepTransformer(
+        data_types={
+            "PRODUCT_ID": bolt.types.categorical(delimiter='-'),
+            "QUERY": bolt.types.text(contextual_encoding="local"),
+        },
+        target="product_id",
+        n_target_classes=1000,
+        integer_target=True,
+    )
+>>> model.cold_start(
+        filename=product_catalog,
+        strong_column_names=["TITLE"],
+        weak_column_names=["DESCRIPTION", "BULLET_POINTS", "BRAND"],
+        learning_rate=0.001,
+        epochs=5,
+        metrics=["f_measure(0.95)"]
+    )
+>>> model.train(
+        train_filename=supervised_query_product_data,
+    )
+>>> result = model.predict({"QUERY": query})
+
+)pbdoc";
+
 const char* const UDT_PREDICT_BATCH = R"pbdoc(
 Performs inference on a batch of samples in parallel.
 

@@ -132,13 +132,36 @@ def modify_udt_classifier():
         strong_column_names: List[str],
         weak_column_names: List[str],
         learning_rate: float,
+        epochs: int,
+        metrics: List[str] = [],
+        validation: Optional[bolt.Validation] = None,
+        callbacks: List[bolt.callbacks.Callback] = [],
     ):
+        # TODO(any): cold start uses new data pipeline, eventually we should
+        # move this to the old data pipeline and reduce the dependency on pandas
+
+        # We replace nans in the assumed string columns here because otherwise
+        # the pandas_do_columnmap function can't interpret the column
+        df = pd.read_csv(filename)
+        for col_name in strong_column_names + weak_column_names:
+            if col_name not in df.columns:
+                raise ValueError(f"Column {col_name} not found in dataset.")
+            df[col_name] = df[col_name].fillna("")
+
+        train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
+
+        if callbacks:
+            train_config.with_callbacks(callbacks)
+        if metrics:
+            train_config.with_metrics(metrics)
+
         original_cold_start_method(
             self,
-            thirdai.data.pandas_to_columnmap(pd.read_csv(filename)),
+            thirdai.data.pandas_to_columnmap(df),
             strong_column_names,
             weak_column_names,
-            learning_rate,
+            train_config,
+            validation,
         )
 
     wrapped_cold_start.__doc__ = udt_cold_start_doc
