@@ -11,7 +11,7 @@ def get_config(have_user_specified_parameters: bool = False):
     if have_user_specified_parameters:
         layer_2_sparsity = {
             "param_name": "use_sparsity",
-            "param_values": {"sparse": 0.25, "dense": 1.0},
+            "param_options": {"sparse": 0.25, "dense": 1.0},
         }
         layer_3_activation = {"param_name": "act"}
     else:

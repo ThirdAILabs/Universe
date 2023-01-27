@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ParameterInputMap.h"
+#include "ArgumentMap.h"
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -54,27 +54,27 @@ json getArray(const json& object, const std::string& key);
  * Format 3: A parameter with multiple options, one of which must be specified
  * by the user. This is indicated by a object with the field 'param_name' which
  * indicates the name the user will use to pass the selected option.
- * Additionally there must be another field 'param_values' which maps the
+ * Additionally there must be another field 'param_options' which maps the
  * different possible options to their corresponding constant values.
  *
  * Example:
  * {
- *   "my_param": { "param_name": "var", "param_values": { "one": 1, "two": 2 } }
+ *   "my_param": { "param_name": "var", "param_options": { "one": 1, "two": 2 } }
  * }
  *
  * Along with the user input { "var": "one" } or { "var": "two" }
  *
  */
 bool booleanParameter(const json& object, const std::string& key,
-                      const ParameterInputMap& user_input);
+                      const ArgumentMap& args);
 
 uint32_t integerParameter(const json& object, const std::string& key,
-                          const ParameterInputMap& user_input);
+                          const ArgumentMap& args);
 
 float floatParameter(const json& object, const std::string& key,
-                     const ParameterInputMap& user_input);
+                     const ArgumentMap& args);
 
 std::string stringParameter(const json& object, const std::string& key,
-                            const ParameterInputMap& user_input);
+                            const ArgumentMap& args);
 
 }  // namespace thirdai::automl::config

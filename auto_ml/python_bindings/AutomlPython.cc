@@ -333,7 +333,7 @@ void createDeploymentSubmodule(py::module_& module) {
       [](const std::string& config_file, const py::dict& parameters,
          const std::vector<uint32_t>& input_dims) {
         auto json_config = json::parse(config::loadConfig(config_file));
-        auto user_input = createUserInputMap(parameters);
+        auto user_input = createArgumentMap(parameters);
 
         return config::buildModel(json_config, user_input, input_dims);
       },
@@ -342,9 +342,9 @@ void createDeploymentSubmodule(py::module_& module) {
 #endif
 }
 
-config::ParameterInputMap createUserInputMap(const py::dict& parameters) {
-  config::ParameterInputMap cpp_parameters;
-  for (const auto& [k, v] : parameters) {
+config::ArgumentMap createArgumentMap(const py::dict& input_args) {
+  config::ArgumentMap args;
+  for (const auto& [k, v] : input_args) {
     if (!py::isinstance<py::str>(k)) {
       throw std::invalid_argument("Keys of parameters map must be strings.");
     }
@@ -352,16 +352,16 @@ config::ParameterInputMap createUserInputMap(const py::dict& parameters) {
 
     if (py::isinstance<py::bool_>(v)) {
       bool value = v.cast<bool>();
-      cpp_parameters.insert(name, value);
+      args.insert(name, value);
     } else if (py::isinstance<py::int_>(v)) {
       uint32_t value = v.cast<uint32_t>();
-      cpp_parameters.insert(name, value);
+      args.insert(name, value);
     } else if (py::isinstance<py::float_>(v)) {
       float value = v.cast<float>();
-      cpp_parameters.insert(name, value);
+      args.insert(name, value);
     } else if (py::isinstance<py::str>(v)) {
       std::string value = v.cast<std::string>();
-      cpp_parameters.insert(name, value);
+      args.insert(name, value);
     } else {
       throw std::invalid_argument("Invalid type '" +
                                   py::str(v.get_type()).cast<std::string>() +
@@ -370,7 +370,7 @@ config::ParameterInputMap createUserInputMap(const py::dict& parameters) {
     }
   }
 
-  return cpp_parameters;
+  return args;
 }
 
 py::object predictTokensWrapper(ModelPipeline& model,
@@ -438,7 +438,7 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
       /* time_granularity = */ std::move(time_granularity),
       /* lookahead = */ lookahead, /* delimiter = */ delimiter,
       /* model_config= */ model_config,
-      /* options = */ createUserInputMap(options));
+      /* options = */ createArgumentMap(options));
 }
 
 void UDTFactory::save_classifier(const UniversalDeepTransformer& classifier,

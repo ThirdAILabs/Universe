@@ -1,5 +1,6 @@
 #pragma once
 
+#include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/models/Generator.h>
 #include <auto_ml/src/models/ModelPipeline.h>
 #include <auto_ml/src/models/TextClassifier.h>
@@ -27,7 +28,7 @@ void createDeploymentSubmodule(py::module_& module);
 
 // Python wrappers for ModelPipline methods
 
-config::ParameterInputMap createUserInputMap(const py::dict& parameters);
+config::ArgumentMap createArgumentMap(const py::dict& input_args);
 
 py::object predictTokensWrapper(ModelPipeline& model,
                                 const std::vector<uint32_t>& tokens,

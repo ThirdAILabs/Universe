@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
+#include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/config/Parameter.h>
-#include <auto_ml/src/config/ParameterInputMap.h>
 
 namespace thirdai::automl::config::tests {
 
@@ -17,7 +17,7 @@ TEST(ConfigParameterTests, UserSpecifiedBoolean) {
     {"key": {"param_name": "user_key"}}
   )"_json;
 
-  ParameterInputMap inputs;
+  ArgumentMap inputs;
   inputs.insert<bool>("user_key", false);
 
   ASSERT_EQ(booleanParameter(config, "key", inputs), false);
@@ -28,7 +28,7 @@ TEST(ConfigParameterTests, OptionMappedBoolean) {
     {
       "key": {
         "param_name": "user_key",
-        "param_values": {
+        "param_options": {
           "good": true,
           "bad": false
         }
@@ -37,13 +37,13 @@ TEST(ConfigParameterTests, OptionMappedBoolean) {
   )"_json;
 
   {
-    ParameterInputMap inputs;
+    ArgumentMap inputs;
     inputs.insert<std::string>("user_key", "good");
     ASSERT_EQ(booleanParameter(config, "key", inputs), true);
   }
 
   {
-    ParameterInputMap inputs;
+    ArgumentMap inputs;
     inputs.insert<std::string>("user_key", "bad");
     ASSERT_EQ(booleanParameter(config, "key", inputs), false);
   }
@@ -62,7 +62,7 @@ TEST(ConfigParameterTests, UserSpecifiedInteger) {
     {"key": {"param_name": "user_key"}}
   )"_json;
 
-  ParameterInputMap inputs;
+  ArgumentMap inputs;
   inputs.insert<uint32_t>("user_key", 64092);
 
   ASSERT_EQ(integerParameter(config, "key", inputs), 64092);
@@ -73,7 +73,7 @@ TEST(ConfigParameterTests, OptionMappedInteger) {
     {
       "key": {
         "param_name": "user_key",
-        "param_values": {
+        "param_options": {
           "one": 1,
           "two": 2
         }
@@ -82,13 +82,13 @@ TEST(ConfigParameterTests, OptionMappedInteger) {
   )"_json;
 
   {
-    ParameterInputMap inputs;
+    ArgumentMap inputs;
     inputs.insert<std::string>("user_key", "one");
     ASSERT_EQ(integerParameter(config, "key", inputs), 1);
   }
 
   {
-    ParameterInputMap inputs;
+    ArgumentMap inputs;
     inputs.insert<std::string>("user_key", "two");
     ASSERT_EQ(integerParameter(config, "key", inputs), 2);
   }
@@ -107,7 +107,7 @@ TEST(ConfigParameterTests, UserSpecifiedFloat) {
     {"key": {"param_name": "user_key"}}
   )"_json;
 
-  ParameterInputMap inputs;
+  ArgumentMap inputs;
   inputs.insert<float>("user_key", 72340.428);
 
   ASSERT_FLOAT_EQ(floatParameter(config, "key", inputs), 72340.428);
@@ -118,7 +118,7 @@ TEST(ConfigParameterTests, OptionMappedFloat) {
     {
       "key": {
         "param_name": "user_key",
-        "param_values": {
+        "param_options": {
           "half": 0.5,
           "third": 0.33
         }
@@ -127,13 +127,13 @@ TEST(ConfigParameterTests, OptionMappedFloat) {
   )"_json;
 
   {
-    ParameterInputMap inputs;
+    ArgumentMap inputs;
     inputs.insert<std::string>("user_key", "half");
     ASSERT_FLOAT_EQ(floatParameter(config, "key", inputs), 0.5);
   }
 
   {
-    ParameterInputMap inputs;
+    ArgumentMap inputs;
     inputs.insert<std::string>("user_key", "third");
     ASSERT_FLOAT_EQ(floatParameter(config, "key", inputs), 0.33);
   }
@@ -152,7 +152,7 @@ TEST(ConfigParameterTests, UserSpecifiedString) {
     {"key": {"param_name": "user_key"}}
   )"_json;
 
-  ParameterInputMap inputs;
+  ArgumentMap inputs;
   inputs.insert<std::string>("user_key", "hello");
 
   ASSERT_EQ(stringParameter(config, "key", inputs), "hello");
@@ -163,7 +163,7 @@ TEST(ConfigParameterTests, OptionMappedString) {
     {
       "key": {
         "param_name": "user_key",
-        "param_values": {
+        "param_options": {
           "long": "12345678",
           "short": "123"
         }
@@ -172,13 +172,13 @@ TEST(ConfigParameterTests, OptionMappedString) {
   )"_json;
 
   {
-    ParameterInputMap inputs;
+    ArgumentMap inputs;
     inputs.insert<std::string>("user_key", "long");
     ASSERT_EQ(stringParameter(config, "key", inputs), "12345678");
   }
 
   {
-    ParameterInputMap inputs;
+    ArgumentMap inputs;
     inputs.insert<std::string>("user_key", "short");
     ASSERT_EQ(stringParameter(config, "key", inputs), "123");
   }

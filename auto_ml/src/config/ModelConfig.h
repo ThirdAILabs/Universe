@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ParameterInputMap.h"
+#include "ArgumentMap.h"
 #include <bolt/src/graph/Graph.h>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -23,7 +23,8 @@ namespace thirdai::automl::config {
  *        {
  *            "name": <node name>,
  *            "type": <node type>,
- *            "other_params": ...
+ *            "other_params": ...,
+ *            "predecessor(s)": ... // any inputs to the node
  *        },
  *        ...
  *    ],
@@ -34,9 +35,11 @@ namespace thirdai::automl::config {
  * The inputs are a array of names that correspond to each provided input dim,
  * i.e. the ith input name correponds to an input to the model that has the ith
  * input dim. Nodes can use these names to reference the inputs.
+ *
+ * The predecessors of a given node must be specified in the nodes list before
+ * the the node that uses them as inputs.
  */
-bolt::BoltGraphPtr buildModel(const json& config,
-                              const ParameterInputMap& user_input,
+bolt::BoltGraphPtr buildModel(const json& config, const ArgumentMap& args,
                               const std::vector<uint32_t>& input_dims);
 
 /**

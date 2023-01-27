@@ -7,7 +7,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/config/ParameterInputMap.h>
+#include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
@@ -55,7 +55,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
       bool integer_target = false, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::optional<std::string>& model_config = std::nullopt,
-      const config::ParameterInputMap& options = {});
+      const config::ArgumentMap& options = {});
 
   /**
    * This wraps the predict method of the ModelPipeline to handle recusive
@@ -207,8 +207,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
     uint32_t prediction_depth = 1;
   };
 
-  static UDTOptions processUDTOptions(
-      const config::ParameterInputMap& options_map);
+  static UDTOptions processUDTOptions(const config::ArgumentMap& options_map);
 
   static void throwOptionError(const std::string& option_name,
                                const std::string& given_option_value,

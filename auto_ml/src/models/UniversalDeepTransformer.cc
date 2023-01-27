@@ -32,7 +32,7 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
     std::string target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    const config::ParameterInputMap& options) {
+    const config::ArgumentMap& options) {
   // we don't put this check in the config constructor itself because its also
   // used for metadata which doesn't use this same check
   if (!data_types.count(target_col)) {
@@ -286,7 +286,7 @@ bolt::BoltGraphPtr UniversalDeepTransformer::loadUDTBoltGraph(
   // This will pass the output (label) dimension of the model into the model
   // config so that it can be used to determine the model architecture.
 
-  config::ParameterInputMap parameters;
+  config::ArgumentMap parameters;
   parameters.insert("output_dim", output_dim);
 
   auto json_config = json::parse(config::loadConfig(saved_model_config));
@@ -338,10 +338,10 @@ bolt::BoltGraphPtr UniversalDeepTransformer::buildUDTBoltGraph(
 
 UniversalDeepTransformer::UDTOptions
 UniversalDeepTransformer::processUDTOptions(
-    const config::ParameterInputMap& options_map) {
+    const config::ArgumentMap& options_map) {
   auto options = UDTOptions();
 
-  for (const auto& [option_name, _] : options_map.parameters()) {
+  for (const auto& [option_name, _] : options_map.arguments()) {
     if (option_name == "contextual_columns") {
       options.contextual_columns =
           options_map.get<bool>("contextual_columns", "boolean");

@@ -7,7 +7,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <auto_ml/src/config/ParameterInputMap.h>
+#include <auto_ml/src/config/ArgumentMap.h>
 #include <fstream>
 #include <random>
 #include <sstream>
@@ -17,8 +17,14 @@
 
 namespace thirdai::automl::config {
 
+/**
+ * Helper function to create the sampling config for a fully connected layer.
+ * Expects the config to either be a json object containing the keys
+ * 'num_tables', 'hashes_per_table', and 'reservoir_size' or to simply be the
+ * string 'random' indicating random sampling should be used.
+ */
 bolt::SamplingConfigPtr getSamplingConfig(const json& config,
-                                          const ParameterInputMap& user_input) {
+                                          const ArgumentMap& args) {
   if (config.contains("sampling_config")) {
     const auto& sampling_json = config["sampling_config"];
 
@@ -27,12 +33,11 @@ bolt::SamplingConfigPtr getSamplingConfig(const json& config,
       return std::make_shared<bolt::RandomSamplingConfig>();
     }
     if (sampling_json.is_object()) {
-      uint32_t num_tables =
-          integerParameter(sampling_json, "num_tables", user_input);
+      uint32_t num_tables = integerParameter(sampling_json, "num_tables", args);
       uint32_t hashes_per_table =
-          integerParameter(sampling_json, "hashes_per_table", user_input);
+          integerParameter(sampling_json, "hashes_per_table", args);
       uint32_t reservoir_size =
-          integerParameter(sampling_json, "reservoir_size", user_input);
+          integerParameter(sampling_json, "reservoir_size", args);
 
       return std::make_shared<bolt::DWTASamplingConfig>(
           num_tables, hashes_per_table, reservoir_size);
@@ -45,14 +50,20 @@ bolt::SamplingConfigPtr getSamplingConfig(const json& config,
   return nullptr;
 }
 
+/**
+ * Helper function to create a fully connected node. Expects the fields 'dim',
+ * 'sparsity', 'activation', and 'predecessor' to be present in the config.
+ * Optionally a field 'sampling_config' can be specified. If it is not present
+ * the sampling parameters will be autotuned if not specified.
+ */
 bolt::NodePtr buildFullyConnectedNode(
-    const json& config, const ParameterInputMap& user_input,
+    const json& config, const ArgumentMap& args,
     const std::unordered_map<std::string, bolt::NodePtr>& created_nodes) {
-  uint32_t dim = integerParameter(config, "dim", user_input);
-  float sparsity = floatParameter(config, "sparsity", user_input);
-  std::string activation = stringParameter(config, "activation", user_input);
+  uint32_t dim = integerParameter(config, "dim", args);
+  float sparsity = floatParameter(config, "sparsity", args);
+  std::string activation = stringParameter(config, "activation", args);
 
-  auto sampling_config = getSamplingConfig(config, user_input);
+  auto sampling_config = getSamplingConfig(config, args);
 
   bolt::FullyConnectedNodePtr layer;
   if (sampling_config) {
@@ -71,6 +82,11 @@ bolt::NodePtr buildFullyConnectedNode(
   return layer;
 }
 
+/**
+ * Helper function to construct the inputs. Matches the input dims to the input
+ * names provided in the config. Updates created nodes to contain the created
+ * inputs.
+ */
 std::vector<bolt::InputPtr> getInputs(
     const json& config, const std::vector<uint32_t>& input_dims,
     std::unordered_map<std::string, bolt::NodePtr>& created_nodes) {
@@ -93,8 +109,7 @@ std::vector<bolt::InputPtr> getInputs(
   return inputs;
 }
 
-bolt::BoltGraphPtr buildModel(const json& config,
-                              const ParameterInputMap& user_input,
+bolt::BoltGraphPtr buildModel(const json& config, const ArgumentMap& args,
                               const std::vector<uint32_t>& input_dims) {
   std::unordered_map<std::string, bolt::NodePtr> created_nodes;
 
@@ -110,7 +125,7 @@ bolt::BoltGraphPtr buildModel(const json& config,
     std::string type = getString(node_config, "type");
     if (type == "fully_connected") {
       created_nodes[name] =
-          buildFullyConnectedNode(node_config, user_input, created_nodes);
+          buildFullyConnectedNode(node_config, args, created_nodes);
     } else {
       throw std::invalid_argument("Found unsupported node type '" + type +
                                   "'.");
@@ -132,6 +147,16 @@ bolt::BoltGraphPtr buildModel(const json& config,
   return model;
 }
 
+/**
+ * This is a helper function to both encrypt and decrypt a config by XORing each
+ * byte in the config string with a random byte from a random generator. This
+ * ensures that the config is not human readable, and also that the same byte
+ * will be unlikely to have the same encoded value in different places. Because
+ * of the nature of XOR this function can both encrypt and decrypt the configs.
+ * Because the seed is fixed the sequence of random bytes for XORing will always
+ * be the same, this is essentially a shortcut for having to store a long byte
+ * string in the code for encrypting/decrypting configs.
+ */
 std::string xorConfig(const std::string& config) {
   std::mt19937 rand(8256387);
   std::uniform_int_distribution<uint8_t> dist;
