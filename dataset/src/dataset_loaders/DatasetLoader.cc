@@ -1,4 +1,5 @@
 #include "DatasetLoader.h"
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <utils/Logging.h>
@@ -15,7 +16,9 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
       _featurizer(std::move(featurizer)),
       _shuffle(shuffle),
       _buffer_size(shuffle_config.min_buffer_size),
-      _buffer(shuffle_config.seed),
+      _buffer(/* should_shuffle = */ _shuffle,
+              /* shuffle_seed = */ shuffle_config.seed,
+              /* num_vector_streams = */ _featurizer->getNumDatasets()),
       _featurization_batch_size(internal_featurization_batch_size) {
   // Different formats of data may or may not contain headers. Thus we
   // delegate to the particular featurizer to determine if a header is
@@ -60,8 +63,9 @@ std::optional<std::pair<InputDatasets, LabelDataset>> DatasetLoader::loadSome(
   // so that after exporting num_batches from the buffer we still have
   // _buffer_size vectors left for future shuffling.
   // We also must check if anything in this multiplication and sum overflows and
-  // use std::numeric_limits<size_t>::max() in that case, since frequently we
-  // pass in std::numeric_limits<size_t>::max() as some of these terms.
+  // use std::numeric_limits<size_t>::max() in that case, since sometimes (when
+  // we want to load everything) we pass in std::numeric_limits<size_t>::max()
+  // as num_batches, which would make the expression overflow
   bool will_overflow =
       (std::numeric_limits<size_t>::max() / num_batches <= batch_size) ||
       (std::numeric_limits<size_t>::max() - _buffer_size <=
@@ -71,7 +75,8 @@ std::optional<std::pair<InputDatasets, LabelDataset>> DatasetLoader::loadSome(
   fillVectorBuffer(fill_size);
 
   auto batch_lists =
-      _buffer.popBatches(num_batches, /* target_batch_size = */ batch_size);
+      popBatchesFromBuffer(/* target_num_batches = */ num_batches,
+                           /* target_batch_size = */ batch_size);
   auto end = std::chrono::high_resolution_clock::now();
   auto duration =
       std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
@@ -139,9 +144,35 @@ void DatasetLoader::fillVectorBuffer(size_t num_rows) {
       for (auto& j : batch) {
         temp_vector.push_back(std::move(j[i]));
       }
-      _buffer.insert(std::move(temp_vector), _shuffle);
+      _buffer.insert(std::move(temp_vector));
     }
   }
 }
 
+std::vector<std::vector<BoltBatch>> DatasetLoader::popBatchesFromBuffer(
+    size_t target_num_batches, size_t target_batch_size) {
+  size_t num_datasets = _featurizer->getNumDatasets();
+  std::vector<std::vector<BoltBatch>> batches(num_datasets);
+  for (size_t batch_id = 0; batch_id < target_num_batches; batch_id++) {
+    std::vector<std::vector<BoltVector>> batch(num_datasets);
+    for (size_t vec_id = 0; vec_id < target_batch_size; vec_id++) {
+      if (auto next_vectors = _buffer.pop()) {
+        assert(next_vectors.size() == num_datasets);
+        for (size_t dataset_id = 0; dataset_id < num_datasets; dataset_id++) {
+          batch.at(dataset_id).push_back(next_vectors->at(dataset_id));
+        }
+      }
+    }
+
+    if (batch.at(0).empty()) {
+      break;
+    }
+
+    for (size_t dataset_id = 0; dataset_id < batch.size(); dataset_id++) {
+      batches.at(dataset_id).emplace_back(std::move(batch.at(dataset_id)));
+    }
+  }
+
+  return batches;
+}
 }  // namespace thirdai::dataset

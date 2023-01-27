@@ -15,35 +15,24 @@ namespace thirdai::dataset {
  */
 class VectorBuffer {
  public:
-  explicit VectorBuffer(uint32_t shuffle_seed) : _gen(shuffle_seed) {}
+  explicit VectorBuffer(bool should_shuffle, uint32_t shuffle_seed,
+                        size_t num_datasets)
+      : _shuffle(should_shuffle), _gen(shuffle_seed), _buffers(num_datasets) {}
 
   /**
    * Inserts a corresponding vector of BoltVectors (one for each BoltVector
    * stream this buffer is tracking, i.e. the first BoltVector in the vector is
-   * from the "first" stream, the second from the "second", and so on). If
-   * shuffle is true, each new vector is shuffled with other vectors in its
-   * corresponding buffer.
+   * from the "first" stream, the second from the "second", and so on).
    */
-  void insert(std::vector<BoltVector>&& vectors, bool shuffle);
+  void insert(std::vector<BoltVector>&& vectors);
 
   /**
-   * Pops a vector of corresponding batches (one from each BoltVector stream
-   * this buffer is tracking, i.e. the first batch in the vector is from the
-   * "first" stream, the second from the "second", and so on). Each will be the
-   * same size (target_batch_size unless the buffer is low on vectors, which is
-   * usually because the source has been exhausted).
+   * Pops a vector of corresponding of BoltVectors (one for each BoltVector
+   * stream this buffer is tracking, i.e. the first BoltVector in the vector is
+   * from the "first" stream, the second from the "second", and so on). Returns
+   * std::nullopt if the streams are empty.
    */
-  std::optional<std::vector<BoltBatch>> popBatch(size_t target_batch_size);
-
-  /**
-   * Similar to popBatch, except the first element is up to num_batches from
-   * the first dataset, the second element is up to num_batches from the
-   * second dataset, and so on. All vectors of batches will have the same size,
-   * and each corresponding batch size will be the same (all target_batch_size
-   * except possible the last one).
-   */
-  std::vector<std::vector<BoltBatch>> popBatches(size_t num_batches,
-                                                 size_t target_batch_size);
+  std::optional<std::vector<BoltVector>> pop();
 
   inline bool empty() const {
     return _buffers.empty() || _buffers.at(0).empty();
@@ -69,11 +58,16 @@ class VectorBuffer {
    */
   void shuffleNewVectors();
 
+  // Whether we should shuffle the vectors that get inserted with other vectors
+  // in the buffer
+  bool _shuffle;
+  // Random number generator to use for shuffling
   std::mt19937 _gen;
+
   /**
    * This data structure consists of a deque storing the currently buffered
    * BoltVectors for every BoltVector stream this VectorBuffer is tracking.
-   * Besides during calls to insertBatch or popBatch, this data structure
+   * Besides during calls to insert or popBatch, this data structure
    * maintains the invariant that BoltVectors with the same index across the
    * buffers are "corresponding"; that is, they were inserted together in a call
    * to insert (additionally, it also maintains the invariant that each deque

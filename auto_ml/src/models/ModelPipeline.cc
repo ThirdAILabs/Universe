@@ -47,7 +47,7 @@ void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
     if (validation && !validation->metrics().empty()) {
       std::optional<float> threshold =
           tuneBinaryClassificationPredictionThreshold(
-              /* data_source= */ dataset::SimpleFileDataSource::make(
+              /* data_source= */ dataset::FileDataSource::make(
                   validation->filename()),
               /* metric_name= */ validation->metrics().at(0), batch_size);
 
@@ -217,7 +217,7 @@ void ModelPipeline::trainInMemory(
 
   if (validation) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
-        dataset::SimpleFileDataSource::make(validation->filename()),
+        dataset::FileDataSource::make(validation->filename()),
         /* training= */ false);
 
     auto [val_data, val_labels] = validation_dataset->loadAll(
@@ -265,7 +265,7 @@ void ModelPipeline::trainOnStream(
    */
   if (validation && !_dataset_factory->hasTemporalTracking()) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
-        dataset::SimpleFileDataSource::make(validation->filename()),
+        dataset::FileDataSource::make(validation->filename()),
         /* training= */ false);
 
     auto [val_data, val_labels] = validation_dataset->loadAll(

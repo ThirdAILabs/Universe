@@ -123,6 +123,8 @@ class TabularFeaturizer : public Featurizer {
     return dims;
   }
 
+  size_t getNumDatasets() final { return 2; }
+
   void setParallelism(bool parallel) { _parallel = parallel; }
 
   BoltVector makeInputVector(ColumnarInputSample& sample) {

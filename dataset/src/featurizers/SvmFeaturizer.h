@@ -30,6 +30,8 @@ class SvmFeaturizer final : public Featurizer {
 
   void processHeader(const std::string& header) final { (void)header; }
 
+  size_t getNumDatasets() final { return 2; }
+
   std::pair<BoltVector, BoltVector> processRow(const std::string& line) const {
     const char* start = line.c_str();
     const char* const line_end = line.c_str() + line.size();

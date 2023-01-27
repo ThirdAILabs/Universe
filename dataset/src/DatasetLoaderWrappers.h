@@ -16,7 +16,7 @@ struct SvmDatasetLoader {
   static std::tuple<BoltDatasetPtr, BoltDatasetPtr> loadDatasetFromFile(
       const std::string& filename, uint32_t batch_size,
       bool softmax_for_multiclass = true) {
-    auto data_source = std::make_shared<SimpleFileDataSource>(filename);
+    auto data_source = std::make_shared<FileDataSource>(filename);
     return loadDataset(data_source, batch_size, softmax_for_multiclass);
   }
 
@@ -36,7 +36,7 @@ struct ClickThroughDatasetLoader {
   loadDatasetFromFile(const std::string& filename, uint32_t batch_size,
                       uint32_t num_dense_features,
                       uint32_t max_num_categorical_features, char delimiter) {
-    auto data_source = std::make_shared<SimpleFileDataSource>(filename);
+    auto data_source = std::make_shared<FileDataSource>(filename);
     return loadDataset(data_source, num_dense_features,
                        max_num_categorical_features, delimiter, batch_size);
   }

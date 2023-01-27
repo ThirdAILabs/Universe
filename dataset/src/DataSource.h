@@ -25,14 +25,13 @@ class DataSource {
 
 using DataSourcePtr = std::shared_ptr<DataSource>;
 
-class SimpleFileDataSource final : public DataSource {
+class FileDataSource final : public DataSource {
  public:
-  explicit SimpleFileDataSource(const std::string& filename)
+  explicit FileDataSource(const std::string& filename)
       : _file(SafeFileIO::ifstream(filename)), _filename(filename) {}
 
-  static std::shared_ptr<SimpleFileDataSource> make(
-      const std::string& filename) {
-    return std::make_shared<SimpleFileDataSource>(filename);
+  static std::shared_ptr<FileDataSource> make(const std::string& filename) {
+    return std::make_shared<FileDataSource>(filename);
   }
 
   std::optional<std::vector<std::string>> nextBatch(

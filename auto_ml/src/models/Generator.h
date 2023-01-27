@@ -592,7 +592,7 @@ class QueryCandidateGenerator {
       const std::string& file_name, uint32_t col_to_hash, bool verbose = true) {
     auto featurizer = constructTabularFeaturizer(
         /* column_index = */ col_to_hash);
-    auto file_data_source = dataset::SimpleFileDataSource::make(file_name);
+    auto file_data_source = dataset::FileDataSource::make(file_name);
 
     auto dataset_loader = std::make_unique<dataset::DatasetLoader>(
         file_data_source, featurizer, /* shuffle = */ false);
@@ -605,7 +605,7 @@ class QueryCandidateGenerator {
 
   std::tuple<uint32_t, uint32_t> mapColumnNamesToIndices(
       const std::string& file_name) {
-    auto file_data_source = dataset::SimpleFileDataSource::make(
+    auto file_data_source = dataset::FileDataSource::make(
         /* filename = */ file_name);
     auto file_header = file_data_source->nextLine();
 

@@ -11,17 +11,24 @@ namespace thirdai::dataset {
 
 class Featurizer {
  public:
-  // Featurizes a list of input rows into N different "datasets". Each dataset
-  // is simply a vector of BoltVectors. Each "dataset" should have the same
-  // number of BoltVectors. BoltVectors with the same index are "corresponding",
-  // and usually this means that they can be trained on as corresponding
-  // examples.
+  /** Featurizes a list of input rows into N different "datasets". Each dataset
+   * is simply a vector of BoltVectors. Each "dataset" should have the same
+   * number of BoltVectors. BoltVectors with the same index are "corresponding",
+   * and usually this means that they can be trained on as corresponding
+   * examples.
+   * TODO(Any): Consider transposing the vector of vector format here and
+   * elsewhere for consistency
+   */
   virtual std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& rows) = 0;
 
   virtual bool expectsHeader() const = 0;
 
   virtual void processHeader(const std::string& header) = 0;
+
+  // Returns the size of the vector returned from featurizer, i.e. how many
+  // datasets this featurizer featurizes rows into
+  virtual size_t getNumDatasets() = 0;
 
   virtual ~Featurizer() = default;
 

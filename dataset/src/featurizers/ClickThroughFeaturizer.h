@@ -42,6 +42,8 @@ class ClickThroughFeaturizer final : public Featurizer {
 
   void processHeader(const std::string& header) final { (void)header; }
 
+  size_t getNumDatasets() final { return 3; }
+
  private:
   std::tuple<BoltVector, BoltVector, BoltVector> processRow(
       const std::string& row) const {

@@ -39,7 +39,7 @@ class DatasetLoaderTests : public ::testing::Test {
     std::vector<std::shared_ptr<Block>> input_blocks({mock_block, mock_block});
     std::vector<std::shared_ptr<Block>> label_blocks({mock_block});
 
-    auto data_source = std::make_shared<SimpleFileDataSource>(_mock_file_name);
+    auto data_source = std::make_shared<FileDataSource>(_mock_file_name);
 
     auto featurizer =
         std::make_shared<TabularFeaturizer>(input_blocks, label_blocks);

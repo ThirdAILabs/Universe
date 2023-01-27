@@ -62,6 +62,12 @@ class DatasetLoader final {
   // reaches the passed in number of rows
   void fillVectorBuffer(size_t num_rows);
 
+  // Pops corresponding vectors from the buffer and turns them into
+  // corresponding BoltBatches. Tries to return target_num_batches each of size
+  // target_batch_size.
+  std::vector<std::vector<BoltBatch>> popBatchesFromBuffer(
+      size_t target_num_batches, size_t target_batch_size);
+
   DataSourcePtr _data_source;
   std::shared_ptr<Featurizer> _featurizer;
 

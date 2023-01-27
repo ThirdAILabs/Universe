@@ -107,8 +107,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
 
   auto metadata = categorical->metadata_config;
 
-  auto data_source =
-      dataset::SimpleFileDataSource::make(metadata->metadata_file);
+  auto data_source = dataset::FileDataSource::make(metadata->metadata_file);
 
   auto column_numbers =
       makeColumnNumberMapFromHeader(*data_source, metadata->delimiter);

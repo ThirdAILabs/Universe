@@ -298,9 +298,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def("resource_name", &DataSource::resourceName)
       .def("restart", &DataSource::restart);
 
-  py::class_<SimpleFileDataSource, DataSource,
-             std::shared_ptr<SimpleFileDataSource>>(dataset_submodule,
-                                                    "FileDataSource")
+  py::class_<FileDataSource, DataSource, std::shared_ptr<FileDataSource>>(
+      dataset_submodule, "FileDataSource")
       .def(py::init<const std::string&>(), py::arg("filename"));
 
   dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
