@@ -306,7 +306,7 @@ add_subdirectory(hashtable)
 add_subdirectory(compression)
 add_subdirectory(utils)
 
-if (${LICENSE_BUILD_FLAG_FOUND})
+if(${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
 endif()
 
@@ -378,11 +378,9 @@ set(THIRDAI_SOURCES
 if(${LICENSE_CHECK_FLAG_FOUND})
   set(THIRDAI_SOURCES
       ${THIRDAI_SOURCES} licensing/src/keygen/KeygenCommunication.cc
-      licensing/src/heartbeat/Heartbeat.cc     
-      licensing/src/CheckLicenseEnabled.cc )
+      licensing/src/heartbeat/Heartbeat.cc licensing/src/CheckLicenseEnabled.cc)
 else()
-  set(THIRDAI_SOURCES
-  ${THIRDAI_SOURCES} licensing/src/CheckLicenseDisabled.cc)
+  set(THIRDAI_SOURCES ${THIRDAI_SOURCES} licensing/src/CheckLicenseDisabled.cc)
 endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
