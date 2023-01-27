@@ -11,12 +11,12 @@ std::vector<BoltVector> SingleBlockDatasetFactory::featurizeInput(
   std::vector<std::string_view> input_vector = {
       std::string_view(input.data(), input.length())};
   dataset::RowSampleRef input_vector_ref(input_vector);
-  return {_unlabeled_batch_processor->makeInputVector(input_vector_ref)};
+  return {_unlabeled_featurizer->makeInputVector(input_vector_ref)};
 }
 
 std::vector<BoltBatch> SingleBlockDatasetFactory::featurizeInputBatch(
     const std::vector<std::string>& inputs) {
-  auto batches = _unlabeled_batch_processor->createBatch(inputs);
+  auto batches = _unlabeled_featurizer->featurize(inputs);
 
   // We cannot use the initializer list because the copy constructor is
   // deleted for BoltBatch.
@@ -40,9 +40,8 @@ std::vector<dataset::Explanation> SingleBlockDatasetFactory::explain(
     const std::optional<std::vector<uint32_t>>& gradients_indices,
     const std::vector<float>& gradients_ratio, const std::string& sample) {
   dataset::CsvSampleRef sample_ref(sample, _delimiter);
-  return bolt::getSignificanceSortedExplanations(gradients_indices,
-                                                 gradients_ratio, sample_ref,
-                                                 _unlabeled_batch_processor);
+  return bolt::getSignificanceSortedExplanations(
+      gradients_indices, gradients_ratio, sample_ref, _unlabeled_featurizer);
 }
 
 }  // namespace thirdai::automl::data

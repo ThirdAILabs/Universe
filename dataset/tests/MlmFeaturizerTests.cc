@@ -1,8 +1,8 @@
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
-#include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/featurizers/MaskedSentenceFeaturizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <unordered_map>
 
@@ -34,7 +34,7 @@ std::vector<uint32_t> ids_from_words(const std::shared_ptr<Vocabulary>& vocab,
   return ids;
 }
 
-TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
+TEST(MaskedSentenceFeaturizer, TestCreateBatch) {
   std::vector<std::string> rows = {
       "the dog ran up the hill", "the cat slept on the window",
       "the rhino has a horn", "the monkey climbed the tree"};
@@ -47,18 +47,18 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
 
   std::shared_ptr<Vocabulary> vocab = vocab_from_tokens(tokenized_sentences);
 
-  dataset::MaskedSentenceBatchProcessor processor(vocab, RANGE);
+  dataset::MaskedSentenceFeaturizer processor(vocab, RANGE);
 
-  auto datasets = processor.createBatch(rows);
+  auto datasets = processor.featurize(rows);
   auto data = datasets.at(0);
   auto masked_indices = datasets.at(1);
   auto labels = datasets.at(2);
 
   std::unordered_set<uint32_t> masked_word_hashes;
 
-  EXPECT_EQ(data.getBatchSize(), 4);
-  EXPECT_EQ(masked_indices.getBatchSize(), 4);
-  EXPECT_EQ(labels.getBatchSize(), 4);
+  EXPECT_EQ(data.size(), 4);
+  EXPECT_EQ(masked_indices.size(), 4);
+  EXPECT_EQ(labels.size(), 4);
 
   for (uint32_t i = 0; i < 4; i++) {
     auto unigrams = ids_from_words(vocab, tokenized_sentences[i]);
@@ -68,7 +68,7 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
   }
 }
 
-TEST(MaskedSentenceBatchProcessor, TestCreateBatchMultipleMaskedTokens) {
+TEST(MaskedSentenceFeaturizer, TestCreateBatchMultipleMaskedTokens) {
   std::vector<std::string> rows{
       "the dog ran up the hill and came back down right away",
       "the cat slept on the window for a very long time",
@@ -88,17 +88,17 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatchMultipleMaskedTokens) {
 
   std::shared_ptr<Vocabulary> vocab = vocab_from_tokens(split_sentences);
 
-  dataset::MaskedSentenceBatchProcessor processor(
+  dataset::MaskedSentenceFeaturizer processor(
       vocab, RANGE, /* masked_tokens_percentage= */ 0.3);
 
-  auto datasets = processor.createBatch(rows);
+  auto datasets = processor.featurize(rows);
   auto data = datasets.at(0);
   auto masked_indices = datasets.at(1);
   auto labels = datasets.at(2);
 
-  EXPECT_EQ(data.getBatchSize(), 4);
-  EXPECT_EQ(masked_indices.getBatchSize(), 4);
-  EXPECT_EQ(labels.getBatchSize(), 4);
+  EXPECT_EQ(data.size(), 4);
+  EXPECT_EQ(masked_indices.size(), 4);
+  EXPECT_EQ(labels.size(), 4);
 
   for (uint32_t index = 0; index < 4; index++) {
     // Only unit-test here is that percentage works.

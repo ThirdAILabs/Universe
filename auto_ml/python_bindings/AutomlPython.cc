@@ -71,6 +71,7 @@ void createModelsSubmodule(py::module_& module) {
       .def("train_with_source", &ModelPipeline::train, py::arg("data_source"),
            py::arg("train_config"), py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
+           py::arg("batch_size") = std::nullopt,
            docs::MODEL_PIPELINE_TRAIN_DATA_SOURCE,
            bolt::python::OutputRedirect())
       .def("evaluate_with_source", &ModelPipeline::evaluate,

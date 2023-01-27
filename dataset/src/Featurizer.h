@@ -9,26 +9,39 @@
 
 namespace thirdai::dataset {
 
-class BatchProcessor {
+class Featurizer {
  public:
-  virtual std::vector<BoltBatch> createBatch(
+  /**
+   * Featurizes a list of input rows into N different "datasets". Each dataset
+   * is simply a vector of BoltVectors. Each "dataset" should have the same
+   * number of BoltVectors. BoltVectors with the same index are "corresponding",
+   * and usually this means that they can be trained on as corresponding
+   * examples.
+   * TODO(Any): Consider transposing the vector of vector format here and
+   * elsewhere for consistency
+   */
+  virtual std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& rows) = 0;
 
   virtual bool expectsHeader() const = 0;
 
   virtual void processHeader(const std::string& header) = 0;
 
-  virtual ~BatchProcessor() = default;
+  // Returns the size of the vector returned from featurizer, i.e. how many
+  // datasets this featurizer featurizes rows into
+  virtual size_t getNumDatasets() = 0;
+
+  virtual ~Featurizer() = default;
 
   // Returns a vector of the BoltVector dimensions one would get if they called
-  // createBatch.
+  // featurize.
   virtual std::vector<uint32_t> getDimensions() {
     // By default we assume that this is an unsupported operation
     throw exceptions::NotImplemented(
-        "Cannot get the dimensions for this batch processor");
+        "Cannot get the dimensions for this featurizer");
   }
   // Default constructor for cereal.
-  BatchProcessor() {}
+  Featurizer() {}
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
@@ -39,6 +52,6 @@ class BatchProcessor {
   }
 };
 
-using BatchProcessorPtr = std::shared_ptr<BatchProcessor>;
+using FeaturizerPtr = std::shared_ptr<Featurizer>;
 
 }  // namespace thirdai::dataset

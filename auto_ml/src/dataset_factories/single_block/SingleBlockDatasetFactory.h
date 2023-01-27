@@ -8,9 +8,9 @@
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
-#include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/featurizers/ProcessorUtils.h>
 #include <utils/StringManipulation.h>
 #include <exception>
 #include <optional>
@@ -26,23 +26,21 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
                             dataset::BlockPtr unlabeled_data_block,
                             dataset::BlockPtr label_block, bool shuffle,
                             char delimiter, bool has_header)
-      : _labeled_batch_processor(
-            std::make_shared<dataset::GenericBatchProcessor>(
-                std::vector<dataset::BlockPtr>{std::move(data_block)},
-                std::vector<dataset::BlockPtr>{std::move(label_block)},
-                /* has_header= */ has_header, delimiter)),
-        _unlabeled_batch_processor(
-            std::make_shared<dataset::GenericBatchProcessor>(
-                std::vector<dataset::BlockPtr>{std::move(unlabeled_data_block)},
-                std::vector<dataset::BlockPtr>{},
-                /* has_header= */ has_header, delimiter)),
+      : _labeled_featurizer(std::make_shared<dataset::TabularFeaturizer>(
+            std::vector<dataset::BlockPtr>{std::move(data_block)},
+            std::vector<dataset::BlockPtr>{std::move(label_block)},
+            /* has_header= */ has_header, delimiter)),
+        _unlabeled_featurizer(std::make_shared<dataset::TabularFeaturizer>(
+            std::vector<dataset::BlockPtr>{std::move(unlabeled_data_block)},
+            std::vector<dataset::BlockPtr>{},
+            /* has_header= */ has_header, delimiter)),
         _shuffle(shuffle),
         _delimiter(delimiter) {}
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataSource> data_source, bool training) final {
     return std::make_unique<dataset::DatasetLoader>(
-        data_source, _labeled_batch_processor, _shuffle && training);
+        data_source, _labeled_featurizer, _shuffle && training);
   }
 
   std::vector<BoltVector> featurizeInput(const std::string& input) final;
@@ -58,18 +56,16 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
       const std::string& sample) final;
 
   std::vector<uint32_t> getInputDims() final {
-    return {_unlabeled_batch_processor->getInputDim()};
+    return {_unlabeled_featurizer->getInputDim()};
   }
 
-  uint32_t getLabelDim() final {
-    return _labeled_batch_processor->getLabelDim();
-  }
+  uint32_t getLabelDim() final { return _labeled_featurizer->getLabelDim(); }
 
   bool hasTemporalTracking() const final { return false; }
 
  private:
-  dataset::GenericBatchProcessorPtr _labeled_batch_processor;
-  dataset::GenericBatchProcessorPtr _unlabeled_batch_processor;
+  dataset::TabularFeaturizerPtr _labeled_featurizer;
+  dataset::TabularFeaturizerPtr _unlabeled_featurizer;
   bool _shuffle;
   char _delimiter;
 
@@ -79,9 +75,8 @@ class SingleBlockDatasetFactory final : public DatasetLoaderFactory {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<DatasetLoaderFactory>(this),
-            _labeled_batch_processor, _unlabeled_batch_processor, _shuffle,
-            _delimiter);
+    archive(cereal::base_class<DatasetLoaderFactory>(this), _labeled_featurizer,
+            _unlabeled_featurizer, _shuffle, _delimiter);
   }
 };
 
