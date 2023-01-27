@@ -19,9 +19,13 @@ namespace thirdai::automl::models {
 void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
                           bolt::TrainConfig& train_config,
                           const std::optional<ValidationOptions>& validation,
-                          std::optional<uint32_t> max_in_memory_batches) {
+                          std::optional<uint32_t> max_in_memory_batches,
+                          std::optional<size_t> batch_size_opt) {
   licensing::FinegrainedAccessToken token =
       licensing::FinegrainedAccessToken(data_source->resourceName());
+
+  size_t batch_size =
+      batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
 
   auto start_time = std::chrono::system_clock::now();
 
@@ -32,9 +36,9 @@ void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
 
   if (max_in_memory_batches) {
     trainOnStream(dataset, train_config, max_in_memory_batches.value(),
-                  validation, token);
+                  validation, batch_size, token);
   } else {
-    trainInMemory(dataset, train_config, validation, token);
+    trainInMemory(dataset, train_config, validation, batch_size, token);
   }
 
   // If the model is for binary classification then at the end of each call to
@@ -45,9 +49,9 @@ void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
     if (validation && !validation->metrics().empty()) {
       std::optional<float> threshold =
           tuneBinaryClassificationPredictionThreshold(
-              /* data_source= */ dataset::SimpleFileDataSource::make(
-                  validation->filename(), DEFAULT_EVALUATE_BATCH_SIZE),
-              /* metric_name= */ validation->metrics().at(0));
+              /* data_source= */ dataset::FileDataSource::make(
+                  validation->filename()),
+              /* metric_name= */ validation->metrics().at(0), batch_size);
 
       binary_output->setPredictionTheshold(threshold);
     } else if (!train_config.metrics().empty()) {
@@ -57,7 +61,7 @@ void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
       std::optional<float> threshold =
           tuneBinaryClassificationPredictionThreshold(
               /* data_source= */ data_source,
-              /* metric_name= */ train_config.metrics().at(0));
+              /* metric_name= */ train_config.metrics().at(0), batch_size);
 
       binary_output->setPredictionTheshold(threshold);
     }
@@ -82,7 +86,8 @@ py::object ModelPipeline::evaluate(
       eval_config_opt.value_or(bolt::EvalConfig::makeConfig());
 
   auto [data, labels] =
-      dataset->loadInMemory(/* verbose = */ eval_config.verbose());
+      dataset->loadAll(/* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
+                       /* verbose = */ eval_config.verbose());
 
   eval_config.returnActivations();
 
@@ -207,19 +212,19 @@ std::vector<dataset::Explanation> ModelPipeline::explain(
 // epochs.
 void ModelPipeline::trainInMemory(
     dataset::DatasetLoaderPtr& dataset_loader, bolt::TrainConfig train_config,
-    const std::optional<ValidationOptions>& validation,
+    const std::optional<ValidationOptions>& validation, size_t batch_size,
     licensing::FinegrainedAccessToken token) {
-  auto loaded_data =
-      dataset_loader->loadInMemory(/* verbose = */ train_config.verbose());
+  auto loaded_data = dataset_loader->loadAll(
+      /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
   auto [train_data, train_labels] = std::move(loaded_data);
 
   if (validation) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
-        dataset::SimpleFileDataSource::make(validation->filename(),
-                                            DEFAULT_EVALUATE_BATCH_SIZE),
+        dataset::FileDataSource::make(validation->filename()),
         /* training= */ false);
 
-    auto [val_data, val_labels] = validation_dataset->loadInMemory(
+    auto [val_data, val_labels] = validation_dataset->loadAll(
+        /* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
         /* verbose = */ train_config.verbose());
 
     train_config.withValidation(val_data, val_labels,
@@ -247,7 +252,7 @@ void ModelPipeline::trainInMemory(
 void ModelPipeline::trainOnStream(
     dataset::DatasetLoaderPtr& dataset_loader, bolt::TrainConfig train_config,
     uint32_t max_in_memory_batches,
-    const std::optional<ValidationOptions>& validation,
+    const std::optional<ValidationOptions>& validation, size_t batch_size,
     licensing::FinegrainedAccessToken token) {
   /**
    * If there are temporal relationships then we cannot do validation because
@@ -264,11 +269,11 @@ void ModelPipeline::trainOnStream(
    */
   if (validation && !_dataset_factory->hasTemporalTracking()) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
-        dataset::SimpleFileDataSource::make(validation->filename(),
-                                            DEFAULT_EVALUATE_BATCH_SIZE),
+        dataset::FileDataSource::make(validation->filename()),
         /* training= */ false);
 
-    auto [val_data, val_labels] = validation_dataset->loadInMemory(
+    auto [val_data, val_labels] = validation_dataset->loadAll(
+        /* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
         /* verbose = */ validation->validationConfig().verbose());
 
     train_config.withValidation(val_data, val_labels,
@@ -288,7 +293,7 @@ void ModelPipeline::trainOnStream(
 
   if (_train_eval_config.freezeHashTables() && epochs > 1) {
     trainSingleEpochOnStream(dataset_loader, train_config,
-                             max_in_memory_batches, token);
+                             max_in_memory_batches, batch_size, token);
     _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
     --epochs;
@@ -296,16 +301,17 @@ void ModelPipeline::trainOnStream(
 
   for (uint32_t e = 0; e < epochs; e++) {
     trainSingleEpochOnStream(dataset_loader, train_config,
-                             max_in_memory_batches, token);
+                             max_in_memory_batches, batch_size, token);
   }
 }
 
 void ModelPipeline::trainSingleEpochOnStream(
     dataset::DatasetLoaderPtr& dataset_loader,
     const bolt::TrainConfig& train_config, uint32_t max_in_memory_batches,
-    licensing::FinegrainedAccessToken token) {
-  while (auto datasets = dataset_loader->streamInMemory(
-             max_in_memory_batches, /* verbose = */ train_config.verbose())) {
+    size_t batch_size, licensing::FinegrainedAccessToken token) {
+  while (auto datasets = dataset_loader->loadSome(
+             batch_size, /* num_batches = */ max_in_memory_batches,
+             /* verbose = */ train_config.verbose())) {
     auto& [data, labels] = datasets.value();
 
     _model->train({data}, labels, train_config, token);
@@ -328,15 +334,16 @@ void ModelPipeline::updateRehashRebuildInTrainConfig(
 }
 
 std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
-    const dataset::DataSourcePtr& data_source, const std::string& metric_name) {
-  uint32_t num_batches =
-      MAX_SAMPLES_FOR_THRESHOLD_TUNING / data_source->getMaxBatchSize();
+    const dataset::DataSourcePtr& data_source, const std::string& metric_name,
+    size_t batch_size) {
+  uint32_t num_batches = MAX_SAMPLES_FOR_THRESHOLD_TUNING / batch_size;
 
   auto dataset = _dataset_factory->getLabeledDatasetLoader(
       data_source, /* training= */ false);
 
   auto loaded_data_opt =
-      dataset->streamInMemory(num_batches, /* verbose = */ false);
+      dataset->loadSome(/* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
+                        num_batches, /* verbose = */ false);
   if (!loaded_data_opt.has_value()) {
     throw std::invalid_argument("No data found for training.");
   }

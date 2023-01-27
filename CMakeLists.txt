@@ -347,6 +347,7 @@ set(THIRDAI_SOURCES
     hashtable/src/VectorHashTable.cc
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
+    dataset/src/VectorBuffer.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
@@ -411,6 +412,7 @@ pybind11_add_module(
   new_dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
+  search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
   auto_ml/python_bindings/DeploymentPython.cc

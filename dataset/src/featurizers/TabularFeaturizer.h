@@ -7,7 +7,7 @@
 #include <cereal/types/vector.hpp>
 #include "ProcessorUtils.h"
 #include <bolt_vector/src/BoltVector.h>
-#include <dataset/src/BatchProcessor.h>
+#include <dataset/src/Featurizer.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
@@ -22,10 +22,9 @@
 
 namespace thirdai::dataset {
 
-// TODO(Geordie / David): Rename to BatchFeaturizer?
-class GenericBatchProcessor : public BatchProcessor {
+class TabularFeaturizer : public Featurizer {
  public:
-  GenericBatchProcessor(
+  TabularFeaturizer(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
       char delimiter = ',', bool parallel = true,
@@ -62,7 +61,8 @@ class GenericBatchProcessor : public BatchProcessor {
                                   _label_blocks.expectedNumColumns());
   }
 
-  std::vector<BoltBatch> createBatch(ColumnarInputBatch& input_batch) {
+  std::vector<std::vector<BoltVector>> featurize(
+      ColumnarInputBatch& input_batch) {
     std::vector<BoltVector> batch_inputs(input_batch.size());
     std::vector<BoltVector> batch_labels(input_batch.size());
 
@@ -89,11 +89,11 @@ class GenericBatchProcessor : public BatchProcessor {
     if (featurization_err) {
       std::rethrow_exception(featurization_err);
     }
-    return {BoltBatch(std::move(batch_inputs)),
-            BoltBatch(std::move(batch_labels))};
+    return {std::move(batch_inputs), std::move(batch_labels)};
   }
 
-  std::vector<BoltBatch> createBatch(const LineInputBatch& input_batch) final {
+  std::vector<std::vector<BoltVector>> featurize(
+      const LineInputBatch& input_batch) final {
     // If there isn't a header, we are forced to assume that every row will
     // have exactly as many columns as expected. Otherwise, we can assume that
     // every row will have the same number of columns as the header
@@ -101,7 +101,7 @@ class GenericBatchProcessor : public BatchProcessor {
         _num_cols_in_header.value_or(_expected_num_cols);
     CsvBatchRef input_batch_ref(input_batch, _delimiter,
                                 expected_num_cols_in_batch);
-    return createBatch(input_batch_ref);
+    return featurize(input_batch_ref);
   }
 
   bool expectsHeader() const final { return _expects_header; }
@@ -123,6 +123,8 @@ class GenericBatchProcessor : public BatchProcessor {
     return dims;
   }
 
+  size_t getNumDatasets() final { return 2; }
+
   void setParallelism(bool parallel) { _parallel = parallel; }
 
   BoltVector makeInputVector(ColumnarInputSample& sample) {
@@ -135,7 +137,7 @@ class GenericBatchProcessor : public BatchProcessor {
 
   /**
    * This function is used in RCA.
-   * The Generic batch processor creates input vectors by dispatching an input
+   * The Generic featurizer creates input vectors by dispatching an input
    * sample through featurization blocks and combining these features using a
    * SegmentedFeatureVector. This function identifies the blocks that are
    * responsible for each feature in an input vector and maps them back to the
@@ -162,14 +164,14 @@ class GenericBatchProcessor : public BatchProcessor {
     return relevant_block->explainIndex(segment_feature.feature_idx, input);
   }
 
-  static std::shared_ptr<GenericBatchProcessor> make(
+  static std::shared_ptr<TabularFeaturizer> make(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
       char delimiter = ',', bool parallel = true,
       std::optional<uint32_t> hash_range = std::nullopt) {
-    return std::make_shared<GenericBatchProcessor>(input_blocks, label_blocks,
-                                                   has_header, delimiter,
-                                                   parallel, hash_range);
+    return std::make_shared<TabularFeaturizer>(input_blocks, label_blocks,
+                                               has_header, delimiter, parallel,
+                                               hash_range);
   }
 
  private:
@@ -231,13 +233,13 @@ class GenericBatchProcessor : public BatchProcessor {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<BatchProcessor>(this), _expects_header,
-            _delimiter, _parallel, _hash_range, _num_cols_in_header,
-            _expected_num_cols, _input_blocks, _label_blocks);
+    archive(cereal::base_class<Featurizer>(this), _expects_header, _delimiter,
+            _parallel, _hash_range, _num_cols_in_header, _expected_num_cols,
+            _input_blocks, _label_blocks);
   }
 
   // Private constructor for cereal.
-  GenericBatchProcessor() {}
+  TabularFeaturizer() {}
 
   bool _expects_header;
   char _delimiter;
@@ -260,8 +262,8 @@ class GenericBatchProcessor : public BatchProcessor {
   uint32_t _expected_num_cols;
 };
 
-using GenericBatchProcessorPtr = std::shared_ptr<GenericBatchProcessor>;
+using TabularFeaturizerPtr = std::shared_ptr<TabularFeaturizer>;
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::GenericBatchProcessor)
+CEREAL_REGISTER_TYPE(thirdai::dataset::TabularFeaturizer)

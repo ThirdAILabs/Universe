@@ -105,7 +105,8 @@ class ModelPipeline {
   void train(const std::shared_ptr<dataset::DataSource>& data_source,
              bolt::TrainConfig& train_config,
              const std::optional<ValidationOptions>& validation,
-             std::optional<uint32_t> max_in_memory_batches);
+             std::optional<uint32_t> max_in_memory_batches,
+             std::optional<size_t> batch_size_opt);
 
   /**
    * Processes the data specified in data_source and computes any metrics
@@ -193,6 +194,7 @@ class ModelPipeline {
   void trainInMemory(dataset::DatasetLoaderPtr& dataset_loader,
                      bolt::TrainConfig train_config,
                      const std::optional<ValidationOptions>& validation,
+                     size_t batch_size,
                      licensing::FinegrainedAccessToken token);
 
   /**
@@ -205,6 +207,7 @@ class ModelPipeline {
                      bolt::TrainConfig train_config,
                      uint32_t max_in_memory_batches,
                      const std::optional<ValidationOptions>& validation,
+                     size_t batch_size,
                      licensing::FinegrainedAccessToken token);
 
   /**
@@ -213,6 +216,7 @@ class ModelPipeline {
   void trainSingleEpochOnStream(dataset::DatasetLoaderPtr& dataset_loader,
                                 const bolt::TrainConfig& train_config,
                                 uint32_t max_in_memory_batches,
+                                size_t batch_size,
                                 licensing::FinegrainedAccessToken token);
 
   /**
@@ -251,8 +255,8 @@ class ModelPipeline {
    * shuffle the data to obtain the batches.
    */
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
-      const dataset::DataSourcePtr& data_source,
-      const std::string& metric_name);
+      const dataset::DataSourcePtr& data_source, const std::string& metric_name,
+      size_t batch_size);
 
   friend class cereal::access;
   template <class Archive>
