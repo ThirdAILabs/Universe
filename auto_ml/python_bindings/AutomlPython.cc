@@ -340,6 +340,9 @@ void createDeploymentSubmodule(py::module_& module) {
       },
       py::arg("config_file"), py::arg("parameters"), py::arg("input_dims"));
 
+#else
+  (void)module;
+
 #endif
 }
 
