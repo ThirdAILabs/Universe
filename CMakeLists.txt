@@ -121,11 +121,12 @@ if(${LICENSE_BUILD_FLAG_FOUND})
     find_package(OpenSSL 1.1.1 REQUIRED)
   endif()
 
-  set(JSON_BuildTests
-      OFF
-      CACHE INTERNAL "")
-  add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 endif()
+
+set(JSON_BuildTests
+    OFF
+    CACHE INTERNAL "")
+add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 
 if(MSVC)
   if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
@@ -341,6 +342,7 @@ set(THIRDAI_SOURCES
     licensing/src/CheckLicense.cc
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
+    dataset/src/VectorBuffer.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
@@ -351,17 +353,11 @@ set(THIRDAI_SOURCES
     new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
-    auto_ml/src/dataset_factories/single_block/SingleBlockDatasetFactory.cc
     auto_ml/src/dataset_factories/udt/DataTypes.cc
     auto_ml/src/dataset_factories/udt/FeatureComposer.cc
     auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
-    auto_ml/src/deployment_config/BlockConfig.cc
-    auto_ml/src/deployment_config/DeploymentConfig.cc
-    auto_ml/src/deployment_config/HyperParameter.cc
-    auto_ml/src/deployment_config/ModelConfig.cc
-    auto_ml/src/deployment_config/NodeConfig.cc
-    auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactoryConfig.cc
-    auto_ml/src/deployment_config/dataset_configs/UDTDatasetFactoryConfig.cc
+    auto_ml/src/config/ModelConfig.cc
+    auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartDataSource.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc)
@@ -380,10 +376,11 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal prometheus-cpp::pull)
 if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(
-    thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto OpenSSL::SSL
-                   nlohmann_json::nlohmann_json)
+  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
+                                       OpenSSL::SSL)
 endif()
+
+target_link_libraries(thirdai PUBLIC nlohmann_json::nlohmann_json)
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
@@ -406,7 +403,6 @@ pybind11_add_module(
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
-  auto_ml/python_bindings/DeploymentPython.cc
   auto_ml/src/models/ModelPipeline.cc
   auto_ml/src/models/OutputProcessor.cc
   auto_ml/src/models/TextClassifier.cc

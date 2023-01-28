@@ -1,5 +1,6 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
+#include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <dataset/src/DataSource.h>
@@ -41,8 +42,8 @@ dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
       makeColumnNumberMapFromHeader(*data_source, _config->delimiter);
   _column_number_to_name = column_number_map.getColumnNumToColNameMap();
 
-  // The batch processor will treat the next line as a header
-  // Restart so batch processor does not skip a sample.
+  // The featurizer will treat the next line as a header
+  // Restart so featurizer does not skip a sample.
   data_source->restart();
 
   _labeled_history_updating_processor->updateColumnNumbers(column_number_map);
@@ -115,9 +116,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
 
   auto metadata = categorical->metadata_config;
 
-  auto data_source =
-      dataset::SimpleFileDataSource::make(metadata->metadata_file,
-                                          /* target_batch_size= */ 2048);
+  auto data_source = dataset::FileDataSource::make(metadata->metadata_file);
 
   auto column_numbers =
       makeColumnNumberMapFromHeader(*data_source, metadata->delimiter);
@@ -130,7 +129,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   auto label_block =
       dataset::StringLookupCategoricalBlock::make(metadata->key, key_vocab);
 
-  _metadata_processors[col_name] = dataset::GenericBatchProcessor::make(
+  _metadata_processors[col_name] = dataset::TabularFeaturizer::make(
       /* input_blocks= */ std::move(input_blocks),
       /* label_blocks= */ {std::move(label_block)},
       /* has_header= */ true, /* delimiter= */ metadata->delimiter,
@@ -180,11 +179,14 @@ dataset::PreprocessedVectorsPtr
 UDTDatasetFactory::preprocessedVectorsFromDataset(
     dataset::DatasetLoader& dataset_loader,
     dataset::ThreadSafeVocabulary& key_vocab) {
-  auto [datasets, ids] = dataset_loader.loadInMemory();
+  // The batch size does not really matter here because we are storing these
+  // vectors as metadata, not training on them. Thus, we choose the somewhat
+  // arbitrary value 2048 since it is large enough to use all threads.
+  auto [datasets, ids] = dataset_loader.loadAll(/* batch_size = */ 2048);
 
   if (datasets.size() != 1) {
     throw std::runtime_error(
-        "For now, the batch processor should return just a single input "
+        "For now, the featurizer should return just a single input "
         "dataset.");
   }
   auto vectors = datasets.at(0);
@@ -222,16 +224,16 @@ void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
   auto metadata_config = getColumnMetadataConfig(col_name);
 
   dataset::MapBatchRef updates_ref(updates);
-  auto batch =
-      _metadata_processors.at(col_name)->createBatch(updates_ref).at(0);
+  std::vector<BoltVector> batch =
+      _metadata_processors.at(col_name)->featurize(updates_ref).at(0);
 
   for (uint32_t update_idx = 0; update_idx < updates.size(); update_idx++) {
     const auto& key = updates.at(update_idx).at(metadata_config->key);
-    _vectors_map.at(col_name)->vectors[key] = batch[update_idx];
+    _vectors_map.at(col_name)->vectors[key] = batch.at(update_idx);
   }
 }
 
-dataset::GenericBatchProcessorPtr
+dataset::TabularFeaturizerPtr
 UDTDatasetFactory::makeLabeledUpdatingProcessor() {
   if (!_config->data_types.count(_config->target)) {
     throw std::invalid_argument(
@@ -242,7 +244,7 @@ UDTDatasetFactory::makeLabeledUpdatingProcessor() {
 
   auto input_blocks = buildInputBlocks(/* should_update_history= */ true);
 
-  auto processor = dataset::GenericBatchProcessor::make(
+  auto processor = dataset::TabularFeaturizer::make(
       std::move(input_blocks), {label_block}, /* has_header= */ true,
       /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
       /* hash_range= */ _config->hash_range);

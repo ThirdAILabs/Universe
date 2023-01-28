@@ -7,10 +7,10 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
-#include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/models/ModelPipeline.h>
 #include <auto_ml/src/models/UDTRecursion.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
@@ -57,7 +57,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
       bool integer_target = false, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::optional<std::string>& model_config = std::nullopt,
-      const deployment::UserInputMap& options = {});
+      const config::ArgumentMap& options = {});
 
   void train(const std::shared_ptr<dataset::DataSource>& data_source_in,
              bolt::TrainConfig& train_config,
@@ -206,8 +206,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
     uint32_t embedding_dimension = DEFAULT_HIDDEN_DIM;
   };
 
-  static UDTOptions processUDTOptions(
-      const deployment::UserInputMap& options_map);
+  static UDTOptions processUDTOptions(const config::ArgumentMap& options_map);
 
   static void throwOptionError(const std::string& option_name,
                                const std::string& given_option_value,
