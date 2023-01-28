@@ -35,12 +35,12 @@ using ColumnVocabularies =
 
 class FeatureComposer {
  public:
-  static UDTConfigPtr verifyConfigIsValid(
-      const UDTConfigPtr& config,
+  static void verifyConfigIsValid(
+      const ColumnDataTypes& data_types, const std::string& target,
       const TemporalRelationships& temporal_relationships);
 
   static std::vector<dataset::BlockPtr> makeNonTemporalFeatureBlocks(
-      const UDTConfig& config,
+      const ColumnDataTypes& data_types, const std::string& target,
       const TemporalRelationships& temporal_relationships,
       const PreprocessedVectorsMap& vectors_map,
       uint32_t text_pairgrams_word_limit, bool contextual_columns);

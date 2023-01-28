@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dataset/src/DataSource.h>
-#include <dataset/src/batch_processors/ProcessorUtils.h>
+#include <dataset/src/featurizers/ProcessorUtils.h>
 #include <algorithm>
 #include <deque>
 #include <optional>
@@ -14,26 +14,27 @@ namespace thirdai::dataset {
 
 class RecursionWrapper final : public DataSource {
  public:
+  static constexpr auto EOS = "EOS";
+
   RecursionWrapper(DataSourcePtr source, char column_delimiter,
-                   char sequence_delimiter, std::string sequence_column_name,
-                   std::vector<std::string> intermediate_column_names,
-                   uint32_t target_batch_size)
-      : DataSource(target_batch_size),
+                   char target_delimiter, std::string intermediate_column,
+                   std::string target_column, std::string step_column)
+      : DataSource(),
         _column_delimiter(column_delimiter),
-        _sequence_delimiter(sequence_delimiter),
-        _sequence_column_name(std::move(sequence_column_name)),
-        _intermediate_column_names(std::move(intermediate_column_names)),
+        _target_delimiter(target_delimiter),
+        _intermediate_column(std::move(intermediate_column)),
+        _target_column(std::move(target_column)),
+        _step_column(std::move(step_column)),
         _source(std::move(source)),
         _at_beginning(true) {}
 
   static auto make(DataSourcePtr source, char column_delimiter,
-                   char sequence_delimiter, std::string sequence_column_name,
-                   std::vector<std::string> recursive_column_names,
-                   uint32_t target_batch_size) {
+                   char target_delimiter, std::string intermediate_column,
+                   std::string target_column, std::string step_column) {
     return std::make_shared<RecursionWrapper>(
-        std::move(source), column_delimiter, sequence_delimiter,
-        std::move(sequence_column_name), recursive_column_names,
-        target_batch_size);
+        std::move(source), column_delimiter, target_delimiter,
+        std::move(intermediate_column), std::move(target_column),
+        std::move(step_column));
   }
 
   std::string resourceName() const final { return _source->resourceName(); }
@@ -43,7 +44,8 @@ class RecursionWrapper final : public DataSource {
     _source->restart();
   }
 
-  std::optional<std::vector<std::string>> nextBatch() final;
+  std::optional<std::vector<std::string>> nextBatch(
+      size_t target_batch_size) final;
 
   std::optional<std::string> nextLine() final;
 
@@ -54,20 +56,23 @@ class RecursionWrapper final : public DataSource {
 
   std::vector<std::string> augment(const std::string& original) const;
 
-  void copyExceptSequenceColumn(std::stringstream& stream,
-                                std::vector<std::string_view>& columns,
-                                std::string_view sequence_column) const;
+  std::string substringLeftOfTarget(
+      const std::vector<std::string_view>& columns) const;
+
+  std::string substringRightOfTarget(
+      const std::vector<std::string_view>& columns) const;
 
   char _column_delimiter;
-  char _sequence_delimiter;
-  std::string _sequence_column_name;
-  std::vector<std::string> _intermediate_column_names;
+  char _target_delimiter;
+  std::string _intermediate_column;
+  std::string _target_column;
+  std::string _step_column;
 
   DataSourcePtr _source;
   std::deque<std::string> _leftovers;
   bool _at_beginning;
 
-  uint32_t _sequence_column_number;
+  uint32_t _target_column_number;
 };
 
 }  // namespace thirdai::dataset

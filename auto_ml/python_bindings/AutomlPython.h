@@ -3,6 +3,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/models/Generator.h>
 #include <auto_ml/src/models/ModelPipeline.h>
+#include <auto_ml/src/models/RNN.h>
 #include <auto_ml/src/models/TextClassifier.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <pybind11/pybind11.h>
@@ -13,6 +14,7 @@ namespace thirdai::automl::python {
 
 using models::ModelPipeline;
 using models::QueryCandidateGenerator;
+using models::RNN;
 using models::TextClassifier;
 using models::UniversalDeepTransformer;
 

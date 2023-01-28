@@ -59,15 +59,6 @@ class UniversalDeepTransformer final : public ModelPipeline {
       const std::optional<std::string>& model_config = std::nullopt,
       const config::ArgumentMap& options = {});
 
-  void train(const std::shared_ptr<dataset::DataSource>& data_source_in,
-             bolt::TrainConfig& train_config,
-             const std::optional<ValidationOptions>& validation,
-             std::optional<uint32_t> max_in_memory_batches);
-
-  py::object evaluate(const dataset::DataSourcePtr& data_source_in,
-                      std::optional<bolt::EvalConfig>& eval_config_opt,
-                      bool return_predicted_class, bool return_metrics);
-
   /**
    * This wraps the predict method of the ModelPipeline to handle recusive
    * predictions. If prediction_depth in the UDT instance is 1, then this

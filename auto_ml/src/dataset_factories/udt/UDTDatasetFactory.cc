@@ -5,6 +5,7 @@
 #include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <stdexcept>
 
@@ -32,23 +33,13 @@ UDTDatasetFactory::UDTDatasetFactory(
       _contextual_columns(contextual_columns),
       _normalize_target_categories(false),
       _regression_binning(regression_binning),
-      _vectors_map(processAllMetadata()),
+      _categorical_metadata(_config->data_types, _text_pairgram_word_limit,
+                            _contextual_columns, _config->hash_range),
       _labeled_history_updating_processor(makeLabeledUpdatingProcessor()),
       _unlabeled_non_updating_processor(makeUnlabeledNonUpdatingProcessor()) {}
 
 dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     dataset::DataSourcePtr data_source, bool training) {
-  auto column_number_map =
-      makeColumnNumberMapFromHeader(*data_source, _config->delimiter);
-  _column_number_to_name = column_number_map.getColumnNumToColNameMap();
-
-  // The featurizer will treat the next line as a header
-  // Restart so featurizer does not skip a sample.
-  data_source->restart();
-
-  _labeled_history_updating_processor->updateColumnNumbers(column_number_map);
-  _unlabeled_non_updating_processor->updateColumnNumbers(column_number_map);
-
   return std::make_unique<dataset::DatasetLoader>(
       data_source, _labeled_history_updating_processor,
       /* shuffle= */ training);
@@ -93,144 +84,14 @@ std::string UDTDatasetFactory::className(uint32_t neuron_id) const {
   return _vocabs.at(_config->target)->getString(neuron_id);
 }
 
-PreprocessedVectorsMap UDTDatasetFactory::processAllMetadata() {
-  PreprocessedVectorsMap metadata_vectors;
-  for (const auto& [col_name, col_type] : _config->data_types) {
-    if (auto categorical = asCategorical(col_type)) {
-      if (categorical->metadata_config) {
-        metadata_vectors[col_name] =
-            makeProcessedVectorsForCategoricalColumn(col_name, categorical);
-      }
-    }
-  }
-  return metadata_vectors;
-}
-
-dataset::PreprocessedVectorsPtr
-UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
-    const std::string& col_name, const CategoricalDataTypePtr& categorical) {
-  if (!categorical->metadata_config) {
-    throw std::invalid_argument("The given categorical column (" + col_name +
-                                ") does not have a metadata config.");
-  }
-
-  auto metadata = categorical->metadata_config;
-
-  auto data_source = dataset::FileDataSource::make(metadata->metadata_file);
-
-  auto column_numbers =
-      makeColumnNumberMapFromHeader(*data_source, metadata->delimiter);
-  data_source->restart();
-
-  auto input_blocks = buildMetadataInputBlocks(*metadata);
-
-  auto key_vocab = dataset::ThreadSafeVocabulary::make(
-      /* vocab_size= */ 0, /* limit_vocab_size= */ false);
-  auto label_block =
-      dataset::StringLookupCategoricalBlock::make(metadata->key, key_vocab);
-
-  _metadata_processors[col_name] = dataset::TabularFeaturizer::make(
-      /* input_blocks= */ std::move(input_blocks),
-      /* label_blocks= */ {std::move(label_block)},
-      /* has_header= */ true, /* delimiter= */ metadata->delimiter,
-      /* parallel= */ true, /* hash_range= */ _config->hash_range);
-
-  _metadata_processors[col_name]->updateColumnNumbers(column_numbers);
-
-  // Here we set parallel=true because there are no temporal
-  // relationships in the metadata file.
-  dataset::DatasetLoader metadata_source(
-      /* source= */ data_source,
-      /* processor= */ _metadata_processors[col_name],
-      /* shuffle = */ false);
-
-  return preprocessedVectorsFromDataset(metadata_source, *key_vocab);
-}
-
-ColumnNumberMap UDTDatasetFactory::makeColumnNumberMapFromHeader(
-    dataset::DataSource& data_source, char delimiter) {
-  auto header = data_source.nextLine();
-  if (!header) {
-    throw std::invalid_argument(
-        "The dataset must have a header that contains column names.");
-  }
-
-  return {*header, delimiter};
-}
-
-std::vector<dataset::BlockPtr> UDTDatasetFactory::buildMetadataInputBlocks(
-    const CategoricalMetadataConfig& metadata_config) const {
-  UDTConfig feature_config(
-      /* data_types= */ metadata_config.column_data_types,
-      /* temporal_tracking_relationships= */ {},
-      /* target= */ metadata_config.key,
-      /* n_target_classes= */ 0);
-  TemporalRelationships empty_temporal_relationships;
-
-  PreprocessedVectorsMap empty_vectors_map;
-
-  return FeatureComposer::makeNonTemporalFeatureBlocks(
-      feature_config.data_types, feature_config.target,
-      empty_temporal_relationships, empty_vectors_map,
-      _text_pairgram_word_limit, _contextual_columns);
-}
-
-dataset::PreprocessedVectorsPtr
-UDTDatasetFactory::preprocessedVectorsFromDataset(
-    dataset::DatasetLoader& dataset_loader,
-    dataset::ThreadSafeVocabulary& key_vocab) {
-  // The batch size does not really matter here because we are storing these
-  // vectors as metadata, not training on them. Thus, we choose the somewhat
-  // arbitrary value 2048 since it is large enough to use all threads.
-  auto [datasets, ids] = dataset_loader.loadAll(/* batch_size = */ 2048);
-
-  if (datasets.size() != 1) {
-    throw std::runtime_error(
-        "For now, the featurizer should return just a single input "
-        "dataset.");
-  }
-  auto vectors = datasets.at(0);
-
-  std::unordered_map<std::string, BoltVector> preprocessed_vectors(ids->len());
-
-  for (uint32_t batch = 0; batch < vectors->numBatches(); batch++) {
-    for (uint32_t vec = 0; vec < vectors->at(batch).getBatchSize(); vec++) {
-      auto id = ids->at(batch)[vec].active_neurons[0];
-      auto key = key_vocab.getString(id);
-      preprocessed_vectors[key] = std::move(vectors->at(batch)[vec]);
-    }
-  }
-
-  return std::make_shared<dataset::PreprocessedVectors>(
-      std::move(preprocessed_vectors), dataset_loader.getInputDim());
-}
-
 void UDTDatasetFactory::updateMetadata(const std::string& col_name,
                                        const MapInput& update) {
-  verifyColumnMetadataExists(col_name);
-
-  auto metadata_config = getColumnMetadataConfig(col_name);
-
-  dataset::MapSampleRef update_ref(update);
-  auto vec = _metadata_processors.at(col_name)->makeInputVector(update_ref);
-
-  const auto& key = update.at(metadata_config->key);
-  _vectors_map.at(col_name)->vectors[key] = vec;
+  _categorical_metadata.updateMetadata(col_name, update);
 }
 
 void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
                                             const MapInputBatch& updates) {
-  verifyColumnMetadataExists(col_name);
-  auto metadata_config = getColumnMetadataConfig(col_name);
-
-  dataset::MapBatchRef updates_ref(updates);
-  std::vector<BoltVector> batch =
-      _metadata_processors.at(col_name)->featurize(updates_ref).at(0);
-
-  for (uint32_t update_idx = 0; update_idx < updates.size(); update_idx++) {
-    const auto& key = updates.at(update_idx).at(metadata_config->key);
-    _vectors_map.at(col_name)->vectors[key] = batch.at(update_idx);
-  }
+  _categorical_metadata.updateMetadataBatch(col_name, updates);
 }
 
 dataset::TabularFeaturizerPtr
@@ -298,32 +159,21 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildInputBlocks(
   std::vector<dataset::BlockPtr> blocks =
       FeatureComposer::makeNonTemporalFeatureBlocks(
           _config->data_types, _config->target, _temporal_relationships,
-          _vectors_map, _text_pairgram_word_limit, _contextual_columns);
+          _categorical_metadata.metadataVectors(), _text_pairgram_word_limit,
+          _contextual_columns);
 
   if (_temporal_relationships.empty()) {
     return blocks;
   }
 
   auto temporal_feature_blocks = FeatureComposer::makeTemporalFeatureBlocks(
-      *_config, _temporal_relationships, _vectors_map, *_context,
+      *_config, _temporal_relationships,
+      _categorical_metadata.metadataVectors(), *_context,
       should_update_history);
 
   blocks.insert(blocks.end(), temporal_feature_blocks.begin(),
                 temporal_feature_blocks.end());
   return blocks;
-}
-
-std::string UDTDatasetFactory::concatenateWithDelimiter(
-    const std::vector<std::string_view>& substrings, char delimiter) {
-  if (substrings.empty()) {
-    return "";
-  }
-  std::stringstream s;
-  s << substrings[0];
-  std::for_each(
-      substrings.begin() + 1, substrings.end(),
-      [&](const std::string_view& substr) { s << delimiter << substr; });
-  return s.str();
 }
 
 void UDTDatasetFactory::save(const std::string& filename) const {

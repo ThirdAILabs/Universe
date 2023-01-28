@@ -16,6 +16,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
+#include <auto_ml/src/dataset_factories/udt/CategoricalMetadata.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -40,7 +41,6 @@
 
 namespace thirdai::automl::data {
 
-using dataset::ColumnNumberMap;
 class UDTDatasetFactory;
 using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
@@ -141,7 +141,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     dataset::CsvSampleRef sample_ref(sample, _config->delimiter);
     return bolt::getSignificanceSortedExplanations(
         gradients_indices, gradients_ratio, sample_ref,
-        _unlabeled_non_updating_processor);
+        *_unlabeled_non_updating_processor);
   }
 
   std::vector<dataset::Explanation> explain(
@@ -150,7 +150,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     dataset::MapSampleRef sample_ref(sample);
     return bolt::getSignificanceSortedExplanations(
         gradients_indices, gradients_ratio, sample_ref,
-        _unlabeled_non_updating_processor);
+        *_unlabeled_non_updating_processor);
   }
 
   std::vector<uint32_t> getInputDims() final {
@@ -182,21 +182,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
  private:
-  PreprocessedVectorsMap processAllMetadata();
-
-  dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
-      const std::string& col_name, const CategoricalDataTypePtr& categorical);
-
-  static ColumnNumberMap makeColumnNumberMapFromHeader(
-      dataset::DataSource& data_source, char delimiter);
-
-  std::vector<dataset::BlockPtr> buildMetadataInputBlocks(
-      const CategoricalMetadataConfig& metadata_config) const;
-
-  static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
-      dataset::DatasetLoader& dataset_loader,
-      dataset::ThreadSafeVocabulary& key_vocab);
-
   std::vector<BoltBatch> featurizeInputBatchImpl(
       dataset::ColumnarInputBatch& inputs, bool should_update_history) {
     auto batches = getProcessor(should_update_history).featurize(inputs);
@@ -229,24 +214,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     auto processor = dataset::TabularFeaturizer::make(
         buildInputBlocks(
             /* should_update_history= */ false),
-        /* label_blocks= */ {}, /* has_header= */ false,
+        /* label_blocks= */ {}, /* has_header= */ true,
         /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
         /* hash_range= */ _config->hash_range);
     return processor;
-  }
-
-  void verifyColumnMetadataExists(const std::string& col_name) {
-    if (!_config->data_types.count(col_name) ||
-        !asCategorical(_config->data_types.at(col_name)) ||
-        !asCategorical(_config->data_types.at(col_name))->metadata_config ||
-        !_metadata_processors.count(col_name) ||
-        !_vectors_map.count(col_name)) {
-      throw std::invalid_argument("'" + col_name + "' is an invalid column.");
-    }
-  }
-
-  auto getColumnMetadataConfig(const std::string& col_name) {
-    return asCategorical(_config->data_types.at(col_name))->metadata_config;
   }
 
   std::vector<dataset::BlockPtr> buildInputBlocks(bool should_update_history);
@@ -255,9 +226,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     return should_update_history ? *_labeled_history_updating_processor
                                  : *_unlabeled_non_updating_processor;
   }
-
-  static std::string concatenateWithDelimiter(
-      const std::vector<std::string_view>& substrings, char delimiter);
 
   TemporalRelationships _temporal_relationships;
   UDTConfigPtr _config;
@@ -279,8 +247,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     up watching is not available during inference, so we should not update the
     history.
   */
-  std::unordered_map<std::string, dataset::TabularFeaturizerPtr>
-      _metadata_processors;
 
   bool _parallel;
   uint32_t _text_pairgram_word_limit;
@@ -289,7 +255,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::optional<dataset::RegressionBinningStrategy> _regression_binning;
 
-  PreprocessedVectorsMap _vectors_map;
+  CategoricalMetadata _categorical_metadata;
+
   dataset::TabularFeaturizerPtr _labeled_history_updating_processor;
   dataset::TabularFeaturizerPtr _unlabeled_non_updating_processor;
 
@@ -300,9 +267,9 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _config,
-            _temporal_relationships, _context, _vocabs, _vectors_map,
-            _column_number_to_name, _labeled_history_updating_processor,
-            _unlabeled_non_updating_processor, _metadata_processors, _parallel,
+            _temporal_relationships, _context, _vocabs, _column_number_to_name,
+            _categorical_metadata, _labeled_history_updating_processor,
+            _unlabeled_non_updating_processor, _parallel,
             _text_pairgram_word_limit, _contextual_columns,
             _normalize_target_categories, _regression_binning);
   }

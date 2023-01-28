@@ -7,7 +7,6 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
-#include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/OutputProcessor.h>
 #include <auto_ml/src/models/UDTRecursion.h>
@@ -102,30 +101,6 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
   return UniversalDeepTransformer({std::move(dataset_factory), std::move(model),
                                    output_processor, train_eval_parameters},
                                   std::move(recursion));
-}
-
-void UniversalDeepTransformer::train(
-    const std::shared_ptr<dataset::DataSource>& data_source_in,
-    bolt::TrainConfig& train_config,
-    const std::optional<ValidationOptions>& validation,
-    std::optional<uint32_t> max_in_memory_batches) {
-  auto data_source = _recursion.targetIsRecursive()
-                         ? _recursion.wrapDataSource(data_source_in)
-                         : data_source_in;
-
-  ModelPipeline::train(data_source, train_config, validation,
-                       max_in_memory_batches);
-}
-
-py::object UniversalDeepTransformer::evaluate(
-    const dataset::DataSourcePtr& data_source_in,
-    std::optional<bolt::EvalConfig>& eval_config_opt,
-    bool return_predicted_class, bool return_metrics) {
-  auto data_source = _recursion.targetIsRecursive()
-                         ? _recursion.wrapDataSource(data_source_in)
-                         : data_source_in;
-  return ModelPipeline::evaluate(data_source, eval_config_opt,
-                                 return_predicted_class, return_metrics);
 }
 
 py::object UniversalDeepTransformer::predict(const MapInput& sample,
@@ -255,62 +230,6 @@ UniversalDeepTransformer::getOutputProcessor(
   }
 
   return {CategoricalOutputProcessor::make(), std::nullopt};
-}
-
-bolt::BoltGraphPtr UniversalDeepTransformer::loadUDTBoltGraph(
-    const std::vector<uint32_t>& input_dims, uint32_t output_dim,
-    const std::string& saved_model_config) {
-  // This will pass the output (label) dimension of the model into the model
-  // config so that it can be used to determine the model architecture.
-
-  config::ArgumentMap parameters;
-  parameters.insert("output_dim", output_dim);
-
-  auto json_config = json::parse(config::loadConfig(saved_model_config));
-
-  return config::buildModel(json_config, parameters, input_dims);
-}
-
-float autotuneSparsity(uint32_t dim) {
-  std::vector<std::pair<uint32_t, float>> sparsity_values = {
-      {450, 1.0},   {900, 0.2},    {1800, 0.1},
-      {4000, 0.05}, {10000, 0.02}, {20000, 0.01}};
-
-  for (const auto& [dim_threshold, sparsity] : sparsity_values) {
-    if (dim < dim_threshold) {
-      return sparsity;
-    }
-  }
-  return 0.05;
-}
-
-bolt::BoltGraphPtr UniversalDeepTransformer::buildUDTBoltGraph(
-    const std::vector<uint32_t>& input_dims, uint32_t output_dim,
-    uint32_t hidden_layer_size) {
-  auto hidden = bolt::FullyConnectedNode::makeDense(hidden_layer_size,
-                                                    /* activation= */ "relu");
-
-  std::vector<bolt::InputPtr> input_nodes;
-  input_nodes.reserve(input_dims.size());
-  for (uint32_t input_dim : input_dims) {
-    input_nodes.push_back(bolt::Input::make(input_dim));
-  }
-
-  hidden->addPredecessor(input_nodes[0]);
-
-  auto sparsity = autotuneSparsity(output_dim);
-  const auto* activation = "softmax";
-  auto output =
-      bolt::FullyConnectedNode::makeAutotuned(output_dim, sparsity, activation);
-  output->addPredecessor(hidden);
-
-  auto graph = std::make_shared<bolt::BoltGraph>(
-      /* inputs= */ input_nodes, output);
-
-  graph->compile(
-      bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
-
-  return graph;
 }
 
 UniversalDeepTransformer::UDTOptions

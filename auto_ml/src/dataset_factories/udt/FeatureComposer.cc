@@ -1,55 +1,54 @@
 #include "FeatureComposer.h"
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <dataset/src/blocks/Sequence.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 
 namespace thirdai::automl::data {
 
-UDTConfigPtr FeatureComposer::verifyConfigIsValid(
-    const UDTConfigPtr& config,
+void FeatureComposer::verifyConfigIsValid(
+    const ColumnDataTypes& data_types, const std::string& target,
     const TemporalRelationships& temporal_relationships) {
-  if (temporal_relationships.count(config->target)) {
+  if (temporal_relationships.count(target)) {
     throw std::invalid_argument(
         "The target column cannot be a temporal tracking key.");
   }
 
   for (const auto& [tracking_key_col_name, temporal_configs] :
        temporal_relationships) {
-    if (!config->data_types.count(tracking_key_col_name)) {
+    if (!data_types.count(tracking_key_col_name)) {
       throw std::invalid_argument("The tracking key '" + tracking_key_col_name +
                                   "' is not found in data_types.");
     }
 
-    if (!asCategorical(config->data_types.at(tracking_key_col_name))) {
+    if (!asCategorical(data_types.at(tracking_key_col_name))) {
       throw std::invalid_argument("Tracking keys must be categorical.");
     }
 
-    if (asCategorical(config->data_types.at(tracking_key_col_name))
-            ->delimiter) {
+    if (asCategorical(data_types.at(tracking_key_col_name))->delimiter) {
       throw std::invalid_argument(
           "Tracking keys cannot have a delimiter; columns containing "
           "tracking keys must only have one value per row.");
     }
 
     for (const auto& temporal_config : temporal_configs) {
-      if (!config->data_types.count(temporal_config.columnName())) {
+      if (!data_types.count(temporal_config.columnName())) {
         throw std::invalid_argument("The tracked column '" +
                                     temporal_config.columnName() +
                                     "' is not found in data_types.");
       }
     }
   }
-
-  return config;
 }
 
 std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
-    const UDTConfig& config,
+    const ColumnDataTypes& data_types, const std::string& target,
     const TemporalRelationships& temporal_relationships,
     const PreprocessedVectorsMap& vectors_map,
     uint32_t text_pairgrams_word_limit, bool contextual_columns) {
   std::vector<dataset::BlockPtr> blocks;
 
   auto non_temporal_columns =
-      getNonTemporalColumns(config.data_types, temporal_relationships);
+      getNonTemporalColumns(data_types, temporal_relationships);
 
   std::vector<dataset::TabularColumn> tabular_columns;
 
@@ -58,8 +57,8 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
     data_types is an ordered map. Thus, the order of the input blocks
     remains consistent and so does the order of the vector segments.
   */
-  for (const auto& [col_name, data_type] : config.data_types) {
-    if (!non_temporal_columns.count(col_name) || col_name == config.target) {
+  for (const auto& [col_name, data_type] : data_types) {
+    if (!non_temporal_columns.count(col_name) || col_name == target) {
       continue;
     }
 
@@ -106,6 +105,11 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
 
     if (asDate(data_type)) {
       blocks.push_back(dataset::DateBlock::make(col_name));
+    }
+
+    if (asSequence(data_type)) {
+      blocks.push_back(dataset::SequenceBlock::make(
+          col_name, /* dim= */ std::numeric_limits<uint32_t>::max()));
     }
   }
 
