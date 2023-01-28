@@ -496,13 +496,15 @@ Example:
 const char* const UDT_GENERATOR_TRAIN = R"pbdoc(
 Trains a UniversalDeepTransformer (UDT) model for query reformulation on a given dataset 
 using a file on disk. The filename must contain at least 1 column containing the target
-queries. If `source` was also specified when constructing the model then a second 
-column may be present containing the source queries. If a source column is present 
-then the model is trained in a supervised setting using the (source, target) pairs, if 
-it is not present it is trained in an unsupervised setting using just the target queries.
+queries. If a source column (specified when the model was constructed) is present 
+then the model is additionally trained in a supervised setting using the (source, target) pairs, 
+(beyond just self supervised (target, target) pairs).
 
 Args:
     filename (str): Path to the dataset file.
+    use_supervised (bool): Whether to try to use an additional "source" query 
+        column to do supervised training if the column is present. Defaults to
+        true. If a "source" column is not present, this is a NOOP.
 
 Returns:
     None
@@ -1409,6 +1411,91 @@ Example:
             }
             ...
         )
+)pbdoc";
+
+const char* const TEXT_CLASSIFIER_INIT = R"pbdoc(
+Constructs a text classifier which takes in bert tokens and metadata and returns 
+scores for each of the N output classes.
+
+Args:
+    input_vocab_size (int): The number of tokens in the input vocabulary. This 
+        should be the the number of possible tokens returned by the tokenizer.
+    metadata_dim (int): The dimension of the metadata. If this is specified as 0
+        the metadata is not used and will be ignored if passed in.
+    n_classes (int): The number of output classes the model will predict scores for.
+
+Returns:
+    A UDTTextClassifier for the given data.
+)pbdoc";
+
+const char* const TEXT_CLASSIFIER_TRAIN = R"pbdoc(
+Trains the model for a single input batch.
+
+Args:
+    data (Dict): A dictionary containing the input data. This should contain the 
+        following fields. Two fields contain the bert tokens for each sample in 
+        the batch in CSR format. The field "tokens" should be a flattened numpy 
+        array of uint32 of all the tokens. The field "offsets" is a numpy array 
+        of uint32 of length (batch_size + 1) that gives the offsets of the tokens 
+        for each document. The tokens for document i should be in the range [offsets[i], 
+        offsets[i+1]) in the tokens array. The field "metadata" should be a 2D numpy 
+        array of 0/1 values (dtype is uint32) that represent the metadata for each 
+        document.
+    labels (np.ndarray): A 2D numpy array of type float32. The shape should be 
+        (batch_size, n_classes) and the label values should be 0/1.
+    learning_rate (float): The learning rate to use for updating the model for the
+        given batch.
+
+Returns:
+    The mean cross entropy loss over all the output classes in the batch. 
+)pbdoc";
+
+const char* const TEXT_CLASSIFIER_VALIDATE = R"pbdoc(
+Evaluates the model on a single input batch and returns the loss.
+
+Args:
+    data (Dict): A dictionary containing the input data. This should contain the 
+        following fields. Two fields contain the bert tokens for each sample in 
+        the batch in CSR format. The field "tokens" should be a flattened numpy 
+        array of uint32 of all the tokens. The field "offsets" is a numpy array 
+        of uint32 of length (batch_size + 1) that gives the offsets of the tokens 
+        for each document. The tokens for document i should be in the range [offsets[i], 
+        offsets[i+1]) in the tokens array. The field "metadata" should be a 2D numpy 
+        array of 0/1 values (dtype is uint32) that represent the metadata for each 
+        document.
+    labels (np.ndarray): A 2D numpy array of type float32. The shape should be 
+        (batch_size, n_classes) and the label values should be 0/1.
+
+Returns: 
+    A dictionary containing the mean cross entropy loss over all the output classes
+    and the cross entropy loss for each output class individually. 
+)pbdoc";
+
+const char* const TEXT_CLASSIFIER_PREDICT = R"pbdoc(
+Returns the predicted scores for the model for each output class for each sample
+in the batch. 
+
+Args:
+    data (Dict): A dictionary containing the input data. This should contain the 
+        following fields. Two fields contain the bert tokens for each sample in 
+        the batch in CSR format. The field "tokens" should be a flattened numpy 
+        array of uint32 of all the tokens. The field "offsets" is a numpy array 
+        of uint32 of length (batch_size + 1) that gives the offsets of the tokens 
+        for each document. The tokens for document i should be in the range [offsets[i], 
+        offsets[i+1]) in the tokens array. The field "metadata" should be a 2D numpy 
+        array of 0/1 values (dtype is uint32) that represent the metadata for each 
+        document.
+
+Returns:
+    A 2D numpy array with dtype float32 and shape (batch_size, n_classes) which 
+    contains the predicted scores from the model for the given input samples.
+)pbdoc";
+
+const char* const TEXT_CLASSIFIER_SAVE = R"pbdoc(
+Saves the model in a binary archive with the given filename.
+
+Args:
+    filename (str): The location to save the model.
 )pbdoc";
 
 }  // namespace thirdai::automl::python::docs

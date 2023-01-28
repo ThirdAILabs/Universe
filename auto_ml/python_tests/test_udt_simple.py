@@ -1,7 +1,7 @@
 import platform
 
 import pytest
-from thirdai import bolt, deployment
+from thirdai import bolt
 
 pytestmark = [pytest.mark.unit]
 
@@ -19,7 +19,6 @@ def write_lines_to_file(file, lines):
 def make_simple_trained_model(
     embedding_dim=None,
     integer_label=False,
-    model_config=None,
     text_encoding_type="none",
 ):
     write_lines_to_file(
@@ -84,7 +83,6 @@ def make_simple_trained_model(
         target="movieId",
         n_target_classes=3,
         integer_target=integer_label,
-        model_config=model_config,
         options={"embedding_dimension": embedding_dim} if embedding_dim else {},
     )
 
@@ -331,43 +329,6 @@ def test_works_without_temporal_relationships():
     model.evaluate(TEST_FILE)
 
     # No assertion as we just want to know that there is no error.
-
-
-def test_model_config_override():
-    # This test creates a model config with the property that the hidden layer
-    # dimension is the same as the regular dimension and checks that UDT correctly
-    # loads and uses the model config in place of its default model architecture.
-
-    model_config = deployment.ModelConfig(
-        input_names=["input"],
-        nodes=[
-            deployment.FullyConnectedNodeConfig(
-                name="hidden",
-                dim=deployment.DatasetLabelDimensionParameter(),
-                activation=deployment.ConstantParameter("relu"),
-                predecessor="input",
-            ),
-            deployment.FullyConnectedNodeConfig(
-                name="output",
-                dim=deployment.DatasetLabelDimensionParameter(),
-                sparsity=deployment.ConstantParameter(1.0),
-                activation=deployment.ConstantParameter("softmax"),
-                predecessor="hidden",
-            ),
-        ],
-        loss=bolt.nn.losses.CategoricalCrossEntropy(),
-    )
-
-    MODEL_CONFIG_PATH = "./model_config_override"
-    model_config.save(MODEL_CONFIG_PATH)
-
-    model = make_simple_trained_model(model_config=MODEL_CONFIG_PATH)
-
-    # We made the dimension of the hidden layer dimension the same as the number
-    # of output classes in the model. Since the number of target classes is 3, the
-    # embedding dimension should be 3 as well. This will not happen with the default
-    # udt model architecture.
-    assert model.embedding_representation(single_sample()).shape == (3,)
 
 
 def test_return_metrics():

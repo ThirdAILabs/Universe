@@ -41,13 +41,12 @@ void checkLicense() {
   _entitlements.insert(FULL_ACCESS_ENTITLEMENT);
 }
 
-void verifyAllowedDataset(const std::string& filename) {
+void verifyAllowedDataset(const std::optional<std::string>& filename) {
   if (_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
     return;
   }
 
-  std::string dataset_hash = sha256File(filename);
-  if (!_entitlements.count(dataset_hash)) {
+  if (!filename || !_entitlements.count(sha256File(*filename))) {
     throw std::runtime_error(
         "This dataset is not authorized under this license.");
   }
@@ -76,7 +75,9 @@ void setLicensePath(const std::string& license_path) {
 
 void checkLicense() {}
 
-void verifyAllowedDataset(const std::string& filename) { (void)filename; }
+void verifyAllowedDataset(const std::optional<std::string>& filename) {
+  (void)filename;
+}
 
 void activate(const std::string& api_key) { (void)api_key; }
 

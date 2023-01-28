@@ -250,19 +250,26 @@ MetricData BoltGraph::train(
   return metric_data;
 }
 
-void BoltGraph::trainOnBatch(std::vector<BoltBatch>& inputs,
+void BoltGraph::trainOnBatch(std::vector<BoltBatch>&& inputs,
                              const BoltBatch& labels, float learning_rate,
                              MetricAggregator& metrics,
                              uint32_t rebuild_hash_tables_interval,
                              uint32_t reconstruct_hash_functions_interval) {
-  if (inputs.size() != _inputs.size()) {
-    throw std::invalid_argument("Expected " + std::to_string(_inputs.size()) +
-                                " inputs, but received " +
-                                std::to_string(inputs.size()) + " inputs.");
+  SingleBatchDatasetContext dataset_context(std::move(inputs));
+  verifyInputForGraph(dataset_context);
+
+  if (!graphCompiled()) {
+    throw std::logic_error("Graph must be compiled before training");
   }
-  for (uint32_t i = 0; i < inputs.size(); i++) {
-    _inputs[i]->setInputs(&inputs[i]);
+
+  if (!_batch_processing_state.isOptimizerInitialized()) {
+    for (auto& node : _nodes) {
+      node->initOptimizer();
+    }
+    _batch_processing_state.markOptimizerInitialized();
   }
+
+  dataset_context.setInputs(/* batch_idx= */ 0, _inputs);
 
   processTrainingBatch(labels, metrics);
 
