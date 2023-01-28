@@ -133,7 +133,7 @@ class NGramTextBlock final : public TextBlock {
     // TODO(any): implement explanations for generic N grams
     if (_n != 1) {
       throw std::invalid_argument(
-          "Word explanations not supported for n != 1.");
+          "Word explanations not supported for this type of featurization.");
     }
     std::unordered_map<uint32_t, std::string> index_to_word_map =
         token_encoding::buildUnigramHashToWordMap(text, _dim, _delimiter);
