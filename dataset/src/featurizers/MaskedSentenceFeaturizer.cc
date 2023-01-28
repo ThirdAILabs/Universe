@@ -4,7 +4,10 @@
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/Vocabulary.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <exception>
 #include <memory>
+#include <new>
+#include <optional>
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
@@ -17,13 +20,26 @@ std::vector<std::vector<BoltVector>> MaskedSentenceFeaturizer::featurize(
   std::vector<BoltVector> masked_indices(rows.size());
   std::vector<BoltVector> labels(rows.size());
 
+  std::optional<std::exception_ptr> thrown_exception_opt = std::nullopt;
+
 #pragma omp parallel for default(none) \
-    shared(rows, vectors, masked_indices, labels)
+    shared(rows, vectors, masked_indices, labels, thrown_exception_opt)
   for (uint32_t i = 0; i < rows.size(); i++) {
-    auto [row_pairgrams, indices, label] = processRow(rows[i]);
-    vectors[i] = std::move(row_pairgrams);
-    masked_indices[i] = std::move(indices);
-    labels[i] = std::move(label);
+    try {
+      auto [row_pairgrams, indices, label] = processRow(rows[i]);
+      vectors[i] = std::move(row_pairgrams);
+      masked_indices[i] = std::move(indices);
+      labels[i] = std::move(label);
+    } catch (const std::exception& e) {
+// It's usually not great practice to catch all exceptions, but we are
+// just doing this to bubble any exceptions out of the omp for loop
+#pragma omp critical
+      { thrown_exception_opt = std::current_exception(); }
+    }
+  }
+
+  if (thrown_exception_opt.has_value()) {
+    std::rethrow_exception(thrown_exception_opt.value());
   }
 
   return {std::move(vectors), std::move(masked_indices), std::move(labels)};
@@ -42,9 +58,9 @@ MaskedSentenceFeaturizer::processRow(const std::string& row) {
           ? static_cast<uint32_t>(size * _masked_tokens_percentage.value())
           : 1;
   std::unordered_set<uint32_t> already_masked_tokens;
-  uint32_t unigram_index = 0;
 
-  while (unigram_index < masked_tokens_size) {
+  for (uint32_t unigram_index = 0; unigram_index < masked_tokens_size;
+       unigram_index++) {
     uint32_t masked_index = _rand() % size;
     if (already_masked_tokens.count(masked_index)) {
       continue;
