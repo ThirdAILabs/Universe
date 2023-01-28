@@ -94,16 +94,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   std::string className(uint32_t neuron_id) const final;
 
   std::vector<BoltBatch> batchUpdateTemporalTrackers(
-      const LineInputBatch& inputs) {
-    std::vector<BoltBatch> result;
-    for (auto& batch :
-         getProcessor(/* should_update_history= */ true).featurize(inputs)) {
-      result.emplace_back(std::move(batch));
-    }
-    return result;
-  }
-
-  std::vector<BoltBatch> batchUpdateTemporalTrackers(
       const MapInputBatch& inputs) {
     dataset::MapBatchRef inputs_ref(inputs);
     return featurizeInputBatchImpl(inputs_ref,

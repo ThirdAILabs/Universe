@@ -74,24 +74,6 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("return_metrics") = false,
            docs::MODEL_PIPELINE_EVALUATE_DATA_SOURCE,
            bolt::python::OutputRedirect())
-      .def("predict",
-           py::overload_cast<const LineInput&, bool, bool>(
-               &ModelPipeline::predict),
-           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
-           py::arg("return_predicted_class") = false,
-           docs::MODEL_PIPELINE_PREDICT)
-      .def("explain", &ModelPipeline::explain<LineInput>,
-           py::arg("input_sample"), py::arg("target_class") = std::nullopt,
-           docs::MODEL_PIPELINE_EXPLAIN)
-      .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
-           py::arg("use_sparse_inference") = false,
-           docs::MODEL_PIPELINE_PREDICT_TOKENS)
-      .def("predict_batch",
-           py::overload_cast<const LineInputBatch&, bool, bool>(
-               &ModelPipeline::predictBatch),
-           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
-           py::arg("return_predicted_class") = false,
-           docs::MODEL_PIPELINE_PREDICT_BATCH)
       .def("save", &ModelPipeline::save, py::arg("filename"),
            docs::MODEL_PIPELINE_SAVE)
       .def_static("load", &ModelPipeline::load, py::arg("filename"),
@@ -115,11 +97,11 @@ void createModelsSubmodule(py::module_& module) {
       .def("reset", &data::UDTDatasetFactory::resetTemporalTrackers,
            docs::TEMPORAL_CONTEXT_RESET)
       .def("update_temporal_trackers",
-           py::overload_cast<const LineInput&>(
+           py::overload_cast<const MapInput&>(
                &data::UDTDatasetFactory::updateTemporalTrackers),
            py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
       .def("batch_update_temporal_trackers",
-           py::overload_cast<const LineInputBatch&>(
+           py::overload_cast<const MapInputBatch&>(
                &data::UDTDatasetFactory::batchUpdateTemporalTrackers),
            py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH)
       .def("verify_can_distribute",
@@ -159,18 +141,8 @@ void createModelsSubmodule(py::module_& module) {
                &UniversalDeepTransformer::predict),
            py::arg("input_sample"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT)
-      .def("predict",
-           py::overload_cast<const LineInput&, bool, bool>(
-               &UniversalDeepTransformer::predict),
-           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
-           py::arg("return_predicted_class") = false, docs::UDT_PREDICT)
       .def("predict_batch",
            py::overload_cast<const MapInputBatch&, bool, bool>(
-               &UniversalDeepTransformer::predictBatch),
-           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
-           py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
-      .def("predict_batch",
-           py::overload_cast<const LineInputBatch&, bool, bool>(
                &UniversalDeepTransformer::predictBatch),
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
@@ -205,7 +177,7 @@ void createModelsSubmodule(py::module_& module) {
       .def("reset_temporal_trackers",
            &UniversalDeepTransformer::resetTemporalTrackers,
            docs::UDT_RESET_TEMPORAL_TRACKERS)
-      .def("explain", &UniversalDeepTransformer::explain<MapInput>,
+      .def("explain", &UniversalDeepTransformer::explain,
            py::arg("input_sample"), py::arg("target_class") = std::nullopt,
            docs::UDT_EXPLAIN)
       .def("save", &UDTFactory::save_classifier, py::arg("filename"),
@@ -393,20 +365,6 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
   }
 
   return args;
-}
-
-py::object predictTokensWrapper(ModelPipeline& model,
-                                const std::vector<uint32_t>& tokens,
-                                bool use_sparse_inference) {
-  std::stringstream sentence;
-  for (uint32_t i = 0; i < tokens.size(); i++) {
-    if (i > 0) {
-      sentence << ' ';
-    }
-    sentence << tokens[i];
-  }
-  return model.predict(sentence.str(), use_sparse_inference,
-                       /* return_predicted_class= */ false);
 }
 
 // UDT Factory Methods
