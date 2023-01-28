@@ -58,9 +58,9 @@ MaskedSentenceFeaturizer::processRow(const std::string& row) {
           ? static_cast<uint32_t>(size * _masked_tokens_percentage.value())
           : 1;
   std::unordered_set<uint32_t> already_masked_tokens;
+  uint32_t unigram_index = 0;
 
-  for (uint32_t unigram_index = 0; unigram_index < masked_tokens_size;
-       unigram_index++) {
+  while (unigram_index < masked_tokens_size) {
     uint32_t masked_index = _rand() % size;
     if (already_masked_tokens.count(masked_index)) {
       continue;
