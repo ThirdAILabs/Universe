@@ -1,12 +1,21 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <stdexcept>
 
 namespace thirdai::automl::data {
+
+static UDTConfigPtr verifyUDTConfigIsValid(
+    const UDTConfigPtr& config,
+    const TemporalRelationships& temporal_relationships) {
+  FeatureComposer::verifyConfigIsValid(config->data_types, config->target,
+                                       temporal_relationships);
+  return config;
+}
 
 UDTDatasetFactory::UDTDatasetFactory(
     const UDTConfigPtr& config, bool force_parallel,
@@ -15,8 +24,7 @@ UDTDatasetFactory::UDTDatasetFactory(
     : _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
           config->data_types, config->provided_relationships,
           config->lookahead)),
-      _config(FeatureComposer::verifyConfigIsValid(config,
-                                                   _temporal_relationships)),
+      _config(verifyUDTConfigIsValid(config, _temporal_relationships)),
       _context(std::make_shared<TemporalContext>()),
       _parallel(_temporal_relationships.empty() || force_parallel),
       _text_pairgram_word_limit(text_pairgram_word_limit),
@@ -163,7 +171,8 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildMetadataInputBlocks(
   PreprocessedVectorsMap empty_vectors_map;
 
   return FeatureComposer::makeNonTemporalFeatureBlocks(
-      feature_config, empty_temporal_relationships, empty_vectors_map,
+      feature_config.data_types, feature_config.target,
+      empty_temporal_relationships, empty_vectors_map,
       _text_pairgram_word_limit, _contextual_columns);
 }
 
@@ -286,8 +295,8 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildInputBlocks(
     bool should_update_history) {
   std::vector<dataset::BlockPtr> blocks =
       FeatureComposer::makeNonTemporalFeatureBlocks(
-          *_config, _temporal_relationships, _vectors_map,
-          _text_pairgram_word_limit, _contextual_columns);
+          _config->data_types, _config->target, _temporal_relationships,
+          _vectors_map, _text_pairgram_word_limit, _contextual_columns);
 
   if (_temporal_relationships.empty()) {
     return blocks;

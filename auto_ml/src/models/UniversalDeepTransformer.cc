@@ -10,6 +10,7 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/OutputProcessor.h>
 #include <auto_ml/src/models/UDTRecursion.h>
+#include <auto_ml/src/nn/UDTDefault.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.h>
@@ -67,11 +68,11 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
   std::vector<uint32_t> input_dims = dataset_factory->getInputDims();
 
   if (model_config) {
-    model = loadUDTBoltGraph(/* input_dims= */ input_dims,
-                             /* output_dim= */ dataset_factory->getLabelDim(),
-                             /* saved_model_config= */ model_config.value());
+    model = nn::fromConfig(/* input_dims= */ input_dims,
+                           /* output_dim= */ dataset_factory->getLabelDim(),
+                           /* saved_model_config= */ model_config.value());
   } else {
-    model = buildUDTBoltGraph(
+    model = nn::UDTDefault(
         /* input_dims= */ input_dims,
         /* output_dim= */ dataset_factory->getLabelDim(),
         /* hidden_layer_size= */ embedding_dimension);
@@ -252,50 +253,6 @@ UniversalDeepTransformer::getOutputProcessor(
   }
 
   return {CategoricalOutputProcessor::make(), std::nullopt};
-}
-
-bolt::BoltGraphPtr UniversalDeepTransformer::loadUDTBoltGraph(
-    const std::vector<uint32_t>& input_dims, uint32_t output_dim,
-    const std::string& saved_model_config) {
-  auto model_config = deployment::ModelConfig::load(saved_model_config);
-
-  // This will pass the output (label) dimension of the model into the model
-  // config so that it can be used to determine the model architecture.
-  deployment::UserInputMap parameters = {
-      {deployment::DatasetLabelDimensionParameter::PARAM_NAME,
-       deployment::UserParameterInput(output_dim)}};
-
-  return model_config->createModel(input_dims, parameters);
-}
-
-bolt::BoltGraphPtr UniversalDeepTransformer::buildUDTBoltGraph(
-    const std::vector<uint32_t>& input_dims, uint32_t output_dim,
-    uint32_t hidden_layer_size) {
-  auto hidden = bolt::FullyConnectedNode::makeDense(hidden_layer_size,
-                                                    /* activation= */ "relu");
-
-  std::vector<bolt::InputPtr> input_nodes;
-  input_nodes.reserve(input_dims.size());
-  for (uint32_t input_dim : input_dims) {
-    input_nodes.push_back(bolt::Input::make(input_dim));
-  }
-
-  hidden->addPredecessor(input_nodes[0]);
-
-  auto sparsity =
-      deployment::AutotunedSparsityParameter::autotuneSparsity(output_dim);
-  const auto* activation = "softmax";
-  auto output =
-      bolt::FullyConnectedNode::makeAutotuned(output_dim, sparsity, activation);
-  output->addPredecessor(hidden);
-
-  auto graph = std::make_shared<bolt::BoltGraph>(
-      /* inputs= */ input_nodes, output);
-
-  graph->compile(
-      bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
-
-  return graph;
 }
 
 UniversalDeepTransformer::UDTOptions
