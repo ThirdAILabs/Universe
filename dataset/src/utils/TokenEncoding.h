@@ -2,6 +2,7 @@
 
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
+#include <utils/StringManipulation.h>
 #include <functional>
 #include <string_view>
 #include <type_traits>
@@ -21,30 +22,31 @@ inline uint32_t seededMurmurHash(const char* key, uint32_t len) {
 }
 
 /**
- * Given a sequence of words compute all N-gram tokens (depending on the
- * supplied n value) and hash them. These are commonly referred to as
- * "unigrams", "bigrams", "trigrams", etc (not to be confused with "pairgrams"
- * which are slightly different and explained elsewhere).
- * "Unigrams" are a specific instance of N-grams where N=1, "bigrams" where N=2,
- * and so on.
+ * Hash each input word and return a list of tokens. Commonly called unigrams.
  */
-std::vector<uint32_t> ngrams(const std::vector<std::string_view>& words,
-                             uint32_t n);
+std::vector<uint32_t> tokenize(const std::vector<std::string_view>& words);
+
+/**
+ * Takes in a list of hashed tokens and uses our combineHashes function to add
+ * in additional N-gram hashed tokens. If you have a vector of words you'd like
+ * to convert into tokens, please use the tokenize method.
+ */
+std::vector<uint32_t> ngrams(std::vector<uint32_t> tokens, uint32_t n);
+
+inline std::vector<uint32_t> ngrams(std::string_view sentence, uint32_t n,
+                                    char delimiter = ' ') {
+  return ngrams(tokenize(text::split(sentence, delimiter)), /* n= */ n);
+}
 
 /**
  * Given a vector of unigram tokens, compute all ordered pairs of tokens and
  * combine their hashes into new tokens.
  */
-std::vector<uint32_t> pairgrams(const std::vector<uint32_t>& unigrams);
+std::vector<uint32_t> pairgrams(const uint32_t* tokens, uint32_t len);
 
-std::vector<uint32_t> pairgrams(std::string_view sentence);
-
-std::vector<uint32_t> ngrams(std::string_view sentence, uint32_t n,
-                             char delimiter = ' ');
-
-std::vector<uint32_t> unigrams(std::string_view sentence, char delimiter = ' ');
-
-std::vector<uint32_t> unigrams(const std::vector<std::string_view>& words);
+inline std::vector<uint32_t> pairgrams(const std::vector<uint32_t>& unigrams) {
+  return pairgrams(unigrams.data(), unigrams.size());
+}
 
 /**
  * Mods each of the given tokens by dim.

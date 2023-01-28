@@ -88,7 +88,8 @@ class PairGramTextBlock final : public TextBlock {
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
-    std::vector<uint32_t> pairgrams = token_encoding::pairgrams(text);
+    std::vector<uint32_t> pairgrams =
+        token_encoding::pairgrams(token_encoding::tokenize(text::split(text)));
     token_encoding::mod(pairgrams, _dim);
     for (auto& [index, value] : token_encoding::sumRepeatedIndices(pairgrams)) {
       vec.addSparseFeatureToSegment(index, value);
@@ -132,7 +133,7 @@ class NGramTextBlock final : public TextBlock {
     // TODO(any): implement explanations for generic N grams
     if (_n != 1) {
       throw std::invalid_argument(
-          "Word explanations not supported for n != 1.");
+          "Word explanations not supported for this type of featurization.");
     }
     std::unordered_map<uint32_t, std::string> index_to_word_map =
         token_encoding::buildUnigramHashToWordMap(text, _dim, _delimiter);
@@ -142,11 +143,11 @@ class NGramTextBlock final : public TextBlock {
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
-    std::vector<uint32_t> unigrams =
+    std::vector<uint32_t> ngrams =
         token_encoding::ngrams(text, /* n= */ _n, _delimiter);
-    token_encoding::mod(unigrams, _dim);
+    token_encoding::mod(ngrams, _dim);
 
-    for (auto& [index, value] : token_encoding::sumRepeatedIndices(unigrams)) {
+    for (auto& [index, value] : token_encoding::sumRepeatedIndices(ngrams)) {
       vec.addSparseFeatureToSegment(index, value);
     }
 
@@ -197,7 +198,7 @@ class CharKGramTextBlock final : public TextBlock {
     if (text.empty()) {
       return nullptr;
     }
-    std::string lower_case_text = utils::lower(text);
+    std::string lower_case_text = text::lower(text);
 
     std::vector<uint32_t> char_k_grams;
 
