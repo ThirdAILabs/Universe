@@ -9,7 +9,6 @@
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/OutputProcessor.h>
-#include <auto_ml/src/models/UDTRecursion.h>
 #include <auto_ml/src/nn/UDTDefault.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
@@ -39,11 +38,6 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
   if (!data_types.count(target_col)) {
     throw std::invalid_argument(
         "Target column provided was not found in data_types.");
-  }
-
-  UDTRecursion recursion(data_types, target_col, delimiter);
-  if (recursion.targetIsRecursive()) {
-    data_types = recursion.modifiedDataTypes();
   }
 
   auto dataset_config = std::make_shared<data::UDTConfig>(
@@ -99,80 +93,7 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
       /* prediction_threshold= */ std::nullopt);
 
   return UniversalDeepTransformer({std::move(dataset_factory), std::move(model),
-                                   output_processor, train_eval_parameters},
-                                  std::move(recursion));
-}
-
-py::object UniversalDeepTransformer::predict(const MapInput& sample,
-                                             bool use_sparse_inference,
-                                             bool return_predicted_class) {
-  if (!_recursion.targetIsRecursive()) {
-    return ModelPipeline::predict(sample, use_sparse_inference,
-                                  return_predicted_class);
-  }
-
-  NumpyArray<uint32_t> output_predictions(_recursion.depth());
-  uint32_t step = 0;
-
-  // Makes a prediction and updates output_predictions with the latest output.
-  auto predict_with_model = [&](const MapInput& sample) {
-    py::object prediction =
-        ModelPipeline::predict(sample, use_sparse_inference,
-                               /* return_predicted_class= */ true);
-
-    uint32_t predicted_class = prediction.cast<uint32_t>();
-    output_predictions.mutable_at(step) = predicted_class;
-    step++;
-
-    return className(predicted_class);
-  };
-
-  _recursion.callPredictRecursively(sample, predict_with_model);
-
-  return py::object(std::move(output_predictions));
-}
-
-py::object UniversalDeepTransformer::predictBatch(const MapInputBatch& samples,
-                                                  bool use_sparse_inference,
-                                                  bool return_predicted_class) {
-  if (!_recursion.targetIsRecursive()) {
-    return ModelPipeline::predictBatch(samples, use_sparse_inference,
-                                       return_predicted_class);
-  }
-
-  NumpyArray<uint32_t> output_predictions(
-      /* shape= */ {samples.size(), static_cast<size_t>(_recursion.depth())});
-  uint32_t step = 0;
-
-  auto predict_batch = [&](const MapInputBatch& samples) {
-    py::object predictions =
-        ModelPipeline::predictBatch(samples, use_sparse_inference,
-                                    /* return_predicted_class= */ true);
-
-    NumpyArray<uint32_t> predictions_np =
-        predictions.cast<NumpyArray<uint32_t>>();
-
-    assert(predictions_np.ndim() == 1);
-    assert(static_cast<uint32_t>(predictions_np.shape(0)) == samples.size());
-
-    for (uint32_t i = 0; i < predictions_np.shape(0); i++) {
-      // Update the list of returned predictions.
-      output_predictions.mutable_at(i, step) = predictions_np.at(i);
-    }
-    step++;
-
-    return predictions_np;
-  };
-
-  auto get_ith_prediction = [&](const NumpyArray<uint32_t>& predictions_np,
-                                uint32_t idx) {
-    return className(predictions_np.at(idx));
-  };
-
-  _recursion.callPredictBatchRecursively(samples, predict_batch,
-                                         get_ith_prediction);
-
-  return py::object(std::move(output_predictions));
+                                   output_processor, train_eval_parameters});
 }
 
 void UniversalDeepTransformer::coldStartPretraining(

@@ -65,21 +65,9 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       dataset::DataSourcePtr data_source, bool training) final;
 
-  std::vector<BoltVector> featurizeInput(const LineInput& input) final {
-    dataset::CsvSampleRef input_ref(input, _config->delimiter);
-    return {getProcessor(/* should_update_history= */ false)
-                .makeInputVector(input_ref)};
-  }
-
   std::vector<BoltVector> featurizeInput(const MapInput& input) final {
     dataset::MapSampleRef input_ref(input);
     return {getProcessor(/* should_update_history= */ false)
-                .makeInputVector(input_ref)};
-  }
-
-  std::vector<BoltVector> updateTemporalTrackers(const LineInput& input) {
-    dataset::CsvSampleRef input_ref(input, _config->delimiter);
-    return {getProcessor(/* should_update_history= */ true)
                 .makeInputVector(input_ref)};
   }
 
@@ -93,16 +81,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   void updateMetadataBatch(const std::string& col_name,
                            const MapInputBatch& updates);
-
-  std::vector<BoltBatch> featurizeInputBatch(
-      const LineInputBatch& inputs) final {
-    std::vector<BoltBatch> result;
-    for (auto& batch :
-         getProcessor(/* should_update_history= */ false).featurize(inputs)) {
-      result.emplace_back(std::move(batch));
-    }
-    return result;
-  }
 
   std::vector<BoltBatch> featurizeInputBatch(
       const MapInputBatch& inputs) final {
@@ -133,16 +111,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   void resetTemporalTrackers() { _context->reset(); }
-
-  std::vector<dataset::Explanation> explain(
-      const std::optional<std::vector<uint32_t>>& gradients_indices,
-      const std::vector<float>& gradients_ratio,
-      const LineInput& sample) final {
-    dataset::CsvSampleRef sample_ref(sample, _config->delimiter);
-    return bolt::getSignificanceSortedExplanations(
-        gradients_indices, gradients_ratio, sample_ref,
-        *_unlabeled_non_updating_processor);
-  }
 
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,

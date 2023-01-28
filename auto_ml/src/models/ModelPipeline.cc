@@ -2,7 +2,6 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <pybind11/stl.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <iostream>
@@ -103,12 +102,6 @@ py::object ModelPipeline::evaluate(
   return py_output;
 }
 
-py::object ModelPipeline::predict(const LineInput& sample,
-                                  bool use_sparse_inference,
-                                  bool return_predicted_class) {
-  return predictImpl(sample, use_sparse_inference, return_predicted_class);
-}
-
 py::object ModelPipeline::predict(const MapInput& sample,
                                   bool use_sparse_inference,
                                   bool return_predicted_class) {
@@ -135,13 +128,6 @@ py::object ModelPipeline::predictImpl(const InputType& sample,
       /* inference_time_seconds = */ elapsed_time.count());
 
   return py_output;
-}
-
-py::object ModelPipeline::predictBatch(const LineInputBatch& samples,
-                                       bool use_sparse_inference,
-                                       bool return_predicted_class) {
-  return predictBatchImpl(samples, use_sparse_inference,
-                          return_predicted_class);
 }
 
 py::object ModelPipeline::predictBatch(const MapInputBatch& samples,
@@ -175,14 +161,8 @@ py::object ModelPipeline::predictBatchImpl(const InputBatchType& samples,
   return py_output;
 }
 
-template std::vector<dataset::Explanation> ModelPipeline::explain(
-    const LineInput&, std::optional<std::variant<uint32_t, std::string>>);
-template std::vector<dataset::Explanation> ModelPipeline::explain(
-    const MapInput&, std::optional<std::variant<uint32_t, std::string>>);
-
-template <typename InputType>
 std::vector<dataset::Explanation> ModelPipeline::explain(
-    const InputType& sample,
+    const MapInput& sample,
     std::optional<std::variant<uint32_t, std::string>> target_class) {
   auto start_time = std::chrono::system_clock::now();
 

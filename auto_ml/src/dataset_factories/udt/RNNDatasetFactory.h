@@ -1,6 +1,5 @@
 #pragma once
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/CategoricalMetadata.h>
@@ -8,6 +7,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Sequence.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
+#include <cstdint>
 #include <memory>
 
 namespace thirdai::automl::data {
@@ -27,22 +27,9 @@ class RNNDatasetFactory final : public DatasetLoaderFactory {
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       dataset::DataSourcePtr data_source, bool training) final;
 
-  std::vector<BoltVector> featurizeInput(const LineInput& input) final {
-    dataset::CsvSampleRef input_ref(input, _delimiter);
-    return {_unlabeled_featurizer->makeInputVector(input_ref)};
-  }
-
   std::vector<BoltVector> featurizeInput(const MapInput& input) final {
     dataset::MapSampleRef input_ref(input);
     return {_unlabeled_featurizer->makeInputVector(input_ref)};
-  }
-  std::vector<BoltBatch> featurizeInputBatch(
-      const LineInputBatch& inputs) final {
-    std::vector<BoltBatch> result;
-    for (auto& batch : _unlabeled_featurizer->featurize(inputs)) {
-      result.emplace_back(std::move(batch));
-    }
-    return result;
   }
 
   std::vector<BoltBatch> featurizeInputBatch(
@@ -68,23 +55,23 @@ class RNNDatasetFactory final : public DatasetLoaderFactory {
   std::string stitchTargetSequence(
       const std::vector<std::string>& predictions) const;
 
-  std::vector<dataset::Explanation> explain(
-      const std::optional<std::vector<uint32_t>>& gradients_indices,
-      const std::vector<float>& gradients_ratio,
-      const LineInput& sample) final {
-    (void)gradients_indices;
-    (void)gradients_ratio;
-    (void)sample;
-    throw std::invalid_argument(
-        "Recursive model currently does not support explanation.");
+  void updateMetadata(const std::string& col_name, const MapInput& update) {
+    _categorical_metadata.updateMetadata(col_name, update);
+  }
+
+  void updateMetadataBatch(const std::string& col_name,
+                           const MapInputBatch& updates) {
+    _categorical_metadata.updateMetadataBatch(col_name, updates);
   }
 
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio, const MapInput& sample) final {
-    dataset::MapSampleRef sample_ref(sample);
-    return bolt::getSignificanceSortedExplanations(
-        gradients_indices, gradients_ratio, sample_ref, *_unlabeled_featurizer);
+    (void)gradients_indices;
+    (void)gradients_ratio;
+    (void)sample;
+    throw std::invalid_argument(
+        "Recursive model currently does not support explanation.");
   }
 
   std::vector<uint32_t> getInputDims() final {

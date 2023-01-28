@@ -12,7 +12,6 @@
 #include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/models/ModelPipeline.h>
-#include <auto_ml/src/models/UDTRecursion.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <memory>
 #include <optional>
@@ -58,49 +57,6 @@ class UniversalDeepTransformer final : public ModelPipeline {
       uint32_t lookahead = 0, char delimiter = ',',
       const std::optional<std::string>& model_config = std::nullopt,
       const config::ArgumentMap& options = {});
-
-  /**
-   * This wraps the predict method of the ModelPipeline to handle recusive
-   * predictions. If prediction_depth in the UDT instance is 1, then this
-   * behaves exactly as predict in the ModelPipeline. If prediction_depth > 1
-   * then this will call predict prediction_depth number of times, with the
-   *classes predicted by the previous calls to predict added as inputs to
-   *subsequent calls.
-   */
-  py::object predict(const MapInput& sample_in, bool use_sparse_inference,
-                     bool return_predicted_class) final;
-
-  py::object predict(const LineInput& sample, bool use_sparse_inference,
-                     bool return_predicted_class) final {
-    (void)sample;
-    (void)use_sparse_inference;
-    (void)return_predicted_class;
-    throw std::runtime_error(
-        "predict must be called with a dictionary of column names to values.");
-  }
-
-  /**
-   * This wraps the predictBatch method of the ModelPipeline to handle recusive
-   * predictions. If prediction_depth in the UDT instance is 1, then this
-   * behaves exactly as predictBatch in the ModelPipeline. If prediction_depth >
-   * 1 then this will call predictBatch prediction_depth number of times, with
-   * the classes predicted by the previous calls to predictBatch added as inputs
-   * to subsequent calls.
-   */
-  py::object predictBatch(const MapInputBatch& samples_in,
-                          bool use_sparse_inference,
-                          bool return_predicted_class) final;
-
-  py::object predictBatch(const LineInputBatch& samples,
-                          bool use_sparse_inference,
-                          bool return_predicted_class) final {
-    (void)samples;
-    (void)use_sparse_inference;
-    (void)return_predicted_class;
-    throw std::runtime_error(
-        "predictBatch must be called with a list of dictionaries of column "
-        "names to values.");
-  }
 
   BoltVector embeddingRepresentation(const MapInput& input) {
     auto input_vector = _dataset_factory->featurizeInput(input);
@@ -167,9 +123,8 @@ class UniversalDeepTransformer final : public ModelPipeline {
   void setPredictionThreshold(float threshold);
 
  private:
-  explicit UniversalDeepTransformer(ModelPipeline&& model,
-                                    UDTRecursion&& recursion)
-      : ModelPipeline(model), _recursion(recursion) {}
+  explicit UniversalDeepTransformer(ModelPipeline&& model)
+      : ModelPipeline(model) {}
 
   /**
    * Returns the output processor to use to create the ModelPipeline. Also
@@ -208,15 +163,13 @@ class UniversalDeepTransformer final : public ModelPipeline {
         " but received value '" + given_option_value + "'.");
   }
 
-  UDTRecursion _recursion;
-
   // Private constructor for cereal.
   UniversalDeepTransformer() {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<ModelPipeline>(this), _recursion);
+    archive(cereal::base_class<ModelPipeline>(this));
   }
 };
 

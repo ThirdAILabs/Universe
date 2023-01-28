@@ -10,10 +10,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/RNNDatasetFactory.h>
-#include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
-#include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/models/ModelPipeline.h>
-#include <auto_ml/src/models/UDTRecursion.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <cstdint>
 #include <memory>
@@ -37,53 +34,40 @@ class RNN final : public ModelPipeline {
       const std::optional<std::string>& model_config = std::nullopt,
       const config::ArgumentMap& options = {});
 
-  void train(const std::shared_ptr<dataset::DataSource>& data_source_in,
-             bolt::TrainConfig& train_config,
-             const std::optional<ValidationOptions>& validation,
-             std::optional<uint32_t> max_in_memory_batches);
-
-  py::object evaluate(const dataset::DataSourcePtr& data_source_in,
-                      std::optional<bolt::EvalConfig>& eval_config_opt,
-                      bool return_predicted_class, bool return_metrics);
-
+  /**
+   * This wraps the predict method of the ModelPipeline to handle recusive
+   * predictions. If prediction_depth in the UDT instance is 1, then this
+   * behaves exactly as predict in the ModelPipeline. If prediction_depth > 1
+   * then this will call predict prediction_depth number of times, with the
+   * classes predicted by the previous calls to predict added as inputs to
+   * subsequent calls.
+   */
   py::object predict(const MapInput& sample_in, bool use_sparse_inference,
                      bool return_predicted_class) final;
 
-  py::object predict(const LineInput& sample, bool use_sparse_inference,
-                     bool return_predicted_class) final {
-    (void)sample;
-    (void)use_sparse_inference;
-    (void)return_predicted_class;
-    throw std::runtime_error(
-        "predict must be called with a dictionary of column names to values.");
-  }
-
+  /**
+   * This wraps the predictBatch method of the ModelPipeline to handle recusive
+   * predictions. If prediction_depth in the UDT instance is 1, then this
+   * behaves exactly as predictBatch in the ModelPipeline. If prediction_depth >
+   * 1 then this will call predictBatch prediction_depth number of times, with
+   * the classes predicted by the previous calls to predictBatch added as inputs
+   * to subsequent calls.
+   */
   py::object predictBatch(const MapInputBatch& samples_in,
                           bool use_sparse_inference,
                           bool return_predicted_class) final;
 
-  py::object predictBatch(const LineInputBatch& samples,
-                          bool use_sparse_inference,
-                          bool return_predicted_class) final {
-    (void)samples;
-    (void)use_sparse_inference;
-    (void)return_predicted_class;
-    throw std::runtime_error(
-        "predictBatch must be called with a list of dictionaries of column "
-        "names to values.");
-  }
-
   void updateMetadata(const std::string& col_name, const MapInput& update) {
-    udtDatasetFactory().updateMetadata(col_name, update);
+    _dataset_factory->updateMetadata(col_name, update);
   }
 
   void updateMetadataBatch(const std::string& col_name,
                            const MapInputBatch& updates) {
-    udtDatasetFactory().updateMetadataBatch(col_name, updates);
+    _dataset_factory->updateMetadataBatch(col_name, updates);
   }
 
   auto className(uint32_t neuron_id) const {
-    return udtDatasetFactory().className(neuron_id);
+    return _dataset_factory->className(neuron_id);
   }
 
   void save_stream(std::ostream& output_stream) const {
@@ -106,16 +90,6 @@ class RNN final : public ModelPipeline {
       : ModelPipeline(model),
         _dataset_factory(std::move(dataset_factory)),
         _max_recursion_depth(max_recursion_depth) {}
-
-  data::UDTDatasetFactory& udtDatasetFactory() const {
-    /*
-      It is safe to return an l-reference because the parent class stores a
-      smart pointer. This ensures that the object is always in scope for as
-      long as the model.
-    */
-    return *std::dynamic_pointer_cast<data::UDTDatasetFactory>(
-        _dataset_factory);
-  }
 
   struct RNNOptions {
     bool contextual_columns = false;

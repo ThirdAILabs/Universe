@@ -14,7 +14,8 @@ namespace thirdai::dataset {
 
 class RecursionWrapper final : public DataSource {
  public:
-  static constexpr auto EOS = "EOS";
+  // Surround with '$' to avoid colliding with an actual token from the data.
+  static constexpr auto EOS = "$EOS$";
 
   RecursionWrapper(DataSourcePtr source, char column_delimiter,
                    char target_delimiter, std::string intermediate_column,

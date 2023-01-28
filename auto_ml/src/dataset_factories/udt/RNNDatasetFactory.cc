@@ -1,12 +1,12 @@
 #include "RNNDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/dataset_factories/udt/CategoricalMetadata.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/FeatureComposer.h>
 #include <dataset/src/RecursionWrapper.h>
 #include <dataset/src/blocks/Sequence.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 

@@ -41,32 +41,13 @@ class DatasetLoaderFactory {
   virtual dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataSource> data_source, bool training) = 0;
 
-  virtual std::vector<BoltVector> featurizeInput(const LineInput& input) = 0;
-
-  virtual std::vector<BoltVector> featurizeInput(const MapInput& input) {
-    (void)input;
-    throw std::invalid_argument(
-        "This model pipeline configuration does not support map input. Pass in "
-        "a string instead.");
-  };
+  virtual std::vector<BoltVector> featurizeInput(const MapInput& input) = 0;
 
   virtual std::vector<BoltBatch> featurizeInputBatch(
-      const LineInputBatch& inputs) = 0;
-
-  virtual std::vector<BoltBatch> featurizeInputBatch(
-      const MapInputBatch& inputs) {
-    (void)inputs;
-    throw std::invalid_argument(
-        "This model pipeline configuration does not support map input. Pass in "
-        "a list of strings instead.");
-  };
+      const MapInputBatch& inputs) = 0;
 
   virtual uint32_t labelToNeuronId(
       std::variant<uint32_t, std::string> label) = 0;
-
-  virtual std::vector<dataset::Explanation> explain(
-      const std::optional<std::vector<uint32_t>>& gradients_indices,
-      const std::vector<float>& gradients_ratio, const std::string& sample) = 0;
 
   virtual std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,

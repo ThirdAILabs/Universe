@@ -4,7 +4,6 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
@@ -13,7 +12,6 @@
 #include <auto_ml/src/dataset_factories/udt/RNNDatasetFactory.h>
 #include <auto_ml/src/models/OutputProcessor.h>
 #include <auto_ml/src/models/TrainEvalParameters.h>
-#include <auto_ml/src/models/UDTRecursion.h>
 #include <auto_ml/src/nn/UDTDefault.h>
 #include <dataset/src/RecursionWrapper.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>

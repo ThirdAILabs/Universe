@@ -105,9 +105,6 @@ class ModelPipeline {
    * Takes in a single input sample and returns the activations for the output
    * layer.
    */
-  virtual py::object predict(const LineInput& sample, bool use_sparse_inference,
-                             bool return_predicted_class);
-
   virtual py::object predict(const MapInput& sample, bool use_sparse_inference,
                              bool return_predicted_class);
 
@@ -116,10 +113,6 @@ class ModelPipeline {
    * returns the activations for the output layer. The order in which the input
    * samples are provided is the order in which the activations are returned.
    */
-  virtual py::object predictBatch(const LineInputBatch& samples,
-                                  bool use_sparse_inference,
-                                  bool return_predicted_class);
-
   virtual py::object predictBatch(const MapInputBatch& samples,
                                   bool use_sparse_inference,
                                   bool return_predicted_class);
@@ -129,9 +122,8 @@ class ModelPipeline {
    * is provided then it will instead explain why that class was/was not
    * predicted.
    */
-  template <typename InputType>
   std::vector<dataset::Explanation> explain(
-      const InputType& sample,
+      const MapInput& sample,
       std::optional<std::variant<uint32_t, std::string>> target_class =
           std::nullopt);
 
