@@ -81,3 +81,103 @@ def test_udt_cold_start(download_clinc_dataset, cold_start_dataset):
 
     # Accuracy is around 78-80%, with regular training it is a few percent lower.
     assert acc >= 0.7
+
+
+def setup_testing_file(missing_values):
+    filename = "DUMMY_COLDSTART.csv"
+    with open(filename, "w") as outfile:
+        outfile.write("category,strong,weak1,weak2\n")
+        outfile.write("0,this is a title,this is a description,another one\n")
+
+        if missing_values:
+            outfile.write("1,there will be no descriptions,,")
+
+    return filename
+
+
+def run_coldstart(
+    strong_columns=["strong"],
+    weak_columns=["weak1", "weak2"],
+    validation=None,
+    callbacks=[],
+    missing_values=False,
+    epochs=5,
+):
+    filename = setup_testing_file(missing_values)
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "category": bolt.types.categorical(),
+            "text": bolt.types.text(),
+        },
+        target="category",
+        n_target_classes=2,
+        integer_target=True,
+    )
+
+    model.cold_start(
+        filename=filename,
+        strong_column_names=strong_columns,
+        weak_column_names=weak_columns,
+        learning_rate=0.01,
+        epochs=epochs,
+        validation=validation,
+        callbacks=callbacks,
+    )
+
+    os.remove(filename)
+
+
+def test_coldstart_validation():
+    val_filename = "val_file.csv"
+    with open(val_filename, "x") as val_file:
+        val_file.write("category,text\n")
+        val_file.write("1,some text here\n")
+
+    validation = bolt.Validation(
+        filename=val_filename, interval=4, metrics=["categorical_accuracy"]
+    )
+
+    run_coldstart(validation=validation)
+
+    os.remove(val_filename)
+
+
+def test_coldstart_callbacks():
+    class CountCallback(bolt.callbacks.Callback):
+        def __init__(self):
+            super().__init__()
+            self.epoch_count = 0
+
+        def on_epoch_end(self, model, train_state):
+            self.epoch_count += 1
+
+    count_callback = CountCallback()
+
+    run_coldstart(callbacks=[count_callback], epochs=5)
+
+    assert count_callback.epoch_count == 5
+
+
+def test_coldstart_missing_strong_or_weak():
+    with pytest.raises(
+        ValueError,
+        match=r"Column SOME RANDOM NAME not found in dataset.",
+    ):
+        run_coldstart(strong_columns=["SOME RANDOM NAME"])
+
+
+    with pytest.raises(
+        ValueError,
+        match=r"Column SOME RANDOM NAME not found in dataset.",
+    ):
+        run_coldstart(weak_columns=["SOME RANDOM NAME"])
+
+
+def test_coldstart_empty_strong_or_weak():
+    run_coldstart(strong_columns=[])
+    run_coldstart(weak_columns=[])
+
+
+def test_coldstart_missing_values():
+    run_coldstart(missing_values=True)
