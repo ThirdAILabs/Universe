@@ -138,10 +138,10 @@ def modify_udt_classifier():
         callbacks: List[bolt.callbacks.Callback] = [],
     ):
         # TODO(any): cold start uses new data pipeline, eventually we should
-        # move this to the old data pipeline and reduce the dependency on pandas
+        # move this to the old data pipeline
 
         # We replace nans in the assumed string columns here because otherwise
-        # the pandas_do_columnmap function can't interpret the column
+        # the pandas_to_columnmap function can't interpret the column
         df = pd.read_csv(filename)
         for col_name in strong_column_names + weak_column_names:
             if col_name not in df.columns:
