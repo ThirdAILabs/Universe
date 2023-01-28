@@ -95,9 +95,9 @@ class TabularFeaturizer : public Featurizer {
       std::vector<std::shared_ptr<Block>> label_blocks, bool has_header = false,
       char delimiter = ',', bool parallel = true,
       std::optional<uint32_t> hash_range = std::nullopt) {
-    return std::make_shared<TabularFeaturizer>(input_blocks, label_blocks,
-                                               has_header, delimiter, parallel,
-                                               hash_range);
+    return std::make_shared<TabularFeaturizer>(
+        std::move(input_blocks), std::move(label_blocks), has_header, delimiter,
+        parallel, hash_range);
   }
 
  private:
