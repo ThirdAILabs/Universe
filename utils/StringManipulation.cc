@@ -1,9 +1,8 @@
 #include "StringManipulation.h"
 
-namespace thirdai::utils {
+namespace thirdai::text {
 
-std::vector<std::string_view> splitIntoWords(std::string_view sentence,
-                                             char delimiter) {
+std::vector<std::string_view> split(std::string_view sentence, char delimiter) {
   std::vector<std::string_view> words;
 
   bool prev_is_delim = true;
@@ -39,4 +38,4 @@ std::vector<std::string_view> splitIntoWords(std::string_view sentence,
   return words;
 }
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::text

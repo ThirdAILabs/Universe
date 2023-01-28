@@ -9,41 +9,40 @@
 
 namespace thirdai::dataset::token_encoding {
 
-std::vector<uint32_t> ngrams(const std::vector<std::string_view>& words,
-                             uint32_t n) {
-  uint32_t num_words = words.size();
+std::vector<uint32_t> ngrams(std::vector<uint32_t> tokens, uint32_t n) {
+  uint32_t num_tokens = tokens.size();
 
+  // if we have to do more than unigrams and there are enough words to N-gram
+  if (n > 1 && n <= num_tokens) {
+    for (uint32_t start_token_idx = 0; start_token_idx <= num_tokens - n;
+         start_token_idx++) {
+      uint32_t n_gram_token = tokens[start_token_idx];
+
+      for (uint32_t i = 1; i < n; i++) {
+        uint32_t next_token = tokens[start_token_idx + i];
+        n_gram_token = hashing::combineHashes(n_gram_token, next_token);
+      }
+      tokens.push_back(n_gram_token);
+    }
+  }
+
+  return tokens;
+}
+
+std::vector<uint32_t> tokenize(const std::vector<std::string_view>& words) {
   std::vector<uint32_t> n_gram_tokens;
   n_gram_tokens.reserve(words.size());
 
-  // - We compute unigrams first because it makes the loop below more simple
-  // and makes computing just unigrams faster
-  // - We include unigrams in all n-gram computations so bolt always can
-  // identify keywords
   for (const auto& word : words) {
     n_gram_tokens.push_back(seededMurmurHash(word.data(), word.size()));
-  }
-
-  // if we have to do more than unigrams and there are enough words to N-gram
-  if (n > 1 && n <= num_words) {
-    for (uint32_t start_token_idx = 0; start_token_idx <= num_words - n;
-         start_token_idx++) {
-      uint32_t n_gram_token = n_gram_tokens[start_token_idx];
-
-      for (uint32_t i = 1; i < n; i++) {
-        uint32_t next_token = n_gram_tokens[start_token_idx + i];
-        n_gram_token = hashing::combineHashes(n_gram_token, next_token);
-      }
-      n_gram_tokens.push_back(n_gram_token);
-    }
   }
 
   return n_gram_tokens;
 }
 
-std::vector<uint32_t> pairgrams(const std::vector<uint32_t>& unigrams) {
+std::vector<uint32_t> pairgrams(const uint32_t* unigrams, uint32_t len) {
   std::vector<uint32_t> tokens;
-  for (uint32_t token = 0; token < unigrams.size(); token++) {
+  for (uint32_t token = 0; token < len; token++) {
     for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
       tokens.push_back(
           hashing::combineHashes(unigrams[prev_token], unigrams[token]));
@@ -51,27 +50,6 @@ std::vector<uint32_t> pairgrams(const std::vector<uint32_t>& unigrams) {
   }
 
   return tokens;
-}
-
-std::vector<uint32_t> ngrams(std::string_view sentence, uint32_t n,
-                             char delimiter) {
-  auto words = thirdai::utils::splitIntoWords(sentence, delimiter);
-
-  return ngrams(words, n);
-}
-
-std::vector<uint32_t> unigrams(std::string_view sentence, char delimiter) {
-  return ngrams(sentence, /* n= */ 1, delimiter);
-}
-
-std::vector<uint32_t> unigrams(const std::vector<std::string_view>& words) {
-  return ngrams(words, /* n= */ 1);
-}
-
-std::vector<uint32_t> pairgrams(std::string_view sentence) {
-  std::vector<uint32_t> tokens = unigrams(sentence);
-
-  return pairgrams(tokens);
 }
 
 void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
@@ -82,9 +60,9 @@ void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
 
 std::unordered_map<uint32_t, std::string> buildUnigramHashToWordMap(
     std::string_view sentence, uint32_t output_range, char delimiter) {
-  auto words = thirdai::utils::splitIntoWords(sentence, delimiter);
+  auto words = thirdai::text::split(sentence, delimiter);
 
-  auto tokens = unigrams(words);
+  auto tokens = tokenize(words);
 
   assert(words.size() == tokens.size());
   uint32_t length = words.size();
@@ -129,10 +107,8 @@ std::vector<std::pair<uint32_t, float>> sumRepeatedIndices(
    * If we're looking at the last element, the next element is clearly
    * "different", so we add a sparse feature accordingly.
    */
-  if (i == indices.size() - 1) {
-    summed_val += 1.0;
-    index_value_pairs.push_back(std::make_pair(indices.back(), summed_val));
-  }
+  summed_val += 1.0;
+  index_value_pairs.push_back(std::make_pair(indices.back(), summed_val));
 
   return index_value_pairs;
 }
