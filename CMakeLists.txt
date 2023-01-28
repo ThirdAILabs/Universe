@@ -342,7 +342,10 @@ set(THIRDAI_SOURCES
     licensing/src/CheckLicense.cc
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
+    dataset/src/RecursionWrapper.cc
     dataset/src/VectorBuffer.cc
+    dataset/src/blocks/TabularHashFeatures.cc
+    dataset/src/blocks/Sequence.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
     dataset/src/featurizers/MaskedSentenceFeaturizer.cc
@@ -360,11 +363,14 @@ set(THIRDAI_SOURCES
     compression/src/DragonVector.cc
     auto_ml/src/dataset_factories/udt/DataTypes.cc
     auto_ml/src/dataset_factories/udt/FeatureComposer.cc
+    auto_ml/src/dataset_factories/udt/CategoricalMetadata.cc
+    auto_ml/src/dataset_factories/udt/RNNDatasetFactory.cc
     auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartDataSource.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
+    auto_ml/src/nn/UDTDefault.cc
     utils/Logging.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
@@ -400,8 +406,6 @@ pybind11_add_module(
   bolt/python_bindings/BoltNNPython.cc
   bolt/python_bindings/CallbacksPython.cc
   dataset/python_bindings/DatasetPython.cc
-  dataset/src/blocks/TabularHashFeatures.cc
-  dataset/src/RecursionWrapper.cc
   new_dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
@@ -410,9 +414,9 @@ pybind11_add_module(
   auto_ml/python_bindings/AutomlPython.cc
   auto_ml/src/models/ModelPipeline.cc
   auto_ml/src/models/OutputProcessor.cc
+  auto_ml/src/models/RNN.cc
   auto_ml/src/models/TextClassifier.cc
   auto_ml/src/models/UniversalDeepTransformer.cc
-  auto_ml/src/models/UDTRecursion.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 
