@@ -62,6 +62,10 @@ class BinaryCrossEntropyLoss final : public LossFunction {
  private:
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
+    // This is a special case csdisco asked for to handle missing labels.
+    if (label == -1.0) {
+      return 0.0;
+    }
     /* Derivation
 
     Note: we are assuming that BCE is used along with a signmoid activation in

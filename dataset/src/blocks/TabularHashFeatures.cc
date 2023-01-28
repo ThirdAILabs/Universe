@@ -4,10 +4,10 @@
 #include <dataset/src/utils/TokenEncoding.h>
 #include <cmath>
 #include <cstdlib>
+#include <random>
 #include <stdexcept>
 #include <string_view>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -45,6 +45,23 @@ struct Token {
   ColumnIdentifier first_column;
   ColumnIdentifier second_column;
 };
+
+TabularHashFeatures::TabularHashFeatures(
+    const std::vector<TabularColumn>& columns, uint32_t output_range,
+    bool with_pairgrams)
+    : _output_range(output_range), _with_pairgrams(with_pairgrams) {
+  std::mt19937 gen(time(nullptr));
+  std::uniform_int_distribution<uint32_t> dist(
+      0, std::numeric_limits<uint32_t>::max());
+
+  // we precompute a random salt value for each column so when we call
+  // combineHashes with those values we don't bias the output distribution to
+  // have more higher order bits set to zero
+  for (const auto& column : columns) {
+    uint32_t salt = dist(gen);
+    _columns.push_back(std::make_pair(column, salt));
+  }
+}
 
 Explanation TabularHashFeatures::explainIndex(uint32_t index_within_block,
                                               ColumnarInputSample& input) {
@@ -100,8 +117,7 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
   UnigramToColumnIdentifier unigram_to_column_identifier;
   std::vector<uint32_t> unigram_hashes;
 
-  uint32_t salt = 0;
-  for (const auto& column : _columns) {
+  for (const auto& [column, salt] : _columns) {
     auto column_identifier = column.identifier;
 
     std::string str_val(input.column(column_identifier));
@@ -122,8 +138,9 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
         break;
       }
     }
-    // Hash with different salt per column.
-    unigram = hashing::combineHashes(unigram, salt++);
+    // Hash with different salt per column so the same bin in a different
+    // column doesn't map to the same unigram.
+    unigram = hashing::combineHashes(unigram, salt);
 
     unigram_to_column_identifier[unigram] = std::move(column_identifier);
     unigram_hashes.push_back(unigram);
@@ -151,7 +168,7 @@ std::vector<ColumnIdentifier*>
 TabularHashFeatures::concreteBlockColumnIdentifiers() {
   std::vector<ColumnIdentifier*> identifier_ptrs;
   identifier_ptrs.reserve(_columns.size());
-  for (auto& column : _columns) {
+  for (auto& [column, _] : _columns) {
     identifier_ptrs.push_back(&column.identifier);
   }
   return identifier_ptrs;
