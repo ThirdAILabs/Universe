@@ -42,7 +42,11 @@ inline std::vector<uint32_t> ngrams(std::string_view sentence, uint32_t n,
  * Given a vector of unigram tokens, compute all ordered pairs of tokens and
  * combine their hashes into new tokens.
  */
-std::vector<uint32_t> pairgrams(const std::vector<uint32_t>& unigrams);
+std::vector<uint32_t> pairgrams(const uint32_t* tokens, uint32_t len);
+
+inline std::vector<uint32_t> pairgrams(const std::vector<uint32_t>& unigrams) {
+  return pairgrams(unigrams.data(), unigrams.size());
+}
 
 /**
  * Mods each of the given tokens by dim.

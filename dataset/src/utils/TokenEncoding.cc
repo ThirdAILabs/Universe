@@ -40,7 +40,7 @@ std::vector<uint32_t> tokenize(const std::vector<std::string_view>& words) {
   return n_gram_tokens;
 }
 
-std::vector<uint32_t> pairgrams(uint32_t* unigrams, uint32_t len) {
+std::vector<uint32_t> pairgrams(const uint32_t* unigrams, uint32_t len) {
   std::vector<uint32_t> tokens;
   for (uint32_t token = 0; token < len; token++) {
     for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
