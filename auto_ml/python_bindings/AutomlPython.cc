@@ -124,18 +124,6 @@ void createModelsSubmodule(py::module_& module) {
                                                         "UDTClassifier")
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
-      .def("train_with_source", &UniversalDeepTransformer::train,
-           py::arg("data_source"), py::arg("train_config"),
-           py::arg("validation") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt,
-           docs::MODEL_PIPELINE_TRAIN_DATA_SOURCE,
-           bolt::python::OutputRedirect())
-      .def("evaluate_with_source", &UniversalDeepTransformer::evaluate,
-           py::arg("data_source"), py::arg("eval_config") = std::nullopt,
-           py::arg("return_predicted_class") = false,
-           py::arg("return_metrics") = false,
-           docs::MODEL_PIPELINE_EVALUATE_DATA_SOURCE,
-           bolt::python::OutputRedirect())
       .def("predict",
            py::overload_cast<const MapInput&, bool, bool>(
                &UniversalDeepTransformer::predict),
