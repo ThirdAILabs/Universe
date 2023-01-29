@@ -759,6 +759,17 @@ float* FullyConnectedLayer::getWeightsGradient() {
   return _weight_optimizer->gradients.data();
 }
 
+std::vector<float> FullyConnectedLayer::getWeightsByNeuron(uint32_t neuron_id) {
+  if (neuron_id >= _dim) {
+    throw std::invalid_argument(
+        "Passed in neuron_id too large for this layer. Should be less than the "
+        "output dim of " +
+        std::to_string(_dim) + ".");
+  }
+  return std::vector<float>(_weights[neuron_id * _prev_dim],
+                            _weights[neuron_id * _prev_dim] + _dim);
+}
+
 void FullyConnectedLayer::setSparsity(float sparsity) {
   deinitSamplingDatastructures();
   _sparsity = sparsity;

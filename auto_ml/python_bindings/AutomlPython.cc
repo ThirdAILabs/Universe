@@ -171,6 +171,8 @@ void createModelsSubmodule(py::module_& module) {
                 model.embeddingRepresentation(input));
           },
           py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
+      .def("getLabelEmbedding", &UniversalDeepTransformer::getLabelEmbedding,
+           py::arg("label_id"), docs::UDT_LABEL_EMBEDDING)
       .def("get_prediction_threshold",
            &UniversalDeepTransformer::getPredictionThreshold)
       .def("set_prediction_threshold",

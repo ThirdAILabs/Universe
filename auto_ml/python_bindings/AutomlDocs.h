@@ -783,6 +783,17 @@ Notes:
 
 )pbdoc";
 
+const char* const UDT_LABEL_EMBEDDING = R"pbdoc(
+Returns an embedding representation for the given output label id. 
+
+Args:
+    label_id (int): The id of the label to get the embedding for. Should be 
+    less than the number of classes used in the model.
+
+Returns:
+    A 1D numpy array of floats representing a dense embedding of that label_id.
+)pbdoc";
+
 const char* const UDT_INDEX = R"pbdoc(
 Indexes a single true sample to keep UniversalDeepTransformer's (UDT) temporal 
 context up to date.

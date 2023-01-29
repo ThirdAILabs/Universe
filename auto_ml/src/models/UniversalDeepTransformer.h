@@ -108,6 +108,19 @@ class UniversalDeepTransformer final : public ModelPipeline {
     // "fc_1" is the name of the penultimate layer.
   }
 
+  std::vector<float> getLabelEmbedding(uint32_t label) {
+    auto fc_layers =
+        _model->getNodes().back()->getInternalFullyConnectedLayers();
+
+    if (fc_layers.size() != 1) {
+      throw std::invalid_argument(
+          "This UDT architecture currently doesn't support getting label "
+          "embeddings.");
+    }
+
+    return fc_layers.front()->getWeightsByNeuron(label);
+  }
+
   /**
    * This method will perform cold start pretraining on the model if the model
    * is a text classification model with a single text column as input and a
