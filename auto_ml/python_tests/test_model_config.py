@@ -3,7 +3,8 @@ import os
 import textwrap
 
 import pytest
-from thirdai import bolt, deployment
+import thirdai
+from thirdai import bolt
 
 
 def get_config(have_user_specified_parameters: bool = False):
@@ -72,9 +73,9 @@ def test_load_model_from_config():
 
     config = get_config(have_user_specified_parameters=True)
 
-    deployment.dump_config(json.dumps(config), CONFIG_FILE)
+    thirdai.deployment.dump_config(json.dumps(config), CONFIG_FILE)
 
-    model = deployment.load_model_from_config(
+    model = thirdai.deployment.load_model_from_config(
         config_file=CONFIG_FILE,
         parameters={"use_sparsity": "sparse", "act": "tanh", "output_dim": 50},
         input_dims=[100],
@@ -101,7 +102,7 @@ def test_load_model_from_config():
 def test_udt_model_config_override():
     CONFIG_FILE = "./model_config"
 
-    deployment.dump_config(json.dumps(get_config()), CONFIG_FILE)
+    thirdai.deployment.dump_config(json.dumps(get_config()), CONFIG_FILE)
 
     udt_model = bolt.UniversalDeepTransformer(
         data_types={"col": bolt.types.categorical()},
@@ -133,9 +134,9 @@ def test_config_dump_load():
 
     CONFIG_FILE = "./simple_model_config"
 
-    deployment.dump_config(json.dumps(config), CONFIG_FILE)
+    thirdai.deployment.dump_config(json.dumps(config), CONFIG_FILE)
 
-    assert json.loads(deployment.load_config(CONFIG_FILE)) == config
+    assert json.loads(thirdai.deployment.load_config(CONFIG_FILE)) == config
 
     os.remove(CONFIG_FILE)
 
@@ -146,7 +147,7 @@ def test_config_encryption():
 
     CONFIG_FILE = "./encrypted_model_config"
 
-    deployment.dump_config(config_str, CONFIG_FILE)
+    thirdai.deployment.dump_config(config_str, CONFIG_FILE)
 
     with open(CONFIG_FILE, "rb") as file:
         encrypted_config_str = file.read()
