@@ -148,9 +148,8 @@ def test_should_save_optimizer_and_load():
         )
         distributed_training_wrapper.update_parameters()
 
-    should_save_optimizer_bolt_model = distributed_training_wrapper.model(
-        should_save_optimizer=True
-    )
+    distributed_training_wrapper.save_with_optimizer(should_save_optimizer=True)
+    should_save_optimizer_bolt_model = distributed_training_wrapper.model()
 
     save_loc = "./should_save_optimizer_save.model"
     should_save_optimizer_bolt_model.save(filename=save_loc)
