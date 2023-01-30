@@ -593,8 +593,12 @@ That's all for now, folks! More docs coming soon :)
            "been called, the batch sizes of the passed in datasets must be the "
            "same as when this method was called the first time.")
       .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
+      .def("save_with_optimizer",
+           &DistributedTrainingWrapper::saveWithOptimizer,
+           py::arg("should_save_optimizer"),
+           "This flag make sure that whenever the save/get method is "
+           "called, optmizer states are saved too. ")
       .def("model", &DistributedTrainingWrapper::getModel,
-           py::arg("should_save_optimizer") = false,
            "The underlying Bolt model wrapped by this "
            "DistributedTrainingWrapper.")
       .def("freeze_hash_tables",

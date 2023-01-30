@@ -270,7 +270,8 @@ class Worker:
 
     @timed
     def get_model(self, should_save_optimizer=False):
-        return self.model.model(should_save_optimizer)
+        self.model.save_with_optimizer(should_save_optimizer)
+        return self.model.model()
 
     @timed
     def ping(self):
