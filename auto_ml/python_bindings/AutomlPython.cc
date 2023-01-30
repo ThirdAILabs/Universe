@@ -164,8 +164,7 @@ void createModelsSubmodule(py::module_& module) {
       .def("cold_start", &UniversalDeepTransformer::coldStartPretraining,
            py::arg("dataset"), py::arg("strong_column_names"),
            py::arg("weak_column_names"), py::arg("train_config"),
-           py::arg("validation"), docs::UDT_COLD_START,
-           bolt::python::OutputRedirect())
+           py::arg("validation"), bolt::python::OutputRedirect())
       .def(
           "embedding_representation",
           [](UniversalDeepTransformer& model, const MapInput& input) {
