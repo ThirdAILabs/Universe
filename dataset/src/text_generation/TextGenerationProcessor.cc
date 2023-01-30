@@ -46,7 +46,7 @@ TextGenerationProcessor::featurizeText(const std::string& line) const {
 
   std::string text = removePunctuationAndSpacing(doc["text"]);
 
-  std::vector<uint32_t> tokens = token_encoding::unigrams(text);
+  std::vector<uint32_t> tokens = token_encoding::ngrams(text, /* n= */ 1);
 
   std::vector<BoltVector> vectors;
   std::vector<BoltVector> labels;

@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <utils/StringManipulation.h>
 #include <string_view>
 
 namespace thirdai::dataset {

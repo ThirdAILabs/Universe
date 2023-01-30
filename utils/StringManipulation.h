@@ -4,14 +4,13 @@
 #include <vector>
 
 // TODO(any): consolidate string manipulation to this file
-namespace thirdai::utils {
+namespace thirdai::text {
 
 /**
- * Splits a sentence into words by delimiter.
+ * Splits a sentence by delimiter.
  */
-std::vector<std::string_view> splitIntoWords(std::string_view sentence,
-                                             char delimiter = ' ');
-
+std::vector<std::string_view> split(std::string_view sentence,
+                                    char delimiter = ' ');
 /**
  * Creates a copy of the original stringview where all characters are lowercase.
  */
@@ -31,4 +30,4 @@ inline uint32_t toInteger(const char* start) {
   return std::strtoul(start, &end, 10);
 }
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::text

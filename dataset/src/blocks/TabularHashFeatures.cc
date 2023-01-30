@@ -138,14 +138,9 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
         break;
       }
     }
-<<<<<<< HEAD
-    // Hash with different salt per column.
-    unigram = hashing::combineHashes(unigram, salt++);
-=======
     // Hash with different salt per column so the same bin in a different
     // column doesn't map to the same unigram.
-    unigram = hashing::HashUtils::combineHashes(unigram, salt);
->>>>>>> 888abc09b1d64bc6c6c9a7ff470ad6aefe32a9ef
+    unigram = hashing::combineHashes(unigram, salt);
 
     unigram_to_column_identifier[unigram] = std::move(column_identifier);
     unigram_hashes.push_back(unigram);
