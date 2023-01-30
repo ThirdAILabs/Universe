@@ -7,6 +7,7 @@
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
 #include <exception>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <sstream>

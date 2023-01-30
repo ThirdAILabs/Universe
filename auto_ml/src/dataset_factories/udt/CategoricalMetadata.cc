@@ -62,17 +62,9 @@ dataset::PreprocessedVectorsPtr CategoricalMetadata::loadVectors(
   // TODO(Geordie): Support other data sources
   auto data_source = dataset::FileDataSource::make(metadata->metadata_file);
 
-  auto header = data_source->nextLine();
-  if (!header) {
-    throw std::invalid_argument(
-        "The dataset must have a header that contains column names.");
-  }
-  dataset::ColumnNumberMap column_numbers(*header, metadata->delimiter);
-
-  data_source->restart();
-
   auto input_blocks = FeatureComposer::makeNonTemporalFeatureBlocks(
-      /* data_types= */ _data_types, /* target= */ metadata->key,
+      /* data_types= */ metadata->column_data_types,
+      /* target= */ metadata->key,
       /* temporal_relationships= */ {},
       /* vectors_map= */ {},
       /* text_pairgrams_word_limit= */ _text_pairgram_word_limit,

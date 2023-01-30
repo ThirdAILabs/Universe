@@ -21,24 +21,20 @@ std::string uniqueName(const ColumnDataTypes& data_types,
   return proposed_name;
 }
 
-RNNDatasetFactoryPtr RNNDatasetFactory::make(
-    ColumnDataTypes data_types, std::string target_column,
-    uint32_t target_vocabulary_size, uint32_t max_recursion_depth,
-    char delimiter, uint32_t text_pairgram_word_limit, bool contextual_columns,
-    uint32_t hash_range) {
+RNNDatasetFactoryPtr RNNDatasetFactory::make(ColumnDataTypes data_types,
+                                             std::string target_column,
+                                             uint32_t n_target_classes,
+                                             char delimiter,
+                                             uint32_t text_pairgram_word_limit,
+                                             bool contextual_columns,
+                                             uint32_t hash_range) {
   if (!data_types.count(target_column)) {
     throw std::invalid_argument(
         "Target column provided was not found in data_types.");
   }
 
-  if (!data::asSequence(data_types.at(target_column))) {
-    throw std::invalid_argument(
-        "Doing recursion with UDT requires that the target column is a "
-        "sequence type.");
-  }
-
   // Increment by 1 for EOS token
-  target_vocabulary_size++;
+  n_target_classes++;
 
   // This column will contain the predicted target sequence so far.
   // The target column will contain the single next item to be predicted.
@@ -49,8 +45,9 @@ RNNDatasetFactoryPtr RNNDatasetFactory::make(
   // Only used by SequenceTargetBlock. Input vectors will not encode this.
   auto step_column = uniqueName(data_types, target_column + "_step");
 
-  auto target_sequence_delimiter =
-      asSequence(data_types.at(intermediate_column))->delimiter;
+  auto target_sequence = asSequence(data_types.at(intermediate_column));
+  auto target_sequence_delimiter = target_sequence->delimiter;
+  auto max_recursion_depth = target_sequence->max_length.value();
 
   CategoricalMetadata metadata(data_types, text_pairgram_word_limit,
                                contextual_columns, hash_range);
@@ -65,7 +62,7 @@ RNNDatasetFactoryPtr RNNDatasetFactory::make(
   auto label_block = dataset::SequenceTargetBlock::make(
       /* target_col= */ target_column, /* step_col= */ step_column,
       /* max_steps= */ max_recursion_depth,
-      /* vocabulary_size= */ target_vocabulary_size);
+      /* vocabulary_size= */ n_target_classes);
 
   auto unlabeled_featurizer = dataset::TabularFeaturizer::make(
       /* input_blocks= */ input_blocks, /* label_blocks= */ {},
@@ -77,7 +74,7 @@ RNNDatasetFactoryPtr RNNDatasetFactory::make(
       /* has_header= */ true, /* delimiter= */ delimiter, /* parallel= */ true,
       /* hash_range= */ hash_range);
 
-  return std::make_shared<RNNDatasetFactory>(
+  return std::shared_ptr<RNNDatasetFactory>(new RNNDatasetFactory(
       /* augmented_data_types= */ std::move(data_types),
       /* intermediate_column= */ std::move(intermediate_column),
       /* current_step_target_column= */ std::move(target_column),
@@ -86,7 +83,7 @@ RNNDatasetFactoryPtr RNNDatasetFactory::make(
       /* label_block= */ std::move(label_block),
       /* categorical_metadata= */ std::move(metadata),
       /* unlabeled_featurizer= */ std::move(unlabeled_featurizer),
-      /* labeled_featurizer= */ std::move(labeled_featurizer));
+      /* labeled_featurizer= */ std::move(labeled_featurizer)));
 }
 
 dataset::DatasetLoaderPtr RNNDatasetFactory::getLabeledDatasetLoader(

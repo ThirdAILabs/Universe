@@ -20,9 +20,9 @@ class RNNDatasetFactory final : public DatasetLoaderFactory {
  public:
   static std::shared_ptr<RNNDatasetFactory> make(
       ColumnDataTypes data_types, std::string target_column,
-      uint32_t target_vocabulary_size, uint32_t max_recursion_depth,
-      char delimiter, uint32_t text_pairgram_word_limit,
-      bool contextual_columns, uint32_t hash_range);
+      uint32_t n_target_classes, char delimiter,
+      uint32_t text_pairgram_word_limit, bool contextual_columns,
+      uint32_t hash_range);
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       dataset::DataSourcePtr data_source, bool training) final;

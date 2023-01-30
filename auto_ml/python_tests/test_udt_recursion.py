@@ -6,6 +6,11 @@ from thirdai import bolt
 
 TRAIN_FILE = "./udt_recursive_data.csv"
 
+# Load save
+# Number of activations given by train and evaluate
+# Predict & predict batch accuracy
+# Predict & predict batch format
+# 
 
 @pytest.fixture(scope="module")
 def recursive_model():

@@ -29,8 +29,7 @@ class RNN final : public ModelPipeline {
  public:
   static RNN buildRNN(
       data::ColumnDataTypes data_types, std::string target_col,
-      uint32_t target_vocabulary_size, uint32_t max_recursion_depth,
-      char delimiter = ',',
+      uint32_t n_target_classes, char delimiter = ',',
       const std::optional<std::string>& model_config = std::nullopt,
       const config::ArgumentMap& options = {});
 

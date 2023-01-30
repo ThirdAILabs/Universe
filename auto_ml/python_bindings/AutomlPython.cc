@@ -10,7 +10,10 @@
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
+#include <pybind11/pytypes.h>
 #include <limits>
+#include <optional>
+#include <stdexcept>
 
 namespace thirdai::automl::python {
 
@@ -34,10 +37,10 @@ void defineAutomlInModule(py::module_& module) {
    */
   py::class_<UDTFactory>(module, "UniversalDeepTransformer", docs::UDT_CLASS)
       .def("__new__", &UDTFactory::buildUDTClassifierWrapper,
-           py::arg("data_types"),
+           py::arg("data_types"), py::arg("target"),
+           py::arg("n_target_classes") = std::nullopt,
            py::arg("temporal_tracking_relationships") =
                data::UserProvidedTemporalRelationships(),
-           py::arg("target"), py::arg("n_target_classes") = std::nullopt,
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
@@ -54,11 +57,6 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("input_vocab_size"), py::arg("metadata_dim"),
            py::arg("n_classes"), py::arg("model_size"),
            docs::TEXT_CLASSIFIER_INIT)
-      .def("__new__", &UDTFactory::buildRNN, py::arg("data_types"),
-           py::arg("target_col"), py::arg("target_vocabulary_size"),
-           py::arg("max_recursion_depth"), py::arg("delimiter") = ',',
-           py::arg("model_config") = std::nullopt,
-           py::arg("options") = py::dict(), docs::UDT_INIT)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 }
@@ -299,7 +297,8 @@ void createUDTTypesSubmodule(py::module_& module) {
 
   py::class_<automl::data::SequenceDataType, automl::data::DataType,
              automl::data::SequenceDataTypePtr>(udt_types_submodule, "sequence")
-      .def(py::init<char>(), py::arg("delimiter") = ' ',
+      .def(py::init<char, std::optional<uint32_t>>(),
+           py::arg("delimiter") = ' ', py::arg("max_length") = std::nullopt,
            docs::UDT_SEQUENCE_TYPE);
 }
 
@@ -414,15 +413,23 @@ TextClassifier UDTFactory::buildTextClassifier(py::object& obj,
   return TextClassifier(input_vocab_size, metadata_dim, n_classes, model_size);
 }
 
-UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
-    py::object& obj, data::ColumnDataTypes data_types,
+py::object UDTFactory::buildUDTClassifierWrapper(
+    py::object& obj, data::ColumnDataTypes data_types, std::string target_col,
+    std::optional<uint32_t> n_target_classes,
     data::UserProvidedTemporalRelationships temporal_tracking_relationships,
-    std::string target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
     const py::dict& options) {
   (void)obj;
-  return UniversalDeepTransformer::buildUDT(
+  if (data::asSequence(data_types[target_col])) {
+    if (!n_target_classes) {
+      throw std::invalid_argument(
+          "Must provide n_target_classes when target is a sequence.");
+    }
+    return py::cast(RNN::buildRNN(std::move(data_types), std::move(target_col),
+                                  *n_target_classes));
+  }
+  return py::cast(UniversalDeepTransformer::buildUDT(
       /* data_types = */ std::move(data_types),
       /* temporal_tracking_relationships = */
       std::move(temporal_tracking_relationships),
@@ -432,19 +439,7 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
       /* time_granularity = */ std::move(time_granularity),
       /* lookahead = */ lookahead, /* delimiter = */ delimiter,
       /* model_config= */ model_config,
-      /* options = */ createArgumentMap(options));
-}
-
-RNN UDTFactory::buildRNN(py::object& obj, data::ColumnDataTypes data_types,
-                         std::string target_col,
-                         uint32_t target_vocabulary_size,
-                         uint32_t max_recursion_depth, char delimiter,
-                         const std::optional<std::string>& model_config,
-                         const config::ArgumentMap& options) {
-  (void)obj;
-  return RNN::buildRNN(std::move(data_types), std::move(target_col),
-                       target_vocabulary_size, max_recursion_depth, delimiter,
-                       model_config, options);
+      /* options = */ createArgumentMap(options)));
 }
 
 void UDTFactory::save_classifier(const UniversalDeepTransformer& classifier,

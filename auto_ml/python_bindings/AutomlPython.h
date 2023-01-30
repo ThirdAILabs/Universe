@@ -7,6 +7,7 @@
 #include <auto_ml/src/models/TextClassifier.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/pytypes.h>
 
 namespace py = pybind11;
 
@@ -54,20 +55,13 @@ class UDTFactory {
                                             uint32_t n_classes,
                                             const std::string& model_size);
 
-  static UniversalDeepTransformer buildUDTClassifierWrapper(
-      py::object& obj, data::ColumnDataTypes data_types,
+  static py::object buildUDTClassifierWrapper(
+      py::object& obj, data::ColumnDataTypes data_types, std::string target_col,
+      std::optional<uint32_t> n_target_classes,
       data::UserProvidedTemporalRelationships temporal_tracking_relationships,
-      std::string target_col, std::optional<uint32_t> n_target_classes,
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
       const py::dict& options);
-
-  static RNN buildRNN(
-      py::object& obj, data::ColumnDataTypes data_types, std::string target_col,
-      uint32_t target_vocabulary_size, uint32_t max_recursion_depth,
-      char delimiter = ',',
-      const std::optional<std::string>& model_config = std::nullopt,
-      const config::ArgumentMap& options = {});
 
   // These need to be here instead of inside UDTFactory because otherwise I was
   // getting weird linking errors

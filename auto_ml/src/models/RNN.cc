@@ -33,18 +33,27 @@ namespace thirdai::automl::models {
 static constexpr uint32_t DEFAULT_HASH_RANGE = 100000;
 
 RNN RNN::buildRNN(data::ColumnDataTypes data_types, std::string target_col,
-                  uint32_t target_vocabulary_size, uint32_t max_recursion_depth,
-                  char delimiter,
+                  uint32_t n_target_classes, char delimiter,
                   const std::optional<std::string>& model_config,
                   const config::ArgumentMap& options) {
+  auto target_sequence = data::asSequence(data_types.at(target_col));
+  if (!target_sequence) {
+    throw std::invalid_argument(
+        "Doing recursion with UDT requires that the target column is a "
+        "sequence type.");
+  }
+  if (!target_sequence->max_length) {
+    throw std::invalid_argument("Must provide max_length for target sequence.");
+  }
+  auto max_recursion_depth = target_sequence->max_length.value();
+
   auto [contextual_columns, freeze_hash_tables, embedding_dimension] =
       processRNNOptions(options);
 
   auto dataset_factory = data::RNNDatasetFactory::make(
       /* data_types= */ std::move(data_types),
       /* target_column= */ std::move(target_col),
-      /* target_vocabulary_size= */ target_vocabulary_size,
-      /* max_recursion_depth= */ max_recursion_depth,
+      /* target_vocabulary_size= */ n_target_classes,
       /* delimiter= */ delimiter, /* text_pairgram_word_limit= */ 15,
       /* contextual_columns= */ contextual_columns,
       /* hash_range= */ DEFAULT_HASH_RANGE);

@@ -130,19 +130,20 @@ struct DateDataType : DataType {
 using DateDataTypePtr = std::shared_ptr<DateDataType>;
 
 struct SequenceDataType : DataType {
-  explicit SequenceDataType(char delimiter) : delimiter(delimiter) {}
+  explicit SequenceDataType(char delimiter = ' ',
+                            std::optional<uint32_t> max_length = std::nullopt)
+      : delimiter(delimiter), max_length(max_length) {}
 
   char delimiter;
+  std::optional<uint32_t> max_length;
 
   std::string toString() const final { return R"({"type": "sequence"})"; }
-
-  SequenceDataType() {}
 
  private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<DataType>(this), delimiter);
+    archive(cereal::base_class<DataType>(this), delimiter, max_length);
   }
 };
 
