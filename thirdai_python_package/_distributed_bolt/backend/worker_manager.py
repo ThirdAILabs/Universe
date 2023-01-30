@@ -47,20 +47,6 @@ class CallResult:
 
 
 class RemoteCallResults:
-    class _Iterator:
-        """An iterator over the results of a remote call."""
-
-        def __init__(self, call_results: List[CallResult]):
-            self._call_results = call_results
-
-        def __iter__(self):
-            return self
-
-        def __next__(self):
-            if not self._call_results:
-                raise StopIteration
-            return self._call_results.pop(0)
-
     def __init__(self):
         self.result_or_errors: List[CallResult] = []
 
@@ -70,15 +56,15 @@ class RemoteCallResults:
     def add_result(self, worker_id: int, result_or_error: ResultOrError):
         self.result_or_errors.append(CallResult(worker_id, result_or_error))
 
-    def __iter__(self):
-        # Shallow copy the list.
-        return self._Iterator(copy.copy(self.result_or_errors))
+    def get(self):
+        return self.result_or_errors
 
 
 class FaultTolerantWorkerManager:
     @dataclass
     class _WorkerState:
-        # whether this worker is in healthy state
+        # whether this worker is in healthy state, a worker being healthy implies it is
+        # up and could train. But, it doesn't certainly imply it have the model to train.
         is_healthy: bool = True
 
     def __init__(self, workers, init_id, logging):
@@ -119,7 +105,7 @@ class FaultTolerantWorkerManager:
         remote_worker_ids = list(self.workers.keys())
         remote_have_model = self.foreach_worker(
             func=lambda worker: worker.has_model(), remote_worker_ids=remote_worker_ids
-        )
+        ).get()
 
         for remote_result, worker_id in zip(remote_have_model, remote_worker_ids):
             if remote_result.ok:
@@ -203,7 +189,6 @@ class FaultTolerantWorkerManager:
                     self._set_worker_state(worker_id, healthy=False)
                 else:
                     # WorkerManager should not handle application level errors.
-
                     self.logging.info(f"Got application level Error:{str(e)}")
                     print(f"Unexpected {e=}, {type(e)=}")
                     raise
@@ -251,7 +236,7 @@ class FaultTolerantWorkerManager:
         remote_results = self.foreach_worker(
             func=lambda worker: worker.ping(),
             remote_worker_ids=unhealthy_worker_ids,
-        )
+        ).get()
 
         self.logging.info("Got remote results")
         restored = []

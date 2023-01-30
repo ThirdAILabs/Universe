@@ -79,7 +79,7 @@ class TrainStateManager:
         # However, if we spill the ray objects, it would significantly hurt our performance
         for gradients in self.worker_manager.foreach_worker(
             lambda worker: worker.get_calculated_gradients(), fetch_local=False
-        ):
+        ).get():
             if gradients.ok:
                 gradients_list.append(gradients.get())
         # We initialize the sum of gradient variables by setting them equal to the
@@ -240,7 +240,7 @@ class TrainStateManager:
         start_calculating_gradients_time = time.time()
         has_next_batches = self.worker_manager.foreach_worker(
             lambda worker: worker.compute_and_store_next_batch_gradients()
-        )
+        ).get()
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
         return all([result.get() for result in has_next_batches if result.ok])
 

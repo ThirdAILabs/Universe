@@ -347,7 +347,7 @@ class DistributedDataParallel:
 
         num_batches_remote_results = self.worker_manager.foreach_worker(
             lambda worker: worker.num_of_batches()
-        )
+        ).get()
 
         self.num_of_batches = min(
             [
