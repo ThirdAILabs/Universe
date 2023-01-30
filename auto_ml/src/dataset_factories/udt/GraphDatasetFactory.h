@@ -286,11 +286,11 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
             /* num_bins= */
             FeatureComposer::getNumberOfBins(numerical_types[i]->granularity)));
       }
-      input_blocks.push_back(std::make_shared<dataset::TabularHashFeatures>(
-          /* columns= */ tabular_columns,
-          /* output_range= */ std::numeric_limits<uint32_t>::max(),
-          /* with_pairgrams= */ true));
     }
+    input_blocks.push_back(std::make_shared<dataset::TabularHashFeatures>(
+        /* columns= */ tabular_columns,
+        /* output_range= */ std::numeric_limits<uint32_t>::max(),
+        /* with_pairgrams= */ true));
     auto key_vocab = dataset::ThreadSafeVocabulary::make(
         /* vocab_size= */ 0, /* limit_vocab_size= */ false);
     auto label_block = dataset::StringLookupCategoricalBlock::make(
