@@ -256,21 +256,6 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<Featurizer, FeaturizerPtr>(dataset_submodule,  // NOLINT
                                         "Featurizer");
 
-  py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
-                                              "DatasetLoader")
-      .def(py::init<std::shared_ptr<dataset::DataSource>,
-                    dataset::FeaturizerPtr, bool, DatasetShuffleConfig>(),
-           py::arg("data_source"), py::arg("featurizer"), py::arg("shuffle"),
-           py::arg("shuffle_config") = DatasetShuffleConfig())
-      .def("get_input_dim", &DatasetLoader::getInputDim)
-      .def("get_label_dim", &DatasetLoader::getLabelDim)
-      .def("load_all", &DatasetLoader::loadAll, py::arg("batch_size"),
-           py::arg("verbose") = true)
-      .def("load_some", &dataset::DatasetLoader::loadSome,
-           py::arg("batch_size"), py::arg("num_batches"),
-           py::arg("verbose") = true)
-      .def("restart", &dataset::DatasetLoader::restart);
-
   py::class_<TabularFeaturizer, Featurizer, TabularFeaturizerPtr>(
       dataset_submodule, "TabularFeaturizer")
       .def(py::init<std::vector<std::shared_ptr<Block>>,
@@ -289,6 +274,21 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("masked_tokens_percentage"));
 
 #endif
+
+  py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
+                                              "DatasetLoader")
+      .def(py::init<std::shared_ptr<dataset::DataSource>,
+                    dataset::FeaturizerPtr, bool, DatasetShuffleConfig>(),
+           py::arg("data_source"), py::arg("featurizer"), py::arg("shuffle"),
+           py::arg("shuffle_config") = DatasetShuffleConfig())
+      .def("get_input_dim", &DatasetLoader::getInputDim)
+      .def("get_label_dim", &DatasetLoader::getLabelDim)
+      .def("load_all", &DatasetLoader::loadAll, py::arg("batch_size"),
+           py::arg("verbose") = true)
+      .def("load_some", &dataset::DatasetLoader::loadSome,
+           py::arg("batch_size"), py::arg("num_batches"),
+           py::arg("verbose") = true)
+      .def("restart", &dataset::DatasetLoader::restart);
 
   py::class_<DataSource, PyDataSource, DataSourcePtr>(dataset_submodule,
                                                       "DataSource")
