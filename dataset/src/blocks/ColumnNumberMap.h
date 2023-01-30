@@ -3,7 +3,6 @@
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_map.hpp>
-#include <_types/_uint32_t.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <cstdint>
 #include <map>
