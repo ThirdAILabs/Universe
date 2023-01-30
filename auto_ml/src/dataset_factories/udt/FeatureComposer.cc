@@ -92,13 +92,17 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
     }
 
     if (auto text_meta = asText(data_type)) {
-      if (text_meta->force_pairgram ||
+      if (text_meta->contextual_encoding == TextEncodingType::Pairgrams ||
           (text_meta->average_n_words &&
            text_meta->average_n_words <= text_pairgrams_word_limit)) {
         // text hash range of MAXINT is fine since features are later
         // hashed into a range. In fact it may reduce hash collisions.
         blocks.push_back(dataset::PairGramTextBlock::make(
             col_name, /* dim= */ std::numeric_limits<uint32_t>::max()));
+      } else if (text_meta->contextual_encoding == TextEncodingType::Bigrams) {
+        blocks.push_back(dataset::NGramTextBlock::make(
+            col_name, /* n= */ 2,
+            /* dim= */ std::numeric_limits<uint32_t>::max()));
       } else {
         blocks.push_back(dataset::NGramTextBlock::make(
             col_name, /* n= */ 1,
