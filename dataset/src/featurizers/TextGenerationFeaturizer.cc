@@ -8,10 +8,10 @@
 
 namespace thirdai::dataset {
 
-TextGenerationFeaturizer::TextGenerationFeaturizer(uint32_t seq_len,
+TextGenerationFeaturizer::TextGenerationFeaturizer(uint32_t sequence_len,
 
                                                    uint32_t output_dim)
-    : _seq_len(seq_len), _output_dim(output_dim) {}
+    : _sequence_len(sequence_len), _output_dim(output_dim) {}
 
 std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
     const std::vector<std::string>& lines) {
@@ -44,9 +44,9 @@ TextGenerationFeaturizer::featurizeText(const std::string& line) const {
   std::vector<BoltVector> vectors;
   std::vector<BoltVector> labels;
 
-  for (uint32_t i = _seq_len; i < tokens.size(); i++) {
-    const uint32_t* phrase_start = tokens.data() + i - _seq_len;
-    auto pairgrams = token_encoding::pairgrams(phrase_start, _seq_len);
+  for (uint32_t i = _sequence_len; i < tokens.size(); i++) {
+    const uint32_t* phrase_start = tokens.data() + i - _sequence_len;
+    auto pairgrams = token_encoding::pairgrams(phrase_start, _sequence_len);
 
     BoltVector vector(/* l= */ pairgrams.size(), /* is_dense= */ false,
                       /* has_gradient= */ false);
