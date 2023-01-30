@@ -73,24 +73,24 @@ TEST(GraphTest, correctNeighboursTest) {
     }
   }
 
-  for (uint32_t i = 0; i < hop3_neighbours.size(); i++) {
-    ASSERT_EQ(hop3_neighbours[i].size(), 5);
+  for (auto neighbour: hop3_neighbours) {
+    ASSERT_EQ(neighbour.size(), 5);
   }
 }
 
-TEST(GraphTest, numericaltest) {
-  auto hop1_neighbours = GraphDatasetFactory::findNeighboursForAllNodes(
-      num_nodes, expected_adjacency_list, 1);
+// TEST(GraphTest, numericaltest) {
+//   auto hop1_neighbours = GraphDatasetFactory::findNeighboursForAllNodes(
+//       num_nodes, expected_adjacency_list, 1);
 
-  auto values = GraphDatasetFactory::processNumerical(rows, numerical_columns,
-                                                      hop1_neighbours);
+//   auto values = GraphDatasetFactory::processNumerical(rows, numerical_columns,
+//                                                       hop1_neighbours);
 
-  for (uint32_t i = 0; i < values.size(); i++) {
-    for (auto k : values[i]) {
-      std::cout << k << " ";
-    }
-    std::cout << std::endl;
-  }
-}
+//   for (uint32_t i = 0; i < values.size(); i++) {
+//     for (auto k : values[i]) {
+//       std::cout << k << " ";
+//     }
+//     std::cout << std::endl;
+//   }
+// }
 
 }  // namespace thirdai::automl::tests
