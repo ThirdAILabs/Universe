@@ -12,9 +12,9 @@ namespace thirdai::dataset {
 SequenceBlock::SequenceBlock(ColumnIdentifier col, char delimiter, uint32_t dim)
     : _col(std::move(col)), _delimiter(delimiter), _dim(dim) {}
 
-uint32_t SequenceBlock::featureDim() const { return _dim; };
+uint32_t SequenceBlock::featureDim() const { return _dim; }
 
-bool SequenceBlock::isDense() const { return false; };
+bool SequenceBlock::isDense() const { return false; }
 
 Explanation SequenceBlock::explainIndex(uint32_t index_within_block,
                                         ColumnarInputSample& input) {
@@ -50,7 +50,7 @@ std::exception_ptr SequenceBlock::buildSegment(ColumnarInputSample& input,
 
 std::vector<ColumnIdentifier*> SequenceBlock::concreteBlockColumnIdentifiers() {
   return {&_col};
-};
+}
 
 uint32_t SequenceBlock::sequenceHash(std::string_view element,
                                      uint32_t pos) const {
