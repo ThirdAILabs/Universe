@@ -22,11 +22,11 @@ namespace thirdai::automl::data {
  * separate "metadata" file that maps user IDs to their static features.
  *
  * This class loads feature vectors from metadata files. It then creates and
- * maintains maps between categorical features (e.g. user ID) and their metadata
- * vectors (e.g. vectors that encode date and place of birth).These vectors can
- * then be injected when UDT loads the main dataset (e.g. the transaction
- * dataset in the above example), thus providing additional features without
- * bloating up the main dataset.
+ * maintains maps between categorical features (e.g. the user ID acts as the
+ * key) and their metadata vectors (e.g. vectors that encode date and place of
+ * birth). In other words, These vectors can then be injected when UDT loads the
+ * main dataset (e.g. the transaction dataset in the above example), thus
+ * providing additional features without bloating up the main dataset.
  */
 class CategoricalMetadata {
  public:
