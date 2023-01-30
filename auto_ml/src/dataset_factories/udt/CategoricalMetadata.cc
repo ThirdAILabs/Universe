@@ -21,10 +21,12 @@ CategoricalMetadata::CategoricalMetadata(const ColumnDataTypes& data_types,
             /* vectors_map= */ {},
             /* text_pairgrams_word_limit= */ _text_pairgram_word_limit,
             /* contextual_columns= */ _contextual_columns);
+
         auto key_vocab = dataset::ThreadSafeVocabulary::make(
             /* vocab_size= */ 0, /* limit_vocab_size= */ false);
         auto label_block = dataset::StringLookupCategoricalBlock::make(
             metadata_config->key, key_vocab);
+
         auto featurizer = dataset::TabularFeaturizer::make(
             /* input_blocks= */ std::move(input_blocks),
             /* label_blocks= */ {std::move(label_block)},
@@ -50,7 +52,7 @@ CategoricalMetadata::CategoricalMetadata(const ColumnDataTypes& data_types,
 
         _keys[name] = metadata_config->key;
         _featurizers[name] = featurizer;
-        _metadata_vectors[name] = fromDatasets(
+        _metadata_vectors[name] = metadataVectorMap(
             /* features= */ *features.at(0), /* key_ids= */ *key_ids,
             /* key_vocab= */ *key_vocab,
             /* feature_dim= */ loader.getInputDim());
@@ -84,7 +86,7 @@ void CategoricalMetadata::updateMetadataBatch(const std::string& col_name,
   }
 }
 
-dataset::PreprocessedVectorsPtr CategoricalMetadata::fromDatasets(
+dataset::PreprocessedVectorsPtr CategoricalMetadata::metadataVectorMap(
     dataset::BoltDataset& features, dataset::BoltDataset& key_ids,
     dataset::ThreadSafeVocabulary& key_vocab, uint32_t feature_dim) {
   std::unordered_map<std::string, BoltVector> preprocessed_vectors(
