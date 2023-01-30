@@ -194,7 +194,6 @@ def simple_bolt_model_in_distributed_training_wrapper(
     learning_rate=0.0001,
     hidden_layer_dim=2000,
     batch_size=64,
-    return_train_config=False,
 ):
 
     input_layer = bolt.nn.Input(dim=num_classes)
@@ -222,10 +221,7 @@ def simple_bolt_model_in_distributed_training_wrapper(
         worker_id=0,
     )
     wrapper.set_datasets([train_data], train_labels)
-    if return_train_config:
-        return wrapper, train_config
-    else:
-        return wrapper
+    return wrapper, train_config
 
 
 # Builds, trains, and does prediction on a model using numpy data and numpy
@@ -336,7 +332,7 @@ def compressed_training(
 
     num_training_batches = math.ceil(train_samples / batch_size)
 
-    wrapped_model = simple_bolt_model_in_distributed_training_wrapper(
+    wrapped_model, _ = simple_bolt_model_in_distributed_training_wrapper(
         train_data=train_data,
         train_labels=train_labels,
         sparsity=0.2,
