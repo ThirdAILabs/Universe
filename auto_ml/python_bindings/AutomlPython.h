@@ -55,6 +55,10 @@ class UDTFactory {
                                             uint32_t n_classes,
                                             const std::string& model_size);
 
+  /**
+   * Builds Recursive UDT if target column is a sequence type. Otherwise, builds
+   * UDT Classifier.
+   */
   static py::object buildUDTClassifierWrapper(
       py::object& obj, data::ColumnDataTypes data_types, std::string target_col,
       std::optional<uint32_t> n_target_classes,
