@@ -672,7 +672,7 @@ You may cold_start the model and train with supervised data afterwards, typicall
 leading to faster convergence on the supervised data.
 
 Args:
-    filename (str): The file to 
+    filename (str): The file to cold start with
     strong_column_names (List[str]): A list of column names containing "strong" 
     representative data of each sample. This is open to interpretation but 
     typically this might be something like product/document titles.
