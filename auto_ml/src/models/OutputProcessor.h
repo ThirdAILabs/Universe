@@ -9,6 +9,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <memory>
+#include <stdexcept>
 
 namespace py = pybind11;
 
@@ -220,7 +221,7 @@ class RNNOutputProcessor final : public OutputProcessor {
   static void throwIfReturnPredictedClass(bool return_predicted_class) {
     if (return_predicted_class) {
       throw std::invalid_argument(
-          "ActivationOutputProcessor cannot return predicted class.");
+          "RNNOutputProcessor cannot return predicted class.");
     }
   }
 
@@ -231,7 +232,7 @@ class RNNOutputProcessor final : public OutputProcessor {
   }
 };
 
-using ActivationOutputProcessorPtr = std::shared_ptr<RNNOutputProcessor>;
+using RNNOutputProcessorPtr = std::shared_ptr<RNNOutputProcessor>;
 
 // Helper function for InferenceOutputTracker to Numpy.
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);

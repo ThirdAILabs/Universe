@@ -4,7 +4,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pytypes.h>
-#include <stdexcept>
 
 namespace thirdai::automl::models {
 
