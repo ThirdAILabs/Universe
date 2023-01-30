@@ -219,12 +219,12 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
 
     std::vector<std::string> nodes(full_data.size());
 
-#pragma omp parallel for default(none) \
-    shared(rows, full_data, nodes, source_col_num)
+    // #pragma omp parallel for default(none)
+    //     shared(rows, full_data, nodes, source_col_num)
     for (uint32_t i = 0; i < full_data.size(); i++) {
       auto temp = dataset::ProcessorUtils::parseCsvRow(full_data[i],
                                                        _config->_delimeter);
-      rows[i] = std::vector<std::string>(temp.begin(), temp.end());;
+      rows[i] = std::vector<std::string>(temp.begin(), temp.end());
 
       nodes[i] = rows[i][source_col_num];
     }

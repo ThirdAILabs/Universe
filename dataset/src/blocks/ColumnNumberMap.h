@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <_types/_uint32_t.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <cstdint>
 #include <map>
@@ -24,9 +25,12 @@ class ColumnNumberMap {
     }
   }
 
-  explicit ColumnNumberMap(
-      std::unordered_map<std::string, uint32_t> name_to_num)
-      : _name_to_num(std::move(name_to_num)), _n_cols(_name_to_num.size()) {}
+  explicit ColumnNumberMap(const std::vector<std::string>& names)
+      : _n_cols(names.size()) {
+    for (uint32_t i = 0; i < names.size(); i++) {
+      _name_to_num[names[i]] = i;
+    }
+  }
 
   ColumnNumberMap() {}
 
