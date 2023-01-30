@@ -140,7 +140,6 @@ def test_should_save_optimizer_and_load():
         labels,
         sparsity=1,
         num_classes=n_classes,
-        return_train_config=True,
     )
 
     for batch_id in range(distributed_training_wrapper.num_batches()):
