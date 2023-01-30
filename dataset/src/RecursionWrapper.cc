@@ -106,14 +106,6 @@ std::vector<std::string> RecursionWrapper::augment(
     sequence.push_back(EARLY_STOP);
   }
   if (sequence.size() > _max_recursion_depth) {
-#pragma omp critical
-    {
-      std::cout << "WARNING: found target sequence \"" << target_seq
-                << "\" with " << sequence.size()
-                << " elements. Expected sequence length = "
-                << _max_recursion_depth << ". Ignoring extra elements."
-                << std::endl;
-    }
     sequence.resize(_max_recursion_depth);
   }
 
