@@ -101,12 +101,10 @@ void createModelsSubmodule(py::module_& module) {
       .def("reset", &data::UDTDatasetFactory::resetTemporalTrackers,
            docs::TEMPORAL_CONTEXT_RESET)
       .def("update_temporal_trackers",
-           py::overload_cast<const MapInput&>(
-               &data::UDTDatasetFactory::updateTemporalTrackers),
-           py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
+           &data::UDTDatasetFactory::updateTemporalTrackers, py::arg("update"),
+           docs::TEMPORAL_CONTEXT_UPDATE)
       .def("batch_update_temporal_trackers",
-           py::overload_cast<const MapInputBatch&>(
-               &data::UDTDatasetFactory::batchUpdateTemporalTrackers),
+           &data::UDTDatasetFactory::batchUpdateTemporalTrackers,
            py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH)
       .def("verify_can_distribute",
            &data::UDTDatasetFactory::verifyCanDistribute)
