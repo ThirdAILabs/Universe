@@ -13,23 +13,19 @@ namespace thirdai::data {
 ColdStartTextAugmentation::ColdStartTextAugmentation(
     std::vector<std::string> strong_column_names,
     std::vector<std::string> weak_column_names, std::string label_column_name,
-    std::string output_column_name, std::optional<uint32_t> weak_min_len,
-    std::optional<uint32_t> weak_max_len,
-    std::optional<uint32_t> weak_chunk_len,
-    std::optional<uint32_t> weak_sample_num_words, uint32_t weak_sample_reps,
-    std::optional<uint32_t> strong_max_len,
-    std::optional<uint32_t> strong_sample_num_words, uint32_t seed)
+    std::string output_column_name, const ColdStartConfig& config,
+    uint32_t seed)
     : _strong_column_names(std::move(strong_column_names)),
       _weak_column_names(std::move(weak_column_names)),
       _label_column_name(std::move(label_column_name)),
       _output_column_name(std::move(output_column_name)),
-      _weak_min_len(weak_min_len),
-      _weak_max_len(weak_max_len),
-      _weak_chunk_len(weak_chunk_len),
-      _weak_sample_num_words(weak_sample_num_words),
-      _weak_sample_reps(weak_sample_reps),
-      _strong_max_len(strong_max_len),
-      _strong_sample_num_words(strong_sample_num_words),
+      _weak_min_len(config.weak_min_len),
+      _weak_max_len(config.weak_max_len),
+      _weak_chunk_len(config.weak_chunk_len),
+      _weak_sample_num_words(config.weak_sample_num_words),
+      _weak_sample_reps(config.weak_sample_reps),
+      _strong_max_len(config.strong_max_len),
+      _strong_sample_num_words(config.strong_sample_num_words),
       _seed(seed) {
   // Validate input parameters.
   validateGreaterThanZero(_weak_min_len, "weak_min_len");
@@ -39,12 +35,12 @@ ColdStartTextAugmentation::ColdStartTextAugmentation(
   validateGreaterThanZero(_strong_max_len, "strong_max_len");
   validateGreaterThanZero(_strong_sample_num_words, "strong_sample_num_words");
 
-  if (weak_sample_reps <= 0) {
+  if (_weak_sample_reps <= 0) {
     throw std::invalid_argument(
         "Invalid parameter: weak_sample_reps "
         "must be greater than 0.");
   }
-  if (weak_sample_reps > 1000) {
+  if (_weak_sample_reps > 1000) {
     throw std::invalid_argument(
         "Invalid parameter: weak_sample_reps "
         "should be smaller than 1000");

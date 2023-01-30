@@ -13,6 +13,41 @@
 
 namespace thirdai::data {
 
+struct ColdStartConfig {
+  explicit ColdStartConfig(
+      std::optional<uint32_t> weak_min_len = 10,
+      std::optional<uint32_t> weak_max_len = 50,
+      std::optional<uint32_t> weak_chunk_len = 25,
+      std::optional<uint32_t> weak_sample_num_words = std::nullopt,
+      uint32_t weak_sample_reps = 1,
+      std::optional<uint32_t> strong_max_len = std::nullopt,
+      std::optional<uint32_t> strong_sample_num_words = 3)
+      : weak_min_len(weak_min_len),
+        weak_max_len(weak_max_len),
+        weak_chunk_len(weak_chunk_len),
+        weak_sample_num_words(weak_sample_num_words),
+        weak_sample_reps(weak_sample_reps),
+        strong_max_len(strong_max_len),
+        strong_sample_num_words(strong_sample_num_words) {}
+
+  static ColdStartConfig longBothPhrases() {
+    return ColdStartConfig(/* weak_min_len= */ 10, /* weak_max_len= */ 50,
+                           /* weak_chunk_len= */ 25,
+                           /* weak_sample_num_words= */ std::nullopt,
+                           /* weak_sample_reps= */ 1,
+                           /* strong_max_len= */ std::nullopt,
+                           /* strong_sample_num_words= */ 3);
+  }
+
+  std::optional<uint32_t> weak_min_len;
+  std::optional<uint32_t> weak_max_len;
+  std::optional<uint32_t> weak_chunk_len;
+  std::optional<uint32_t> weak_sample_num_words;
+  uint32_t weak_sample_reps;
+  std::optional<uint32_t> strong_max_len;
+  std::optional<uint32_t> strong_sample_num_words;
+};
+
 /**
  * This class augments text data by applying various slicing and sampling
  * methods to sequences of words. It takes in a ColumnMap with text columns
@@ -95,13 +130,8 @@ class ColdStartTextAugmentation final : public Augmentation {
   ColdStartTextAugmentation(
       std::vector<std::string> strong_column_names,
       std::vector<std::string> weak_column_names, std::string label_column_name,
-      std::string output_column_name, std::optional<uint32_t> weak_min_len = 10,
-      std::optional<uint32_t> weak_max_len = 50,
-      std::optional<uint32_t> weak_chunk_len = 25,
-      std::optional<uint32_t> weak_sample_num_words = std::nullopt,
-      uint32_t weak_sample_reps = 1,
-      std::optional<uint32_t> strong_max_len = std::nullopt,
-      std::optional<uint32_t> strong_sample_num_words = 3,
+      std::string output_column_name,
+      const ColdStartConfig& config = ColdStartConfig::longBothPhrases(),
       uint32_t seed = 42803);
 
   ColumnMap apply(const ColumnMap& columns) final;

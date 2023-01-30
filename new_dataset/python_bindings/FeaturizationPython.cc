@@ -75,11 +75,26 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
   py::class_<ColdStartTextAugmentation, Augmentation,
              std::shared_ptr<ColdStartTextAugmentation>>(
       augmentations_submodule, "ColdStartText")
-      .def(py::init<std::vector<std::string>, std::vector<std::string>,
-                    std::string, std::string, std::optional<uint32_t>,
-                    std::optional<uint32_t>, std::optional<uint32_t>,
-                    std::optional<uint32_t>, uint32_t, std::optional<uint32_t>,
-                    std::optional<uint32_t>, uint32_t>(),
+      .def(py::init([](std::vector<std::string> strong_column_names,
+                       std::vector<std::string> weak_column_names,
+                       std::string label_column_name,
+                       std::string output_column_name,
+                       std::optional<uint32_t> weak_min_len,
+                       std::optional<uint32_t> weak_max_len,
+                       std::optional<uint32_t> weak_chunk_len,
+                       std::optional<uint32_t> weak_sample_num_words,
+                       uint32_t weak_sample_reps,
+                       std::optional<uint32_t> strong_max_len,
+                       std::optional<uint32_t> strong_sample_num_words,
+                       uint32_t seed) {
+             return std::make_shared<ColdStartTextAugmentation>(
+                 strong_column_names, weak_column_names, label_column_name,
+                 output_column_name,
+                 ColdStartConfig(weak_min_len, weak_max_len, weak_chunk_len,
+                                 weak_sample_num_words, weak_sample_reps,
+                                 strong_max_len, strong_sample_num_words),
+                 seed);
+           }),
            py::arg("strong_columns"), py::arg("weak_columns"),
            py::arg("label_column"), py::arg("output_column"),
            py::arg("weak_min_len") = std::nullopt,

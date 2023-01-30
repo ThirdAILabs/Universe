@@ -166,7 +166,6 @@ def test_coldstart_missing_strong_or_weak():
     ):
         run_coldstart(strong_columns=["SOME RANDOM NAME"])
 
-
     with pytest.raises(
         ValueError,
         match=r"Column SOME RANDOM NAME not found in dataset.",
