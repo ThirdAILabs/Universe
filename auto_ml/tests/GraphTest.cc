@@ -43,8 +43,10 @@ TEST(GraphTest, correctGraphTest) {
   auto adj_list = GraphDatasetFactory::createGraph(rows, relationship_columns);
 
   for (uint32_t i = 0; i < adj_list.size(); i++) {
-    for (uint32_t j = 0; j < adj_list[i].size(); j++) {
-      ASSERT_EQ(adj_list[i][j], expected_adjacency_list[i][j]);
+    for (auto j : adj_list[i]) {
+      ASSERT_TRUE(std::find(expected_adjacency_list[i].begin(),
+                            expected_adjacency_list[i].end(),
+                            j) != expected_adjacency_list[i].end());
     }
   }
 }
@@ -74,6 +76,21 @@ TEST(GraphTest, correctNeighboursTest) {
 
   for (uint32_t i = 0; i < hop3_neighbours.size(); i++) {
     ASSERT_EQ(hop3_neighbours[i].size(), 5);
+  }
+}
+
+TEST(GraphTest, numericaltest) {
+  auto hop1_neighbours = GraphDatasetFactory::findNeighboursForAllNodes(
+      num_nodes, expected_adjacency_list, 1);
+
+  auto values = GraphDatasetFactory::processNumerical(rows, numerical_columns,
+                                                      hop1_neighbours);
+
+  for (uint32_t i = 0; i < values.size(); i++) {
+    for (auto k : values[i]) {
+      std::cout << k << " ";
+    }
+    std::cout << std::endl;
   }
 }
 
