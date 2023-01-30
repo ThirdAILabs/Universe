@@ -1,7 +1,6 @@
 #include "Sequence.h"
 #include <cereal/archives/binary.hpp>
 #include <hashing/src/HashUtils.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <utils/StringManipulation.h>
