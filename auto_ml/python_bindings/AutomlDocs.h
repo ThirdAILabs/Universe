@@ -680,7 +680,7 @@ Args:
     representative data of each sample. This should include any non-strong column that is related in  anyway to the underlying object, typically...
     the strong columns, typically attributes like descriptions, tags, 
     bullet points, etc. 
-    learning_rate (float): Learning rate. 
+    learning_rate (float): Learning rate. Cold start can be very sensitive to this value. A good default is X.
     epochs (int): Number of epochs to pre-train for.
     metrics (List[str]) = []: List of pre-training metric names to record.
     validation (Optional[bolt.Validation]) = None: Optional validation object. 
