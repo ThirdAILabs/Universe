@@ -53,8 +53,7 @@ TextGenerationFeaturizer::featurizeText(const std::string& line) const {
     std::copy(pairgrams.begin(), pairgrams.end(), vector.active_neurons);
     std::fill_n(vector.activations, vector.len, 1.0);
 
-    BoltVector label =
-        BoltVector::singleElementSparseVector(tokens[i] % _output_dim);
+    BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
 
     vectors.emplace_back(std::move(vector));
     labels.emplace_back(std::move(label));

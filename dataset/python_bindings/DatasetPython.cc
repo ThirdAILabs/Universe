@@ -18,6 +18,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/MaskedSentenceFeaturizer.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
+#include <dataset/src/featurizers/TextGenerationFeaturizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -289,6 +290,12 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<std::shared_ptr<Vocabulary>, uint32_t, float>(),
            py::arg("vocabulary"), py::arg("pairgram_range"),
            py::arg("masked_tokens_percentage"));
+
+  py::class_<TextGenerationFeaturizer, Featurizer,
+             std::shared_ptr<TextGenerationFeaturizer>>(
+      dataset_submodule, "TextGenerationFeaturizer")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("sequence_len"),
+           py::arg("output_dim"));
 
 #endif
 
