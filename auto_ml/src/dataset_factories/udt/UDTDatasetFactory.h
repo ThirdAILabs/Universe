@@ -108,7 +108,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     dataset::MapSampleRef sample_ref(sample);
     return bolt::getSignificanceSortedExplanations(
         gradients_indices, gradients_ratio, sample_ref,
-        *_unlabeled_non_updating_processor);
+        _unlabeled_non_updating_processor);
   }
 
   std::vector<uint32_t> getInputDims() final {

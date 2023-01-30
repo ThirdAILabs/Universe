@@ -69,7 +69,7 @@ inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
     const std::optional<std::vector<uint32_t>>& gradients_indices,
     const std::vector<float>& gradients_ratio,
     dataset::ColumnarInputSample& input,
-    dataset::TabularFeaturizer& generic_featurizer) {
+    const dataset::TabularFeaturizerPtr& generic_featurizer) {
   std::vector<std::pair<float, uint32_t>> gradients_ratio_with_indices =
       sortGradientsBySignificance(gradients_ratio, gradients_indices);
 
@@ -89,12 +89,12 @@ inline std::vector<dataset::Explanation> getSignificanceSortedExplanations(
   // We rebuild the vector to get the index to segment feature map.
   // TODO(Geordie): Reuse information from the forward pass.
   auto index_to_segment_feature =
-      generic_featurizer.getIndexToSegmentFeatureMap(input);
+      generic_featurizer->getIndexToSegmentFeatureMap(input);
 
   for (const auto& [ratio, index] : gradients_ratio_with_indices) {
     if (ratio) {
       dataset::Explanation explanation_for_index =
-          generic_featurizer.explainFeature(
+          generic_featurizer->explainFeature(
               input,
               /* segment_feature= */ index_to_segment_feature.at(index));
       explanation_for_index.percentage_significance = (ratio / ratio_sum) * 100;
