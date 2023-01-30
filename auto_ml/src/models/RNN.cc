@@ -83,7 +83,7 @@ RNN RNN::buildRNN(data::ColumnDataTypes data_types, std::string target_col,
   return RNN(
       /* model= */ {dataset_factory, std::move(model),
                     RNNOutputProcessor::make(), train_eval_parameters},
-      /* dataset_factory= */ std::move(dataset_factory),
+      /* dataset_factory= */ dataset_factory,
       /* max_recursion_depth= */ max_recursion_depth);
 }
 
