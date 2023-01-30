@@ -15,13 +15,13 @@ namespace thirdai::data {
 
 struct ColdStartConfig {
   explicit ColdStartConfig(
-      std::optional<uint32_t> weak_min_len = 10,
-      std::optional<uint32_t> weak_max_len = 50,
-      std::optional<uint32_t> weak_chunk_len = 25,
+      std::optional<uint32_t> weak_min_len = std::nullopt,
+      std::optional<uint32_t> weak_max_len = std::nullopt,
+      std::optional<uint32_t> weak_chunk_len = std::nullopt,
       std::optional<uint32_t> weak_sample_num_words = std::nullopt,
       uint32_t weak_sample_reps = 1,
       std::optional<uint32_t> strong_max_len = std::nullopt,
-      std::optional<uint32_t> strong_sample_num_words = 3)
+      std::optional<uint32_t> strong_sample_num_words = std::nullopt)
       : weak_min_len(weak_min_len),
         weak_max_len(weak_max_len),
         weak_chunk_len(weak_chunk_len),
