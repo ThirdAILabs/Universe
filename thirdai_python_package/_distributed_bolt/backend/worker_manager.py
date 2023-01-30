@@ -118,7 +118,7 @@ class FaultTolerantWorkerManager:
 
         remote_worker_ids = list(self.workers.keys())
         remote_have_model = self.foreach_worker(
-            func=lambda worker: worker.have_model(), remote_worker_ids=remote_worker_ids
+            func=lambda worker: worker.has_model(), remote_worker_ids=remote_worker_ids
         )
 
         for remote_result, worker_id in zip(remote_have_model, remote_worker_ids):

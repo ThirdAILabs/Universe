@@ -278,7 +278,7 @@ class Worker:
         return "ping"
 
     @timed
-    def have_model(self):
+    def has_model(self):
         return hasattr(self, "model")
 
     def get_current_chunk_and_batch(self):
