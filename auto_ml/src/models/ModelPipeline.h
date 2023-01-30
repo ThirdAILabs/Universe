@@ -193,14 +193,6 @@ class ModelPipeline {
                                 size_t batch_size);
 
   /**
-   * Takes in a single input sample and returns the activations for the output
-   * layer.
-   */
-  template <typename InputType>
-  py::object predictImpl(const InputType& sample, bool use_sparse_inference,
-                         bool return_predicted_class);
-
-  /**
    * Takes in a batch of input samples and processes them in parallel and
    * returns the activations for the output layer. The order in which the input
    * samples are provided is the order in which the activations are returned.

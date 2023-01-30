@@ -107,9 +107,10 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
       blocks.push_back(dataset::DateBlock::make(col_name));
     }
 
-    if (asSequence(data_type)) {
+    if (auto sequence = asSequence(data_type)) {
       blocks.push_back(dataset::SequenceBlock::make(
-          col_name, /* dim= */ std::numeric_limits<uint32_t>::max()));
+          col_name, /* delimiter= */ sequence->delimiter,
+          /* dim= */ std::numeric_limits<uint32_t>::max()));
     }
   }
 

@@ -19,7 +19,7 @@ namespace thirdai::dataset {
  */
 class SequenceBlock : public Block {
  public:
-  explicit SequenceBlock(ColumnIdentifier col, uint32_t dim);
+  explicit SequenceBlock(ColumnIdentifier col, char delimiter, uint32_t dim);
 
   uint32_t featureDim() const final;
 
@@ -28,9 +28,9 @@ class SequenceBlock : public Block {
   Explanation explainIndex(uint32_t index_within_block,
                            ColumnarInputSample& input) final;
 
-  static auto make(ColumnIdentifier col,
+  static auto make(ColumnIdentifier col, char delimiter,
                    uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM) {
-    return std::make_shared<SequenceBlock>(std::move(col), dim);
+    return std::make_shared<SequenceBlock>(std::move(col), delimiter, dim);
   }
 
  protected:
@@ -43,15 +43,16 @@ class SequenceBlock : public Block {
   // Constructor for cereal.
   SequenceBlock() {}
 
-  uint32_t sequenceHash(uint32_t hash, uint32_t pos) const;
+  uint32_t sequenceHash(std::string_view element, uint32_t pos) const;
 
   ColumnIdentifier _col;
+  char _delimiter;
   uint32_t _dim;
 
   friend class cereal::access;
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Block>(this), _col, _dim);
+    archive(cereal::base_class<Block>(this), _col, _delimiter, _dim);
   }
 };
 
@@ -77,6 +78,8 @@ class SequenceTargetBlock : public Block {
   }
 
   std::string className(uint32_t label_id);
+
+  std::string classNameAtStep(const BoltVector& activations, uint32_t step);
 
  protected:
   std::exception_ptr buildSegment(ColumnarInputSample& input,

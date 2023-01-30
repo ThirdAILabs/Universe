@@ -45,7 +45,8 @@ struct BoltVector {
   static BoltVector singleElementSparseVector(uint32_t active_neuron,
                                               float activation = 1.0);
 
-  uint32_t getHighestActivationId() const;
+  uint32_t getHighestActivationId(
+      uint32_t begin = 0, std::optional<uint32_t> end = std::nullopt) const;
 
   uint32_t getSecondHighestActivationId() const;
 

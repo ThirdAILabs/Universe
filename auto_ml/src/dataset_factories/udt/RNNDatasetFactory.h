@@ -1,5 +1,6 @@
 #pragma once
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/CategoricalMetadata.h>
@@ -49,6 +50,9 @@ class RNNDatasetFactory final : public DatasetLoaderFactory {
 
   std::string className(uint32_t neuron_id) const final;
 
+  std::string classNameAtStep(const BoltVector& activations,
+                              uint32_t step) const;
+
   void incorporateNewPrediction(MapInput& sample,
                                 const std::string& new_prediction) const;
 
@@ -97,6 +101,7 @@ class RNNDatasetFactory final : public DatasetLoaderFactory {
                              std::string current_step_target_column,
                              std::string step_column, char delimiter,
                              char target_sequence_delimiter,
+                             uint32_t max_recursion_depth,
                              dataset::SequenceTargetBlockPtr label_block,
                              CategoricalMetadata categorical_metadata,
                              dataset::TabularFeaturizerPtr unlabeled_featurizer,
@@ -108,6 +113,7 @@ class RNNDatasetFactory final : public DatasetLoaderFactory {
   std::string _step_column;
   char _delimiter;
   char _target_delimiter;
+  uint32_t _max_recursion_depth;
 
   dataset::SequenceTargetBlockPtr _label_block;
   CategoricalMetadata _categorical_metadata;
@@ -123,8 +129,8 @@ class RNNDatasetFactory final : public DatasetLoaderFactory {
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _data_types,
             _intermediate_column, _current_step_target_column, _step_column,
-            _delimiter, _target_delimiter, _label_block, _categorical_metadata,
-            _unlabeled_featurizer, _labeled_featurizer);
+            _delimiter, _target_delimiter, _max_recursion_depth, _label_block,
+            _categorical_metadata, _unlabeled_featurizer, _labeled_featurizer);
   }
 };
 

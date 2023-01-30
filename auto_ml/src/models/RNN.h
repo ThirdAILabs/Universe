@@ -65,10 +65,6 @@ class RNN final : public ModelPipeline {
     _dataset_factory->updateMetadataBatch(col_name, updates);
   }
 
-  auto className(uint32_t neuron_id) const {
-    return _dataset_factory->className(neuron_id);
-  }
-
   void save_stream(std::ostream& output_stream) const {
     cereal::BinaryOutputArchive oarchive(output_stream);
     oarchive(*this);

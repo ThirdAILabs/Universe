@@ -46,10 +46,11 @@ BoltVector BoltVector::singleElementSparseVector(uint32_t active_neuron,
   return vec;
 }
 
-uint32_t BoltVector::getHighestActivationId() const {
-  float max_act = activations[0];
+uint32_t BoltVector::getHighestActivationId(uint32_t begin,
+                                            std::optional<uint32_t> end) const {
+  float max_act = activations[begin];
   uint32_t id = 0;
-  for (uint32_t i = 1; i < len; i++) {
+  for (uint32_t i = begin + 1; i < end.value_or(len); i++) {
     if (activations[i] > max_act) {
       max_act = activations[i];
       id = i;

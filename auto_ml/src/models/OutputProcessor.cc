@@ -4,6 +4,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pytypes.h>
+#include <stdexcept>
 
 namespace thirdai::automl::models {
 
@@ -178,6 +179,24 @@ uint32_t BinaryOutputProcessor ::binaryActivationsToPrediction(
   return pred;
 }
 
+py::object ActivationOutputProcessor::processBoltVector(
+    BoltVector& output, bool return_predicted_class) {
+  throwIfReturnPredictedClass(return_predicted_class);
+  return py::cast(output);
+}
+
+py::object ActivationOutputProcessor::processBoltBatch(
+    BoltBatch& outputs, bool return_predicted_class) {
+  throwIfReturnPredictedClass(return_predicted_class);
+  return py::cast(outputs);
+}
+
+py::object ActivationOutputProcessor::processOutputTracker(
+    bolt::InferenceOutputTracker& output, bool return_predicted_class) {
+  throwIfReturnPredictedClass(return_predicted_class);
+  return convertInferenceTrackerToNumpy(output);
+}
+
 py::object convertInferenceTrackerToNumpy(
     bolt::InferenceOutputTracker& output) {
   uint32_t num_samples = output.numSamples();
@@ -282,3 +301,4 @@ uint32_t argmax(const float* const array, uint32_t len) {
 CEREAL_REGISTER_TYPE(thirdai::automl::models::CategoricalOutputProcessor)
 CEREAL_REGISTER_TYPE(thirdai::automl::models::RegressionOutputProcessor)
 CEREAL_REGISTER_TYPE(thirdai::automl::models::BinaryOutputProcessor)
+CEREAL_REGISTER_TYPE(thirdai::automl::models::ActivationOutputProcessor)

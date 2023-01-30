@@ -132,7 +132,11 @@ using DateDataTypePtr = std::shared_ptr<DateDataType>;
 struct SequenceDataType : DataType {
   explicit SequenceDataType(char delimiter = ' ',
                             std::optional<uint32_t> max_length = std::nullopt)
-      : delimiter(delimiter), max_length(max_length) {}
+      : delimiter(delimiter), max_length(max_length) {
+    if (max_length && max_length.value() == 0) {
+      throw std::invalid_argument("Sequence max_length cannot be 0.");
+    }
+  }
 
   char delimiter;
   std::optional<uint32_t> max_length;

@@ -4,6 +4,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
@@ -23,6 +24,7 @@
 #include <utils/StringManipulation.h>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -79,8 +81,8 @@ RNN RNN::buildRNN(data::ColumnDataTypes data_types, std::string target_col,
       /* prediction_threshold= */ std::nullopt);
 
   return RNN(
-      /* model= */ {std::move(dataset_factory), std::move(model),
-                    CategoricalOutputProcessor::make(), train_eval_parameters},
+      /* model= */ {dataset_factory, std::move(model),
+                    ActivationOutputProcessor::make(), train_eval_parameters},
       /* dataset_factory= */ std::move(dataset_factory),
       /* max_recursion_depth= */ max_recursion_depth);
 }
@@ -98,12 +100,12 @@ py::object RNN::predict(const MapInput& sample, bool use_sparse_inference,
   std::vector<std::string> predictions;
 
   for (uint32_t step = 0; step < _max_recursion_depth; step++) {
-    py::object prediction =
+    auto activations =
         ModelPipeline::predict(mutable_sample, use_sparse_inference,
-                               /* return_predicted_class= */ true);
-    uint32_t predicted_class_id = prediction.cast<uint32_t>();
-    auto predicted_class = className(predicted_class_id);
-    if (predicted_class == dataset::RecursionWrapper::EOS) {
+                               /* return_predicted_class= */ false)
+            .cast<BoltVector>();
+    auto predicted_class = _dataset_factory->classNameAtStep(activations, step);
+    if (predicted_class == dataset::RecursionWrapper::EARLY_STOP) {
       break;
     }
 
@@ -139,7 +141,8 @@ py::object RNN::predictBatch(const MapInputBatch& samples,
                              bool return_predicted_class) {
   if (!return_predicted_class) {
     throw std::invalid_argument(
-        "UDT currently does not support returning activations during recursive "
+        "UDT currently does not support returning activations during "
+        "recursive "
         "predictions.");
   }
 
@@ -149,20 +152,17 @@ py::object RNN::predictBatch(const MapInputBatch& samples,
 
   for (uint32_t step = 0; step < _max_recursion_depth && !progress.allDone();
        step++) {
-    py::object predictions =
+    auto batch_activations =
         ModelPipeline::predictBatch(mutable_samples, use_sparse_inference,
-                                    /* return_predicted_class= */ true);
-    NumpyArray<uint32_t> predictions_np =
-        predictions.cast<NumpyArray<uint32_t>>();
+                                    /* return_predicted_class= */ false)
+            .cast<BoltBatch>();
 
-    assert(predictions_np.ndim() == 1);
-    assert(static_cast<uint32_t>(predictions_np.shape(0)) == samples.size());
-
-    for (uint32_t i = 0; i < predictions_np.shape(0); i++) {
+    for (uint32_t i = 0; i < batch_activations.getBatchSize(); i++) {
       // Update the list of returned predictions.
       if (!progress.sampleIsDone(i)) {
-        auto predicted_class = className(predictions_np.at(i));
-        if (predicted_class == dataset::RecursionWrapper::EOS) {
+        auto predicted_class =
+            _dataset_factory->classNameAtStep(batch_activations[i], step);
+        if (predicted_class == dataset::RecursionWrapper::EARLY_STOP) {
           progress.markSampleDone(i);
           continue;
         }

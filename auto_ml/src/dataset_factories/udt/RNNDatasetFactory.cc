@@ -8,6 +8,7 @@
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl::data {
@@ -80,6 +81,7 @@ RNNDatasetFactoryPtr RNNDatasetFactory::make(ColumnDataTypes data_types,
       /* current_step_target_column= */ std::move(target_column),
       /* step_column= */ step_column, /* delimiter= */ delimiter,
       /* target_sequence_delimiter= */ target_sequence_delimiter,
+      /* max_recursion_depth= */ max_recursion_depth,
       /* label_block= */ std::move(label_block),
       /* categorical_metadata= */ std::move(metadata),
       /* unlabeled_featurizer= */ std::move(unlabeled_featurizer),
@@ -94,7 +96,8 @@ dataset::DatasetLoaderPtr RNNDatasetFactory::getLabeledDatasetLoader(
       /* target_delimiter= */ _target_delimiter,
       /* intermediate_column= */ _intermediate_column,
       /* target_column= */ _current_step_target_column,
-      /* step_column= */ _step_column);
+      /* step_column= */ _step_column,
+      /* max_recursion_depth= */ _max_recursion_depth);
 
   return std::make_unique<dataset::DatasetLoader>(
       data_source, _labeled_featurizer, /* shuffle= */ training);
@@ -109,6 +112,11 @@ uint32_t RNNDatasetFactory::labelToNeuronId(
 
 std::string RNNDatasetFactory::className(uint32_t neuron_id) const {
   return _label_block->className(neuron_id);
+}
+
+std::string RNNDatasetFactory::classNameAtStep(const BoltVector& activations,
+                                               uint32_t step) const {
+  return _label_block->classNameAtStep(activations, step);
 }
 
 void RNNDatasetFactory::incorporateNewPrediction(
@@ -163,7 +171,7 @@ RNNDatasetFactory::RNNDatasetFactory(
     ColumnDataTypes augmented_data_types, std::string intermediate_column,
     std::string current_step_target_column, std::string step_column,
     char delimiter, char target_sequence_delimiter,
-    dataset::SequenceTargetBlockPtr label_block,
+    uint32_t max_recursion_depth, dataset::SequenceTargetBlockPtr label_block,
     CategoricalMetadata categorical_metadata,
     dataset::TabularFeaturizerPtr unlabeled_featurizer,
     dataset::TabularFeaturizerPtr labeled_featurizer)
@@ -173,9 +181,12 @@ RNNDatasetFactory::RNNDatasetFactory(
       _step_column(std::move(step_column)),
       _delimiter(delimiter),
       _target_delimiter(target_sequence_delimiter),
+      _max_recursion_depth(max_recursion_depth),
       _label_block(std::move(label_block)),
       _categorical_metadata(std::move(categorical_metadata)),
       _unlabeled_featurizer(std::move(unlabeled_featurizer)),
       _labeled_featurizer(std::move(labeled_featurizer)) {}
 
 }  // namespace thirdai::automl::data
+
+CEREAL_REGISTER_TYPE(thirdai::automl::data::RNNDatasetFactory)

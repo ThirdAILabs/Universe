@@ -192,6 +192,38 @@ class BinaryOutputProcessor final : public OutputProcessor {
 
 using BinaryOutputProcessorPtr = std::shared_ptr<BinaryOutputProcessor>;
 
+class ActivationOutputProcessor final : public OutputProcessor {
+ public:
+  explicit ActivationOutputProcessor() {}
+
+  static auto make() { return std::make_shared<ActivationOutputProcessor>(); }
+
+  py::object processBoltVector(BoltVector& output,
+                               bool return_predicted_class) final;
+
+  py::object processBoltBatch(BoltBatch& outputs,
+                              bool return_predicted_class) final;
+
+  py::object processOutputTracker(bolt::InferenceOutputTracker& output,
+                                  bool return_predicted_class) final;
+
+ private:
+  static void throwIfReturnPredictedClass(bool return_predicted_class) {
+    if (return_predicted_class) {
+      throw std::invalid_argument(
+          "ActivationOutputProcessor cannot return predicted class.");
+    }
+  }
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<OutputProcessor>(this));
+  }
+};
+
+using ActivationOutputProcessorPtr = std::shared_ptr<ActivationOutputProcessor>;
+
 // Helper function for InferenceOutputTracker to Numpy.
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);
 

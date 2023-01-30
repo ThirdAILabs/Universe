@@ -1,3 +1,4 @@
+#include <_types/_uint32_t.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/RecursionWrapper.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
@@ -102,7 +103,16 @@ std::vector<std::string> RecursionWrapper::augment(
 
   auto target_seq = std::string(columns[_target_column_number]);
   auto sequence = ProcessorUtils::parseCsvRow(target_seq, _target_delimiter);
-  sequence.push_back(EOS);
+  if (sequence.size() < _max_recursion_depth) {
+    sequence.push_back(EARLY_STOP);
+  }
+  if (sequence.size() > _max_recursion_depth) {
+    std::cout << "WARNING: found target sequence \"" << target_seq << "\" with "
+              << sequence.size() << " elements. Expected sequence length = "
+              << _max_recursion_depth << ". Ignoring extra elements."
+              << std::endl;
+    sequence.resize(_max_recursion_depth);
+  }
 
   std::vector<std::string> augmentations(sequence.size());
 
@@ -147,7 +157,7 @@ std::string RecursionWrapper::substringLeftOfTarget(
 std::string RecursionWrapper::substringRightOfTarget(
     const std::vector<std::string_view>& columns) const {
   std::stringstream after_target;
-  for (uint32_t i = _target_column_number; i < columns.size(); i++) {
+  for (uint32_t i = _target_column_number + 1; i < columns.size(); i++) {
     after_target << _column_delimiter << columns[i];
   }
   return after_target.str();

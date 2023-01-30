@@ -234,8 +234,6 @@ void createModelsSubmodule(py::module_& module) {
 
   py::class_<RNN, ModelPipeline, std::shared_ptr<RNN>>(models_submodule,
                                                        "UDTRNN")
-      .def("class_name", &RNN::className, py::arg("neuron_id"),
-           docs::UDT_CLASS_NAME)
       .def("predict", &RNN::predict, py::arg("input_sample"),
            py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = true, docs::UDT_PREDICT)
@@ -421,6 +419,9 @@ py::object UDTFactory::buildUDTClassifierWrapper(
     char delimiter, const std::optional<std::string>& model_config,
     const py::dict& options) {
   (void)obj;
+  if (!data_types.count(target_col)) {
+    throw std::invalid_argument("data_types must contain target_col.");
+  }
   if (data::asSequence(data_types[target_col])) {
     if (!n_target_classes) {
       throw std::invalid_argument(

@@ -105,13 +105,6 @@ py::object ModelPipeline::evaluate(
 py::object ModelPipeline::predict(const MapInput& sample,
                                   bool use_sparse_inference,
                                   bool return_predicted_class) {
-  return predictImpl(sample, use_sparse_inference, return_predicted_class);
-}
-
-template <typename InputType>
-py::object ModelPipeline::predictImpl(const InputType& sample,
-                                      bool use_sparse_inference,
-                                      bool return_predicted_class) {
   auto start_time = std::chrono::system_clock::now();
 
   std::vector<BoltVector> inputs = _dataset_factory->featurizeInput(sample);

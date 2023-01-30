@@ -1,6 +1,8 @@
 #include "Sequence.h"
 #include <cereal/archives/binary.hpp>
 #include <hashing/src/HashUtils.h>
+#include <_types/_uint32_t.h>
+#include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <utils/StringManipulation.h>
 #include <memory>
@@ -8,8 +10,8 @@
 
 namespace thirdai::dataset {
 
-SequenceBlock::SequenceBlock(ColumnIdentifier col, uint32_t dim)
-    : _col(std::move(col)), _dim(dim) {}
+SequenceBlock::SequenceBlock(ColumnIdentifier col, char delimiter, uint32_t dim)
+    : _col(std::move(col)), _delimiter(delimiter), _dim(dim) {}
 
 uint32_t SequenceBlock::featureDim() const { return _dim; };
 
@@ -17,27 +19,27 @@ bool SequenceBlock::isDense() const { return false; };
 
 Explanation SequenceBlock::explainIndex(uint32_t index_within_block,
                                         ColumnarInputSample& input) {
-  uint32_t position = 0;
   std::string keyword;
-  TokenEncoding::forEachWordHash(
-      input.column(_col),
-      [&](uint32_t word_hash, const std::string_view& word) {
-        if (sequenceHash(word_hash, position) == index_within_block) {
-          keyword = std::string(word);
-        }
-      });
+
+  auto sequence = std::string(input.column(_col));
+  auto elements = ProcessorUtils::parseCsvRow(sequence, _delimiter);
+  for (uint32_t i = 0; i < elements.size(); i++) {
+    if (sequenceHash(elements[i], /* pos= */ i) == index_within_block) {
+      keyword = std::string(elements[i]);
+    }
+  }
+
   return {_col, std::move(keyword)};
 }
 
 std::exception_ptr SequenceBlock::buildSegment(ColumnarInputSample& input,
                                                SegmentedFeatureVector& vec) {
-  std::vector<uint32_t> hashes;
-  TokenEncoding::forEachWordHash(
-      input.column(_col),
-      [&](uint32_t word_hash, const std::string_view& word) {
-        (void)word;
-        hashes.push_back(sequenceHash(word_hash, /* pos= */ hashes.size()));
-      });
+  auto sequence = std::string(input.column(_col));
+  auto elements = ProcessorUtils::parseCsvRow(sequence, _delimiter);
+  std::vector<uint32_t> hashes(elements.size());
+  for (uint32_t i = 0; i < elements.size(); i++) {
+    hashes[i] = sequenceHash(elements[i], /* pos= */ i);
+  }
 
   TokenEncoding::sumRepeatedIndices(
       hashes, /* base_value= */ 1.0, [&](uint32_t hash, float value) {
@@ -51,8 +53,11 @@ std::vector<ColumnIdentifier*> SequenceBlock::concreteBlockColumnIdentifiers() {
   return {&_col};
 };
 
-uint32_t SequenceBlock::sequenceHash(uint32_t hash, uint32_t pos) const {
-  return hashing::HashUtils::combineHashes(pos, hash) % _dim;
+uint32_t SequenceBlock::sequenceHash(std::string_view element,
+                                     uint32_t pos) const {
+  auto element_hash =
+      TokenEncoding::computeUnigram(element.data(), element.size());
+  return hashing::HashUtils::combineHashes(pos, element_hash) % _dim;
 }
 
 SequenceTargetBlock::SequenceTargetBlock(ColumnIdentifier target_col,
@@ -97,6 +102,13 @@ std::exception_ptr SequenceTargetBlock::buildSegment(
 std::string SequenceTargetBlock::className(uint32_t label_id) {
   uint32_t target_id = label_id % _vocabulary.vocabSize();
   return _vocabulary.getString(target_id);
+}
+
+std::string SequenceTargetBlock::classNameAtStep(const BoltVector& activations,
+                                                 uint32_t step) {
+  auto begin = step * _vocabulary.vocabSize();
+  auto end = begin + _vocabulary.vocabSize();
+  return className(activations.getHighestActivationId(begin, end));
 }
 
 std::vector<ColumnIdentifier*>
