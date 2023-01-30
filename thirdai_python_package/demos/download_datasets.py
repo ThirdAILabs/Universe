@@ -88,7 +88,8 @@ def download_criteo():
 
     if not os.path.exists(CRITEO_ZIP):
         print(
-            f"Downloading from {CRITEO_URL}. This can take 20-40 minutes depending on the Criteo server."
+            f"Downloading from {CRITEO_URL}. This can take 20-40 minutes depending on"
+            " the Criteo server."
         )
         os.system(f"wget -t inf -c {CRITEO_URL} -O {CRITEO_ZIP}")
 
@@ -298,7 +299,6 @@ def perturb_query_reformulation_data(dataframe, noise_level, seed=42):
         words_to_transform = math.ceil(noise_level * query_length)
 
         for _ in range(PER_QUERY_COPIES):
-
             incorrect_query_list = correct_query.split(" ")
             transformed_words = 0
             visited_indices = set()
@@ -340,7 +340,6 @@ def perturb_query_reformulation_data(dataframe, noise_level, seed=42):
 
 
 def prepare_query_reformulation_data(seed=42):
-
     TRAIN_FILE_PATH = "train_file.csv"
     TEST_FILE_PATH = "test_file.csv"
     TRAIN_FILE_DATASET_PERCENTAGE = 0.7
@@ -375,11 +374,19 @@ def prepare_query_reformulation_data(seed=42):
         noise_level=TEST_NOISE_LEVEL,
     )
 
+    # TODO(Geordie): Fix this when the new CSV parser is in
+    train_data_with_noise = train_data_with_noise.replace(",", "", regex=True)
+    test_data_with_noise = test_data_with_noise.replace(",", "", regex=True)
+
     # Write dataset to CSV
     train_data_with_noise.to_csv(TRAIN_FILE_PATH, index=False)
     test_data_with_noise.to_csv(TEST_FILE_PATH, index=False)
 
-    return TRAIN_FILE_PATH, TEST_FILE_PATH, inference_batch
+    return (
+        TRAIN_FILE_PATH,
+        TEST_FILE_PATH,
+        inference_batch,
+    )
 
 
 def download_clinc_dataset(

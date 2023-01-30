@@ -6,7 +6,6 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
-#include "ColumnNumberMap.h"
 #include "DataTypes.h"
 #include "FeatureComposer.h"
 #include "TemporalContext.h"
@@ -17,13 +16,14 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
-#include <auto_ml/src/deployment_config/HyperParameter.h>
-#include <dataset/src/DataLoader.h>
-#include <dataset/src/StreamingGenericDatasetLoader.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
-#include <dataset/src/batch_processors/ProcessorUtils.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/ColumnNumberMap.h>
+#include <dataset/src/blocks/InputTypes.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/featurizers/ProcessorUtils.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <algorithm>
@@ -40,63 +40,53 @@
 
 namespace thirdai::automl::data {
 
+using dataset::ColumnNumberMap;
 class UDTDatasetFactory;
 using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
 class UDTDatasetFactory final : public DatasetLoaderFactory {
  public:
-  explicit UDTDatasetFactory(UDTConfigPtr config, bool force_parallel,
+  explicit UDTDatasetFactory(const UDTConfigPtr& config, bool force_parallel,
                              uint32_t text_pairgram_word_limit,
                              bool contextual_columns = false,
                              std::optional<dataset::RegressionBinningStrategy>
-                                 regression_binning = std::nullopt)
-      : _config(std::move(config)),
-        _temporal_relationships(TemporalRelationshipsAutotuner::autotune(
-            _config->data_types, _config->provided_relationships,
-            _config->lookahead)),
-        _context(std::make_shared<TemporalContext>()),
-        _parallel(_temporal_relationships.empty() || force_parallel),
-        _text_pairgram_word_limit(text_pairgram_word_limit),
-        _contextual_columns(contextual_columns),
-        _regression_binning(regression_binning) {
-    FeatureComposer::verifyConfigIsValid(*_config, _temporal_relationships);
-
-    _vectors_map = processAllMetadata();
-
-    ColumnNumberMap mock_column_number_map(_config->data_types);
-    auto mock_processor = makeLabeledUpdatingProcessor(mock_column_number_map);
-
-    _input_dim = mock_processor->getInputDim();
-    _label_dim = mock_processor->getLabelDim();
-  }
+                                 regression_binning = std::nullopt);
 
   static std::shared_ptr<UDTDatasetFactory> make(
-      UDTConfigPtr config, bool force_parallel,
+      const UDTConfigPtr& config, bool force_parallel,
       uint32_t text_pairgram_word_limit, bool contextual_columns = false,
       std::optional<dataset::RegressionBinningStrategy> regression_binning =
           std::nullopt) {
     return std::make_shared<UDTDatasetFactory>(
-        std::move(config), force_parallel, text_pairgram_word_limit,
-        contextual_columns, regression_binning);
+        config, force_parallel, text_pairgram_word_limit, contextual_columns,
+        regression_binning);
   }
 
-  DatasetLoaderPtr getLabeledDatasetLoader(
-      std::shared_ptr<dataset::DataLoader> data_loader, bool training) final;
+  dataset::DatasetLoaderPtr getLabeledDatasetLoader(
+      dataset::DataSourcePtr data_source, bool training) final;
 
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
-    return featurizeInputImpl(input, /* should_update_history= */ false);
+    dataset::CsvSampleRef input_ref(input, _config->delimiter);
+    return {getProcessor(/* should_update_history= */ false)
+                .makeInputVector(input_ref)};
   }
 
   std::vector<BoltVector> featurizeInput(const MapInput& input) final {
-    return featurizeInputImpl(input, /* should_update_history= */ false);
+    dataset::MapSampleRef input_ref(input);
+    return {getProcessor(/* should_update_history= */ false)
+                .makeInputVector(input_ref)};
   }
 
   std::vector<BoltVector> updateTemporalTrackers(const LineInput& input) {
-    return featurizeInputImpl(input, /* should_update_history= */ true);
+    dataset::CsvSampleRef input_ref(input, _config->delimiter);
+    return {getProcessor(/* should_update_history= */ true)
+                .makeInputVector(input_ref)};
   }
 
   std::vector<BoltVector> updateTemporalTrackers(const MapInput& input) {
-    return featurizeInputImpl(input, /* should_update_history= */ true);
+    dataset::MapSampleRef input_ref(input);
+    return {getProcessor(/* should_update_history= */ true)
+                .makeInputVector(input_ref)};
   }
 
   void updateMetadata(const std::string& col_name, const MapInput& update);
@@ -106,16 +96,19 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> featurizeInputBatch(
       const LineInputBatch& inputs) final {
-    return featurizeInputBatchImpl(inputs, /* should_update_history= */ false);
+    std::vector<BoltBatch> result;
+    for (auto& batch :
+         getProcessor(/* should_update_history= */ false).featurize(inputs)) {
+      result.emplace_back(std::move(batch));
+    }
+    return result;
   }
 
   std::vector<BoltBatch> featurizeInputBatch(
       const MapInputBatch& inputs) final {
-    verifyColumnNumberMapIsInitialized();
-    return featurizeInputBatchImpl(
-        lineInputBatchFromMapInputBatch(*_column_number_map, _config->delimiter,
-                                        inputs),
-        /* should_update_history= */ false);
+    dataset::MapBatchRef inputs_ref(inputs);
+    return featurizeInputBatchImpl(inputs_ref,
+                                   /* should_update_history= */ false);
   }
 
   uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final;
@@ -124,16 +117,19 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> batchUpdateTemporalTrackers(
       const LineInputBatch& inputs) {
-    return featurizeInputBatchImpl(inputs, /* should_update_history= */ true);
+    std::vector<BoltBatch> result;
+    for (auto& batch :
+         getProcessor(/* should_update_history= */ true).featurize(inputs)) {
+      result.emplace_back(std::move(batch));
+    }
+    return result;
   }
 
   std::vector<BoltBatch> batchUpdateTemporalTrackers(
       const MapInputBatch& inputs) {
-    verifyColumnNumberMapIsInitialized();
-    return featurizeInputBatchImpl(
-        lineInputBatchFromMapInputBatch(*_column_number_map, _config->delimiter,
-                                        inputs),
-        /* should_update_history= */ true);
+    dataset::MapBatchRef inputs_ref(inputs);
+    return featurizeInputBatchImpl(inputs_ref,
+                                   /* should_update_history= */ true);
   }
 
   void resetTemporalTrackers() { _context->reset(); }
@@ -142,20 +138,28 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio,
       const LineInput& sample) final {
-    return explainImpl(gradients_indices, gradients_ratio, sample);
+    dataset::CsvSampleRef sample_ref(sample, _config->delimiter);
+    return bolt::getSignificanceSortedExplanations(
+        gradients_indices, gradients_ratio, sample_ref,
+        _unlabeled_non_updating_processor);
   }
 
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
       const std::vector<float>& gradients_ratio, const MapInput& sample) final {
-    return explainImpl(gradients_indices, gradients_ratio, sample);
+    dataset::MapSampleRef sample_ref(sample);
+    return bolt::getSignificanceSortedExplanations(
+        gradients_indices, gradients_ratio, sample_ref,
+        _unlabeled_non_updating_processor);
   }
 
-  std::vector<bolt::InputPtr> getInputNodes() final {
-    return {bolt::Input::make(_input_dim)};
+  std::vector<uint32_t> getInputDims() final {
+    return {_labeled_history_updating_processor->getInputDim()};
   }
 
-  uint32_t getLabelDim() final { return _label_dim; }
+  uint32_t getLabelDim() final {
+    return _labeled_history_updating_processor->getLabelDim();
+  }
 
   void save(const std::string& filename) const;
 
@@ -167,18 +171,15 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   void verifyCanDistribute();
 
-  void resetDatasetFactory() {
-    _labeled_history_updating_processor = {};
-    _unlabeled_non_updating_processor = {};
-    _column_number_map = {};
-    _column_number_to_name = {};
-  }
-
   bool hasTemporalTracking() const final {
     return !_temporal_relationships.empty();
   }
 
   UDTConfigPtr config() { return _config; }
+
+  void enableTargetCategoryNormalization() {
+    _normalize_target_categories = true;
+  }
 
  private:
   PreprocessedVectorsMap processAllMetadata();
@@ -186,74 +187,25 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
       const std::string& col_name, const CategoricalDataTypePtr& categorical);
 
-  static ColumnNumberMapPtr makeColumnNumberMap(
-      dataset::DataLoader& data_loader, char delimiter);
+  static ColumnNumberMap makeColumnNumberMapFromHeader(
+      dataset::DataSource& data_source, char delimiter);
 
   std::vector<dataset::BlockPtr> buildMetadataInputBlocks(
-      const CategoricalMetadataConfig& metadata_config,
-      const ColumnNumberMap& column_numbers) const;
+      const CategoricalMetadataConfig& metadata_config) const;
 
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
-      dataset::StreamingGenericDatasetLoader& dataset,
+      dataset::DatasetLoader& dataset_loader,
       dataset::ThreadSafeVocabulary& key_vocab);
 
-  template <typename InputType>
-  std::vector<BoltVector> featurizeInputImpl(const InputType& input,
-                                             bool should_update_history) {
-    verifyProcessorsAreInitialized();
-    verifyColumnNumberMapIsInitialized();
-    auto& processor = getProcessor(should_update_history);
-    return {boltVectorFromInput(processor, *_column_number_map,
-                                _config->delimiter, input)};
-  }
-
-  template <typename InputType>
-  BoltVector boltVectorFromInput(dataset::GenericBatchProcessor& processor,
-                                 const ColumnNumberMap& column_number_map,
-                                 char delimiter, const InputType& input) {
-    BoltVector vector;
-    auto sample = toVectorOfStringViews(column_number_map, delimiter, input);
-    if (auto exception = processor.makeInputVector(sample, vector)) {
-      std::rethrow_exception(exception);
-    }
-    return vector;
-  }
-
-  std::vector<BoltBatch> featurizeInputBatchImpl(const LineInputBatch& inputs,
-                                                 bool should_update_history) {
-    verifyProcessorsAreInitialized();
-    auto [input_batch, _] =
-        getProcessor(should_update_history).createBatch(inputs);
+  std::vector<BoltBatch> featurizeInputBatchImpl(
+      dataset::ColumnarInputBatch& inputs, bool should_update_history) {
+    auto batches = getProcessor(should_update_history).featurize(inputs);
 
     // We cannot use the initializer list because the copy constructor is
     // deleted for BoltBatch.
     std::vector<BoltBatch> batch_list;
-    batch_list.emplace_back(std::move(input_batch));
+    batch_list.emplace_back(std::move(batches.at(0)));
     return batch_list;
-  }
-
-  template <typename InputType>
-  std::vector<dataset::Explanation> explainImpl(
-      const std::optional<std::vector<uint32_t>>& gradients_indices,
-      const std::vector<float>& gradients_ratio, const InputType& sample) {
-    verifyProcessorsAreInitialized();
-    verifyColumnNumberMapIsInitialized();
-
-    auto input_row =
-        toVectorOfStringViews(*_column_number_map, _config->delimiter, sample);
-    auto result = bolt::getSignificanceSortedExplanations(
-        gradients_indices, gradients_ratio, input_row,
-        _unlabeled_non_updating_processor);
-
-    for (auto& response : result) {
-      // We need this conditional because tabular pairgram block provides its
-      // own column name.
-      if (response.column_name.empty()) {
-        response.column_name = _column_number_to_name[response.column_number];
-      }
-    }
-
-    return result;
   }
 
   /**
@@ -261,10 +213,9 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
    * automatically updates the temporal context, as well as for manually
    * updating the temporal context.
    */
-  dataset::GenericBatchProcessorPtr makeLabeledUpdatingProcessor(
-      const ColumnNumberMap& column_number_map);
+  dataset::TabularFeaturizerPtr makeLabeledUpdatingProcessor();
 
-  dataset::BlockPtr getLabelBlock(const ColumnNumberMap& column_number_map);
+  dataset::BlockPtr getLabelBlock();
 
   /**
    * The Unlabeled non-updating processor is used for inference and
@@ -274,28 +225,14 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
    * movie that he ends up watching is not available during inference. Thus, we
    * should not update the history.
    */
-  dataset::GenericBatchProcessorPtr makeUnlabeledNonUpdatingProcessor(
-      const ColumnNumberMap& column_number_map) {
-    auto processor = dataset::GenericBatchProcessor::make(
-        buildInputBlocks(/* column_numbers= */ column_number_map,
-                         /* should_update_history= */ false),
+  dataset::TabularFeaturizerPtr makeUnlabeledNonUpdatingProcessor() {
+    auto processor = dataset::TabularFeaturizer::make(
+        buildInputBlocks(
+            /* should_update_history= */ false),
         /* label_blocks= */ {}, /* has_header= */ false,
         /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
         /* hash_range= */ _config->hash_range);
     return processor;
-  }
-
-  void verifyProcessorsAreInitialized() {
-    if (!_unlabeled_non_updating_processor ||
-        !_labeled_history_updating_processor) {
-      throw std::invalid_argument("Attempted inference before training.");
-    }
-  }
-
-  void verifyColumnNumberMapIsInitialized() {
-    if (!_column_number_map) {
-      throw std::invalid_argument("Attempted inference before training.");
-    }
   }
 
   void verifyColumnMetadataExists(const std::string& col_name) {
@@ -303,7 +240,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
         !asCategorical(_config->data_types.at(col_name)) ||
         !asCategorical(_config->data_types.at(col_name))->metadata_config ||
         !_metadata_processors.count(col_name) ||
-        !_metadata_column_number_maps.count(col_name) ||
         !_vectors_map.count(col_name)) {
       throw std::invalid_argument("'" + col_name + "' is an invalid column.");
     }
@@ -313,42 +249,22 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     return asCategorical(_config->data_types.at(col_name))->metadata_config;
   }
 
-  std::vector<dataset::BlockPtr> buildInputBlocks(
-      const ColumnNumberMap& column_numbers, bool should_update_history);
+  std::vector<dataset::BlockPtr> buildInputBlocks(bool should_update_history);
 
-  dataset::GenericBatchProcessor& getProcessor(bool should_update_history) {
+  dataset::TabularFeaturizer& getProcessor(bool should_update_history) {
     return should_update_history ? *_labeled_history_updating_processor
                                  : *_unlabeled_non_updating_processor;
   }
 
-  static std::vector<std::string_view> toVectorOfStringViews(
-      const ColumnNumberMap& column_number_map, char delimiter,
-      const LineInput& input) {
-    (void)column_number_map;
-    return dataset::ProcessorUtils::parseCsvRow(input, delimiter);
-  }
-
-  static std::vector<std::string_view> toVectorOfStringViews(
-      const ColumnNumberMap& column_number_map, char delimiter,
-      const MapInput& input);
-
-  static std::vector<std::string> lineInputBatchFromMapInputBatch(
-      const ColumnNumberMap& column_number_map, char delimiter,
-      const MapInputBatch& input_maps);
-
   static std::string concatenateWithDelimiter(
       const std::vector<std::string_view>& substrings, char delimiter);
 
-  UDTConfigPtr _config;
   TemporalRelationships _temporal_relationships;
+  UDTConfigPtr _config;
 
   TemporalContextPtr _context;
   std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> _vocabs;
-  PreprocessedVectorsMap _vectors_map;
 
-  ColumnNumberMapPtr _column_number_map;
-  std::unordered_map<std::string, ColumnNumberMapPtr>
-      _metadata_column_number_maps;
   std::vector<std::string> _column_number_to_name;
 
   /*
@@ -363,18 +279,19 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     up watching is not available during inference, so we should not update the
     history.
   */
-  dataset::GenericBatchProcessorPtr _labeled_history_updating_processor;
-  dataset::GenericBatchProcessorPtr _unlabeled_non_updating_processor;
-  std::unordered_map<std::string, dataset::GenericBatchProcessorPtr>
+  std::unordered_map<std::string, dataset::TabularFeaturizerPtr>
       _metadata_processors;
 
-  uint32_t _input_dim;
-  uint32_t _label_dim;
   bool _parallel;
   uint32_t _text_pairgram_word_limit;
   bool _contextual_columns;
+  bool _normalize_target_categories;
 
   std::optional<dataset::RegressionBinningStrategy> _regression_binning;
+
+  PreprocessedVectorsMap _vectors_map;
+  dataset::TabularFeaturizerPtr _labeled_history_updating_processor;
+  dataset::TabularFeaturizerPtr _unlabeled_non_updating_processor;
 
   // Private constructor for cereal.
   UDTDatasetFactory() {}
@@ -384,11 +301,10 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _config,
             _temporal_relationships, _context, _vocabs, _vectors_map,
-            _column_number_map, _metadata_column_number_maps,
             _column_number_to_name, _labeled_history_updating_processor,
-            _unlabeled_non_updating_processor, _metadata_processors, _input_dim,
-            _label_dim, _parallel, _text_pairgram_word_limit,
-            _contextual_columns, _regression_binning);
+            _unlabeled_non_updating_processor, _metadata_processors, _parallel,
+            _text_pairgram_word_limit, _contextual_columns,
+            _normalize_target_categories, _regression_binning);
   }
 };
 

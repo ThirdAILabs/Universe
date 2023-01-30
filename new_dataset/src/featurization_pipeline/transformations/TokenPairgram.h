@@ -5,7 +5,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/string.hpp>
 #include <hashing/src/MurmurHash.h>
-#include <dataset/src/utils/TextEncodingUtils.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <new_dataset/src/featurization_pipeline/Transformation.h>
@@ -44,11 +44,11 @@ class TokenPairgram : public Transformation {
       std::vector<uint32_t> input_tokens_vector(input_tokens_buffer.begin(),
                                                 input_tokens_buffer.end());
       std::vector<uint32_t> pairgrams =
-          dataset::TextEncodingUtils::computeRawPairgramsFromUnigrams(
+          dataset::TokenEncoding::computeRawPairgramsFromUnigrams(
               input_tokens_vector, _output_range);
 
       std::vector<std::pair<uint32_t, float>> deduplicated_pairgrams;
-      dataset::TextEncodingUtils::sumRepeatedIndices(
+      dataset::TokenEncoding::sumRepeatedIndices(
           pairgrams, /* base_value= */ 1.0,
           [&](uint32_t pairgram, float value) {
             deduplicated_pairgrams.push_back(std::make_pair(pairgram, value));

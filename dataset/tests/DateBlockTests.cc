@@ -1,18 +1,20 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Date.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <sstream>
 
 namespace thirdai::dataset {
 
 class DateBlockTests : public testing::Test {
  protected:
-  static auto featurize(const std::vector<std::string>& input_rows) {
-    GenericBatchProcessor processor(
+  static std::vector<BoltVector> featurize(
+      const std::vector<std::string>& input_rows) {
+    TabularFeaturizer processor(
         /* input_blocks = */ {std::make_shared<DateBlock>(/* col = */ 0)},
         /* label_blocks = */ {});
-    return std::get<0>(processor.createBatch(input_rows));
+    return processor.featurize(input_rows).at(0);
   }
 
   static std::optional<uint32_t> dayOfWeek(const BoltVector& vector) {
@@ -235,7 +237,8 @@ TEST_F(DateBlockTests, ExplainMethodGivesCorrectDayName) {
   for (const auto& vec : batch) {
     auto day_of_week = dayOfWeek(vec);
     ASSERT_TRUE(day_of_week.has_value());
-    auto day = block->explainIndex(*day_of_week, {});
+    RowSampleRef empty_input_row({});
+    auto day = block->explainIndex(*day_of_week, empty_input_row);
     ASSERT_TRUE(days[day_number++] == day.keyword);
   }
 }
@@ -258,7 +261,9 @@ TEST_F(DateBlockTests, ExplainMethodGivesCorrectMonthName) {
   for (const auto& vec : batch) {
     auto month_of_year = monthOfYear(vec);
     ASSERT_TRUE(month_of_year.has_value());
-    auto month = block->explainIndex(*month_of_year + monthOfYearOffset(), {});
+    RowSampleRef empty_input_row({});
+    auto month = block->explainIndex(*month_of_year + monthOfYearOffset(),
+                                     empty_input_row);
     ASSERT_TRUE(months[month_number++] == month.keyword);
   }
 }

@@ -22,11 +22,11 @@ class DateBlockTests;
  * TODO(Geordie): try out other features
  * such as day of month, day of year, year, etc.
  */
-class DateBlock : public Block {
+class DateBlock final : public Block {
   friend DateBlockTests;
 
  public:
-  explicit DateBlock(uint32_t col) : _col(col) {}
+  explicit DateBlock(ColumnIdentifier col) : _col(std::move(col)) {}
 
   uint32_t featureDim() const final {
     return day_of_week_dim + month_of_year_dim + week_of_month_dim +
@@ -35,16 +35,9 @@ class DateBlock : public Block {
 
   bool isDense() const final { return false; };
 
-  uint32_t expectedNumColumns() const final {
-    // _col is the column index, so we expect at least
-    // _col + 1 columns in each input row.
-    return _col + 1;
-  };
-
-  Explanation explainIndex(
-      uint32_t index_within_block,
-      const std::vector<std::string_view>& input_row) final {
-    (void)input_row;
+  Explanation explainIndex(uint32_t index_within_block,
+                           ColumnarInputSample& input) final {
+    (void)input;
     std::string reason;
     if (index_within_block >= featureDim()) {
       throw std::invalid_argument("index is out of bounds for date block.");
@@ -69,7 +62,9 @@ class DateBlock : public Block {
     return {_col, reason};
   }
 
-  static auto make(uint32_t col) { return std::make_shared<DateBlock>(col); }
+  static auto make(ColumnIdentifier col) {
+    return std::make_shared<DateBlock>(std::move(col));
+  }
 
  protected:
   static constexpr uint32_t day_of_week_dim = 7;
@@ -77,13 +72,12 @@ class DateBlock : public Block {
   static constexpr uint32_t week_of_month_dim = 5;
   static constexpr uint32_t week_of_year_dim = 53;
 
-  std::exception_ptr buildSegment(
-      const std::vector<std::string_view>& input_row,
-      SegmentedFeatureVector& vec) final {
+  std::exception_ptr buildSegment(ColumnarInputSample& input,
+                                  SegmentedFeatureVector& vec) final {
     TimeObject time;
 
     try {
-      time = TimeObject(input_row[_col]);
+      time = TimeObject(input.column(_col));
     } catch (const std::invalid_argument& e) {
       return std::make_exception_ptr(e);
     }
@@ -108,8 +102,12 @@ class DateBlock : public Block {
     return nullptr;
   }
 
+  std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
+    return {&_col};
+  }
+
  private:
-  uint32_t _col;
+  ColumnIdentifier _col;
 
   // Constructor for Cereal
   DateBlock() {}

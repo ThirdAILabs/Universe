@@ -80,11 +80,11 @@ Examples:
 
 )pbdoc";
 
-const char* const MODEL_PIPELINE_TRAIN_DATA_LOADER = R"pbdoc(
-Trains a ModelPipeline on a given dataset using any DataLoader.
+const char* const MODEL_PIPELINE_TRAIN_DATA_SOURCE = R"pbdoc(
+Trains a ModelPipeline on a given dataset using any DataSource.
 
 Args:
-    data_source (dataset.DataLoader): A data loader for the given dataset.
+    data_source (dataset.DataSource): A data source for the given dataset.
     train_config (bolt.TrainConfig): The training config specifies the number
         of epochs and learning_rate, and optionally allows for specification of a
         validation dataset, metrics, callbacks, and how frequently to log metrics 
@@ -101,7 +101,7 @@ Returns:
 Examples:
     >>> train_config = bolt.TrainConfig(epochs=5, learning_rate=0.01)
     >>> model.train(
-            data_source=dataset.CSVDataLoader(...), train_config=train_config, max_in_memory_batches=12
+            data_source=dataset.CSVDataSource(...), train_config=train_config, max_in_memory_batches=12
         )
 
 )pbdoc";
@@ -135,12 +135,12 @@ Examples:
 
 )pbdoc";
 
-const char* const MODEL_PIPELINE_EVALUATE_DATA_LOADER = R"pbdoc(
+const char* const MODEL_PIPELINE_EVALUATE_DATA_SOURCE = R"pbdoc(
 Evaluates the ModelPipeline on the given dataset and returns a numpy array of the 
 activations.
 
 Args:
-    data_source (dataset.DataLoader): A data loader for the given dataset.
+    data_source (dataset.DataSource): A data source for the given dataset.
     eval_config (Option[bolt.EvalConfig]): The predict config is optional
         and allows for specification of metrics to compute and whether to use sparse
         inference.
@@ -159,7 +159,7 @@ Returns:
     The shape of each array will be (dataset_length, num_nonzeros_in_output).
 
 Examples:
-    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.CSVDataLoader(...))
+    >>> (active_neurons, activations) = model.evaluate(data_source=dataset.CSVDataSource(...))
 
 )pbdoc";
 
@@ -464,10 +464,15 @@ const char* const UDT_GENERATOR_INIT = R"pbdoc(
 UniversalDeepTransformer (UDT) Constructor. 
 
 Args:
+    source_column (str): Optional. Column name specifying the source queries in the input 
+        dataset. If provided then the model can use these queries to augment its training.
+        If not provided then the model be trained from the target queries directly. If the 
+        source column is specified the the model can be trained with in both a supervised 
+        setting where (incorrect query, correct query) pairs are provided and in an 
+        unsupervised setting where only correct queries are provided. If source is not specified
+        then it can only be trained in an unsupervised setting.
     target_column (str): Column name specifying the target queries in the input dataset. 
         Queries in this column are the target that the UDT model learns to predict. 
-    source_column (str): Column name specifying the source queries in the input dataset. 
-        The UDT model uses is trained based on these queries. 
     dataset_size (str): The size of the input dataset. This size factor informs what
         UDT model to create. 
 
@@ -490,10 +495,16 @@ Example:
 
 const char* const UDT_GENERATOR_TRAIN = R"pbdoc(
 Trains a UniversalDeepTransformer (UDT) model for query reformulation on a given dataset 
-using a file on disk.
+using a file on disk. The filename must contain at least 1 column containing the target
+queries. If a source column (specified when the model was constructed) is present 
+then the model is additionally trained in a supervised setting using the (source, target) pairs, 
+(beyond just self supervised (target, target) pairs).
 
 Args:
     filename (str): Path to the dataset file.
+    use_supervised (bool): Whether to try to use an additional "source" query 
+        column to do supervised training if the column is present. Defaults to
+        true. If a "source" column is not present, this is a NOOP.
 
 Returns:
     None
@@ -540,11 +551,13 @@ Args:
     filename (str): Path to the dataset file 
     top_k (int): The number of candidate query reformulations suggested by the UDT model.
         The default value for k is 5.
+    return_scores (bool): Whether or not to return the scores for the reformulations.
 
 Returns:
-    List[List[str]]
-    Returns a list of k reformulations for each incorrect query to be reformulated in the 
-    input dataset. 
+    Tuple(List[List[str]]) or Tuple(List[List[str]], List[List[str]])
+    Returns a tuple of list of k reformulations for each incorrect query to be 
+    reformulated in the input dataset. If return_scores is True, also returns 
+    the corresponding scores for the reformulations.
 
 Notes:
     - If the input dataset file contains pairs of correct and incorrect queries, this 
@@ -624,11 +637,13 @@ Args:
     input_query (str): The input query as a string. 
     top_k (int): The number of candidate query reformulations suggested by the UDT model
         for this input. The default value for k is 5. 
+    return_scores (bool): Whether or not to return the scores for the reformulations.
 
 Returns:
-    List[str]
-    Returns a list of k reformulations suggested by the UDT model for the given input
-    sample.
+    Tuple(List[List[str]]) or Tuple(List[List[str]], List[List[str]])
+    Returns a tuple of list of k reformulations for each incorrect query to be 
+    reformulated in the input dataset. If return_scores is True, also returns 
+    the corresponding scores for the reformulations.
 
 Example:
     >>> model = bolt.UniversalDeepTransformer(
@@ -695,11 +710,13 @@ Args:
     input_queries (List[str]): A list of target queries to be reformulated. 
     top_k (int): The number of candidate query reformulations suggested by the UDT model
         for this input batch. The default value for k is 5. 
+    return_scores (bool): Whether or not to return the scores for the reformulations.
 
 Returns:
-    List[List[str]]
-    Returns a list of k reformulations suggested by the UDT model for each of the given 
-    input samples.
+    Tuple(List[List[str]]) or Tuple(List[List[str]], List[List[str]])
+    Returns a tuple of list of k reformulations for each incorrect query to be 
+    reformulated in the input dataset. If return_scores is True, also returns 
+    the corresponding scores for the reformulations.
 
 Example:
     >>> input_queries = # An arbitrary list of incorrect queries. 
@@ -1393,6 +1410,91 @@ Example:
             }
             ...
         )
+)pbdoc";
+
+const char* const TEXT_CLASSIFIER_INIT = R"pbdoc(
+Constructs a text classifier which takes in bert tokens and metadata and returns 
+scores for each of the N output classes.
+
+Args:
+    input_vocab_size (int): The number of tokens in the input vocabulary. This 
+        should be the the number of possible tokens returned by the tokenizer.
+    metadata_dim (int): The dimension of the metadata. If this is specified as 0
+        the metadata is not used and will be ignored if passed in.
+    n_classes (int): The number of output classes the model will predict scores for.
+
+Returns:
+    A UDTTextClassifier for the given data.
+)pbdoc";
+
+const char* const TEXT_CLASSIFIER_TRAIN = R"pbdoc(
+Trains the model for a single input batch.
+
+Args:
+    data (Dict): A dictionary containing the input data. This should contain the 
+        following fields. Two fields contain the bert tokens for each sample in 
+        the batch in CSR format. The field "tokens" should be a flattened numpy 
+        array of uint32 of all the tokens. The field "offsets" is a numpy array 
+        of uint32 of length (batch_size + 1) that gives the offsets of the tokens 
+        for each document. The tokens for document i should be in the range [offsets[i], 
+        offsets[i+1]) in the tokens array. The field "metadata" should be a 2D numpy 
+        array of 0/1 values (dtype is uint32) that represent the metadata for each 
+        document.
+    labels (np.ndarray): A 2D numpy array of type float32. The shape should be 
+        (batch_size, n_classes) and the label values should be 0/1.
+    learning_rate (float): The learning rate to use for updating the model for the
+        given batch.
+
+Returns:
+    The mean cross entropy loss over all the output classes in the batch. 
+)pbdoc";
+
+const char* const TEXT_CLASSIFIER_VALIDATE = R"pbdoc(
+Evaluates the model on a single input batch and returns the loss.
+
+Args:
+    data (Dict): A dictionary containing the input data. This should contain the 
+        following fields. Two fields contain the bert tokens for each sample in 
+        the batch in CSR format. The field "tokens" should be a flattened numpy 
+        array of uint32 of all the tokens. The field "offsets" is a numpy array 
+        of uint32 of length (batch_size + 1) that gives the offsets of the tokens 
+        for each document. The tokens for document i should be in the range [offsets[i], 
+        offsets[i+1]) in the tokens array. The field "metadata" should be a 2D numpy 
+        array of 0/1 values (dtype is uint32) that represent the metadata for each 
+        document.
+    labels (np.ndarray): A 2D numpy array of type float32. The shape should be 
+        (batch_size, n_classes) and the label values should be 0/1.
+
+Returns: 
+    A dictionary containing the mean cross entropy loss over all the output classes
+    and the cross entropy loss for each output class individually. 
+)pbdoc";
+
+const char* const TEXT_CLASSIFIER_PREDICT = R"pbdoc(
+Returns the predicted scores for the model for each output class for each sample
+in the batch. 
+
+Args:
+    data (Dict): A dictionary containing the input data. This should contain the 
+        following fields. Two fields contain the bert tokens for each sample in 
+        the batch in CSR format. The field "tokens" should be a flattened numpy 
+        array of uint32 of all the tokens. The field "offsets" is a numpy array 
+        of uint32 of length (batch_size + 1) that gives the offsets of the tokens 
+        for each document. The tokens for document i should be in the range [offsets[i], 
+        offsets[i+1]) in the tokens array. The field "metadata" should be a 2D numpy 
+        array of 0/1 values (dtype is uint32) that represent the metadata for each 
+        document.
+
+Returns:
+    A 2D numpy array with dtype float32 and shape (batch_size, n_classes) which 
+    contains the predicted scores from the model for the given input samples.
+)pbdoc";
+
+const char* const TEXT_CLASSIFIER_SAVE = R"pbdoc(
+Saves the model in a binary archive with the given filename.
+
+Args:
+    filename (str): The location to save the model.
 )pbdoc";
 
 }  // namespace thirdai::automl::python::docs

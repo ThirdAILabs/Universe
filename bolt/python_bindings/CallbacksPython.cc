@@ -35,11 +35,11 @@ void createCallbacksSubmodule(py::module_& module) {
                      &TrainState::reconstruct_hash_functions_batch)
       .def_readwrite("stop_training", &TrainState::stop_training)
       .def_readonly("epoch_times", &TrainState::epoch_times)
-      .def("get_train_metrics", &TrainState::getTrainMetrics,
+      .def("get_train_metric_values", &TrainState::getTrainMetricValues,
            py::arg("metric_name"))
       .def("get_all_train_metrics", &TrainState::getAllTrainMetrics)
-      .def("get_validation_metrics", &TrainState::getValidationMetrics,
-           py::arg("metric_name"))
+      .def("get_validation_metric_values",
+           &TrainState::getValidationMetricValues, py::arg("metric_name"))
       .def("get_all_validation_metrics", &TrainState::getAllValidationMetrics);
 #else
   (void)py_callback;
@@ -91,22 +91,40 @@ void createCallbacksSubmodule(py::module_& module) {
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
-      .def(py::init<std::string, std::string, uint32_t, double>(),
-           py::arg("monitored_metric"), py::arg("model_save_path"),
-           py::arg("patience"), py::arg("min_delta"), R"pbdoc(
-This callback is intended to stop training early based on prediction results 
-from a given validation set. Requires validation data specified in train.
-Saves the best model to model_save_path.
+      .def(py::init<std::string, std::optional<std::string>, uint32_t, uint32_t,
+                    float, double, std::string, std::optional<double>>(),
+           py::arg("model_save_path"),
+           py::arg("monitored_metric") = std::nullopt, py::arg("patience") = 2,
+           py::arg("max_lr_adjustments") = 2, py::arg("lr_multiplier") = 0.5,
+           py::arg("min_delta") = 0, py::arg("compare_against") = "prev",
+           py::arg("time_out") = std::nullopt, R"pbdoc(
+This callback monitors a validation metric and gives users a means to configure 
+their model training based on that metric. It provides features for saving 
+the best scoring model on the validation set, stopping training early when the model converges, adjusting
+the learning rate, and adding a training timeout.
 Args:
-     monitored_metric (string): The metric to monitor for early stopping. The 
-          metric is assumed to be associated with validation data.
      model_save_path (string): The file path to save the model that scored the 
-          best on the validation set
-     patience (int): The nuber of epochs with no improvement in validation score
-          after which training will be stopped.
+          best on the validation set.
+     monitored_metric (string): Optional: The metric to monitor for early stopping.
+     If there is no metric specified we will use the validation metric provided. 
+     We will throw an error if there are no tracked validation metrics, if 
+     validation is not set up, or if there are multiple validation metrics.
+     patience (int): The number of epochs with no improvement in validation score
+          after which we will evaluate whether to do one of two things: 1) adjust
+          the learning rate and continue training or 2) stop training if we've 
+          changed the learning rate enough times. Defaults to 2.
+     max_lr_adjustments (int): The maximum number of learning rate adjustments 
+          allowed after a "patience" interval. Defaults to 2.
+     lr_multiplier (float): Multiplier for the learning rate after a 'patience' 
+          interval. Defaults to 0.5. Must be positive.
      min_delta (float): The minimum change in the monitored metric to qualify 
           as an improvement, i.e. an absolute change of less than min_delta will
-          count as no improvement.
+          count as no improvement. Defaults to 0. 
+     compare_against (string): One of 'best' or 'prev'. Determines whether to 
+          compare against the best validation metric so far or the previous validation
+          metric recorded. Defaults to 'prev'.
+     time_out (float): Optional. Represents the total training time (in seconds)
+     after which the model will stop training. Rounds up to the nearest epoch.
 )pbdoc");
 }
 

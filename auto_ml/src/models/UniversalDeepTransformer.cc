@@ -2,10 +2,12 @@
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/cold_start/ColdStartDataLoader.h>
+#include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
+#include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/OutputProcessor.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
@@ -15,10 +17,12 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/StringManipulation.h>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 namespace thirdai::automl::models {
 
@@ -28,7 +32,14 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
     std::string target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
-    const deployment::UserInputMap& options) {
+    const config::ArgumentMap& options) {
+  // we don't put this check in the config constructor itself because its also
+  // used for metadata which doesn't use this same check
+  if (!data_types.count(target_col)) {
+    throw std::invalid_argument(
+        "Target column provided was not found in data_types.");
+  }
+
   auto dataset_config = std::make_shared<data::UDTConfig>(
       std::move(data_types), std::move(temporal_tracking_relationships),
       std::move(target_col), n_target_classes, integer_target,
@@ -65,25 +76,40 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
       getOutputProcessor(dataset_config);
 
   auto dataset_factory = data::UDTDatasetFactory::make(
-      /* config= */ std::move(dataset_config),
+      /* config= */ dataset_config,
       /* force_parallel= */ parallel_data_processing,
       /* text_pairgram_word_limit= */ TEXT_PAIRGRAM_WORD_LIMIT,
       /* contextual_columns= */ contextual_columns,
       /* regression_binning= */ regression_binning);
 
   bolt::BoltGraphPtr model;
+
+  std::vector<uint32_t> input_dims = dataset_factory->getInputDims();
+
   if (model_config) {
-    model =
-        loadUDTBoltGraph(/* input_nodes= */ dataset_factory->getInputNodes(),
-                         /* output_dim= */ dataset_factory->getLabelDim(),
-                         /* saved_model_config= */ model_config.value());
+    model = loadUDTBoltGraph(/* input_dims= */ input_dims,
+                             /* output_dim= */ dataset_factory->getLabelDim(),
+                             /* saved_model_config= */ model_config.value());
   } else {
     model = buildUDTBoltGraph(
-        /* input_nodes= */ dataset_factory->getInputNodes(),
+        /* input_dims= */ input_dims,
         /* output_dim= */ dataset_factory->getLabelDim(),
         /* hidden_layer_size= */ embedding_dimension);
   }
-  deployment::TrainEvalParameters train_eval_parameters(
+
+  // If we are using a softmax activation then we want to normalize the target
+  // labels (so they sum to 1.0) in order for softmax to work correctly.
+  auto fc_output =
+      std::dynamic_pointer_cast<bolt::FullyConnectedNode>(model->output());
+  if (fc_output &&
+      fc_output->getActivationFunction() == bolt::ActivationFunction::Softmax) {
+    // TODO(Nicholas, Geordie): Refactor the way that models are constructed so
+    // that we can discover if the output is softmax prior to constructing the
+    // dataset factory so we don't need this method.
+    dataset_factory->enableTargetCategoryNormalization();
+  }
+
+  TrainEvalParameters train_eval_parameters(
       /* rebuild_hash_tables_interval= */ std::nullopt,
       /* reconstruct_hash_functions_interval= */ std::nullopt,
       /* default_batch_size= */ DEFAULT_INFERENCE_BATCH_SIZE,
@@ -216,11 +242,10 @@ void UniversalDeepTransformer::coldStartPretraining(
 
   auto augmented_data = augmentation.apply(dataset);
 
-  auto data_loader = cold_start::ColdStartDataLoader::make(
+  auto data_source = cold_start::ColdStartDataSource::make(
       /* column_map= */ augmented_data,
       /* text_column_name= */ metadata.text_column_name,
       /* label_column_name= */ dataset_config->target,
-      /* batch_size= */ _train_eval_config.defaultBatchSize(),
       /* column_delimiter= */ dataset_config->delimiter,
       /* label_delimiter= */ metadata.label_delimiter);
 
@@ -228,12 +253,9 @@ void UniversalDeepTransformer::coldStartPretraining(
       bolt::TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
                                     /* epochs= */ 1);
 
-  train(data_loader, train_config, /* validation= */ std::nullopt,
-        /* max_in_memory_batches= */ std::nullopt);
-
-  // We reset the dataset factory in case the ordering of the label and text
-  // columns we assume here does not match the user's dataset.
-  udtDatasetFactory().resetDatasetFactory();
+  train(data_source, train_config, /* validation= */ std::nullopt,
+        /* max_in_memory_batches= */ std::nullopt,
+        /* batch_size = */ _train_eval_config.defaultBatchSize());
 }
 
 std::pair<OutputProcessorPtr, std::optional<dataset::RegressionBinningStrategy>>
@@ -259,28 +281,47 @@ UniversalDeepTransformer::getOutputProcessor(
 }
 
 bolt::BoltGraphPtr UniversalDeepTransformer::loadUDTBoltGraph(
-    const std::vector<bolt::InputPtr>& input_nodes, uint32_t output_dim,
+    const std::vector<uint32_t>& input_dims, uint32_t output_dim,
     const std::string& saved_model_config) {
-  auto model_config = deployment::ModelConfig::load(saved_model_config);
-
   // This will pass the output (label) dimension of the model into the model
   // config so that it can be used to determine the model architecture.
-  deployment::UserInputMap parameters = {
-      {deployment::DatasetLabelDimensionParameter::PARAM_NAME,
-       deployment::UserParameterInput(output_dim)}};
 
-  return model_config->createModel(input_nodes, parameters);
+  config::ArgumentMap parameters;
+  parameters.insert("output_dim", output_dim);
+
+  auto json_config = json::parse(config::loadConfig(saved_model_config));
+
+  return config::buildModel(json_config, parameters, input_dims);
+}
+
+float autotuneSparsity(uint32_t dim) {
+  std::vector<std::pair<uint32_t, float>> sparsity_values = {
+      {450, 1.0},   {900, 0.2},    {1800, 0.1},
+      {4000, 0.05}, {10000, 0.02}, {20000, 0.01}};
+
+  for (const auto& [dim_threshold, sparsity] : sparsity_values) {
+    if (dim < dim_threshold) {
+      return sparsity;
+    }
+  }
+  return 0.05;
 }
 
 bolt::BoltGraphPtr UniversalDeepTransformer::buildUDTBoltGraph(
-    std::vector<bolt::InputPtr> input_nodes, uint32_t output_dim,
+    const std::vector<uint32_t>& input_dims, uint32_t output_dim,
     uint32_t hidden_layer_size) {
   auto hidden = bolt::FullyConnectedNode::makeDense(hidden_layer_size,
                                                     /* activation= */ "relu");
+
+  std::vector<bolt::InputPtr> input_nodes;
+  input_nodes.reserve(input_dims.size());
+  for (uint32_t input_dim : input_dims) {
+    input_nodes.push_back(bolt::Input::make(input_dim));
+  }
+
   hidden->addPredecessor(input_nodes[0]);
 
-  auto sparsity =
-      deployment::AutotunedSparsityParameter::autotuneSparsity(output_dim);
+  auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = "softmax";
   auto output =
       bolt::FullyConnectedNode::makeAutotuned(output_dim, sparsity, activation);
@@ -297,22 +338,22 @@ bolt::BoltGraphPtr UniversalDeepTransformer::buildUDTBoltGraph(
 
 UniversalDeepTransformer::UDTOptions
 UniversalDeepTransformer::processUDTOptions(
-    const deployment::UserInputMap& options_map) {
+    const config::ArgumentMap& options_map) {
   auto options = UDTOptions();
 
-  for (const auto& [option_name, option_value] : options_map) {
+  for (const auto& [option_name, _] : options_map.arguments()) {
     if (option_name == "contextual_columns") {
       options.contextual_columns =
-          option_value.resolveBooleanParam("contextual_columns");
+          options_map.get<bool>("contextual_columns", "boolean");
     } else if (option_name == "force_parallel") {
       options.force_parallel =
-          option_value.resolveBooleanParam("force_parallel");
+          options_map.get<bool>("force_parallel", "boolean");
     } else if (option_name == "freeze_hash_tables") {
       options.freeze_hash_tables =
-          option_value.resolveBooleanParam("freeze_hash_tables");
+          options_map.get<bool>("freeze_hash_tables", "boolean");
     } else if (option_name == "embedding_dimension") {
       uint32_t int_value =
-          option_value.resolveIntegerParam("embedding_dimension");
+          options_map.get<uint32_t>("embedding_dimension", "integer");
       if (int_value != 0) {
         options.embedding_dimension = int_value;
       } else {
@@ -323,7 +364,8 @@ UniversalDeepTransformer::processUDTOptions(
         throw std::invalid_argument(error.str());
       }
     } else if (option_name == "prediction_depth") {
-      uint32_t int_value = option_value.resolveIntegerParam("prediction_depth");
+      uint32_t int_value =
+          options_map.get<uint32_t>("prediction_depth", "integer");
       if (int_value != 0) {
         options.prediction_depth = int_value;
       } else {
