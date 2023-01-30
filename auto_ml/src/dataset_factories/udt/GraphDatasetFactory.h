@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/FeatureComposer.h>
@@ -18,7 +19,7 @@
 #include <utility>
 namespace thirdai::automl::data {
 
-class GraphDatasetFactory {
+class GraphDatasetFactory : public DatasetLoaderFactory {
   static constexpr const uint32_t DEFAULT_BATCH_SIZE = 2048;
 
  public:
@@ -50,15 +51,14 @@ class GraphDatasetFactory {
         /* label_blocks= */ {std::move(label_block)},
         /* has_header= */ true, /* delimiter= */ _config->_delimeter,
         /* parallel= */ true, /* hash_range= */ 100000);
-    _batch_processor->updateColumnNumbers(_column_number_map);
   }
 
-  std::vector<uint32_t> getInputDim() {
+  std::vector<uint32_t> getInputDims() final {
     return {_batch_processor->getInputDim()};
   }
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
-      const dataset::DataSourcePtr& data_source, bool training) {
+      std::shared_ptr<dataset::DataSource> data_source, bool training) final {
     _column_number_map = UDTDatasetFactory::makeColumnNumberMapFromHeader(
         *data_source, _config->_delimeter);
 
@@ -73,19 +73,47 @@ class GraphDatasetFactory {
                                                     /* shuffle= */ training);
   }
 
-  uint32_t getLabelDim() { return _batch_processor->getLabelDim(); }
+  std::vector<BoltVector> featurizeInput(const LineInput& input) final {
+    dataset::CsvSampleRef input_ref(input, _config->_delimeter);
+    return {_batch_processor->makeInputVector(input_ref)};
+  }
+
+  std::vector<BoltBatch> featurizeInputBatch(
+      const LineInputBatch& inputs) final {
+    return _batch_processor->createBatch(inputs);
+  }
+
+  uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
+    if (std::holds_alternative<uint32_t>(label)) {
+      throw std::invalid_argument("Received an integer label");
+    }
+    const std::string& label_str = std::get<std::string>(label);
+    return _target_vocab->getUid(label_str);
+  }
+
+  uint32_t getLabelDim() final { return _batch_processor->getLabelDim(); }
 
   dataset::GenericBatchProcessorPtr getBatchProcessor() {
     return _batch_processor;
   }
 
+  std::vector<dataset::Explanation> explain(
+      const std::optional<std::vector<uint32_t>>& gradients_indices,
+      const std::vector<float>& gradients_ratio,
+      const std::string& sample) final {
+    dataset::CsvSampleRef input(sample, _config->_delimeter);
+    return bolt::getSignificanceSortedExplanations(
+        gradients_indices, gradients_ratio, input, _batch_processor);
+  }
+
+  bool hasTemporalTracking() const final { return false; }
+
   static std::vector<std::vector<uint32_t>> createGraph(  // upto now correct
       const std::vector<std::vector<std::string>>& rows,
       const std::vector<uint32_t>& relationship_col_nums) {
     std::vector<std::vector<uint32_t>> adjacency_list_simulation(rows.size());
-    // #pragma omp parallel for default(none) shared(
-    //     relationship_col_nums, rows, adjacency_list_simulation,
-    //     source_col_num) collapse(2)
+#pragma omp parallel for default(none) \
+    shared(relationship_col_nums, rows, adjacency_list_simulation) collapse(2)
     for (uint32_t i = 0; i < rows.size(); i++) {
       for (uint32_t j = i + 1; j < rows.size(); j++) {
         for (unsigned int relationship_col_num : relationship_col_nums) {
@@ -121,8 +149,8 @@ class GraphDatasetFactory {
       const std::vector<std::unordered_set<uint32_t>>& neighbours) {
     std::vector<std::vector<std::string>> processed_numerical_columns(
         rows.size(), std::vector<std::string>(numerical_columns.size()));
-    // #pragma omp parallel for default(none) shared(
-    //     rows, k_hop, numerical_columns, processed_numerical_columns)
+#pragma omp parallel for default(none) \
+    shared(rows, numerical_columns, processed_numerical_columns, neighbours)
     for (uint32_t i = 0; i < rows.size(); i++) {
       for (uint32_t j = 0; j < numerical_columns.size(); j++) {
         int value = 0;
@@ -186,17 +214,17 @@ class GraphDatasetFactory {
       full_data.insert(full_data.end(), data->begin(), data->end());
     }
 
-    std::vector<std::vector<std::string>> rows;
+    std::vector<std::vector<std::string>> rows(full_data.size());
 
     std::unordered_map<std::string, uint32_t> nodes;
 
-    // #pragma omp parallel for default(none)
-    //     shared(rows, full_data, nodes, source_col_num)
+#pragma omp parallel for default(none) \
+    shared(rows, full_data, nodes, source_col_num)
     for (uint32_t i = 0; i < full_data.size(); i++) {
       auto temp = dataset::ProcessorUtils::parseCsvRow(full_data[i],
                                                        _config->_delimeter);
       std::vector<std::string> v(temp.begin(), temp.end());
-      rows.push_back(v);
+      rows[i] = v;
 
       nodes[v[source_col_num]] = i;
     }
@@ -229,11 +257,24 @@ class GraphDatasetFactory {
                 /* identifier= */ col_num));
           }
         }
+        if (auto text_meta = asText(data_type)) {
+          if (text_meta->force_pairgram || (text_meta->average_n_words &&
+                                            text_meta->average_n_words <= 15)) {
+            // text hash range of MAXINT is fine since features are later
+            // hashed into a range. In fact it may reduce hash collisions.
+            input_blocks.push_back(dataset::PairGramTextBlock::make(
+                col_num, /* dim= */ std::numeric_limits<uint32_t>::max()));
+          } else {
+            input_blocks.push_back(dataset::UniGramTextBlock::make(
+                col_num, /* dim= */ std::numeric_limits<uint32_t>::max()));
+          }
+        }
       }
-      if (_config->_neighbourhood_context &&
-          data_type->data_type() == "numerical") {
-        numerical_columns.push_back(col_num);
-        numerical_types.push_back(asNumerical(data_type));
+      if (_config->_neighbourhood_context) {
+        if (auto numerical = asNumerical(data_type)) {
+          numerical_columns.push_back(col_num);
+          numerical_types.push_back(asNumerical(data_type));
+        }
       }
     }
 

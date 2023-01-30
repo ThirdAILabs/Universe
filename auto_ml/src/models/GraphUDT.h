@@ -10,28 +10,24 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <memory>
+#include <optional>
 #include <utility>
 namespace thirdai::automl::models {
 
-class GraphUDT {
- public:
-  explicit GraphUDT(bolt::BoltGraphPtr model,
-                    data::GraphDatasetFactoryPtr graph_dataset_factory)
-      : _model(std::move(model)),
-        _graph_dataset_factory(std::move(graph_dataset_factory)) {}
+class GraphUDT : public ModelPipeline {
+  static constexpr const uint32_t DEFAULT_INFERENCE_BATCH_SIZE = 2048;
 
+ public:
   static GraphUDT buildGraphUDT(
-      const data::ColumnDataTypes& data_types,
-      const std::string& graph_file_name, const std::string& source,
-      const std::string& target,
-      const std::vector<std::string>& relationship_columns,
-      uint32_t n_target_classes, bool neighbourhood_context = false,
-      bool label_context = false, uint32_t kth_neighbourhood = 0,
-      char delimeter = ',') {
+      data::ColumnDataTypes data_types, std::string graph_file_name,
+      std::string source, std::string target,
+      std::vector<std::string> relationship_columns, uint32_t n_target_classes,
+      bool neighbourhood_context = false, bool label_context = false,
+      uint32_t kth_neighbourhood = 0, char delimeter = ',') {
     auto dataset_config = std::make_shared<data::GraphConfig>(
-        data_types, graph_file_name, source, target, relationship_columns,
-        n_target_classes, neighbourhood_context, label_context,
-        kth_neighbourhood, delimeter);
+        std::move(data_types), std::move(graph_file_name), std::move(source),
+        std::move(target), std::move(relationship_columns), n_target_classes,
+        neighbourhood_context, label_context, kth_neighbourhood, delimeter);
 
     auto graph_dataset_factory =
         std::make_shared<data::GraphDatasetFactory>(dataset_config);
@@ -40,32 +36,32 @@ class GraphUDT {
 
     bolt::BoltGraphPtr model;
     model = buildGraphBoltGraph(
-        /* input_dims= */ graph_dataset_factory->getInputDim(),
+        /* input_dims= */ graph_dataset_factory->getInputDims(),
         /* output_dim= */ graph_dataset_factory->getLabelDim(),
         /* hidden_layer_dim= */ 1024);
 
-    return GraphUDT(model, graph_dataset_factory);
+    deployment::TrainEvalParameters train_eval_parameters(
+        /* rebuild_hash_tables_interval= */ std::nullopt,
+        /* reconstruct_hash_functions_interval= */ std::nullopt,
+        /* default_batch_size= */ DEFAULT_INFERENCE_BATCH_SIZE,
+        /* freeze_hash_tables= */ true,
+        /* prediction_threshold= */ std::nullopt);
+
+    return GraphUDT({graph_dataset_factory, model,
+                     getOutputProcessor(dataset_config),
+                     train_eval_parameters});
   }
+  static OutputProcessorPtr getOutputProcessor(
+      const data::GraphConfigPtr& dataset_config) {
+    if (dataset_config->_n_target_classes == 2) {
+      return BinaryOutputProcessor::make();
+    }
 
-  void train(const std::string& file_name, uint32_t epochs, float learning_rate,
-             uint32_t batch_size) {
-    auto train_config = bolt::TrainConfig::makeConfig(learning_rate, epochs);
-
-    auto data_source =
-        dataset::SimpleFileDataSource::make(file_name, batch_size);
-
-    auto dataset_loader = std::make_unique<dataset::DatasetLoader>(
-        data_source, _graph_dataset_factory->getBatchProcessor(),
-        /* shuffle= */ true);
-
-    auto loaded_data = dataset_loader->loadInMemory();
-
-    auto [train_data, train_labels] = std::move(loaded_data);
-
-    _model->train(train_data, train_labels, train_config);
+    return CategoricalOutputProcessor::make();
   }
 
  private:
+  explicit GraphUDT(ModelPipeline&& model) : ModelPipeline(model) {}
   static bolt::BoltGraphPtr buildGraphBoltGraph(
       const std::vector<uint32_t>& input_dims, uint32_t output_dim,
       uint32_t hidden_layer_dim) {
@@ -94,9 +90,6 @@ class GraphUDT {
 
     return graph;
   }
-
-  bolt::BoltGraphPtr _model;
-  data::GraphDatasetFactoryPtr _graph_dataset_factory;
 };
 
 }  // namespace thirdai::automl::models

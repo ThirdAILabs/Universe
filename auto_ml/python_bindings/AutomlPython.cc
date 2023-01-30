@@ -55,18 +55,14 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("input_vocab_size"), py::arg("metadata_dim"),
            py::arg("n_classes"), py::arg("model_size"),
            docs::TEXT_CLASSIFIER_INIT)
-      .def_static("load", &UDTFactory::load, py::arg("filename"),
-                  docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
-
-  py::class_<GraphUDT, std::shared_ptr<GraphUDT>>(module, "UDTGraph")
-      .def(py::init(&GraphUDT::buildGraphUDT), py::arg("data_types"),
+      .def("__new__", &UDTFactory::buildGraphUDT, py::arg("data_types"),
            py::arg("graph_file_name"), py::arg("source"), py::arg("target"),
            py::arg("relationship_columns"), py::arg("n_target_classes"),
            py::arg("neighbourhood_context") = false,
            py::arg("label_context") = false, py::arg("kth_neighbourhood") = 0,
            py::arg("delimeter") = ',')
-      .def("train", &GraphUDT::train, py::arg("file_name"), py::arg("epochs"),
-           py::arg("learning_rate"), py::arg("batch_size"));
+      .def_static("load", &UDTFactory::load, py::arg("filename"),
+                  docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 }
 
 void createModelsSubmodule(py::module_& module) {
@@ -226,6 +222,14 @@ void createModelsSubmodule(py::module_& module) {
            docs::UDT_EXPLAIN)
       .def("save", &UDTFactory::save_classifier, py::arg("filename"),
            docs::UDT_SAVE);
+  py::class_<GraphUDT, ModelPipeline, std::shared_ptr<GraphUDT>>(module,
+                                                                 "UDTGraph")
+      .def(py::init(&GraphUDT::buildGraphUDT), py::arg("data_types"),
+           py::arg("graph_file_name"), py::arg("source"), py::arg("target"),
+           py::arg("relationship_columns"), py::arg("n_target_classes"),
+           py::arg("neighbourhood_context") = false,
+           py::arg("label_context") = false, py::arg("kth_neighbourhood") = 0,
+           py::arg("delimeter") = ',');
 
   py::class_<QueryCandidateGenerator, std::shared_ptr<QueryCandidateGenerator>>(
       models_submodule, "UDTGenerator")
@@ -461,6 +465,19 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
       /* lookahead = */ lookahead, /* delimiter = */ delimiter,
       /* model_config= */ model_config,
       /* options = */ createUserInputMap(options));
+}
+
+GraphUDT UDTFactory::buildGraphUDT(
+    py::object& obj, data::ColumnDataTypes data_types,
+    std::string graph_file_name, std::string source, std::string target,
+    std::vector<std::string> relationship_columns, uint32_t n_target_classes,
+    bool neighbourhood_context, bool label_context, uint32_t kth_neighbourhood,
+    char delimeter) {
+  (void)obj;
+  return GraphUDT::buildGraphUDT(
+      std::move(data_types), std::move(graph_file_name), std::move(source),
+      std::move(target), std::move(relationship_columns), n_target_classes,
+      neighbourhood_context, label_context, kth_neighbourhood, delimeter);
 }
 
 void UDTFactory::save_classifier(const UniversalDeepTransformer& classifier,

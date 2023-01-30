@@ -11,6 +11,7 @@ namespace py = pybind11;
 
 namespace thirdai::automl::python {
 
+using models::GraphUDT;
 using models::ModelPipeline;
 using models::QueryCandidateGenerator;
 using models::TextClassifier;
@@ -63,6 +64,15 @@ class UDTFactory {
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
       const py::dict& options);
+
+  static GraphUDT buildGraphUDT(py::object& obj,
+                                data::ColumnDataTypes data_types,
+                                std::string graph_file_name, std::string source,
+                                std::string target,
+                                std::vector<std::string> relationship_columns,
+                                uint32_t n_target_classes,
+                                bool neighbourhood_context, bool label_context,
+                                uint32_t kth_neighbourhood, char delimeter);
 
   // These need to be here instead of inside UDTFactory because otherwise I was
   // getting weird linking errors
