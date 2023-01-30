@@ -1,16 +1,17 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/Featurizer.h>
+#include <limits>
 
 namespace thirdai::dataset {
 
 /**
  * Featurizes text data for next word prediction.
  */
-class TextGenerationProcessor {
+class TextGenerationFeaturizer final : public Featurizer {
  public:
-  TextGenerationProcessor(uint32_t seq_len, uint32_t input_dim,
-                          uint32_t output_dim);
+  TextGenerationFeaturizer(uint32_t seq_len, uint32_t output_dim);
 
   /**
    * Featurizes a list of rows from a text dataset for next word prediction.
@@ -25,8 +26,18 @@ class TextGenerationProcessor {
    * recovered by looking at the intersection of the words mapped to the given
    * hash indices.
    */
-  std::pair<std::vector<BoltVector>, std::vector<BoltVector>> featurize(
-      const std::vector<std::string>& lines) const;
+  std::vector<std::vector<BoltVector>> featurize(
+      const std::vector<std::string>& lines) final;
+
+  bool expectsHeader() const final { return false; }
+
+  void processHeader(const std::string& header) final { (void)header; }
+
+  size_t getNumDatasets() final { return 2; }
+
+  std::vector<uint32_t> getDimensions() final {
+    return {std::numeric_limits<uint32_t>::max(), _output_dim};
+  }
 
  private:
   /**
@@ -36,15 +47,9 @@ class TextGenerationProcessor {
   std::pair<std::vector<BoltVector>, std::vector<BoltVector>> featurizeText(
       const std::string& line) const;
 
-  /**
-   * Helper function to remove all the punctuation from a string and converts
-   * any whitespace to ' ' characters so they do not affect the output tokens.
-   * The ' ' extra characters will be ignored when splitting the words.
-   */
-  static std::string removePunctuationAndSpacing(const std::string& str);
+  static std::vector<uint32_t> parseTokens(const std::string& line);
 
   uint32_t _seq_len;
-  uint32_t _input_dim;
   uint32_t _output_dim;
 };
 
