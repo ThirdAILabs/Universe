@@ -231,7 +231,7 @@ void createModelsSubmodule(py::module_& module) {
            docs::TEXT_CLASSIFIER_SAVE);
 
   py::class_<RNN, ModelPipeline, std::shared_ptr<RNN>>(models_submodule,
-                                                       "UDTRNN")
+                                                       "RecursiveUDT")
       .def("predict", &RNN::predict, py::arg("input_sample"),
            py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = true, docs::UDT_PREDICT)
