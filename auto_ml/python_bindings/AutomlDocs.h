@@ -677,7 +677,7 @@ Args:
     representative data of each sample. "Strong" data can be different depending on the problem, but
     typically this might be something like product/document titles.
     weak_column_names (List[str]): A list of column names containing "weak" 
-    representative data of each sample. This includes anything not included in 
+    representative data of each sample. This should include any non-strong column that is related in  anyway to the underlying object, typically...
     the strong columns, typically attributes like descriptions, tags, 
     bullet points, etc. 
     learning_rate (float): Learning rate. 
