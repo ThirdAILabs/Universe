@@ -13,8 +13,9 @@
 
 namespace thirdai::automl::data {
 
-std::string uniqueName(const ColumnDataTypes& data_types,
-                       std::string proposed_name) {
+// Augments a proposed name until it is unique in the data_types map.
+static std::string uniqueName(const ColumnDataTypes& data_types,
+                              std::string proposed_name) {
   while (data_types.count(proposed_name)) {
     // Use unusual characters '$' to avoid colliding with other column names;
     proposed_name += "$";
