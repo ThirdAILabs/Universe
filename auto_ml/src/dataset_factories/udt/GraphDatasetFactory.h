@@ -1,17 +1,18 @@
 #pragma once
 
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/FeatureComposer.h>
 #include <auto_ml/src/dataset_factories/udt/GraphConfig.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <memory>
 #include <unordered_map>
@@ -30,9 +31,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     auto input_blocks = buildInputBlocks();
 
     auto label_block = getLabelBlock();
-    auto data_loader = dataset::SimpleFileDataSource::make(
-        _config->_graph_file_name,
-        /* target_batch_size= */ DEFAULT_BATCH_SIZE);
+    auto data_loader = dataset::FileDataSource::make(_config->_graph_file_name);
 
     _column_number_map = UDTDatasetFactory::makeColumnNumberMapFromHeader(
         *data_loader, _config->_delimeter);
@@ -46,7 +45,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       input_blocks.push_back(graph_block);
     }
 
-    _batch_processor = dataset::GenericBatchProcessor::make(
+    _batch_processor = dataset::TabularFeaturizer::make(
         /* input_blocks= */ std::move(input_blocks),
         /* label_blocks= */ {std::move(label_block)},
         /* has_header= */ true, /* delimiter= */ _config->_delimeter,
@@ -80,7 +79,11 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
 
   std::vector<BoltBatch> featurizeInputBatch(
       const LineInputBatch& inputs) final {
-    return _batch_processor->createBatch(inputs);
+    std::vector<BoltBatch> result;
+    for (auto& batch : _batch_processor->featurize(inputs)) {
+      result.emplace_back(std::move(batch));
+    }
+    return result;
   }
 
   uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
@@ -93,9 +96,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
 
   uint32_t getLabelDim() final { return _batch_processor->getLabelDim(); }
 
-  dataset::GenericBatchProcessorPtr getBatchProcessor() {
-    return _batch_processor;
-  }
+  dataset::TabularFeaturizerPtr getBatchProcessor() { return _batch_processor; }
 
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& gradients_indices,
@@ -210,23 +211,22 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
 
     std::vector<std::string> full_data;
 
-    while (auto data = data_loader.nextBatch()) {
+    while (auto data = data_loader.nextBatch(DEFAULT_BATCH_SIZE)) {
       full_data.insert(full_data.end(), data->begin(), data->end());
     }
 
     std::vector<std::vector<std::string>> rows(full_data.size());
 
-    std::unordered_map<std::string, uint32_t> nodes;
+    std::vector<std::string> nodes(full_data.size());
 
 #pragma omp parallel for default(none) \
     shared(rows, full_data, nodes, source_col_num)
     for (uint32_t i = 0; i < full_data.size(); i++) {
       auto temp = dataset::ProcessorUtils::parseCsvRow(full_data[i],
                                                        _config->_delimeter);
-      std::vector<std::string> v(temp.begin(), temp.end());
-      rows[i] = v;
+      rows[i] = std::vector<std::string>(temp.begin(), temp.end());;
 
-      nodes[v[source_col_num]] = i;
+      nodes[i] = rows[i][source_col_num];
     }
 
     _node_id_map = ColumnNumberMap(nodes);
@@ -296,7 +296,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     auto label_block = dataset::StringLookupCategoricalBlock::make(
         _column_number_map.at(_config->_source), key_vocab);
 
-    auto processor = dataset::GenericBatchProcessor::make(
+    auto processor = dataset::TabularFeaturizer::make(
         /* input_blocks= */ std::move(input_blocks),
         /* label_blocks= */ {std::move(label_block)},
         /* has_header= */ false, /* delimiter= */ _config->_delimeter,
@@ -349,14 +349,14 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   }
 
   static dataset::PreprocessedVectorsPtr makePreprocessedVectors(
-      const dataset::GenericBatchProcessorPtr& processor,
+      const dataset::TabularFeaturizerPtr& processor,
       dataset::ThreadSafeVocabulary& key_vocab, dataset::CsvRolledBatch rows) {
-    auto batches = processor->createBatch(rows);
+    auto batches = processor->featurize(rows);
 
     std::unordered_map<std::string, BoltVector> preprocessed_vectors(
         rows.size());
 
-    for (uint32_t vec = 0; vec < batches[0].getBatchSize(); vec++) {
+    for (uint32_t vec = 0; vec < batches[0].size(); vec++) {
       auto id = batches[1][vec].active_neurons[0];
       auto key = key_vocab.getString(id);
       preprocessed_vectors[key] = std::move(batches[0][vec]);
@@ -372,7 +372,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   ColumnNumberMap _node_id_map;
   std::vector<std::vector<uint32_t>> _adjacency_list;
   std::vector<std::unordered_set<uint32_t>> _neighbours;
-  dataset::GenericBatchProcessorPtr _batch_processor;
+  dataset::TabularFeaturizerPtr _batch_processor;
   dataset::ThreadSafeVocabularyPtr _target_vocab;
 };
 

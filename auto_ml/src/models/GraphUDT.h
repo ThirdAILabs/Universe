@@ -7,6 +7,7 @@
 #include <auto_ml/src/dataset_factories/udt/GraphConfig.h>
 #include <auto_ml/src/dataset_factories/udt/GraphDatasetFactory.h>
 #include <auto_ml/src/models/ModelPipeline.h>
+#include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <memory>
@@ -35,12 +36,12 @@ class GraphUDT : public ModelPipeline {
     graph_dataset_factory->prepareTheBatchProcessor();
 
     bolt::BoltGraphPtr model;
-    model = buildGraphBoltGraph(
+    model = UniversalDeepTransformer::buildUDTBoltGraph(
         /* input_dims= */ graph_dataset_factory->getInputDims(),
         /* output_dim= */ graph_dataset_factory->getLabelDim(),
         /* hidden_layer_dim= */ 1024);
 
-    deployment::TrainEvalParameters train_eval_parameters(
+    TrainEvalParameters train_eval_parameters(
         /* rebuild_hash_tables_interval= */ std::nullopt,
         /* reconstruct_hash_functions_interval= */ std::nullopt,
         /* default_batch_size= */ DEFAULT_INFERENCE_BATCH_SIZE,
@@ -62,34 +63,6 @@ class GraphUDT : public ModelPipeline {
 
  private:
   explicit GraphUDT(ModelPipeline&& model) : ModelPipeline(model) {}
-  static bolt::BoltGraphPtr buildGraphBoltGraph(
-      const std::vector<uint32_t>& input_dims, uint32_t output_dim,
-      uint32_t hidden_layer_dim) {
-    std::vector<bolt::InputPtr> inputs;
-    inputs.reserve(input_dims.size());
-    for (uint32_t input_dim : input_dims) {
-      inputs.push_back(bolt::Input::make(input_dim));
-    }
-
-    auto hidden = bolt::FullyConnectedNode::makeDense(hidden_layer_dim,
-                                                      /* activation= */ "relu");
-    hidden->addPredecessor(inputs[0]);
-
-    auto sparsity =
-        deployment::AutotunedSparsityParameter::autotuneSparsity(output_dim);
-    const auto* activation = "softmax";
-    auto output = bolt::FullyConnectedNode::makeAutotuned(output_dim, sparsity,
-                                                          activation);
-    output->addPredecessor(hidden);
-
-    auto graph = std::make_shared<bolt::BoltGraph>(
-        /* inputs= */ inputs, output);
-
-    graph->compile(
-        bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
-
-    return graph;
-  }
 };
 
 }  // namespace thirdai::automl::models

@@ -1,7 +1,7 @@
 enable_testing()
 include(GoogleTest)
 
-set(AUTOML_TESTS QueryCandidateGeneratorTest GraphTest)
+set(AUTOML_TESTS QueryCandidateGeneratorTest ConfigParameterTests GraphTest)
 
 foreach(AUTOML_TEST IN LISTS AUTOML_TESTS)
   add_executable(${AUTOML_TEST} ${AUTOML_TEST}.cc)
