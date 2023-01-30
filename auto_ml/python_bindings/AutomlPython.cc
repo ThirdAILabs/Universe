@@ -6,6 +6,7 @@
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <auto_ml/src/models/RNN.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
@@ -53,6 +54,11 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("input_vocab_size"), py::arg("metadata_dim"),
            py::arg("n_classes"), py::arg("model_size"),
            docs::TEXT_CLASSIFIER_INIT)
+      .def("__new__", &UDTFactory::buildRNN, py::arg("data_types"),
+           py::arg("target_col"), py::arg("target_vocabulary_size"),
+           py::arg("max_recursion_depth"), py::arg("delimiter") = ',',
+           py::arg("model_config") = std::nullopt,
+           py::arg("options") = py::dict(), docs::UDT_INIT)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 }
@@ -227,6 +233,26 @@ void createModelsSubmodule(py::module_& module) {
            docs::TEXT_CLASSIFIER_PREDICT)
       .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"),
            docs::TEXT_CLASSIFIER_SAVE);
+
+  py::class_<RNN, ModelPipeline, std::shared_ptr<RNN>>(models_submodule,
+                                                       "UDTRNN")
+      .def("class_name", &RNN::className, py::arg("neuron_id"),
+           docs::UDT_CLASS_NAME)
+      .def("predict", &RNN::predict, py::arg("input_sample"),
+           py::arg("use_sparse_inference") = false,
+           py::arg("return_predicted_class") = true, docs::UDT_PREDICT)
+      .def("predict_batch", &RNN::predictBatch, py::arg("input_samples"),
+           py::arg("use_sparse_inference") = false,
+           py::arg("return_predicted_class") = true, docs::UDT_PREDICT_BATCH)
+      .def("index_metadata", &RNN::updateMetadata, py::arg("column_name"),
+           py::arg("update"), docs::UDT_INDEX_METADATA,
+           bolt::python::OutputRedirect())
+      .def("index_metadata_batch", &RNN::updateMetadataBatch,
+           py::arg("column_name"), py::arg("updates"),
+           docs::UDT_INDEX_METADATA_BATCH, bolt::python::OutputRedirect())
+      .def("explain", &RNN::explain, py::arg("input_sample"),
+           py::arg("target_class") = std::nullopt, docs::UDT_EXPLAIN)
+      .def("save", &UDTFactory::saveRNN, py::arg("filename"), docs::UDT_SAVE);
 }
 
 void createUDTTypesSubmodule(py::module_& module) {
@@ -273,8 +299,8 @@ void createUDTTypesSubmodule(py::module_& module) {
 
   py::class_<automl::data::SequenceDataType, automl::data::DataType,
              automl::data::SequenceDataTypePtr>(udt_types_submodule, "sequence")
-      .def(py::init<uint32_t, char>(), py::arg("length"),
-           py::arg("delimiter") = ' ', docs::UDT_SEQUENCE_TYPE);
+      .def(py::init<char>(), py::arg("delimiter") = ' ',
+           docs::UDT_SEQUENCE_TYPE);
 }
 
 void createUDTTemporalSubmodule(py::module_& module) {
@@ -409,6 +435,18 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
       /* options = */ createArgumentMap(options));
 }
 
+RNN UDTFactory::buildRNN(py::object& obj, data::ColumnDataTypes data_types,
+                         std::string target_col,
+                         uint32_t target_vocabulary_size,
+                         uint32_t max_recursion_depth, char delimiter,
+                         const std::optional<std::string>& model_config,
+                         const config::ArgumentMap& options) {
+  (void)obj;
+  return RNN::buildRNN(std::move(data_types), std::move(target_col),
+                       target_vocabulary_size, max_recursion_depth, delimiter,
+                       model_config, options);
+}
+
 void UDTFactory::save_classifier(const UniversalDeepTransformer& classifier,
                                  const std::string& filename) {
   std::ofstream filestream =
@@ -435,6 +473,13 @@ void UDTFactory::saveTextClassifier(const TextClassifier& text_classifier,
   text_classifier.save_stream(filestream);
 }
 
+void UDTFactory::saveRNN(const RNN& rnn, const std::string& filename) {
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  filestream.write(reinterpret_cast<const char*>(&UDT_RNN_IDENTIFIER), 1);
+  rnn.save_stream(filestream);
+}
+
 py::object UDTFactory::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
@@ -451,6 +496,10 @@ py::object UDTFactory::load(const std::string& filename) {
 
   if (first_byte == UDT_TEXT_CLASSIFIER_IDENTIFIER) {
     return py::cast(TextClassifier::load_stream(filestream));
+  }
+
+  if (first_byte == UDT_RNN_IDENTIFIER) {
+    return py::cast(RNN::load_stream(filestream));
   }
 
   throw std::invalid_argument("Found an invalid header byte in the saved file");
