@@ -766,8 +766,12 @@ std::vector<float> FullyConnectedLayer::getWeightsByNeuron(uint32_t neuron_id) {
         "output dim of " +
         std::to_string(_dim) + ".");
   }
-  return std::vector<float>(_weights[neuron_id * _prev_dim],
-                            _weights[neuron_id * _prev_dim] + _dim);
+
+  std::vector<float> embedding(_prev_dim);
+  std::copy(std::begin(_weights) + neuron_id * _prev_dim,
+            std::begin(_weights) + neuron_id * _prev_dim + _prev_dim,
+            embedding.begin());
+  return embedding;
 }
 
 void FullyConnectedLayer::setSparsity(float sparsity) {

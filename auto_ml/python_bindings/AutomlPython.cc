@@ -5,9 +5,12 @@
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <auto_ml/src/models/OutputProcessor.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
+#include <pybind11/numpy.h>
+#include <pybind11/pytypes.h>
 #include <limits>
 
 namespace thirdai::automl::python {
@@ -175,7 +178,10 @@ void createModelsSubmodule(py::module_& module) {
           "get_label_embedding",
           [](UniversalDeepTransformer& model, uint32_t label_id) {
             auto embedding = model.getLabelEmbedding(label_id);
-            return py::array(embedding.size(), embedding.data());
+            models::NumpyArray<float> numpy_array(embedding.size());
+            std::copy(embedding.begin(), embedding.end(),
+                      numpy_array.mutable_data());
+            return numpy_array;
           },
           py::arg("label_id"), docs::UDT_LABEL_EMBEDDING)
       .def("get_prediction_threshold",
