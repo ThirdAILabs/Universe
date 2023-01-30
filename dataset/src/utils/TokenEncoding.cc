@@ -40,16 +40,16 @@ std::vector<uint32_t> tokenize(const std::vector<std::string_view>& words) {
   return n_gram_tokens;
 }
 
-std::vector<uint32_t> pairgrams(const uint32_t* unigrams, uint32_t len) {
-  std::vector<uint32_t> tokens;
+std::vector<uint32_t> pairgrams(const uint32_t* tokens, uint32_t len) {
+  std::vector<uint32_t> pairgram_tokens;
   for (uint32_t token = 0; token < len; token++) {
     for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
-      tokens.push_back(
-          hashing::combineHashes(unigrams[prev_token], unigrams[token]));
+      pairgram_tokens.push_back(
+          hashing::combineHashes(tokens[prev_token], tokens[token]));
     }
   }
 
-  return tokens;
+  return pairgram_tokens;
 }
 
 void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
