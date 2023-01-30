@@ -79,7 +79,7 @@ def test_udt_recursion_predict_batch():
     os.remove(TRAIN_FILE)
 
 
-def test_long_output_does_not_break():
+def test_udt_recursion_long_output_does_not_break():
     model = recursive_model(
         inputs=["1 2 3 4", "3 4 5"],
         outputs=["1 2 3 4 5 6 7", "3 4 5 6 7 8 9"],
@@ -94,7 +94,7 @@ def test_long_output_does_not_break():
     os.remove(TRAIN_FILE)
 
 
-def test_long_output_ignores_remaining():
+def test_udt_recursion_long_output_ignores_remaining():
     model = recursive_model(
         inputs=["1 2 3 4", "3 4 5"],
         outputs=["1 2 3 4 5 6 7", "3 4 5 6 7 8 9"],
@@ -110,7 +110,7 @@ def test_long_output_ignores_remaining():
     os.remove(TRAIN_FILE)
 
 
-def test_short_output_does_not_break():
+def test_udt_recursion_short_output_does_not_break():
     model = recursive_model(
         inputs=["1 2 3 4", "3 4 5"],
         outputs=["1 2", "3 4"],
@@ -124,7 +124,7 @@ def test_short_output_does_not_break():
     os.remove(TRAIN_FILE)
 
 
-def test_target_no_max_length_throws():
+def test_udt_recursion_target_no_max_length_throws():
     with pytest.raises(
         ValueError, match="Must provide max_length for target sequence."
     ):
@@ -138,7 +138,7 @@ def test_target_no_max_length_throws():
         )
 
 
-def test_zero_max_length_throws():
+def test_udt_recursion_zero_max_length_throws():
     with pytest.raises(
         ValueError,
         match=f"Sequence max_length cannot be 0.",
