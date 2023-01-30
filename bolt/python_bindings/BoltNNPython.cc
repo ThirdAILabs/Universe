@@ -621,7 +621,8 @@ void createLossesSubmodule(py::module_& nn_submodule) {
   py::class_<CategoricalCrossEntropyLoss,
              std::shared_ptr<CategoricalCrossEntropyLoss>, LossFunction>(
       losses_submodule, "CategoricalCrossEntropy",
-      "A loss function that minimizes mean squared error (MSE) for regression ")
+      "A loss function for multi-class (one label per sample) classification "
+      "tasks.")
       .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
 
   py::class_<BinaryCrossEntropyLoss, std::shared_ptr<BinaryCrossEntropyLoss>,
@@ -633,8 +634,7 @@ void createLossesSubmodule(py::module_& nn_submodule) {
 
   py::class_<MeanSquaredError, std::shared_ptr<MeanSquaredError>, LossFunction>(
       losses_submodule, "MeanSquaredError",
-      "A loss function that minimizes mean squared "
-      "error (MSE) for regression "
+      "A loss function that minimizes mean squared error (MSE) for regression "
       "tasks. "
       ":math:`MSE = sum( (actual - prediction)^2 )`")
       .def(py::init<>(), "Constructs a MeanSquaredError object.");
