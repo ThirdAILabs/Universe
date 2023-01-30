@@ -662,7 +662,7 @@ with exactly two columns: one text column as input and one of either a categoric
 or multicategorical column as the target. 
 
 The cold start pretraining typically takes in an unsupervised dataset of objects
-where each object contains one or more columns of textual metadata. This could 
+where each object corresponds to one or more columns of textual metadata. This could 
 be something like a product catalog (with product ids as objects and titles, 
 descriptions, and tags as metadata). The goal is to pre-train UDT on this 
 unsupervised data so in the future it may be able to answer text search queries 
