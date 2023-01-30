@@ -101,7 +101,7 @@ EmbeddingLayerConfig::EmbeddingLayerConfig(
 
 EmbeddingReductionType EmbeddingLayerConfig::getReductionType(
     const std::string& reduction_name) {
-  std::string lower_name = utils::lower(reduction_name);
+  std::string lower_name = text::lower(reduction_name);
   if (lower_name == "sum") {
     return EmbeddingReductionType::SUM;
   }

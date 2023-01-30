@@ -54,6 +54,9 @@ struct BoltVector {
   static BoltVector makeSparseVector(const std::vector<uint32_t>& indices,
                                      const std::vector<float>& values);
 
+  static BoltVector makeSparseVector(
+      const std::vector<std::pair<uint32_t, float>>& index_value_pairs);
+
   static BoltVector makeDenseVector(const std::vector<float>& values);
 
   static BoltVector makeSparseVectorWithGradients(

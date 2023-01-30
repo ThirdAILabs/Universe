@@ -94,34 +94,51 @@ classifier_eval_doc = """
     """
 
 udt_cold_start_doc = """
-    This method performs cold start pretraining for the model. This is a type of 
+    This method will perform cold start pretraining for UDT. This is a type of 
     pretraining for text classification models that is especially useful for query 
     to product recommendation models. It requires that the model takes in a single 
-    text input and has a categorical output. It can consume raw data like a product 
-    catalog and pretrain the recommendation model. The dataset it takes in should 
-    be a csv file that gives a product/category id column and some number of text 
-    columns, where for a given row the text is related to the product/category also 
-    specified by that row.
+    text input and has a categorical/multi-categorical output.
+
+    The cold start pretraining typically takes in an unsupervised dataset of objects
+    where each object corresponds to one or more columns of textual metadata. This could 
+    be something like a product catalog (with product ids as objects, and titles, 
+    descriptions, and tags as metadata). The goal with cold start is to pre-train UDT
+    on unsupervised data so in the future it may be able to answer text search queries 
+    and return the relevant objects. The dataset it takes in should be a csv file that
+    gives a class id column and some number of text columns, where for a given row 
+    the text is related to the class also specified by that row.
+
+    You may cold_start the model and train with supervised data afterwards, typically
+    leading to faster convergence on the supervised data.
 
     Args:
         filename (str): Path to the dataset used for pretraining.
         strong_column_names (List[str]): The strong column names indicate which 
-            text columns are most closely related to the product/category. In this 
+            text columns are most closely related to the output class. In this 
             case closely related means that all of the words in the text are useful
-            in identifying the product/category in that row. For example in the 
+            in identifying the output class in that row. For example in the 
             case of a product catalog then a strong column could be the full title 
             of the product.
         weak_column_names (List[str]): The weak column names indicate which text 
-            columns are either more loosely related to the product/category. In 
-            this case loosely related means that parts of the texxt are useful in 
-            identifying the product/category, but there may also be parts of the 
+            columns are either more loosely related to the output class. In 
+            this case loosely related means that parts of the text are useful in 
+            identifying the output class, but there may also be parts of the 
             text that contain more generic words or phrases that don't have as high 
-            of a correlation to the product of interest. For example in a product 
-            catalog the description of the product could be a weak column because 
-            while there is a correlation, parts of the description may be fairly 
-            similar between products or be too general to completly identify which
-            products the correspond to.
-        learning_rate (float): The learning rate to use for the pretraining.
+            of a correlation. For example in a product catalog the description of
+            the product could be a weak column because while there is a correlation,
+            parts of the description may be fairly similar between products or be
+            too general to completly identify which products the correspond to.
+        learning_rate (float): Learning rate used for pretraining. Cold start 
+            can be very sensitive to this value. A good default is 0.001.
+        epochs (int): Number of epochs to pre-train for.
+        metrics (List[str]) = []: List of pre-training metric names to record.
+        validation (Optional[bolt.Validation]) = None: Optional validation object. 
+            Note that this validation data should have the format as specified in 
+            the UDT constructor (ie text and categorical) and not the same format
+            passed in to cold start. In the product catalog example this would 
+            be query, product_id pairs. 
+        callbacks (List[bolt.callbacks.Callback] = []: Callbacks to use during 
+            pre-training.
 
     Returns:
         None.
@@ -133,12 +150,19 @@ udt_cold_start_doc = """
                     "product": bolt.types.categorical(),
                 }
                 target="product",
+                n_target_classes=1000,
                 integer_target=True,
             )
         >>> model.cold_start(
                 filename="product_catalog.csv",
                 strong_column_names=["title"],
                 weak_column_names=["description", "bullet_points"],
-                learning_rate=0.0001,
+                learning_rate=0.001,
+                epochs=5,
+                metrics=["f_measure(0.95)"]
             )
+        >>> model.train(
+                train_filename=supervised_query_product_data,
+            )
+        >>> result = model.predict({"QUERY": query})
 """

@@ -123,7 +123,7 @@ void createDatasetSubmodule(py::module_& module) {
       "A block that encodes text as a weighted set of ordered pairs of "
       "space-separated words.")
       .def(py::init<uint32_t, uint32_t>(), py::arg("col"),
-           py::arg("dim") = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
+           py::arg("dim") = token_encoding::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
@@ -134,19 +134,21 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &PairGramTextBlock::isDense,
            "Returns false since text blocks always produce sparse features.");
 
-  py::class_<UniGramTextBlock, TextBlock, UniGramTextBlockPtr>(
-      block_submodule, "TextUniGram",
-      "A block that encodes text as a weighted set of space-separated words.")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("col"),
-           py::arg("dim") = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
+  py::class_<NGramTextBlock, TextBlock, NGramTextBlockPtr>(
+      block_submodule, "TextNGram",
+      "A block that encodes text as hashed N-gram tokens.")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("col"),
+           py::arg("n"),
+           py::arg("dim") = token_encoding::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
            "the text to be encoded.\n"
+           " * n: Int - The number of words per N-gram representation."
            " * dim: Int - Dimension of the encoding")
-      .def("feature_dim", &UniGramTextBlock::featureDim,
+      .def("feature_dim", &NGramTextBlock::featureDim,
            "Returns the dimension of the vector encoding.")
-      .def("is_dense", &UniGramTextBlock::isDense,
+      .def("is_dense", &NGramTextBlock::isDense,
            "Returns false since text blocks always produce sparse "
            "features.");
 
@@ -155,7 +157,7 @@ void createDatasetSubmodule(py::module_& module) {
       "A block that encodes text as a weighted set of character trigrams.")
       .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("col"),
            py::arg("k"),
-           py::arg("dim") = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
+           py::arg("dim") = token_encoding::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
@@ -302,7 +304,10 @@ void createDatasetSubmodule(py::module_& module) {
       dataset_submodule, "FileDataSource")
       .def(py::init<const std::string&>(), py::arg("filename"));
 
-  dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
+  dataset_submodule.def("make_sparse_vector",
+                        py::overload_cast<const std::vector<uint32_t>&,
+                                          const std::vector<float>&>(
+                            &BoltVector::makeSparseVector),
                         py::arg("indices"), py::arg("values"));
 
   dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
