@@ -1,5 +1,3 @@
-#pragma once
-
 #include "UDTDefault.h"
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <auto_ml/src/config/ArgumentMap.h>
