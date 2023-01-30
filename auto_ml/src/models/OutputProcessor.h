@@ -192,11 +192,20 @@ class BinaryOutputProcessor final : public OutputProcessor {
 
 using BinaryOutputProcessorPtr = std::shared_ptr<BinaryOutputProcessor>;
 
-class ActivationOutputProcessor final : public OutputProcessor {
+/**
+ * An output processor that returns returns BoltVectors and BoltBatches as
+ * py::objects. This is a hack so we can access BoltVectors and BoltBatches
+ * as-is in RNN. This seemed like a viable solution at the time of writing
+ * that doesn't require additional massive changes in a PR that already
+ * refactored much of UDT.
+ * TODO(Geordie, Nicholas): How should we refactor model pipeline to avoid this
+ * hack?
+ */
+class RNNOutputProcessor final : public OutputProcessor {
  public:
-  explicit ActivationOutputProcessor() {}
+  explicit RNNOutputProcessor() {}
 
-  static auto make() { return std::make_shared<ActivationOutputProcessor>(); }
+  static auto make() { return std::make_shared<RNNOutputProcessor>(); }
 
   py::object processBoltVector(BoltVector& output,
                                bool return_predicted_class) final;
@@ -222,7 +231,7 @@ class ActivationOutputProcessor final : public OutputProcessor {
   }
 };
 
-using ActivationOutputProcessorPtr = std::shared_ptr<ActivationOutputProcessor>;
+using ActivationOutputProcessorPtr = std::shared_ptr<RNNOutputProcessor>;
 
 // Helper function for InferenceOutputTracker to Numpy.
 py::object convertInferenceTrackerToNumpy(bolt::InferenceOutputTracker& output);

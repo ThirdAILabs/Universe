@@ -179,19 +179,19 @@ uint32_t BinaryOutputProcessor ::binaryActivationsToPrediction(
   return pred;
 }
 
-py::object ActivationOutputProcessor::processBoltVector(
-    BoltVector& output, bool return_predicted_class) {
+py::object RNNOutputProcessor::processBoltVector(BoltVector& output,
+                                                 bool return_predicted_class) {
   throwIfReturnPredictedClass(return_predicted_class);
   return py::cast(output);
 }
 
-py::object ActivationOutputProcessor::processBoltBatch(
-    BoltBatch& outputs, bool return_predicted_class) {
+py::object RNNOutputProcessor::processBoltBatch(BoltBatch& outputs,
+                                                bool return_predicted_class) {
   throwIfReturnPredictedClass(return_predicted_class);
   return py::cast(outputs);
 }
 
-py::object ActivationOutputProcessor::processOutputTracker(
+py::object RNNOutputProcessor::processOutputTracker(
     bolt::InferenceOutputTracker& output, bool return_predicted_class) {
   throwIfReturnPredictedClass(return_predicted_class);
   return convertInferenceTrackerToNumpy(output);
@@ -301,4 +301,4 @@ uint32_t argmax(const float* const array, uint32_t len) {
 CEREAL_REGISTER_TYPE(thirdai::automl::models::CategoricalOutputProcessor)
 CEREAL_REGISTER_TYPE(thirdai::automl::models::RegressionOutputProcessor)
 CEREAL_REGISTER_TYPE(thirdai::automl::models::BinaryOutputProcessor)
-CEREAL_REGISTER_TYPE(thirdai::automl::models::ActivationOutputProcessor)
+CEREAL_REGISTER_TYPE(thirdai::automl::models::RNNOutputProcessor)
