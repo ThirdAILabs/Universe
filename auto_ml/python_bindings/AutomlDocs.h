@@ -1224,7 +1224,7 @@ Example:
     A531,22
     A339,29
     ...
-    >>> deployment.UniversalDeepTransformer(
+    >>> bolt.UniversalDeepTransformer(
             data_types: {
                 "user_id": bolt.types.categorical(
                     delimiter=' ',
@@ -1260,7 +1260,7 @@ Example:
     >>> # We want to predict the current week's sales performance for each product using temporal context.
     >>> # For each product ID, we would like to track both their ad spend level and sales performance over time.
     >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
-    >>> model = deployment.UniversalDeepTransformer(
+    >>> model = bolt.UniversalDeepTransformer(
             data_types={
                 "product_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
@@ -1301,7 +1301,7 @@ Example:
     >>> # We want to predict the current week's sales performance for each product using temporal context.
     >>> # For each product ID, we would like to track both their ad spend and sales performance over time.
     >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
-    >>> model = deployment.UniversalDeepTransformer(
+    >>> model = bolt.UniversalDeepTransformer(
             data_types={
                 "product_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
@@ -1343,7 +1343,7 @@ Args:
         column.
 
 Example:
-    >>> deployment.UniversalDeepTransformer(
+    >>> bolt.UniversalDeepTransformer(
             data_types: {
                 "user_id": bolt.types.categorical(
                     delimiter=' ',
@@ -1368,7 +1368,7 @@ Args:
 
 
 Example:
-    >>> deployment.UniversalDeepTransformer(
+    >>> bolt.UniversalDeepTransformer(
             data_types: {
                 "hours_watched": bolt.types.numerical(range=(0, 25), granularity="xs")
             }
@@ -1390,7 +1390,7 @@ Args:
         udt will only use attention when appropriate.
 
 Example:
-    >>> deployment.UniversalDeepTransformer(
+    >>> bolt.UniversalDeepTransformer(
             data_types: {
                 "user_motto": bolt.types.text(average_n_words=10),
                 "user_bio": bolt.types.text()
@@ -1404,7 +1404,7 @@ Date column type. Use this object if a column contains date strings.
 Date strings must be in YYYY-MM-DD format.
 
 Example:
-    >>> deployment.UniversalDeepTransformer(
+    >>> bolt.UniversalDeepTransformer(
             data_types: {
                 "timestamp": bolt.types.date()
             }
@@ -1413,7 +1413,29 @@ Example:
 )pbdoc";
 
 const char* const UDT_SEQUENCE_TYPE = R"pbdoc(
-Sequential column type. TODO
+Sequence column type. Use this object if a column contains an ordered sequence 
+of strings delimited by a character. The delimiter must be different than the 
+delimiter between columns.
+
+When the target column is a sequence type, then UDT will perform inferences 
+recursively.
+
+Args:
+    delimiter (str): Optional. The sequence delimiter. Defaults to " ".
+    max_length (int): Required if the column is the target. The maximum length 
+        of the sequence. If UDT sees longer sequences, elements beyond the provided
+        upper bound will be ignored.
+
+Example:
+    >>> bolt.UniversalDeepTransformer(
+            data_types: {
+                "input_sequence": bolt.types.sequence(delimiter='\t')
+                "output_sequence": bolt.types.sequence(max_length=30) # max_length must be provided for target sequence.
+            },
+            target="output_sequence",
+            n_target_classes=26
+            ...
+        )
 )pbdoc";
 
 const char* const TEXT_CLASSIFIER_INIT = R"pbdoc(
