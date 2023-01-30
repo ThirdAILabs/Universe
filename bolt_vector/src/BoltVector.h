@@ -45,6 +45,11 @@ struct BoltVector {
   static BoltVector singleElementSparseVector(uint32_t active_neuron,
                                               float activation = 1.0);
 
+  /**
+   * Gets the id of the neuron with the highest activation.
+   * If provided, `begin` and `end` restricts the search space to a range of
+   * neuron IDs.
+   */
   uint32_t getHighestActivationId(
       uint32_t begin = 0, std::optional<uint32_t> end = std::nullopt) const;
 
