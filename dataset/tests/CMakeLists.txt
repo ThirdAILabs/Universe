@@ -14,7 +14,8 @@ set(DATASET_TESTS
     TabularFeaturizerTests
     MlmFeaturizerTests
     SaveLoadInMemoryDatasetTest
-    DatasetLoaderTests)
+    DatasetLoaderTests
+    TokenEncodingTests)
 
 include(GoogleTest)
 
