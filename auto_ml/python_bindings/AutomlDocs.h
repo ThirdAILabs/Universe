@@ -662,7 +662,7 @@ with exactly two columns: one text column as input and one of either a categoric
 or multicategorical column as the target. 
 
 The cold start pretraining typically takes in an unsupervised dataset of objects
-where each object contains one or more columns of textual metadata. This could 
+where each object corresponds to one or more columns of textual metadata. This could 
 be something like a product catalog (with product ids as objects and titles, 
 descriptions, and tags as metadata). The goal is to pre-train UDT on this 
 unsupervised data so in the future it may be able to answer text search queries 
@@ -672,15 +672,15 @@ You may cold_start the model and train with supervised data afterwards, typicall
 leading to faster convergence on the supervised data.
 
 Args:
-    filename (str): The file to 
+    filename (str): The file to cold start with
     strong_column_names (List[str]): A list of column names containing "strong" 
-    representative data of each sample. This is open to interpretation but 
+    representative data of each sample. "Strong" data can be different depending on the problem, but
     typically this might be something like product/document titles.
     weak_column_names (List[str]): A list of column names containing "weak" 
-    representative data of each sample. This includes anything not included in 
+    representative data of each sample. This should include any non-strong column that is related in  anyway to the underlying object, typically...
     the strong columns, typically attributes like descriptions, tags, 
     bullet points, etc. 
-    learning_rate (float): Learning rate. 
+    learning_rate (float): Learning rate. Cold start can be very sensitive to this value. A good default is X.
     epochs (int): Number of epochs to pre-train for.
     metrics (List[str]) = []: List of pre-training metric names to record.
     validation (Optional[bolt.Validation]) = None: Optional validation object. 
