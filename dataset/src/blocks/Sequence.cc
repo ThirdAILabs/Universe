@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Sequence.h"
 #include <cereal/archives/binary.hpp>
 #include <hashing/src/HashUtils.h>
