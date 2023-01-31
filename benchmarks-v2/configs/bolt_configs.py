@@ -1,4 +1,4 @@
-from base_config import BenchmarkConfig
+from configs import BenchmarkConfig
 from thirdai import bolt
 
 
