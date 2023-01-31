@@ -74,8 +74,9 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
         // want is unigrams of the "words" separated by some delimiter
         // 2. text hash range of MAXINT is fine since features are later
         // hashed into a range. In fact it may reduce hash collisions.
-        blocks.push_back(dataset::UniGramTextBlock::make(
-            col_name, /* dim= */ std::numeric_limits<uint32_t>::max(),
+        blocks.push_back(dataset::NGramTextBlock::make(
+            col_name, /* n= */ 1,
+            /* dim= */ std::numeric_limits<uint32_t>::max(),
             *categorical->delimiter));
       } else {
         tabular_columns.push_back(dataset::TabularColumn::Categorical(
@@ -91,16 +92,21 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
     }
 
     if (auto text_meta = asText(data_type)) {
-      if (text_meta->force_pairgram ||
+      if (text_meta->contextual_encoding == TextEncodingType::Pairgrams ||
           (text_meta->average_n_words &&
            text_meta->average_n_words <= text_pairgrams_word_limit)) {
         // text hash range of MAXINT is fine since features are later
         // hashed into a range. In fact it may reduce hash collisions.
         blocks.push_back(dataset::PairGramTextBlock::make(
             col_name, /* dim= */ std::numeric_limits<uint32_t>::max()));
+      } else if (text_meta->contextual_encoding == TextEncodingType::Bigrams) {
+        blocks.push_back(dataset::NGramTextBlock::make(
+            col_name, /* n= */ 2,
+            /* dim= */ std::numeric_limits<uint32_t>::max()));
       } else {
-        blocks.push_back(dataset::UniGramTextBlock::make(
-            col_name, /* dim= */ std::numeric_limits<uint32_t>::max()));
+        blocks.push_back(dataset::NGramTextBlock::make(
+            col_name, /* n= */ 1,
+            /* dim= */ std::numeric_limits<uint32_t>::max()));
       }
     }
 
@@ -168,7 +174,7 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeTemporalFeatureBlocks(
 }
 
 uint32_t FeatureComposer::getNumberOfBins(const std::string& granularity_size) {
-  auto lower_size = utils::lower(granularity_size);
+  auto lower_size = text::lower(granularity_size);
   if (lower_size == "xs" || lower_size == "extrasmall") {
     return 10;
   }

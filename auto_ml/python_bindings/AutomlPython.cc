@@ -2,6 +2,7 @@
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
@@ -60,17 +61,10 @@ void createModelsSubmodule(py::module_& module) {
 
   py::class_<ModelPipeline, std::shared_ptr<ModelPipeline>>(models_submodule,
                                                             "Pipeline")
-      .def(py::init(&createPipeline), py::arg("deployment_config"),
-           py::arg("parameters") = py::dict(),
-           docs::MODEL_PIPELINE_INIT_FROM_CONFIG,
-           bolt::python::OutputRedirect())
-      .def(py::init(&createPipelineFromSavedConfig), py::arg("config_path"),
-           py::arg("parameters") = py::dict(),
-           docs::MODEL_PIPELINE_INIT_FROM_SAVED_CONFIG,
-           bolt::python::OutputRedirect())
       .def("train_with_source", &ModelPipeline::train, py::arg("data_source"),
            py::arg("train_config"), py::arg("validation") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
+           py::arg("batch_size") = std::nullopt,
            docs::MODEL_PIPELINE_TRAIN_DATA_SOURCE,
            bolt::python::OutputRedirect())
       .def("evaluate_with_source", &ModelPipeline::evaluate,
@@ -145,15 +139,6 @@ void createModelsSubmodule(py::module_& module) {
   py::class_<UniversalDeepTransformer, ModelPipeline,
              std::shared_ptr<UniversalDeepTransformer>>(models_submodule,
                                                         "UDTClassifier")
-      .def(py::init(&UniversalDeepTransformer::buildUDT), py::arg("data_types"),
-           py::arg("temporal_tracking_relationships") =
-               data::UserProvidedTemporalRelationships(),
-           py::arg("target"), py::arg("n_target_classes") = std::nullopt,
-           py::arg("integer_target") = false,
-           py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
-           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
-           py::arg("options") = deployment::UserInputMap{}, docs::UDT_INIT,
-           bolt::python::OutputRedirect())
       .def("class_name", &UniversalDeepTransformer::className,
            py::arg("neuron_id"), docs::UDT_CLASS_NAME)
       .def("predict",
@@ -178,7 +163,8 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
       .def("cold_start", &UniversalDeepTransformer::coldStartPretraining,
            py::arg("dataset"), py::arg("strong_column_names"),
-           py::arg("weak_column_names"), py::arg("learning_rate"))
+           py::arg("weak_column_names"), py::arg("train_config"),
+           py::arg("validation"), bolt::python::OutputRedirect())
       .def(
           "embedding_representation",
           [](UniversalDeepTransformer& model, const MapInput& input) {
@@ -219,8 +205,8 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("source_column"), py::arg("target_column"),
            py::arg("dataset_size"), py::arg("delimiter") = ',',
            docs::UDT_GENERATOR_INIT)
-      .def("train", &QueryCandidateGenerator::buildFlashIndex,
-           py::arg("filename"), docs::UDT_GENERATOR_TRAIN)
+      .def("train", &QueryCandidateGenerator::train, py::arg("filename"),
+           py::arg("use_supervised") = true, docs::UDT_GENERATOR_TRAIN)
       .def(
           "evaluate",
           [](QueryCandidateGenerator& udt_generator_model,
@@ -305,9 +291,9 @@ void createUDTTypesSubmodule(py::module_& module) {
 
   py::class_<automl::data::TextDataType, automl::data::DataType,
              automl::data::TextDataTypePtr>(udt_types_submodule, "text")
-      .def(py::init<std::optional<double>, bool>(),
+      .def(py::init<std::optional<double>, std::string>(),
            py::arg("average_n_words") = std::nullopt,
-           py::arg("use_attention") = false, docs::UDT_TEXT_TYPE);
+           py::arg("contextual_encoding") = "none", docs::UDT_TEXT_TYPE);
 
   py::class_<automl::data::DateDataType, automl::data::DataType,
              automl::data::DateDataTypePtr>(udt_types_submodule, "date")
@@ -334,9 +320,36 @@ void createUDTTemporalSubmodule(py::module_& module) {
                              docs::UDT_NUMERICAL_TEMPORAL);
 }
 
-deployment::UserInputMap createUserInputMap(const py::dict& parameters) {
-  deployment::UserInputMap cpp_parameters;
-  for (const auto& [k, v] : parameters) {
+void createDeploymentSubmodule(py::module_& module) {
+#if THIRDAI_EXPOSE_ALL
+
+  auto deployment = module.def_submodule("deployment");
+
+  deployment.def("load_config", &config::loadConfig, py::arg("filename"));
+
+  deployment.def("dump_config", &config::dumpConfig, py::arg("config"),
+                 py::arg("filename"));
+
+  deployment.def(
+      "load_model_from_config",
+      [](const std::string& config_file, const py::dict& parameters,
+         const std::vector<uint32_t>& input_dims) {
+        auto json_config = json::parse(config::loadConfig(config_file));
+        auto user_input = createArgumentMap(parameters);
+
+        return config::buildModel(json_config, user_input, input_dims);
+      },
+      py::arg("config_file"), py::arg("parameters"), py::arg("input_dims"));
+
+#else
+  (void)module;
+
+#endif
+}
+
+config::ArgumentMap createArgumentMap(const py::dict& input_args) {
+  config::ArgumentMap args;
+  for (const auto& [k, v] : input_args) {
     if (!py::isinstance<py::str>(k)) {
       throw std::invalid_argument("Keys of parameters map must be strings.");
     }
@@ -344,19 +357,16 @@ deployment::UserInputMap createUserInputMap(const py::dict& parameters) {
 
     if (py::isinstance<py::bool_>(v)) {
       bool value = v.cast<bool>();
-      cpp_parameters.emplace(name, deployment::UserParameterInput(value));
+      args.insert(name, value);
     } else if (py::isinstance<py::int_>(v)) {
       uint32_t value = v.cast<uint32_t>();
-      cpp_parameters.emplace(name, deployment::UserParameterInput(value));
+      args.insert(name, value);
     } else if (py::isinstance<py::float_>(v)) {
       float value = v.cast<float>();
-      cpp_parameters.emplace(name, deployment::UserParameterInput(value));
+      args.insert(name, value);
     } else if (py::isinstance<py::str>(v)) {
       std::string value = v.cast<std::string>();
-      cpp_parameters.emplace(name, deployment::UserParameterInput(value));
-    } else if (py::isinstance<data::UDTConfig>(v)) {
-      data::UDTConfigPtr value = v.cast<data::UDTConfigPtr>();
-      cpp_parameters.emplace(name, deployment::UserParameterInput(value));
+      args.insert(name, value);
     } else {
       throw std::invalid_argument("Invalid type '" +
                                   py::str(v.get_type()).cast<std::string>() +
@@ -365,20 +375,7 @@ deployment::UserInputMap createUserInputMap(const py::dict& parameters) {
     }
   }
 
-  return cpp_parameters;
-}
-
-ModelPipeline createPipeline(const deployment::DeploymentConfigPtr& config,
-                             const py::dict& parameters) {
-  deployment::UserInputMap cpp_parameters = createUserInputMap(parameters);
-  return ModelPipeline::make(config, cpp_parameters);
-}
-
-ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
-                                            const py::dict& parameters) {
-  auto config = deployment::DeploymentConfig::load(config_path);
-
-  return createPipeline(config, parameters);
+  return args;
 }
 
 py::object predictTokensWrapper(ModelPipeline& model,
@@ -446,7 +443,7 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
       /* time_granularity = */ std::move(time_granularity),
       /* lookahead = */ lookahead, /* delimiter = */ delimiter,
       /* model_config= */ model_config,
-      /* options = */ createUserInputMap(options));
+      /* options = */ createArgumentMap(options));
 }
 
 void UDTFactory::save_classifier(const UniversalDeepTransformer& classifier,

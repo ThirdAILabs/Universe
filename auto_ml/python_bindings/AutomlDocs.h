@@ -496,13 +496,15 @@ Example:
 const char* const UDT_GENERATOR_TRAIN = R"pbdoc(
 Trains a UniversalDeepTransformer (UDT) model for query reformulation on a given dataset 
 using a file on disk. The filename must contain at least 1 column containing the target
-queries. If `source` was also specified when constructing the model then a second 
-column may be present containing the source queries. If a source column is present 
-then the model is trained in a supervised setting using the (source, target) pairs, if 
-it is not present it is trained in an unsupervised setting using just the target queries.
+queries. If a source column (specified when the model was constructed) is present 
+then the model is additionally trained in a supervised setting using the (source, target) pairs, 
+(beyond just self supervised (target, target) pairs).
 
 Args:
     filename (str): Path to the dataset file.
+    use_supervised (bool): Whether to try to use an additional "source" query 
+        column to do supervised training if the column is present. Defaults to
+        true. If a "source" column is not present, this is a NOOP.
 
 Returns:
     None
@@ -1383,9 +1385,10 @@ Args:
     average_n_words (float): Optional. Average number of words in the 
         text column in each row. If provided, UDT may make 
         optimizations as appropriate.
-    use_attention (bool): Optional. If true, udt is guaranteed to
-        use attention when processing this text column. Otherwise, 
-        udt will only use attention when appropriate.
+    contextual_encoding (int): Optional. Either "local", "global", or "none", 
+        defaults to "none". If not "none", udt is guaranteed to use this encoding
+        type when processing this text column. Otherwise, udt will determine the
+        appropriate encoding type.
 
 Example:
     >>> deployment.UniversalDeepTransformer(

@@ -82,7 +82,7 @@ void FastSRP::hashSingleDense(const float* values, uint32_t dim,
   delete[] bin_values;
 
   // TODO(Josh, Patrick): Shouldn't we densify here too?
-  HashUtils::compactHashBits(hashes, output, _num_tables, _hashes_per_table);
+  compactHashBits(hashes, output, _num_tables, _hashes_per_table);
   for (uint32_t i = 0; i < _num_tables; i++) {
     output[i] %= _range;
   }
@@ -118,8 +118,8 @@ void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
 
   delete[] bin_values;
 
-  HashUtils::densifyHashes(hashes, _num_hashes);
-  HashUtils::compactHashBits(hashes, output, _num_tables, _hashes_per_table);
+  densifyHashes(hashes, _num_hashes);
+  compactHashBits(hashes, output, _num_tables, _hashes_per_table);
   for (uint32_t i = 0; i < _num_tables; i++) {
     output[i] %= _range;
   }

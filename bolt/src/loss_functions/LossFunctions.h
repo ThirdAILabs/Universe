@@ -180,7 +180,7 @@ class MarginBCE final : public LossFunction {
 };
 
 static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
-  std::string lower_name = utils::lower(name);
+  std::string lower_name = text::lower(name);
   if (lower_name == "categoricalcrossentropyloss") {
     return CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss();
   }

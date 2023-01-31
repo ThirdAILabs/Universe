@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dataset/src/batch_processors/ProcessorUtils.h>
+#include <dataset/src/featurizers/ProcessorUtils.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
 #include <cctype>
 #include <cstdlib>

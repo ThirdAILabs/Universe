@@ -29,7 +29,6 @@ def add_distributed_to_udt():
         learning_rate: float = 0.001,
         epochs: int = 3,
         max_in_memory_batches: Optional[int] = None,
-        gcp_credentials_path: Optional[str] = None,
         metrics: List[str] = [],
         verbose: bool = True,
     ):
@@ -62,8 +61,6 @@ def add_distributed_to_udt():
             max_in_memory_batches (Optional[int], optional): The maximum number of batches to load in
                 memory at a given time. If this is specified then the dataset will be processed
                 in a streaming fashion. Defaults to None, which causes the entire dataset to be loaded in memory.
-            gcp_credentials_path (Optional[str], optional): Credentials for GCP, if using GCP for data
-                loading.
             metrics (List[str], optional): Metrics to be logged during training. Defaults to [].
             verbose (bool, optional): Prints info about training. Defaults to True.
 
@@ -112,7 +109,6 @@ def add_distributed_to_udt():
                 DistributedUDTDatasetLoader(
                     train_file=file,
                     batch_size=batch_size,
-                    gcp_credentials_path=gcp_credentials_path,
                     max_in_memory_batches=max_in_memory_batches,
                     data_processor=data_processor,
                 )

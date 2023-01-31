@@ -15,7 +15,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 BUCKET = "testing-bucket"
 BLOB = "storage-object-name"
 TEST_FILE = "test_file.csv"
-GCS_CREDENTIALS = "test_credentials.json"
 TEST_DATASET_SIZE = 10
 NUMBER_OF_COLS = 2
 
@@ -60,7 +59,6 @@ def test_csv_source_from_gcs(
     # create a csv data source
     source = dataset.CSVDataSource(
         storage_path=f"gcs://{BUCKET}",
-        batch_size=5,
     )
 
     all_records = []
