@@ -114,7 +114,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       const std::vector<uint32_t>& relationship_col_nums) {
     std::vector<std::vector<uint32_t>> adjacency_list_simulation(rows.size());
 #pragma omp parallel for default(none) \
-    shared(relationship_col_nums, rows, adjacency_list_simulation) collapse(2)
+    shared(relationship_col_nums, rows, adjacency_list_simulation)
     for (uint32_t i = 0; i < rows.size(); i++) {
       for (uint32_t j = i + 1; j < rows.size(); j++) {
         for (unsigned int relationship_col_num : relationship_col_nums) {
