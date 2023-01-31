@@ -3,39 +3,37 @@ from thirdai import bolt
 
 
 class BoltBenchmarkConfig(BenchmarkConfig):
-    pass
+    loss_fn = "CategoricalCrossEntropyLoss"
+    hidden_sparsity = 1.0
+    output_spasity = 1.0
+    learning_rate = 1e-04
+    hidden_activation = "ReLU"
+    hidden_sampling_config = None
+    output_activation = "Softmax"
+    output_sampling_config = None
 
 
 # TODO(blaise): Add config for Movie Lens
-
-
-class Amazon670kConfig(BenchmarkConfig):
+class Amazon670kConfig(BoltBenchmarkConfig):
     dataset_name = "amazon_670k"
     reconstruct_hash_functions = 6400
     rebuild_hash_tables = 128000
-    learning_rate = 1e-04
-    loss_fn = "CategoricalCrossEntropyLoss"
 
     train_dataset_path = "amazon-670k/train_shuffled_noHeader.txt"
     test_dataset_path = "amazon-670k/test_shuffled_noHeader_sampled.txt"
-    format = "svm"
     batch_size = 256
 
     input_dim = 135909
     hidden_dim = 256
-    hidden_activation = "ReLU"
-
     output_dim = 670091
-    output_activation = "Softmax"
     output_sparsity = 0.005
 
 
-class Amazon131kConfig(BenchmarkConfig):
+class Amazon131kConfig(BoltBenchmarkConfig):
     dataset_name = "amazon_131k"
     reconstruct_hash_functions = 6400
     rebuild_hash_tables = 128000
     learning_rate = 1e-04
-    loss_fn = "CategoricalCrossEntropyLoss"
 
     train_dataset_path = "amazon-131k/train_shuffled_noHeader.txt"
     test_dataset_path = "amazon-131k/test_shuffled_noHeader_sampled.txt"
@@ -43,19 +41,15 @@ class Amazon131kConfig(BenchmarkConfig):
 
     input_dim = 135909
     hidden_dim = 256
-    hidden_activation = "ReLU"
-
     output_dim = 670091
-    output_activation = "Softmax"
     output_sparsity = 0.005
 
 
-class AmazonPolarity(BenchmarkConfig):
+class AmazonPolarity(BoltBenchmarkConfig):
     dataset_name = "amazon_polarity"
     reconstruct_hash_functions = 6400
     rebuild_hash_tables = 128000
     learning_rate = 1e-04
-    loss_fn = "CategoricalCrossEntropyLoss"
 
     train_dataset_path = "amazon_polarity/svm_train.txt"
     test_dataset_path = "amazon_polarity/svm_test.txt"
@@ -63,16 +57,12 @@ class AmazonPolarity(BenchmarkConfig):
 
     input_dim = 100000
     hidden_dim = 10000
-    hidden_activation = "ReLU"
     hidden_sparsity = 0.005
-
     output_dim = 2
-    output_activation = "Softmax"
-    output_sampling_config = None
     output_sparsity = 1.0
 
 
-class WayfairConfig(BenchmarkConfig):
+class WayfairConfig(BoltBenchmarkConfig):
     dataset_name = "wayfair"
     reconstruct_hash_functions = 10000
     rebuild_hash_tables = 50000
@@ -84,7 +74,6 @@ class WayfairConfig(BenchmarkConfig):
 
     input_dim = 100000
     hidden_dim = 1024
-    hidden_activation = "ReLU"
 
     output_dim = 931
     output_activation = "Sigmoid"
@@ -100,12 +89,11 @@ class WayfairConfig(BenchmarkConfig):
     ]
 
 
-class CriteoDLRMConfig(BenchmarkConfig):
+class CriteoDLRMConfig(BoltBenchmarkConfig):
     dataset_name = "criteo"
     reconstruct_hash_functions = 6400
     rebuild_hash_tables = 128000
     learning_rate = 1e-04
-    loss_fn = "CategoricalCrossEntropyLoss"
 
     train_dataset_path = "criteo/train_shuf.txt"
     test_dataset_path = "criteo/test_shuf.txt"
@@ -131,7 +119,7 @@ class CriteoDLRMConfig(BenchmarkConfig):
     embedding_num_tokens_per_input = 26
 
 
-class FineGrainedBoltBenchmarks(BenchmarkConfig):
+class FineGrainedBoltBenchmarks(BoltBenchmarkConfig):
     hidden_sparsity, output_sparsity = [
         0.01,
         0.05,
