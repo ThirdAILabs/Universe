@@ -73,7 +73,7 @@ TEST(GraphTest, correctNeighboursTest) {
     }
   }
 
-  for (auto neighbour: hop3_neighbours) {
+  for (const auto& neighbour : hop3_neighbours) {
     ASSERT_EQ(neighbour.size(), 5);
   }
 }
@@ -82,7 +82,8 @@ TEST(GraphTest, correctNeighboursTest) {
 //   auto hop1_neighbours = GraphDatasetFactory::findNeighboursForAllNodes(
 //       num_nodes, expected_adjacency_list, 1);
 
-//   auto values = GraphDatasetFactory::processNumerical(rows, numerical_columns,
+//   auto values = GraphDatasetFactory::processNumerical(rows,
+//   numerical_columns,
 //                                                       hop1_neighbours);
 
 //   for (uint32_t i = 0; i < values.size(); i++) {
