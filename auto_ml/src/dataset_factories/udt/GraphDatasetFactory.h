@@ -249,8 +249,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
           (_config->_label_context && col_name == _config->_target)) {
         if (auto categorical = asCategorical(data_type)) {
           if (categorical->delimiter) {
-            input_blocks.push_back(dataset::UniGramTextBlock::make(
-                col_num, /* dim= */ std::numeric_limits<uint32_t>::max(),
+            input_blocks.push_back(dataset::NGramTextBlock::make(
+                col_num, /* dim= */ 1, std::numeric_limits<uint32_t>::max(),
                 *categorical->delimiter));
           } else {
             tabular_columns.push_back(dataset::TabularColumn::Categorical(
@@ -258,15 +258,22 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
           }
         }
         if (auto text_meta = asText(data_type)) {
-          if (text_meta->force_pairgram || (text_meta->average_n_words &&
-                                            text_meta->average_n_words <= 15)) {
+          if (text_meta->contextual_encoding == TextEncodingType::Pairgrams ||
+              (text_meta->average_n_words &&
+               text_meta->average_n_words <= 15)) {
             // text hash range of MAXINT is fine since features are later
             // hashed into a range. In fact it may reduce hash collisions.
             input_blocks.push_back(dataset::PairGramTextBlock::make(
-                col_num, /* dim= */ std::numeric_limits<uint32_t>::max()));
+                col_name, /* dim= */ std::numeric_limits<uint32_t>::max()));
+          } else if (text_meta->contextual_encoding ==
+                     TextEncodingType::Bigrams) {
+            input_blocks.push_back(dataset::NGramTextBlock::make(
+                col_name, /* n= */ 2,
+                /* dim= */ std::numeric_limits<uint32_t>::max()));
           } else {
-            input_blocks.push_back(dataset::UniGramTextBlock::make(
-                col_num, /* dim= */ std::numeric_limits<uint32_t>::max()));
+            input_blocks.push_back(dataset::NGramTextBlock::make(
+                col_name, /* n= */ 1,
+                /* dim= */ std::numeric_limits<uint32_t>::max()));
           }
         }
       }
