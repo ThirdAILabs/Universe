@@ -80,6 +80,7 @@ def modify_udt_classifier():
             train_config=train_config,
             validation=validation,
             max_in_memory_batches=max_in_memory_batches,
+            batch_size=batch_size,
         )
 
     wrapped_train.__doc__ = classifier_train_doc
