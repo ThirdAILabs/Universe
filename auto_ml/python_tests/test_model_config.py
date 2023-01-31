@@ -3,7 +3,6 @@ import os
 import textwrap
 
 import pytest
-import thirdai
 from thirdai import bolt
 
 
@@ -69,13 +68,15 @@ def get_config(have_user_specified_parameters: bool = False):
 
 @pytest.mark.unit
 def test_load_model_from_config():
+    from thirdai import deployment
+
     CONFIG_FILE = "./model_config"
 
     config = get_config(have_user_specified_parameters=True)
 
-    thirdai.deployment.dump_config(json.dumps(config), CONFIG_FILE)
+    deployment.dump_config(json.dumps(config), CONFIG_FILE)
 
-    model = thirdai.deployment.load_model_from_config(
+    model = deployment.load_model_from_config(
         config_file=CONFIG_FILE,
         parameters={"use_sparsity": "sparse", "act": "tanh", "output_dim": 50},
         input_dims=[100],
@@ -100,9 +101,11 @@ def test_load_model_from_config():
 
 @pytest.mark.unit
 def test_udt_model_config_override():
+    from thirdai import deployment
+
     CONFIG_FILE = "./model_config"
 
-    thirdai.deployment.dump_config(json.dumps(get_config()), CONFIG_FILE)
+    deployment.dump_config(json.dumps(get_config()), CONFIG_FILE)
 
     udt_model = bolt.UniversalDeepTransformer(
         data_types={"col": bolt.types.categorical()},
@@ -130,24 +133,28 @@ def test_udt_model_config_override():
 
 @pytest.mark.unit
 def test_config_dump_load():
+    from thirdai import deployment
+
     config = get_config()
 
     CONFIG_FILE = "./simple_model_config"
 
-    thirdai.deployment.dump_config(json.dumps(config), CONFIG_FILE)
+    deployment.dump_config(json.dumps(config), CONFIG_FILE)
 
-    assert json.loads(thirdai.deployment.load_config(CONFIG_FILE)) == config
+    assert json.loads(deployment.load_config(CONFIG_FILE)) == config
 
     os.remove(CONFIG_FILE)
 
 
 @pytest.mark.unit
 def test_config_encryption():
+    from thirdai import deployment
+
     config_str = json.dumps(get_config())
 
     CONFIG_FILE = "./encrypted_model_config"
 
-    thirdai.deployment.dump_config(config_str, CONFIG_FILE)
+    deployment.dump_config(config_str, CONFIG_FILE)
 
     with open(CONFIG_FILE, "rb") as file:
         encrypted_config_str = file.read()
