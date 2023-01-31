@@ -35,8 +35,8 @@ void MinHash::hashSingleSparse(const uint32_t* indices, const float* values,
     all_hashes[hash_idx] = min_hash;
   }
 
-  HashUtils::defaultCompactHashes(all_hashes.data(), output, _num_tables,
-                                  _hashes_per_table);
+  defaultCompactHashes(all_hashes.data(), output, _num_tables,
+                       _hashes_per_table);
 
   for (uint32_t t = 0; t < _num_tables; t++) {
     output[t] %= _range;

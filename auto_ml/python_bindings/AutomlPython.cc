@@ -173,7 +173,8 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
       .def("cold_start", &UniversalDeepTransformer::coldStartPretraining,
            py::arg("dataset"), py::arg("strong_column_names"),
-           py::arg("weak_column_names"), py::arg("learning_rate"))
+           py::arg("weak_column_names"), py::arg("train_config"),
+           py::arg("validation"), bolt::python::OutputRedirect())
       .def(
           "embedding_representation",
           [](UniversalDeepTransformer& model, const MapInput& input) {
@@ -308,9 +309,9 @@ void createUDTTypesSubmodule(py::module_& module) {
 
   py::class_<automl::data::TextDataType, automl::data::DataType,
              automl::data::TextDataTypePtr>(udt_types_submodule, "text")
-      .def(py::init<std::optional<double>, bool>(),
+      .def(py::init<std::optional<double>, std::string>(),
            py::arg("average_n_words") = std::nullopt,
-           py::arg("use_attention") = false, docs::UDT_TEXT_TYPE);
+           py::arg("contextual_encoding") = "none", docs::UDT_TEXT_TYPE);
 
   py::class_<automl::data::DateDataType, automl::data::DataType,
              automl::data::DateDataTypePtr>(udt_types_submodule, "date")

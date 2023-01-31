@@ -77,9 +77,11 @@ MaskedSentenceFeaturizer::processRow(const std::string& row) {
       masked_word_ids, std::vector<float>(masked_word_ids.size(), 1.0));
 
   auto pairgrams =
-      TokenEncoding::computePairgramsFromUnigrams(unigrams, _output_range);
+      token_encoding::pairgrams(token_encoding::tokenize(text::split(row)));
+  token_encoding::mod(pairgrams, _output_range);
+  auto dedpulicated_pairgrams = token_encoding::sumRepeatedIndices(pairgrams);
 
-  return {std::move(pairgrams),
+  return {BoltVector::makeSparseVector(dedpulicated_pairgrams),
           BoltVector::makeSparseVector(
               masked_indices, std::vector<float>(masked_tokens_size, 1.0)),
           std::move(label)};

@@ -1,20 +1,16 @@
 #pragma once
 #include <string>
 #include <string_view>
+#include <vector>
 
-namespace thirdai::utils {
+// TODO(any): consolidate string manipulation to this file
+namespace thirdai::text {
 
 /**
- * Creates a copy of the original string where all characters are lowercase.
+ * Splits a sentence by delimiter.
  */
-inline std::string lower(const std::string& str) {
-  std::string lower_name;
-  for (char c : str) {
-    lower_name.push_back(std::tolower(c));
-  }
-  return lower_name;
-}
-
+std::vector<std::string_view> split(std::string_view sentence,
+                                    char delimiter = ' ');
 /**
  * Creates a copy of the original stringview where all characters are lowercase.
  */
@@ -34,4 +30,4 @@ inline uint32_t toInteger(const char* start) {
   return std::strtoul(start, &end, 10);
 }
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::text
