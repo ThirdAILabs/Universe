@@ -1,5 +1,5 @@
 import numpy as np
-from base_config import BenchmarkConfig
+from configs import BenchmarkConfig
 from thirdai import bolt, deployment
 
 
