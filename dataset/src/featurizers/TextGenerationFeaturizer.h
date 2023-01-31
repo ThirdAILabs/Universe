@@ -11,7 +11,7 @@ namespace thirdai::dataset {
  */
 class TextGenerationFeaturizer final : public Featurizer {
  public:
-  TextGenerationFeaturizer(uint32_t sequence_len, uint32_t output_dim);
+  TextGenerationFeaturizer(uint32_t sequence_len, uint32_t vocab_size);
 
   /**
    * Featurizes a list of rows from a text dataset for next word prediction.
@@ -38,7 +38,7 @@ class TextGenerationFeaturizer final : public Featurizer {
   size_t getNumDatasets() final { return 2; }
 
   std::vector<uint32_t> getDimensions() final {
-    return {std::numeric_limits<uint32_t>::max(), _output_dim};
+    return {std::numeric_limits<uint32_t>::max(), _vocab_size};
   }
 
  private:
@@ -52,7 +52,7 @@ class TextGenerationFeaturizer final : public Featurizer {
   static std::vector<uint32_t> parseTokens(const std::string& line);
 
   uint32_t _sequence_len;
-  uint32_t _output_dim;
+  uint32_t _vocab_size;
 };
 
 }  // namespace thirdai::dataset

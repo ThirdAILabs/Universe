@@ -9,9 +9,8 @@
 namespace thirdai::dataset {
 
 TextGenerationFeaturizer::TextGenerationFeaturizer(uint32_t sequence_len,
-
-                                                   uint32_t output_dim)
-    : _sequence_len(sequence_len), _output_dim(output_dim) {}
+                                                   uint32_t vocab_size)
+    : _sequence_len(sequence_len), _vocab_size(vocab_size) {}
 
 std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
     const std::vector<std::string>& lines) {
@@ -39,7 +38,6 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
 std::pair<std::vector<BoltVector>, std::vector<BoltVector>>
 TextGenerationFeaturizer::featurizeText(const std::string& line) const {
   std::vector<uint32_t> tokens = parseTokens(line);
-  std::cout << "Tokens.size() = " << tokens.size() << std::endl;
 
   std::vector<BoltVector> vectors;
   std::vector<BoltVector> labels;

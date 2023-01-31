@@ -295,7 +295,7 @@ void createDatasetSubmodule(py::module_& module) {
              std::shared_ptr<TextGenerationFeaturizer>>(
       dataset_submodule, "TextGenerationFeaturizer")
       .def(py::init<uint32_t, uint32_t>(), py::arg("sequence_len"),
-           py::arg("output_dim"));
+           py::arg("vocab_size"));
 
 #endif
 
