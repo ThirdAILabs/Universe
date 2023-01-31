@@ -317,10 +317,6 @@ class FullyConnectedLayer final {
       archive(_weight_optimizer, _bias_optimizer);
     }
 
-    // After loading with or without optimizer, Ideally, we would
-    // want the models to just save without optimizer by default.
-    _should_save_optimizer = false;
-
     // TODO(david) another way to reduce memory for inference is to remove these
     // in addition to the optimizer as mentioned above
     initActiveNeuronsTrackers();

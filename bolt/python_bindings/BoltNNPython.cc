@@ -595,7 +595,7 @@ That's all for now, folks! More docs coming soon :)
       .def("finish_training", &DistributedTrainingWrapper::finishTraining, "")
       .def("save_with_optimizer",
            &DistributedTrainingWrapper::saveWithOptimizer,
-           py::arg("should_save_optimizer"),
+           py::arg("should_save_optimizer") = false,
            "This flag make sure that whenever the save/get method is "
            "called, optmizer states are saved too. ")
       .def("model", &DistributedTrainingWrapper::getModel,

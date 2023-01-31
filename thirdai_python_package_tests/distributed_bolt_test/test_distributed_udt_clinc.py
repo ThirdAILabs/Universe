@@ -2,7 +2,6 @@ import os
 
 import pytest
 from distributed_utils import (
-    clear_ray_workers,
     ray_two_node_cluster_config,
     remove_files,
 )
