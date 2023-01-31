@@ -249,10 +249,6 @@ void createDatasetSubmodule(py::module_& module) {
            "Returns false since text blocks always produce sparse "
            "features.");
 
-  py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleConfig")
-      .def(py::init<size_t, uint32_t>(), py::arg("min_vecs_in_buffer") = 64000,
-           py::arg("seed") = time(NULL));
-
   py::class_<Featurizer, FeaturizerPtr>(dataset_submodule,  // NOLINT
                                         "Featurizer");
 
@@ -274,6 +270,10 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("masked_tokens_percentage"));
 
 #endif
+
+  py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleConfig")
+      .def(py::init<size_t, uint32_t>(), py::arg("min_vecs_in_buffer") = 64000,
+           py::arg("seed") = time(NULL));
 
   py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
                                               "DatasetLoader")
