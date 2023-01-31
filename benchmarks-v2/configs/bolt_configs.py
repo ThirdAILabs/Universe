@@ -120,7 +120,7 @@ class CriteoDLRMConfig(BoltBenchmarkConfig):
 
 
 class FineGrainedBoltBenchmarks(BoltBenchmarkConfig):
-    hidden_sparsity, output_sparsity = [
+    hidden_and_output_sparsities = [
         0.01,
         0.05,
         0.1,
