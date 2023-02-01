@@ -1,5 +1,6 @@
+import json
+
 import numpy as np
-import json 
 from configs import BenchmarkConfig
 from thirdai import bolt, deployment
 
@@ -98,7 +99,7 @@ class WayfairUDTConfig(BenchmarkConfig):
                 "dim": 1024,
                 "sparsity": 1.0,
                 "activation": "relu",
-                "predecessor": "input"
+                "predecessor": "input",
             },
             {
                 "name": "output",
@@ -108,17 +109,16 @@ class WayfairUDTConfig(BenchmarkConfig):
                 "sampling_config": {
                     "num_tables": 64,
                     "hashes_per_table": 4,
-                    "reservoir_size": 64
+                    "reservoir_size": 64,
                 },
-                "predecessor": "hidden"
-            }
+                "predecessor": "hidden",
+            },
         ],
         "output": "output",
-        "loss": "CategoricalCrossEntropyLoss"
+        "loss": "CategoricalCrossEntropyLoss",
     }
 
     deployment.dump_config(json.dumps(config), model_config_path)
-    
 
     # Learning rate scheduler that decreases the learning rate by a factor of 10
     # after the third epoch. This scheduling is what has given up the optimal
