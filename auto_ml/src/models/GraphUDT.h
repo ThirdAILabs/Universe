@@ -21,14 +21,18 @@ class GraphUDT : public ModelPipeline {
  public:
   static GraphUDT buildGraphUDT(
       data::ColumnDataTypes data_types, std::string graph_file_name,
-      std::string source, std::string target,
-      std::vector<std::string> relationship_columns, uint32_t n_target_classes,
+      std::string source, std::string target, uint32_t n_target_classes,
+      std::optional<std::vector<std::string>> relationship_columns =
+          std::nullopt,
       bool neighbourhood_context = false, bool label_context = false,
-      uint32_t kth_neighbourhood = 0, char delimeter = ',') {
+      uint32_t kth_neighbourhood = 0, char delimeter = ',',
+      std::optional<std::unordered_map<uint32_t, std::vector<uint32_t>>>
+          adj_list = std::nullopt) {
     auto dataset_config = std::make_shared<data::GraphConfig>(
         std::move(data_types), std::move(graph_file_name), std::move(source),
-        std::move(target), std::move(relationship_columns), n_target_classes,
-        neighbourhood_context, label_context, kth_neighbourhood, delimeter);
+        std::move(target), n_target_classes, std::move(relationship_columns),
+        neighbourhood_context, label_context, kth_neighbourhood, delimeter,
+        adj_list);
 
     auto graph_dataset_factory =
         std::make_shared<data::GraphDatasetFactory>(dataset_config);
