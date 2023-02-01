@@ -11,6 +11,7 @@ class BoltBenchmarkConfig(BenchmarkConfig):
     hidden_sampling_config = None
     output_activation = "Softmax"
     output_sampling_config = None
+    compute_roc_auc = False
 
 
 # TODO(blaise): Add config for Movie Lens
