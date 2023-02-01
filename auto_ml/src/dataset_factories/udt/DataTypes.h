@@ -69,13 +69,35 @@ struct CategoricalDataType : DataType {
 
 using CategoricalDataTypePtr = std::shared_ptr<CategoricalDataType>;
 
+enum class TextEncodingType {
+  Unigrams,
+  Bigrams,
+  Pairgrams,
+};
+
+inline TextEncodingType getTextEncodingFromString(const std::string& encoding) {
+  std::unordered_map<std::string, TextEncodingType> contextual_encodings = {
+      {"none", TextEncodingType::Unigrams},
+      {"local", TextEncodingType::Bigrams},
+      {"global", TextEncodingType::Pairgrams},
+  };
+
+  if (contextual_encodings.count(encoding) == 0) {
+    throw std::invalid_argument(
+        "Created text column with invalid contextual_encoding '" + encoding +
+        "' please choose one of 'none', 'local', or 'global'.");
+  };
+  return contextual_encodings[encoding];
+}
+
 struct TextDataType : DataType {
   explicit TextDataType(std::optional<double> average_n_words = std::nullopt,
-                        bool force_pairgram = false)
-      : average_n_words(average_n_words), force_pairgram(force_pairgram) {}
+                        const std::string& contextual_encoding = "none")
+      : average_n_words(average_n_words),
+        contextual_encoding(getTextEncodingFromString(contextual_encoding)) {}
 
   std::optional<double> average_n_words;
-  bool force_pairgram;
+  TextEncodingType contextual_encoding;
 
   std::string toString() const final { return R"({"type": "text"})"; }
 
@@ -84,7 +106,7 @@ struct TextDataType : DataType {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<DataType>(this), average_n_words,
-            force_pairgram);
+            contextual_encoding);
   }
 };
 

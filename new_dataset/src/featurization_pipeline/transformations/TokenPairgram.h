@@ -44,16 +44,11 @@ class TokenPairgram : public Transformation {
       std::vector<uint32_t> input_tokens_vector(input_tokens_buffer.begin(),
                                                 input_tokens_buffer.end());
       std::vector<uint32_t> pairgrams =
-          dataset::TokenEncoding::computeRawPairgramsFromUnigrams(
-              input_tokens_vector, _output_range);
+          dataset::token_encoding::pairgrams(input_tokens_vector);
+      dataset::token_encoding::mod(pairgrams, _output_range);
 
-      std::vector<std::pair<uint32_t, float>> deduplicated_pairgrams;
-      dataset::TokenEncoding::sumRepeatedIndices(
-          pairgrams, /* base_value= */ 1.0,
-          [&](uint32_t pairgram, float value) {
-            deduplicated_pairgrams.push_back(std::make_pair(pairgram, value));
-          });
-      column_values[row_idx] = deduplicated_pairgrams;
+      column_values[row_idx] =
+          dataset::token_encoding::sumRepeatedIndices(pairgrams);
     }
 
     auto output_column = std::make_shared<columns::CppSparseArrayColumn>(

@@ -200,8 +200,7 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
 
  private:
   uint32_t getHashedIndex(uint32_t index) const {
-    return hashing::HashUtils::combineHashes(index, _n_segments_added) %
-           _hash_range;
+    return hashing::combineHashes(index, _n_segments_added) % _hash_range;
   }
 
   uint32_t _hash_range;
