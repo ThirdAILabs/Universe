@@ -1,4 +1,5 @@
 import numpy as np
+import json 
 from configs import BenchmarkConfig
 from thirdai import bolt, deployment
 
@@ -88,31 +89,36 @@ class WayfairUDTConfig(BenchmarkConfig):
     learning_rate = 0.001
     delimiter = "\t"
 
-    model_config = deployment.ModelConfig(
-        input_names=["input"],
-        nodes=[
-            deployment.FullyConnectedNodeConfig(
-                name="hidden",
-                dim=deployment.ConstantParameter(1024),
-                sparsity=deployment.ConstantParameter(1.0),
-                activation=deployment.ConstantParameter("relu"),
-                predecessor="input",
-            ),
-            deployment.FullyConnectedNodeConfig(
-                name="output",
-                dim=deployment.DatasetLabelDimensionParameter(),
-                sparsity=deployment.ConstantParameter(0.1),
-                activation=deployment.ConstantParameter("sigmoid"),
-                sampling_config=deployment.ConstantParameter(
-                    bolt.nn.DWTASamplingConfig(
-                        num_tables=64, hashes_per_table=4, reservoir_size=64
-                    )
-                ),
-                predecessor="hidden",
-            ),
+    config = {
+        "inputs": ["input"],
+        "nodes": [
+            {
+                "name": "hidden",
+                "type": "fully_connected",
+                "dim": 1024,
+                "sparsity": 1.0,
+                "activation": "relu",
+                "predecessor": "input"
+            },
+            {
+                "name": "output",
+                "type": "fully_connected",
+                "dim": {"param_name": "output_dim"},
+                "sparsity": 0.1,
+                "sampling_config": {
+                    "num_tables": 64,
+                    "hashes_per_table": 4,
+                    "reservoir_size": 64
+                },
+                "predecessor": "hidden"
+            }
         ],
-        loss=bolt.nn.losses.BinaryCrossEntropy(),
-    )
+        "output": "output",
+        "loss": "CategoricalCrossEntropyLoss"
+    }
+
+    deployment.dump_config(json.dumps(config), model_config_path)
+    
 
     # Learning rate scheduler that decreases the learning rate by a factor of 10
     # after the third epoch. This scheduling is what has given up the optimal
