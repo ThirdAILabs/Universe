@@ -17,13 +17,13 @@ class BoltBenchmarkConfig(BenchmarkConfig):
 class Amazon670kConfig(BoltBenchmarkConfig):
     dataset_name = "amazon_670k"
     experiment_name = "Bolt_Amazon670k"
-    reconstruct_hash_functions = 6400
-    rebuild_hash_tables = 128000
+    rehashing_factor = 6400
+    rebuild_hash_tables_factor = 128000
 
     train_dataset_path = "/share/data/amazon-670k/train_shuffled_noHeader.txt"
     test_dataset_path = "/share/data/amazon-670k/test_shuffled_noHeader_sampled.txt"
     dataset_format = "svm"
-    batch_size = 256
+    train_batch_size, test_batch_size = 256, 256
 
     input_dim = 135909
     hidden_dim = 256
@@ -34,8 +34,8 @@ class Amazon670kConfig(BoltBenchmarkConfig):
 class Amazon131kConfig(BoltBenchmarkConfig):
     dataset_name = "amazon_131k"
     experiment_name = "Bolt_Amazon131k"
-    reconstruct_hash_functions = 6400
-    rebuild_hash_tables = 128000
+    rehashing_factor = 6400
+    rebuild_hash_tables_factor = 128000
     learning_rate = 1e-04
 
     train_dataset_path = "/share/data/amazon-131k/train_shuffled_noHeader.txt"
@@ -52,8 +52,8 @@ class Amazon131kConfig(BoltBenchmarkConfig):
 class AmazonPolarity(BoltBenchmarkConfig):
     dataset_name = "amazon_polarity"
     experiment_name = "Bolt_AmazonPolarity"
-    reconstruct_hash_functions = 6400
-    rebuild_hash_tables = 128000
+    rehashing_factor = 6400
+    rebuild_hash_tables_factor = 128000
     learning_rate = 1e-04
 
     train_dataset_path = "/share/data/amazon_polarity/svm_train.txt"
@@ -71,8 +71,8 @@ class AmazonPolarity(BoltBenchmarkConfig):
 class WayfairConfig(BoltBenchmarkConfig):
     dataset_name = "wayfair"
     experiment_name = "Bolt_Wayfair"
-    reconstruct_hash_functions = 10000
-    rebuild_hash_tables = 50000
+    rehashing_factor = 10000
+    rebuild_hash_tables_factor = 50000
     loss_fn = "CategoricalCrossEntropyLoss"
 
     train_dataset_path = "/share/data/wayfair/train_raw_queries.txt"
@@ -100,8 +100,8 @@ class CriteoDLRMConfig(BoltBenchmarkConfig):
     dataset_name = "criteo"
     experiment_name = "Bolt_Criteo"
 
-    reconstruct_hash_functions = 6400
-    rebuild_hash_tables = 128000
+    rehashing_factor = 6400
+    rebuild_hash_tables_factor = 128000
     learning_rate = 1e-04
 
     train_dataset_path = "/share/data/criteo/train_shuf.txt"

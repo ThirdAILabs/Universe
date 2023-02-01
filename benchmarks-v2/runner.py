@@ -20,27 +20,41 @@ def validate_dataset_attributes(config):
     for attribute in attributes:
         assert hasattr(config, attribute)
 
+def load_wayfair_dataset(filename, batch_size, output_dim, shuffle=True):
+    batch_processor = dataset.GenericBatchProcessor(
+            input_blocks=[dataset.blocks.TextPairGram(col=1)],
+            label_blocks=[dataset.blocks.NumericalId(col=0, n_classes=output_dim, delimiter=",")],
+            has_header=False,
+            delimiter="\t"
+        )
+
+    dataloader = dataset.DatasetLoader(
+        data_source=dataset.FileDataSource(filename=filename, batch_size=batch_size),
+        batch_processor=batch_processor,
+        shuffle=shuffle
+    )
+    data, labels = dataloader.load_in_memory()
+    return data, labels
 
 def load_datasets(config):
     validate_dataset_attributes(config)
 
-    result = {
-        "train_data": [],
-        "train_labels": [],
-        "test_data": [],
-        "test_labels": [],
-        "test_labels_np": [],
-    }
-
     dataset_format = config.dataset_format
 
     if dataset_format == "svm":
-        train_dataset = dataset.load_bolt_svm_dataset(
+        train_data, train_labels = dataset.load_bolt_svm_dataset(
             filename=config.train_dataset_path, batch_size=config.train_batch_size
         )
-        test_dataset = dataset.load_bolt_svm_dataset(
+        test_data, test_labels = dataset.load_bolt_svm_dataset(
             filename=config.test_dataset_path, batch_size=config.test_batch_size
         )
+    elif dataset_format == "wayfair":
+        assert hasattr(config, "output_dim")
+        train_data, train_labels = load_wayfair_dataset(filename=config.train_dataset_path, batch_size=config.train_batch_size, output_dim=config.output_dim)
+        test_data, test_labels = load_wayfair_dataset(filename=config.test_dataset_path, batch_size=config.test_batch_size, output_dim=config.output_dim, shuffle=False)
+
+    return train_data, train_labels, test_data, test_labels
+
 
 
 def construct_input_node(benchmark_config):
@@ -75,6 +89,27 @@ def construct_fully_connected_node(benchmark_config, is_hidden_layer=True):
     )
 
 
+def get_train_and_eval_configs(benchmark_config):
+    learning_rate = benchmark_config.learning_rate
+    metrics = [benchmark_config.metric_type]
+
+    train_config = bolt.TrainConfig(epochs=1, learning_rate=learning_rate).with_metrics(
+        metrics
+    )
+
+    if hasattr(benchmark_config, "rehashing_factor"):
+        train_config.with_reconstruct_hash_functions(benchmark_config.rehashing_factor)
+
+    if hasattr(benchmark_config, "rebuild_hash_tables_factor"):
+        train_config.with_rebuild_hash_tables(
+            benchmark_config.rebuild_hash_tables_factor
+        )
+
+    eval_config = bolt.EvalConfig().with_metrics(metrics)
+
+    return train_config, eval_config
+
+
 def define_bolt_model(config: BoltBenchmarkConfig):
     def construct_criteo_dlrm_model(config):
         pass
@@ -82,9 +117,9 @@ def define_bolt_model(config: BoltBenchmarkConfig):
     def get_loss_function(config):
         loss = config.loss_fn.lower()
         if loss == "categoricalcrossentropyloss":
-            return bolt.nn.losses.CategoricalCrossEntropyLoss()
+            return bolt.nn.losses.CategoricalCrossEntropy()
         elif loss == "binarycrossentropyloss":
-            return bolt.nn.losses.BinaryCrossEntropyLoss()
+            return bolt.nn.losses.BinaryCrossEntropy()
         elif loss == "meansquarederror":
             return bolt.nn.losses.MeanSquaredError()
         raise ValueError(f"Invalid loss function: {loss}")
@@ -99,7 +134,7 @@ def define_bolt_model(config: BoltBenchmarkConfig):
     )(hidden_node)
 
     loss_function = get_loss_function(config)
-    model = bolt.nn.Model(inputs=input_node, output=output_node)
+    model = bolt.nn.Model(inputs=[input_node], output=output_node)
     model.compile(loss=loss_function, print_when_done=False)
     model.summary(detailed=True)
 
@@ -110,6 +145,9 @@ def get_mlflow_uri():
     load_dotenv()
     return os.getenv("MLFLOW_URI")
 
+def compute_roc_auc():
+    pass 
+
 
 def launch_bolt_benchmark(config: BoltBenchmarkConfig, run_name: str) -> None:
     if not issubclass(config, BoltBenchmarkConfig):
@@ -118,14 +156,32 @@ def launch_bolt_benchmark(config: BoltBenchmarkConfig, run_name: str) -> None:
         )
 
     mlflow_uri = get_mlflow_uri()
-    # callbacks = [
-    #     MlflowCallback(
-    #         mlflow_uri, config.experiment_name, run_name, config.dataset_name, {}
-    #     )
-    # ]
 
     model = define_bolt_model(config)
-    dataset = load_datasets(config)
+    train, train_y, test, test_y = load_datasets(config)
+    
+    epochs = config.num_epochs 
+    train_config, eval_config = get_train_and_eval_configs(benchmark_config=config)
+
+    for epoch in range(epochs):
+        train_metrics = model.train(
+            train_data=train,
+            train_labels=train_y,
+            train_config=train_config
+        )
+        print(f"train_metrics = {train_metrics}")
+
+        predict_output = model.evaluate(
+            test_data=test,
+            test_labels=test_y,
+            eval_config=eval_config
+        )
+
+        if config.compute_roc_auc:
+            compute_roc_auc()
+
+    if hasattr(config, "save"):
+        model.save(config.save)
 
 
 if __name__ == "__main__":
