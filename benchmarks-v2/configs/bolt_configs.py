@@ -16,11 +16,13 @@ class BoltBenchmarkConfig(BenchmarkConfig):
 # TODO(blaise): Add config for Movie Lens
 class Amazon670kConfig(BoltBenchmarkConfig):
     dataset_name = "amazon_670k"
+    experiment_name = "Bolt_Amazon670k"
     reconstruct_hash_functions = 6400
     rebuild_hash_tables = 128000
 
-    train_dataset_path = "amazon-670k/train_shuffled_noHeader.txt"
-    test_dataset_path = "amazon-670k/test_shuffled_noHeader_sampled.txt"
+    train_dataset_path = "/share/data/amazon-670k/train_shuffled_noHeader.txt"
+    test_dataset_path = "/share/data/amazon-670k/test_shuffled_noHeader_sampled.txt"
+    dataset_format = "svm"
     batch_size = 256
 
     input_dim = 135909
@@ -31,12 +33,14 @@ class Amazon670kConfig(BoltBenchmarkConfig):
 
 class Amazon131kConfig(BoltBenchmarkConfig):
     dataset_name = "amazon_131k"
+    experiment_name = "Bolt_Amazon131k"
     reconstruct_hash_functions = 6400
     rebuild_hash_tables = 128000
     learning_rate = 1e-04
 
-    train_dataset_path = "amazon-131k/train_shuffled_noHeader.txt"
-    test_dataset_path = "amazon-131k/test_shuffled_noHeader_sampled.txt"
+    train_dataset_path = "/share/data/amazon-131k/train_shuffled_noHeader.txt"
+    test_dataset_path = "/share/data/amazon-131k/test_shuffled_noHeader_sampled.txt"
+    dataset_format = "svm"
     batch_size = 256
 
     input_dim = 135909
@@ -47,12 +51,14 @@ class Amazon131kConfig(BoltBenchmarkConfig):
 
 class AmazonPolarity(BoltBenchmarkConfig):
     dataset_name = "amazon_polarity"
+    experiment_name = "Bolt_AmazonPolarity"
     reconstruct_hash_functions = 6400
     rebuild_hash_tables = 128000
     learning_rate = 1e-04
 
-    train_dataset_path = "amazon_polarity/svm_train.txt"
-    test_dataset_path = "amazon_polarity/svm_test.txt"
+    train_dataset_path = "/share/data/amazon_polarity/svm_train.txt"
+    test_dataset_path = "/share/data/amazon_polarity/svm_test.txt"
+    datasest_format = "svm"
     batch_size = 256
 
     input_dim = 100000
@@ -64,6 +70,7 @@ class AmazonPolarity(BoltBenchmarkConfig):
 
 class WayfairConfig(BoltBenchmarkConfig):
     dataset_name = "wayfair"
+    experiment_name = "Bolt_Wayfair"
     reconstruct_hash_functions = 10000
     rebuild_hash_tables = 50000
     loss_fn = "CategoricalCrossEntropyLoss"
@@ -91,12 +98,14 @@ class WayfairConfig(BoltBenchmarkConfig):
 
 class CriteoDLRMConfig(BoltBenchmarkConfig):
     dataset_name = "criteo"
+    experiment_name = "Bolt_Criteo"
+
     reconstruct_hash_functions = 6400
     rebuild_hash_tables = 128000
     learning_rate = 1e-04
 
-    train_dataset_path = "criteo/train_shuf.txt"
-    test_dataset_path = "criteo/test_shuf.txt"
+    train_dataset_path = "/share/data/criteo/train_shuf.txt"
+    test_dataset_path = "/share/data/criteo/test_shuf.txt"
     delimiter = " "
     max_num_numerical_features = 13
     max_num_categorical_features = 26
@@ -119,7 +128,9 @@ class CriteoDLRMConfig(BoltBenchmarkConfig):
     embedding_num_tokens_per_input = 26
 
 
-class FineGrainedBoltBenchmarks(BoltBenchmarkConfig):
+class FineGrainedBoltBenchmarksConfig(BoltBenchmarkConfig):
+    experiment_name = ""
+
     hidden_and_output_sparsities = [
         0.01,
         0.05,
