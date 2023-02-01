@@ -113,8 +113,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       const std::vector<std::vector<std::string>>& rows,
       const std::vector<uint32_t>& relationship_col_nums) {
     std::vector<std::vector<uint32_t>> adjacency_list_simulation(rows.size());
-#pragma omp parallel for default(none) \
-    shared(relationship_col_nums, rows, adjacency_list_simulation)
+// #pragma omp parallel for default(none) 
+//     shared(relationship_col_nums, rows, adjacency_list_simulation)
     for (uint32_t i = 0; i < rows.size(); i++) {
       for (uint32_t j = i + 1; j < rows.size(); j++) {
         for (unsigned int relationship_col_num : relationship_col_nums) {
@@ -134,6 +134,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       const std::vector<std::vector<uint32_t>>& adjacency_list,
       uint32_t k_hop) {
     std::vector<std::unordered_set<uint32_t>> neighbours(num_nodes);
+#pragma omp parallel for default(none) shared(num_nodes,k_hop,adjacency_list,neighbours)
     for (uint32_t i = 0; i < num_nodes; i++) {
       std::unordered_set<uint32_t> neighbours_for_node;
       std::vector<bool> visited(num_nodes, false);
@@ -186,12 +187,20 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     std::vector<uint32_t> relationship_col_nums = getRelationshipColumns(
         _config->_relationship_columns, _column_number_map);
 
+    std::cout<<"h 1"<<std::endl;
+
     _adjacency_list = createGraph(rows, relationship_col_nums);
+
+    std::cout<<"h 2"<<std::endl;
 
     _neighbours = findNeighboursForAllNodes(rows.size(), _adjacency_list,
                                             _config->_kth_neighbourhood);
 
+    std::cout<<"h 3"<<std::endl;
+
     auto values = processNumerical(rows, numerical_columns, _neighbours);
+
+    std::cout<<"h 4"<<std::endl;
 
     auto copied_rows = rows;
 
