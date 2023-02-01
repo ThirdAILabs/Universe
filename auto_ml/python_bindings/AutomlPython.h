@@ -62,14 +62,14 @@ class UDTFactory {
       char delimiter, const std::optional<std::string>& model_config,
       const py::dict& options);
 
-  static GraphUDT buildGraphUDT(py::object& obj,
-                                data::ColumnDataTypes data_types,
-                                std::string graph_file_name, std::string source,
-                                std::string target,
-                                std::vector<std::string> relationship_columns,
-                                uint32_t n_target_classes,
-                                bool neighbourhood_context, bool label_context,
-                                uint32_t kth_neighbourhood, char delimeter);
+  static GraphUDT buildGraphUDT(
+      py::object& obj, data::ColumnDataTypes data_types,
+      std::string graph_file_name, std::string source, std::string target,
+      uint32_t n_target_classes, std::vector<std::string> relationship_columns,
+      bool neighbourhood_context, bool label_context,
+      uint32_t kth_neighbourhood, char delimeter,
+      std::optional<std::unordered_map<uint32_t, std::vector<uint32_t>>>
+          adj_list);
 
   // These need to be here instead of inside UDTFactory because otherwise I was
   // getting weird linking errors

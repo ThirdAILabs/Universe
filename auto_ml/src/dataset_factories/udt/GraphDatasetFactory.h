@@ -183,10 +183,19 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   dataset::CsvRolledBatch getFinalData(
       const std::vector<std::vector<std::string>>& rows,
       const std::vector<uint32_t>& numerical_columns) {
-    std::vector<uint32_t> relationship_col_nums = getRelationshipColumns(
-        _config->_relationship_columns, _column_number_map);
+    if (!_config->_adj_list) {
+      std::vector<uint32_t> relationship_col_nums = getRelationshipColumns(
+          *_config->_relationship_columns, _column_number_map);
 
-    _adjacency_list = createGraph(rows, relationship_col_nums);
+      _adjacency_list = createGraph(rows, relationship_col_nums);
+    } else {
+      std::vector<std::vector<uint32_t>> adjacency_list(
+          _config->_adj_list->size());
+      for (const auto& temp : *_config->_adj_list) {
+        adjacency_list[temp.first] = temp.second;
+      }
+      _adjacency_list = adjacency_list;
+    }
 
     _neighbours = findNeighboursForAllNodes(rows.size(), _adjacency_list,
                                             _config->_kth_neighbourhood);
