@@ -32,7 +32,7 @@ class GraphUDT : public ModelPipeline {
         std::move(data_types), std::move(graph_file_name), std::move(source),
         std::move(target), n_target_classes, std::move(relationship_columns),
         neighbourhood_context, label_context, kth_neighbourhood, delimeter,
-        adj_list);
+        std::move(adj_list));
 
     auto graph_dataset_factory =
         std::make_shared<data::GraphDatasetFactory>(dataset_config);
