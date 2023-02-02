@@ -232,7 +232,7 @@ def test_embedding_representation_returns_correct_dimension():
 def test_label_embedding_returns_correct_dimension():
     for embedding_dim in [128, 256]:
         model = make_simple_trained_model(embedding_dim=embedding_dim)
-        embedding = model.get_label_embedding(0)
+        embedding = model.get_entity_embedding(0)
         assert embedding.shape == (embedding_dim,)
         assert (embedding != 0).any()
 
@@ -245,7 +245,7 @@ def test_label_embedding_fails_on_large_label():
         ValueError,
         match=r"Passed in neuron_id too large for this layer. Should be less than the output dim of 3.",
     ):
-        embedding = model.get_label_embedding(100000)
+        embedding = model.get_entity_embedding(100000)
 
 
 @pytest.mark.release

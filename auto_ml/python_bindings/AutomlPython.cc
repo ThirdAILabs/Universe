@@ -176,9 +176,9 @@ void createModelsSubmodule(py::module_& module) {
           },
           py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
       .def(
-          "get_label_embedding",
+          "get_entity_embedding",
           [](UniversalDeepTransformer& model, uint32_t label_id) {
-            auto embedding = model.getLabelEmbedding(label_id);
+            auto embedding = model.getEntityEmbedding(label_id);
             models::NumpyArray<float> numpy_array(embedding.size());
             std::copy(embedding.begin(), embedding.end(),
                       numpy_array.mutable_data());

@@ -108,7 +108,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
     // "fc_1" is the name of the penultimate layer.
   }
 
-  std::vector<float> getLabelEmbedding(uint32_t label) {
+  std::vector<float> getEntityEmbedding(uint32_t label) {
     auto fc_layers =
         _model->getNodes().back()->getInternalFullyConnectedLayers();
 
