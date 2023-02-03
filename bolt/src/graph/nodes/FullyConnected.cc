@@ -212,8 +212,7 @@ void FullyConnectedNode::disableSparseParameterUpdates() {
 }
 
 void FullyConnectedNode::saveWithOptimizer(bool should_save_optimizer) {
-  if (getState() != NodeState::Compiled &&
-      getState() != NodeState::PreparedForBatchProcessing) {
+  if (getState() != NodeState::Compiled) {
     throw exceptions::NodeStateMachineError(
         "Cannot call saveWithOptimizer until the model "
         "containing the node is compiled.");

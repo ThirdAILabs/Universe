@@ -134,11 +134,11 @@ class TrainStateManager:
         remote_bolt_graph_model = self.worker_manager.foreach_worker(
             lambda worker: worker.get_model(should_save_optimizer=True),
             remote_worker_ids=[worker_with_model],
-        ).get_front()
+        ).pop()
         remote_train_source_pointers = self.worker_manager.foreach_worker(
             lambda worker: worker.get_current_chunk_and_batch(),
             remote_worker_ids=[worker_with_model],
-        ).get_front()
+        ).pop()
         return remote_bolt_graph_model, remote_train_source_pointers
 
     def prepare_restored_worker_for_training(
@@ -172,10 +172,10 @@ class TrainStateManager:
         while (
             self.worker_manager.num_healthy_workers()
             < self.worker_manager.num_workers()
-            and time_waiting < worker_wait_time_out
+            and next_retry_wait_seconds < worker_wait_time_out
         ):
             self.logging.info(
-                f"Probing unhealthy worker!! Total workers:{self.worker_manager.num_workers()}, Unhealthy workers:{self.worker_manager.num_workers()-self.worker_manager.num_healthy_workers()}"
+                f"Probing unhealthy worker after {next_retry_wait_seconds} seconds!! Total workers:{self.worker_manager.num_workers()}, Unhealthy workers:{self.worker_manager.num_workers()-self.worker_manager.num_healthy_workers()}"
             )
 
             time.sleep(next_retry_wait_seconds)

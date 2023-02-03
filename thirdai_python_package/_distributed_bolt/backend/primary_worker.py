@@ -38,6 +38,9 @@ class PrimaryWorker(Worker):
             primary_worker=self,
             communication_type=communication_type,
             log_dir=log_dir,
+            # Due to communication being in circular fashion, we cannot pass friends to
+            # all the worker at init. primary -> worker[1] -> worker[2] -> ..., and finally
+            # we assign worker[n-1] as friend to primary worker.
             friend=None,
         )
 

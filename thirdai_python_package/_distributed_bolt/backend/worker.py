@@ -2,6 +2,7 @@ import os
 import textwrap
 from functools import wraps
 from time import time
+import sys
 
 import ray
 import thirdai._distributed_bolt.backend.communication as comm
@@ -42,10 +43,8 @@ class Worker:
         log_dir: str,
         friend,
     ):
-        """
-        Initializes the worker, including wrapping the passed in model in a
-        DistributedWrapper with the dataset read in.
-        """
+        """Initializes all the class variables which doesn't changes with
+        training, which includes variables like train_sources etc."""
 
         logging.setup(
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
@@ -65,7 +64,25 @@ class Worker:
         *args,
         **kwargs,
     ):
-        return func(self, *args, **kwargs)
+        """A Generic interface to apply arbitrary member function on the remote worker.
+            It logs function failure at the worker level.
+        Args:
+            func: The function to call.
+            args: Optional additional args for that function call
+            kwargs: Optional additional kwargs for that function call
+
+        Returns:
+            Same as function called.
+        """
+        try:
+            return func(self, *args, **kwargs)
+        except Exception as err:
+            print(f"Worker Exception, recreating! {err=}")
+            logging.warning(f"Worker Exception, recreating! {err=}")
+            # Allow logs to propagate
+            time.sleep(0.5)
+            # Kill this worker so Ray Core can restart it.
+            sys.exit(1)
 
     def prepare_for_training(
         self,
@@ -73,6 +90,18 @@ class Worker:
         chunks_to_skip: int = 0,
         batch_to_run: int = 0,
     ):
+        """
+        This function prepares this worker class for training by passing the model and
+        pointer to train_sources. This function is called after initializing a worker
+        and called again only when a worker goes down. This function also called
+        to update the worker with an updated model when this worker fails.
+
+        Args:
+            bolt_graph (_type_): Ref to Bolt Graph
+            chunks_to_skip (int, optional): Chunk to start training from. Defaults to 0.
+            batch_to_run (int, optional): Batch to run inside the chunk. Defaults to 0.
+
+        """
 
         self.train_source.load(chunks_to_skip=chunks_to_skip)
         start = time()
@@ -271,9 +300,9 @@ class Worker:
     @timed
     def get_model(self, should_save_optimizer=False):
         if should_save_optimizer:
-            return self.model.model
-        else:
             return self.model.model_with_optimizer
+        else:
+            return self.model.model
 
     @timed
     def ping(self):

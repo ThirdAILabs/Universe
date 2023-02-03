@@ -50,9 +50,6 @@ class RemoteCallResults:
     def __init__(self):
         self.result_or_errors: List[CallResult] = []
 
-    def get_front(self):
-        return self.result_or_errors[0]
-
     def add_result(self, worker_id: int, result_or_error: ResultOrError):
         self.result_or_errors.append(CallResult(worker_id, result_or_error))
 

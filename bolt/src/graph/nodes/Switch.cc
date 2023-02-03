@@ -1,5 +1,4 @@
 #include "Switch.h"
-#include <bolt/src/graph/nodes/FullyConnected.h>
 
 namespace thirdai::bolt {
 
