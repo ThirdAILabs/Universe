@@ -12,7 +12,7 @@ class Circular:
         self.primary_worker = primary_worker
         self.num_workers = num_workers
 
-        self.friend = friend  # this variable is set up in set_friend
+        self.friend = friend
         self.partitions = []
         self.friend_gradients = []
         self.gradients = []

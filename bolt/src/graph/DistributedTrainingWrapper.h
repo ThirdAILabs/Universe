@@ -49,11 +49,14 @@ class DistributedTrainingWrapper {
     }
   }
 
-  void saveWithOptimizer(bool should_save_optimizer) {
-    _bolt_graph->saveWithOptimizer(should_save_optimizer);
+  BoltGraphPtr getModelWithOptimizer() {
+    _bolt_graph->saveWithOptimizer(true);
+    return _bolt_graph;
   }
-
-  BoltGraphPtr getModel() { return _bolt_graph; }
+  BoltGraphPtr getModel() {
+    _bolt_graph->saveWithOptimizer(false);
+    return _bolt_graph;
+  }
 
   void finishTraining() { requireTrainContext(); }
 

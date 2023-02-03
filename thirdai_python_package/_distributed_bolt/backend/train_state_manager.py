@@ -74,7 +74,8 @@ class TrainStateManager:
         """
         gradients_list = []
         # fetch_local = false, for linear communication to make sure, we don't
-        # spill gradients during communication, and do communication one by one
+        # spill(https://docs.ray.io/en/latest/ray-core/objects/object-spilling.html)
+        # gradients during communication, and do communication one by one
         # this doesn't hurt our performance as communication would anyway get queued
         # However, if we spill the ray objects, it would significantly hurt our performance
         for gradients in self.worker_manager.foreach_worker(
@@ -143,8 +144,10 @@ class TrainStateManager:
     def prepare_restored_worker_for_training(
         self, bolt_graph_model_ref, chunks_to_skip, batch_to_run, restored_workers
     ):
-        # At least one of the worker is have model
+        # At least one of the worker have model
         # ask each worker to get model from that worker
+        # by passing in the model ref
+
         self.worker_manager.foreach_worker(
             lambda worker: worker.prepare_for_training(
                 bolt_graph=bolt_graph_model_ref,
@@ -165,7 +168,7 @@ class TrainStateManager:
             )
 
     def check_worker_availability(self, worker_wait_time_out=1000):
-        time_waiting = 0
+        next_retry_wait_seconds = 1
         while (
             self.worker_manager.num_healthy_workers()
             < self.worker_manager.num_workers()
@@ -175,8 +178,8 @@ class TrainStateManager:
                 f"Probing unhealthy worker!! Total workers:{self.worker_manager.num_workers()}, Unhealthy workers:{self.worker_manager.num_workers()-self.worker_manager.num_healthy_workers()}"
             )
 
-            time.sleep(time_waiting)
-            time_waiting += time_waiting
+            time.sleep(next_retry_wait_seconds)
+            next_retry_wait_seconds *= 2
             # Find workers which are restored
             restored_workers = self.worker_manager.probe_unhealthy_workers()
             self.logging.info(
@@ -235,7 +238,7 @@ class TrainStateManager:
     def _compute_and_store_next_batch_gradients(self):
         """
         Calls compute_and_store_batch_gradients function on each of the
-        workers and returns whether all workers have a next batch.
+        workers and returns whether all workers that respond have a next batch.
         """
         start_calculating_gradients_time = time.time()
         has_next_batches = self.worker_manager.foreach_worker(

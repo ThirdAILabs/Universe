@@ -168,29 +168,29 @@ class FaultTolerantWorkerManager:
                 result = ray.get(r)
                 remote_results.add_result(worker_id, ResultOrError(result=result))
 
-            except Exception as e:
+            except Exception as err:
                 # Return error to the user.
-                remote_results.add_result(worker_id, ResultOrError(error=e))
+                remote_results.add_result(worker_id, ResultOrError(error=err))
 
                 # Mark the worker as unhealthy.
                 # It may very likely be better to use RayActorError here.
-                if isinstance(e, RayError):
+                if isinstance(err, RayError):
                     # Take this worker out of service and wait for Ray Core to
                     # restore it.
                     if self._is_worker_healthy(worker_id):
                         print(
                             f"Ray error, taking worker {worker_id} out of service. "
-                            f"{str(e)}"
+                            f"{str(err)}"
                         )
                         self.logging.warning(
                             f"Ray error, taking worker {worker_id} out of service. "
-                            f"{str(e)}"
+                            f"{str(err)}"
                         )
                     self._set_worker_state(worker_id, healthy=False)
                 else:
                     # WorkerManager should not handle application level errors.
-                    self.logging.info(f"Got application level Error:{str(e)}")
-                    print(f"Unexpected {e=}, {type(e)=}")
+                    self.logging.info(f"Got application level Error:{str(err)}")
+                    print(f"Unexpected {err=}, {type(err)=}")
                     raise
 
         return remote_results

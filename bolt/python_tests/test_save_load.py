@@ -3,7 +3,7 @@ import pytest
 from thirdai import bolt
 
 from utils import (
-    check_parameters_across_two_model,
+    assert_models_have_same_params,
     gen_numpy_training_data,
     simple_bolt_model_in_distributed_training_wrapper,
 )
@@ -148,8 +148,7 @@ def test_should_save_optimizer_and_load():
         )
         distributed_training_wrapper.update_parameters()
 
-    distributed_training_wrapper.save_with_optimizer(should_save_optimizer=True)
-    should_save_optimizer_bolt_model = distributed_training_wrapper.model()
+    should_save_optimizer_bolt_model = distributed_training_wrapper.model_with_optimizer
 
     save_loc = "./should_save_optimizer_save.model"
     should_save_optimizer_bolt_model.save(filename=save_loc)
@@ -172,7 +171,7 @@ def test_should_save_optimizer_and_load():
     nodes_1 = distributed_training_wrapper_should_save_optimizer.model().nodes()
     nodes_2 = distributed_training_wrapper.model().nodes()
 
-    check_parameters_across_two_model(nodes_1, nodes_2)
+    assert_models_have_same_params(nodes_1, nodes_2)
     for batch_id in range(distributed_training_wrapper.num_batches()):
         distributed_training_wrapper_should_save_optimizer.compute_and_store_batch_gradients(
             batch_idx=batch_id
@@ -198,7 +197,7 @@ def test_should_save_optimizer_and_load():
         distributed_training_wrapper_should_save_optimizer.update_parameters()
         distributed_training_wrapper.update_parameters()
 
-    nodes_1 = distributed_training_wrapper_should_save_optimizer.model().nodes()
-    nodes_2 = distributed_training_wrapper.model().nodes()
+    nodes_1 = distributed_training_wrapper_should_save_optimizer.model.nodes()
+    nodes_2 = distributed_training_wrapper.model.nodes()
 
-    check_parameters_across_two_model(nodes_1, nodes_2)
+    assert_models_have_same_params(nodes_1, nodes_2)
