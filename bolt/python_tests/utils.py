@@ -195,6 +195,8 @@ def simple_bolt_model_in_distributed_training_wrapper(
     hidden_layer_dim=2000,
     batch_size=64,
 ):
+    train_data = dataset.from_numpy(train_data, batch_size=batch_size)
+    train_labels = dataset.from_numpy(train_labels, batch_size=batch_size)
 
     input_layer = bolt.nn.Input(dim=num_classes)
     hidden_layer = bolt.nn.FullyConnected(
@@ -221,7 +223,7 @@ def simple_bolt_model_in_distributed_training_wrapper(
         worker_id=0,
     )
     wrapper.set_datasets([train_data], train_labels)
-    return wrapper, train_config
+    return wrapper
 
 
 # Builds, trains, and does prediction on a model using numpy data and numpy
@@ -279,7 +281,7 @@ def get_compressed_weight_gradients(
     seed_for_hashing,
     sample_population_size,
 ):
-    model = wrapped_model.model()
+    model = wrapped_model.model
     compressed_weight_grads = []
     for layer in model.nodes():
         if hasattr(layer, "weight_gradients"):
@@ -299,7 +301,7 @@ def set_compressed_weight_gradients(
     wrapped_model,
     compressed_weight_grads,
 ):
-    model = wrapped_model.model()
+    model = wrapped_model.model
     nodes_with_weight_gradients = [
         layer for layer in model.nodes() if hasattr(layer, "weight_gradients")
     ]
@@ -320,19 +322,16 @@ def compressed_training(
     epochs=30,
     batch_size=64,
 ):
-    num_train_samples = 1000
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=n_classes,
-        n_samples=num_train_samples,
-        batch_size_for_conversion=batch_size,
+        n_classes=n_classes, n_samples=1000, convert_to_bolt_dataset=False
     )
     test_data, test_labels = gen_numpy_training_data(
-        n_classes=n_classes, n_samples=100, batch_size_for_conversion=batch_size
+        n_classes=n_classes, n_samples=100, convert_to_bolt_dataset=False
     )
 
-    num_training_batches = math.ceil(num_train_samples / batch_size)
+    num_training_batches = math.ceil(len(train_data) / batch_size)
 
-    wrapped_model, _ = simple_bolt_model_in_distributed_training_wrapper(
+    wrapped_model = simple_bolt_model_in_distributed_training_wrapper(
         train_data=train_data,
         train_labels=train_labels,
         sparsity=0.2,
@@ -363,18 +362,9 @@ def compressed_training(
 
     model = wrapped_model.model
     acc = model.evaluate(
-        test_data=test_data,
-        test_labels=test_labels,
+        test_data=dataset.from_numpy(test_data, batch_size=64),
+        test_labels=dataset.from_numpy(test_labels, batch_size=64),
         eval_config=eval_config,
     )
 
     return acc
-
-
-def assert_models_have_same_params(nodes_1, nodes_2):
-
-    for layer_1, layer_2 in zip(nodes_1, nodes_2):
-        if hasattr(layer_1, "weights") and hasattr(layer_2, "weights"):
-            assert np.equal(layer_1.weights.get(), layer_2.weights.get()).all()
-        if hasattr(layer_1, "biases") and hasattr(layer_2, "biases"):
-            assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
