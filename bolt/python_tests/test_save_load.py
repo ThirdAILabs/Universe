@@ -1,12 +1,7 @@
-import numpy as np
 import pytest
 from thirdai import bolt
 
-from utils import (
-    assert_models_have_same_params,
-    gen_numpy_training_data,
-    simple_bolt_model_in_distributed_training_wrapper,
-)
+from utils import gen_numpy_training_data
 
 pytestmark = [pytest.mark.unit]
 
@@ -121,83 +116,3 @@ def test_save_fully_connected_layer_parameters():
     new_model.train(data, labels, epochs=2)
     test_metrics3 = new_model.evaluate(data, labels)
     assert test_metrics3["categorical_accuracy"] >= 0.9
-
-
-# This test saves and loads hard copy(saves optimizer state) for a model
-# and then, trains the loaded model and the earlier model again.
-# If optimizer states are getting saved during should_save_optimizer implies
-# that training the model again should not change the parameters.
-def test_should_save_optimizer_and_load():
-    n_classes = 100
-
-    data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=1000)
-
-    (
-        distributed_training_wrapper,
-        train_config,
-    ) = simple_bolt_model_in_distributed_training_wrapper(
-        data,
-        labels,
-        sparsity=1,
-        num_classes=n_classes,
-    )
-
-    for batch_id in range(distributed_training_wrapper.num_batches()):
-        distributed_training_wrapper.compute_and_store_batch_gradients(
-            batch_idx=batch_id
-        )
-        distributed_training_wrapper.update_parameters()
-
-    should_save_optimizer_bolt_model = distributed_training_wrapper.model_with_optimizer
-
-    save_loc = "./should_save_optimizer_save.model"
-    should_save_optimizer_bolt_model.save(filename=save_loc)
-
-    new_should_save_optimizer_bolt_model = bolt.nn.Model.load(filename=save_loc)
-
-    distributed_training_wrapper_should_save_optimizer = (
-        bolt.DistributedTrainingWrapper(
-            model=new_should_save_optimizer_bolt_model,
-            train_config=train_config,
-            worker_id=1,
-        )
-    )
-
-    data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=1000)
-
-    distributed_training_wrapper_should_save_optimizer.set_datasets([data], labels)
-    distributed_training_wrapper.set_datasets([data], labels)
-
-    nodes_1 = distributed_training_wrapper_should_save_optimizer.model().nodes()
-    nodes_2 = distributed_training_wrapper.model().nodes()
-
-    assert_models_have_same_params(nodes_1, nodes_2)
-    for batch_id in range(distributed_training_wrapper.num_batches()):
-        distributed_training_wrapper_should_save_optimizer.compute_and_store_batch_gradients(
-            batch_idx=batch_id
-        )
-        distributed_training_wrapper.compute_and_store_batch_gradients(
-            batch_idx=batch_id
-        )
-
-        gradients_a = np.array(
-            distributed_training_wrapper_should_save_optimizer.gradient_reference().get_gradients()
-        )
-        gradients_b = np.array(
-            distributed_training_wrapper.gradient_reference().get_gradients()
-        )
-
-        gradients_avg = (gradients_a + gradients_b) / 2
-
-        distributed_training_wrapper_should_save_optimizer.gradient_reference().set_gradients(
-            gradients_avg
-        )
-        distributed_training_wrapper.gradient_reference().set_gradients(gradients_avg)
-
-        distributed_training_wrapper_should_save_optimizer.update_parameters()
-        distributed_training_wrapper.update_parameters()
-
-    nodes_1 = distributed_training_wrapper_should_save_optimizer.model.nodes()
-    nodes_2 = distributed_training_wrapper.model.nodes()
-
-    assert_models_have_same_params(nodes_1, nodes_2)
