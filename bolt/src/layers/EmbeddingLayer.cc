@@ -17,6 +17,7 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
       _hash_fn(seed),
       _disable_sparse_parameter_updates(false) {
   switch (_reduction) {
+    case EmbeddingReductionType::AVERAGE:
     case EmbeddingReductionType::SUM:
       break;
     case EmbeddingReductionType::CONCATENATION:
@@ -79,6 +80,7 @@ void EmbeddingLayer::forward(uint32_t vec_index, const BoltVector& tokens,
       assert(embedding_block_offset < _embedding_block_size - _lookup_size);
 
       switch (_reduction) {
+        case EmbeddingReductionType::AVERAGE:
         case EmbeddingReductionType::SUM:
           // Safe since we allocated 2^_log_embedding_block_size+_lookup_size
           for (uint32_t i = 0; i < _lookup_size; i++) {
@@ -95,6 +97,12 @@ void EmbeddingLayer::forward(uint32_t vec_index, const BoltVector& tokens,
           // output vector.
           output_start += _num_lookups_per_token * _lookup_size;
           break;
+      }
+    }
+
+    if (_reduction == EmbeddingReductionType::AVERAGE) {
+      for (uint32_t i = 0; i < _lookup_size; i++) {
+        output_start[i] /= tokens.len;
       }
     }
   }
@@ -210,11 +218,15 @@ void EmbeddingLayer::buildLayerSummary(std::stringstream& summary) const {
   summary << ", lookup_size=" << _lookup_size;
   summary << ", log_embedding_block_size=" << _log_embedding_block_size;
   switch (_reduction) {
+    case EmbeddingReductionType::AVERAGE:
+      summary << ", reduction=average";
+      break;
     case EmbeddingReductionType::SUM:
       summary << ", reduction=sum";
       break;
     case EmbeddingReductionType::CONCATENATION:
       summary << ", reduction=concatenation";
+      break;
   }
   if (_num_tokens_per_input) {
     summary << ", num_tokens_per_input=" << _num_tokens_per_input.value();

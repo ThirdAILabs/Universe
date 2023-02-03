@@ -108,6 +108,9 @@ EmbeddingReductionType EmbeddingLayerConfig::getReductionType(
   if (lower_name == "concat" || lower_name == "concatenation") {
     return EmbeddingReductionType::CONCATENATION;
   }
+  if (lower_name == "average" || lower_name == "avg") {
+    return EmbeddingReductionType::AVERAGE;
+  }
   throw std::invalid_argument(
       "Invalid embedding reduction time '" + reduction_name +
       "', supported options are 'sum' or 'concat'/'concatenation'");

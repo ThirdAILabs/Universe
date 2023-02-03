@@ -78,6 +78,7 @@ struct ConvLayerConfig {
 enum class EmbeddingReductionType {
   SUM,
   CONCATENATION,
+  AVERAGE,
 };
 
 class EmbeddingLayerConfig {
