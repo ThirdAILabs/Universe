@@ -3,7 +3,7 @@ from thirdai._distributed_bolt.backend.worker import Worker
 from thirdai._thirdai import bolt
 
 
-# Setting it -1 implies it would do so indefinately. Read more about it here:
+# Setting it max_restarts=-1 implies it would do so indefinately. Read more about it here:
 # https://docs.ray.io/en/latest/ray-core/actors/fault-tolerance.html
 @ray.remote(max_restarts=-1)
 class PrimaryWorker(Worker):

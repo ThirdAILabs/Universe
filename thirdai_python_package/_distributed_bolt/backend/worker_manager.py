@@ -10,7 +10,7 @@ from ray.exceptions import RayActorError, RayError, RayTaskError
 class ResultOrError:
     def __init__(self, result: Any = None, error: Exception = None):
 
-        # Note(pratik) : None is a valid result if the remote function
+        # None is a valid result if the remote function
         # does not return anything.
         self._result = result
         # Easier to handle if we show the user the original error.
