@@ -74,28 +74,11 @@ class FaultTolerantWorkerManager:
         self.num_worker_restarts = 0
         self.logging = logging
 
-    def _add_workers(self, workers):
-        for worker in workers:
-            self.workers[self.next_id] = worker
-            self.remote_worker_states[self.next_id] = self._WorkerState()
-            self.next_id += 1
-
     def num_workers(self):
         return len(self.workers)
 
-    def _set_worker_state(self, worker_id: int, healthy: bool):
-        if worker_id not in self.remote_worker_states:
-            raise ValueError(f"Unknown worker id: {worker_id}")
-        self.logging.info(f"Worker {worker_id} is being marked as {healthy}")
-        self.remote_worker_states[worker_id].is_healthy = healthy
-
     def num_healthy_workers(self):
         return sum([s.is_healthy for s in self.remote_worker_states.values()])
-
-    def _is_worker_healthy(self, worker_id):
-        if worker_id not in self.remote_worker_states:
-            raise ValueError(f"Unknown worker id: {worker_id}")
-        return self.remote_worker_states[worker_id].is_healthy
 
     def get_worker_with_model(self):
 
@@ -110,6 +93,80 @@ class FaultTolerantWorkerManager:
                     return worker_id
 
         return None
+
+    def foreach_worker(
+        self,
+        func: Union[Callable[[Any], Any], List[Callable[[Any], Any]]],
+        *,
+        remote_worker_ids: List[int] = None,
+        timeout_seconds=None,
+        fetch_local: bool = True,
+    ):
+
+        remote_worker_ids = remote_worker_ids or list(self.workers.keys())
+
+        remote_calls = self._call_workers(
+            func=func,
+            remote_worker_ids=remote_worker_ids,
+        )
+
+        remote_results = self._fetch_result(
+            remote_worker_ids=remote_worker_ids,
+            remote_calls=remote_calls,
+            timeout_seconds=timeout_seconds,
+            fetch_local=fetch_local,
+        )
+
+        return remote_results
+
+    def probe_unhealthy_workers(self):
+
+        unhealthy_worker_ids = [
+            worker_id
+            for worker_id in self.workers.keys()
+            if not self._is_worker_healthy(worker_id)
+        ]
+
+        self.logging.info(f"Probing unhealthy worker={unhealthy_worker_ids}")
+        if not unhealthy_worker_ids:
+            return []
+
+        self.logging.info("Calling ping on unhealthy worker")
+        remote_results = self.foreach_worker(
+            func=lambda worker: worker.ping(),
+            remote_worker_ids=unhealthy_worker_ids,
+        ).get()
+
+        self.logging.info("Got remote results")
+        restored = []
+        for result in remote_results:
+            worker_id = result.worker_id
+            if result.ok:
+                restored.append(worker_id)
+                self._set_worker_state(worker_id, healthy=True)
+                self.num_worker_restarts += 1
+            else:
+                pass
+
+        self.logging.info(f"Workers restored {restored}")
+        return restored
+
+    def _add_workers(self, workers):
+        for worker in workers:
+            self.workers[self.next_id] = worker
+            self.remote_worker_states[self.next_id] = self._WorkerState()
+            self.next_id += 1
+
+    def _set_worker_state(self, worker_id: int, healthy: bool):
+        if worker_id not in self.remote_worker_states:
+            raise ValueError(f"Unknown worker id: {worker_id}")
+        self.logging.info(f"Worker {worker_id} is being marked as {healthy}")
+        self.remote_worker_states[worker_id].is_healthy = healthy
+
+    def _is_worker_healthy(self, worker_id):
+        if worker_id not in self.remote_worker_states:
+            raise ValueError(f"Unknown worker id: {worker_id}")
+        return self.remote_worker_states[worker_id].is_healthy
 
     def _call_workers(
         self,
@@ -191,60 +248,3 @@ class FaultTolerantWorkerManager:
                     raise
 
         return remote_results
-
-    def foreach_worker(
-        self,
-        func: Union[Callable[[Any], Any], List[Callable[[Any], Any]]],
-        *,
-        remote_worker_ids: List[int] = None,
-        timeout_seconds=None,
-        fetch_local: bool = True,
-    ):
-
-        remote_worker_ids = remote_worker_ids or list(self.workers.keys())
-
-        remote_calls = self._call_workers(
-            func=func,
-            remote_worker_ids=remote_worker_ids,
-        )
-
-        remote_results = self._fetch_result(
-            remote_worker_ids=remote_worker_ids,
-            remote_calls=remote_calls,
-            timeout_seconds=timeout_seconds,
-            fetch_local=fetch_local,
-        )
-
-        return remote_results
-
-    def probe_unhealthy_workers(self):
-
-        unhealthy_worker_ids = [
-            worker_id
-            for worker_id in self.workers.keys()
-            if not self._is_worker_healthy(worker_id)
-        ]
-
-        self.logging.info(f"Probing unhealthy worker={unhealthy_worker_ids}")
-        if not unhealthy_worker_ids:
-            return []
-
-        self.logging.info("Calling ping on unhealthy worker")
-        remote_results = self.foreach_worker(
-            func=lambda worker: worker.ping(),
-            remote_worker_ids=unhealthy_worker_ids,
-        ).get()
-
-        self.logging.info("Got remote results")
-        restored = []
-        for result in remote_results:
-            worker_id = result.worker_id
-            if result.ok:
-                restored.append(worker_id)
-                self._set_worker_state(worker_id, healthy=True)
-                self.num_worker_restarts += 1
-            else:
-                pass
-
-        self.logging.info(f"Workers restored {restored}")
-        return restored
