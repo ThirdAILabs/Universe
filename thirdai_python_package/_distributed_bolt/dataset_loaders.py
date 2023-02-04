@@ -67,14 +67,14 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         # book-keeping for fault-tolerance
         self.current_chunk_id = 0
 
-    def load(self, chunks_to_skip):
+    def load(self, chunk_start_index=0):
         self.generator = self.data_processor.get_dataset_loader(
             _create_data_source(self.train_file),
             training=True,
         )
 
-        while chunks_to_skip > 0:
-            chunks_to_skip -= 1
+        while chunk_start_index > 0:
+            chunk_start_index -= 1
             self.next()
 
     def next(self):
@@ -124,10 +124,10 @@ class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
         # book-keeping for fault-tolerance
         self.current_chunk_id = 0
 
-    def load(self, chunks_to_skip):
+    def load(self, chunk_start_index=0):
 
-        while chunks_to_skip > 0:
-            chunks_to_skip -= 1
+        while chunk_start_index > 0:
+            chunk_start_index -= 1
             self.next()
 
     def next(self):
@@ -190,10 +190,10 @@ class DistributedTabularDatasetLoader(DistributedDatasetLoader):
         # book-keeping for fault-tolerance
         self.current_chunk_id = 0
 
-    def load(self, chunks_to_skip):
+    def load(self, chunk_start_index=0):
 
-        while chunks_to_skip > 0:
-            chunks_to_skip -= 1
+        while chunk_start_index > 0:
+            chunk_start_index -= 1
             self.next()
 
     def next(self):

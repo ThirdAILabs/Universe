@@ -198,10 +198,27 @@ class FaultTolerantWorkerManager:
         *,
         remote_worker_ids: List[int],
         remote_calls: List[ray.ObjectRef],
-        timeout_seconds: int = None,
+        timeout_seconds: float = None,
         fetch_local: bool = True,
     ):
-        timeout = float(timeout_seconds) if timeout_seconds is not None else None
+        """
+        This function receives the calls and worker_ids. It passes the calls to
+        ray.wait(https://docs.ray.io/en/latest/ray-core/package-ref.html#ray-wait)
+        which in turns returns a list of object which are ready in object store.
+        It fetches the object, handles any failure in fetching and returns a RemoteCallResult
+        list.
+
+        Args:
+            remote_worker_ids (List[int]): list of worker_ids to call remote_calls
+            remote_calls (List[ray.ObjectRef]): list of remote_calls for workers
+            timeout_seconds (float, optional): time to wait for object to process. Defaults to None.
+            fetch_local (bool, optional): make sure remote results are fetched locally in parallel.
+                Defaults to True.
+
+        Returns:
+            RemoteCallResults: Return from remote function calls
+        """
+        timeout = timeout_seconds if timeout_seconds is not None else None
         ready, _ = ray.wait(
             remote_calls,
             num_returns=len(remote_calls),
