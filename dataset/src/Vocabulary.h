@@ -124,12 +124,7 @@ class Basic {
 
  private:
   std::wstring cleanText(const std::wstring& text) const;
-  bool isControl(const wchar_t& ch) const;
-  bool isWhitespace(const wchar_t& ch) const;
-  bool isPunctuation(const wchar_t& ch) const;
-  bool isChineseChar(const wchar_t& ch) const;
   std::wstring tokenizeChineseChars(const std::wstring& text) const;
-  bool isStripChar(const wchar_t& ch) const;
   std::wstring strip(const std::wstring& text) const;
   std::vector<std::wstring> split(const std::wstring& text) const;
   std::wstring runStripAccents(const std::wstring& text) const;
@@ -176,13 +171,22 @@ class is_any_of {
 };
 
 std::wstring join(const std::vector<std::wstring>& atoms,
-                  std::wstring delimiter);
+                  const std::wstring& delimiter);
 
 template <class Predicate>
 void split(std::vector<std::wstring>& result, const std::wstring& s,
            Predicate predicate);
-}  // namespace detail
-   //
+//
 std::string convertFromUnicode(const std::wstring& wText);
+std::wstring convertToUnicode(const std::string& text);
+std::string normalize_nfd(const std::string& s);
+std::wstring tolower(const std::wstring& s);
+
+bool isControl(const wchar_t& ch);
+bool isWhitespace(const wchar_t& ch);
+bool isPunctuation(const wchar_t& ch);
+bool isChineseChar(const wchar_t& ch);
+bool isStripChar(const wchar_t& ch);
+}  // namespace detail
 
 }  // namespace thirdai::dataset

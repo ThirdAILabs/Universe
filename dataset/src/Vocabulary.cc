@@ -140,8 +140,11 @@ std::string convertFromUnicode(const std::wstring& wText) {
   char dst[64];
   std::string ret;
   for (auto ch : wText) {
-    utf8proc_ssize_t num = utf8proc_encode_char(ch, (utf8proc_uint8_t*)dst);
-    if (num <= 0) return "";
+    utf8proc_ssize_t num =
+        utf8proc_encode_char(ch, reinterpret_cast<utf8proc_uint8_t*>(dst));
+    if (num <= 0) {
+      return "";
+    }
     ret += std::string(dst, dst + num);
   }
   return ret;
@@ -184,8 +187,8 @@ void split(std::vector<std::wstring>& result, const std::wstring& s,
 // &, is_any_of);
 
 std::wstring join(const std::vector<std::wstring>& atoms,
-                  const std::wstring delimiter) {
-  std::wstring result = L"";
+                  const std::wstring& delimiter) {
+  std::wstring result;
   for (size_t i = 0; i < atoms.size(); i++) {
     if (i != 0) {
       result += delimiter;
@@ -197,31 +200,43 @@ std::wstring join(const std::vector<std::wstring>& atoms,
   return result;
 }
 
-}  // namespace detail
-
-static std::string normalize_nfd(const std::string& s) {
+std::string normalize_nfd(const std::string& s) {
   std::string ret;
-  char* result = (char*)utf8proc_NFD((unsigned char*)s.c_str());
+
+  // The utf8proc API takes in a const char *, and returns a new char * pointing
+  // to the NFD normalized string. It is the responsibility of the client to
+  // deallocate this if not needed further.
+  //
+  char* result = reinterpret_cast<char*>(
+      utf8proc_NFD(reinterpret_cast<const unsigned char*>(s.c_str())));
   if (result) {
+    // Pack into an RAII managed object (this is a copy).
     ret = std::string(result);
+
+    // We are responsible for de-allocating the `malloc`d memory for the
+    // normalized string, now that we have copied it for our purposes. If we
+    // don't do the free below, it will be a leak.
+    //
+    // Linter appears to think something else, so:
+    // NOLINTNEXTLINE
     free(result);
     result = NULL;
   }
   return ret;
 }
 
-static bool isStripChar(const wchar_t& ch) {
+bool isStripChar(const wchar_t& ch) {
   return stripChar.find(ch) != std::wstring::npos;
 }
 
-static std::wstring strip(const std::wstring& text) {
+std::wstring strip(const std::wstring& text) {
   std::wstring ret = text;
   if (ret.empty()) {
     return ret;
   }
   // TODO(jerin-thirdai): There are overflow errors here.
   size_t pos = 0;
-  while (pos < ret.size() && isStripChar(ret[pos])) {
+  while (pos < ret.size() && detail::isStripChar(ret[pos])) {
     pos++;
   }
 
@@ -231,19 +246,19 @@ static std::wstring strip(const std::wstring& text) {
   // size_t - 1 can overflow, and the cast is infinity. This is also not
   // reliable behaviour cross-platform.
   pos = ret.size() - 1;
-  while (pos != (size_t)-1 && isStripChar(ret[pos])) {
+  while (pos != (size_t)-1 && detail::isStripChar(ret[pos])) {
     pos--;
   }
   return ret.substr(0, pos + 1);
 }
 
-static std::vector<std::wstring> split(const std::wstring& text) {
+std::vector<std::wstring> split(const std::wstring& text) {
   std::vector<std::wstring> result;
   detail::split(result, text, detail::is_any_of(stripChar));
   return result;
 }
 
-static std::vector<std::wstring> whitespaceTokenize(const std::wstring& text) {
+std::vector<std::wstring> whitespaceTokenize(const std::wstring& text) {
   std::wstring rtext = strip(text);
   if (rtext.empty()) {
     return std::vector<std::wstring>();
@@ -251,14 +266,14 @@ static std::vector<std::wstring> whitespaceTokenize(const std::wstring& text) {
   return split(text);
 }
 
-static std::wstring convertToUnicode(const std::string& text) {
+std::wstring convertToUnicode(const std::string& text) {
   size_t i = 0;
   std::wstring ret;
   while (i < text.size()) {
     wchar_t codepoint;
-    utf8proc_ssize_t forward =
-        utf8proc_iterate((utf8proc_uint8_t*)&text[i], text.size() - i,
-                         (utf8proc_int32_t*)&codepoint);
+    utf8proc_ssize_t forward = utf8proc_iterate(
+        reinterpret_cast<const utf8proc_uint8_t*>(&text[i]), text.size() - i,
+        reinterpret_cast<utf8proc_int32_t*>(&codepoint));
     if (forward < 0) {
       return L"";
     }
@@ -268,13 +283,14 @@ static std::wstring convertToUnicode(const std::string& text) {
   return ret;
 }
 
-static std::wstring tolower(const std::wstring& s) {
+std::wstring tolower(const std::wstring& s) {
   std::wstring ret(s.size(), L' ');
   for (size_t i = 0; i < s.size(); i++) {
     ret[i] = utf8proc_tolower(s[i]);
   }
   return ret;
 }
+}  // namespace detail
 
 static Vocab loadVocab(const std::string& vocabFile) {
   Vocab vocab;
@@ -282,11 +298,11 @@ static Vocab loadVocab(const std::string& vocabFile) {
   std::ifstream ifs(vocabFile, std::ifstream::in);
   std::string line;
   while (getline(ifs, line)) {
-    std::wstring token = convertToUnicode(line);
+    std::wstring token = detail::convertToUnicode(line);
     if (token.empty()) {
       break;
     }
-    token = strip(token);
+    token = detail::strip(token);
     vocab[token] = index;
     index++;
   }
@@ -298,10 +314,10 @@ Basic::Basic(bool lower_case) : _to_lower(lower_case) {}
 std::wstring Basic::cleanText(const std::wstring& text) const {
   std::wstring output;
   for (const wchar_t& cp : text) {
-    if (cp == 0 || cp == 0xfffd || isControl(cp)) {
+    if (cp == 0 || cp == 0xfffd || detail::isControl(cp)) {
       continue;
     }
-    if (isWhitespace(cp)) {
+    if (detail::isWhitespace(cp)) {
       output += L" ";
     } else {
       output += cp;
@@ -310,18 +326,19 @@ std::wstring Basic::cleanText(const std::wstring& text) const {
   return output;
 }
 
-bool Basic::isControl(const wchar_t& ch) const {
+namespace detail {
+bool isControl(const wchar_t& ch) {
   if (ch == L'\t' || ch == L'\n' || ch == L'\r') {
     return false;
   }
-  auto cat = utf8proc_category(ch);
-  if (cat == UTF8PROC_CATEGORY_CC || cat == UTF8PROC_CATEGORY_CF) {
+  auto category = utf8proc_category(ch);
+  if (category == UTF8PROC_CATEGORY_CC || category == UTF8PROC_CATEGORY_CF) {
     return true;
   }
   return false;
 }
 
-bool Basic::isWhitespace(const wchar_t& ch) const {
+bool isWhitespace(const wchar_t& ch) {
   if (ch == L' ' || ch == L'\t' || ch == L'\n' || ch == L'\r') {
     return true;
   }
@@ -332,7 +349,7 @@ bool Basic::isWhitespace(const wchar_t& ch) const {
   return false;
 }
 
-bool Basic::isPunctuation(const wchar_t& ch) const {
+bool isPunctuation(const wchar_t& ch) {
   if ((ch >= 33 && ch <= 47) || (ch >= 58 && ch <= 64) ||
       (ch >= 91 && ch <= 96) || (ch >= 123 && ch <= 126)) {
     return true;
@@ -347,7 +364,7 @@ bool Basic::isPunctuation(const wchar_t& ch) const {
   return false;
 }
 
-bool Basic::isChineseChar(const wchar_t& ch) const {
+bool isChineseChar(const wchar_t& ch) {
   if ((ch >= 0x4E00 && ch <= 0x9FFF) || (ch >= 0x3400 && ch <= 0x4DBF) ||
       (ch >= 0x20000 && ch <= 0x2A6DF) || (ch >= 0x2A700 && ch <= 0x2B73F) ||
       (ch >= 0x2B740 && ch <= 0x2B81F) || (ch >= 0x2B820 && ch <= 0x2CEAF) ||
@@ -357,10 +374,12 @@ bool Basic::isChineseChar(const wchar_t& ch) const {
   return false;
 }
 
+}  // namespace detail
+
 std::wstring Basic::tokenizeChineseChars(const std::wstring& text) const {
   std::wstring output;
   for (auto& ch : text) {
-    if (isChineseChar(ch)) {
+    if (detail::isChineseChar(ch)) {
       output += L' ';
       output += ch;
       output += L' ';
@@ -374,7 +393,8 @@ std::wstring Basic::runStripAccents(const std::wstring& text) const {
   // Strips accents from a piece of text.
   std::wstring nText;
   try {
-    nText = convertToUnicode(normalize_nfd(convertFromUnicode(text)));
+    nText = detail::convertToUnicode(
+        detail::normalize_nfd(convertFromUnicode(text)));
   } catch (std::bad_cast& e) {
     std::cerr << "bad_cast" << std::endl;
     return L"";
@@ -383,7 +403,9 @@ std::wstring Basic::runStripAccents(const std::wstring& text) const {
   std::wstring output;
   for (auto& ch : nText) {
     auto cat = utf8proc_category(ch);
-    if (cat == UTF8PROC_CATEGORY_MN) continue;
+    if (cat == UTF8PROC_CATEGORY_MN) {
+      continue;
+    }
     output += ch;
   }
   return output;
@@ -396,11 +418,13 @@ std::vector<std::wstring> Basic::runSplitOnPunc(
   std::vector<std::wstring> output;
   while (i < text.size()) {
     wchar_t ch = text[i];
-    if (isPunctuation(ch)) {
+    if (detail::isPunctuation(ch)) {
       output.push_back(std::wstring(&ch, 1));
       startNewWord = true;
     } else {
-      if (startNewWord) output.push_back(std::wstring());
+      if (startNewWord) {
+        output.push_back(std::wstring());
+      }
       startNewWord = false;
       output[output.size() - 1] += ch;
     }
@@ -410,22 +434,23 @@ std::vector<std::wstring> Basic::runSplitOnPunc(
 }
 
 std::vector<std::wstring> Basic::tokenize(const std::string& text) const {
-  std::wstring nText = convertToUnicode(text);
+  std::wstring nText = detail::convertToUnicode(text);
   nText = cleanText(nText);
 
   nText = tokenizeChineseChars(nText);
 
-  const std::vector<std::wstring>& origTokens = whitespaceTokenize(nText);
+  const std::vector<std::wstring>& origTokens =
+      detail::whitespaceTokenize(nText);
   std::vector<std::wstring> splitTokens;
   for (std::wstring token : origTokens) {
     if (_to_lower) {
-      token = tolower(token);
+      token = detail::tolower(token);
       token = runStripAccents(token);
     }
     const auto& tokens = runSplitOnPunc(token);
     splitTokens.insert(splitTokens.end(), tokens.begin(), tokens.end());
   }
-  return whitespaceTokenize(detail::join(splitTokens, L" "));
+  return detail::whitespaceTokenize(detail::join(splitTokens, L" "));
 }
 
 Wordpiece::Wordpiece(const Vocab& vocab, const std::wstring& unkToken,
@@ -436,7 +461,7 @@ Wordpiece::Wordpiece(const Vocab& vocab, const std::wstring& unkToken,
 
 std::vector<std::wstring> Wordpiece::tokenize(const std::wstring& text) const {
   std::vector<std::wstring> outputTokens;
-  for (auto& token : whitespaceTokenize(text)) {
+  for (auto& token : detail::whitespaceTokenize(text)) {
     if (token.size() > mMaxInputCharsPerWord) {
       outputTokens.push_back(_unk);
     }
