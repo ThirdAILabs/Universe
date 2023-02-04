@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string_view>
 #include <unordered_map>
+#include <utf8proc.h>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -112,5 +113,76 @@ class FixedVocabulary : public Vocabulary {
   // compute when we know there cannot be duplicates by construction.
   uint32_t add(const std::string_view& token_view);
 };
+
+using Vocab = std::unordered_map<std::wstring, size_t>;
+using InvVocab = std::unordered_map<size_t, std::wstring>;
+
+class Basic {
+ public:
+  explicit Basic(bool lower_case = true);
+  std::vector<std::wstring> tokenize(const std::string& text) const;
+
+ private:
+  std::wstring cleanText(const std::wstring& text) const;
+  bool isControl(const wchar_t& ch) const;
+  bool isWhitespace(const wchar_t& ch) const;
+  bool isPunctuation(const wchar_t& ch) const;
+  bool isChineseChar(const wchar_t& ch) const;
+  std::wstring tokenizeChineseChars(const std::wstring& text) const;
+  bool isStripChar(const wchar_t& ch) const;
+  std::wstring strip(const std::wstring& text) const;
+  std::vector<std::wstring> split(const std::wstring& text) const;
+  std::wstring runStripAccents(const std::wstring& text) const;
+  std::vector<std::wstring> runSplitOnPunc(const std::wstring& text) const;
+
+  bool _to_lower;
+};
+
+class Wordpiece {
+ public:
+  explicit Wordpiece(const Vocab& vocab,
+                     const std::wstring& unkToken = L"[UNK]",
+                     size_t maxInputCharsPerWord = 200);
+  std::vector<std::wstring> tokenize(const std::wstring& text) const;
+
+ private:
+  Vocab _vocab;
+  std::wstring _unk;
+  size_t mMaxInputCharsPerWord;
+};
+
+class FullTokenizer {
+ public:
+  explicit FullTokenizer(const std::string& vocabFile, bool lower_case = true);
+  std::vector<std::wstring> tokenize(const std::string& text) const;
+  std::vector<size_t> encode(const std::vector<std::wstring>& text) const;
+
+ private:
+  Vocab _vocab;
+  InvVocab _inverse;
+  std::string _vocab_fpath;
+  Basic _basic;
+  Wordpiece _wordpiece;
+};
+
+namespace detail {
+class is_any_of {
+ public:
+  explicit is_any_of(const std::wstring& delimiters);
+  bool operator()(wchar_t candidate) const;
+
+ private:
+  std::wstring delimiters_;
+};
+
+std::wstring join(const std::vector<std::wstring>& atoms,
+                  std::wstring delimiter);
+
+template <class Predicate>
+void split(std::vector<std::wstring>& result, const std::wstring& s,
+           Predicate predicate);
+}  // namespace detail
+   //
+std::string convertFromUnicode(const std::wstring& wText);
 
 }  // namespace thirdai::dataset

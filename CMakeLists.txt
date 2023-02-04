@@ -274,6 +274,9 @@ add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
 set(SKIP_PERFORMANCE_COMPARISON ON)
 add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 
+
+add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
+
 # This is so we can include cryptopp/*.h. We want this even if the build flag
 # isn't there so it always gets included in the compile_commands.json file and
 # can work with vscode
@@ -381,7 +384,7 @@ endif()
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
-                                     cereal::cereal prometheus-cpp::pull)
+                                     cereal::cereal prometheus-cpp::pull utf8proc)
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
                                        OpenSSL::SSL)
