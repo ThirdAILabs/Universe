@@ -141,8 +141,6 @@ def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config)
         assert False, "No node Found!"
     node_to_kill = nodes_to_kill[0]
     mini_cluster.remove_node(node_to_kill)
-    # adding some waiting time
-
     mini_cluster.add_node(num_cpus=1, wait=True)
 
     distributed_model.train()

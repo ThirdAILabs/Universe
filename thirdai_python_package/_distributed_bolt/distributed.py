@@ -147,6 +147,7 @@ class RayTrainingClusterConfig:
         runtime_env: Dict = {},
         ignore_reinit_error=False,
         log_dir: str = os.path.join(tempfile.gettempdir(), "thirdai"),
+        num_max_restarts_for_worker: int = 3,
     ):
         """
         This constructor connects to an already existing Ray cluster,
@@ -233,12 +234,20 @@ class RayTrainingClusterConfig:
             f"Using {num_cpus_to_use} cpus / node (user requested {requested_cpus_per_node})"
         )
 
+        # setting max_restarts=num_max_restarts_for_worker implies ray with start each of these worker automatically
+        # 3 times. Read more about it here: https://docs.ray.io/en/latest/ray-core/actors/fault-tolerance.html
         self.primary_worker_config = PrimaryWorker.options(
-            num_cpus=num_cpus_to_use, max_concurrency=2
+            num_cpus=num_cpus_to_use,
+            max_concurrency=2,
+            max_restarts=num_max_restarts_for_worker,
         )
 
         self.replica_worker_configs = [
-            ReplicaWorker.options(num_cpus=num_cpus_to_use, max_concurrency=2)
+            ReplicaWorker.options(
+                num_cpus=num_cpus_to_use,
+                max_concurrency=2,
+                max_restarts=num_max_restarts_for_worker,
+            )
             for _ in range(self.num_workers - 1)
         ]
 

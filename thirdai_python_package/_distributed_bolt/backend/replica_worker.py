@@ -3,9 +3,7 @@ from thirdai._distributed_bolt.backend.worker import Worker
 from thirdai._thirdai import bolt
 
 
-# setting max_restarts=-1 implies ray with start this worker automatically
-# indefinately. Read more about it here: https://docs.ray.io/en/latest/ray-core/actors/fault-tolerance.html
-@ray.remote(max_restarts=-1)
+@ray.remote
 class ReplicaWorker(Worker):
     """
     This is a ray remote class(Actor). Read about them here.

@@ -142,7 +142,7 @@ class TrainStateManager:
         return remote_bolt_graph_model, remote_train_source_pointers
 
     def prepare_restored_worker_for_training(
-        self, bolt_graph_model_ref, chunks_to_skip, batch_to_run, restored_workers
+        self, bolt_graph_model_ref, chunk_start_index, batch_to_run, restored_workers
     ):
         # At least one of the worker have model
         # ask each worker to get model from that worker
@@ -151,7 +151,7 @@ class TrainStateManager:
         self.worker_manager.foreach_worker(
             lambda worker: worker.prepare_for_training(
                 bolt_graph=bolt_graph_model_ref,
-                chunks_to_skip=chunks_to_skip,
+                chunk_start_index=chunk_start_index,
                 batch_to_run=batch_to_run,
             ),
             remote_worker_ids=restored_workers,
@@ -197,7 +197,7 @@ class TrainStateManager:
 
                 # Check whether this worker doesn't fails during model fetch
                 if remote_train_source_pointers.ok and remote_bolt_graph_model.ok:
-                    chunks_to_skip, batch_to_run = remote_train_source_pointers.get()
+                    chunk_start_index, batch_to_run = remote_train_source_pointers.get()
                     bolt_graph_model = remote_bolt_graph_model.get()
                 else:
                     continue
@@ -207,7 +207,7 @@ class TrainStateManager:
                 if worker_with_model != None:
                     self.prepare_restored_worker_for_training(
                         bolt_graph_model_ref,
-                        chunks_to_skip,
+                        chunk_start_index,
                         batch_to_run,
                         restored_workers,
                     )

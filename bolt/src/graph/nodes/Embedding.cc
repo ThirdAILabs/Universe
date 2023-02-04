@@ -71,7 +71,8 @@ void EmbeddingNode::disableSparseParameterUpdates() {
 }
 
 void EmbeddingNode::saveWithOptimizer(bool should_save_optimizer) {
-  if (getState() != NodeState::Compiled) {
+  if (getState() != NodeState::Compiled &&
+      getState() != NodeState::PreparedForBatchProcessing) {
     throw exceptions::NodeStateMachineError(
         "Cannot call saveWithOptimizer until the model "
         "containing the node is compiled.");

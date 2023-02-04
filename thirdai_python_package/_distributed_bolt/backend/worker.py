@@ -77,8 +77,12 @@ class Worker:
         try:
             return func(self, *args, **kwargs)
         except Exception as err:
-            print(f"Worker Exception, recreating! {err=}")
-            logging.warning(f"Worker Exception, recreating! {err=}")
+            print(
+                f"Worker Exception! Killing this worker, so Ray Core can restart it. {err=}"
+            )
+            logging.warn(
+                f"Worker Exception! Killing this worker, so Ray Core can restart it. {err=}"
+            )
             # Allow logs to propagate
             time.sleep(0.5)
             # Kill this worker so Ray Core can restart it.
@@ -87,7 +91,7 @@ class Worker:
     def prepare_for_training(
         self,
         bolt_graph,
-        chunks_to_skip: int = 0,
+        chunk_start_index: int = 0,
         batch_to_run: int = 0,
     ):
         """
@@ -98,12 +102,12 @@ class Worker:
 
         Args:
             bolt_graph (_type_): Ref to Bolt Graph
-            chunks_to_skip (int, optional): Chunk to start training from. Defaults to 0.
+            chunk_start_index (int, optional): Chunk to start training from. Defaults to 0.
             batch_to_run (int, optional): Batch to run inside the chunk. Defaults to 0.
 
         """
 
-        self.train_source.load(chunks_to_skip=chunks_to_skip)
+        self.train_source.load(chunk_start_index=chunk_start_index)
         start = time()
         self.model = bolt.DistributedTrainingWrapper(
             model=ray.get(bolt_graph),
