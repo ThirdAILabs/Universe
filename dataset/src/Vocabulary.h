@@ -114,9 +114,6 @@ class FixedVocabulary : public Vocabulary {
   uint32_t add(const std::string_view& token_view);
 };
 
-using Vocab = std::unordered_map<std::wstring, size_t>;
-using InvVocab = std::unordered_map<size_t, std::wstring>;
-
 class Basic {
  public:
   explicit Basic(bool lower_case = true);
@@ -133,31 +130,23 @@ class Basic {
   bool _to_lower;
 };
 
-class Wordpiece {
- public:
-  explicit Wordpiece(const Vocab& vocab,
-                     const std::wstring& unkToken = L"[UNK]",
-                     size_t maxInputCharsPerWord = 200);
-  std::vector<std::wstring> tokenize(const std::wstring& text) const;
-
- private:
-  Vocab _vocab;
-  std::wstring _unk;
-  size_t mMaxInputCharsPerWord;
-};
-
 class FullTokenizer {
  public:
   explicit FullTokenizer(const std::string& vocabFile, bool lower_case = true);
   std::vector<std::wstring> tokenize(const std::string& text) const;
   std::vector<size_t> encode(const std::vector<std::wstring>& text) const;
+  std::vector<std::wstring> wordpiece_tokenize(
+      const std::wstring& text, const std::wstring& unkToken = L"[UNK]",
+      size_t maxInputCharsPerWord = 200) const;
 
  private:
+  using Vocab = std::unordered_map<std::wstring, size_t>;
+  using InvVocab = std::unordered_map<size_t, std::wstring>;
+  static Vocab loadVocab(const std::string& vocabFile);
   Vocab _vocab;
   InvVocab _inverse;
   std::string _vocab_fpath;
   Basic _basic;
-  Wordpiece _wordpiece;
 };
 
 namespace detail {

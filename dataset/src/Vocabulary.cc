@@ -292,8 +292,8 @@ std::wstring tolower(const std::wstring& s) {
 }
 }  // namespace detail
 
-static Vocab loadVocab(const std::string& vocabFile) {
-  Vocab vocab;
+FullTokenizer::Vocab FullTokenizer::loadVocab(const std::string& vocabFile) {
+  FullTokenizer::Vocab vocab;
   size_t index = 0;
   std::ifstream ifs(vocabFile, std::ifstream::in);
   std::string line;
@@ -453,17 +453,13 @@ std::vector<std::wstring> Basic::tokenize(const std::string& text) const {
   return detail::whitespaceTokenize(detail::join(splitTokens, L" "));
 }
 
-Wordpiece::Wordpiece(const Vocab& vocab, const std::wstring& unkToken,
-                     size_t maxInputCharsPerWord)
-    : _vocab(vocab),
-      _unk(unkToken),
-      mMaxInputCharsPerWord(maxInputCharsPerWord) {}
-
-std::vector<std::wstring> Wordpiece::tokenize(const std::wstring& text) const {
+std::vector<std::wstring> FullTokenizer::wordpiece_tokenize(
+    const std::wstring& text, const std::wstring& unkToken /*= L"[UNK]"*/,
+    size_t maxInputCharsPerWord /*= 200*/) const {
   std::vector<std::wstring> outputTokens;
   for (auto& token : detail::whitespaceTokenize(text)) {
-    if (token.size() > mMaxInputCharsPerWord) {
-      outputTokens.push_back(_unk);
+    if (token.size() > maxInputCharsPerWord) {
+      outputTokens.push_back(unkToken);
     }
     bool isBad = false;
     size_t start = 0;
@@ -493,7 +489,7 @@ std::vector<std::wstring> Wordpiece::tokenize(const std::wstring& text) const {
       start = end;
     }
     if (isBad) {
-      outputTokens.push_back(_unk);
+      outputTokens.push_back(unkToken);
     } else {
       outputTokens.insert(outputTokens.end(), subTokens.begin(),
                           subTokens.end());
@@ -503,9 +499,7 @@ std::vector<std::wstring> Wordpiece::tokenize(const std::wstring& text) const {
 }
 
 FullTokenizer::FullTokenizer(const std::string& vocabFile, bool lower_case)
-    : _vocab(loadVocab(vocabFile)),
-      _basic(Basic(lower_case)),
-      _wordpiece(Wordpiece(_vocab)) {
+    : _vocab(loadVocab(vocabFile)), _basic(Basic(lower_case)) {
   for (auto& v : _vocab) {
     _inverse[v.second] = v.first;
   }
@@ -515,7 +509,7 @@ std::vector<std::wstring> FullTokenizer::tokenize(
     const std::string& text) const {
   std::vector<std::wstring> splitTokens;
   for (auto& token : _basic.tokenize(text)) {
-    for (auto& subToken : _wordpiece.tokenize(token)) {
+    for (auto& subToken : wordpiece_tokenize(token)) {
       splitTokens.push_back(subToken);
     }
   }
