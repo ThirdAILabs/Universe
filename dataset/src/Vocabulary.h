@@ -150,6 +150,9 @@ class FullTokenizer {
 };
 
 namespace detail {
+
+const std::wstring DEFAULT_STRIP_CHARACTERS = L" \t\n\r\v\f";
+
 class is_any_of {
  public:
   explicit is_any_of(const std::wstring& delimiters);

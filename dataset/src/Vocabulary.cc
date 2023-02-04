@@ -150,8 +150,6 @@ std::string convertFromUnicode(const std::wstring& wText) {
   return ret;
 }
 
-const std::wstring stripChar = L" \t\n\r\v\f";
-
 namespace detail {
 
 is_any_of::is_any_of(const std::wstring& delimiters)
@@ -226,7 +224,7 @@ std::string normalize_nfd(const std::string& s) {
 }
 
 bool isStripChar(const wchar_t& ch) {
-  return stripChar.find(ch) != std::wstring::npos;
+  return DEFAULT_STRIP_CHARACTERS.find(ch) != std::wstring::npos;
 }
 
 std::wstring strip(const std::wstring& text) {
@@ -254,7 +252,7 @@ std::wstring strip(const std::wstring& text) {
 
 std::vector<std::wstring> split(const std::wstring& text) {
   std::vector<std::wstring> result;
-  detail::split(result, text, detail::is_any_of(stripChar));
+  detail::split(result, text, detail::is_any_of(DEFAULT_STRIP_CHARACTERS));
   return result;
 }
 
