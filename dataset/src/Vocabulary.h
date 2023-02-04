@@ -130,9 +130,9 @@ class Basic {
   bool _to_lower;
 };
 
-class FullTokenizer {
+class Wordpiece {
  public:
-  explicit FullTokenizer(const std::string& vocabFile, bool lower_case = true);
+  explicit Wordpiece(const std::string& vocabFile, bool lower_case = true);
   std::vector<std::wstring> tokenize(const std::string& text) const;
   std::vector<size_t> encode(const std::vector<std::wstring>& text) const;
   std::vector<std::wstring> wordpiece_tokenize(

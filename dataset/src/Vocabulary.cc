@@ -290,8 +290,8 @@ std::wstring tolower(const std::wstring& s) {
 }
 }  // namespace detail
 
-FullTokenizer::Vocab FullTokenizer::loadVocab(const std::string& vocabFile) {
-  FullTokenizer::Vocab vocab;
+Wordpiece::Vocab Wordpiece::loadVocab(const std::string& vocabFile) {
+  Wordpiece::Vocab vocab;
   size_t index = 0;
   std::ifstream ifs(vocabFile, std::ifstream::in);
   std::string line;
@@ -451,7 +451,7 @@ std::vector<std::wstring> Basic::tokenize(const std::string& text) const {
   return detail::whitespaceTokenize(detail::join(splitTokens, L" "));
 }
 
-std::vector<std::wstring> FullTokenizer::wordpiece_tokenize(
+std::vector<std::wstring> Wordpiece::wordpiece_tokenize(
     const std::wstring& text, const std::wstring& unkToken /*= L"[UNK]"*/,
     size_t maxInputCharsPerWord /*= 200*/) const {
   std::vector<std::wstring> outputTokens;
@@ -496,15 +496,14 @@ std::vector<std::wstring> FullTokenizer::wordpiece_tokenize(
   return outputTokens;
 }
 
-FullTokenizer::FullTokenizer(const std::string& vocabFile, bool lower_case)
+Wordpiece::Wordpiece(const std::string& vocabFile, bool lower_case)
     : _vocab(loadVocab(vocabFile)), _basic(Basic(lower_case)) {
   for (auto& v : _vocab) {
     _inverse[v.second] = v.first;
   }
 }
 
-std::vector<std::wstring> FullTokenizer::tokenize(
-    const std::string& text) const {
+std::vector<std::wstring> Wordpiece::tokenize(const std::string& text) const {
   std::vector<std::wstring> splitTokens;
   for (auto& token : _basic.tokenize(text)) {
     for (auto& subToken : wordpiece_tokenize(token)) {
@@ -514,7 +513,7 @@ std::vector<std::wstring> FullTokenizer::tokenize(
   return splitTokens;
 }
 
-std::vector<size_t> FullTokenizer::encode(
+std::vector<size_t> Wordpiece::encode(
     const std::vector<std::wstring>& text) const {
   std::vector<size_t> ret(text.size());
   for (size_t i = 0; i < text.size(); i++) {
