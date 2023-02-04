@@ -216,12 +216,24 @@ static bool isStripChar(const wchar_t& ch) {
 
 static std::wstring strip(const std::wstring& text) {
   std::wstring ret = text;
-  if (ret.empty()) return ret;
+  if (ret.empty()) {
+    return ret;
+  }
+  // TODO(jerin-thirdai): There are overflow errors here.
   size_t pos = 0;
-  while (pos < ret.size() && isStripChar(ret[pos])) pos++;
-  if (pos != 0) ret = ret.substr(pos, ret.size() - pos);
+  while (pos < ret.size() && isStripChar(ret[pos])) {
+    pos++;
+  }
+
+  if (pos != 0) {
+    ret = ret.substr(pos, ret.size() - pos);
+  }
+  // size_t - 1 can overflow, and the cast is infinity. This is also not
+  // reliable behaviour cross-platform.
   pos = ret.size() - 1;
-  while (pos != (size_t)-1 && isStripChar(ret[pos])) pos--;
+  while (pos != (size_t)-1 && isStripChar(ret[pos])) {
+    pos--;
+  }
   return ret.substr(0, pos + 1);
 }
 
@@ -233,7 +245,9 @@ static std::vector<std::wstring> split(const std::wstring& text) {
 
 static std::vector<std::wstring> whitespaceTokenize(const std::wstring& text) {
   std::wstring rtext = strip(text);
-  if (rtext.empty()) return std::vector<std::wstring>();
+  if (rtext.empty()) {
+    return std::vector<std::wstring>();
+  }
   return split(text);
 }
 
@@ -245,7 +259,9 @@ static std::wstring convertToUnicode(const std::string& text) {
     utf8proc_ssize_t forward =
         utf8proc_iterate((utf8proc_uint8_t*)&text[i], text.size() - i,
                          (utf8proc_int32_t*)&codepoint);
-    if (forward < 0) return L"";
+    if (forward < 0) {
+      return L"";
+    }
     ret += codepoint;
     i += forward;
   }
@@ -267,7 +283,9 @@ static Vocab loadVocab(const std::string& vocabFile) {
   std::string line;
   while (getline(ifs, line)) {
     std::wstring token = convertToUnicode(line);
-    if (token.empty()) break;
+    if (token.empty()) {
+      break;
+    }
     token = strip(token);
     vocab[token] = index;
     index++;
@@ -280,39 +298,52 @@ Basic::Basic(bool lower_case) : _to_lower(lower_case) {}
 std::wstring Basic::cleanText(const std::wstring& text) const {
   std::wstring output;
   for (const wchar_t& cp : text) {
-    if (cp == 0 || cp == 0xfffd || isControl(cp)) continue;
-    if (isWhitespace(cp))
+    if (cp == 0 || cp == 0xfffd || isControl(cp)) {
+      continue;
+    }
+    if (isWhitespace(cp)) {
       output += L" ";
-    else
+    } else {
       output += cp;
+    }
   }
   return output;
 }
 
 bool Basic::isControl(const wchar_t& ch) const {
-  if (ch == L'\t' || ch == L'\n' || ch == L'\r') return false;
+  if (ch == L'\t' || ch == L'\n' || ch == L'\r') {
+    return false;
+  }
   auto cat = utf8proc_category(ch);
-  if (cat == UTF8PROC_CATEGORY_CC || cat == UTF8PROC_CATEGORY_CF) return true;
+  if (cat == UTF8PROC_CATEGORY_CC || cat == UTF8PROC_CATEGORY_CF) {
+    return true;
+  }
   return false;
 }
 
 bool Basic::isWhitespace(const wchar_t& ch) const {
-  if (ch == L' ' || ch == L'\t' || ch == L'\n' || ch == L'\r') return true;
+  if (ch == L' ' || ch == L'\t' || ch == L'\n' || ch == L'\r') {
+    return true;
+  }
   auto cat = utf8proc_category(ch);
-  if (cat == UTF8PROC_CATEGORY_ZS) return true;
+  if (cat == UTF8PROC_CATEGORY_ZS) {
+    return true;
+  }
   return false;
 }
 
 bool Basic::isPunctuation(const wchar_t& ch) const {
   if ((ch >= 33 && ch <= 47) || (ch >= 58 && ch <= 64) ||
-      (ch >= 91 && ch <= 96) || (ch >= 123 && ch <= 126))
+      (ch >= 91 && ch <= 96) || (ch >= 123 && ch <= 126)) {
     return true;
+  }
   auto cat = utf8proc_category(ch);
   if (cat == UTF8PROC_CATEGORY_PD || cat == UTF8PROC_CATEGORY_PS ||
       cat == UTF8PROC_CATEGORY_PE || cat == UTF8PROC_CATEGORY_PC ||
       cat == UTF8PROC_CATEGORY_PO  // sometimes ¶ belong SO
-      || cat == UTF8PROC_CATEGORY_PI || cat == UTF8PROC_CATEGORY_PF)
+      || cat == UTF8PROC_CATEGORY_PI || cat == UTF8PROC_CATEGORY_PF) {
     return true;
+  }
   return false;
 }
 
@@ -320,8 +351,9 @@ bool Basic::isChineseChar(const wchar_t& ch) const {
   if ((ch >= 0x4E00 && ch <= 0x9FFF) || (ch >= 0x3400 && ch <= 0x4DBF) ||
       (ch >= 0x20000 && ch <= 0x2A6DF) || (ch >= 0x2A700 && ch <= 0x2B73F) ||
       (ch >= 0x2B740 && ch <= 0x2B81F) || (ch >= 0x2B820 && ch <= 0x2CEAF) ||
-      (ch >= 0xF900 && ch <= 0xFAFF) || (ch >= 0x2F800 && ch <= 0x2FA1F))
+      (ch >= 0xF900 && ch <= 0xFAFF) || (ch >= 0x2F800 && ch <= 0x2FA1F)) {
     return true;
+  }
   return false;
 }
 
@@ -417,7 +449,10 @@ std::vector<std::wstring> Wordpiece::tokenize(const std::wstring& text) const {
       bool hasCurSubstr = false;
       while (start < end) {
         std::wstring substr = token.substr(start, end - start);
-        if (start > 0) substr = L"##" + substr;
+        if (start > 0) {
+          substr = L"##" + substr;
+        }
+
         if (_vocab.find(substr) != _vocab.end()) {
           curSubstr = substr;
           hasCurSubstr = true;
@@ -432,11 +467,12 @@ std::vector<std::wstring> Wordpiece::tokenize(const std::wstring& text) const {
       subTokens.push_back(curSubstr);
       start = end;
     }
-    if (isBad)
+    if (isBad) {
       outputTokens.push_back(_unk);
-    else
+    } else {
       outputTokens.insert(outputTokens.end(), subTokens.begin(),
                           subTokens.end());
+    }
   }
   return outputTokens;
 }
@@ -445,15 +481,19 @@ FullTokenizer::FullTokenizer(const std::string& vocabFile, bool lower_case)
     : _vocab(loadVocab(vocabFile)),
       _basic(Basic(lower_case)),
       _wordpiece(Wordpiece(_vocab)) {
-  for (auto& v : _vocab) _inverse[v.second] = v.first;
+  for (auto& v : _vocab) {
+    _inverse[v.second] = v.first;
+  }
 }
 
 std::vector<std::wstring> FullTokenizer::tokenize(
     const std::string& text) const {
   std::vector<std::wstring> splitTokens;
-  for (auto& token : _basic.tokenize(text))
-    for (auto& subToken : _wordpiece.tokenize(token))
+  for (auto& token : _basic.tokenize(text)) {
+    for (auto& subToken : _wordpiece.tokenize(token)) {
       splitTokens.push_back(subToken);
+    }
+  }
   return splitTokens;
 }
 
