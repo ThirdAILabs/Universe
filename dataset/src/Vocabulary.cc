@@ -1,4 +1,5 @@
 #include "Vocabulary.h"
+#include <cassert>
 #include <iostream>
 
 namespace thirdai::dataset {
