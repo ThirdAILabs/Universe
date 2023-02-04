@@ -1,4 +1,5 @@
 #include "EmbeddingLayer.h"
+#include <bolt/src/layers/LayerConfig.h>
 #include <hashing/src/MurmurHash.h>
 #include <algorithm>
 #include <random>
@@ -126,8 +127,14 @@ void EmbeddingLayer::backpropagate(uint32_t vec_index,
 
       float* update_loc = _optimizer->gradients.data() + embedding_block_offset;
 
-      for (uint32_t i = 0; i < _lookup_size; i++) {
-        update_loc[i] += output_gradients[i];
+      if (_reduction == EmbeddingReductionType::AVERAGE) {
+        for (uint32_t i = 0; i < _lookup_size; i++) {
+          update_loc[i] += output_gradients[i] / num_tokens;
+        }
+      } else {
+        for (uint32_t i = 0; i < _lookup_size; i++) {
+          update_loc[i] += output_gradients[i];
+        }
       }
 
       if (_reduction == EmbeddingReductionType::CONCATENATION) {
