@@ -187,7 +187,7 @@ std::wstring convertToUnicode(const std::string& text) {
   return ret;
 }
 
-std::wstring tolower(const std::wstring& s) {
+std::wstring lower(const std::wstring& s) {
   std::wstring ret(s.size(), L' ');
   for (size_t i = 0; i < s.size(); i++) {
     ret[i] = utf8proc_tolower(s[i]);

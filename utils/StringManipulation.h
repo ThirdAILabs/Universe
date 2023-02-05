@@ -54,7 +54,7 @@ std::vector<std::wstring> split(
 std::string convertFromUnicode(const std::wstring& wText);
 std::wstring convertToUnicode(const std::string& text);
 std::string normalize_nfd(const std::string& s);
-std::wstring tolower(const std::wstring& s);
+std::wstring lower(const std::wstring& s);
 
 std::vector<std::wstring> whitespaceTokenize(const std::wstring& text);
 std::wstring strip(
