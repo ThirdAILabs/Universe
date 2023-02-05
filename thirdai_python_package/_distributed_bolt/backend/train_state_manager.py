@@ -131,14 +131,22 @@ class TrainStateManager:
     def get_remote_worker_state(self, worker_with_model):
 
         # function is called on only one worker, hence just checking for index 0
-        remote_bolt_graph_model = self.worker_manager.foreach_worker(
-            lambda worker: worker.get_model(should_save_optimizer=True),
-            remote_worker_ids=[worker_with_model],
-        ).pop()
-        remote_train_source_pointers = self.worker_manager.foreach_worker(
-            lambda worker: worker.get_current_chunk_and_batch(),
-            remote_worker_ids=[worker_with_model],
-        ).pop()
+        remote_bolt_graph_model = (
+            self.worker_manager.foreach_worker(
+                lambda worker: worker.get_model(should_save_optimizer=True),
+                remote_worker_ids=[worker_with_model],
+            )
+            .get()
+            .pop()
+        )
+        remote_train_source_pointers = (
+            self.worker_manager.foreach_worker(
+                lambda worker: worker.get_current_chunk_and_batch(),
+                remote_worker_ids=[worker_with_model],
+            )
+            .get()
+            .pop()
+        )
         return remote_bolt_graph_model, remote_train_source_pointers
 
     def prepare_restored_worker_for_training(

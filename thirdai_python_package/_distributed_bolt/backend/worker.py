@@ -78,10 +78,10 @@ class Worker:
             return func(self, *args, **kwargs)
         except Exception as err:
             print(
-                f"Worker Exception! Killing this worker, so Ray Core can restart it. {err=}"
+                f"Worker Exception! Killing this worker, so Ray Core can restart it. {err=}. {func=}"
             )
             logging.warn(
-                f"Worker Exception! Killing this worker, so Ray Core can restart it. {err=}"
+                f"Worker Exception! Killing this worker, so Ray Core can restart it. {err=}. {func=}"
             )
             # Allow logs to propagate
             time.sleep(0.5)

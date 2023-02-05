@@ -147,7 +147,7 @@ class RayTrainingClusterConfig:
         runtime_env: Dict = {},
         ignore_reinit_error=False,
         log_dir: str = os.path.join(tempfile.gettempdir(), "thirdai"),
-        num_max_restarts_for_worker: int = 3,
+        num_max_restarts_for_worker: int = 5,
     ):
         """
         This constructor connects to an already existing Ray cluster,
