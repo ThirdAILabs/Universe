@@ -5,28 +5,6 @@
 
 namespace thirdai::text {
 
-namespace {
-
-class is_any_of {
- public:
-  explicit is_any_of(std::wstring delimiters);
-  bool operator()(wchar_t candidate) const;
-
- private:
-  std::wstring delimiters_;
-};
-
-is_any_of::is_any_of(std::wstring delimiters)
-    : delimiters_(std::move(delimiters)) {}
-
-bool is_any_of::operator()(wchar_t candidate) const {
-  return std::any_of(
-      delimiters_.begin(), delimiters_.end(),
-      [candidate](wchar_t delimiter) { return candidate == delimiter; });
-}
-
-}  // namespace
-
 std::vector<std::string_view> split(std::string_view sentence, char delimiter) {
   std::vector<std::string_view> words;
 
@@ -159,7 +137,6 @@ std::wstring strip(const std::wstring& text,
     ++left;
   }
 
-  // pos \in [0, size_t_max - 1], since we handled empty-case.
   // Strip from right.
   size_t right = text.size();
   while (right > left && isStripChar(text[right - 1])) {
@@ -173,7 +150,13 @@ std::wstring strip(const std::wstring& text,
 std::vector<std::wstring> split(
     const std::wstring& text,
     const std::wstring& split_characters /*=DEFAULT_STRIP_CHARACTERS*/) {
-  return split_if(text, is_any_of(split_characters));
+  // Lambda as predicate, checks if delimiter or not.
+  auto is_delimiter = [&split_characters](wchar_t c) {
+    return std::any_of(split_characters.begin(), split_characters.end(),
+                       [c](wchar_t delimiter) { return c == delimiter; });
+  };
+
+  return split_if(text, is_delimiter);
 }
 
 std::vector<std::wstring> splitOnWhitespace(const std::wstring& text) {
