@@ -67,8 +67,8 @@ bool is_any_of::operator()(wchar_t candidate) const {
 }
 
 template <class Predicate>
-void split(std::vector<std::wstring>& result, const std::wstring& s,
-           Predicate predicate) {
+std::vector<std::wstring> split(const std::wstring& s, Predicate predicate) {
+  std::vector<std::wstring> result;
   size_t current = 0;
   size_t start = 0;
   while (current < s.size()) {
@@ -82,6 +82,7 @@ void split(std::vector<std::wstring>& result, const std::wstring& s,
   if (current - start > 0) {
     result.push_back(s.substr(start, current - start));
   }
+  return result;
 }
 
 // template void split<is_any_of>(std::vector<std::wstring>, const std::wstring
@@ -155,9 +156,7 @@ std::wstring strip(const std::wstring& text) {
 }
 
 std::vector<std::wstring> split(const std::wstring& text) {
-  std::vector<std::wstring> result;
-  split(result, text, is_any_of(DEFAULT_STRIP_CHARACTERS));
-  return result;
+  return split(text, is_any_of(DEFAULT_STRIP_CHARACTERS));
 }
 
 std::vector<std::wstring> whitespaceTokenize(const std::wstring& text) {

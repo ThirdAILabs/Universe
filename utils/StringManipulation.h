@@ -45,8 +45,7 @@ std::wstring join(const std::vector<std::wstring>& atoms,
                   const std::wstring& delimiter);
 
 template <class Predicate>
-void split(std::vector<std::wstring>& result, const std::wstring& s,
-           Predicate predicate);
+std::vector<std::wstring> split(const std::wstring& text, Predicate predicate);
 //
 std::string convertFromUnicode(const std::wstring& wText);
 std::wstring convertToUnicode(const std::string& text);
