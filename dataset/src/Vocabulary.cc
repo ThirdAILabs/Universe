@@ -359,10 +359,15 @@ std::string Wordpiece::decode(const std::vector<uint32_t>& token_ids) const {
     uint32_t token_id = token_ids[i];
     auto query = _inverse.find(token_id);
     assert(query != _inverse.end());
-    if (i != 0) {
+
+    std::string token = text::convertFromUnicode(query->second);
+    bool is_subword_suffix = token.size() >= 2 && token.substr(0, 2) == "##";
+
+    if (i != 0 and !is_subword_suffix) {
       result += " ";
     }
-    result += text::convertFromUnicode(query->second);
+
+    result += is_subword_suffix ? token.substr(2) : token;
   }
   return result;
 }

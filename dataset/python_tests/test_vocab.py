@@ -80,7 +80,6 @@ def test_wordpiece_vocab():
 
             # Assert sentence-level reconstruction
             decoded = vocab.decode(pieces)
-            decoded = decoded.replace(" ##", "")
             assert decoded == sample
 
             if "THIRDAI_TEST_DEBUG" in os.environ:
