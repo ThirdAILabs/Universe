@@ -67,26 +67,26 @@ bool is_any_of::operator()(wchar_t candidate) const {
 }
 
 template <class Predicate>
-std::vector<std::wstring> split(const std::wstring& s, Predicate predicate) {
+std::vector<std::wstring> split_if(const std::wstring& text,
+                                   Predicate predicate) {
   std::vector<std::wstring> result;
   size_t current = 0;
   size_t start = 0;
-  while (current < s.size()) {
-    if (predicate(s[current])) {
-      result.push_back(s.substr(start, current - start));
+  while (current < text.size()) {
+    if (predicate(text[current])) {
+      std::wstring atom = text.substr(start, current - start);
+      result.push_back(std::move(atom));
       start = current + 1;
     }
     ++current;
   }
 
   if (current - start > 0) {
-    result.push_back(s.substr(start, current - start));
+    std::wstring atom = text.substr(start, current - start);
+    result.push_back(std::move(atom));
   }
   return result;
 }
-
-// template void split<is_any_of>(std::vector<std::wstring>, const std::wstring
-// &, is_any_of);
 
 std::wstring join(const std::vector<std::wstring>& atoms,
                   const std::wstring& delimiter) {
@@ -95,7 +95,6 @@ std::wstring join(const std::vector<std::wstring>& atoms,
     if (i != 0) {
       result += delimiter;
     }
-
     result += atoms[i];
   }
 
@@ -155,8 +154,10 @@ std::wstring strip(const std::wstring& text) {
   return text.substr(left, right - left);
 }
 
-std::vector<std::wstring> split(const std::wstring& text) {
-  return split(text, is_any_of(DEFAULT_STRIP_CHARACTERS));
+std::vector<std::wstring> split(
+    const std::wstring& text,
+    const std::wstring& split_characters /*=DEFAULT_STRIP_CHARACTERS*/) {
+  return split_if(text, is_any_of(split_characters));
 }
 
 std::vector<std::wstring> whitespaceTokenize(const std::wstring& text) {

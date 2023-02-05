@@ -45,13 +45,17 @@ std::wstring join(const std::vector<std::wstring>& atoms,
                   const std::wstring& delimiter);
 
 template <class Predicate>
-std::vector<std::wstring> split(const std::wstring& text, Predicate predicate);
-//
+std::vector<std::wstring> split_if(const std::wstring& text,
+                                   Predicate predicate);
+std::vector<std::wstring> split(
+    const std::wstring& text,
+    const std::wstring& split_characters = DEFAULT_STRIP_CHARACTERS);
+
 std::string convertFromUnicode(const std::wstring& wText);
 std::wstring convertToUnicode(const std::string& text);
 std::string normalize_nfd(const std::string& s);
 std::wstring tolower(const std::wstring& s);
-std::vector<std::wstring> split(const std::wstring& text);
+
 std::vector<std::wstring> whitespaceTokenize(const std::wstring& text);
 std::wstring strip(const std::wstring& text);
 
