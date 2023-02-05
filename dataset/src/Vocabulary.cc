@@ -226,26 +226,27 @@ bool isStripChar(const wchar_t& ch) {
 }
 
 std::wstring strip(const std::wstring& text) {
-  std::wstring ret = text;
-  if (ret.empty()) {
-    return ret;
-  }
-  // TODO(jerin-thirdai): There are overflow errors here.
-  size_t pos = 0;
-  while (pos < ret.size() && detail::isStripChar(ret[pos])) {
-    pos++;
+  // Empty string, return empty-string.
+  // This takes care of ret.size() = 0;
+  if (text.empty()) {
+    return text;
   }
 
-  if (pos != 0) {
-    ret = ret.substr(pos, ret.size() - pos);
+  // Remove stripchars from front.
+  size_t left = 0;
+  while (left < text.size() && detail::isStripChar(text[left])) {
+    ++left;
   }
-  // size_t - 1 can overflow, and the cast is infinity. This is also not
-  // reliable behaviour cross-platform.
-  pos = ret.size() - 1;
-  while (pos != (size_t)-1 && detail::isStripChar(ret[pos])) {
-    pos--;
+
+  // pos \in [0, size_t_max - 1], since we handled empty-case.
+  // Strip from right.
+  size_t right = text.size();
+  while (right > left && detail::isStripChar(text[right - 1])) {
+    --right;
   }
-  return ret.substr(0, pos + 1);
+
+  // [left, right) now represents stripped substring.
+  return text.substr(left, right - left);
 }
 
 std::vector<std::wstring> split(const std::wstring& text) {
