@@ -1,6 +1,6 @@
 import os
 import pytest
-from thirdai.dataset import FixedVocabulary
+from thirdai.dataset import FixedVocabulary, Wordpiece
 
 pytestmark = [pytest.mark.unit]
 
@@ -31,7 +31,7 @@ def setup_module():
             bert_vocab_file.write(response.read())
 
 
-def test_vocab():
+def test_fixed_vocab():
     vocab = FixedVocabulary.make(BERT_VOCAB_PATH)
 
     with open(BERT_VOCAB_PATH) as vocab_file:
@@ -56,3 +56,33 @@ def test_vocab():
                 print()
 
         assert len(pieces) == len(tokens)
+
+
+def test_wordpiece_vocab():
+    vocab = Wordpiece.make(BERT_VOCAB_PATH)
+
+    with open(BERT_VOCAB_PATH) as vocab_file:
+        lines = vocab_file.read().splitlines()
+        assert len(lines) == vocab.size()
+
+    for sample in BERT_SAMPLES:
+        sample = sample.replace(" ##", "")
+        pieces = vocab.encode(sample)
+
+        # Nothing maps to unknown, as the above is taken from BERT (thirdai)
+        assert vocab.unk_id() not in pieces
+        tokens = sample.split()
+        for piece, token in zip(pieces, tokens):
+            # Assert reconstruction works
+            if "THIRDAI_TEST_DEBUG" in os.environ:
+                print("{}: {}".format(token, piece), end=" ")
+
+            # Assert sentence-level reconstruction
+            decoded = vocab.decode(pieces)
+            decoded = decoded.replace(" ##", "")
+            assert decoded == sample
+
+            if "THIRDAI_TEST_DEBUG" in os.environ:
+                print()
+
+        # assert len(pieces) == len(tokens)
