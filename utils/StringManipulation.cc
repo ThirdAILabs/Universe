@@ -326,7 +326,7 @@ std::vector<std::wstring> tokenize(const std::string& text, bool lower_case) {
   std::vector<std::wstring> splitTokens;
   for (std::wstring token : origTokens) {
     if (lower_case) {
-      token = tolower(token);
+      token = lower(token);
       token = stripAccents(token);
     }
     const auto& tokens = splitOnPunctuation(token);
