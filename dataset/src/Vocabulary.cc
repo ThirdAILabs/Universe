@@ -1,6 +1,5 @@
 #include "Vocabulary.h"
 #include "utils/StringManipulation.h"
-#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <utf8proc.h>

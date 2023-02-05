@@ -1,4 +1,5 @@
 #include "StringManipulation.h"
+#include <algorithm>
 #include <utf8proc.h>
 
 namespace thirdai::text {
