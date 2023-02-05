@@ -512,16 +512,61 @@ std::vector<std::wstring> Wordpiece::tokenize(const std::string& text) const {
   }
   return splitTokens;
 }
+std::vector<uint32_t> Wordpiece::encode(
+    const std::string_view& sentence) const {
+  std::string sentence_copy(sentence.data(), sentence.size());
+  std::vector<std::wstring> tokens = tokenize(sentence_copy);
+  std::vector<uint32_t> ids = encode_tokens(tokens);
+  return ids;
+}
 
-std::vector<size_t> Wordpiece::encode(
-    const std::vector<std::wstring>& text) const {
-  std::vector<size_t> ret(text.size());
-  for (size_t i = 0; i < text.size(); i++) {
-    auto query = _vocab.find(text[i]);
+std::vector<uint32_t> Wordpiece::encode_tokens(
+    const std::vector<std::wstring>& tokens) const {
+  std::vector<uint32_t> ret(tokens.size());
+  for (uint32_t i = 0; i < tokens.size(); i++) {
+    auto query = _vocab.find(tokens[i]);
     assert(query != _vocab.end());
     ret[i] = query->second;
   }
   return ret;
+}
+
+uint32_t Wordpiece::id(const std::string_view& token_view) const {
+  std::string token(token_view.data(), token_view.size());
+  std::wstring wtoken = detail::convertToUnicode(detail::normalize_nfd(token));
+  auto query = _vocab.find(wtoken);
+  if (query != _vocab.end()) {
+    return query->second;
+  }
+  return unkId();
+}
+
+uint32_t Wordpiece::size() const { return _vocab.size(); }
+
+uint32_t Wordpiece::unkId() const {
+  auto query = _vocab.find(L"[UNK]");
+  assert(query != _vocab.end());
+  return query->second;
+}
+
+uint32_t Wordpiece::maskId() const {
+  auto query = _vocab.find(L"[MASK]");
+  assert(query != _vocab.end());
+  return query->second;
+}
+
+std::string Wordpiece::decode(const std::vector<uint32_t>& token_ids) const {
+  std::string result;
+  for (size_t i = 0; i < token_ids.size(); i++) {
+    uint32_t token_id = token_ids[i];
+    auto query = _inverse.find(token_id);
+    assert(query != _inverse.end());
+    if (i != 0) {
+      result += " ";
+    }
+    result += detail::convertFromUnicode(query->second);
+  }
+  return result;
 }
 
 }  // namespace thirdai::dataset

@@ -130,19 +130,39 @@ class Basic {
   bool _to_lower;
 };
 
-class Wordpiece {
+class Wordpiece : public Vocabulary {
  public:
   explicit Wordpiece(const std::string& vocabFile, bool lower_case = true);
-  std::vector<std::wstring> tokenize(const std::string& text) const;
-  std::vector<size_t> encode(const std::vector<std::wstring>& text) const;
-  std::vector<std::wstring> wordpiece_tokenize(
-      const std::wstring& text, const std::wstring& unkToken = L"[UNK]",
-      size_t maxInputCharsPerWord = 200) const;
+  std::vector<uint32_t> encode(const std::string_view& sentence) const final;
+
+  // Decodes given token_ids into a string. Throws out of bounds exception if
+  // piece outside what's known to the vocabulary.
+  std::string decode(const std::vector<uint32_t>& token_ids) const final;
+
+  // Returns the id of a given token, if it exists in the vocabulary.
+  // If token not present, returns unkId, indicating the token is unknown to the
+  // vocabulary.
+  uint32_t id(const std::string_view& token_view) const final;
+
+  // Returns the total size of the vocabulary.
+  uint32_t size() const final;
+
+  // Returns the id of unknown token.
+  uint32_t unkId() const final;
+
+  // Returns id of mask special token.
+  uint32_t maskId() const final;
 
  private:
   using Vocab = std::unordered_map<std::wstring, size_t>;
   using InvVocab = std::unordered_map<size_t, std::wstring>;
   static Vocab loadVocab(const std::string& vocabFile);
+  std::vector<std::wstring> tokenize(const std::string& text) const;
+  std::vector<uint32_t> encode_tokens(
+      const std::vector<std::wstring>& tokens) const;
+  std::vector<std::wstring> wordpiece_tokenize(
+      const std::wstring& text, const std::wstring& unkToken = L"[UNK]",
+      size_t maxInputCharsPerWord = 200) const;
   Vocab _vocab;
   InvVocab _inverse;
   std::string _vocab_fpath;
