@@ -137,8 +137,7 @@ def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config)
     # if head is returned here, it connects the gcs to a new address,
     # which leads to timeout
     nodes_to_kill = get_other_nodes(mini_cluster, exclude_head=True)
-    if not nodes_to_kill:
-        assert False, "No node Found!"
+    assert nodes_to_kill, "No node Found!"
     node_to_kill = nodes_to_kill[0]
     mini_cluster.remove_node(node_to_kill)
     mini_cluster.add_node(num_cpus=1, wait=True)
