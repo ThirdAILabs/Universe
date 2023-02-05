@@ -470,10 +470,14 @@ std::vector<std::wstring> Wordpiece::wordpiece_tokenize(
       std::wstring curSubstr;
       bool hasCurSubstr = false;
       while (start < end) {
-        std::wstring substr = token.substr(start, end - start);
+        std::wstring substr;
+
+        // Add ## prefix if we're in the middle of a word.
         if (start > 0) {
-          substr = L"##" + substr;
+          substr += L"##";
         }
+
+        substr += token.substr(start, end - start);
 
         if (_vocab.find(substr) != _vocab.end()) {
           curSubstr = substr;
