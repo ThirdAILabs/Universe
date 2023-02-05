@@ -53,7 +53,7 @@ std::wstring strip(
 
 std::string convertFromUnicode(const std::wstring& wText);
 std::wstring convertToUnicode(const std::string& text);
-std::string normalize_nfd(const std::string& s);
+std::string normalizeNFD(const std::string& s);
 std::wstring lower(const std::wstring& s);
 
 std::vector<std::wstring> tokenize(const std::string& text, bool lower_case);

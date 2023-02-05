@@ -93,7 +93,7 @@ std::wstring join(const std::vector<std::wstring>& atoms,
   return result;
 }
 
-std::string normalize_nfd(const std::string& s) {
+std::string normalizeNFD(const std::string& s) {
   std::string ret;
 
   // The utf8proc API takes in a const char *, and returns a new char * pointing
@@ -276,7 +276,7 @@ std::wstring stripAccents(const std::wstring& text) {
   // Strips accents from a piece of text.
   std::wstring nText;
   try {
-    nText = convertToUnicode(normalize_nfd(convertFromUnicode(text)));
+    nText = convertToUnicode(normalizeNFD(convertFromUnicode(text)));
   } catch (std::bad_cast& e) {
     std::cerr << "bad_cast" << std::endl;
     return L"";
