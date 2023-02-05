@@ -306,7 +306,7 @@ Wordpiece::Vocab Wordpiece::loadVocab(const std::string& vocabFile) {
 
 Basic::Basic(bool lower_case) : _to_lower(lower_case) {}
 
-std::wstring Basic::cleanText(const std::wstring& text) const {
+std::wstring Basic::cleanText(const std::wstring& text) {
   std::wstring output;
   for (const wchar_t& cp : text) {
     if (cp == 0 || cp == 0xfffd || detail::isControl(cp)) {
@@ -375,7 +375,7 @@ bool isChineseChar(const wchar_t& ch) {
 
 }  // namespace detail
 
-std::wstring Basic::tokenizeChineseChars(const std::wstring& text) const {
+std::wstring Basic::tokenizeChineseChars(const std::wstring& text) {
   std::wstring output;
   for (wchar_t ch : text) {
     if (detail::isChineseChar(ch)) {
@@ -389,7 +389,7 @@ std::wstring Basic::tokenizeChineseChars(const std::wstring& text) const {
   return output;
 }
 
-std::wstring Basic::runStripAccents(const std::wstring& text) const {
+std::wstring Basic::runStripAccents(const std::wstring& text) {
   // Strips accents from a piece of text.
   std::wstring nText;
   try {
@@ -411,8 +411,7 @@ std::wstring Basic::runStripAccents(const std::wstring& text) const {
   return output;
 }
 
-std::vector<std::wstring> Basic::runSplitOnPunc(
-    const std::wstring& text) const {
+std::vector<std::wstring> Basic::runSplitOnPunc(const std::wstring& text) {
   size_t i = 0;
   bool startNewWord = true;
   std::vector<std::wstring> output;

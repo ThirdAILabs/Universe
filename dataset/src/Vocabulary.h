@@ -120,12 +120,12 @@ class Basic {
   std::vector<std::wstring> tokenize(const std::string& text) const;
 
  private:
-  std::wstring cleanText(const std::wstring& text) const;
-  std::wstring tokenizeChineseChars(const std::wstring& text) const;
-  std::wstring strip(const std::wstring& text) const;
-  std::vector<std::wstring> split(const std::wstring& text) const;
-  std::wstring runStripAccents(const std::wstring& text) const;
-  std::vector<std::wstring> runSplitOnPunc(const std::wstring& text) const;
+  static std::wstring cleanText(const std::wstring& text);
+  static std::wstring tokenizeChineseChars(const std::wstring& text);
+  static std::wstring strip(const std::wstring& text);
+  static std::vector<std::wstring> split(const std::wstring& text);
+  static std::wstring runStripAccents(const std::wstring& text);
+  static std::vector<std::wstring> runSplitOnPunc(const std::wstring& text);
 
   bool _to_lower;
 };
