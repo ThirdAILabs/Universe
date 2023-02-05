@@ -238,7 +238,7 @@ std::vector<uint32_t> Wordpiece::encode_tokens(
 
 uint32_t Wordpiece::id(const std::string_view& token_view) const {
   std::string token(token_view.data(), token_view.size());
-  std::wstring wtoken = text::convertToUnicode(text::normalize_nfd(token));
+  std::wstring wtoken = text::convertToUnicode(text::normalizeNFD(token));
   auto query = _vocab.find(wtoken);
   if (query != _vocab.end()) {
     return query->second;
