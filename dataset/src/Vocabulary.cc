@@ -328,6 +328,7 @@ bool isControl(const wchar_t& ch) {
   }
   auto category = utf8proc_category(ch);
   if (category == UTF8PROC_CATEGORY_CC || category == UTF8PROC_CATEGORY_CF) {
+    // NOLINTNEXTLINE
     return true;
   }
   return false;
@@ -339,6 +340,7 @@ bool isWhitespace(const wchar_t& ch) {
   }
   auto cat = utf8proc_category(ch);
   if (cat == UTF8PROC_CATEGORY_ZS) {
+    // NOLINTNEXTLINE
     return true;
   }
   return false;
@@ -354,6 +356,7 @@ bool isPunctuation(const wchar_t& ch) {
       cat == UTF8PROC_CATEGORY_PE || cat == UTF8PROC_CATEGORY_PC ||
       cat == UTF8PROC_CATEGORY_PO  // sometimes ¶ belong SO
       || cat == UTF8PROC_CATEGORY_PI || cat == UTF8PROC_CATEGORY_PF) {
+    // NOLINTNEXTLINE
     return true;
   }
   return false;
@@ -364,6 +367,7 @@ bool isChineseChar(const wchar_t& ch) {
       (ch >= 0x20000 && ch <= 0x2A6DF) || (ch >= 0x2A700 && ch <= 0x2B73F) ||
       (ch >= 0x2B740 && ch <= 0x2B81F) || (ch >= 0x2B820 && ch <= 0x2CEAF) ||
       (ch >= 0xF900 && ch <= 0xFAFF) || (ch >= 0x2F800 && ch <= 0x2FA1F)) {
+    // NOLINTNEXTLINE
     return true;
   }
   return false;
