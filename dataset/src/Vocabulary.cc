@@ -377,13 +377,14 @@ bool isChineseChar(const wchar_t& ch) {
 
 std::wstring Basic::tokenizeChineseChars(const std::wstring& text) const {
   std::wstring output;
-  for (auto& ch : text) {
+  for (wchar_t ch : text) {
     if (detail::isChineseChar(ch)) {
       output += L' ';
       output += ch;
       output += L' ';
-    } else
+    } else {
       output += ch;
+    }
   }
   return output;
 }
