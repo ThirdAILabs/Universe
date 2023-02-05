@@ -208,8 +208,8 @@ bool isWhitespace(const wchar_t& c) {
   if (c == L' ' || c == L'\t' || c == L'\n' || c == L'\r') {
     return true;
   }
-  auto cat = utf8proc_category(c);
-  if (cat == UTF8PROC_CATEGORY_ZS) {
+  auto category = utf8proc_category(c);
+  if (category == UTF8PROC_CATEGORY_ZS) {
     // NOLINTNEXTLINE
     return true;
   }
@@ -221,11 +221,11 @@ bool isPunctuation(const wchar_t& c) {
       (c >= 123 && c <= 126)) {
     return true;
   }
-  auto cat = utf8proc_category(c);
-  if (cat == UTF8PROC_CATEGORY_PD || cat == UTF8PROC_CATEGORY_PS ||
-      cat == UTF8PROC_CATEGORY_PE || cat == UTF8PROC_CATEGORY_PC ||
-      cat == UTF8PROC_CATEGORY_PO  // sometimes ¶ belong SO
-      || cat == UTF8PROC_CATEGORY_PI || cat == UTF8PROC_CATEGORY_PF) {
+  auto category = utf8proc_category(c);
+  if (category == UTF8PROC_CATEGORY_PD || category == UTF8PROC_CATEGORY_PS ||
+      category == UTF8PROC_CATEGORY_PE || category == UTF8PROC_CATEGORY_PC ||
+      category == UTF8PROC_CATEGORY_PO  // sometimes ¶ belong SO
+      || category == UTF8PROC_CATEGORY_PI || category == UTF8PROC_CATEGORY_PF) {
     // NOLINTNEXTLINE
     return true;
   }
@@ -284,8 +284,8 @@ std::wstring stripAccents(const std::wstring& text) {
 
   std::wstring output;
   for (auto& c : nText) {
-    auto cat = utf8proc_category(c);
-    if (cat == UTF8PROC_CATEGORY_MN) {
+    auto category = utf8proc_category(c);
+    if (category == UTF8PROC_CATEGORY_MN) {
       continue;
     }
     output += c;
