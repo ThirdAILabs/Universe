@@ -155,12 +155,9 @@ std::string convertFromUnicode(const std::wstring& wText) {
 is_any_of::is_any_of(std::wstring delimiters)
     : delimiters_(std::move(delimiters)) {}
 bool is_any_of::operator()(wchar_t candidate) const {
-  for (wchar_t delimiter : delimiters_) {
-    if (candidate == delimiter) {
-      return true;
-    }
-  }
-  return false;
+  return std::any_of(
+      delimiters_.begin(), delimiters_.end(),
+      [candidate](wchar_t delimiter) { return candidate == delimiter; });
 }
 
 template <class Predicate>
