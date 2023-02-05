@@ -243,7 +243,7 @@ bool isChineseChar(const wchar_t& ch) {
   return false;
 }
 
-std::wstring cleanText(const std::wstring& text) {
+std::wstring normalizeSpaces(const std::wstring& text) {
   std::wstring output;
   for (const wchar_t& cp : text) {
     if (cp == 0 || cp == 0xfffd || isControl(cp)) {
@@ -272,7 +272,7 @@ std::wstring tokenizeChineseChars(const std::wstring& text) {
   return output;
 }
 
-std::wstring runStripAccents(const std::wstring& text) {
+std::wstring stripAccents(const std::wstring& text) {
   // Strips accents from a piece of text.
   std::wstring nText;
   try {
@@ -293,7 +293,7 @@ std::wstring runStripAccents(const std::wstring& text) {
   return output;
 }
 
-std::vector<std::wstring> runSplitOnPunc(const std::wstring& text) {
+std::vector<std::wstring> splitOnPunctuation(const std::wstring& text) {
   size_t i = 0;
   bool startNewWord = true;
   std::vector<std::wstring> output;
@@ -316,8 +316,7 @@ std::vector<std::wstring> runSplitOnPunc(const std::wstring& text) {
 
 std::vector<std::wstring> tokenize(const std::string& text, bool lower_case) {
   std::wstring nText = convertToUnicode(text);
-  nText = cleanText(nText);
-
+  nText = normalizeSpaces(nText);
   nText = tokenizeChineseChars(nText);
 
   const std::vector<std::wstring>& origTokens = whitespaceTokenize(nText);
@@ -325,9 +324,9 @@ std::vector<std::wstring> tokenize(const std::string& text, bool lower_case) {
   for (std::wstring token : origTokens) {
     if (lower_case) {
       token = tolower(token);
-      token = runStripAccents(token);
+      token = stripAccents(token);
     }
-    const auto& tokens = runSplitOnPunc(token);
+    const auto& tokens = splitOnPunctuation(token);
     splitTokens.insert(splitTokens.end(), tokens.begin(), tokens.end());
   }
   return whitespaceTokenize(join(splitTokens, L" "));
