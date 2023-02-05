@@ -126,11 +126,8 @@ std::string normalize_nfd(const std::string& s) {
   return ret;
 }
 
-bool isStripChar(const wchar_t& ch) {
-  return DEFAULT_STRIP_CHARACTERS.find(ch) != std::wstring::npos;
-}
-
-std::wstring strip(const std::wstring& text) {
+std::wstring strip(const std::wstring& text,
+                   const std::wstring& strip_characters) {
   // Empty string, return empty-string.
   // This takes care of ret.size() = 0;
   if (text.empty()) {
@@ -139,6 +136,11 @@ std::wstring strip(const std::wstring& text) {
 
   // Remove stripchars from front.
   size_t left = 0;
+
+  auto isStripChar = [&strip_characters](const wchar_t& ch) {
+    return strip_characters.find(ch) != std::wstring::npos;
+  };
+
   while (left < text.size() && isStripChar(text[left])) {
     ++left;
   }

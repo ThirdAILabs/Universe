@@ -57,7 +57,9 @@ std::string normalize_nfd(const std::string& s);
 std::wstring tolower(const std::wstring& s);
 
 std::vector<std::wstring> whitespaceTokenize(const std::wstring& text);
-std::wstring strip(const std::wstring& text);
+std::wstring strip(
+    const std::wstring& text,
+    const std::wstring& strip_characters = DEFAULT_STRIP_CHARACTERS);
 
 std::vector<std::wstring> tokenize(const std::string& text, bool lower_case);
 std::wstring normalizeSpaces(const std::wstring& text);
@@ -69,6 +71,5 @@ bool isControl(const wchar_t& ch);
 bool isWhitespace(const wchar_t& ch);
 bool isPunctuation(const wchar_t& ch);
 bool isChineseChar(const wchar_t& ch);
-bool isStripChar(const wchar_t& ch);
 
 }  // namespace thirdai::text
