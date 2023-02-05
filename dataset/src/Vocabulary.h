@@ -6,7 +6,6 @@
 #include <sstream>
 #include <string_view>
 #include <unordered_map>
-#include <utf8proc.h>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -173,37 +172,5 @@ class Wordpiece : public Vocabulary {
   std::string _vocab_fpath;
   Basic _basic;
 };
-
-namespace detail {
-
-const std::wstring DEFAULT_STRIP_CHARACTERS = L" \t\n\r\v\f";
-
-class is_any_of {
- public:
-  explicit is_any_of(std::wstring delimiters);
-  bool operator()(wchar_t candidate) const;
-
- private:
-  std::wstring delimiters_;
-};
-
-std::wstring join(const std::vector<std::wstring>& atoms,
-                  const std::wstring& delimiter);
-
-template <class Predicate>
-void split(std::vector<std::wstring>& result, const std::wstring& s,
-           Predicate predicate);
-//
-std::string convertFromUnicode(const std::wstring& wText);
-std::wstring convertToUnicode(const std::string& text);
-std::string normalize_nfd(const std::string& s);
-std::wstring tolower(const std::wstring& s);
-
-bool isControl(const wchar_t& ch);
-bool isWhitespace(const wchar_t& ch);
-bool isPunctuation(const wchar_t& ch);
-bool isChineseChar(const wchar_t& ch);
-bool isStripChar(const wchar_t& ch);
-}  // namespace detail
 
 }  // namespace thirdai::dataset
