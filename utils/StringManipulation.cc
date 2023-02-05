@@ -47,9 +47,9 @@ std::vector<std::string_view> split(std::string_view sentence, char delimiter) {
 std::string convertFromUnicode(const std::wstring& wText) {
   char dst[64];
   std::string ret;
-  for (auto ch : wText) {
+  for (auto c : wText) {
     utf8proc_ssize_t num =
-        utf8proc_encode_char(ch, reinterpret_cast<utf8proc_uint8_t*>(dst));
+        utf8proc_encode_char(c, reinterpret_cast<utf8proc_uint8_t*>(dst));
     if (num <= 0) {
       return "";
     }
@@ -137,8 +137,8 @@ std::wstring strip(const std::wstring& text,
   // Remove stripchars from front.
   size_t left = 0;
 
-  auto isStripChar = [&strip_characters](const wchar_t& ch) {
-    return strip_characters.find(ch) != std::wstring::npos;
+  auto isStripChar = [&strip_characters](const wchar_t& c) {
+    return strip_characters.find(c) != std::wstring::npos;
   };
 
   while (left < text.size() && isStripChar(text[left])) {
@@ -195,11 +195,11 @@ std::wstring lower(const std::wstring& s) {
   return ret;
 }
 
-bool isControl(const wchar_t& ch) {
-  if (ch == L'\t' || ch == L'\n' || ch == L'\r') {
+bool isControl(const wchar_t& c) {
+  if (c == L'\t' || c == L'\n' || c == L'\r') {
     return false;
   }
-  auto category = utf8proc_category(ch);
+  auto category = utf8proc_category(c);
   if (category == UTF8PROC_CATEGORY_CC || category == UTF8PROC_CATEGORY_CF) {
     // NOLINTNEXTLINE
     return true;
@@ -207,11 +207,11 @@ bool isControl(const wchar_t& ch) {
   return false;
 }
 
-bool isWhitespace(const wchar_t& ch) {
-  if (ch == L' ' || ch == L'\t' || ch == L'\n' || ch == L'\r') {
+bool isWhitespace(const wchar_t& c) {
+  if (c == L' ' || c == L'\t' || c == L'\n' || c == L'\r') {
     return true;
   }
-  auto cat = utf8proc_category(ch);
+  auto cat = utf8proc_category(c);
   if (cat == UTF8PROC_CATEGORY_ZS) {
     // NOLINTNEXTLINE
     return true;
@@ -219,12 +219,12 @@ bool isWhitespace(const wchar_t& ch) {
   return false;
 }
 
-bool isPunctuation(const wchar_t& ch) {
-  if ((ch >= 33 && ch <= 47) || (ch >= 58 && ch <= 64) ||
-      (ch >= 91 && ch <= 96) || (ch >= 123 && ch <= 126)) {
+bool isPunctuation(const wchar_t& c) {
+  if ((c >= 33 && c <= 47) || (c >= 58 && c <= 64) || (c >= 91 && c <= 96) ||
+      (c >= 123 && c <= 126)) {
     return true;
   }
-  auto cat = utf8proc_category(ch);
+  auto cat = utf8proc_category(c);
   if (cat == UTF8PROC_CATEGORY_PD || cat == UTF8PROC_CATEGORY_PS ||
       cat == UTF8PROC_CATEGORY_PE || cat == UTF8PROC_CATEGORY_PC ||
       cat == UTF8PROC_CATEGORY_PO  // sometimes ¶ belong SO
@@ -235,11 +235,11 @@ bool isPunctuation(const wchar_t& ch) {
   return false;
 }
 
-bool isChineseChar(const wchar_t& ch) {
-  if ((ch >= 0x4E00 && ch <= 0x9FFF) || (ch >= 0x3400 && ch <= 0x4DBF) ||
-      (ch >= 0x20000 && ch <= 0x2A6DF) || (ch >= 0x2A700 && ch <= 0x2B73F) ||
-      (ch >= 0x2B740 && ch <= 0x2B81F) || (ch >= 0x2B820 && ch <= 0x2CEAF) ||
-      (ch >= 0xF900 && ch <= 0xFAFF) || (ch >= 0x2F800 && ch <= 0x2FA1F)) {
+bool isChineseChar(const wchar_t& c) {
+  if ((c >= 0x4E00 && c <= 0x9FFF) || (c >= 0x3400 && c <= 0x4DBF) ||
+      (c >= 0x20000 && c <= 0x2A6DF) || (c >= 0x2A700 && c <= 0x2B73F) ||
+      (c >= 0x2B740 && c <= 0x2B81F) || (c >= 0x2B820 && c <= 0x2CEAF) ||
+      (c >= 0xF900 && c <= 0xFAFF) || (c >= 0x2F800 && c <= 0x2FA1F)) {
     // NOLINTNEXTLINE
     return true;
   }
@@ -263,13 +263,13 @@ std::wstring normalizeSpaces(const std::wstring& text) {
 
 std::wstring tokenizeChineseChars(const std::wstring& text) {
   std::wstring output;
-  for (wchar_t ch : text) {
-    if (isChineseChar(ch)) {
+  for (wchar_t c : text) {
+    if (isChineseChar(c)) {
       output += L' ';
-      output += ch;
+      output += c;
       output += L' ';
     } else {
-      output += ch;
+      output += c;
     }
   }
   return output;
@@ -286,12 +286,12 @@ std::wstring stripAccents(const std::wstring& text) {
   }
 
   std::wstring output;
-  for (auto& ch : nText) {
-    auto cat = utf8proc_category(ch);
+  for (auto& c : nText) {
+    auto cat = utf8proc_category(c);
     if (cat == UTF8PROC_CATEGORY_MN) {
       continue;
     }
-    output += ch;
+    output += c;
   }
   return output;
 }
@@ -301,16 +301,16 @@ std::vector<std::wstring> splitOnPunctuation(const std::wstring& text) {
   bool startNewWord = true;
   std::vector<std::wstring> output;
   while (i < text.size()) {
-    wchar_t ch = text[i];
-    if (isPunctuation(ch)) {
-      output.push_back(std::wstring(&ch, 1));
+    wchar_t c = text[i];
+    if (isPunctuation(c)) {
+      output.push_back(std::wstring(&c, 1));
       startNewWord = true;
     } else {
       if (startNewWord) {
         output.push_back(std::wstring());
       }
       startNewWord = false;
-      output[output.size() - 1] += ch;
+      output[output.size() - 1] += c;
     }
     i++;
   }

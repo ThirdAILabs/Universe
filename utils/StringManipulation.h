@@ -67,9 +67,9 @@ std::wstring tokenizeChineseChars(const std::wstring& text);
 std::wstring stripAccents(const std::wstring& text);
 std::vector<std::wstring> splitOnPunctuation(const std::wstring& text);
 
-bool isControl(const wchar_t& ch);
-bool isWhitespace(const wchar_t& ch);
-bool isPunctuation(const wchar_t& ch);
-bool isChineseChar(const wchar_t& ch);
+bool isControl(const wchar_t& c);
+bool isWhitespace(const wchar_t& c);
+bool isPunctuation(const wchar_t& c);
+bool isChineseChar(const wchar_t& c);
 
 }  // namespace thirdai::text
