@@ -56,6 +56,12 @@ std::vector<std::wstring> split(const std::wstring& text);
 std::vector<std::wstring> whitespaceTokenize(const std::wstring& text);
 std::wstring strip(const std::wstring& text);
 
+std::vector<std::wstring> tokenize(const std::string& text, bool lower_case);
+std::wstring cleanText(const std::wstring& text);
+std::wstring tokenizeChineseChars(const std::wstring& text);
+std::wstring runStripAccents(const std::wstring& text);
+std::vector<std::wstring> runSplitOnPunc(const std::wstring& text);
+
 bool isControl(const wchar_t& ch);
 bool isWhitespace(const wchar_t& ch);
 bool isPunctuation(const wchar_t& ch);

@@ -113,22 +113,6 @@ class FixedVocabulary : public Vocabulary {
   uint32_t add(const std::string_view& token_view);
 };
 
-class Basic {
- public:
-  explicit Basic(bool lower_case = true);
-  std::vector<std::wstring> tokenize(const std::string& text) const;
-
- private:
-  static std::wstring cleanText(const std::wstring& text);
-  static std::wstring tokenizeChineseChars(const std::wstring& text);
-  static std::wstring strip(const std::wstring& text);
-  static std::vector<std::wstring> split(const std::wstring& text);
-  static std::wstring runStripAccents(const std::wstring& text);
-  static std::vector<std::wstring> runSplitOnPunc(const std::wstring& text);
-
-  bool _to_lower;
-};
-
 class Wordpiece : public Vocabulary {
  public:
   explicit Wordpiece(const std::string& vocabFile, bool lower_case = true);
@@ -170,7 +154,7 @@ class Wordpiece : public Vocabulary {
   Vocab _vocab;
   InvVocab _inverse;
   std::string _vocab_fpath;
-  Basic _basic;
+  bool _to_lower;
 };
 
 }  // namespace thirdai::dataset

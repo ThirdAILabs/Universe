@@ -1,5 +1,6 @@
 #include "StringManipulation.h"
 #include <algorithm>
+#include <iostream>
 #include <utf8proc.h>
 
 namespace thirdai::text {
@@ -241,6 +242,96 @@ bool isChineseChar(const wchar_t& ch) {
     return true;
   }
   return false;
+}
+
+std::wstring cleanText(const std::wstring& text) {
+  std::wstring output;
+  for (const wchar_t& cp : text) {
+    if (cp == 0 || cp == 0xfffd || isControl(cp)) {
+      continue;
+    }
+    if (isWhitespace(cp)) {
+      output += L" ";
+    } else {
+      output += cp;
+    }
+  }
+  return output;
+}
+
+std::wstring tokenizeChineseChars(const std::wstring& text) {
+  std::wstring output;
+  for (wchar_t ch : text) {
+    if (isChineseChar(ch)) {
+      output += L' ';
+      output += ch;
+      output += L' ';
+    } else {
+      output += ch;
+    }
+  }
+  return output;
+}
+
+std::wstring runStripAccents(const std::wstring& text) {
+  // Strips accents from a piece of text.
+  std::wstring nText;
+  try {
+    nText = convertToUnicode(normalize_nfd(convertFromUnicode(text)));
+  } catch (std::bad_cast& e) {
+    std::cerr << "bad_cast" << std::endl;
+    return L"";
+  }
+
+  std::wstring output;
+  for (auto& ch : nText) {
+    auto cat = utf8proc_category(ch);
+    if (cat == UTF8PROC_CATEGORY_MN) {
+      continue;
+    }
+    output += ch;
+  }
+  return output;
+}
+
+std::vector<std::wstring> runSplitOnPunc(const std::wstring& text) {
+  size_t i = 0;
+  bool startNewWord = true;
+  std::vector<std::wstring> output;
+  while (i < text.size()) {
+    wchar_t ch = text[i];
+    if (isPunctuation(ch)) {
+      output.push_back(std::wstring(&ch, 1));
+      startNewWord = true;
+    } else {
+      if (startNewWord) {
+        output.push_back(std::wstring());
+      }
+      startNewWord = false;
+      output[output.size() - 1] += ch;
+    }
+    i++;
+  }
+  return output;
+}
+
+std::vector<std::wstring> tokenize(const std::string& text, bool lower_case) {
+  std::wstring nText = convertToUnicode(text);
+  nText = cleanText(nText);
+
+  nText = tokenizeChineseChars(nText);
+
+  const std::vector<std::wstring>& origTokens = whitespaceTokenize(nText);
+  std::vector<std::wstring> splitTokens;
+  for (std::wstring token : origTokens) {
+    if (lower_case) {
+      token = tolower(token);
+      token = runStripAccents(token);
+    }
+    const auto& tokens = runSplitOnPunc(token);
+    splitTokens.insert(splitTokens.end(), tokens.begin(), tokens.end());
+  }
+  return whitespaceTokenize(join(splitTokens, L" "));
 }
 
 }  // namespace thirdai::text

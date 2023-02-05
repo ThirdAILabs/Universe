@@ -152,99 +152,6 @@ Wordpiece::Vocab Wordpiece::loadVocab(const std::string& vocabFile) {
   return vocab;
 }
 
-Basic::Basic(bool lower_case) : _to_lower(lower_case) {}
-
-std::wstring Basic::cleanText(const std::wstring& text) {
-  std::wstring output;
-  for (const wchar_t& cp : text) {
-    if (cp == 0 || cp == 0xfffd || text::isControl(cp)) {
-      continue;
-    }
-    if (text::isWhitespace(cp)) {
-      output += L" ";
-    } else {
-      output += cp;
-    }
-  }
-  return output;
-}
-
-std::wstring Basic::tokenizeChineseChars(const std::wstring& text) {
-  std::wstring output;
-  for (wchar_t ch : text) {
-    if (text::isChineseChar(ch)) {
-      output += L' ';
-      output += ch;
-      output += L' ';
-    } else {
-      output += ch;
-    }
-  }
-  return output;
-}
-
-std::wstring Basic::runStripAccents(const std::wstring& text) {
-  // Strips accents from a piece of text.
-  std::wstring nText;
-  try {
-    nText = text::convertToUnicode(
-        text::normalize_nfd(text::convertFromUnicode(text)));
-  } catch (std::bad_cast& e) {
-    std::cerr << "bad_cast" << std::endl;
-    return L"";
-  }
-
-  std::wstring output;
-  for (auto& ch : nText) {
-    auto cat = utf8proc_category(ch);
-    if (cat == UTF8PROC_CATEGORY_MN) {
-      continue;
-    }
-    output += ch;
-  }
-  return output;
-}
-
-std::vector<std::wstring> Basic::runSplitOnPunc(const std::wstring& text) {
-  size_t i = 0;
-  bool startNewWord = true;
-  std::vector<std::wstring> output;
-  while (i < text.size()) {
-    wchar_t ch = text[i];
-    if (text::isPunctuation(ch)) {
-      output.push_back(std::wstring(&ch, 1));
-      startNewWord = true;
-    } else {
-      if (startNewWord) {
-        output.push_back(std::wstring());
-      }
-      startNewWord = false;
-      output[output.size() - 1] += ch;
-    }
-    i++;
-  }
-  return output;
-}
-
-std::vector<std::wstring> Basic::tokenize(const std::string& text) const {
-  std::wstring nText = text::convertToUnicode(text);
-  nText = cleanText(nText);
-
-  nText = tokenizeChineseChars(nText);
-
-  const std::vector<std::wstring>& origTokens = text::whitespaceTokenize(nText);
-  std::vector<std::wstring> splitTokens;
-  for (std::wstring token : origTokens) {
-    if (_to_lower) {
-      token = text::tolower(token);
-      token = runStripAccents(token);
-    }
-    const auto& tokens = runSplitOnPunc(token);
-    splitTokens.insert(splitTokens.end(), tokens.begin(), tokens.end());
-  }
-  return text::whitespaceTokenize(text::join(splitTokens, L" "));
-}
-
 std::vector<std::wstring> Wordpiece::wordpiece_tokenize(
     const std::wstring& text, const std::wstring& unkToken /*= L"[UNK]"*/,
     size_t maxInputCharsPerWord /*= 200*/) const {
@@ -295,7 +202,7 @@ std::vector<std::wstring> Wordpiece::wordpiece_tokenize(
 }
 
 Wordpiece::Wordpiece(const std::string& vocabFile, bool lower_case)
-    : _vocab(loadVocab(vocabFile)), _basic(Basic(lower_case)) {
+    : _vocab(loadVocab(vocabFile)), _to_lower(lower_case) {
   for (auto& v : _vocab) {
     _inverse[v.second] = v.first;
   }
@@ -303,7 +210,7 @@ Wordpiece::Wordpiece(const std::string& vocabFile, bool lower_case)
 
 std::vector<std::wstring> Wordpiece::tokenize(const std::string& text) const {
   std::vector<std::wstring> splitTokens;
-  for (auto& token : _basic.tokenize(text)) {
+  for (auto& token : text::tokenize(text, _to_lower)) {
     for (auto& subToken : wordpiece_tokenize(token)) {
       splitTokens.push_back(subToken);
     }
