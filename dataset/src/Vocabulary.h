@@ -180,7 +180,7 @@ const std::wstring DEFAULT_STRIP_CHARACTERS = L" \t\n\r\v\f";
 
 class is_any_of {
  public:
-  explicit is_any_of(const std::wstring& delimiters);
+  explicit is_any_of(std::wstring delimiters);
   bool operator()(wchar_t candidate) const;
 
  private:

@@ -152,8 +152,8 @@ std::string convertFromUnicode(const std::wstring& wText) {
   return ret;
 }
 
-is_any_of::is_any_of(const std::wstring& delimiters)
-    : delimiters_(delimiters) {}
+is_any_of::is_any_of(std::wstring delimiters)
+    : delimiters_(std::move(delimiters)) {}
 bool is_any_of::operator()(wchar_t candidate) const {
   for (wchar_t delimiter : delimiters_) {
     if (candidate == delimiter) {
