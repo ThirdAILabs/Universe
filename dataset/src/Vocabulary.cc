@@ -156,7 +156,7 @@ std::vector<std::wstring> Wordpiece::wordpiece_tokenize(
     const std::wstring& text, const std::wstring& unkToken /*= L"[UNK]"*/,
     size_t maxInputCharsPerWord /*= 200*/) const {
   std::vector<std::wstring> outputTokens;
-  for (auto& token : text::whitespaceTokenize(text)) {
+  for (const std::wstring& token : text::splitOnWhitespace(text)) {
     if (token.size() > maxInputCharsPerWord) {
       outputTokens.push_back(unkToken);
     }

@@ -5,6 +5,28 @@
 
 namespace thirdai::text {
 
+namespace {
+
+class is_any_of {
+ public:
+  explicit is_any_of(std::wstring delimiters);
+  bool operator()(wchar_t candidate) const;
+
+ private:
+  std::wstring delimiters_;
+};
+
+is_any_of::is_any_of(std::wstring delimiters)
+    : delimiters_(std::move(delimiters)) {}
+
+bool is_any_of::operator()(wchar_t candidate) const {
+  return std::any_of(
+      delimiters_.begin(), delimiters_.end(),
+      [candidate](wchar_t delimiter) { return candidate == delimiter; });
+}
+
+}  // namespace
+
 std::vector<std::string_view> split(std::string_view sentence, char delimiter) {
   std::vector<std::string_view> words;
 
@@ -56,14 +78,6 @@ std::string convertFromUnicode(const std::wstring& wText) {
     ret += std::string(dst, dst + num);
   }
   return ret;
-}
-
-is_any_of::is_any_of(std::wstring delimiters)
-    : delimiters_(std::move(delimiters)) {}
-bool is_any_of::operator()(wchar_t candidate) const {
-  return std::any_of(
-      delimiters_.begin(), delimiters_.end(),
-      [candidate](wchar_t delimiter) { return candidate == delimiter; });
 }
 
 template <class Predicate>
@@ -162,7 +176,7 @@ std::vector<std::wstring> split(
   return split_if(text, is_any_of(split_characters));
 }
 
-std::vector<std::wstring> whitespaceTokenize(const std::wstring& text) {
+std::vector<std::wstring> splitOnWhitespace(const std::wstring& text) {
   std::wstring rtext = strip(text);
   if (rtext.empty()) {
     return std::vector<std::wstring>();
@@ -322,7 +336,7 @@ std::vector<std::wstring> tokenize(const std::string& text, bool lower_case) {
   nText = normalizeSpaces(nText);
   nText = tokenizeChineseChars(nText);
 
-  const std::vector<std::wstring>& origTokens = whitespaceTokenize(nText);
+  const std::vector<std::wstring>& origTokens = splitOnWhitespace(nText);
   std::vector<std::wstring> splitTokens;
   for (std::wstring token : origTokens) {
     if (lower_case) {
@@ -332,7 +346,7 @@ std::vector<std::wstring> tokenize(const std::string& text, bool lower_case) {
     const auto& tokens = splitOnPunctuation(token);
     splitTokens.insert(splitTokens.end(), tokens.begin(), tokens.end());
   }
-  return whitespaceTokenize(join(splitTokens, L" "));
+  return splitOnWhitespace(join(splitTokens, L" "));
 }
 
 }  // namespace thirdai::text

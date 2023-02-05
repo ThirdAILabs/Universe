@@ -30,16 +30,12 @@ inline uint32_t toInteger(const char* start) {
   return std::strtoul(start, &end, 10);
 }
 
+bool isControl(const wchar_t& c);
+bool isWhitespace(const wchar_t& c);
+bool isPunctuation(const wchar_t& c);
+bool isChineseChar(const wchar_t& c);
+
 const std::wstring DEFAULT_STRIP_CHARACTERS = L" \t\n\r\v\f";
-
-class is_any_of {
- public:
-  explicit is_any_of(std::wstring delimiters);
-  bool operator()(wchar_t candidate) const;
-
- private:
-  std::wstring delimiters_;
-};
 
 std::wstring join(const std::vector<std::wstring>& atoms,
                   const std::wstring& delimiter);
@@ -51,25 +47,21 @@ std::vector<std::wstring> split(
     const std::wstring& text,
     const std::wstring& split_characters = DEFAULT_STRIP_CHARACTERS);
 
+std::wstring strip(
+    const std::wstring& text,
+    const std::wstring& strip_characters = DEFAULT_STRIP_CHARACTERS);
+
 std::string convertFromUnicode(const std::wstring& wText);
 std::wstring convertToUnicode(const std::string& text);
 std::string normalize_nfd(const std::string& s);
 std::wstring lower(const std::wstring& s);
 
-std::vector<std::wstring> whitespaceTokenize(const std::wstring& text);
-std::wstring strip(
-    const std::wstring& text,
-    const std::wstring& strip_characters = DEFAULT_STRIP_CHARACTERS);
-
 std::vector<std::wstring> tokenize(const std::string& text, bool lower_case);
 std::wstring normalizeSpaces(const std::wstring& text);
 std::wstring tokenizeChineseChars(const std::wstring& text);
 std::wstring stripAccents(const std::wstring& text);
-std::vector<std::wstring> splitOnPunctuation(const std::wstring& text);
 
-bool isControl(const wchar_t& c);
-bool isWhitespace(const wchar_t& c);
-bool isPunctuation(const wchar_t& c);
-bool isChineseChar(const wchar_t& c);
+std::vector<std::wstring> splitOnPunctuation(const std::wstring& text);
+std::vector<std::wstring> splitOnWhitespace(const std::wstring& text);
 
 }  // namespace thirdai::text
