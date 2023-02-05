@@ -1,4 +1,5 @@
 import os
+
 import pytest
 from thirdai.dataset import FixedVocabulary, Wordpiece
 
