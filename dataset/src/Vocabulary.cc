@@ -133,6 +133,8 @@ uint32_t FixedVocabulary::add(const std::string_view& token_view) {
   return token_id;
 }
 
+namespace detail {
+
 // https://unicode.org/reports/tr15/#Norm_Forms
 // https://ssl.icu-project.org/apiref/icu4c/uchar_8h.html
 //
@@ -149,8 +151,6 @@ std::string convertFromUnicode(const std::wstring& wText) {
   }
   return ret;
 }
-
-namespace detail {
 
 is_any_of::is_any_of(const std::wstring& delimiters)
     : delimiters_(delimiters) {}
@@ -392,7 +392,7 @@ std::wstring Basic::runStripAccents(const std::wstring& text) const {
   std::wstring nText;
   try {
     nText = detail::convertToUnicode(
-        detail::normalize_nfd(convertFromUnicode(text)));
+        detail::normalize_nfd(detail::convertFromUnicode(text)));
   } catch (std::bad_cast& e) {
     std::cerr << "bad_cast" << std::endl;
     return L"";

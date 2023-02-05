@@ -153,6 +153,11 @@ class Wordpiece : public Vocabulary {
   // Returns id of mask special token.
   uint32_t maskId() const final;
 
+  static std::shared_ptr<Vocabulary> make(const std::string& vocab_file,
+                                          bool lowercase = true) {
+    return std::make_shared<Wordpiece>(vocab_file, lowercase);
+  }
+
  private:
   using Vocab = std::unordered_map<std::wstring, size_t>;
   using InvVocab = std::unordered_map<size_t, std::wstring>;
