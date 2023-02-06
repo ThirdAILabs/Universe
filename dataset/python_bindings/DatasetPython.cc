@@ -251,27 +251,8 @@ void createDatasetSubmodule(py::module_& module) {
            "Returns false since text blocks always produce sparse "
            "features.");
 
-  py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleConfig")
-      .def(py::init<size_t, uint32_t>(), py::arg("min_vecs_in_buffer") = 64000,
-           py::arg("seed") = time(NULL));
-
   py::class_<Featurizer, FeaturizerPtr>(dataset_submodule,  // NOLINT
                                         "Featurizer");
-
-  py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
-                                              "DatasetLoader")
-      .def(py::init<std::shared_ptr<dataset::DataSource>,
-                    dataset::FeaturizerPtr, bool, DatasetShuffleConfig>(),
-           py::arg("data_source"), py::arg("featurizer"), py::arg("shuffle"),
-           py::arg("shuffle_config") = DatasetShuffleConfig())
-      .def("get_input_dim", &DatasetLoader::getInputDim)
-      .def("get_label_dim", &DatasetLoader::getLabelDim)
-      .def("load_all", &DatasetLoader::loadAll, py::arg("batch_size"),
-           py::arg("verbose") = true)
-      .def("load_some", &dataset::DatasetLoader::loadSome,
-           py::arg("batch_size"), py::arg("num_batches"),
-           py::arg("verbose") = true)
-      .def("restart", &dataset::DatasetLoader::restart);
 
   py::class_<TabularFeaturizer, Featurizer, TabularFeaturizerPtr>(
       dataset_submodule, "TabularFeaturizer")
@@ -291,6 +272,25 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("masked_tokens_percentage"));
 
 #endif
+
+  py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleConfig")
+      .def(py::init<size_t, uint32_t>(), py::arg("min_vecs_in_buffer") = 64000,
+           py::arg("seed") = time(NULL));
+
+  py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
+                                              "DatasetLoader")
+      .def(py::init<std::shared_ptr<dataset::DataSource>,
+                    dataset::FeaturizerPtr, bool, DatasetShuffleConfig>(),
+           py::arg("data_source"), py::arg("featurizer"), py::arg("shuffle"),
+           py::arg("shuffle_config") = DatasetShuffleConfig())
+      .def("get_input_dim", &DatasetLoader::getInputDim)
+      .def("get_label_dim", &DatasetLoader::getLabelDim)
+      .def("load_all", &DatasetLoader::loadAll, py::arg("batch_size"),
+           py::arg("verbose") = true)
+      .def("load_some", &dataset::DatasetLoader::loadSome,
+           py::arg("batch_size"), py::arg("num_batches"),
+           py::arg("verbose") = true)
+      .def("restart", &dataset::DatasetLoader::restart);
 
   py::class_<DataSource, PyDataSource, DataSourcePtr>(dataset_submodule,
                                                       "DataSource")
