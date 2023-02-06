@@ -1,16 +1,14 @@
 #include "DatasetPython.h"
 #include "PyDataSource.h"
 #include <bolt_vector/src/BoltVector.h>
-#include <dataset/src/BatchProcessor.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/DatasetLoaderWrappers.h>
 #include <dataset/src/Datasets.h>
+#include <dataset/src/Featurizer.h>
 #include <dataset/src/InMemoryDataset.h>
 #include <dataset/src/NumpyDataset.h>
-#include <dataset/src/ShuffleBatchBuffer.h>
+#include <dataset/src/VectorBuffer.h>
 #include <dataset/src/Vocabulary.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
-#include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
@@ -18,6 +16,8 @@
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/featurizers/MaskedSentenceFeaturizer.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -123,7 +123,7 @@ void createDatasetSubmodule(py::module_& module) {
       "A block that encodes text as a weighted set of ordered pairs of "
       "space-separated words.")
       .def(py::init<uint32_t, uint32_t>(), py::arg("col"),
-           py::arg("dim") = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
+           py::arg("dim") = token_encoding::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
@@ -134,19 +134,21 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &PairGramTextBlock::isDense,
            "Returns false since text blocks always produce sparse features.");
 
-  py::class_<UniGramTextBlock, TextBlock, UniGramTextBlockPtr>(
-      block_submodule, "TextUniGram",
-      "A block that encodes text as a weighted set of space-separated words.")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("col"),
-           py::arg("dim") = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
+  py::class_<NGramTextBlock, TextBlock, NGramTextBlockPtr>(
+      block_submodule, "TextNGram",
+      "A block that encodes text as hashed N-gram tokens.")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("col"),
+           py::arg("n"),
+           py::arg("dim") = token_encoding::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
            "the text to be encoded.\n"
+           " * n: Int - The number of words per N-gram representation."
            " * dim: Int - Dimension of the encoding")
-      .def("feature_dim", &UniGramTextBlock::featureDim,
+      .def("feature_dim", &NGramTextBlock::featureDim,
            "Returns the dimension of the vector encoding.")
-      .def("is_dense", &UniGramTextBlock::isDense,
+      .def("is_dense", &NGramTextBlock::isDense,
            "Returns false since text blocks always produce sparse "
            "features.");
 
@@ -155,7 +157,7 @@ void createDatasetSubmodule(py::module_& module) {
       "A block that encodes text as a weighted set of character trigrams.")
       .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("col"),
            py::arg("k"),
-           py::arg("dim") = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
+           py::arg("dim") = token_encoding::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
@@ -249,32 +251,11 @@ void createDatasetSubmodule(py::module_& module) {
            "Returns false since text blocks always produce sparse "
            "features.");
 
-  py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleConfig")
-      .def(py::init<size_t, uint32_t>(),
-           py::arg("num_batches_in_buffer") = 1000,
-           py::arg("seed") = time(NULL));
+  py::class_<Featurizer, FeaturizerPtr>(dataset_submodule,  // NOLINT
+                                        "Featurizer");
 
-  py::class_<BatchProcessor, BatchProcessorPtr>(dataset_submodule,
-                                                "BatchProcessor")
-      .def("create_batch", &BatchProcessor::createBatch, py::arg("rows"));
-
-  py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
-                                              "DatasetLoader")
-      .def(py::init<std::shared_ptr<dataset::DataSource>,
-                    dataset::BatchProcessorPtr, bool, DatasetShuffleConfig>(),
-           py::arg("data_source"), py::arg("batch_processor"),
-           py::arg("shuffle"),
-           py::arg("shuffle_config") = DatasetShuffleConfig())
-      .def("get_input_dim", &DatasetLoader::getInputDim)
-      .def("get_label_dim", &DatasetLoader::getLabelDim)
-      .def("load_in_memory", &DatasetLoader::loadInMemory,
-           py::arg("verbose") = true)
-      .def("stream_in_memory", &dataset::DatasetLoader::streamInMemory,
-           py::arg("num_batches"), py::arg("verbose") = true)
-      .def("restart", &dataset::DatasetLoader::restart);
-
-  py::class_<GenericBatchProcessor, BatchProcessor, GenericBatchProcessorPtr>(
-      dataset_submodule, "GenericBatchProcessor")
+  py::class_<TabularFeaturizer, Featurizer, TabularFeaturizerPtr>(
+      dataset_submodule, "TabularFeaturizer")
       .def(py::init<std::vector<std::shared_ptr<Block>>,
                     std::vector<std::shared_ptr<Block>>, bool, char, bool,
                     std::optional<uint32_t>>(),
@@ -282,9 +263,8 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("has_header") = false, py::arg("delimiter") = ',',
            py::arg("parallel") = true, py::arg("hash_range") = std::nullopt);
 
-  py::class_<MaskedSentenceBatchProcessor, BatchProcessor,
-             MaskedSentenceBatchProcessorPtr>(dataset_submodule,
-                                              "MLMBatchProcessor")
+  py::class_<MaskedSentenceFeaturizer, Featurizer, MaskedSentenceFeaturizerPtr>(
+      dataset_submodule, "MLMFeaturizer")
       .def(py::init<std::shared_ptr<Vocabulary>, uint32_t>(),
            py::arg("vocabulary"), py::arg("pairgram_range"))
       .def(py::init<std::shared_ptr<Vocabulary>, uint32_t, float>(),
@@ -293,21 +273,41 @@ void createDatasetSubmodule(py::module_& module) {
 
 #endif
 
+  py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleConfig")
+      .def(py::init<size_t, uint32_t>(), py::arg("min_vecs_in_buffer") = 64000,
+           py::arg("seed") = time(NULL));
+
+  py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
+                                              "DatasetLoader")
+      .def(py::init<std::shared_ptr<dataset::DataSource>,
+                    dataset::FeaturizerPtr, bool, DatasetShuffleConfig>(),
+           py::arg("data_source"), py::arg("featurizer"), py::arg("shuffle"),
+           py::arg("shuffle_config") = DatasetShuffleConfig())
+      .def("get_input_dim", &DatasetLoader::getInputDim)
+      .def("get_label_dim", &DatasetLoader::getLabelDim)
+      .def("load_all", &DatasetLoader::loadAll, py::arg("batch_size"),
+           py::arg("verbose") = true)
+      .def("load_some", &dataset::DatasetLoader::loadSome,
+           py::arg("batch_size"), py::arg("num_batches"),
+           py::arg("verbose") = true)
+      .def("restart", &dataset::DatasetLoader::restart);
+
   py::class_<DataSource, PyDataSource, DataSourcePtr>(dataset_submodule,
                                                       "DataSource")
-      .def(py::init<uint32_t>(), py::arg("target_batch_size"))
+      .def(py::init<>())
       .def("next_batch", &DataSource::nextBatch)
       .def("next_line", &DataSource::nextLine)
       .def("resource_name", &DataSource::resourceName)
       .def("restart", &DataSource::restart);
 
-  py::class_<SimpleFileDataSource, DataSource,
-             std::shared_ptr<SimpleFileDataSource>>(dataset_submodule,
-                                                    "FileDataSource")
-      .def(py::init<const std::string&, uint32_t>(), py::arg("filename"),
-           py::arg("batch_size"));
+  py::class_<FileDataSource, DataSource, std::shared_ptr<FileDataSource>>(
+      dataset_submodule, "FileDataSource")
+      .def(py::init<const std::string&>(), py::arg("filename"));
 
-  dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
+  dataset_submodule.def("make_sparse_vector",
+                        py::overload_cast<const std::vector<uint32_t>&,
+                                          const std::vector<float>&>(
+                            &BoltVector::makeSparseVector),
                         py::arg("indices"), py::arg("values"));
 
   dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
@@ -434,7 +434,8 @@ void createDatasetSubmodule(py::module_& module) {
       "a BoltDataset storing the labels.");
   dataset_submodule.def(
       "load_bolt_svm_dataset", SvmDatasetLoader::loadDataset,
-      py::arg("data_source"), py::arg("softmax_for_multiclass") = true,
+      py::arg("data_source"), py::arg("batch_size"),
+      py::arg("softmax_for_multiclass") = true,
       "The same as the other implementation of this method, but takes in a "
       "custom data source instead of a file name.");
 

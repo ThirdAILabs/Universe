@@ -15,6 +15,12 @@ namespace thirdai::dataset {
 using UnigramToColumnIdentifier =
     std::unordered_map<uint32_t, ColumnIdentifier>;
 
+struct PairGram {
+  uint32_t pairgram;
+  uint32_t first_token;
+  uint32_t second_token;
+};
+
 struct Token {
   static Token fromUnigram(
       uint32_t unigram, const UnigramToColumnIdentifier& to_column_identifier) {
@@ -26,7 +32,7 @@ struct Token {
   }
 
   static Token fromPairgram(
-      TokenEncoding::PairGram pairgram,
+      PairGram pairgram,
       const UnigramToColumnIdentifier& to_column_identifier) {
     Token token;
     token.token = pairgram.pairgram;
@@ -91,10 +97,9 @@ std::exception_ptr TabularHashFeatures::buildSegment(
     return e;
   };
 
-  TokenEncoding::sumRepeatedIndices(
-      tokens, /* base_value = */ 1.0, [&vec](uint32_t pairgram, float value) {
-        vec.addSparseFeatureToSegment(pairgram, value);
-      });
+  for (auto& [index, value] : token_encoding::sumRepeatedIndices(tokens)) {
+    vec.addSparseFeatureToSegment(index, value);
+  }
 
   return nullptr;
 }
@@ -128,13 +133,14 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
         break;
       }
       case TabularDataType::Categorical: {
-        unigram = TokenEncoding::computeUnigram(str_val.data(), str_val.size());
+        unigram =
+            token_encoding::seededMurmurHash(str_val.data(), str_val.size());
         break;
       }
     }
     // Hash with different salt per column so the same bin in a different
     // column doesn't map to the same unigram.
-    unigram = hashing::HashUtils::combineHashes(unigram, salt);
+    unigram = hashing::combineHashes(unigram, salt);
 
     unigram_to_column_identifier[unigram] = std::move(column_identifier);
     unigram_hashes.push_back(unigram);
@@ -142,8 +148,8 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
 
   std::vector<uint32_t> hashes;
   if (_with_pairgrams) {
-    TokenEncoding::forEachPairgramFromUnigram(
-        unigram_hashes, _output_range, [&](TokenEncoding::PairGram pairgram) {
+    forEachPairgramFromUnigram(
+        unigram_hashes, _output_range, [&](PairGram pairgram) {
           auto token =
               Token::fromPairgram(pairgram, unigram_to_column_identifier);
           token_processor(token);
@@ -193,6 +199,25 @@ uint32_t TabularHashFeatures::computeBin(const TabularColumn& column,
   }
   return static_cast<uint32_t>(
       std::round((value - column.range->first) / binsize));
+}
+
+template <typename PAIRGRAM_PROCESSOR_T>
+void forEachPairgramFromUnigram(const std::vector<uint32_t>& unigram_hashes,
+                                uint32_t output_range,
+                                PAIRGRAM_PROCESSOR_T pairgram_processor) {
+  static_assert(std::is_convertible<PAIRGRAM_PROCESSOR_T,
+                                    std::function<void(PairGram)>>::value);
+
+  for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
+    for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
+      uint32_t combined_hash = hashing::combineHashes(
+          unigram_hashes[prev_token], unigram_hashes[token]);
+      combined_hash = combined_hash % output_range;
+      pairgram_processor({/* pairgram= */ combined_hash,
+                          /* first_token= */ unigram_hashes[prev_token],
+                          /* second_token= */ unigram_hashes[token]});
+    }
+  }
 }
 
 }  // namespace thirdai::dataset

@@ -7,9 +7,9 @@
 #include <auto_ml/src/Aliases.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <cstdint>
 #include <memory>
 #include <optional>

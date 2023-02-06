@@ -392,7 +392,7 @@ void FullyConnectedLayer::randomNeuronSampling(const BoltVector& input,
   // This is because rand() is not threadsafe and because we want to make the
   // output more deterministic.
   uint64_t random_offset =
-      hashing::HashUtils::simpleIntegerHash(
+      hashing::simpleIntegerHash(
           // Hack to intepret the float as an integer without doing a
           // conversion.
           *reinterpret_cast<uint32_t*>(&input.activations[0])) %

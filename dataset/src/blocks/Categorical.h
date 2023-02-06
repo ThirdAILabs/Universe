@@ -6,7 +6,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
-#include <dataset/src/batch_processors/ProcessorUtils.h>
+#include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cstdlib>

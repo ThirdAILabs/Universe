@@ -29,7 +29,7 @@ static std::string LPNormToStr(LPNorm norm) {
 }
 
 static LPNorm getNorm(const std::string& norm_order) {
-  std::string lower_case_norm_order = utils::lower(norm_order);
+  std::string lower_case_norm_order = text::lower(norm_order);
   if (lower_case_norm_order == "l-1") {
     return LPNorm::L1;
   }

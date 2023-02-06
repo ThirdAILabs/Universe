@@ -43,10 +43,10 @@ def setup_mock_s3(s3):
 def load_all_batches(storage_path, batch_size):
     from thirdai import dataset
 
-    source = dataset.CSVDataSource(storage_path=storage_path, batch_size=batch_size)
+    source = dataset.CSVDataSource(storage_path=storage_path)
     batches = []
     while True:
-        next_batch = source.next_batch()
+        next_batch = source.next_batch(batch_size)
         if not next_batch:
             break
         batches.append(next_batch)
@@ -56,7 +56,7 @@ def load_all_batches(storage_path, batch_size):
 def load_all_lines(storage_path, batch_size):
     from thirdai import dataset
 
-    source = dataset.CSVDataSource(storage_path=storage_path, batch_size=batch_size)
+    source = dataset.CSVDataSource(storage_path=storage_path)
     lines = []
     while True:
         next_line = source.next_line()

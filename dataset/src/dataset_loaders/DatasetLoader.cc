@@ -1,7 +1,7 @@
 #include "DatasetLoader.h"
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/ShuffleBatchBuffer.h>
 #include <utils/Logging.h>
 #include <limits>
 #include <utility>
@@ -9,30 +9,36 @@
 namespace thirdai::dataset {
 
 DatasetLoader::DatasetLoader(DataSourcePtr data_source,
-                             dataset::BatchProcessorPtr batch_processor,
-                             bool shuffle, DatasetShuffleConfig shuffle_config)
+                             dataset::FeaturizerPtr featurizer, bool shuffle,
+                             DatasetShuffleConfig shuffle_config,
+                             size_t internal_featurization_batch_size)
     : _data_source(std::move(data_source)),
-      _batch_processor(std::move(batch_processor)),
+      _featurizer(std::move(featurizer)),
       _shuffle(shuffle),
-      _batch_buffer_size(shuffle_config.n_batches),
-      _buffer(shuffle_config.seed, _data_source->getMaxBatchSize()) {
+      _buffer_size(shuffle_config.min_buffer_size),
+      _buffer(/* should_shuffle = */ _shuffle,
+              /* shuffle_seed = */ shuffle_config.seed,
+              /* num_vector_streams = */ _featurizer->getNumDatasets()),
+      _featurization_batch_size(internal_featurization_batch_size) {
   // Different formats of data may or may not contain headers. Thus we
-  // delegate to the particular batch processor to determine if a header is
-  // needed. The first row is interpreted as the header. The batch processor
+  // delegate to the particular featurizer to determine if a header is
+  // needed. The first row is interpreted as the header. The featurizer
   // is responsible for checking that the header is properly formatted.
-  if (_batch_processor->expectsHeader()) {
+  if (_featurizer->expectsHeader()) {
     auto header = _data_source->nextLine();
     if (!header) {
       throw std::invalid_argument("Cannot read empty file.");
     }
-    _batch_processor->processHeader(*header);
+    _featurizer->processHeader(*header);
   }
 }
 
-// Loads the entire data source at once
-std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory(
-    bool verbose) {
-  auto datasets = streamInMemory(std::numeric_limits<size_t>::max(), verbose);
+std::pair<InputDatasets, LabelDataset> DatasetLoader::loadAll(size_t batch_size,
+                                                              bool verbose) {
+  auto datasets =
+      loadSome(/* batch_size = */ batch_size,
+               /* num_batches = */ std::numeric_limits<size_t>::max(),
+               /* verbose = */ verbose);
   if (!datasets) {
     throw std::invalid_argument(
         "Did not find any data to load from the data source.");
@@ -40,8 +46,8 @@ std::pair<InputDatasets, LabelDataset> DatasetLoader::loadInMemory(
   return datasets.value();
 }
 
-std::optional<std::pair<InputDatasets, LabelDataset>>
-DatasetLoader::streamInMemory(size_t num_batches, bool verbose) {
+std::optional<std::pair<InputDatasets, LabelDataset>> DatasetLoader::loadSome(
+    size_t batch_size, size_t num_batches, bool verbose) {
 #if THIRDAI_EXPOSE_ALL
   if (verbose) {
     // This is useful internally but we don't want to expose it to keep the
@@ -53,26 +59,28 @@ DatasetLoader::streamInMemory(size_t num_batches, bool verbose) {
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  // We fill the buffer with num_batches + _batch_buffer_size number of batches
+  // We fill the buffer with num_batches * batch_size + _buffer_size vectors
   // so that after exporting num_batches from the buffer we still have
-  // _batch_buffer_size number of batches left for future shuffling.
-  // We also much check if the sum overflows, since in the frequent case we
-  // want to load all batches we pass in std::numeric_limits<size_t> which will
-  // cause an overflow. For the source of this overflow check, see:
-  // https://stackoverflow.com/q/199333/how-do-i-detect-unsigned-integer-overflow
-  size_t fill_size = num_batches + _batch_buffer_size;
-  bool overflowed = fill_size < (num_batches | _batch_buffer_size);
-  if (overflowed) {
-    fill_size = std::numeric_limits<size_t>::max();
-  }
-  fillShuffleBuffer(fill_size);
+  // _buffer_size vectors left for future shuffling.
+  // We also must check if anything in this multiplication and sum overflows and
+  // use std::numeric_limits<size_t>::max() in that case, since sometimes (when
+  // we want to load everything) we pass in std::numeric_limits<size_t>::max()
+  // as num_batches, which would make the expression overflow
+  bool will_overflow =
+      (std::numeric_limits<size_t>::max() / num_batches <= batch_size) ||
+      (std::numeric_limits<size_t>::max() - _buffer_size <=
+       num_batches * batch_size);
+  size_t fill_size = will_overflow ? std::numeric_limits<size_t>::max()
+                                   : num_batches * batch_size + _buffer_size;
+  fillVectorBuffer(fill_size);
 
-  auto batch_lists = _buffer.exportBuffer(num_batches);
+  auto dataset_slices = popFromBuffer(/* target_num_batches = */ num_batches,
+                                      /* target_batch_size = */ batch_size);
   auto end = std::chrono::high_resolution_clock::now();
   auto duration =
       std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
-  if (batch_lists.at(0).empty()) {
+  if (dataset_slices.at(0).empty()) {
 #if THIRDAI_EXPOSE_ALL
     if (verbose) {
       // This is to ensure that it always prints complete if it prints that it
@@ -90,10 +98,11 @@ DatasetLoader::streamInMemory(size_t num_batches, bool verbose) {
   // TODO(any): Once we have Bolt V2, fix this to work with an arbitrary
   // number of datasets and labels in arbitrary positions
   BoltDatasetPtr labels =
-      std::make_shared<BoltDataset>(std::move(batch_lists.back()));
+      std::make_shared<BoltDataset>(std::move(dataset_slices.back()));
   std::vector<BoltDatasetPtr> data;
-  for (uint32_t i = 0; i < batch_lists.size() - 1; i++) {
-    data.push_back(std::make_shared<BoltDataset>(std::move(batch_lists.at(i))));
+  for (uint32_t i = 0; i < dataset_slices.size() - 1; i++) {
+    data.push_back(
+        std::make_shared<BoltDataset>(std::move(dataset_slices.at(i))));
   }
 
   if (verbose) {
@@ -109,27 +118,62 @@ DatasetLoader::streamInMemory(size_t num_batches, bool verbose) {
 void DatasetLoader::restart() {
   _data_source->restart();
 
-  // When we restart we need to make sure we don't reread the header. s
-  if (_batch_processor->expectsHeader()) {
+  // When we restart we need to make sure we don't reread the header.
+  if (_featurizer->expectsHeader()) {
     auto header = _data_source->nextLine();
     if (!header) {
       throw std::invalid_argument("Cannot read empty file.");
     }
   }
-
-  _buffer.clear();
 }
 
-void DatasetLoader::fillShuffleBuffer(size_t fill_size) {
-  while (_buffer.size() <= fill_size) {
-    auto rows = _data_source->nextBatch();
+void DatasetLoader::fillVectorBuffer(size_t num_rows) {
+  while (_buffer.size() <= num_rows) {
+    auto rows = _data_source->nextBatch(
+        /* target_batch_size = */ _featurization_batch_size);
     if (!rows) {
       return;
     }
 
-    auto batch = _batch_processor->createBatch(*rows);
-    _buffer.insertBatch(std::move(batch), _shuffle);
+    auto batch = _featurizer->featurize(*rows);
+    for (size_t i = 0; i < batch.at(0).size(); i++) {
+      std::vector<BoltVector> temp_vector;
+      temp_vector.reserve(batch.size());
+      for (auto& j : batch) {
+        temp_vector.push_back(std::move(j[i]));
+      }
+      _buffer.insert(std::move(temp_vector));
+    }
   }
 }
 
+std::vector<DatasetSlice> DatasetLoader::popFromBuffer(
+    size_t target_num_batches, size_t target_batch_size) {
+  size_t num_datasets = _featurizer->getNumDatasets();
+  std::vector<std::vector<BoltBatch>> batches(num_datasets);
+
+  for (size_t batch_id = 0; batch_id < target_num_batches; batch_id++) {
+    // The ith element in this list contains BoltVectors corresponding to the
+    // ith Dataset this DatasetLoader is loading
+    std::vector<std::vector<BoltVector>> batch(num_datasets);
+    for (size_t vec_id = 0; vec_id < target_batch_size; vec_id++) {
+      if (auto next_vectors = _buffer.pop()) {
+        assert(next_vectors->size() == num_datasets);
+        for (size_t dataset_id = 0; dataset_id < num_datasets; dataset_id++) {
+          batch.at(dataset_id).push_back(next_vectors->at(dataset_id));
+        }
+      }
+    }
+
+    if (batch.at(0).empty()) {
+      break;
+    }
+
+    for (size_t dataset_id = 0; dataset_id < batch.size(); dataset_id++) {
+      batches.at(dataset_id).emplace_back(std::move(batch.at(dataset_id)));
+    }
+  }
+
+  return batches;
+}
 }  // namespace thirdai::dataset

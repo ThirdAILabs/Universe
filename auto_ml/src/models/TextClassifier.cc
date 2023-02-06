@@ -34,7 +34,7 @@ TextClassifier::TextClassifier(uint32_t input_vocab_size, uint32_t metadata_dim,
   auto input = bolt::Input::make(input_vocab_size + metadata_dim);
 
   bolt::FullyConnectedNodePtr hidden =
-      getHiddenLayer(utils::lower(model_size))->addPredecessor(input);
+      getHiddenLayer(text::lower(model_size))->addPredecessor(input);
 
   auto output = bolt::FullyConnectedNode::makeDense(
                     /* dim= */ n_classes, /* activation= */ "sigmoid")
