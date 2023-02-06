@@ -339,11 +339,8 @@ def perturb_query_reformulation_data(dataframe, noise_level, seed=42):
     )
 
 
-# Supervised Training File has both the target and the source columns, whereas the
-# Unsupervised Training File has only the target column.
 def prepare_query_reformulation_data(seed=42):
-    SUPERVISED_TRAIN_FILE_PATH = "supervised_train_file.csv"
-    UNSUPERVISED_TRAIN_FILE_PATH = "unsupervised_train_file.csv"
+    TRAIN_FILE_PATH = "train_file.csv"
     TEST_FILE_PATH = "test_file.csv"
     TRAIN_FILE_DATASET_PERCENTAGE = 0.7
     INFERENCE_BATCH_PERCENTAGE = 0.0001
@@ -382,15 +379,11 @@ def prepare_query_reformulation_data(seed=42):
     test_data_with_noise = test_data_with_noise.replace(",", "", regex=True)
 
     # Write dataset to CSV
-    train_data_with_noise.to_csv(SUPERVISED_TRAIN_FILE_PATH, index=False)
-    train_data_with_noise["target_queries"].to_csv(
-        UNSUPERVISED_TRAIN_FILE_PATH, index=False
-    )
+    train_data_with_noise.to_csv(TRAIN_FILE_PATH, index=False)
     test_data_with_noise.to_csv(TEST_FILE_PATH, index=False)
 
     return (
-        SUPERVISED_TRAIN_FILE_PATH,
-        UNSUPERVISED_TRAIN_FILE_PATH,
+        TRAIN_FILE_PATH,
         TEST_FILE_PATH,
         inference_batch,
     )

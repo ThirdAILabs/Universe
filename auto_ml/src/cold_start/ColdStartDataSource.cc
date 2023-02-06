@@ -6,11 +6,9 @@ namespace thirdai::automl::cold_start {
 ColdStartDataSource::ColdStartDataSource(const data::ColumnMap& column_map,
                                          std::string text_column_name,
                                          std::string label_column_name,
-                                         uint32_t batch_size,
                                          char column_delimiter,
                                          std::optional<char> label_delimiter)
-    : DataSource(batch_size),
-      _text_column(column_map.getStringColumn(text_column_name)),
+    : _text_column(column_map.getStringColumn(text_column_name)),
       _label_column(column_map.getTokenArrayColumn(label_column_name)),
       _row_idx(0),
       _text_column_name(std::move(text_column_name)),
@@ -19,13 +17,14 @@ ColdStartDataSource::ColdStartDataSource(const data::ColumnMap& column_map,
       _label_delimiter(label_delimiter),
       _header(getHeader()) {}
 
-std::optional<std::vector<std::string>> ColdStartDataSource::nextBatch() {
+std::optional<std::vector<std::string>> ColdStartDataSource::nextBatch(
+    size_t target_batch_size) {
   std::vector<std::string> rows;
 
   while (auto row = nextLine()) {
     rows.push_back(std::move(*row));
 
-    if (rows.size() == _target_batch_size) {
+    if (rows.size() == target_batch_size) {
       break;
     }
   }

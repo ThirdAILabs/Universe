@@ -51,9 +51,8 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
     hashes[bin_id] = std::min(hash, hashes[bin_id]);
   }
 
-  HashUtils::densifyHashes(hashes.data(), _total_num_hashes);
-  HashUtils::defaultCompactHashes(hashes.data(), output, _num_tables,
-                                  _hashes_per_table);
+  densifyHashes(hashes.data(), _total_num_hashes);
+  defaultCompactHashes(hashes.data(), output, _num_tables, _hashes_per_table);
   for (uint32_t i = 0; i < _num_tables; i++) {
     output[i] %= _range;
   }

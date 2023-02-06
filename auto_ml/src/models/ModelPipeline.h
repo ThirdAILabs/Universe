@@ -7,10 +7,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
-#include <auto_ml/src/deployment_config/DatasetConfig.h>
-#include <auto_ml/src/deployment_config/DeploymentConfig.h>
-#include <auto_ml/src/deployment_config/HyperParameter.h>
-#include <auto_ml/src/deployment_config/TrainEvalParameters.h>
+#include <auto_ml/src/models/TrainEvalParameters.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <exceptions/src/Exceptions.h>
@@ -73,24 +70,11 @@ class ModelPipeline {
  public:
   ModelPipeline(data::DatasetLoaderFactoryPtr dataset_factory,
                 bolt::BoltGraphPtr model, OutputProcessorPtr output_processor,
-                deployment::TrainEvalParameters train_eval_parameters)
+                TrainEvalParameters train_eval_parameters)
       : _dataset_factory(std::move(dataset_factory)),
         _model(std::move(model)),
         _output_processor(std::move(output_processor)),
         _train_eval_config(train_eval_parameters) {}
-
-  static auto make(
-      const deployment::DeploymentConfigPtr& config,
-      const std::unordered_map<std::string, deployment::UserParameterInput>&
-          user_specified_parameters) {
-    auto [dataset_factory, model] =
-        config->createDataSourceAndModel(user_specified_parameters);
-    return ModelPipeline(
-        std::move(dataset_factory), std::move(model),
-        CategoricalOutputProcessor::make(
-            config->train_eval_parameters().predictionThreshold()),
-        config->train_eval_parameters());
-  }
 
   /**
    * Trains the model on the data given in datasource using the specified
@@ -105,7 +89,8 @@ class ModelPipeline {
   void train(const std::shared_ptr<dataset::DataSource>& data_source,
              bolt::TrainConfig& train_config,
              const std::optional<ValidationOptions>& validation,
-             std::optional<uint32_t> max_in_memory_batches);
+             std::optional<uint32_t> max_in_memory_batches,
+             std::optional<size_t> batch_size_opt);
 
   /**
    * Processes the data specified in data_source and computes any metrics
@@ -192,7 +177,8 @@ class ModelPipeline {
    */
   void trainInMemory(dataset::DatasetLoaderPtr& dataset_loader,
                      bolt::TrainConfig train_config,
-                     const std::optional<ValidationOptions>& validation);
+                     const std::optional<ValidationOptions>& validation,
+                     size_t batch_size);
 
   /**
    * Performs training on a streaming dataset in chunks. Note that validation is
@@ -203,14 +189,16 @@ class ModelPipeline {
   void trainOnStream(dataset::DatasetLoaderPtr& dataset_loader,
                      bolt::TrainConfig train_config,
                      uint32_t max_in_memory_batches,
-                     const std::optional<ValidationOptions>& validation);
+                     const std::optional<ValidationOptions>& validation,
+                     size_t batch_size);
 
   /**
    * Helper for processing a streaming dataset in chunks for a single epoch.
    */
   void trainSingleEpochOnStream(dataset::DatasetLoaderPtr& dataset_loader,
                                 const bolt::TrainConfig& train_config,
-                                uint32_t max_in_memory_batches);
+                                uint32_t max_in_memory_batches,
+                                size_t batch_size);
 
   /**
    * Takes in a single input sample and returns the activations for the output
@@ -248,8 +236,8 @@ class ModelPipeline {
    * shuffle the data to obtain the batches.
    */
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
-      const dataset::DataSourcePtr& data_source,
-      const std::string& metric_name);
+      const dataset::DataSourcePtr& data_source, const std::string& metric_name,
+      size_t batch_size);
 
   friend class cereal::access;
   template <class Archive>
@@ -258,12 +246,10 @@ class ModelPipeline {
   }
 
  protected:
-  static constexpr uint32_t ALL_BATCHES = std::numeric_limits<uint32_t>::max();
-
   data::DatasetLoaderFactoryPtr _dataset_factory;
   bolt::BoltGraphPtr _model;
   OutputProcessorPtr _output_processor;
-  deployment::TrainEvalParameters _train_eval_config;
+  TrainEvalParameters _train_eval_config;
 };
 
 }  // namespace thirdai::automl::models

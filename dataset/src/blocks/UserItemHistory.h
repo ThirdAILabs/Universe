@@ -9,8 +9,8 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 #include <hashing/src/MurmurHash.h>
-#include <dataset/src/batch_processors/ProcessorUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TimeUtils.h>

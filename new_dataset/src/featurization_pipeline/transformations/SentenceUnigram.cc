@@ -37,13 +37,8 @@ columns::SparseArrayColumnPtr SentenceUnigram::deduplicatedUnigramColumn(
     std::string text = (*input_column)[row_idx];
     std::vector<uint32_t> unigrams = computeUnigrams(text);
 
-    std::vector<std::pair<uint32_t, float>> deduplicated_unigrams;
-    // TODO(any): make TextEncodingUtils more usable
-    dataset::TokenEncoding::sumRepeatedIndices(
-        unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
-          deduplicated_unigrams.push_back(std::make_pair(unigram, value));
-        });
-    column_values[row_idx] = deduplicated_unigrams;
+    column_values[row_idx] =
+        dataset::token_encoding::sumRepeatedIndices(unigrams);
   }
 
   return std::make_shared<columns::CppSparseArrayColumn>(
@@ -57,8 +52,7 @@ columns::TokenArrayColumnPtr SentenceUnigram::rawUnigramColumn(
     shared(num_rows, column_values, input_column)
   for (uint32_t row_idx = 0; row_idx < num_rows; row_idx++) {
     std::string text = (*input_column)[row_idx];
-    std::vector<uint32_t> unigrams = computeUnigrams(text);
-    column_values[row_idx] = unigrams;
+    column_values[row_idx] = computeUnigrams(text);
   }
 
   return std::make_shared<columns::CppTokenArrayColumn>(
@@ -67,12 +61,10 @@ columns::TokenArrayColumnPtr SentenceUnigram::rawUnigramColumn(
 
 std::vector<uint32_t> SentenceUnigram::computeUnigrams(
     const std::string& text) {
-  std::vector<uint32_t> unigrams;
+  std::vector<uint32_t> unigrams =
+      dataset::token_encoding::ngrams(text, /* n= */ 1);
   if (_output_range) {
-    unigrams = dataset::TokenEncoding::computeRawUnigramsWithRange(
-        text, *_output_range);
-  } else {
-    unigrams = dataset::TokenEncoding::computeRawUnigrams(text);
+    dataset::token_encoding::mod(unigrams, *_output_range);
   }
   return unigrams;
 }

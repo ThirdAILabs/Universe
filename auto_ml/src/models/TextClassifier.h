@@ -140,7 +140,7 @@ class TextClassifier {
   static void verifyParamIsNonzero(uint32_t param, const std::string& name);
 
   // Private constructor for cereal.
-  TextClassifier() {}
+  TextClassifier() { licensing::checkLicense(); }
 
   friend class cereal::access;
   template <typename Archive>

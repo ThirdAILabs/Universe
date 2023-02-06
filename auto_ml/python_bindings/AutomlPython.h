@@ -1,5 +1,6 @@
 #pragma once
 
+#include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/models/Generator.h>
 #include <auto_ml/src/models/ModelPipeline.h>
 #include <auto_ml/src/models/TextClassifier.h>
@@ -23,15 +24,11 @@ void createUDTTypesSubmodule(py::module_& module);
 
 void createUDTTemporalSubmodule(py::module_& module);
 
+void createDeploymentSubmodule(py::module_& module);
+
 // Python wrappers for ModelPipline methods
 
-deployment::UserInputMap createUserInputMap(const py::dict& parameters);
-
-ModelPipeline createPipeline(const deployment::DeploymentConfigPtr& config,
-                             const py::dict& parameters);
-
-ModelPipeline createPipelineFromSavedConfig(const std::string& config_path,
-                                            const py::dict& parameters);
+config::ArgumentMap createArgumentMap(const py::dict& input_args);
 
 py::object predictTokensWrapper(ModelPipeline& model,
                                 const std::vector<uint32_t>& tokens,

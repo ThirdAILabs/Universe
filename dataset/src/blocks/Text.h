@@ -69,11 +69,11 @@ class PairGramTextBlock final : public TextBlock {
  public:
   explicit PairGramTextBlock(
       ColumnIdentifier col,
-      uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM)
+      uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM)
       : TextBlock(std::move(col), dim) {}
 
   static auto make(ColumnIdentifier col,
-                   uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM) {
+                   uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<PairGramTextBlock>(std::move(col), dim);
   }
 
@@ -89,12 +89,11 @@ class PairGramTextBlock final : public TextBlock {
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> pairgrams =
-        TokenEncoding::computeRawPairgrams(text, _dim);
-
-    TokenEncoding::sumRepeatedIndices(
-        pairgrams, /* base_value= */ 1.0, [&](uint32_t pairgram, float value) {
-          vec.addSparseFeatureToSegment(pairgram, value);
-        });
+        token_encoding::pairgrams(token_encoding::tokenize(text::split(text)));
+    token_encoding::mod(pairgrams, _dim);
+    for (auto& [index, value] : token_encoding::sumRepeatedIndices(pairgrams)) {
+      vec.addSparseFeatureToSegment(index, value);
+    }
 
     return nullptr;
   }
@@ -113,57 +112,63 @@ class PairGramTextBlock final : public TextBlock {
 using PairGramTextBlockPtr = std::shared_ptr<PairGramTextBlock>;
 
 /**
- * A block that encodes text as a weighted set of space-separated words.
+ * A block that encodes text as hashed N-gram tokens.
  */
-class UniGramTextBlock final : public TextBlock {
+class NGramTextBlock final : public TextBlock {
  public:
-  explicit UniGramTextBlock(
-      ColumnIdentifier col,
-      uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
+  explicit NGramTextBlock(
+      ColumnIdentifier col, uint32_t n = 1,
+      uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM,
       char delimiter = ' ')
-      : TextBlock(std::move(col), dim), _delimiter(delimiter) {}
+      : TextBlock(std::move(col), dim), _n(n), _delimiter(delimiter) {}
 
-  static auto make(ColumnIdentifier col,
-                   uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM,
+  static auto make(ColumnIdentifier col, uint32_t n = 1,
+                   uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM,
                    char delimiter = ' ') {
-    return std::make_shared<UniGramTextBlock>(std::move(col), dim, delimiter);
+    return std::make_shared<NGramTextBlock>(std::move(col), n, dim, delimiter);
   }
 
   std::string getResponsibleWord(uint32_t index,
                                  const std::string_view& text) const final {
+    // TODO(any): implement explanations for generic N grams
+    if (_n != 1) {
+      throw std::invalid_argument(
+          "Word explanations not supported for this type of featurization.");
+    }
     std::unordered_map<uint32_t, std::string> index_to_word_map =
-        TokenEncoding::buildUnigramHashToWordMap(text, _dim, _delimiter);
+        token_encoding::buildUnigramHashToWordMap(text, _dim, _delimiter);
     return index_to_word_map.at(index);
   }
 
  protected:
   std::exception_ptr encodeText(std::string_view text,
                                 SegmentedFeatureVector& vec) final {
-    std::vector<uint32_t> unigrams =
-        TokenEncoding::computeRawUnigramsWithRange(text, _dim, _delimiter);
+    std::vector<uint32_t> ngrams =
+        token_encoding::ngrams(text, /* n= */ _n, _delimiter);
+    token_encoding::mod(ngrams, _dim);
 
-    TokenEncoding::sumRepeatedIndices(
-        unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
-          vec.addSparseFeatureToSegment(unigram, value);
-        });
+    for (auto& [index, value] : token_encoding::sumRepeatedIndices(ngrams)) {
+      vec.addSparseFeatureToSegment(index, value);
+    }
 
     return nullptr;
   }
 
  private:
   // Private constructor for cereal.
-  UniGramTextBlock() {}
+  NGramTextBlock() {}
 
+  uint32_t _n;
   char _delimiter = ' ';
 
   friend class cereal::access;
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<TextBlock>(this), _delimiter);
+    archive(cereal::base_class<TextBlock>(this), _n, _delimiter);
   }
 };
 
-using UniGramTextBlockPtr = std::shared_ptr<UniGramTextBlock>;
+using NGramTextBlockPtr = std::shared_ptr<NGramTextBlock>;
 
 /**
  * A block that encodes text as a weighted set of character k-grams.
@@ -171,11 +176,11 @@ using UniGramTextBlockPtr = std::shared_ptr<UniGramTextBlock>;
 class CharKGramTextBlock final : public TextBlock {
  public:
   CharKGramTextBlock(ColumnIdentifier col, uint32_t k,
-                     uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM)
+                     uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM)
       : TextBlock(std::move(col), dim), _k(k) {}
 
   static auto make(ColumnIdentifier col, uint32_t k,
-                   uint32_t dim = TokenEncoding::DEFAULT_TEXT_ENCODING_DIM) {
+                   uint32_t dim = token_encoding::DEFAULT_TEXT_ENCODING_DIM) {
     return std::make_shared<CharKGramTextBlock>(std::move(col), k, dim);
   }
 
@@ -193,14 +198,14 @@ class CharKGramTextBlock final : public TextBlock {
     if (text.empty()) {
       return nullptr;
     }
-    std::string lower_case_text = utils::lower(text);
+    std::string lower_case_text = text::lower(text);
 
     std::vector<uint32_t> char_k_grams;
 
     size_t n_kgrams = text.size() >= _k ? text.size() - (_k - 1) : 1;
     size_t len = std::min(text.size(), static_cast<size_t>(_k));
     for (uint32_t offset = 0; offset < n_kgrams; offset++) {
-      uint32_t k_gram_hash = TokenEncoding::computeUnigram(
+      uint32_t k_gram_hash = token_encoding::seededMurmurHash(
                                  /* key= */ &lower_case_text.at(offset), len) %
                              _dim;
       char_k_grams.push_back(k_gram_hash);
@@ -211,11 +216,10 @@ class CharKGramTextBlock final : public TextBlock {
       number of entries in the sparse vector, which can in turn make BOLT
       run faster.
     */
-    TokenEncoding::sumRepeatedIndices(
-        /* indices = */ char_k_grams,
-        /* base_value = */ 1.0, [&](uint32_t index, float value) {
-          vec.addSparseFeatureToSegment(index, value);
-        });
+    for (auto& [index, value] :
+         token_encoding::sumRepeatedIndices(char_k_grams)) {
+      vec.addSparseFeatureToSegment(index, value);
+    }
 
     return nullptr;
   }
@@ -239,5 +243,5 @@ using CharKGramTextBlockPtr = std::shared_ptr<CharKGramTextBlock>;
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::TextBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::PairGramTextBlock)
-CEREAL_REGISTER_TYPE(thirdai::dataset::UniGramTextBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::NGramTextBlock)
 CEREAL_REGISTER_TYPE(thirdai::dataset::CharKGramTextBlock)

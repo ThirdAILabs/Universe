@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
+#include <bolt/src/utils/ProgressBar.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/HashTable.h>
 #include <hashtable/src/VectorHashTable.h>
@@ -47,14 +48,6 @@ class Flash {
   Flash& operator=(Flash&& flash_index) = delete;
   Flash(const Flash& flash_index) = delete;
 
-  /**
-   * Insert all batches in the dataset the Flash data structure.
-   * loadNextBatches on the dataset should not have been called yet, and this
-   * will run through the entire dataset.
-   */
-  void addDataset(const dataset::InMemoryDataset& dataset,
-                  const std::vector<std::vector<LABEL_T>>& labels,
-                  bool verbose);
   /**
    * Insert this batch into the Flash data structure.
    */

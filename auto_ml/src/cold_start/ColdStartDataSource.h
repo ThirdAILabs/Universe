@@ -14,20 +14,19 @@ class ColdStartDataSource final : public dataset::DataSource {
  public:
   ColdStartDataSource(const thirdai::data::ColumnMap& column_map,
                       std::string text_column_name,
-                      std::string label_column_name, uint32_t batch_size,
-                      char column_delimiter,
+                      std::string label_column_name, char column_delimiter,
                       std::optional<char> label_delimiter);
 
   static auto make(const thirdai::data::ColumnMap& column_map,
                    std::string text_column_name, std::string label_column_name,
-                   uint32_t batch_size, char column_delimiter,
-                   std::optional<char> label_delimiter) {
+                   char column_delimiter, std::optional<char> label_delimiter) {
     return std::make_shared<ColdStartDataSource>(
         column_map, std::move(text_column_name), std::move(label_column_name),
-        batch_size, column_delimiter, label_delimiter);
+        column_delimiter, label_delimiter);
   }
 
-  std::optional<std::vector<std::string>> nextBatch() final;
+  std::optional<std::vector<std::string>> nextBatch(
+      size_t target_batch_size) final;
 
   std::optional<std::string> nextLine() final;
 

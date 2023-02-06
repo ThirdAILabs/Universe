@@ -1,7 +1,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/UserItemHistory.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <sys/types.h>
@@ -90,28 +90,28 @@ std::vector<std::string> makeSamples(std::vector<uint32_t>& user_id_sequence,
   return samples;
 }
 
-auto processSamples(std::vector<std::string>& samples, uint32_t track_last_n,
-                    bool parallel) {
+std::vector<BoltVector> processSamples(std::vector<std::string>& samples,
+                                       uint32_t track_last_n, bool parallel) {
   auto records = ItemHistoryCollection::make();
 
   auto user_item_history_block = UserItemHistoryBlock::make(
       /* user_col = */ 0, /* item_col = */ 1, /* timestamp_col = */ 2, records,
       track_last_n, ITEM_HASH_RANGE);
 
-  GenericBatchProcessor processor(
+  TabularFeaturizer processor(
       /* input_blocks = */ {user_item_history_block},
       /* label_blocks = */ {}, /* has_header= */ false, /* delimiter= */ ',',
       /* parallel= */ parallel);
 
-  auto batch = processor.createBatch(samples).at(0);
+  auto batch = processor.featurize(samples).at(0);
 
   return std::move(batch);
 }
 
-auto groupVectorsByUser(BoltBatch&& batch,
+auto groupVectorsByUser(std::vector<BoltVector>&& batch,
                         const std::vector<uint32_t>& user_ids) {
   std::unordered_map<uint32_t, std::vector<BoltVector>> user_to_vectors;
-  for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
+  for (uint32_t i = 0; i < batch.size(); i++) {
     user_to_vectors[user_ids[i]].push_back(std::move(batch[i]));
   }
   return user_to_vectors;
@@ -216,9 +216,9 @@ TEST(UserItemHistoryBlockTests, CorrectMultiThread) {
   auto parallel_batch =
       processSamples(samples, track_last_n, /* parallel= */ true);
 
-  ASSERT_EQ(sequential_batch.getBatchSize(), parallel_batch.getBatchSize());
+  ASSERT_EQ(sequential_batch.size(), parallel_batch.size());
 
-  for (uint32_t i = 0; i < sequential_batch.getBatchSize(); i++) {
+  for (uint32_t i = 0; i < sequential_batch.size(); i++) {
     auto sequential_elements = vectorAsWeightedSet(sequential_batch[i]);
     auto parallel_elements = vectorAsWeightedSet(parallel_batch[i]);
 
@@ -234,7 +234,7 @@ TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
 
   auto records = ItemHistoryCollection::make();
 
-  GenericBatchProcessor processor(
+  TabularFeaturizer processor(
       /* input_blocks= */ {UserItemHistoryBlock::make(
           /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
           /* records= */ records, /* track_last_n= */ 3,
@@ -247,7 +247,7 @@ TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
       /* delimiter= */ ',',
       /* parallel= */ false);
 
-  auto batch = processor.createBatch(samples).at(0);
+  auto batch = processor.featurize(samples).at(0);
 
   ASSERT_EQ(batch[0].len, 0);
 
@@ -270,7 +270,7 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
 
   auto records = ItemHistoryCollection::make();
 
-  GenericBatchProcessor processor(
+  TabularFeaturizer processor(
       /* input_blocks= */ {UserItemHistoryBlock::make(
           /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
           /* records= */ records, /* track_last_n= */ 3,
@@ -284,15 +284,15 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
       /* delimiter= */ ',',
       /* parallel= */ false);
 
-  auto batch = processor.createBatch(samples).at(0);
+  auto batch = processor.featurize(samples).at(0);
 
   // This means the block tracks the last 3 beyond lag.
   ASSERT_EQ(batch[4].len, 3);
 }
 
-GenericBatchProcessor makeItemHistoryBatchProcessor(
-    ItemHistoryCollectionPtr history, uint32_t track_last_n,
-    bool should_update_history) {
+TabularFeaturizer makeItemHistoryFeaturizer(ItemHistoryCollectionPtr history,
+                                            uint32_t track_last_n,
+                                            bool should_update_history) {
   return {/* input_blocks= */ {UserItemHistoryBlock::make(
               /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
               std::move(history), track_last_n, ITEM_HASH_RANGE,
@@ -318,11 +318,11 @@ TEST(UserItemHistoryBlockTests, HandlesNoUpdateCaseProperly) {
 
   auto history = ItemHistoryCollection::make();
 
-  auto updating_processor = makeItemHistoryBatchProcessor(
-      history,
-      /* track_last_n= */ updating_samples.size() + 1,
-      /* should_update_history= */ true);
-  updating_processor.createBatch(updating_samples);
+  auto updating_processor =
+      makeItemHistoryFeaturizer(history,
+                                /* track_last_n= */ updating_samples.size() + 1,
+                                /* should_update_history= */ true);
+  updating_processor.featurize(updating_samples);
 
   std::vector<std::string> items_in_history;
   for (const auto& item_struct : history->at("user1")) {
@@ -330,12 +330,12 @@ TEST(UserItemHistoryBlockTests, HandlesNoUpdateCaseProperly) {
   }
   ASSERT_EQ(items_in_history.size(), updating_samples.size());
 
-  auto non_updating_processor = makeItemHistoryBatchProcessor(
-      history,
-      /* track_last_n= */ updating_samples.size() + 1,
-      /* should_update_history= */ false);
+  auto non_updating_processor =
+      makeItemHistoryFeaturizer(history,
+                                /* track_last_n= */ updating_samples.size() + 1,
+                                /* should_update_history= */ false);
   auto non_updating_batch =
-      non_updating_processor.createBatch(non_updating_sample);
+      non_updating_processor.featurize(non_updating_sample);
 
   // Size is updating_samples.size() + 1 because it includes the non-updating
   // sample

@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <optional>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -22,7 +23,7 @@ static constexpr uint32_t DEFAULT_NUM_BINS = 10;
 enum class TabularDataType {
   Numeric,
   Categorical,
-};  // TODO(david) add datetime/text support
+};
 
 struct TabularColumn {
   static TabularColumn Numeric(ColumnIdentifier identifier,
@@ -68,11 +69,8 @@ struct TabularColumn {
  */
 class TabularHashFeatures final : public Block {
  public:
-  TabularHashFeatures(std::vector<TabularColumn> columns, uint32_t output_range,
-                      bool with_pairgrams = true)
-      : _columns(std::move(columns)),
-        _output_range(output_range),
-        _with_pairgrams(with_pairgrams) {}
+  TabularHashFeatures(const std::vector<TabularColumn>& columns,
+                      uint32_t output_range, bool with_pairgrams = true);
 
   uint32_t featureDim() const final { return _output_range; };
 
@@ -119,7 +117,7 @@ class TabularHashFeatures final : public Block {
             _with_pairgrams);
   }
 
-  std::vector<TabularColumn> _columns;
+  std::vector<std::pair<TabularColumn, uint32_t>> _columns;
   uint32_t _output_range;
   bool _with_pairgrams;
 };

@@ -47,7 +47,6 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self,
         train_file: str,
         batch_size: int,
-        gcp_credentials_path: str,
         max_in_memory_batches: int,
         data_processor,
     ):
@@ -55,17 +54,12 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.data_processor = data_processor
         self.train_file = train_file
         self.batch_size = batch_size
-        self.gcp_credentials_path = gcp_credentials_path
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
 
     def load(self):
         self.generator = self.data_processor.get_dataset_loader(
-            _create_data_source(
-                self.train_file,
-                batch_size=self.batch_size,
-                gcp_credentials_path=self.gcp_credentials_path,
-            ),
+            _create_data_source(self.train_file),
             training=True,
         )
 
@@ -74,10 +68,12 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
             return None
 
         if self.max_in_memory_batches == None:
-            load = self.generator.load_in_memory()
+            load = self.generator.load_all(batch_size=self.batch_size)
             self.dataset_finished = True
         else:
-            load = self.generator.load_in_memory(self.max_in_memory_batches)
+            load = self.generator.load_some(
+                self.max_in_memory_batches, batch_size=self.batch_size
+            )
 
         return load
 

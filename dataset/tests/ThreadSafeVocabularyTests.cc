@@ -1,7 +1,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
-#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <sys/types.h>
 #include <algorithm>
@@ -84,11 +84,13 @@ void assertStringsEqual(std::vector<std::string>& strings_1,
   }
 }
 
-std::vector<uint32_t> getUidsFromBatch(BoltBatch& batch, uint32_t block_idx = 0,
+std::vector<uint32_t> getUidsFromBatch(std::vector<BoltVector>& batch,
+                                       uint32_t block_idx = 0,
                                        uint32_t block_dim = 0) {
   std::vector<uint32_t> uids;
-  for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
-    uids.push_back(batch[i].active_neurons[block_idx] - block_idx * block_dim);
+  uids.reserve(batch.size());
+  for (auto& i : batch) {
+    uids.push_back(i.active_neurons[block_idx] - block_idx * block_dim);
   }
   return uids;
 }
@@ -111,9 +113,9 @@ TEST(ThreadSafeVocabularyTests, InBlock) {
   auto lookup_block = StringLookupCategoricalBlock::make(
       /* col = */ 0, vocab);
 
-  GenericBatchProcessor processor(/* input_blocks = */ {lookup_block},
-                                  /* label_blocks = */ {});
-  auto batch = processor.createBatch(strings).at(0);
+  TabularFeaturizer processor(/* input_blocks = */ {lookup_block},
+                              /* label_blocks = */ {});
+  auto batch = processor.featurize(strings).at(0);
 
   auto uids = getUidsFromBatch(batch);
   auto reverted_strings = backToStrings(*vocab, uids);
@@ -132,10 +134,10 @@ TEST(ThreadSafeVocabularyTests, InMultipleBlocks) {
   auto lookup_block_3 = StringLookupCategoricalBlock::make(
       /* col = */ 0, vocab);
 
-  GenericBatchProcessor processor(
+  TabularFeaturizer processor(
       /* input_blocks = */ {lookup_block_1, lookup_block_2, lookup_block_3},
       /* label_blocks = */ {});
-  auto batch = processor.createBatch(strings).at(0);
+  auto batch = processor.featurize(strings).at(0);
 
   uint32_t lookup_block_dim = lookup_block_1->featureDim();
   auto block_1_uids =
