@@ -2,6 +2,7 @@ import time
 
 import numpy as np
 import ray
+from typing import Any, Callable, List, Optional, Union
 from ray.exceptions import RayError
 
 
@@ -47,8 +48,15 @@ class TrainStateManager:
         # be different if each worker has multiple datasets streamed in, or if
         # something causes a worker to be restarted in the middle of training.
         self.batch_id_within_epoch = 0
-        if communication_type == "circular":
-            self.worker_manager.foreach_worker(
+
+        self.train_source = train_source
+        self.train_config = train_config
+        self.bolt_computation_time = 0
+        self.averaging_and_communication_time = 0
+
+    def set_friend_for_primary_worker(self):
+        if self.communication_type == "circular":
+            self.check_worker_availability_and_call(
                 func=lambda worker: worker.set_friend(
                     self.workers[len(self.workers) - 1]
                 ),
@@ -57,10 +65,21 @@ class TrainStateManager:
                 remote_worker_ids=[0],
             )
 
-        self.train_source = train_source
-        self.train_config = train_config
-        self.bolt_computation_time = 0
-        self.averaging_and_communication_time = 0
+    def check_worker_availability_and_call(
+        self,
+        func: Union[Callable[[Any], Any], List[Callable[[Any], Any]]],
+        *,
+        remote_worker_ids: Optional[List[int]] = None,
+        timeout_seconds=None,
+        fetch_local: bool = True,
+    ):
+        self.check_worker_availability()
+        return self.worker_manager.foreach_worker(
+            func=func,
+            remote_worker_ids=remote_worker_ids,
+            timeout_seconds=timeout_seconds,
+            fetch_local=fetch_local,
+        )
 
     def run_linear_cluster_communication(self):
         """
@@ -78,7 +97,7 @@ class TrainStateManager:
         # gradients during communication, and do communication one by one
         # this doesn't hurt our performance as communication would anyway get queued
         # However, if we spill the ray objects, it would significantly hurt our performance
-        for gradients in self.worker_manager.foreach_worker(
+        for gradients in self.check_worker_availability_and_call(
             lambda worker: worker.get_calculated_gradients(), fetch_local=False
         ).get():
             if gradients.ok:
@@ -96,7 +115,7 @@ class TrainStateManager:
         # This allows us to do just a single copy of the gradient array to shared disk, instead
         # of 1 per worker.
         gradient_averages_ref = ray.put(self.gradient_averages)
-        self.worker_manager.foreach_worker(
+        self.check_worker_availability_and_call(
             lambda worker: worker.receive_gradients(gradient_averages_ref)
         )
         del gradient_averages_ref
@@ -121,7 +140,7 @@ class TrainStateManager:
         ]:
             for node in range(num_workers - 1):
                 should_avg_gradients = node == num_workers - 2
-                self.worker_manager.foreach_worker(
+                self.check_worker_availability_and_call(
                     lambda worker: worker.process_ring(
                         update_id, avg_gradients=should_avg_gradients, reduce=reduce
                     )
@@ -132,7 +151,7 @@ class TrainStateManager:
 
         # function is called on only one worker, hence just checking for index 0
         remote_bolt_graph_model = (
-            self.worker_manager.foreach_worker(
+            self.check_worker_availability_and_call(
                 lambda worker: worker.get_model(should_save_optimizer=True),
                 remote_worker_ids=[worker_with_model],
             )
@@ -140,7 +159,7 @@ class TrainStateManager:
             .pop()
         )
         remote_train_source_pointers = (
-            self.worker_manager.foreach_worker(
+            self.check_worker_availability_and_call(
                 lambda worker: worker.get_current_chunk_and_batch(),
                 remote_worker_ids=[worker_with_model],
             )
@@ -156,7 +175,7 @@ class TrainStateManager:
         # ask each worker to get model from that worker
         # by passing in the model ref
 
-        self.worker_manager.foreach_worker(
+        self.check_worker_availability_and_call(
             lambda worker: worker.prepare_for_training(
                 bolt_graph=bolt_graph_model_ref,
                 chunk_start_index=chunk_start_index,
@@ -168,7 +187,7 @@ class TrainStateManager:
         # communication, we need to set the friend because we are not
         # passing it in constructor
         if 0 in restored_workers and self.communication_type == "circular":
-            self.worker_manager.foreach_worker(
+            self.check_worker_availability_and_call(
                 func=lambda worker: worker.set_friend(
                     self.workers[len(self.workers) - 1]
                 ),
@@ -223,12 +242,15 @@ class TrainStateManager:
                     raise NotImplementedError(
                         f"None of the workers are healthy. Distributed BOLT couldn't restart the training. Restart the training again from last saved state."
                     )
+        if next_retry_wait_seconds >= worker_wait_time_out:
+            raise TimeoutError(
+                f"Waited for {worker_wait_time_out}! check_worker_availability timed out!"
+            )
 
     def train_batch(self, epoch):
         """
         Trains the model and returns whether all workers have a next batch.
         """
-        self.check_worker_availability()
         all_workers_have_next_batch = self._compute_and_store_next_batch_gradients()
         self._communicate()
         self._update_parameters()
@@ -238,10 +260,14 @@ class TrainStateManager:
 
     def move_to_next_epoch(self):
         self.batch_id_within_epoch = 0
-        self.worker_manager.foreach_worker(lambda worker: worker.move_to_next_epoch())
+        self.check_worker_availability_and_call(
+            lambda worker: worker.move_to_next_epoch()
+        )
 
     def freeze_hash_tables(self):
-        self.worker_manager.foreach_worker(lambda worker: worker.freeze_hash_tables())
+        self.check_worker_availability_and_call(
+            lambda worker: worker.freeze_hash_tables()
+        )
 
     def _compute_and_store_next_batch_gradients(self):
         """
@@ -249,7 +275,7 @@ class TrainStateManager:
         workers and returns whether all workers that respond have a next batch.
         """
         start_calculating_gradients_time = time.time()
-        has_next_batches = self.worker_manager.foreach_worker(
+        has_next_batches = self.check_worker_availability_and_call(
             lambda worker: worker.compute_and_store_next_batch_gradients()
         ).get()
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
@@ -266,11 +292,11 @@ class TrainStateManager:
             self.run_linear_cluster_communication()
         elif self.communication_type == "circular":
             self.run_circular_cluster_communication()
-            self.worker_manager.foreach_worker(
+            self.check_worker_availability_and_call(
                 lambda worker: worker.receive_gradients()
             )
         elif self.communication_type == "gloo":
-            self.worker_manager.foreach_worker(
+            self.check_worker_availability_and_call(
                 lambda worker: worker.receive_gradients()
             )
 
@@ -281,7 +307,9 @@ class TrainStateManager:
         Calls each update_parameters on each worker to update parameters
         """
         start_update_parameter_time = time.time()
-        self.worker_manager.foreach_worker(lambda worker: worker.update_parameters())
+        self.check_worker_availability_and_call(
+            lambda worker: worker.update_parameters()
+        )
         self.bolt_computation_time += time.time() - start_update_parameter_time
 
     def _log_post_batch(self, epoch):

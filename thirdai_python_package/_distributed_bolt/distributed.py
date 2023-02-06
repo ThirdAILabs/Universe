@@ -325,11 +325,21 @@ class DistributedDataParallel:
 
         self.workers = [self.primary_worker] + self.replica_workers
 
-        self.worker_manager = FaultTolerantWorkerManager(
+        worker_manager = FaultTolerantWorkerManager(
             workers=self.workers, init_id=0, logging=self.logging
         )
 
-        self.worker_manager.foreach_worker(
+        self.train_state_manager = TrainStateManager(
+            self.workers,
+            self.primary_worker,
+            self.logging,
+            self.communication_type,
+            self.train_sources,
+            self.train_config,
+            worker_manager,
+        )
+
+        self.train_state_manager.check_worker_availability_and_call(
             [
                 lambda worker: worker.prepare_for_training(
                     bolt_graph=bolt_graph_ref,
@@ -338,9 +348,11 @@ class DistributedDataParallel:
             ],
         )
 
-        num_batches_remote_results = self.worker_manager.foreach_worker(
-            lambda worker: worker.num_of_batches()
-        ).get()
+        num_batches_remote_results = (
+            self.train_state_manager.check_worker_availability_and_call(
+                lambda worker: worker.num_of_batches()
+            ).get()
+        )
 
         self.num_of_batches = min(
             [
@@ -350,16 +362,18 @@ class DistributedDataParallel:
             ]
         )
 
+        self.train_state_manager.set_friend_for_primary_worker()
+
         self.logging.info(
             f"Data loaded on all nodes, minimmum num batches is {self.num_of_batches}."
         )
         self.total_batches_trained = 0
 
-    def train_on_epoch(self, train_state_manager, epoch):
-        while train_state_manager.train_batch(epoch=epoch):
+    def train_on_epoch(self, epoch):
+        while self.train_state_manager.train_batch(epoch=epoch):
             self.total_batches_trained += 1
         self.total_batches_trained += 1
-        train_state_manager.move_to_next_epoch()
+        self.train_state_manager.move_to_next_epoch()
 
     def train(self, freeze_hash_tables=False) -> Dict[str, Union[int, str]]:
         """
@@ -376,29 +390,19 @@ class DistributedDataParallel:
             total batches trained and total real time.
         """
         train_start = time.time()
-        train_state_manager = TrainStateManager(
-            self.workers,
-            self.primary_worker,
-            self.logging,
-            self.communication_type,
-            self.train_sources,
-            self.train_config,
-            self.worker_manager,
-        )
 
         starting_epoch = 0
         if freeze_hash_tables:
             self.train_on_epoch(
-                train_state_manager=train_state_manager,
                 epoch=starting_epoch,
             )
 
-            train_state_manager.freeze_hash_tables()
+            self.train_state_manager.freeze_hash_tables()
 
             starting_epoch += 1
 
         for epoch in range(starting_epoch, self.train_config.num_epochs):
-            self.train_on_epoch(train_state_manager=train_state_manager, epoch=epoch)
+            self.train_on_epoch(epoch)
 
         return {
             "time": time.time() - train_start,
