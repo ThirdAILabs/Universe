@@ -276,13 +276,6 @@ class FullyConnectedLayer final {
 
   template <class Archive>
   void save(Archive& archive) const {
-    /**
-     * TODO(pratik): Ideally we would want to save optimizer with something like
-     * opt.save() which saves optimizer states rather than just popuulating the
-     * model, and then concat it while loading model rather than using this
-     * flag. But this current contruct doesn't allow a independent optimizer
-     * save, would lead a lot of refactoring.
-     */
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
             _disable_sparse_parameter_updates, _sampling_mode,

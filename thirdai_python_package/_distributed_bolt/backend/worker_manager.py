@@ -1,6 +1,6 @@
 import copy
 from dataclasses import dataclass
-from typing import Any, Callable, Iterator, List, Mapping, Tuple, Union
+from typing import Any, Callable, Optional, List, Union
 
 import numpy as np
 import ray
@@ -98,7 +98,7 @@ class FaultTolerantWorkerManager:
         self,
         func: Union[Callable[[Any], Any], List[Callable[[Any], Any]]],
         *,
-        remote_worker_ids: List[int] = None,
+        remote_worker_ids: Optional[List[int]] = None,
         timeout_seconds=None,
         fetch_local: bool = True,
     ):

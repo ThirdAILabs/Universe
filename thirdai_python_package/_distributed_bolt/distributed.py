@@ -12,7 +12,6 @@ from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
 from thirdai._distributed_bolt.backend.worker_manager import FaultTolerantWorkerManager
 from thirdai._distributed_bolt.dataset_loaders import (
-    DistributedDatasetLoader,
     DistributedUDTDatasetLoader,
 )
 from thirdai._thirdai import bolt
@@ -263,7 +262,7 @@ class DistributedDataParallel:
         cluster_config: RayTrainingClusterConfig,
         model: bolt.nn.Model,
         train_config: bolt.TrainConfig,
-        train_sources: Union[List[DistributedDatasetLoader], List[str]],
+        train_sources,
     ):
         """
         This constructor returns a new DistributedDataParallel object that can

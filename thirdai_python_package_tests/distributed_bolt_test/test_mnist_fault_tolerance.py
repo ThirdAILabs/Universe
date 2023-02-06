@@ -107,7 +107,7 @@ def evaluated_distributed_mnist_model(distributed_model):
 
 
 @pytest.fixture(scope="module")
-def train_distributed_bolt_check(request, ray_two_node_cluster_config):
+def train_distributed_bolt_evaluate(request, ray_two_node_cluster_config):
 
     train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=3)
     distributed_model, mini_cluster = get_distributed_mnist_model(
@@ -154,17 +154,17 @@ def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config)
 # pytestmark.mark.distributed prevents it from running in our normal unit and
 # integration test pipeline where ray isn't a dependency.
 @pytest.mark.parametrize(
-    "train_distributed_bolt_check",
+    "train_distributed_bolt_evaluate",
     ["linear", "circular"],
     indirect=True,
 )
-def test_distributed_mnist(train_distributed_bolt_check):
+def test_distributed_mnist(train_distributed_bolt_evaluate):
     import multiprocessing
 
     if multiprocessing.cpu_count() < 2:
         assert False, "not enough cpus for distributed training"
 
-    assert train_distributed_bolt_check[0]["categorical_accuracy"] > 0.9
+    assert train_distributed_bolt_evaluate[0]["categorical_accuracy"] > 0.9
 
 
 @pytest.mark.parametrize(

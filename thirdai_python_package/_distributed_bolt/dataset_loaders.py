@@ -1,55 +1,10 @@
-from abc import ABC, abstractmethod
 from typing import Callable, List, Optional, Tuple, Union
 
 from thirdai import data, dataset
 from thirdai.bolt.udt_modifications import _create_data_source
 
 
-class DistributedDatasetLoader(ABC):
-    @abstractmethod
-    def next() -> Optional[
-        Tuple[
-            Union[dataset.BoltDataset, List[dataset.BoltDataset]],
-            dataset.BoltDataset,
-        ]
-    ]:
-        """
-        This function returns training data and labels if there is training data left for
-        ingestion for a epoch else, will return NULL.
-
-        Returns:
-            Optional[ Tuple[ Union[dataset.BoltDataset, List[dataset.BoltDataset]], dataset.BoltDataset, ] ]:
-                It either returns tuple of training data and training labels or None.
-        """
-        pass
-
-    @abstractmethod
-    def restart() -> None:
-        """
-        This function is needed to be called before every epoch other than 1st epoch. It moves
-        the training data pointer to the front to restart ingestion of training data again.
-        """
-        pass
-
-    @abstractmethod
-    def load() -> None:
-        """
-        This function is called only once before the first epoch. As this function is called
-        independently inside each worker, it can be used for multiple purposes which includes
-        initializing construct for data sources which cannot be pickled across workers(ex. ifstream),
-        and if some initialization which needed to done independently for each workers.
-        """
-        pass
-
-    @abstractmethod
-    def get_current_data_chunk_id() -> int:
-        """
-        This function returns the current chunk id which is loaded. It is called to retrieve chunk
-        id for fault tolerance.
-        """
-
-
-class DistributedUDTDatasetLoader(DistributedDatasetLoader):
+class DistributedUDTDatasetLoader:
     def __init__(
         self,
         train_file: str,
@@ -99,7 +54,7 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.current_chunk_id = 0
 
 
-class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
+class DistributedGenericInMemoryDatasetLoader:
     """
     Wraps a generator function that returns a single pair of training and label
     datasets into an in memory data generator ready to pass into the distributed
@@ -170,7 +125,7 @@ class DistributedSvmDatasetLoader(DistributedGenericInMemoryDatasetLoader):
         )
 
 
-class DistributedTabularDatasetLoader(DistributedDatasetLoader):
+class DistributedTabularDatasetLoader:
     def __init__(
         self,
         column_map_generator: data.ColumnMapGenerator,
