@@ -206,7 +206,7 @@ setup(
             "mock",
         ],
         "benchmark": [
-            "toml",
+            "python-dotenv" "toml",
             "psutil",
             "scikit-learn",
             "mlflow==1.23.1",
