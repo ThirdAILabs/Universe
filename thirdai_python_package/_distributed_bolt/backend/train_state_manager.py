@@ -1,8 +1,8 @@
 import time
+from typing import Any, Callable, List, Optional, Union
 
 import numpy as np
 import ray
-from typing import Any, Callable, List, Optional, Union
 from ray.exceptions import RayError
 
 
