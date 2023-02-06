@@ -30,6 +30,8 @@ def main():
     exit_code = 0
     for config in configs:
         config_name = config.__name__
+        if config_name != "Amazon670kConfig":
+            continue
         run_name = f"{prefix}_{current_date}"
 
         command = f"python3 benchmarks-v2/runner.py --run_name={run_name} --config_name={config_name}"

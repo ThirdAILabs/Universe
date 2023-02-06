@@ -2,7 +2,7 @@ from configs import BenchmarkConfig
 from thirdai import bolt
 
 
-class BoltBenchmarkConfig(BenchmarkConfig, ABC):
+class BoltBenchmarkConfig(BenchmarkConfig):
     loss_fn = "CategoricalCrossEntropyLoss"
     hidden_sparsity = 1.0
     output_spasity = 1.0
@@ -12,6 +12,7 @@ class BoltBenchmarkConfig(BenchmarkConfig, ABC):
     output_activation = "Softmax"
     output_sampling_config = None
     compute_roc_auc = False
+
 
 # TODO(blaise): Add config for Movie Lens
 class Amazon670kConfig(BoltBenchmarkConfig):
@@ -112,6 +113,7 @@ class CriteoDLRMConfig(BoltBenchmarkConfig):
     max_num_numerical_features = 13
     max_num_categorical_features = 26
 
+    compute_roc_auc = True
     nodes = {
         "numerical_input": {"type": "Input", "predecessor": None, "dim": 13},
         "hidden1": {
