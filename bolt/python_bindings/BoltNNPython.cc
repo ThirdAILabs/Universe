@@ -1,5 +1,6 @@
 #include "BoltNNPython.h"
 #include "PybindUtils.h"
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/DistributedTrainingWrapper.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
@@ -13,6 +14,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/graph/nodes/Switch.h>
+#include <auto_ml/src/models/OutputProcessor.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/functional.h>
@@ -526,6 +528,17 @@ That's all for now, folks! More docs coming soon :)
           "The third element, the active neuron matrix, is only present if "
           "we are returning activations AND the ouptut is sparse.",
           bolt::python::OutputRedirect())
+      .def(
+          "predict",
+          [](BoltGraph& model, std::vector<BoltVector> data,
+             bool use_sparse_inference,
+             const std::optional<std::string>& output_node_name) {
+            auto output_vec = model.predictSingle(
+                std::move(data), use_sparse_inference, output_node_name);
+            return automl::models::convertBoltVectorToNumpy(output_vec);
+          },
+          py::arg("data"), py::arg("use_sparse_inference") = false,
+          py::arg("output") = std::nullopt)
       .def("save", &BoltGraph::save, py::arg("filename"))
       .def_static("load", &BoltGraph::load, py::arg("filename"))
       .def("__str__",

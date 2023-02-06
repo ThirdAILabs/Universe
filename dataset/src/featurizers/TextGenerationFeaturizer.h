@@ -41,6 +41,9 @@ class TextGenerationFeaturizer final : public Featurizer {
     return {std::numeric_limits<uint32_t>::max(), _vocab_size};
   }
 
+  static std::vector<BoltVector> featurizeInferenceSample(
+      const std::vector<uint32_t>& tokens);
+
  private:
   /**
    * Helper function to featurize a single line from the text dataset and

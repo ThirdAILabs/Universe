@@ -76,4 +76,14 @@ std::vector<uint32_t> TextGenerationFeaturizer::parseTokens(
   return tokens;
 }
 
+std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
+    const std::vector<uint32_t>& tokens) {
+  auto pairgrams = token_encoding::pairgrams(tokens);
+
+  BoltVector vector = BoltVector::makeSparseVector(
+      pairgrams, std::vector<float>(pairgrams.size(), 1.0));
+
+  return {std::move(vector)};
+}
+
 }  // namespace thirdai::dataset
