@@ -2,7 +2,7 @@ from configs import BenchmarkConfig
 from thirdai import bolt
 
 
-class BoltBenchmarkConfig(BenchmarkConfig):
+class BoltBenchmarkConfig(BenchmarkConfig, ABC):
     loss_fn = "CategoricalCrossEntropyLoss"
     hidden_sparsity = 1.0
     output_spasity = 1.0
@@ -12,7 +12,6 @@ class BoltBenchmarkConfig(BenchmarkConfig):
     output_activation = "Softmax"
     output_sampling_config = None
     compute_roc_auc = False
-
 
 # TODO(blaise): Add config for Movie Lens
 class Amazon670kConfig(BoltBenchmarkConfig):
@@ -160,20 +159,3 @@ class CriteoDLRMConfig(BoltBenchmarkConfig):
             "activation": "Softmax",
         },
     }
-
-
-class FineGrainedBoltBenchmarksConfig(BoltBenchmarkConfig):
-    experiment_name = ""
-
-    hidden_and_output_sparsities = [
-        0.01,
-        0.05,
-        0.1,
-        0.3,
-        0.5,
-        0.6,
-        0.7,
-        0.8,
-        0.9,
-        1.0,
-    ]
