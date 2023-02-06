@@ -1,6 +1,6 @@
 import copy
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, List, Union
+from typing import Any, Callable, List, Optional, Union
 
 import numpy as np
 import ray

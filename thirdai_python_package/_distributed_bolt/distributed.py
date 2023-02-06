@@ -11,9 +11,7 @@ from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
 from thirdai._distributed_bolt.backend.worker_manager import FaultTolerantWorkerManager
-from thirdai._distributed_bolt.dataset_loaders import (
-    DistributedUDTDatasetLoader,
-)
+from thirdai._distributed_bolt.dataset_loaders import DistributedUDTDatasetLoader
 from thirdai._thirdai import bolt
 
 from .utils import get_num_cpus, init_logging
