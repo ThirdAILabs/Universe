@@ -65,10 +65,10 @@ class UDTFactory {
   static GraphUDT buildGraphUDT(
       py::object& obj, data::ColumnDataTypes data_types,
       std::string graph_file_name, std::string source, std::string target,
-      uint32_t n_target_classes, std::vector<std::string> relationship_columns,
-      bool neighbourhood_context, bool label_context,
-      uint32_t kth_neighbourhood, char delimeter,
-      std::optional<std::unordered_map<uint32_t, std::vector<uint32_t>>>
+      uint32_t n_target_classes, uint32_t max_neighbours,
+      std::vector<std::string> relationship_columns, bool neighbourhood_context,
+      bool label_context, uint32_t kth_neighbourhood, char delimeter,
+      std::optional<std::unordered_map<std::string, std::vector<std::string>>>
           adj_list);
 
   // These need to be here instead of inside UDTFactory because otherwise I was

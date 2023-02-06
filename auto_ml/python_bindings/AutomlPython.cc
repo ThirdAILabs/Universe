@@ -59,7 +59,7 @@ void defineAutomlInModule(py::module_& module) {
            docs::TEXT_CLASSIFIER_INIT)
       .def("__new__", &UDTFactory::buildGraphUDT, py::arg("data_types"),
            py::arg("graph_file_name"), py::arg("source"), py::arg("target"),
-           py::arg("n_target_classes"),
+           py::arg("n_target_classes"), py::arg("max_neighbours"),
            py::arg("relationship_columns") = std::nullopt,
            py::arg("neighbourhood_context") = false,
            py::arg("label_context") = false, py::arg("kth_neighbourhood") = 0,
@@ -214,7 +214,7 @@ void createModelsSubmodule(py::module_& module) {
                                                                  "UDTGraph")
       .def(py::init(&GraphUDT::buildGraphUDT), py::arg("data_types"),
            py::arg("graph_file_name"), py::arg("source"), py::arg("target"),
-           py::arg("n_target_classes"),
+           py::arg("n_target_classes"), py::arg("max_neighbours"),
            py::arg("relationship_columns") = std::nullopt,
            py::arg("neighbourhood_context") = false,
            py::arg("label_context") = false, py::arg("kth_neighbourhood") = 0,
@@ -470,17 +470,17 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
 GraphUDT UDTFactory::buildGraphUDT(
     py::object& obj, data::ColumnDataTypes data_types,
     std::string graph_file_name, std::string source, std::string target,
-    uint32_t n_target_classes, std::vector<std::string> relationship_columns,
-    bool neighbourhood_context, bool label_context, uint32_t kth_neighbourhood,
-    char delimeter,
-    std::optional<std::unordered_map<uint32_t, std::vector<uint32_t>>>
+    uint32_t n_target_classes, uint32_t max_neighbours,
+    std::vector<std::string> relationship_columns, bool neighbourhood_context,
+    bool label_context, uint32_t kth_neighbourhood, char delimeter,
+    std::optional<std::unordered_map<std::string, std::vector<std::string>>>
         adj_list) {
   (void)obj;
   return GraphUDT::buildGraphUDT(
       std::move(data_types), std::move(graph_file_name), std::move(source),
-      std::move(target), n_target_classes, std::move(relationship_columns),
-      neighbourhood_context, label_context, kth_neighbourhood, delimeter,
-      std::move(adj_list));
+      std::move(target), n_target_classes, max_neighbours,
+      std::move(relationship_columns), neighbourhood_context, label_context,
+      kth_neighbourhood, delimeter, std::move(adj_list));
 }
 
 void UDTFactory::save_classifier(const UniversalDeepTransformer& classifier,

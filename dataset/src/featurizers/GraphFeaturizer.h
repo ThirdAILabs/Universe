@@ -1,10 +1,11 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <memory>
 #include <optional>
 #include <unordered_map>
 #include <utility>
@@ -13,20 +14,47 @@ namespace thirdai::dataset {
 
 class GraphFeaturizer final : public Featurizer {
  public:
-  GraphFeaturizer(uint32_t k_hop,
-                  std::vector<ColumnIdentifier> numerical_columns,
-                  std::shared_ptr<Block> label_block,
-                  std::vector<ColumnIdentifier>
-                      relationship_columns,
-                  char delimiter = ',')
-      : _k_hop(k_hop),
-        _numerical_columns(std::move(numerical_columns)),
-        _relationship_columns(std::move(relationship_columns)),
-        _label_block(std::move(label_block)),
-        _delimiter(delimiter) {}
+  GraphFeaturizer(std::vector<std::shared_ptr<Block>> input_blocks,
+                  std::vector<std::shared_ptr<Block>> label_blocks,
+                  ColumnIdentifier source_col, uint32_t max_neighbours,
+                  char delimiter = ',',
+                  std::optional<uint32_t> hash_range = std::nullopt)
+      : _input_blocks(std::move(input_blocks)),
+        _label_blocks(std::move(label_blocks)),
+        _source_col(std::move(source_col)),
+        _max_neighbours(max_neighbours),
+        _delimiter(delimiter),
+        _hash_range(hash_range) {
+    _node_vocab = ThreadSafeVocabulary::make(/*vocab_size=*/0,
+                                             /*limit_vocab_size=*/false);
+
+    _node_vocab->getUid("null_neighbour");
+  }
+
+  static std::shared_ptr<GraphFeaturizer> make(
+      std::vector<std::shared_ptr<Block>> input_blocks,
+      std::vector<std::shared_ptr<Block>> label_blocks,
+      ColumnIdentifier source_col, uint32_t max_neighbours,
+      char delimiter = ',', std::optional<uint32_t> hash_range = std::nullopt) {
+    return std::make_shared<GraphFeaturizer>(
+        std::move(input_blocks), std::move(label_blocks), source_col,
+        max_neighbours, delimiter, hash_range);
+  }
 
   std::vector<std::vector<BoltVector>> featurize(
-      const std::vector<std::string>& rows) final;
+      const LineInputBatch& input_batch) final;
+
+  std::vector<std::vector<BoltVector>> featurize(
+      ColumnarInputBatch& input_batch);
+
+  uint32_t getInputDim() const {
+    return _hash_range.value_or(_input_blocks.featureDim());
+  }
+
+  uint32_t getLabelDim() const { return _label_blocks.featureDim(); }
+
+  void updateColumns(const std::string& header,
+                     std::vector<ColumnIdentifier>& columns) const;
 
   bool expectsHeader() const final { return true; }
 
@@ -34,23 +62,30 @@ class GraphFeaturizer final : public Featurizer {
 
   size_t getNumDatasets() final { return 3; }
 
-  void updateAdjacencyList(
-      const std::unordered_map<std::string, std::vector<std::string>>&
-          adj_list);
+  void updateNeighbours(
+      const std::unordered_map<std::string, std::unordered_set<std::string>>&
+          neighbours);
 
  private:
-  std::tuple<BoltVector, BoltVector, BoltVector> processRow(
-      const std::string& row) const;
+  std::exception_ptr featurizeSampleInBatch(
+      uint32_t index_in_batch, ColumnarInputBatch& input_batch,
+      std::vector<BoltVector>& batch_inputs,
+      std::vector<BoltVector>& batch_token_inputs,
+      std::vector<BoltVector>& batch_labels);
 
-  void addNodeInfo(const std::string& node_id,
-                   const std::vector<std::string>& neighbours);
+  BoltVector buildTokenVector(ColumnarInputSample& sample);
 
-  uint32_t _k_hop;
-  std::vector<ColumnIdentifier> _numerical_columns;
-  std::unordered_map<std::string, std::vector<std::string>> _adjacency_list;
-  std::vector<ColumnIdentifier> _relationship_columns;
-  std::shared_ptr<Block> _label_block;
+  std::unordered_map<std::string, std::unordered_set<std::string>> _neighbours;
+  ThreadSafeVocabularyPtr _node_vocab;
+  BlockList _input_blocks;
+  BlockList _label_blocks;
+  ColumnIdentifier _source_col;
+  uint32_t _expected_num_cols;
+  uint32_t _max_neighbours;
   char _delimiter;
+  std::optional<uint32_t> _hash_range;
 };
+
+using GraphFeaturizerPtr = std::shared_ptr<GraphFeaturizer>;
 
 }  // namespace thirdai::dataset
