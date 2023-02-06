@@ -39,7 +39,8 @@
 //     {0, 1, 2, 5},    {0, 1, 5},       {0, 1, 2, 3, 4}};
 
 // TEST(GraphTest, correctGraphTest) {
-//   auto adj_list = GraphDatasetFactory::createGraph(rows, relationship_columns);
+//   auto adj_list = GraphDatasetFactory::createGraph(rows,
+//   relationship_columns);
 
 //   for (uint32_t i = 0; i < adj_list.size(); i++) {
 //     for (auto j : adj_list[i]) {
