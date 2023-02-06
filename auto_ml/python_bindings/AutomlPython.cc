@@ -179,13 +179,14 @@ void createModelsSubmodule(py::module_& module) {
           "get_entity_embedding",
           [](UniversalDeepTransformer& model,
              std::variant<uint32_t, std::string> label) {
-            auto embedding = model.getEntityEmbedding(std::move(label));
+            std::vector<float> embedding =
+                model.getEntityEmbedding(std::move(label));
             models::NumpyArray<float> numpy_array(embedding.size());
             std::copy(embedding.begin(), embedding.end(),
                       numpy_array.mutable_data());
             return numpy_array;
           },
-          py::arg("label_id"), docs::UDT_LABEL_EMBEDDING)
+          py::arg("label_id"), docs::UDT_ENTITY_EMBEDDING)
       .def("get_prediction_threshold",
            &UniversalDeepTransformer::getPredictionThreshold)
       .def("set_prediction_threshold",

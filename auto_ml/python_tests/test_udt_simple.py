@@ -229,16 +229,22 @@ def test_embedding_representation_returns_correct_dimension():
 
 
 @pytest.mark.release
-def test_label_embedding_returns_correct_dimension():
+def test_entity_embedding():
     for embedding_dim in [128, 256]:
-        model = make_simple_trained_model(embedding_dim=embedding_dim, integer_label=False)
-        embedding = model.get_entity_embedding("0")
-        assert embedding.shape == (embedding_dim,)
-        assert (embedding != 0).any()
+        for integer_label in [True, False]:
+            model = make_simple_trained_model(embedding_dim=embedding_dim, integer_label=integer_label)
+            output_labels = [0, 1, 2] if integer_label else ["0", "1", "4"]
+            for output_id, output_label in enumerate(output_labels):
+                embedding = model.get_entity_embedding(output_label)
+                assert embedding.shape == (embedding_dim,)
+                weights = model._get_model().get_layer("fc_2").weights.get()
+
+                assert (weights[output_id] == embedding).all()
+
 
 
 @pytest.mark.release
-def test_label_embedding_fails_on_large_label():
+def test_entity_embedding_fails_on_large_label():
     model = make_simple_trained_model(embedding_dim=100, integer_label=True)
 
     with pytest.raises(

@@ -767,10 +767,8 @@ std::vector<float> FullyConnectedLayer::getWeightsByNeuron(uint32_t neuron_id) {
         std::to_string(_dim) + ".");
   }
 
-  std::vector<float> embedding(_prev_dim);
-  std::copy(std::begin(_weights) + neuron_id * _prev_dim,
-            std::begin(_weights) + neuron_id * _prev_dim + _prev_dim,
-            embedding.begin());
+  std::vector<float> embedding(_weights.begin() + neuron_id * _prev_dim,
+                               _weights.begin() + (neuron_id + 1) * _prev_dim);
   return embedding;
 }
 

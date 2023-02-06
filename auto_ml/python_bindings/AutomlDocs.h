@@ -783,15 +783,17 @@ Notes:
 
 )pbdoc";
 
-const char* const UDT_LABEL_EMBEDDING = R"pbdoc(
-Returns an embedding representation for the given output label id. 
+const char* const UDT_ENTITY_EMBEDDING = R"pbdoc(
+Returns an embedding representation for a given output entity, an entity being 
+the name of a class predicted as output.
 
 Args:
-    label_id (int): The id of the label to get the embedding for. Should be 
-    less than the number of classes used in the model.
+    label_id (Union[int, str]): The the name of the entity to get an embedding for.
+    If integer_target=True, this function should take in an integer from 0 to 
+    n_target_classes - 1 instead of a string.
 
 Returns:
-    A 1D numpy array of floats representing a dense embedding of that label_id.
+    A 1D numpy array of floats representing a dense embedding of that entity.
 )pbdoc";
 
 const char* const UDT_INDEX = R"pbdoc(

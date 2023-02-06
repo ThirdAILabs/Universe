@@ -108,20 +108,13 @@ class UniversalDeepTransformer final : public ModelPipeline {
     // "fc_1" is the name of the penultimate layer.
   }
 
+  /**
+   * Given a class name (or class id in the case of integer_target = true),
+   * return an embedding for that entity. This is really just the weights for
+   * the last layer that point to the corresponding output neuron.
+   */
   std::vector<float> getEntityEmbedding(
-      std::variant<uint32_t, std::string> label) {
-    uint32_t label_id = _dataset_factory->labelToNeuronId(std::move(label));
-    auto fc_layers =
-        _model->getNodes().back()->getInternalFullyConnectedLayers();
-
-    if (fc_layers.size() != 1) {
-      throw std::invalid_argument(
-          "This UDT architecture currently doesn't support getting entity "
-          "embeddings.");
-    }
-
-    return fc_layers.front()->getWeightsByNeuron(label_id);
-  }
+      std::variant<uint32_t, std::string> label);
 
   /**
    * This method will perform cold start pretraining on the model if the model
