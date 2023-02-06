@@ -142,7 +142,6 @@ def construct_fully_connected_node(benchmark_config, is_hidden_layer=True):
         sampling_config=sampling_config,
     )
 
-
 def get_train_and_eval_configs(benchmark_config, callbacks=None):
     learning_rate = benchmark_config.learning_rate
     metrics = [benchmark_config.metric_type]
