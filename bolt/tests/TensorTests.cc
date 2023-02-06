@@ -97,7 +97,7 @@ TEST(TensorTests, DenseBoltBatchToTensor) {
   EXPECT_NE(tensor->activationsPtr(), nullptr);
   EXPECT_EQ(tensor->gradientsPtr(), nullptr);
 
-  for (uint32_t i = 0; i < 4; i++) {
+  for (uint32_t i = 0; i < vectors_copy.size(); i++) {
     thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
         tensor->getVector(i), vectors[i]);
   }
@@ -122,7 +122,7 @@ TEST(TensorTests, SparseBoltBatchToTensor) {
   EXPECT_NE(tensor->activationsPtr(), nullptr);
   EXPECT_EQ(tensor->gradientsPtr(), nullptr);
 
-  for (uint32_t i = 0; i < 4; i++) {
+  for (uint32_t i = 0; i < vectors_copy.size(); i++) {
     thirdai::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
         tensor->getVector(i), vectors[i]);
   }
@@ -145,7 +145,7 @@ TEST(TensorTests, DenseVectorDimMismatch) {
 }
 
 TEST(TensorTests, SparseVectorDimMismatch) {
-  BoltBatch batch({BoltVector::makeSparseVector({1, 4}, {1.0})});
+  BoltBatch batch({BoltVector::makeSparseVector({1, 4}, {1.0, 1.0})});
 
   // NOLINTNEXTLINE
   ASSERT_THROW(tensor::Tensor::convert(std::move(batch), 2),

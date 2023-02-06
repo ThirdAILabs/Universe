@@ -90,7 +90,10 @@ uint32_t Tensor::dim() const { return _dim; }
 
 std::optional<uint32_t> Tensor::nonzeros() const { return _nonzeros; }
 
-BoltVector& Tensor::getVector(uint32_t index) { return _vectors[index]; }
+BoltVector& Tensor::getVector(uint32_t index) {
+  assert(index < _vectors.size());
+  return _vectors[index];
+}
 
 uint32_t Tensor::batchSize() const { return _vectors.size(); }
 
