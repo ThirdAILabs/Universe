@@ -155,15 +155,15 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     shared(rows, numerical_columns, processed_numerical_columns, neighbours)
     for (uint32_t i = 0; i < rows.size(); i++) {
       for (uint32_t j = 0; j < numerical_columns.size(); j++) {
-        int value = 0;
+        int value = std::stoi(rows[i][numerical_columns[j]]);
         if (!neighbours[i].empty()) {
           for (auto neighbour : neighbours[i]) {
-            value += stoi(rows[neighbour][numerical_columns[j]]);
+            value += std::stoi(rows[neighbour][numerical_columns[j]]);
           }
           processed_numerical_columns[i][j] =
-              std::to_string(static_cast<float>(value) / neighbours[i].size());
+              std::to_string(static_cast<float>(value) / (neighbours[i].size()+1));
         } else {
-          processed_numerical_columns[i][j] = "0";
+          processed_numerical_columns[i][j] = std::to_string(value);
         }
       }
     }
