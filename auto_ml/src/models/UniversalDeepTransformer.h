@@ -108,17 +108,19 @@ class UniversalDeepTransformer final : public ModelPipeline {
     // "fc_1" is the name of the penultimate layer.
   }
 
-  std::vector<float> getEntityEmbedding(uint32_t label) {
+  std::vector<float> getEntityEmbedding(
+      std::variant<uint32_t, std::string> label) {
+    uint32_t label_id = _dataset_factory->labelToNeuronId(std::move(label));
     auto fc_layers =
         _model->getNodes().back()->getInternalFullyConnectedLayers();
 
     if (fc_layers.size() != 1) {
       throw std::invalid_argument(
-          "This UDT architecture currently doesn't support getting label "
+          "This UDT architecture currently doesn't support getting entity "
           "embeddings.");
     }
 
-    return fc_layers.front()->getWeightsByNeuron(label);
+    return fc_layers.front()->getWeightsByNeuron(label_id);
   }
 
   /**
