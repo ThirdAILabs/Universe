@@ -184,7 +184,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
           }
           processed_numerical_columns[i][j] =
               std::to_string(static_cast<float>(value) /
-                             neighbours.at(rows[i][source_col_num]).size());
+                             (neighbours.at(rows[i][source_col_num]).size()+1));
         } else {
           processed_numerical_columns[i][j] = std::to_string(value);
         }

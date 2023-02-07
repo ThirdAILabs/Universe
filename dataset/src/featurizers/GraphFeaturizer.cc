@@ -100,8 +100,9 @@ std::exception_ptr GraphFeaturizer::featurizeSampleInBatch(
 
 BoltVector GraphFeaturizer::buildTokenVector(ColumnarInputSample& sample) {
   auto node_value = std::string(sample.column(_source_col));
-  std::vector<uint32_t> indices(_max_neighbours);
+  std::vector<uint32_t> indices(_max_neighbours,0);
   uint32_t i = 0;
+  if(_neighbours.find(node_value) != _neighbours.end()) {
   for (auto it = _neighbours[node_value].begin();
        it != _neighbours[node_value].end(); it++, i++) {
     if (i >= _max_neighbours) {
@@ -109,8 +110,6 @@ BoltVector GraphFeaturizer::buildTokenVector(ColumnarInputSample& sample) {
     }
     indices[i] = _node_vocab->getUid(*it);
   }
-  while (++i < _max_neighbours) {
-    indices[i] = 0;
   }
   std::vector<float> values(_max_neighbours, 1.0);
 
