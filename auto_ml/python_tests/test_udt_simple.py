@@ -229,19 +229,21 @@ def test_embedding_representation_returns_correct_dimension():
 
 
 @pytest.mark.unit
-def test_entity_embedding():
-    for embedding_dim in [128, 256]:
-        for integer_label in [True, False]:
-            model = make_simple_trained_model(
-                embedding_dim=embedding_dim, integer_label=integer_label
-            )
-            output_labels = [0, 1, 2] if integer_label else ["0", "1", "4"]
-            for output_id, output_label in enumerate(output_labels):
-                embedding = model.get_entity_embedding(output_label)
-                assert embedding.shape == (embedding_dim,)
-                weights = model._get_model().get_layer("fc_2").weights.get()
+@pytest.mark.parametrize(
+    "embedding_dim, integer_label",
+    [(128, True), (128, False), (256, True), (256, False)],
+)
+def test_entity_embedding(embedding_dim, integer_label):
+    model = make_simple_trained_model(
+        embedding_dim=embedding_dim, integer_label=integer_label
+    )
+    output_labels = [0, 1, 2] if integer_label else ["0", "1", "4"]
+    for output_id, output_label in enumerate(output_labels):
+        embedding = model.get_entity_embedding(output_label)
+        assert embedding.shape == (embedding_dim,)
+        weights = model._get_model().get_layer("fc_2").weights.get()
 
-                assert (weights[output_id] == embedding).all()
+        assert (weights[output_id] == embedding).all()
 
 
 @pytest.mark.release
