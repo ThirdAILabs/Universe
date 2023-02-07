@@ -1,18 +1,10 @@
 import argparse
-import os
-
-import mlflow
 import numpy as np
+from typing import Union
 from configs import bolt_configs
-from configs.bolt_configs import BoltBenchmarkConfig
-from dotenv import load_dotenv
+from configs import BoltBenchmarkConfig, DLRMConfig
 from thirdai import bolt, dataset
 from thirdai.experimental import MlflowCallback
-
-
-def get_mlflow_uri():
-    load_dotenv()
-    return os.getenv("MLFLOW_URI")
 
 
 def validate_dataset_attributes(config):
@@ -53,14 +45,14 @@ def load_click_through_dataset(
     max_categorical_features,
     delimiter,
 ):
-    data, _, labels = dataset.load_click_through_dataset(
+    bolt_dataset, bolt_token_dataset, labels = dataset.load_click_through_dataset(
         filename=filename,
         batch_size=batch_size,
         max_num_numerical_features=max_num_numerical_features,
         max_categorical_features=max_categorical_features,
         delimiter=delimiter,
     )
-    return data, labels
+    return bolt_dataset, bolt_token_dataset, labels
 
 
 def load_datasets(config):
@@ -92,7 +84,11 @@ def load_datasets(config):
         assert hasattr(config, "max_num_numerical_features")
         assert hasattr(config, "max_num_categorical_features")
 
-        train_data, _, train_labels = load_click_through_dataset(
+        (
+            train_bolt_dataset,
+            train_bolt_token_dataset,
+            train_labels,
+        ) = load_click_through_dataset(
             filename=config.train_dataset_path,
             batch_size=config.train_batch_size,
             max_num_numerical_features=config.max_num_numerical_features,
@@ -100,13 +96,19 @@ def load_datasets(config):
             delimiter=config.delimiter,
         )
 
-        test_data, _, test_labels = load_click_through_dataset(
+        (
+            test_bolt_dataset,
+            test_bolt_token_dataset,
+            test_labels,
+        ) = load_click_through_dataset(
             filename=config.test_dataset_path,
             batch_size=config.test_batch_size,
             max_num_numerical_features=config.max_num_numerical_features,
-            max_categorical_features=config.max_categorical_features,
+            max_categorical_features=config.max_num_categorical_features,
             delimiter=config.delimiter,
         )
+        train_data = [train_bolt_dataset, train_bolt_token_dataset]
+        test_data = [test_bolt_dataset, test_bolt_token_dataset]
 
     return train_data, train_labels, test_data, test_labels
 
@@ -141,6 +143,7 @@ def construct_fully_connected_node(benchmark_config, is_hidden_layer=True):
         activation=activation,
         sampling_config=sampling_config,
     )
+
 
 def get_train_and_eval_configs(benchmark_config, callbacks=None):
     learning_rate = benchmark_config.learning_rate
@@ -226,6 +229,7 @@ def define_dlrm_model(config, loss_function: bolt.nn.losses):
     model = bolt.nn.Model(inputs=[input_node, token_input], output=output)
     model.compile(loss=loss_function, print_when_done=False)
     model.summary(detailed=True)
+    return model
 
 
 def define_bolt_model(config: BoltBenchmarkConfig):
@@ -258,7 +262,7 @@ def define_bolt_model(config: BoltBenchmarkConfig):
 
 
 def compute_roc_auc(predict_output, test_labels_path, mlflow_callback=None):
-    with open(config.train_dataset_path) as file:
+    with open(test_labels_path) as file:
         test_labels = [np.array([int(line[0]) for line in file.readlines()])]
 
     if len(predict_output) != 2:
@@ -287,13 +291,14 @@ def compute_roc_auc(predict_output, test_labels_path, mlflow_callback=None):
         mlflow_callback.log_additional_metric(key="roc_auc", value=auc)
 
 
-def launch_bolt_benchmark(config: BoltBenchmarkConfig, run_name: str) -> None:
-    if not issubclass(config, BoltBenchmarkConfig):
+def run_bolt_benchmark(
+    config: Union[BoltBenchmarkConfig, DLRMConfig], run_name: str, mlflow_uri: str
+) -> None:
+    if not (issubclass(config, BoltBenchmarkConfig) or issubclass(config, DLRMConfig)):
         raise ValueError(
-            f"The input config must be a bolt config. Given a config of type {config.__class__}"
+            f"The input config must be a Bolt or DLRM config. Given a config of type {config.__bases__}"
         )
 
-    mlflow_uri = get_mlflow_uri()
     experiment_name = config.experiment_name
     dataset_name = config.dataset_name
 
@@ -344,15 +349,20 @@ def launch_bolt_benchmark(config: BoltBenchmarkConfig, run_name: str) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Benchmark a dataset with Bolt")
     parser.add_argument(
+        "--mlflow_uri", required=True, help="MLflow URI to log metrics and artifacts."
+    )
+    parser.add_argument(
         "--run_name", default="", required=True, help="The job name to track in MLflow"
     )
     parser.add_argument(
         "--config_name",
         default="",
         required=True,
-        help="The name of the config for Bolt",
+        help="The python class name of the Bolt benchmark config",
     )
 
     arguments = parser.parse_args()
     config = getattr(bolt_configs, arguments.config_name)
-    launch_bolt_benchmark(config=config, run_name=arguments.run_name)
+    run_bolt_benchmark(
+        config=config, run_name=arguments.run_name, mlflow_uri=arguments.mlflow_uri
+    )

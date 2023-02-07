@@ -1,17 +1,5 @@
-from configs import BenchmarkConfig
+from configs import BoltBenchmarkConfig, DLRMConfig
 from thirdai import bolt
-
-
-class BoltBenchmarkConfig(BenchmarkConfig):
-    loss_fn = "CategoricalCrossEntropyLoss"
-    hidden_sparsity = 1.0
-    output_spasity = 1.0
-    learning_rate = 1e-04
-    hidden_activation = "ReLU"
-    hidden_sampling_config = None
-    output_activation = "Softmax"
-    output_sampling_config = None
-    compute_roc_auc = False
 
 
 # TODO(blaise): Add config for Movie Lens
@@ -97,21 +85,17 @@ class WayfairConfig(BoltBenchmarkConfig):
     ]
 
 
-class CriteoDLRMConfig(BoltBenchmarkConfig):
+class CriteoDLRMConfig(DLRMConfig):
     dataset_name = "criteo_46m"
-    experiment_name = "Bolt_Criteo46M"
+    experiment_name = "Bolt_Criteo46M_Testing"
 
     rehashing_factor = 6400
     rebuild_hash_tables_factor = 128000
-    learning_rate = 1e-04
 
     train_dataset_path = "/share/data/criteo/train_shuf.txt"
     test_dataset_path = "/share/data/criteo/test_shuf.txt"
     dataset_format = "click_through"
     train_batch_size, test_batch_size = 512, 256
-    delimiter = " "
-    max_num_numerical_features = 13
-    max_num_categorical_features = 26
 
     compute_roc_auc = True
     nodes = {
