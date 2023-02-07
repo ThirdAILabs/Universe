@@ -283,15 +283,13 @@ using MetadataCategoricalBlockPtr = std::shared_ptr<MetadataCategoricalBlock>;
 
 class GraphCategoricalBlock : public CategoricalBlock {
  public:
-  GraphCategoricalBlock(ColumnIdentifier col, PreprocessedVectorsPtr vectors,
-                        std::vector<std::unordered_set<uint32_t>> neighbours,
-                        ColumnNumberMap node_id_map)
+  GraphCategoricalBlock(
+      ColumnIdentifier col, PreprocessedVectorsPtr vectors,
+      std::unordered_map<std::string, std::unordered_set<std::string>>
+          neighbours)
       : CategoricalBlock(std::move(col), vectors->dim, std::nullopt),
         _vectors(std::move(vectors)),
-        _neighbours(std::move(neighbours)),
-        _node_id_map(std::move(node_id_map)) {
-    _id_to_node_map = _node_id_map.getColumnNumToColNameMap();
-  }
+        _neighbours(std::move(neighbours)) {}
 
   std::string getResponsibleCategory(
       uint32_t index, const std::string_view& category_value) const final {
@@ -299,12 +297,12 @@ class GraphCategoricalBlock : public CategoricalBlock {
     return "Neighbours for the node '" + std::string(category_value) + "'";
   }
 
-  static auto make(ColumnIdentifier col, PreprocessedVectorsPtr vectors,
-                   std::vector<std::unordered_set<uint32_t>> neighbours,
-                   ColumnNumberMap node_id_map) {
+  static auto make(
+      ColumnIdentifier col, PreprocessedVectorsPtr vectors,
+      std::unordered_map<std::string, std::unordered_set<std::string>>
+          neighbours) {
     return std::make_shared<GraphCategoricalBlock>(
-        std::move(col), std::move(vectors), std::move(neighbours),
-        std::move(node_id_map));
+        std::move(col), std::move(vectors), std::move(neighbours));
   }
 
  protected:
@@ -312,19 +310,15 @@ class GraphCategoricalBlock : public CategoricalBlock {
                                     uint32_t num_categories_in_sample,
                                     SegmentedFeatureVector& vec) final {
     (void)num_categories_in_sample;
-    for (const auto& neighbour :
-         _neighbours[_node_id_map.at(std::string(category))]) {
-      _vectors->appendPreprocessedFeaturesToVector(_id_to_node_map[neighbour],
-                                                   vec);
+    for (const auto& neighbour : _neighbours[std::string(category)]) {
+      _vectors->appendPreprocessedFeaturesToVector(neighbour, vec);
     }
     return nullptr;
   }
 
  private:
   PreprocessedVectorsPtr _vectors;
-  std::vector<std::unordered_set<uint32_t>> _neighbours;
-  ColumnNumberMap _node_id_map;
-  std::vector<std::string> _id_to_node_map;
+  std::unordered_map<std::string, std::unordered_set<std::string>> _neighbours;
 };
 
 /**

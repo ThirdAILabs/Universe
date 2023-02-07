@@ -100,15 +100,15 @@ class TabularFeaturizer : public Featurizer {
         parallel, hash_range);
   }
 
+  static std::exception_ptr buildVector(BoltVector& vector, BlockList& blocks,
+                                        ColumnarInputSample& sample,
+                                        std::optional<uint32_t> hash_range);
+
  private:
   std::exception_ptr featurizeSampleInBatch(
       uint32_t index_in_batch, ColumnarInputBatch& input_batch,
       std::vector<BoltVector>& batch_inputs,
       std::vector<BoltVector>& batch_labels);
-
-  static std::exception_ptr buildVector(BoltVector& vector, BlockList& blocks,
-                                        ColumnarInputSample& sample,
-                                        std::optional<uint32_t> hash_range);
 
   static std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
       bool blocks_dense, std::optional<uint32_t> hash_range,
