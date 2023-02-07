@@ -8,6 +8,7 @@
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
 #include <random>
 #include <sstream>
@@ -171,12 +172,12 @@ std::string xorConfig(const std::string& config) {
 }
 
 void dumpConfig(const std::string& config, const std::string& filename) {
-  std::ofstream file(filename);
+  std::ofstream file = dataset::SafeFileIO::ofstream(filename);
   file << xorConfig(config);
 }
 
 std::string loadConfig(const std::string& filename) {
-  std::ifstream file(filename);
+  std::ifstream file = dataset::SafeFileIO::ifstream(filename);
 
   std::stringstream buffer;
   buffer << file.rdbuf();
