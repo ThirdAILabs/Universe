@@ -109,6 +109,14 @@ class UniversalDeepTransformer final : public ModelPipeline {
   }
 
   /**
+   * Given a class name (or class id in the case of integer_target = true),
+   * return an embedding for that entity. This is really just the weight vector
+   * for the neuron in the output layer corresponding to the given label.
+   */
+  std::vector<float> getEntityEmbedding(
+      std::variant<uint32_t, std::string> label);
+
+  /**
    * This method will perform cold start pretraining on the model if the model
    * is a text classification model with a single text column as input and a
    * categorical column as the target. For this pretraining the strong and weak
