@@ -278,7 +278,7 @@ std::wstring stripAccents(const std::wstring& text) {
   return output;
 }
 
-std::vector<std::wstring> splitOnPunctuation(const std::wstring& text) {
+std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text) {
   size_t i = 0;
   bool startNewWord = true;
   std::vector<std::wstring> output;

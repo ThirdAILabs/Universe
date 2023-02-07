@@ -59,7 +59,7 @@ std::wstring lower(const std::wstring& s);
 std::wstring normalizeSpaces(const std::wstring& text);
 std::wstring stripAccents(const std::wstring& text);
 
-std::vector<std::wstring> splitOnPunctuation(const std::wstring& text);
+std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text);
 std::vector<std::wstring> splitOnWhitespace(const std::wstring& text);
 
 }  // namespace thirdai::text

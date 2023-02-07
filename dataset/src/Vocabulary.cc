@@ -289,21 +289,29 @@ std::wstring Wordpiece::tokenizeChineseChars(const std::wstring& text) {
 
 std::vector<std::wstring> Wordpiece::basicTokenize(const std::string& text,
                                                    bool to_lower) {
-  std::wstring nText = text::convertToUnicode(text);
-  nText = text::normalizeSpaces(nText);
-  nText = tokenizeChineseChars(nText);
+  std::wstring u_text = text::convertToUnicode(text);
+  u_text = text::normalizeSpaces(u_text);
+  u_text = tokenizeChineseChars(u_text);
 
-  const std::vector<std::wstring>& origTokens = text::splitOnWhitespace(nText);
-  std::vector<std::wstring> splitTokens;
-  for (std::wstring token : origTokens) {
+  std::vector<std::wstring> tokens;
+
+  // Split at (normalized) whitespaces to begin with.
+  std::vector<std::wstring> space_tokens = text::splitOnWhitespace(u_text);
+  for (std::wstring space_token : space_tokens) {
     if (to_lower) {
-      token = text::lower(token);
-      token = text::stripAccents(token);
+      space_token = text::lower(space_token);
+      space_token = text::stripAccents(space_token);
     }
-    const auto& tokens = text::splitOnPunctuation(token);
-    splitTokens.insert(splitTokens.end(), tokens.begin(), tokens.end());
+
+    // Tokenize by punctuations. This means punctuations appear in text as
+    // tokens.
+    std::vector<std::wstring> punct_tokens =
+        text::tokenizeByPunctuations(space_token);
+
+    tokens.insert(tokens.end(), punct_tokens.begin(), punct_tokens.end());
   }
-  return text::splitOnWhitespace(text::join(splitTokens, L" "));
+
+  return tokens;
 }
 
 }  // namespace thirdai::dataset
