@@ -228,7 +228,7 @@ def test_embedding_representation_returns_correct_dimension():
         assert (embedding != 0).any()
 
 
-@pytest.mark.release
+@pytest.mark.unit
 def test_entity_embedding():
     for embedding_dim in [128, 256]:
         for integer_label in [True, False]:
