@@ -166,8 +166,8 @@ class Wordpiece : public Vocabulary {
   // Runs wordpiece tokenization on supplied text (which is most of the time
   // expected to be a subword).
   std::vector<std::wstring> wordpieceTokenize(
-      const std::wstring& text, const std::wstring& unkToken = L"[UNK]",
-      size_t maxInputCharsPerWord = 200) const;
+      const std::wstring& text, const std::wstring& unk = L"[UNK]",
+      size_t max_chars_per_wordpiece = 200) const;
 
   // Wrapper function sequencing together basic and wordpiece (BPE)
   // tokenizations.

@@ -153,53 +153,61 @@ Wordpiece::WordToId Wordpiece::load(const std::string& vocab_fpath) {
 }
 
 std::vector<std::wstring> Wordpiece::wordpieceTokenize(
-    const std::wstring& text, const std::wstring& unkToken /*= L"[UNK]"*/,
-    size_t maxInputCharsPerWord /*= 200*/) const {
-  std::vector<std::wstring> outputTokens;
+    const std::wstring& text, const std::wstring& unk /*= L"[UNK]"*/,
+    size_t max_chars_per_wordpiece /*= 200*/) const {
+  std::vector<std::wstring> worpieces;
   for (const std::wstring& token : text::splitOnWhitespace(text)) {
-    if (token.size() > maxInputCharsPerWord) {
-      outputTokens.push_back(unkToken);
+    if (token.size() > max_chars_per_wordpiece) {
+      worpieces.push_back(unk);
     }
+
+    std::vector<std::wstring> subwords;
+
+    // TODO(jerin-thirdai): This block looks like it can be simplified. It is
+    // currently riddled with jump statements and can be more structured.
+
     bool isBad = false;
     size_t start = 0;
-    std::vector<std::wstring> subTokens;
+
     while (start < token.size()) {
       size_t end = token.size();
-      std::wstring curSubstr;
-      bool hasCurSubstr = false;
+      std::wstring candidate;
+      bool candidate_valid = false;
       while (start < end) {
-        std::wstring substr;
+        std::wstring buffer;
 
         // Add ## prefix if we're in the middle of a word.
         if (start > 0) {
-          substr += L"##";
+          buffer += L"##";
         }
 
-        substr += token.substr(start, end - start);
+        buffer += token.substr(start, end - start);
 
-        if (_word_to_id.find(substr) != _word_to_id.end()) {
-          curSubstr = substr;
-          hasCurSubstr = true;
+        if (_word_to_id.find(buffer) != _word_to_id.end()) {
+          candidate = buffer;
+          candidate_valid = true;
           break;
         }
 
         end--;
       }
-      if (!hasCurSubstr) {
+
+      if (!candidate_valid) {
         isBad = true;
         break;
       }
-      subTokens.push_back(curSubstr);
+
+      subwords.push_back(candidate);
       start = end;
     }
+
     if (isBad) {
-      outputTokens.push_back(unkToken);
+      worpieces.push_back(unk);
     } else {
-      outputTokens.insert(outputTokens.end(), subTokens.begin(),
-                          subTokens.end());
+      worpieces.insert(worpieces.end(), subwords.begin(), subwords.end());
     }
   }
-  return outputTokens;
+  return worpieces;
 }
 
 Wordpiece::Wordpiece(const std::string& vocab_fpath, bool to_lower)
