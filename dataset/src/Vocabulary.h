@@ -113,6 +113,10 @@ class FixedVocabulary : public Vocabulary {
   uint32_t add(const std::string_view& token_view);
 };
 
+// Implementation follows
+// https://github.com/huggingface/transformers/blob/447808c85f0e6d6b0aeeb07214942bf1e578f9d2/src/transformers/models/bert/tokenization_bert.py
+// with some elements inducted into a common (text) library hoping for wider
+// usage in thirdai source.
 class Wordpiece : public Vocabulary {
  public:
   explicit Wordpiece(const std::string& vocab_fpath, bool to_lower = true);
@@ -152,13 +156,13 @@ class Wordpiece : public Vocabulary {
   // Helper method to load vocabulary from path at construction.
   static WordToId load(const std::string& vocab_fpath);
 
-  // Runs a basic tokenization, without accounting for BPE subwords. These
+  // Runs a basic tokenization, without accounting for subwords. These
   // include normalizing text with NFKC and spaces (the original surface text is
   // lost here), and further split at punctuations (with checks from unicode
   // categories) and normalized whitespaces.
   //
   // This is prior to being fed to wordpiece tokenization, which accounts for
-  // BPE subwords (ie, subwords are scanned for within the word / token that
+  // subwords (ie, subwords are scanned for within the word / token that
   // came out of basic tokenization).
   static std::vector<std::wstring> basicTokenize(const std::string& text,
                                                  bool to_lower);

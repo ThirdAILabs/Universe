@@ -155,18 +155,22 @@ Wordpiece::WordToId Wordpiece::load(const std::string& vocab_fpath) {
 std::vector<std::wstring> Wordpiece::wordpieceTokenize(
     const std::wstring& text, const std::wstring& unk /*= L"[UNK]"*/,
     size_t max_chars_per_wordpiece /*= 200*/) const {
+  // This is mostly from
+  // https://github.com/huggingface/transformers/blob/447808c85f0e6d6b0aeeb07214942bf1e578f9d2/src/transformers/models/bert/tokenization_bert.py#L512-L558
   std::vector<std::wstring> wordpieces;
+
+  // TODO(jerin-thirdai): The following block looks like it can be simplified.
+  // It is currently riddled with jump statements and can be more structured.
+
   for (const std::wstring& token : text::splitOnWhitespace(text)) {
     if (token.size() > max_chars_per_wordpiece) {
       wordpieces.push_back(unk);
+      continue;
     }
 
     std::vector<std::wstring> subwords;
 
-    // TODO(jerin-thirdai): This block looks like it can be simplified. It is
-    // currently riddled with jump statements and can be more structured.
-
-    bool isBad = false;
+    bool is_bad = false;
     size_t start = 0;
 
     while (start < token.size()) {
@@ -193,7 +197,7 @@ std::vector<std::wstring> Wordpiece::wordpieceTokenize(
       }
 
       if (!candidate_valid) {
-        isBad = true;
+        is_bad = true;
         break;
       }
 
@@ -201,7 +205,7 @@ std::vector<std::wstring> Wordpiece::wordpieceTokenize(
       start = end;
     }
 
-    if (isBad) {
+    if (is_bad) {
       wordpieces.push_back(unk);
     } else {
       wordpieces.insert(wordpieces.end(), subwords.begin(), subwords.end());
