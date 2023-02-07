@@ -57,17 +57,19 @@ def test_fixed_vocab():
 
         # Nothing maps to unknown, as the above is taken from BERT (thirdai)
         assert vocab.unk_id() not in pieces
+
+        # Assert piece level reconstruction.
         tokens = sample.split()
         for piece, token in zip(pieces, tokens):
             # Assert reconstruction works
             if "THIRDAI_TEST_DEBUG" in os.environ:
                 print("{}: {}".format(token, piece), end=" ")
 
-            # Assert sentence-level reconstruction
-            assert vocab.decode(pieces) == sample
+        # Assert sentence-level reconstruction
+        assert vocab.decode(pieces) == sample
 
-            if "THIRDAI_TEST_DEBUG" in os.environ:
-                print()
+        if "THIRDAI_TEST_DEBUG" in os.environ:
+            print()
 
         assert len(pieces) == len(tokens)
 
@@ -87,6 +89,7 @@ def test_wordpiece_vocab():
         assert vocab.unk_id() not in pieces
         tokens = tokenized.split()
 
+        # Assert piece level reconstruction.
         for piece, token in zip(pieces, tokens):
             # Assert reconstruction works
             if "THIRDAI_TEST_DEBUG" in os.environ:
@@ -95,11 +98,11 @@ def test_wordpiece_vocab():
             # Assert the piece matches the token from huggingface.
             assert vocab.id(token) == piece
 
-            # Assert sentence-level reconstruction
-            decoded = vocab.decode(pieces)
-            assert decoded == tokenized.replace(" ##", "")
+        # Assert sentence-level reconstruction
+        decoded = vocab.decode(pieces)
+        assert decoded == tokenized.replace(" ##", "")
 
-            if "THIRDAI_TEST_DEBUG" in os.environ:
-                print()
+        if "THIRDAI_TEST_DEBUG" in os.environ:
+            print()
 
         # assert len(pieces) == len(tokens)
