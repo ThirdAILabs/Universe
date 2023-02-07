@@ -221,7 +221,10 @@ class BoltGraph {
 
   class BatchProcessingState {
    public:
-    BatchProcessingState() : _allocated_batch_size(0), _using_sparsity(false) {}
+    BatchProcessingState()
+        : _allocated_batch_size(0),
+          _using_sparsity(false),
+          _optimizer_initialized(false) {}
 
     BatchProcessingState(uint32_t batch_size, bool using_sparsity)
         : _allocated_batch_size(batch_size),
