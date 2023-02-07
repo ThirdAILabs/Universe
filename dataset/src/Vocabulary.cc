@@ -182,6 +182,7 @@ std::vector<std::wstring> Wordpiece::wordpieceTokenize(
           hasCurSubstr = true;
           break;
         }
+
         end--;
       }
       if (!hasCurSubstr) {
@@ -203,19 +204,18 @@ std::vector<std::wstring> Wordpiece::wordpieceTokenize(
 
 Wordpiece::Wordpiece(const std::string& vocab_fpath, bool to_lower)
     : _word_to_id(load(vocab_fpath)), _to_lower(to_lower) {
-  for (auto& v : _word_to_id) {
+  for (const auto& v : _word_to_id) {
     _id_to_word[v.second] = v.first;
   }
 }
 
 std::vector<std::wstring> Wordpiece::tokenize(const std::string& text) const {
-  std::vector<std::wstring> splitTokens;
+  std::vector<std::wstring> subwords;
   for (auto& token : basicTokenize(text, _to_lower)) {
-    for (auto& subToken : wordpieceTokenize(token)) {
-      splitTokens.push_back(subToken);
-    }
+    std::vector<std::wstring> wordpieces = wordpieceTokenize(token);
+    subwords.insert(subwords.end(), wordpieces.begin(), wordpieces.end());
   }
-  return splitTokens;
+  return subwords;
 }
 std::vector<uint32_t> Wordpiece::encode(
     const std::string_view& sentence) const {
