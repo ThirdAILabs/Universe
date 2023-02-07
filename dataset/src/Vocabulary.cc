@@ -211,10 +211,13 @@ Wordpiece::Wordpiece(const std::string& vocab_fpath, bool to_lower)
 
 std::vector<std::wstring> Wordpiece::tokenize(const std::string& text) const {
   std::vector<std::wstring> subwords;
-  for (auto& token : basicTokenize(text, _to_lower)) {
+
+  std::vector<std::wstring> tokens = basicTokenize(text, _to_lower);
+  for (const std::wstring& token : tokens) {
     std::vector<std::wstring> wordpieces = wordpieceTokenize(token);
     subwords.insert(subwords.end(), wordpieces.begin(), wordpieces.end());
   }
+
   return subwords;
 }
 std::vector<uint32_t> Wordpiece::encode(
