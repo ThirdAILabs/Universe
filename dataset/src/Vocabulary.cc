@@ -155,10 +155,10 @@ Wordpiece::WordToId Wordpiece::load(const std::string& vocab_fpath) {
 std::vector<std::wstring> Wordpiece::wordpieceTokenize(
     const std::wstring& text, const std::wstring& unk /*= L"[UNK]"*/,
     size_t max_chars_per_wordpiece /*= 200*/) const {
-  std::vector<std::wstring> worpieces;
+  std::vector<std::wstring> wordpieces;
   for (const std::wstring& token : text::splitOnWhitespace(text)) {
     if (token.size() > max_chars_per_wordpiece) {
-      worpieces.push_back(unk);
+      wordpieces.push_back(unk);
     }
 
     std::vector<std::wstring> subwords;
@@ -202,12 +202,12 @@ std::vector<std::wstring> Wordpiece::wordpieceTokenize(
     }
 
     if (isBad) {
-      worpieces.push_back(unk);
+      wordpieces.push_back(unk);
     } else {
-      worpieces.insert(worpieces.end(), subwords.begin(), subwords.end());
+      wordpieces.insert(wordpieces.end(), subwords.begin(), subwords.end());
     }
   }
-  return worpieces;
+  return wordpieces;
 }
 
 Wordpiece::Wordpiece(const std::string& vocab_fpath, bool to_lower)
