@@ -51,9 +51,9 @@ std::wstring strip(
     const std::wstring& text,
     const std::wstring& strip_characters = DEFAULT_STRIP_CHARACTERS);
 
-std::string convertFromUnicode(const std::wstring& wText);
-std::wstring convertToUnicode(const std::string& text);
-std::string normalizeNFD(const std::string& s);
+std::string fromUnicode(const std::wstring& wText);
+std::wstring toUnicode(const std::string& text);
+std::string normalize(const std::string& s);
 std::wstring lower(const std::wstring& s);
 
 std::wstring normalizeSpaces(const std::wstring& text);

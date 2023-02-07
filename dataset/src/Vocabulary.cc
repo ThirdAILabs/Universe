@@ -141,7 +141,7 @@ Wordpiece::WordToId Wordpiece::load(const std::string& vocab_fpath) {
   std::ifstream ifs(vocab_fpath, std::ifstream::in);
   std::string line;
   while (getline(ifs, line)) {
-    std::wstring token = text::convertToUnicode(line);
+    std::wstring token = text::toUnicode(line);
     if (token.empty()) {
       break;
     }
@@ -243,7 +243,7 @@ std::vector<uint32_t> Wordpiece::encode(
 
 uint32_t Wordpiece::id(const std::string_view& token_view) const {
   std::string token(token_view.data(), token_view.size());
-  std::wstring wtoken = text::convertToUnicode(text::normalizeNFD(token));
+  std::wstring wtoken = text::toUnicode(text::normalize(token));
   auto query = _word_to_id.find(wtoken);
   if (query != _word_to_id.end()) {
     return query->second;
@@ -272,7 +272,7 @@ std::string Wordpiece::decode(const std::vector<uint32_t>& token_ids) const {
     auto query = _id_to_word.find(token_id);
     assert(query != _id_to_word.end());
 
-    std::string token = text::convertFromUnicode(query->second);
+    std::string token = text::fromUnicode(query->second);
     bool is_subword_suffix = token.size() >= 2 && token.substr(0, 2) == "##";
 
     if (i != 0 and !is_subword_suffix) {
@@ -300,7 +300,7 @@ std::wstring Wordpiece::tokenizeChineseChars(const std::wstring& text) {
 
 std::vector<std::wstring> Wordpiece::basicTokenize(const std::string& text,
                                                    bool to_lower) {
-  std::wstring u_text = text::convertToUnicode(text);
+  std::wstring u_text = text::toUnicode(text);
   u_text = text::normalizeSpaces(u_text);
   u_text = tokenizeChineseChars(u_text);
 

@@ -44,7 +44,7 @@ std::vector<std::string_view> split(std::string_view sentence, char delimiter) {
 // https://unicode.org/reports/tr15/#Norm_Forms
 // https://ssl.icu-project.org/apiref/icu4c/uchar_8h.html
 //
-std::string convertFromUnicode(const std::wstring& wText) {
+std::string fromUnicode(const std::wstring& wText) {
   char dst[64];
   std::string ret;
   for (auto c : wText) {
@@ -93,7 +93,7 @@ std::wstring join(const std::vector<std::wstring>& atoms,
   return result;
 }
 
-std::string normalizeNFD(const std::string& s) {
+std::string normalize(const std::string& s) {
   std::string ret;
 
   // The utf8proc API takes in a const char *, and returns a new char * pointing
@@ -166,7 +166,7 @@ std::vector<std::wstring> splitOnWhitespace(const std::wstring& text) {
   return split(text);
 }
 
-std::wstring convertToUnicode(const std::string& text) {
+std::wstring toUnicode(const std::string& text) {
   size_t i = 0;
   std::wstring ret;
   while (i < text.size()) {
@@ -261,7 +261,7 @@ std::wstring stripAccents(const std::wstring& text) {
   // Strips accents from a piece of text.
   std::wstring nText;
   try {
-    nText = convertToUnicode(normalizeNFD(convertFromUnicode(text)));
+    nText = toUnicode(normalize(fromUnicode(text)));
   } catch (std::bad_cast& e) {
     std::cerr << "bad_cast" << std::endl;
     return L"";
