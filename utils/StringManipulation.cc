@@ -279,23 +279,28 @@ std::wstring stripAccents(const std::wstring& text) {
 }
 
 std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text) {
-  size_t i = 0;
-  bool startNewWord = true;
+  std::wstring buffer;
   std::vector<std::wstring> output;
-  while (i < text.size()) {
-    wchar_t c = text[i];
+  for (wchar_t c : text) {
     if (isPunctuation(c)) {
-      output.push_back(std::wstring(&c, 1));
-      startNewWord = true;
-    } else {
-      if (startNewWord) {
-        output.push_back(std::wstring());
+      if (!buffer.empty()) {
+        // Push the current string, move makes string empty again.
+        output.push_back(std::move(buffer));
       }
-      startNewWord = false;
-      output[output.size() - 1] += c;
+
+      // Push punctuation as a separate token.
+      output.push_back(std::wstring(&c, 1));
+    } else {
+      // Not a punctuation. Append to buffer.
+      buffer += c;
     }
-    i++;
   }
+
+  // Overhang, if not empty. Push it in as a token.
+  if (!buffer.empty()) {
+    output.push_back(std::move(buffer));
+  }
+
   return output;
 }
 
