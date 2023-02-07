@@ -475,9 +475,6 @@ def download_brazilian_houses_dataset():
     train_df = df.iloc[:8000, :]
     test_df = df.iloc[8000:, :]
 
-    train_df = train_df.drop("Unnamed: 0", axis=1)
-    test_df = test_df.drop("Unnamed: 0", axis=1)
-
     train_df.to_csv(TRAIN_FILE, index=False)
     test_df.to_csv(TEST_FILE, index=False)
 
