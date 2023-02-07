@@ -110,8 +110,8 @@ class UniversalDeepTransformer final : public ModelPipeline {
 
   /**
    * Given a class name (or class id in the case of integer_target = true),
-   * return an embedding for that entity. This is really just the weights for
-   * the last layer that point to the corresponding output neuron.
+   * return an embedding for that entity. This is really just the weight vector
+   * for the neuron in the output layer corresponding to the given label.
    */
   std::vector<float> getEntityEmbedding(
       std::variant<uint32_t, std::string> label);
