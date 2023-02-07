@@ -41,8 +41,8 @@ std::wstring join(const std::vector<std::wstring>& atoms,
                   const std::wstring& delimiter);
 
 template <class Predicate>
-std::vector<std::wstring> split_if(const std::wstring& text,
-                                   Predicate predicate);
+std::vector<std::wstring> splitIf(const std::wstring& text,
+                                  Predicate predicate);
 std::vector<std::wstring> split(
     const std::wstring& text,
     const std::wstring& split_characters = DEFAULT_STRIP_CHARACTERS);

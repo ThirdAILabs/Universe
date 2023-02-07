@@ -59,8 +59,8 @@ std::string convertFromUnicode(const std::wstring& wText) {
 }
 
 template <class Predicate>
-std::vector<std::wstring> split_if(const std::wstring& text,
-                                   Predicate predicate) {
+std::vector<std::wstring> splitIf(const std::wstring& text,
+                                  Predicate predicate) {
   std::vector<std::wstring> result;
   size_t current = 0;
   size_t start = 0;
@@ -156,7 +156,7 @@ std::vector<std::wstring> split(
                        [c](wchar_t delimiter) { return c == delimiter; });
   };
 
-  return split_if(text, is_delimiter);
+  return splitIf(text, is_delimiter);
 }
 
 std::vector<std::wstring> splitOnWhitespace(const std::wstring& text) {
