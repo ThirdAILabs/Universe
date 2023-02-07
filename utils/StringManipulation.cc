@@ -286,6 +286,7 @@ std::vector<std::wstring> tokenizeByPunctuations(const std::wstring& text) {
       if (!buffer.empty()) {
         // Push the current string, move makes string empty again.
         output.push_back(std::move(buffer));
+        buffer = L"";
       }
 
       // Push punctuation as a separate token.
