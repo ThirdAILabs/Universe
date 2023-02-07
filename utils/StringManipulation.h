@@ -56,9 +56,7 @@ std::wstring convertToUnicode(const std::string& text);
 std::string normalizeNFD(const std::string& s);
 std::wstring lower(const std::wstring& s);
 
-std::vector<std::wstring> tokenize(const std::string& text, bool lower_case);
 std::wstring normalizeSpaces(const std::wstring& text);
-std::wstring tokenizeChineseChars(const std::wstring& text);
 std::wstring stripAccents(const std::wstring& text);
 
 std::vector<std::wstring> splitOnPunctuation(const std::wstring& text);

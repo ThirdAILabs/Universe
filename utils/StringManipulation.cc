@@ -258,20 +258,6 @@ std::wstring normalizeSpaces(const std::wstring& text) {
   return output;
 }
 
-std::wstring tokenizeChineseChars(const std::wstring& text) {
-  std::wstring output;
-  for (wchar_t c : text) {
-    if (isChineseChar(c)) {
-      output += L' ';
-      output += c;
-      output += L' ';
-    } else {
-      output += c;
-    }
-  }
-  return output;
-}
-
 std::wstring stripAccents(const std::wstring& text) {
   // Strips accents from a piece of text.
   std::wstring nText;
@@ -312,24 +298,6 @@ std::vector<std::wstring> splitOnPunctuation(const std::wstring& text) {
     i++;
   }
   return output;
-}
-
-std::vector<std::wstring> tokenize(const std::string& text, bool lower_case) {
-  std::wstring nText = convertToUnicode(text);
-  nText = normalizeSpaces(nText);
-  nText = tokenizeChineseChars(nText);
-
-  const std::vector<std::wstring>& origTokens = splitOnWhitespace(nText);
-  std::vector<std::wstring> splitTokens;
-  for (std::wstring token : origTokens) {
-    if (lower_case) {
-      token = lower(token);
-      token = stripAccents(token);
-    }
-    const auto& tokens = splitOnPunctuation(token);
-    splitTokens.insert(splitTokens.end(), tokens.begin(), tokens.end());
-  }
-  return splitOnWhitespace(join(splitTokens, L" "));
 }
 
 }  // namespace thirdai::text

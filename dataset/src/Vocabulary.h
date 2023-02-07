@@ -115,7 +115,11 @@ class FixedVocabulary : public Vocabulary {
 
 class Wordpiece : public Vocabulary {
  public:
-  explicit Wordpiece(const std::string& vocabFile, bool lower_case = true);
+  explicit Wordpiece(const std::string& vocab_fpath, bool to_lower = true);
+
+  // Encode a sentence into vector of integral vocab-ids inferred from tokens.
+  // Whitespace tokenization under the hood, stripping leading, trailing
+  // spaces. See decode(...) for inverse operation.
   std::vector<uint32_t> encode(const std::string_view& sentence) const final;
 
   // Decodes given token_ids into a string. Throws out of bounds exception if
@@ -144,13 +148,38 @@ class Wordpiece : public Vocabulary {
  private:
   using Vocab = std::unordered_map<std::wstring, size_t>;
   using InvVocab = std::unordered_map<size_t, std::wstring>;
-  static Vocab loadVocab(const std::string& vocabFile);
-  std::vector<std::wstring> tokenize(const std::string& text) const;
-  std::vector<uint32_t> encode_tokens(
-      const std::vector<std::wstring>& tokens) const;
-  std::vector<std::wstring> wordpiece_tokenize(
+
+  // Helper method to load vocabulary from path at construction.
+  static Vocab load(const std::string& vocab_fpath);
+
+  // Runs a basic tokenization, without accounting for BPE subwords. These
+  // include normalizing text with NFKC and spaces (the original surface text is
+  // lost here), and further split at punctuations (with checks from unicode
+  // categories) and normalized whitespaces.
+  //
+  // This is prior to being fed to wordpiece tokenization, which accounts for
+  // BPE subwords (ie, subwords are scanned for within the word / token that
+  // came out of basic tokenization).
+  static std::vector<std::wstring> basicTokenize(const std::string& text,
+                                                 bool to_lower);
+
+  // Runs wordpiece tokenization on supplied text (which is most of the time
+  // expected to be a subword).
+  std::vector<std::wstring> wordpieceTokenize(
       const std::wstring& text, const std::wstring& unkToken = L"[UNK]",
       size_t maxInputCharsPerWord = 200) const;
+
+  // Wrapper function sequencing together basic and wordpiece (BPE)
+  // tokenizations.
+  std::vector<std::wstring> tokenize(const std::string& text) const;
+
+  // An additional step used in BERT tokenizer (or at least in implementations
+  // available publically).
+  static std::wstring tokenizeChineseChars(const std::wstring& text);
+
+  std::vector<uint32_t> encodeTokens(
+      const std::vector<std::wstring>& tokens) const;
+
   Vocab _vocab;
   InvVocab _inverse;
   std::string _vocab_fpath;

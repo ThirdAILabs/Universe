@@ -135,10 +135,10 @@ uint32_t FixedVocabulary::add(const std::string_view& token_view) {
   return token_id;
 }
 
-Wordpiece::Vocab Wordpiece::loadVocab(const std::string& vocabFile) {
+Wordpiece::Vocab Wordpiece::load(const std::string& vocab_fpath) {
   Wordpiece::Vocab vocab;
   size_t index = 0;
-  std::ifstream ifs(vocabFile, std::ifstream::in);
+  std::ifstream ifs(vocab_fpath, std::ifstream::in);
   std::string line;
   while (getline(ifs, line)) {
     std::wstring token = text::convertToUnicode(line);
@@ -152,7 +152,7 @@ Wordpiece::Vocab Wordpiece::loadVocab(const std::string& vocabFile) {
   return vocab;
 }
 
-std::vector<std::wstring> Wordpiece::wordpiece_tokenize(
+std::vector<std::wstring> Wordpiece::wordpieceTokenize(
     const std::wstring& text, const std::wstring& unkToken /*= L"[UNK]"*/,
     size_t maxInputCharsPerWord /*= 200*/) const {
   std::vector<std::wstring> outputTokens;
@@ -201,8 +201,8 @@ std::vector<std::wstring> Wordpiece::wordpiece_tokenize(
   return outputTokens;
 }
 
-Wordpiece::Wordpiece(const std::string& vocabFile, bool lower_case)
-    : _vocab(loadVocab(vocabFile)), _to_lower(lower_case) {
+Wordpiece::Wordpiece(const std::string& vocab_fpath, bool to_lower)
+    : _vocab(load(vocab_fpath)), _to_lower(to_lower) {
   for (auto& v : _vocab) {
     _inverse[v.second] = v.first;
   }
@@ -210,8 +210,8 @@ Wordpiece::Wordpiece(const std::string& vocabFile, bool lower_case)
 
 std::vector<std::wstring> Wordpiece::tokenize(const std::string& text) const {
   std::vector<std::wstring> splitTokens;
-  for (auto& token : text::tokenize(text, _to_lower)) {
-    for (auto& subToken : wordpiece_tokenize(token)) {
+  for (auto& token : basicTokenize(text, _to_lower)) {
+    for (auto& subToken : wordpieceTokenize(token)) {
       splitTokens.push_back(subToken);
     }
   }
@@ -221,11 +221,11 @@ std::vector<uint32_t> Wordpiece::encode(
     const std::string_view& sentence) const {
   std::string sentence_copy(sentence.data(), sentence.size());
   std::vector<std::wstring> tokens = tokenize(sentence_copy);
-  std::vector<uint32_t> ids = encode_tokens(tokens);
+  std::vector<uint32_t> ids = encodeTokens(tokens);
   return ids;
 }
 
-std::vector<uint32_t> Wordpiece::encode_tokens(
+std::vector<uint32_t> Wordpiece::encodeTokens(
     const std::vector<std::wstring>& tokens) const {
   std::vector<uint32_t> ret(tokens.size());
   for (uint32_t i = 0; i < tokens.size(); i++) {
@@ -277,6 +277,39 @@ std::string Wordpiece::decode(const std::vector<uint32_t>& token_ids) const {
     result += is_subword_suffix ? token.substr(2) : token;
   }
   return result;
+}
+
+std::wstring Wordpiece::tokenizeChineseChars(const std::wstring& text) {
+  std::wstring output;
+  for (wchar_t c : text) {
+    if (text::isChineseChar(c)) {
+      output += L' ';
+      output += c;
+      output += L' ';
+    } else {
+      output += c;
+    }
+  }
+  return output;
+}
+
+std::vector<std::wstring> Wordpiece::basicTokenize(const std::string& text,
+                                                   bool to_lower) {
+  std::wstring nText = text::convertToUnicode(text);
+  nText = text::normalizeSpaces(nText);
+  nText = tokenizeChineseChars(nText);
+
+  const std::vector<std::wstring>& origTokens = text::splitOnWhitespace(nText);
+  std::vector<std::wstring> splitTokens;
+  for (std::wstring token : origTokens) {
+    if (to_lower) {
+      token = text::lower(token);
+      token = text::stripAccents(token);
+    }
+    const auto& tokens = text::splitOnPunctuation(token);
+    splitTokens.insert(splitTokens.end(), tokens.begin(), tokens.end());
+  }
+  return text::splitOnWhitespace(text::join(splitTokens, L" "));
 }
 
 }  // namespace thirdai::dataset
