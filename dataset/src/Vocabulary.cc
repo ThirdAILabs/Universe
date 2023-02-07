@@ -234,8 +234,8 @@ std::vector<std::wstring> Wordpiece::tokenize(const std::string& text) const {
 }
 std::vector<uint32_t> Wordpiece::encode(
     const std::string_view& sentence) const {
-  std::string sentence_copy(sentence.data(), sentence.size());
-  std::vector<std::wstring> tokens = tokenize(sentence_copy);
+  std::string buffer(sentence.data(), sentence.size());
+  std::vector<std::wstring> tokens = tokenize(buffer);
   std::vector<uint32_t> encoded(tokens.size());
   for (uint32_t i = 0; i < tokens.size(); i++) {
     auto query = _word_to_id.find(tokens[i]);
