@@ -28,7 +28,7 @@ BERT_RAW_SAMPLES = [
     "before joining city of hope, rosen worked at northwestern university.",
     "the third section (8 km) was the bypass of szczuczyn opened in november 2015 as a single carriageway road.",
     "in may 2021, the company left the swedish market due to a “unfair and discriminatory treatment” by the swedish tax agency.",
-    "since 2018, the winner of the bonaire kampionato , the top tier of football on the island qualifies for the caribbean club shield , a tertiary knockout tournament for developing caribbean football nations .",
+    "since 2018, the winner of the bonaire kampionato, the top tier of football on the island qualifies for the caribbean club shield, a tertiary knockout tournament for developing caribbean football nations.",
     "the tone of linlithgow's warnings to amery grew increasingly serious over the first half of 1943, as did amery's requests to the war cabinet; on 4august 1943 amery noted the spread of famine, and specifically stressed the effect upon calcutta and the potential effect on the morale of european troops.",
     "during the first years of japanese occupation following the first sino-japanese war, the political divisions of the island were changed frequently.",
     "october 27 – martin mullen, 63, right fielder in one game for the 1872 cleveland forest citys of the national association.",
