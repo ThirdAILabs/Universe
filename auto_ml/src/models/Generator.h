@@ -257,8 +257,8 @@ class QueryCandidateGenerator {
    * and there is a source column in the passed in filename.
    */
   void train(const std::string& filename, bool use_supervised = true) {
-    licensing::FinegrainedAccessToken token =
-        licensing::FinegrainedAccessToken(filename);
+    licensing::TrainPermissionsToken token =
+        licensing::TrainPermissionsToken(filename);
 
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
         /* file_name = */ filename);
@@ -446,7 +446,7 @@ class QueryCandidateGenerator {
   void addDatasetToIndex(const dataset::BoltDatasetPtr& data,
                          const std::vector<std::vector<uint32_t>>& labels,
                          std::optional<ProgressBar>& bar,
-                         licensing::FinegrainedAccessToken token) {
+                         licensing::TrainPermissionsToken token) {
     if (!_flash_index) {
       auto hash_function = _query_generator_config->hashFunction();
       if (_query_generator_config->reservoirSize().has_value()) {

@@ -38,8 +38,12 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
 template <typename LABEL_T>
 void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
                               const std::vector<LABEL_T>& labels,
-                              licensing::FinegrainedAccessToken token) {
-  token.verifyCanTrain();
+                              licensing::TrainPermissionsToken token) {
+  // A token can only be constructed if the user has a full access
+  // license or is using a dataset that is allowed under their demo license.
+  // Hence this method successfully being called with a token is enough to
+  // continue, and we don't actually need to use the token object.
+  (void)token;
 
   if (batch.getBatchSize() != labels.size()) {
     throw std::invalid_argument("Batch size and number of labels must match.");
@@ -144,7 +148,7 @@ template void Flash<uint64_t>::serialize(cereal::BinaryOutputArchive&);
 template <typename LABEL_T>
 template <class Archive>
 void Flash<LABEL_T>::serialize(Archive& archive) {
-  licensing::verifyLicenseNotDemo();
+  licensing::disableForDemoLicenses();
   archive(_hash_function, _num_tables, _range, _hashtable);
 }
 

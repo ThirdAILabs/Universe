@@ -22,10 +22,26 @@ static std::unordered_set<std::string> _entitlements = {};
 
 static std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
 
-FinegrainedAccessToken::FinegrainedAccessToken(
+void assertUserHasFullAccess() {
+  if (!_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
+    throw exceptions::LicenseCheckException(
+        "You must have a full license to perform this operation.");
+  }
+}
+
+TrainPermissionsToken::TrainPermissionsToken(
     const std::string& train_file_path) {
   if (_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
     return;
+  }
+
+  // This handles the rare case where someone is "illegally" trying to train on
+  // a data source like S3 with a demo license (otherwise without this check,
+  // we might get a segfault or weird error from cryptopp).
+  if (!std::filesystem::exists(train_file_path)) {
+    throw exceptions::LicenseCheckException(
+        "Could not find a local file corresponding to the passed in data "
+        "source, so cannot validate the dataset with the demo license.");
   }
 
   if (!_entitlements.count(sha256File(train_file_path))) {
@@ -34,12 +50,7 @@ FinegrainedAccessToken::FinegrainedAccessToken(
   }
 }
 
-FinegrainedAccessToken::FinegrainedAccessToken() {
-  if (!_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
-    throw std::runtime_error(
-        "You must have a full license to perform this operation.");
-  }
-}
+TrainPermissionsToken::TrainPermissionsToken() { assertUserHasFullAccess(); }
 
 void checkLicense() {
 #pragma message( \
@@ -78,11 +89,6 @@ void setLicensePath(const std::string& license_path) {
   _license_path = license_path;
 }
 
-void verifyLicenseNotDemo() {
-  if (!_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
-    throw exceptions::LicenseCheckException(
-        "You must have a full license to perform this operation.");
-  }
-}
+void disableForDemoLicenses() { assertUserHasFullAccess(); }
 
 }  // namespace thirdai::licensing

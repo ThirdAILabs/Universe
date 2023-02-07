@@ -8,12 +8,12 @@
 
 namespace thirdai::licensing {
 
-FinegrainedAccessToken::FinegrainedAccessToken(
+TrainPermissionsToken::TrainPermissionsToken(
     const std::string& train_file_path) {
   (void)train_file_path;
 }
 
-FinegrainedAccessToken::FinegrainedAccessToken() {}
+TrainPermissionsToken::TrainPermissionsToken() {}
 
 void checkLicense() {}
 
@@ -35,6 +35,6 @@ void endHeartbeat() {}
 
 void setLicensePath(const std::string& license_path) { (void)license_path; }
 
-void verifyLicenseNotDemo() {}
+void disableForDemoLicenses() {}
 
 }  // namespace thirdai::licensing

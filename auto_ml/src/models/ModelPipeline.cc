@@ -21,9 +21,6 @@ void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
                           const std::optional<ValidationOptions>& validation,
                           std::optional<uint32_t> max_in_memory_batches,
                           std::optional<size_t> batch_size_opt) {
-  licensing::FinegrainedAccessToken token =
-      licensing::FinegrainedAccessToken(data_source->resourceName());
-
   size_t batch_size =
       batch_size_opt.value_or(_train_eval_config.defaultBatchSize());
 
@@ -35,9 +32,17 @@ void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
   updateRehashRebuildInTrainConfig(train_config);
 
   if (max_in_memory_batches) {
+    // We require a full license when streaming to avoid the case of a customer
+    // using a demo license by accident with a huge file and waiting a few
+    // minutes for the sha256 hash to run, only to fail. Instead, we'll just
+    // fail fast. This also hides an extra feature (streaming) if you're using
+    // the demo license, which is never a bad thing.
+    licensing::TrainPermissionsToken token = licensing::TrainPermissionsToken();
     trainOnStream(dataset, train_config, max_in_memory_batches.value(),
                   validation, batch_size, token);
   } else {
+    licensing::TrainPermissionsToken token =
+        licensing::TrainPermissionsToken(data_source->resourceName());
     trainInMemory(dataset, train_config, validation, batch_size, token);
   }
 
@@ -213,7 +218,7 @@ std::vector<dataset::Explanation> ModelPipeline::explain(
 void ModelPipeline::trainInMemory(
     dataset::DatasetLoaderPtr& dataset_loader, bolt::TrainConfig train_config,
     const std::optional<ValidationOptions>& validation, size_t batch_size,
-    licensing::FinegrainedAccessToken token) {
+    licensing::TrainPermissionsToken token) {
   auto loaded_data = dataset_loader->loadAll(
       /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
   auto [train_data, train_labels] = std::move(loaded_data);
@@ -253,7 +258,7 @@ void ModelPipeline::trainOnStream(
     dataset::DatasetLoaderPtr& dataset_loader, bolt::TrainConfig train_config,
     uint32_t max_in_memory_batches,
     const std::optional<ValidationOptions>& validation, size_t batch_size,
-    licensing::FinegrainedAccessToken token) {
+    licensing::TrainPermissionsToken token) {
   /**
    * If there are temporal relationships then we cannot do validation because
    * loading the validation data before all of the training data could lead to
@@ -308,7 +313,7 @@ void ModelPipeline::trainOnStream(
 void ModelPipeline::trainSingleEpochOnStream(
     dataset::DatasetLoaderPtr& dataset_loader,
     const bolt::TrainConfig& train_config, uint32_t max_in_memory_batches,
-    size_t batch_size, licensing::FinegrainedAccessToken token) {
+    size_t batch_size, licensing::TrainPermissionsToken token) {
   while (auto datasets = dataset_loader->loadSome(
              batch_size, /* num_batches = */ max_in_memory_batches,
              /* verbose = */ train_config.verbose())) {

@@ -53,8 +53,8 @@ class Flash {
    * Insert this batch into the Flash data structure.
    */
   void addBatch(const BoltBatch& batch, const std::vector<LABEL_T>& labels,
-                licensing::FinegrainedAccessToken token =
-                    licensing::FinegrainedAccessToken());
+                licensing::TrainPermissionsToken token =
+                    licensing::TrainPermissionsToken());
 
   /**
    * Perform a batch query on the Flash structure, for now on a Batch object.

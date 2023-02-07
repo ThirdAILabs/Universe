@@ -194,8 +194,7 @@ class ModelPipeline {
   void trainInMemory(dataset::DatasetLoaderPtr& dataset_loader,
                      bolt::TrainConfig train_config,
                      const std::optional<ValidationOptions>& validation,
-                     size_t batch_size,
-                     licensing::FinegrainedAccessToken token);
+                     size_t batch_size, licensing::TrainPermissionsToken token);
 
   /**
    * Performs training on a streaming dataset in chunks. Note that validation is
@@ -207,8 +206,7 @@ class ModelPipeline {
                      bolt::TrainConfig train_config,
                      uint32_t max_in_memory_batches,
                      const std::optional<ValidationOptions>& validation,
-                     size_t batch_size,
-                     licensing::FinegrainedAccessToken token);
+                     size_t batch_size, licensing::TrainPermissionsToken token);
 
   /**
    * Helper for processing a streaming dataset in chunks for a single epoch.
@@ -217,7 +215,7 @@ class ModelPipeline {
                                 const bolt::TrainConfig& train_config,
                                 uint32_t max_in_memory_batches,
                                 size_t batch_size,
-                                licensing::FinegrainedAccessToken token);
+                                licensing::TrainPermissionsToken token);
 
   /**
    * Takes in a single input sample and returns the activations for the output
