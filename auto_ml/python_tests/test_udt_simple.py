@@ -258,33 +258,6 @@ def test_entity_embedding_fails_on_large_label():
 
 
 @pytest.mark.release
-def test_entity_embedding():
-    for embedding_dim in [128, 256]:
-        for integer_label in [True, False]:
-            model = make_simple_trained_model(
-                embedding_dim=embedding_dim, integer_label=integer_label
-            )
-            output_labels = [0, 1, 2] if integer_label else ["0", "1", "4"]
-            for output_id, output_label in enumerate(output_labels):
-                embedding = model.get_entity_embedding(output_label)
-                assert embedding.shape == (embedding_dim,)
-                weights = model._get_model().get_layer("fc_2").weights.get()
-
-                assert (weights[output_id] == embedding).all()
-
-
-@pytest.mark.release
-def test_entity_embedding_fails_on_large_label():
-    model = make_simple_trained_model(embedding_dim=100, integer_label=True)
-
-    with pytest.raises(
-        ValueError,
-        match=r"Passed in neuron_id too large for this layer. Should be less than the output dim of 3.",
-    ):
-        embedding = model.get_entity_embedding(100000)
-
-
-@pytest.mark.release
 def test_explanations_total_percentage():
     model = make_simple_trained_model(integer_label=False)
     explanations = model.explain(single_sample())
