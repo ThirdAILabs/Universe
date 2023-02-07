@@ -135,8 +135,8 @@ uint32_t FixedVocabulary::add(const std::string_view& token_view) {
   return token_id;
 }
 
-Wordpiece::Vocab Wordpiece::load(const std::string& vocab_fpath) {
-  Wordpiece::Vocab vocab;
+Wordpiece::WordToId Wordpiece::load(const std::string& vocab_fpath) {
+  Wordpiece::WordToId vocab;
   size_t index = 0;
   std::ifstream ifs(vocab_fpath, std::ifstream::in);
   std::string line;
@@ -177,7 +177,7 @@ std::vector<std::wstring> Wordpiece::wordpieceTokenize(
 
         substr += token.substr(start, end - start);
 
-        if (_vocab.find(substr) != _vocab.end()) {
+        if (_word_to_id.find(substr) != _word_to_id.end()) {
           curSubstr = substr;
           hasCurSubstr = true;
           break;
@@ -202,9 +202,9 @@ std::vector<std::wstring> Wordpiece::wordpieceTokenize(
 }
 
 Wordpiece::Wordpiece(const std::string& vocab_fpath, bool to_lower)
-    : _vocab(load(vocab_fpath)), _to_lower(to_lower) {
-  for (auto& v : _vocab) {
-    _inverse[v.second] = v.first;
+    : _word_to_id(load(vocab_fpath)), _to_lower(to_lower) {
+  for (auto& v : _word_to_id) {
+    _id_to_word[v.second] = v.first;
   }
 }
 
@@ -221,42 +221,36 @@ std::vector<uint32_t> Wordpiece::encode(
     const std::string_view& sentence) const {
   std::string sentence_copy(sentence.data(), sentence.size());
   std::vector<std::wstring> tokens = tokenize(sentence_copy);
-  std::vector<uint32_t> ids = encodeTokens(tokens);
-  return ids;
-}
-
-std::vector<uint32_t> Wordpiece::encodeTokens(
-    const std::vector<std::wstring>& tokens) const {
-  std::vector<uint32_t> ret(tokens.size());
+  std::vector<uint32_t> encoded(tokens.size());
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    auto query = _vocab.find(tokens[i]);
-    assert(query != _vocab.end());
-    ret[i] = query->second;
+    auto query = _word_to_id.find(tokens[i]);
+    assert(query != _word_to_id.end());
+    encoded[i] = query->second;
   }
-  return ret;
+  return encoded;
 }
 
 uint32_t Wordpiece::id(const std::string_view& token_view) const {
   std::string token(token_view.data(), token_view.size());
   std::wstring wtoken = text::convertToUnicode(text::normalizeNFD(token));
-  auto query = _vocab.find(wtoken);
-  if (query != _vocab.end()) {
+  auto query = _word_to_id.find(wtoken);
+  if (query != _word_to_id.end()) {
     return query->second;
   }
   return unkId();
 }
 
-uint32_t Wordpiece::size() const { return _vocab.size(); }
+uint32_t Wordpiece::size() const { return _word_to_id.size(); }
 
 uint32_t Wordpiece::unkId() const {
-  auto query = _vocab.find(L"[UNK]");
-  assert(query != _vocab.end());
+  auto query = _word_to_id.find(L"[UNK]");
+  assert(query != _word_to_id.end());
   return query->second;
 }
 
 uint32_t Wordpiece::maskId() const {
-  auto query = _vocab.find(L"[MASK]");
-  assert(query != _vocab.end());
+  auto query = _word_to_id.find(L"[MASK]");
+  assert(query != _word_to_id.end());
   return query->second;
 }
 
@@ -264,8 +258,8 @@ std::string Wordpiece::decode(const std::vector<uint32_t>& token_ids) const {
   std::string result;
   for (size_t i = 0; i < token_ids.size(); i++) {
     uint32_t token_id = token_ids[i];
-    auto query = _inverse.find(token_id);
-    assert(query != _inverse.end());
+    auto query = _id_to_word.find(token_id);
+    assert(query != _id_to_word.end());
 
     std::string token = text::convertFromUnicode(query->second);
     bool is_subword_suffix = token.size() >= 2 && token.substr(0, 2) == "##";

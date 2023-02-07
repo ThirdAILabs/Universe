@@ -146,11 +146,11 @@ class Wordpiece : public Vocabulary {
   }
 
  private:
-  using Vocab = std::unordered_map<std::wstring, size_t>;
-  using InvVocab = std::unordered_map<size_t, std::wstring>;
+  using WordToId = std::unordered_map<std::wstring, size_t>;
+  using IdToWord = std::unordered_map<size_t, std::wstring>;
 
   // Helper method to load vocabulary from path at construction.
-  static Vocab load(const std::string& vocab_fpath);
+  static WordToId load(const std::string& vocab_fpath);
 
   // Runs a basic tokenization, without accounting for BPE subwords. These
   // include normalizing text with NFKC and spaces (the original surface text is
@@ -177,12 +177,9 @@ class Wordpiece : public Vocabulary {
   // available publically).
   static std::wstring tokenizeChineseChars(const std::wstring& text);
 
-  std::vector<uint32_t> encodeTokens(
-      const std::vector<std::wstring>& tokens) const;
+  WordToId _word_to_id;
+  IdToWord _id_to_word;
 
-  Vocab _vocab;
-  InvVocab _inverse;
-  std::string _vocab_fpath;
   bool _to_lower;
 };
 

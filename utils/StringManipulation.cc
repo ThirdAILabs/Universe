@@ -120,26 +120,25 @@ std::string normalizeNFD(const std::string& s) {
 
 std::wstring strip(const std::wstring& text,
                    const std::wstring& strip_characters) {
-  // Empty string, return empty-string.
-  // This takes care of ret.size() = 0;
+  // Empty string, return empty-string, no iterations involved - fast path.
   if (text.empty()) {
     return text;
   }
 
-  // Remove stripchars from front.
-  size_t left = 0;
-
-  auto isStripChar = [&strip_characters](const wchar_t& c) {
+  // Convenience lambda to use across left and right stripping ahead.
+  auto is_strip_char = [&strip_characters](const wchar_t& c) {
     return strip_characters.find(c) != std::wstring::npos;
   };
 
-  while (left < text.size() && isStripChar(text[left])) {
+  // Remove stripchars from front.
+  size_t left = 0;
+  while (left < text.size() && is_strip_char(text[left])) {
     ++left;
   }
 
   // Strip from right.
   size_t right = text.size();
-  while (right > left && isStripChar(text[right - 1])) {
+  while (right > left && is_strip_char(text[right - 1])) {
     --right;
   }
 
@@ -185,11 +184,11 @@ std::wstring convertToUnicode(const std::string& text) {
 }
 
 std::wstring lower(const std::wstring& s) {
-  std::wstring ret(s.size(), L' ');
+  std::wstring lowered(s.size(), L' ');
   for (size_t i = 0; i < s.size(); i++) {
-    ret[i] = utf8proc_tolower(s[i]);
+    lowered[i] = utf8proc_tolower(s[i]);
   }
-  return ret;
+  return lowered;
 }
 
 bool isControl(const wchar_t& c) {
