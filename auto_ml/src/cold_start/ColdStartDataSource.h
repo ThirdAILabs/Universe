@@ -15,14 +15,16 @@ class ColdStartDataSource final : public dataset::DataSource {
   ColdStartDataSource(const thirdai::data::ColumnMap& column_map,
                       std::string text_column_name,
                       std::string label_column_name, char column_delimiter,
-                      std::optional<char> label_delimiter);
+                      std::optional<char> label_delimiter,
+                      std::string resource_name);
 
   static auto make(const thirdai::data::ColumnMap& column_map,
                    std::string text_column_name, std::string label_column_name,
-                   char column_delimiter, std::optional<char> label_delimiter) {
+                   char column_delimiter, std::optional<char> label_delimiter,
+                   std::string resource_name) {
     return std::make_shared<ColdStartDataSource>(
         column_map, std::move(text_column_name), std::move(label_column_name),
-        column_delimiter, label_delimiter);
+        column_delimiter, label_delimiter, resource_name);
   }
 
   std::optional<std::vector<std::string>> nextBatch(
@@ -30,7 +32,7 @@ class ColdStartDataSource final : public dataset::DataSource {
 
   std::optional<std::string> nextLine() final;
 
-  std::string resourceName() const final { return "cold_start_column_map"; }
+  std::string resourceName() const final { return _original_filename; }
 
   void restart() final {
     _header = getHeader();
@@ -59,6 +61,8 @@ class ColdStartDataSource final : public dataset::DataSource {
   std::optional<char> _label_delimiter;
 
   std::optional<std::string> _header;
+
+  std::string _resource_name;
 };
 
 }  // namespace thirdai::automl::cold_start

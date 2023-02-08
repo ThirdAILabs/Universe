@@ -7,7 +7,8 @@ ColdStartDataSource::ColdStartDataSource(const data::ColumnMap& column_map,
                                          std::string text_column_name,
                                          std::string label_column_name,
                                          char column_delimiter,
-                                         std::optional<char> label_delimiter)
+                                         std::optional<char> label_delimiter,
+                                         std::string resource_name)
     : _text_column(column_map.getStringColumn(text_column_name)),
       _label_column(column_map.getTokenArrayColumn(label_column_name)),
       _row_idx(0),
@@ -15,7 +16,8 @@ ColdStartDataSource::ColdStartDataSource(const data::ColumnMap& column_map,
       _label_column_name(std::move(label_column_name)),
       _column_delimiter(column_delimiter),
       _label_delimiter(label_delimiter),
-      _header(getHeader()) {}
+      _header(getHeader()),
+      _resource_name(std::move(resource_name)) {}
 
 std::optional<std::vector<std::string>> ColdStartDataSource::nextBatch(
     size_t target_batch_size) {

@@ -53,6 +53,9 @@ class ColumnMap {
 
   std::vector<std::string> columns() const;
 
+  static ColumnMap createStringColumnMapFromFile(
+      const dataset::DataSourcePtr& source);
+
  private:
   std::vector<columns::ColumnPtr> selectColumns(
       const std::vector<std::string>& column_names) const;

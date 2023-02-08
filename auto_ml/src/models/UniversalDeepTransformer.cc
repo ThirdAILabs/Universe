@@ -10,6 +10,7 @@
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/OutputProcessor.h>
+#include <dataset/src/DataSource.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.h>
@@ -238,11 +239,14 @@ std::vector<float> UniversalDeepTransformer::getEntityEmbedding(
 }
 
 void UniversalDeepTransformer::coldStartPretraining(
-    thirdai::data::ColumnMap dataset,
+    const dataset::DataSourcePtr& original_source,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     bolt::TrainConfig& train_config,
     const std::optional<ValidationOptions>& validation) {
+  auto dataset =
+      thirdai::data::ColumnMap::createStringColumnMapFromFile(original_source);
+
   auto dataset_config = udtDatasetFactory().config();
 
   auto metadata = cold_start::getColdStartMetadata(dataset_config);
@@ -263,7 +267,8 @@ void UniversalDeepTransformer::coldStartPretraining(
       /* text_column_name= */ metadata.text_column_name,
       /* label_column_name= */ dataset_config->target,
       /* column_delimiter= */ dataset_config->delimiter,
-      /* label_delimiter= */ metadata.label_delimiter);
+      /* label_delimiter= */ metadata.label_delimiter,
+      /* resource_name = */ original_source->resourceName());
 
   // TODO(david): reconsider validation. Instead of forcing users to pass in a
   // supervised dataset of query product pairs, can we create a synthetic
