@@ -1,11 +1,10 @@
 import os
 
 import pytest
+from download_datasets import download_mnist
 from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
 from thirdai import dataset
-from download_datasets import download_mnist
-
 
 # Add an integration test marker for all tests in this file
 pytestmark = [pytest.mark.integration]
