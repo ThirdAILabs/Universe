@@ -26,7 +26,7 @@ class GraphFeaturizer final : public Featurizer {
         _max_neighbours(max_neighbours),
         _delimiter(delimiter),
         _hash_range(hash_range) {
-          _node_id_to_num_map.insert({"null_node",0});
+    _node_id_to_num_map.insert({"null_node", 0});
   }
 
   static std::shared_ptr<GraphFeaturizer> make(

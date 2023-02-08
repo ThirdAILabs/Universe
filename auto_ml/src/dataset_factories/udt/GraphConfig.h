@@ -15,8 +15,8 @@ struct GraphConfig {
       uint32_t max_neighbours,
       std::optional<std::vector<std::string>> relationship_columns =
           std::nullopt,
-      bool neighbourhood_context = false, bool label_context = false,
-      uint32_t kth_neighbourhood = 0, char delimeter = ',',
+      bool numerical_context = false, bool features_context = false,
+      uint32_t k_hop = 0, char delimeter = ',',
       std::optional<std::unordered_map<std::string, std::vector<std::string>>>
           adj_list = std::nullopt)
       : _data_types(std::move(data_types)),
@@ -26,15 +26,17 @@ struct GraphConfig {
         _max_neighbours(max_neighbours),
         _relationship_columns(std::move(relationship_columns)),
         _n_target_classes(n_target_classes),
-        _neighbourhood_context(neighbourhood_context),
-        _label_context(label_context),
-        _kth_neighbourhood(kth_neighbourhood),
+        _numerical_context(numerical_context),
+        _features_context(features_context),
+        _k_hop(k_hop),
         _delimeter(delimeter),
         _adj_list(std::move(adj_list)) {
-          if(! _relationship_columns && ! _adj_list) {
-            throw std::invalid_argument("Atleast one of relationship columns or adj_list has to be provided.");
-          }
-        }
+    if (!_relationship_columns && !_adj_list) {
+      throw std::invalid_argument(
+          "Atleast one of relationship columns or adj_list has to be "
+          "provided.");
+    }
+  }
 
   ColumnDataTypes _data_types;
   std::string _graph_file_name;
@@ -43,9 +45,9 @@ struct GraphConfig {
   uint32_t _max_neighbours;
   std::optional<std::vector<std::string>> _relationship_columns;
   uint32_t _n_target_classes;
-  bool _neighbourhood_context;
-  bool _label_context;
-  uint32_t _kth_neighbourhood;
+  bool _numerical_context;
+  bool _features_context;
+  uint32_t _k_hop;
   char _delimeter;
   std::optional<std::unordered_map<std::string, std::vector<std::string>>>
       _adj_list;

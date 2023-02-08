@@ -66,8 +66,8 @@ class UDTFactory {
       py::object& obj, data::ColumnDataTypes data_types,
       std::string graph_file_name, std::string source, std::string target,
       uint32_t n_target_classes, uint32_t max_neighbours,
-      std::vector<std::string> relationship_columns, bool neighbourhood_context,
-      bool label_context, uint32_t kth_neighbourhood, char delimeter,
+      std::vector<std::string> relationship_columns, bool numerical_context,
+      bool features_context, uint32_t k_hop, char delimeter,
       std::optional<std::unordered_map<std::string, std::vector<std::string>>>
           adj_list);
 

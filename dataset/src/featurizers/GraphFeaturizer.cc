@@ -65,11 +65,12 @@ void GraphFeaturizer::updateNeighbours(
   }
 }
 
-void GraphFeaturizer::updateNodeIdMap(const ColumnNumberMap& column_number_map) {
+void GraphFeaturizer::updateNodeIdMap(
+    const ColumnNumberMap& column_number_map) {
   auto temp = column_number_map.getColumnNumToColNameMap();
-  for(const auto& node: temp) {
+  for (const auto& node : temp) {
     auto present_size = _node_id_to_num_map.size();
-    if(!_node_id_to_num_map.count(node)) {
+    if (!_node_id_to_num_map.count(node)) {
       _node_id_to_num_map[node] = present_size;
     }
   }
@@ -110,16 +111,16 @@ std::exception_ptr GraphFeaturizer::featurizeSampleInBatch(
 
 BoltVector GraphFeaturizer::buildTokenVector(ColumnarInputSample& sample) {
   auto node_value = std::string(sample.column(_source_col));
-  std::vector<uint32_t> indices(_max_neighbours,0);
+  std::vector<uint32_t> indices(_max_neighbours, 0);
   uint32_t i = 0;
-  if(_neighbours.find(node_value) != _neighbours.end()) {
-  for (auto it = _neighbours[node_value].begin();
-       it != _neighbours[node_value].end(); it++, i++) {
-    if (i >= _max_neighbours) {
-      break;
+  if (_neighbours.find(node_value) != _neighbours.end()) {
+    for (auto it = _neighbours[node_value].begin();
+         it != _neighbours[node_value].end(); it++, i++) {
+      if (i >= _max_neighbours) {
+        break;
+      }
+      indices[i] = _node_id_to_num_map.at(*it);
     }
-    indices[i] = _node_id_to_num_map.at(*it);
-  }
   }
   std::vector<float> values(_max_neighbours, 1.0);
 

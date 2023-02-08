@@ -29,15 +29,15 @@ class GraphUDT : public ModelPipeline {
       uint32_t max_neighbours,
       std::optional<std::vector<std::string>> relationship_columns =
           std::nullopt,
-      bool neighbourhood_context = false, bool label_context = false,
-      uint32_t kth_neighbourhood = 0, char delimeter = ',',
+      bool numerical_context = false, bool features_context = false,
+      uint32_t k_hop = 0, char delimeter = ',',
       std::optional<std::unordered_map<std::string, std::vector<std::string>>>
           adj_list = std::nullopt) {
     auto dataset_config = std::make_shared<data::GraphConfig>(
         std::move(data_types), std::move(graph_file_name), std::move(source),
         std::move(target), n_target_classes, max_neighbours,
-        std::move(relationship_columns), neighbourhood_context, label_context,
-        kth_neighbourhood, delimeter, std::move(adj_list));
+        std::move(relationship_columns), numerical_context, features_context,
+        k_hop, delimeter, std::move(adj_list));
 
     auto graph_dataset_factory =
         std::make_shared<data::GraphDatasetFactory>(dataset_config);

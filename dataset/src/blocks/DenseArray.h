@@ -4,6 +4,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
+#include <dataset/src/blocks/ColumnIdentifier.h>
 #include <cmath>
 #include <exception>
 #include <memory>
@@ -27,15 +28,16 @@ class DenseArrayBlock final : public Block {
    *   start_col: int - the column number of the first dense array entry.
    *   dim: int - the dimension of the dense array; the number of dense values.
    */
-  DenseArrayBlock(uint32_t start_col, uint32_t dim)
-      : _start_col(start_col), _dim(dim) {}
+  DenseArrayBlock(ColumnIdentifier start_col, uint32_t dim)
+      : _start_col(std::move(start_col)), _dim(dim) {}
 
-  static auto make(uint32_t start_col, uint32_t dim) {
-    return std::make_shared<DenseArrayBlock>(start_col, dim);
+  static auto make(ColumnIdentifier start_col, uint32_t dim) {
+    return std::make_shared<DenseArrayBlock>(std::move(start_col), dim);
   }
 
-  static auto makeSingle(uint32_t start_col) {
-    return std::make_shared<DenseArrayBlock>(start_col, /* dim= */ 1);
+  static auto makeSingle(ColumnIdentifier start_col) {
+    return std::make_shared<DenseArrayBlock>(std::move(start_col),
+                                             /* dim= */ 1);
   }
 
   uint32_t featureDim() const final { return _dim; };
