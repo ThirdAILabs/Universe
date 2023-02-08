@@ -126,7 +126,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
    * new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h
    */
   void coldStartPretraining(
-      thirdai::data::ColumnMap dataset,
+      const dataset::DataSourcePtr& source,
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       bolt::TrainConfig& train_config,

@@ -1,7 +1,11 @@
 #include "ColumnMap.h"
+#include <dataset/src/DataSource.h>
+#include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
+#include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <exception>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace thirdai::data {
 
@@ -210,6 +214,37 @@ std::vector<std::string> ColumnMap::columns() const {
     columns.push_back(map_entry.first);
   }
   return columns;
+}
+
+ColumnMap ColumnMap::createStringColumnMapFromFile(
+    const dataset::DataSourcePtr& source) {
+  auto header_string = source->nextLine();
+  if (!header_string.has_value()) {
+    throw std::invalid_argument("Source was found to be empty.");
+  }
+  auto header = dataset::ProcessorUtils::parseCsvRow(*header_string,
+                                                     /* delimiter = */ ',');
+
+  std::vector<std::vector<std::string>> columns(header.size());
+  while (auto line_str = source->nextLine()) {
+    auto line =
+        dataset::ProcessorUtils::parseCsvRow(*line_str, /* delimiter = */ ',');
+    if (line.size() != header.size()) {
+      throw std::invalid_argument(
+          "Different number of entries in row than in the header.");
+    }
+    for (size_t i = 0; i < columns.size(); i++) {
+      columns.at(i).emplace_back(line.at(i));
+    }
+  }
+
+  std::unordered_map<std::string, columns::ColumnPtr> column_map;
+  for (size_t i = 0; i < columns.size(); i++) {
+    column_map[std::string(header.at(i))] =
+        std::make_shared<columns::CppStringColumn>(columns.at(i));
+  }
+
+  return ColumnMap(column_map);
 }
 
 }  // namespace thirdai::data

@@ -15,10 +15,4 @@ struct ColdStartMetadata {
 ColdStartMetadata getColdStartMetadata(
     const data::UDTConfigPtr& dataset_config);
 
-// Checks that the label column is a TokenArrayColumn. If it is not then it will
-// attempt to convert it to a TokenArrayColumn if possible.
-void convertLabelColumnToTokenArray(thirdai::data::ColumnMap& columns,
-                                    const std::string& label_column_name,
-                                    std::optional<char> label_delimiter);
-
 }  // namespace thirdai::automl::cold_start

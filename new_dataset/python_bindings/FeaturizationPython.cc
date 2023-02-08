@@ -51,7 +51,8 @@ void createFeaturizationSubmodule(py::module_& dataset_submodule) {
              std::shared_ptr<columns::CppStringColumn>>(columns_submodule,
                                                         "StringColumn")
       .def(py::init<std::vector<std::string>>(), py::arg("values"),
-           docs::STRING_COLUMN);
+           docs::STRING_COLUMN)
+      .def("__getitem__", &columns::CppStringColumn::operator[]);
 
   py::class_<columns::PyTokenArrayColumn, columns::Column,
              std::shared_ptr<columns::PyTokenArrayColumn>>(columns_submodule,
