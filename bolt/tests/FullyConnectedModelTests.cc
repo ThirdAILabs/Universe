@@ -114,7 +114,7 @@ std::vector<float> computeAccuracy(model::ModelPtr& model,
 void basicTrainingTest(bool with_hidden_layer) {
   static constexpr uint32_t N_CLASSES = 100;
   auto train_data =
-      getDataset(N_CLASSES, /* n_batches= */ 100, /* batch_size= */ 100);
+      getLabeledDataset(N_CLASSES, /* n_batches= */ 100, /* batch_size= */ 100);
 
   auto model = createModel(N_CLASSES, with_hidden_layer);
 
@@ -122,7 +122,7 @@ void basicTrainingTest(bool with_hidden_layer) {
   trainModel(model, train_data, /* learning_rate= */ 0.001, epochs);
 
   auto test_data =
-      getDataset(N_CLASSES, /* n_batches= */ 100, /* batch_size= */ 20);
+      getLabeledDataset(N_CLASSES, /* n_batches= */ 100, /* batch_size= */ 20);
 
   auto accs = computeAccuracy(model, test_data);
 
@@ -148,15 +148,15 @@ TEST(FullyConnectedModelTests, VaryingBatchSize) {
 
   for (uint32_t e = 0; e < 2; e++) {
     for (uint32_t batch_size : batch_sizes) {
-      auto train_data = getDataset(N_CLASSES,
-                                   /* n_batches= */ 50, batch_size);
+      auto train_data = getLabeledDataset(N_CLASSES,
+                                          /* n_batches= */ 50, batch_size);
 
       trainModel(model, train_data, 0.001, /* epochs= */ 1);
     }
   }
 
   auto test_data =
-      getDataset(N_CLASSES, /* n_batches= */ 100, /* batch_size= */ 20);
+      getLabeledDataset(N_CLASSES, /* n_batches= */ 100, /* batch_size= */ 20);
 
   auto accs = computeAccuracy(model, test_data);
 
@@ -198,14 +198,14 @@ TEST(FullyConnectedModelTests, SparseOutput) {
       /* losses= */ {loss::CategoricalCrossEntropy::make(output, label)});
 
   auto train_data =
-      getDataset(N_CLASSES, /* n_batches= */ 200, /* batch_size= */ 100);
+      getLabeledDataset(N_CLASSES, /* n_batches= */ 200, /* batch_size= */ 100);
 
   trainModel(model, train_data, /* learning_rate= */ 0.001,
              /* epochs= */ 3,
              /* single_input= */ true);
 
   auto test_data =
-      getDataset(N_CLASSES, /* n_batches= */ 100, /* batch_size= */ 20);
+      getLabeledDataset(N_CLASSES, /* n_batches= */ 100, /* batch_size= */ 20);
 
   auto accs = computeAccuracy(model, test_data);
 

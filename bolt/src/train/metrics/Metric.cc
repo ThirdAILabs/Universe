@@ -6,6 +6,8 @@ namespace thirdai::bolt::train::metrics {
 
 void Metric::incrementAtomicFloat(std::atomic<float>& value, float increment) {
   float curr_val = value.load(std::memory_order_relaxed);
+  // Compare and exchange weak will update the value of curr_val if it is found
+  // to be different from the value stored in the atomic variable.
   while (!value.compare_exchange_weak(curr_val, curr_val + increment,
                                       std::memory_order_relaxed)) {
   }

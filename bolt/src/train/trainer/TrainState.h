@@ -6,7 +6,9 @@ namespace thirdai::bolt::train {
 
 /**
  * This class contains information about the current state of training that is
- * exposed to callbacks.
+ * exposed to callbacks. We need this class so that callbacks have access to the
+ * internal state of the call to train (otherwise they just have access to the
+ * model object).
  */
 class TrainState {
  public:

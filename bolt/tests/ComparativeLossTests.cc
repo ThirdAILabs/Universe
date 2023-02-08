@@ -3,6 +3,7 @@
 #include <bolt/src/nn/loss/ComparativeLoss.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <set>
 
 namespace thirdai::bolt::nn::tests {
 
@@ -29,21 +30,21 @@ class LossTracker final : public loss::ComparativeLoss {
 
  private:
   float singleLoss(float activation, float label) const override {
-    const_cast<LossTracker*>(this)->_loss_called_with.emplace_back(activation,
-                                                                   label);
+    const_cast<LossTracker*>(this)->_loss_called_with.insert(
+        {activation, label});
     return 0.0;
   }
 
   float singleGradient(float activation, float label,
                        uint32_t batch_size) const override {
     (void)batch_size;
-    const_cast<LossTracker*>(this)->_gradient_called_with.emplace_back(
-        activation, label);
+    const_cast<LossTracker*>(this)->_gradient_called_with.insert(
+        {activation, label});
     return 0.0;
   }
 
-  std::vector<std::pair<float, float>> _loss_called_with;
-  std::vector<std::pair<float, float>> _gradient_called_with;
+  std::set<std::pair<float, float>> _loss_called_with;
+  std::set<std::pair<float, float>> _gradient_called_with;
 };
 
 BoltVector sparseLabel() {
@@ -82,7 +83,7 @@ tensor::TensorPtr denseOutput() {
 }
 
 void runTest(bool output_sparse, bool label_sparse, bool test_loss,
-             const std::vector<std::pair<float, float>>& expected_called_with) {
+             const std::set<std::pair<float, float>>& expected_called_with) {
   auto output_tensor = output_sparse ? sparseOutput() : denseOutput();
 
   auto output = ops::Input::make(/* dim= */ 8);
@@ -98,7 +99,7 @@ void runTest(bool output_sparse, bool label_sparse, bool test_loss,
 
   label->setTensor(label_tensor);
 
-  std::vector<std::pair<float, float>> called_with;
+  std::set<std::pair<float, float>> called_with;
   if (test_loss) {
     loss.loss(/* index_in_batch= */ 0);
     called_with = loss.lossCalledWith();
@@ -109,14 +110,14 @@ void runTest(bool output_sparse, bool label_sparse, bool test_loss,
 
   ASSERT_EQ(called_with.size(), expected_called_with.size());
 
-  for (uint32_t i = 0; i < called_with.size(); i++) {
-    ASSERT_EQ(called_with.at(i).first, expected_called_with.at(i).first);
-    ASSERT_EQ(called_with.at(i).second, expected_called_with.at(i).second);
+  for (const auto& expected : expected_called_with) {
+    called_with.erase(expected);
   }
+  ASSERT_EQ(called_with.size(), 0);
 }
 
 TEST(ComparativeLossTests, LossDenseOutputDenseLabels) {
-  std::vector<std::pair<float, float>> expected_called_with = {
+  std::set<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {0.0, 0.0}, {0.0, 0.0},
       {5.0, 2.0}, {0.0, 0.0}, {0.0, 3.0}, {6.0, 0.0}};
 
@@ -125,7 +126,7 @@ TEST(ComparativeLossTests, LossDenseOutputDenseLabels) {
 }
 
 TEST(ComparativeLossTests, LossDenseOutputSparseLabels) {
-  std::vector<std::pair<float, float>> expected_called_with = {
+  std::set<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {0.0, 0.0}, {0.0, 0.0},
       {5.0, 2.0}, {0.0, 0.0}, {0.0, 3.0}, {6.0, 0.0}};
 
@@ -134,7 +135,7 @@ TEST(ComparativeLossTests, LossDenseOutputSparseLabels) {
 }
 
 TEST(ComparativeLossTests, LossSparseOutputDenseLabels) {
-  std::vector<std::pair<float, float>> expected_called_with = {
+  std::set<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {0.0, 0.0}, {0.0, 0.0},
       {5.0, 2.0}, {0.0, 0.0}, {0.0, 3.0}, {6.0, 0.0}};
   runTest(/* output_sparse= */ true, /* label_sparse= */ false,
@@ -142,14 +143,14 @@ TEST(ComparativeLossTests, LossSparseOutputDenseLabels) {
 }
 
 TEST(ComparativeLossTests, LossSparseOutputSparseLabels) {
-  std::vector<std::pair<float, float>> expected_called_with = {
+  std::set<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {5.0, 2.0}, {6.0, 0.0}, {0.0, 0.0}, {0.0, 3.0}};
   runTest(/* output_sparse= */ true, /* label_sparse= */ true,
           /* test_loss= */ true, expected_called_with);
 }
 
 TEST(ComparativeLossTests, GradientDenseOutputDenseLabels) {
-  std::vector<std::pair<float, float>> expected_called_with = {
+  std::set<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {0.0, 0.0}, {0.0, 0.0},
       {5.0, 2.0}, {0.0, 0.0}, {0.0, 3.0}, {6.0, 0.0}};
   runTest(/* output_sparse= */ false, /* label_sparse= */ false,
@@ -157,7 +158,7 @@ TEST(ComparativeLossTests, GradientDenseOutputDenseLabels) {
 }
 
 TEST(ComparativeLossTests, GradientDenseOutputSparseLabels) {
-  std::vector<std::pair<float, float>> expected_called_with = {
+  std::set<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {0.0, 0.0}, {0.0, 0.0},
       {5.0, 2.0}, {0.0, 0.0}, {0.0, 3.0}, {6.0, 0.0}};
   runTest(/* output_sparse= */ false, /* label_sparse= */ true,
@@ -165,14 +166,14 @@ TEST(ComparativeLossTests, GradientDenseOutputSparseLabels) {
 }
 
 TEST(ComparativeLossTests, GradientSparseOutputDenseLabels) {
-  std::vector<std::pair<float, float>> expected_called_with = {
+  std::set<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {5.0, 2.0}, {6.0, 0.0}};
   runTest(/* output_sparse= */ true, /* label_sparse= */ false,
           /* test_loss= */ false, expected_called_with);
 }
 
 TEST(ComparativeLossTests, GradientSparseOutputSparseLabels) {
-  std::vector<std::pair<float, float>> expected_called_with = {
+  std::set<std::pair<float, float>> expected_called_with = {
       {0.0, 0.0}, {4.0, 1.0}, {5.0, 2.0}, {6.0, 0.0}};
   runTest(/* output_sparse= */ true, /* label_sparse= */ true,
           /* test_loss= */ false, expected_called_with);

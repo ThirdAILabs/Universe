@@ -12,16 +12,17 @@ namespace thirdai::bolt::nn::tests {
 TEST(ComputationScheduleTests, SingleOutput) {
   auto input = emptyInput();
 
-  auto act_1 = Noop::make("op_1")->apply({input});
-  auto act_2 = Noop::make("op_2")->apply({input, act_1});
-  auto act_3 = Noop::make("op_3")->apply({input, act_1, act_2});
-  auto act_4 = Noop::make("op_4")->apply({input, act_1, act_2, act_3});
-  auto act_5 = Noop::make("op_5")->apply({input, act_1, act_2, act_3, act_4});
+  auto comp_1 = Noop::make("op_1")->apply({input});
+  auto comp_2 = Noop::make("op_2")->apply({input, comp_1});
+  auto comp_3 = Noop::make("op_3")->apply({input, comp_1, comp_2});
+  auto comp_4 = Noop::make("op_4")->apply({input, comp_1, comp_2, comp_3});
+  auto comp_5 =
+      Noop::make("op_5")->apply({input, comp_1, comp_2, comp_3, comp_4});
 
-  auto loss = MockLoss::make({act_5});
+  auto loss = MockLoss::make({comp_5});
 
   model::Model model(/* inputs= */ {input},
-                     /* outputs= */ {act_5},
+                     /* outputs= */ {comp_5},
                      /* losses= */ {loss});
 
   ASSERT_EQ(model.opExecutionOrder().size(), 5);
@@ -42,19 +43,19 @@ TEST(ComputationScheduleTests, MultipleOutputs) {
   auto input_2 = emptyInput();
   auto input_3 = emptyInput();
 
-  auto act_1 = Noop::make("op_1")->apply({input_1, input_2});
-  auto act_2 = Noop::make("op_2")->apply({input_2, act_1});
-  auto act_3 = Noop::make("op_3")->apply({input_3, act_1, act_2});
-  auto act_4 = Noop::make("op_4")->apply({input_3, act_3});
-  auto act_5 = Noop::make("op_5")->apply({act_1, act_3});
-  auto act_6 = Noop::make("op_6")->apply({act_3, act_5});
-  auto act_7 = Noop::make("op_7")->apply({act_3, act_5, act_6});
+  auto comp_1 = Noop::make("op_1")->apply({input_1, input_2});
+  auto comp_2 = Noop::make("op_2")->apply({input_2, comp_1});
+  auto comp_3 = Noop::make("op_3")->apply({input_3, comp_1, comp_2});
+  auto comp_4 = Noop::make("op_4")->apply({input_3, comp_3});
+  auto comp_5 = Noop::make("op_5")->apply({comp_1, comp_3});
+  auto comp_6 = Noop::make("op_6")->apply({comp_3, comp_5});
+  auto comp_7 = Noop::make("op_7")->apply({comp_3, comp_5, comp_6});
 
-  auto loss = MockLoss::make({act_4, act_7});
+  auto loss = MockLoss::make({comp_4, comp_7});
 
   model::Model model(
       /* inputs= */ {input_1, input_2, input_3},
-      /* outputs= */ {act_4, act_7},
+      /* outputs= */ {comp_4, comp_7},
       /* losses= */ {loss});
 
   ASSERT_EQ(model.opExecutionOrder().size(), 7);
@@ -94,17 +95,17 @@ TEST(ComputationScheduleTests, Recurrence) {
 
   auto op = Noop::make("recurrence");
 
-  auto act_1 = op->apply({input_1, input_2});
-  auto act_2 = op->apply({input_3, act_1});
-  auto act_3 = op->apply({input_4, act_2});
-  auto act_4 = op->apply({input_5, act_3});
-  auto act_5 = Noop::make("output")->apply({act_4});
+  auto comp_1 = op->apply({input_1, input_2});
+  auto comp_2 = op->apply({input_3, comp_1});
+  auto comp_3 = op->apply({input_4, comp_2});
+  auto comp_4 = op->apply({input_5, comp_3});
+  auto comp_5 = Noop::make("output")->apply({comp_4});
 
-  auto loss = MockLoss::make({act_5});
+  auto loss = MockLoss::make({comp_5});
 
   model::Model model(
       /* inputs= */ {input_1, input_2, input_3, input_4, input_5},
-      /* outputs= */ {act_5}, /* losses= */ {loss});
+      /* outputs= */ {comp_5}, /* losses= */ {loss});
 
   std::vector<std::string> op_order = {"recurrence", "recurrence", "recurrence",
                                        "recurrence", "output"};

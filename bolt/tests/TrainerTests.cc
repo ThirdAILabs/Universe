@@ -66,11 +66,11 @@ TEST(TrainerTest, Training) {
 
   Trainer trainer(model);
 
-  auto train_data = nn::tests::getDataset(
+  auto train_data = nn::tests::getLabeledDataset(
       /* n_classes= */ N_CLASSES, /* n_batches= */ 50,
       /* batch_size= */ 50);
 
-  auto val_data = nn::tests::getDataset(
+  auto val_data = nn::tests::getLabeledDataset(
       /* n_classes= */ N_CLASSES, /* n_batches= */ 10,
       /* batch_size= */ 50);
 

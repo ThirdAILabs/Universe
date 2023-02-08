@@ -85,8 +85,9 @@ metrics::History Trainer::train(
 
     callbacks.onEpochEnd();
 
-    // This condition ensures that if we validated after the last batch already
-    // that we don't do so again here.
+    // This condition ensures that if we steps_per_validation coincides with the
+    // end of the epoch that we don't validate twice: once above when we reach
+    // the validation interval and once when we reach the end of the epoch.
     if (validation_data && steps_since_validation != 0) {
       validate(*validation_data, validation_metrics);
       steps_since_validation = 0;

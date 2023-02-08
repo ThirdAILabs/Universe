@@ -5,8 +5,9 @@
 
 namespace thirdai::bolt::nn::tests {
 
-inline train::LabeledDataset getDataset(uint32_t n_classes, uint32_t n_batches,
-                                        uint32_t batch_size) {
+inline train::LabeledDataset getLabeledDataset(uint32_t n_classes,
+                                               uint32_t n_batches,
+                                               uint32_t batch_size) {
   auto [data, labels] =
       thirdai::bolt::tests::TestDatasetGenerators::generateSimpleVectorDataset(
           /* n_classes= */ n_classes, /* n_batches= */ n_batches,

@@ -11,18 +11,16 @@ namespace thirdai::bolt::train::metrics {
 
 /**
  * Metrics represent some value or measure that is computed during training
- * and/or validation. Metrics are bound to a particular output/label pair in the
- * model and cannot be reused once passed into the model. Currently metrics can
- * only be applied to outputs which are used uniquely in a loss function with a
- * single label. For instance if a loss function is computed on two outputs then
- * those outputs are not available for metrics.
+ * and/or validation. The metric should be constructed with computations it
+ * needs to access to compute the metric.
  */
 class Metric {
  public:
   /**
    * Updates the current value of the metric with the ith sample in the batch.
    * This method is automatically called in parallel accross different elements
-   * of a batch and must support concurency.
+   * of a batch and must support concurency. This should use the computations
+   * the metric was constructed with.
    */
   virtual void record(uint32_t index_in_batch) = 0;
 
@@ -66,19 +64,18 @@ class Metric {
 
 using MetricPtr = std::shared_ptr<Metric>;
 
-// Maps metric names to values. Names are supplied by the user when initially
-// specifying the metrics.
+// Maps metric names of each metric to all the values that been computed for
+// that metric. Contains values from both training and validation metrics. Names
+// are supplied by the user when initially specifying the metrics.
 using History = std::unordered_map<std::string, std::vector<float>>;
 
 using HistoryPtr = std::shared_ptr<History>;
 
-// How metrics are provided to the trainer. Maps output names to lists of
-// metrics.
+// How metrics are provided to the trainer.
 using InputMetrics = std::unordered_map<std::string, metrics::MetricPtr>;
 
 /**
- * Represents a collection of metrics. Binds the metrics their given output and
- * label in its constructor.
+ * Represents a collection of metrics.
  */
 class MetricCollection {
  public:
@@ -90,7 +87,9 @@ class MetricCollection {
   void recordBatch(uint32_t batch_size);
 
   /**
-   * Updates the given history with the values of each metric.
+   * Updates the given history with the values of each metric. The metrics store
+   * there values in the history under the key <prefix>_<metric_name>. This is
+   * used to distinguish train vs validation metrics.
    */
   void updateHistory(HistoryPtr& history, const std::string& prefix);
 

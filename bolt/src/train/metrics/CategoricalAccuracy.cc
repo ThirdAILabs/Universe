@@ -28,6 +28,8 @@ void CategoricalAccuracy::reset() {
 }
 
 float CategoricalAccuracy::value() const {
+  // We are using memory order relaxed because we don't need a strict ordering
+  // between concurrent accesses, just atomic guarentees.
   return static_cast<float>(_correct.load(std::memory_order_relaxed)) /
          _num_samples.load(std::memory_order_relaxed);
 }

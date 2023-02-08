@@ -10,12 +10,11 @@ namespace thirdai::bolt::train::callbacks {
 /**
  * Base class for a callback. When a callback is first passed into the train
  * method of a Trainer it is bound to that model and cannot be used on a
- * different model. The fields model, train_state, and history will be set with
- * the model it is bound to, the current train state for the trainer, and the
- * history of the trainer for that model respectively. The callback can use
- * these fields to access properties and functionality of the model, modify
- * current state of training such as the learning rate or early stopping, or
- * look at past values of train/validation metrics.
+ * different model. The callback has access to the Model, the TrainState and the
+ * metric History which gives all the computed values of all metrics. The
+ * callback can use these fields to access properties and functionality of the
+ * model, modify current state of training such as the learning rate or early
+ * stopping, or look at past values of train/validation metrics.
  */
 class Callback {
  public:
@@ -62,6 +61,11 @@ class Callback {
   virtual ~Callback() = default;
 
  protected:
+  /**
+   * The fields model, train_state, and history will be set with the model it is
+   * bound to, the current train state for the trainer, and the history of the
+   * trainer for that model respectively.
+   */
   nn::model::ModelPtr model;
   TrainStatePtr train_state;
   metrics::HistoryPtr history;
