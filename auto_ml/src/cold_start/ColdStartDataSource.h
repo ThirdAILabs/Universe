@@ -32,7 +32,7 @@ class ColdStartDataSource final : public dataset::DataSource {
 
   std::optional<std::string> nextLine() final;
 
-  std::string resourceName() const final { return _original_filename; }
+  std::string resourceName() const final { return _resource_name; }
 
   void restart() final {
     _header = getHeader();
