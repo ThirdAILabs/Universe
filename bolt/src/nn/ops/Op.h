@@ -34,7 +34,7 @@ class Op {
    * Computes the forward computation of the op. This should use the inputs in
    * the given set of input tensors and store the result in the given output
    * tensor. The parameter index_in_batch indicates which sample of the batch
-   * the computation is for. This allows the model to parallelize the entire
+   * the op should process. This allows the model to parallelize the entire
    * forward and/or backward pass through the graph across the batch. Thus, this
    * function should be thread safe to being called with different values for
    * index_in_batch at the same time.
@@ -51,7 +51,7 @@ class Op {
    * tensor. The model ensures that backpropagate will will not be called on a
    * given op and its output until all the ops that backpropagate gradients to
    * that output have done so. The parameter index_in_batch indicates which
-   * sample of the batch the computation is for. This allows the model to
+   * sample of the batch the op should process. This allows the model to
    * parallelize the entire forward and/or backward pass through the graph
    * across the batch. Thus, this function should be thread safe to being called
    * with different values for index_in_batch at the same time (though benign
@@ -73,11 +73,12 @@ class Op {
 
   /**
    * Returns the number of nonzeros in the ops output for a given list of
-   * inputs that will be passed to the op's forward computation. The
-   * use_sparsity argument indicates whether sparsity will be used in the
-   * forward computation. There are several reasons why the number of nonzeros
-   * may be dependent on these arguments. If the op is a FullyConnected op using
-   * a sparse layer the number of nonzeros in the output will be dependent on
+   * inputs that will be passed to the op's forward computation. Returns
+   * std::nullopt if the number of nonzeros is not fixed. The use_sparsity
+   * argument indicates whether sparsity will be used in the forward
+   * computation. There are several reasons why the number of nonzeros may be
+   * dependent on these arguments. If the op is a FullyConnected op using a
+   * sparse layer the number of nonzeros in the output will be dependent on
    * whether or not sparsity is being used. If the op is a Concatenate op with
    * sparse inputs, then if sparsity is being used the number of nonzeros in the
    * output will depend on the number of nonzeros in the inputs.
@@ -94,7 +95,8 @@ class Op {
 
   /**
    * Appends a line to the summary to describe the op when applied to the given
-   * inputs and yielding the given output.
+   * inputs and yielding the given output. Ideally this should be in the form:
+   * OpType(op name): input(s) -> output(s) [op parameters]
    */
   virtual void summary(std::ostream& summary,
                        const autograd::ComputationList& inputs,

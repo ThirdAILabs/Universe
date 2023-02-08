@@ -14,6 +14,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <optional>
+#include <stdexcept>
 
 namespace py = pybind11;
 
@@ -31,11 +32,20 @@ py::object toNumpy(const T* data, std::vector<uint32_t> shape) {
 template <typename T>
 py::object toNumpy(const tensor::TensorPtr& tensor, const T* data) {
   auto nonzeros = tensor->nonzeros();
-  if (data && nonzeros) {
+  if (!nonzeros) {
+    throw std::runtime_error(
+        "Cannot convert tensor to numpy if the number of nonzeros is not "
+        "fixed.");
+  }
+  if (data) {
     py::array_t<T, py::array::c_style | py::array::forcecast> arr(
         {tensor->batchSize(), *nonzeros}, data);
     return py::object(std::move(arr));
   }
+  // We return None if the data is nullptr so that a user can access the field
+  // and check if its None rather than dealing with an exception. For example:
+  // if tensor.active_neurons:
+  //      do something
   return py::none();
 }
 

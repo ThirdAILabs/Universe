@@ -3,12 +3,22 @@
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <optional>
+#include <sstream>
+#include <stdexcept>
 
 namespace thirdai::bolt::nn::loss {
 
 ComparativeLoss::ComparativeLoss(autograd::ComputationPtr output,
-                                 autograd::ComputationPtr _labels)
-    : _output(std::move(output)), _labels(std::move(_labels)) {}
+                                 autograd::ComputationPtr labels)
+    : _output(std::move(output)), _labels(std::move(labels)) {
+  if (_output->dim() != _labels->dim()) {
+    std::stringstream error;
+    error << "Cannot have comparative loss between output of dimension "
+          << _output->dim() << " and labels of dimension " << _labels->dim()
+          << ".";
+    throw std::invalid_argument(error.str());
+  }
+}
 
 float ComparativeLoss::loss(uint32_t index_in_batch) const {
   const BoltVector& labels = _labels->tensor()->getVector(index_in_batch);
@@ -70,6 +80,9 @@ float ComparativeLoss::loss(const BoltVector& activations,
 
   if constexpr (ACT_DENSE || LABEL_DENSE) {
     float total_loss = 0.0;
+
+    // We know that one of the vectors is dense and that both outputs and labels
+    // have the same dimension so this is safe.
     uint32_t dim = std::max(activations.len, labels.len);
     for (uint32_t i = 0; i < dim; i++) {
       float activation = activations.findActiveNeuron<ACT_DENSE>(i).activation;

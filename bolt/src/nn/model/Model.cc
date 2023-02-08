@@ -25,13 +25,8 @@ Model::Model(autograd::ComputationList inputs,
     _labels.insert(_labels.end(), labels.begin(), labels.end());
   }
 
-  checkNoOutputsHaveDependentOps();
-  checkNoOutputsUsedInMultipleLosses();
-
   _computation_order =
-      autograd::getComputationOrder(_inputs, outputsUsedInLossFunctions());
-
-  checkAllOutputsInComputationOrder();
+      autograd::getComputationOrder(_inputs, _outputs, _losses);
 
   _allocation_manager = AllocationManager(_computation_order);
 
@@ -52,20 +47,20 @@ std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,
 }
 
 void Model::forward(const tensor::TensorList& inputs, bool use_sparsity) {
-  uint32_t input_batch_size = setInputs(inputs);
+  uint32_t input_batch_size = setInput(inputs);
 
   forward(input_batch_size, use_sparsity);
 }
 
 void Model::forward(const tensor::TensorPtr& inputs, bool use_sparsity) {
-  setSingleInput(inputs);
+  setInput(inputs);
 
   forward(inputs->batchSize(), use_sparsity);
 }
 
 void Model::trainOnBatch(const tensor::TensorList& inputs,
                          const tensor::TensorList& labels) {
-  uint32_t input_batch_size = setInputs(inputs);
+  uint32_t input_batch_size = setInput(inputs);
   uint32_t label_batch_size = setLabels(labels);
 
   trainOnBatch(input_batch_size, label_batch_size);
@@ -73,8 +68,8 @@ void Model::trainOnBatch(const tensor::TensorList& inputs,
 
 void Model::trainOnBatch(const tensor::TensorPtr& inputs,
                          const tensor::TensorPtr& labels) {
-  setSingleInput(inputs);
-  setSingleLabel(labels);
+  setInput(inputs);
+  setLabels(labels);
 
   trainOnBatch(inputs->batchSize(), labels->batchSize());
 }
@@ -89,7 +84,7 @@ void Model::validateOnBatch(const tensor::TensorList& inputs,
 void Model::validateOnBatch(const tensor::TensorPtr& inputs,
                             const tensor::TensorPtr& labels,
                             bool use_sparsity) {
-  setSingleLabel(labels);
+  setLabels(labels);
   forward(inputs, use_sparsity);
 }
 
@@ -100,7 +95,7 @@ void Model::updateParameters(float learning_rate) {
   }
 }
 
-std::vector<ops::OpPtr> Model::opComputationOrder() const {
+std::vector<ops::OpPtr> Model::opExecutionOrder() const {
   std::vector<ops::OpPtr> ops;
   for (const auto& comp : _computation_order) {
     ops.push_back(comp->op());
@@ -161,7 +156,7 @@ std::string Model::summary(bool print) const {
 uint32_t Model::trainSteps() const { return _train_steps; }
 
 void Model::forward(uint32_t input_batch_size, bool use_sparsity) {
-  _allocation_manager.reallocateForBatch(input_batch_size, use_sparsity);
+  _allocation_manager.reallocateIfNeeded(input_batch_size, use_sparsity);
 
 #pragma omp parallel for default(none) shared(input_batch_size)
   for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
@@ -175,14 +170,14 @@ void Model::trainOnBatch(uint32_t input_batch_size, uint32_t label_batch_size) {
     throw std::invalid_argument(
         "Input batch size and label batch size do not match.");
   }
-  _allocation_manager.reallocateForBatch(input_batch_size,
+  _allocation_manager.reallocateIfNeeded(input_batch_size,
                                          /* use_sparsity= */ true);
 
-#pragma omp parallel for default(none) shared(input_batch_size)
+  // #pragma omp parallel for default(none) shared(input_batch_size)
   for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
        index_in_batch++) {
     forwardVector(index_in_batch, /* training= */ true);
-    backpropagateVector(index_in_batch);
+    backpropagateVector(index_in_batch, input_batch_size);
   }
 }
 
@@ -192,11 +187,11 @@ void Model::forwardVector(uint32_t index_in_batch, bool training) {
   }
 }
 
-void Model::backpropagateVector(uint32_t index_in_batch) {
+void Model::backpropagateVector(uint32_t index_in_batch, uint32_t batch_size) {
   _allocation_manager.resetOutputGradients(index_in_batch);
 
   for (auto& loss : _losses) {
-    loss->gradients(index_in_batch, _allocation_manager.currentBatchSize());
+    loss->gradients(index_in_batch, batch_size);
   }
 
   for (auto tensor = _computation_order.rbegin();
@@ -217,7 +212,10 @@ inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
 
   std::optional<uint32_t> batch_size = std::nullopt;
   for (uint32_t i = 0; i < inputs.size(); i++) {
-    if (batch_size && batches[i]->batchSize() != *batch_size) {
+    if (!batch_size) {
+      batch_size = batches[i]->batchSize();
+    }
+    if (batches[i]->batchSize() != *batch_size) {
       std::stringstream error;
       error << "Expected all " << type
             << " to have same batch size but received inputs with batch "
@@ -225,20 +223,17 @@ inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
             << *batch_size << " and " << batches[i]->batchSize() << ".";
       throw std::invalid_argument(error.str());
     }
-    if (!batch_size) {
-      batch_size = batches[i]->batchSize();
-    }
     inputs[i]->setTensor(batches[i]);
   }
 
   return batch_size.value();
 }
 
-uint32_t Model::setInputs(const tensor::TensorList& input_batches) {
+uint32_t Model::setInput(const tensor::TensorList& input_batches) {
   return setBatchHelper(_inputs, input_batches, "inputs");
 }
 
-void Model::setSingleInput(const tensor::TensorPtr& input) {
+void Model::setInput(const tensor::TensorPtr& input) {
   if (_inputs.size() != 1) {
     throw std::invalid_argument("Expected " + std::to_string(_inputs.size()) +
                                 " input batches but received 1.");
@@ -250,68 +245,12 @@ uint32_t Model::setLabels(const tensor::TensorList& label_batches) {
   return setBatchHelper(_labels, label_batches, "labels");
 }
 
-void Model::setSingleLabel(const tensor::TensorPtr& labels) {
+void Model::setLabels(const tensor::TensorPtr& labels) {
   if (_labels.size() != 1) {
     throw std::invalid_argument("Expected " + std::to_string(_labels.size()) +
                                 " label batches but received 1.");
   }
   _labels[0]->setTensor(labels);
-}
-
-autograd::ComputationList Model::outputsUsedInLossFunctions() const {
-  autograd::ComputationList comps;
-
-  for (const auto& loss : _losses) {
-    auto comps_in_loss = loss->outputsUsed();
-    comps.insert(comps.end(), comps_in_loss.begin(), comps_in_loss.end());
-  }
-
-  return comps;
-}
-
-void Model::checkNoOutputsHaveDependentOps() const {
-  auto out_degrees = autograd::countDependentComputations(_outputs);
-
-  for (const auto& output : outputsUsedInLossFunctions()) {
-    if (out_degrees.count(output)) {
-      throw std::invalid_argument(
-          "Outputs used in loss functions must not be inputs to any further "
-          "ops. Found output '" +
-          output->name() + "' with a dependent op.");
-    }
-  }
-}
-
-void Model::checkAllOutputsInComputationOrder() const {
-  for (const auto& output : _outputs) {
-    if (std::find(_computation_order.begin(), _computation_order.end(),
-                  output) == _computation_order.end()) {
-      throw std::invalid_argument(
-          "Specified output '" + output->name() +
-          "' is not found in the computation graph created from traversing "
-          "backward from the specified loss functions.");
-    }
-  }
-}
-
-void Model::checkNoOutputsUsedInMultipleLosses() const {
-  std::unordered_set<autograd::ComputationPtr> outputs_set(_outputs.begin(),
-                                                           _outputs.end());
-
-  for (const auto& loss : _losses) {
-    for (const auto& output : loss->outputsUsed()) {
-      if (!outputs_set.count(output)) {
-        throw std::invalid_argument(
-            "Only outputs can be used in losses and outputs cannot be reused "
-            "in multiple losses. Found output '" +
-            output->name() +
-            "' which is either not an output or has already been used in a "
-            "loss function.");
-      }
-
-      outputs_set.erase(output);
-    }
-  }
 }
 
 void Model::matchOutputFullyConnectedLayersWithLabels() {

@@ -7,12 +7,15 @@
 namespace thirdai::bolt::nn::autograd {
 
 ComputationList getComputationOrder(const ComputationList& inputs,
-                                    const ComputationList& outputs) {
-  auto out_degrees = countDependentComputations(outputs);
+                                    const ComputationList& outputs,
+                                    const std::vector<loss::LossPtr>& losses) {
+  checkLossesOnlyApplyToTerminalOutputs(losses);
+
+  auto out_degrees = countDependentComputations(losses);
 
   std::queue<ComputationPtr> queue;
 
-  for (const auto& output : outputs) {
+  for (const auto& output : computationsUsedInLossFunctions(losses)) {
     queue.push(output);
   }
 
@@ -57,11 +60,14 @@ ComputationList getComputationOrder(const ComputationList& inputs,
         "' was not used by any computation in the model.");
   }
 
+  checkAllOutputsInComputationOrder(/* computation_order= */ computation_order,
+                                    /* outputs= */ outputs);
+
   return computation_order;
 }
 
 std::unordered_map<ComputationPtr, uint32_t> countDependentComputations(
-    const ComputationList& outputs) {
+    const std::vector<loss::LossPtr>& losses) {
   std::unordered_map<ComputationPtr, uint32_t> out_degrees;
 
   std::unordered_set<ComputationPtr> visited;
@@ -81,11 +87,55 @@ std::unordered_map<ComputationPtr, uint32_t> countDependentComputations(
     }
   };
 
-  for (const auto& output : outputs) {
+  for (const auto& output : computationsUsedInLossFunctions(losses)) {
     recurse(output);
   }
 
   return out_degrees;
+}
+
+autograd::ComputationList computationsUsedInLossFunctions(
+    const std::vector<loss::LossPtr>& losses) {
+  std::unordered_set<ComputationPtr> comps;
+
+  for (const auto& loss : losses) {
+    for (const auto& output : loss->outputsUsed()) {
+      if (comps.count(output)) {
+        throw std::invalid_argument(
+            "Two loss functions cannot be applied to the same computation.");
+      }
+      comps.insert(output);
+    }
+  }
+
+  return {comps.begin(), comps.end()};
+}
+
+void checkLossesOnlyApplyToTerminalOutputs(
+    const std::vector<loss::LossPtr>& losses) {
+  auto out_degrees = autograd::countDependentComputations(losses);
+
+  for (const auto& output : computationsUsedInLossFunctions(losses)) {
+    if (out_degrees.count(output)) {
+      throw std::invalid_argument(
+          "Outputs used in loss functions must not be inputs to any further "
+          "ops. Found output '" +
+          output->name() + "' with a dependent op.");
+    }
+  }
+}
+
+void checkAllOutputsInComputationOrder(const ComputationList& computation_order,
+                                       const ComputationList& outputs) {
+  for (const auto& output : outputs) {
+    if (std::find(computation_order.begin(), computation_order.end(), output) ==
+        computation_order.end()) {
+      throw std::invalid_argument(
+          "Specified output '" + output->name() +
+          "' is not found in the computation graph created from traversing "
+          "backward from the specified loss functions.");
+    }
+  }
 }
 
 }  // namespace thirdai::bolt::nn::autograd

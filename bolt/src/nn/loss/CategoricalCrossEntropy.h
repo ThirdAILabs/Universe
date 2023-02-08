@@ -7,9 +7,9 @@ namespace thirdai::bolt::nn::loss {
 
 /**
  * Categorical cross entropy loss function. Same as standard implementation of
- * CCE except it adds 1e-7 to output activations before taking the log when
- * computing the loss to handle the case in which there is a non-active neuron
- * whose activation is treated as zero.
+ * CCE except it ensures the output activations are >= 1e-6 before taking the
+ * log when computing the loss to handle the case in which there is a non-active
+ * neuron whose activation is treated as zero.
  */
 class CategoricalCrossEntropy final : public ComparativeLoss {
  public:

@@ -60,9 +60,7 @@ TEST(InvalidModelTests, OutputsCannotBeReusedInLosses) {
   CHECK_MODEL_EXCEPTION(
       model::Model(/* inputs= */ {input}, /* outputs= */ {act_2, act_3},
                    /* losses= */ {loss_1, loss_2}),
-      "Only outputs can be used in losses and outputs cannot be reused in "
-      "multiple losses. Found output 'tensor_3' which is either not an output "
-      "or has already been used in a loss function.");
+      "Two loss functions cannot be applied to the same computation.");
 }
 
 TEST(InvalidModelTests, UnusedInput) {

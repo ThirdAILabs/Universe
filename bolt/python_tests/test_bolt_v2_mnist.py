@@ -4,6 +4,8 @@ import pytest
 from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
 from thirdai import dataset
+from download_datasets import download_mnist
+
 
 # Add an integration test marker for all tests in this file
 pytestmark = [pytest.mark.integration]
@@ -12,33 +14,21 @@ pytestmark = [pytest.mark.integration]
 LEARNING_RATE = 0.0001
 
 
-def load_mnist():
-    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
+@pytest.fixture
+def load_mnist_bolt_v2(download_mnist):
+    train_file, test_file = download_mnist
+    train_x, train_y = dataset.load_bolt_svm_dataset(train_file, 250)
     train_x = bolt.train.convert_dataset(train_x, dim=784)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
 
-    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
+    test_x, test_y = dataset.load_bolt_svm_dataset(test_file, 250)
     test_x = bolt.train.convert_dataset(test_x, dim=784)
     test_y = bolt.train.convert_dataset(test_y, dim=10)
 
     return (train_x, train_y), (test_x, test_y)
 
 
-def setup_module():
-    if not os.path.exists("mnist"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
-        )
-        os.system("bzip2 -d mnist.bz2")
-
-    if not os.path.exists("mnist.t"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
-        )
-        os.system("bzip2 -d mnist.t.bz2")
-
-
-def test_bolt_on_mnist():
+def test_bolt_on_mnist(load_mnist_bolt_v2):
     input_layer = bolt.nn.Input(dim=784)
 
     hidden_layer = bolt.nn.FullyConnected(
@@ -61,7 +51,7 @@ def test_bolt_on_mnist():
 
     model = bolt.nn.Model(inputs=[input_layer], outputs=[output], losses=[loss])
 
-    train_data, test_data = load_mnist()
+    train_data, test_data = load_mnist_bolt_v2
 
     trainer = bolt.train.Trainer(model)
 

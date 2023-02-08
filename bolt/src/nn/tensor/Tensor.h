@@ -40,7 +40,7 @@ class Tensor {
   BoltVector& getVector(uint32_t index);
 
   /**
-   * Returns the batch size of the data in the tensor.
+   * Returns the number of vectors in the tensor.
    */
   uint32_t batchSize() const;
 

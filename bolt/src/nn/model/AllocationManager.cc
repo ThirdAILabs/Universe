@@ -6,12 +6,10 @@ namespace thirdai::bolt::nn::model {
 AllocationManager::AllocationManager(autograd::ComputationList computations)
     : _computations(std::move(computations)),
       _allocated_batch_size(0),
-      _current_batch_size(0),
       _using_sparsity(true) {}
 
-void AllocationManager::reallocateForBatch(uint32_t batch_size,
+void AllocationManager::reallocateIfNeeded(uint32_t batch_size,
                                            bool use_sparsity) {
-  _current_batch_size = batch_size;
   if (batch_size <= _allocated_batch_size && use_sparsity == _using_sparsity) {
     return;
   }

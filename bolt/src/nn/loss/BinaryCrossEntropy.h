@@ -6,7 +6,7 @@ namespace thirdai::bolt::nn::loss {
 
 /**
  * Binary cross entropy loss function. Same as standard implementation of
- * BCE except it adds clips output activations to [1e-6, 1-1e-6] for stability.
+ * BCE except it clips output activations to [1e-6, 1-1e-6] for stability.
  */
 class BinaryCrossEntropy final : public ComparativeLoss {
  public:

@@ -6,6 +6,13 @@
 
 namespace thirdai::bolt::nn::loss {
 
+/**
+ * Loss functions are used to compute the gradients of the terminal computations
+ * in the computation graph (computations with no successors). The Losses should
+ * be constructed with a combination of terminal computations in the computation
+ * graph and labels. There is no restriction on how many computations and labels
+ * the Loss can use.
+ */
 class Loss {
  public:
   /**

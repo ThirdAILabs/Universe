@@ -24,9 +24,9 @@ TEST(ComputationScheduleTests, SingleOutput) {
                      /* outputs= */ {act_5},
                      /* losses= */ {loss});
 
-  ASSERT_EQ(model.opComputationOrder().size(), 5);
+  ASSERT_EQ(model.opExecutionOrder().size(), 5);
   uint32_t op_cnt = 0;
-  for (const auto& op : model.opComputationOrder()) {
+  for (const auto& op : model.opExecutionOrder()) {
     ASSERT_EQ(op->name(), "op_" + std::to_string(++op_cnt));
   }
 
@@ -57,11 +57,11 @@ TEST(ComputationScheduleTests, MultipleOutputs) {
       /* outputs= */ {act_4, act_7},
       /* losses= */ {loss});
 
-  ASSERT_EQ(model.opComputationOrder().size(), 7);
+  ASSERT_EQ(model.opExecutionOrder().size(), 7);
 
   std::vector<uint32_t> op_order_first_part = {1, 2, 3, 5, 6};
   for (uint32_t i = 0; i < 5; i++) {
-    ASSERT_EQ(model.opComputationOrder()[i]->name(),
+    ASSERT_EQ(model.opExecutionOrder()[i]->name(),
               "op_" + std::to_string(op_order_first_part[i]));
   }
 
@@ -72,8 +72,8 @@ TEST(ComputationScheduleTests, MultipleOutputs) {
               "tensor_" + std::to_string(comp_order_first_part[i]));
   }
 
-  auto sixth_op = model.opComputationOrder()[5]->name();
-  auto seventh_op = model.opComputationOrder()[6]->name();
+  auto sixth_op = model.opExecutionOrder()[5]->name();
+  auto seventh_op = model.opExecutionOrder()[6]->name();
 
   ASSERT_TRUE(sixth_op == "op_4" && seventh_op == "op_7" ||
               sixth_op == "op_7" && seventh_op == "op_4");
@@ -108,9 +108,9 @@ TEST(ComputationScheduleTests, Recurrence) {
 
   std::vector<std::string> op_order = {"recurrence", "recurrence", "recurrence",
                                        "recurrence", "output"};
-  ASSERT_EQ(model.opComputationOrder().size(), 5);
+  ASSERT_EQ(model.opExecutionOrder().size(), 5);
   for (uint32_t i = 0; i < 5; i++) {
-    ASSERT_EQ(model.opComputationOrder()[i]->name(), op_order[i]);
+    ASSERT_EQ(model.opExecutionOrder()[i]->name(), op_order[i]);
   }
 
   ASSERT_EQ(model.computationOrder().size(), 10);

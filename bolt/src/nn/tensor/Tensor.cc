@@ -16,14 +16,17 @@ Tensor::Tensor(uint32_t batch_size, uint32_t dim, uint32_t nonzeros)
 
   _vectors.reserve(batch_size);
 
-  for (uint32_t i = 0; i < batch_size * nonzeros; i += nonzeros) {
+  for (uint32_t offset = 0; offset < batch_size * nonzeros;
+       offset += nonzeros) {
     uint32_t* active_neurons = nullptr;
     if (nonzeros < dim) {
-      active_neurons = _active_neurons.data() + i;
+      active_neurons = _active_neurons.data() + offset;
     }
 
-    _vectors.emplace_back(active_neurons, _activations.data() + i,
-                          _gradients.data() + i, nonzeros);
+    _vectors.emplace_back(
+        /* active_neurons= */ active_neurons,
+        /* activations= */ _activations.data() + offset,
+        /* gradients= */ _gradients.data() + offset, /* len= */ nonzeros);
   }
 }
 
@@ -40,6 +43,8 @@ Tensor::Tensor(BoltBatch&& batch, uint32_t dim)
       throw std::invalid_argument(
           "All vectors in batch must have same sparsity to convert to tensor.");
     }
+    // Since this constructor is intended to be used to convert inputs we don't
+    // need to handle the case where there are gradients.
     if (vec.hasGradients()) {
       throw std::invalid_argument(
           "Cannot convert vector with gradients to tensor.");
@@ -67,19 +72,22 @@ Tensor::Tensor(BoltBatch&& batch, uint32_t dim)
     uint32_t* active_neurons =
         is_dense ? nullptr : _active_neurons.data() + offset;
 
-    _vectors.emplace_back(active_neurons, _activations.data() + offset, nullptr,
-                          vec.len);
+    _vectors.emplace_back(/* active_neurons= */ active_neurons,
+                          /* activations= */ _activations.data() + offset,
+                          /* gradients= */ nullptr, /* len= */ vec.len);
     offset += vec.len;
   }
 }
 
 std::shared_ptr<Tensor> Tensor::dense(uint32_t batch_size, uint32_t dim) {
-  return std::make_shared<Tensor>(batch_size, dim, dim);
+  return std::make_shared<Tensor>(/* batch_size= */ batch_size, /* dim= */ dim,
+                                  /* nonzeros= */ dim);
 }
 
 std::shared_ptr<Tensor> Tensor::sparse(uint32_t batch_size, uint32_t dim,
                                        uint32_t nonzeros) {
-  return std::make_shared<Tensor>(batch_size, dim, nonzeros);
+  return std::make_shared<Tensor>(/* batch_size= */ batch_size, /* dim= */ dim,
+                                  /* nonzeros= */ nonzeros);
 }
 
 std::shared_ptr<Tensor> Tensor::convert(BoltBatch&& batch, uint32_t dim) {

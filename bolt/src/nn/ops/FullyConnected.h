@@ -49,7 +49,8 @@ class FullyConnected final
                const autograd::Computation* output) const final;
 
   /**
-   * Applies the op to an input tensor and yields a new output tensor.
+   * Applies the op to an input tensor and yields a new output tensor. Used to
+   * add the op to a computation graph.
    */
   autograd::ComputationPtr apply(autograd::ComputationPtr input);
 

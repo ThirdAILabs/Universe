@@ -9,6 +9,16 @@
 
 namespace thirdai::bolt::nn::model {
 
+/**
+ * This represents the core Model that the Bolt engine is based around. This
+ * combines the logic in the computations, loss functions, and autograd. These
+ * Models are designed to only support processing a single batch at a time. This
+ * simplifies the code and allows for things such as metrics, callbacks,
+ * validation etc. to be delegated to a seperate trainer class. Additionally
+ * this allows for users to interact with the model at a lower level if needed
+ * to write custom training functions and interact with the state of the model
+ * after processing batches.
+ */
 class Model {
  public:
   Model(autograd::ComputationList inputs, autograd::ComputationList outputs,
@@ -21,9 +31,10 @@ class Model {
   /**
    * Computes the forward pass through the model for the given batch.
    * Activations are not cleared until the next call to forward or trainOnBatch.
-   * Labels will not be selected by sparse fully connected layers which yield
-   * outputs since labels are not provided. For this type of sampling
-   * trainOnBatch must be used.
+   * This is intended for use with inference/evaluation and so labels will not
+   * be selected by sparse fully connected layers which yield outputs since
+   * labels are not provided. For this type of sampling trainOnBatch must be
+   * used.
    */
   void forward(const tensor::TensorList& inputs, bool use_sparsity);
 
@@ -44,7 +55,11 @@ class Model {
   /**
    * Performs the forward pass through the model on a given batch. Differs from
    * forward because the labels can be provided so that they are set and can
-   * thus be used in metrics during validation.
+   * thus be used in metrics during validation. The labels are not used at all
+   * during the forward pass (i.e. not used in sparse layer sampling) or
+   * anywhere else in the model. This does not return anything because it is
+   * just intended to perform the forward pass through the model so that metrics
+   * can be computed.
    */
   void validateOnBatch(const tensor::TensorList& inputs,
                        const tensor::TensorList& labels, bool use_sparsity);
@@ -61,11 +76,11 @@ class Model {
 
   /**
    * Returns the list of ops in the model in the order they will be executed
-   * during the forward pass. Ops that are used multiple times will occur
-   * multiple times in this list at each of the points in which they would be
-   * executed.
+   * during the forward pass. If an op is used multiple times in a model then it
+   * will occur multiple times in this list, with the locations depending on
+   * where the computations it is used in are located in the computation order.
    */
-  std::vector<ops::OpPtr> opComputationOrder() const;
+  std::vector<ops::OpPtr> opExecutionOrder() const;
 
   /**
    * Returns the list of computations in the model in the order they will be
@@ -75,7 +90,7 @@ class Model {
   autograd::ComputationList computationOrder() const;
 
   /**
-   * Returns the outputs of the outputs of the model.
+   * Returns the outputs of the model.
    */
   const autograd::ComputationList& outputs() const;
 
@@ -121,26 +136,21 @@ class Model {
    * batch. Assumes that setInputs(...) and setLabels(...) have already been
    * called.
    */
-  void backpropagateVector(uint32_t index_in_batch);
+  void backpropagateVector(uint32_t index_in_batch, uint32_t batch_size);
 
   /**
    * Sets the given batch as the inputs to the model.
    */
-  uint32_t setInputs(const tensor::TensorList& input_batches);
+  uint32_t setInput(const tensor::TensorList& input_batches);
 
-  void setSingleInput(const tensor::TensorPtr& input);
+  void setInput(const tensor::TensorPtr& input);
 
   /**
    * Sets the given labels as the current labels for the model.
    */
   uint32_t setLabels(const tensor::TensorList& label_batches);
 
-  void setSingleLabel(const tensor::TensorPtr& labels);
-
-  /**
-   * Returns the computations in the model that are used in loss functions.
-   */
-  autograd::ComputationList outputsUsedInLossFunctions() const;
+  void setLabels(const tensor::TensorPtr& labels);
 
   /**
    * When a loss is applied to a single output computation coming from a fully
@@ -149,15 +159,6 @@ class Model {
    * the layer is sparse.
    */
   void matchOutputFullyConnectedLayersWithLabels();
-
-  /**
-   * These methods perform checks to make sure that model is valid.
-   */
-  void checkNoOutputsHaveDependentOps() const;
-
-  void checkAllOutputsInComputationOrder() const;
-
-  void checkNoOutputsUsedInMultipleLosses() const;
 
   autograd::ComputationList _inputs;
   autograd::ComputationList _outputs;

@@ -1,7 +1,6 @@
-import os
-
 import pytest
 from thirdai import bolt, dataset
+from download_datasets import download_mnist
 
 # Add an integration test marker for all tests in this file
 pytestmark = [pytest.mark.integration]
@@ -10,27 +9,15 @@ pytestmark = [pytest.mark.integration]
 LEARNING_RATE = 0.0001
 
 
-def load_mnist():
-    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
-    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
+@pytest.fixture
+def load_mnist(download_mnist):
+    train_file, test_file = download_mnist
+    train_x, train_y = dataset.load_bolt_svm_dataset(train_file, 250)
+    test_x, test_y = dataset.load_bolt_svm_dataset(test_file, 250)
     return train_x, train_y, test_x, test_y
 
 
-def setup_module():
-    if not os.path.exists("mnist"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
-        )
-        os.system("bzip2 -d mnist.bz2")
-
-    if not os.path.exists("mnist.t"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
-        )
-        os.system("bzip2 -d mnist.t.bz2")
-
-
-def test_bolt_dag_on_mnist():
+def test_bolt_dag_on_mnist(load_mnist):
     input_layer = bolt.nn.Input(dim=784)
 
     hidden_layer = bolt.nn.FullyConnected(
@@ -48,7 +35,7 @@ def test_bolt_dag_on_mnist():
 
     model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
-    train_data, train_labels, test_data, test_labels = load_mnist()
+    train_data, train_labels, test_data, test_labels = load_mnist
 
     train_config = (
         bolt.TrainConfig(learning_rate=0.0001, epochs=3)

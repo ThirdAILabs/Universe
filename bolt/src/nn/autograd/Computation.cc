@@ -7,6 +7,12 @@ namespace thirdai::bolt::nn::autograd {
 
 std::string nextComputationName() {
   static uint32_t constructed = 0;
+  /**
+   * We name this tensor because there is a symmetry between tensors and
+   * computations, each computation generates 1 tensor in the model. Calling it
+   * tensor makes it more intuitive when model summaries are displayed and keeps
+   * the computation class hidden from the user.
+   */
   return "tensor_" + std::to_string(++constructed);
 }
 
@@ -55,7 +61,6 @@ void Computation::addInput(ComputationPtr input) {
 }
 
 void Computation::setTensor(tensor::TensorPtr tensor) {
-  // TODO(Nicholas): check num nonzeros if present.
   if (tensor->dim() != dim()) {
     throw std::invalid_argument(
         "Cannot set tensor with dimension " + std::to_string(tensor->dim()) +

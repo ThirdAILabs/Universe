@@ -9,10 +9,11 @@ using ComputationPtr = std::shared_ptr<Computation>;
 using ComputationList = std::vector<ComputationPtr>;
 
 /**
- * A computation represents a node in the computation graph. It stores in inputs
- * to and outputs of the computation, as well as the op that defines the
- * computation. It is used to store the computation graph and determine the
- * correct ordering of the ops for autograd.
+ * A Computation represents a node in the overarching computation graph for the
+ * Bolt model. It stores a single Op that defines how the Computation processes
+ * its input, a Tensor representing the output of the Computation, and a list of
+ * Computations that precede it and make up the input. It is used to store the
+ * computation graph and determine the correct ordering of the ops for autograd.
  */
 class Computation {
  public:
@@ -41,14 +42,18 @@ class Computation {
   /**
    * Computes the activations of the neurons in the output of the computation
    * from its inputs using its source op. Calls the forward method of the source
-   * op.
+   * op. The parameter index_in_batch indicates which sample of the batch
+   * the computation should process. This allows the model to parallelize the
+   * entire forward and/or backward pass through the graph across the batch.
    */
   void forward(uint32_t index_in_batch, bool training);
 
   /**
    * Backpropagates the gradients of the outputs of the computation to its
    * inputs using the source op. Calls the backpropagate method of the source
-   * op.
+   * op. The parameter index_in_batch indicates which sample of the batch the
+   * computation should process. This allows the model to parallelize the entire
+   * forward and/or backward pass through the graph across the batch.
    */
   void backpropagate(uint32_t index_in_batch);
 
@@ -60,29 +65,34 @@ class Computation {
   /**
    * Returns the number of nonzeros the output tensor will contain depending on
    * whether or not sparsity is being used and the inputs. Calls the nonzeros
-   * method of the source op.
+   * method of the source op. Returns std::nullopt if the number of nonzeros is
+   * not fixed, for instance in a sparse input.
    */
   std::optional<uint32_t> nonzeros(bool use_sparsity) const;
 
   /**
-   * Reallocates the number of vectors stored in the output tensor to reflect
-   * either a change in the batch size the model is processing, a change in
-   * whether sparsity is being used for the computations, or a change in the
-   * sparsity of some op in the model. This method obtains its number of
-   * nonzeros from its source op by passing in the inputs and whether sparsity
-   * is enabled.
+   * Reallocates the output tensor to reflect either a change in the batch size
+   * the model is processing, a change in whether sparsity is being used for the
+   * computations, or a change in the sparsity of some op in the model. This
+   * method obtains its number of nonzeros from its source op by passing in the
+   * inputs and whether sparsity is enabled.
    */
   void allocate(uint32_t batch_size, bool use_sparsity);
 
   /**
-   * Adds an additional input to the computation which will be passed into its
-   * source op during forward and backward. This is only intended to be used to
-   * add the labels as an extra input to the FullyConnected op when the
-   * FullyConnected op yields an output and we want the labels to always be in
-   * the set of active neurons.
+   * Adds an additional input to the end of the input list which will be passed
+   * into the computation's op during forward and backward. One possible use
+   * case is to add the labels as an extra input to the FullyConnected op when
+   * the FullyConnected op yields an output and we want the labels to always be
+   * in the set of active neurons.
    */
   void addInput(ComputationPtr input);
 
+  /**
+   * Sets the tensor representing the output of the computation. This is used to
+   * inject data into the computation graph, for example the inputs and labels
+   * during training.
+   */
   void setTensor(tensor::TensorPtr tensor);
 
   /**

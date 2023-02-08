@@ -10,13 +10,15 @@
 
 namespace py = pybind11;
 
-PYBIND11_MAKE_OPAQUE(std::vector<thirdai::bolt::nn::tensor::TensorPtr>)
+PYBIND11_MAKE_OPAQUE(thirdai::bolt::nn::tensor::TensorList)
 
 namespace thirdai::bolt::train::python {
 
 void createBoltV2TrainSubmodule(py::module_& module) {
   auto train = module.def_submodule("train");
 
+  // TODO(Nicholas): Add methods to return tensors in data pipeline and remove
+  // this.
   train.def(
       "convert_dataset",
       [](const dataset::BoltDatasetPtr& dataset, uint32_t dim) {
@@ -46,7 +48,7 @@ void createBoltV2TrainSubmodule(py::module_& module) {
       metrics, "CategoricalAccuracy")
       .def(py::init<nn::autograd::ComputationPtr,
                     nn::autograd::ComputationPtr>(),
-           py::arg("outputs"), py::arg("metrics"));
+           py::arg("outputs"), py::arg("labels"));
 
   auto callbacks = train.def_submodule("callbacks");
 

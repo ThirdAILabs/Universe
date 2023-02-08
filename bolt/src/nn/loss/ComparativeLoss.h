@@ -16,7 +16,7 @@ namespace thirdai::bolt::nn::loss {
 class ComparativeLoss : public Loss {
  public:
   ComparativeLoss(autograd::ComputationPtr output,
-                  autograd::ComputationPtr _labels);
+                  autograd::ComputationPtr labels);
 
   float loss(uint32_t index_in_batch) const final;
 

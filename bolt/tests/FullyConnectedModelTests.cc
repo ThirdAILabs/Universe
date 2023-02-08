@@ -52,7 +52,7 @@ model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
   }
 
   auto model = model::Model::make(/* inputs= */ {input}, /* outputs= */ outputs,
-                                  /* losses= */ {losses});
+                                  /* losses= */ losses);
 
   return model;
 }
