@@ -35,7 +35,7 @@ class GraphFeaturizer final : public Featurizer {
       ColumnIdentifier source_col, uint32_t max_neighbours,
       char delimiter = ',', std::optional<uint32_t> hash_range = std::nullopt) {
     return std::make_shared<GraphFeaturizer>(
-        std::move(input_blocks), std::move(label_blocks), source_col,
+        std::move(input_blocks), std::move(label_blocks), std::move(source_col),
         max_neighbours, delimiter, hash_range);
   }
 
