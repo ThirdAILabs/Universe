@@ -5,6 +5,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <sys/types.h>
 #include <memory>
 #include <optional>
 #include <unordered_map>
@@ -25,10 +26,7 @@ class GraphFeaturizer final : public Featurizer {
         _max_neighbours(max_neighbours),
         _delimiter(delimiter),
         _hash_range(hash_range) {
-    _node_vocab = ThreadSafeVocabulary::make(/*vocab_size=*/0,
-                                             /*limit_vocab_size=*/false);
-
-    _node_vocab->getUid("null_neighbour");
+          _node_id_to_num_map.insert({"null_node",0});
   }
 
   static std::shared_ptr<GraphFeaturizer> make(
@@ -66,6 +64,8 @@ class GraphFeaturizer final : public Featurizer {
       const std::unordered_map<std::string, std::unordered_set<std::string>>&
           neighbours);
 
+  void updateNodeIdMap(const ColumnNumberMap& column_number_map);
+
  private:
   std::exception_ptr featurizeSampleInBatch(
       uint32_t index_in_batch, ColumnarInputBatch& input_batch,
@@ -76,7 +76,7 @@ class GraphFeaturizer final : public Featurizer {
   BoltVector buildTokenVector(ColumnarInputSample& sample);
 
   std::unordered_map<std::string, std::unordered_set<std::string>> _neighbours;
-  ThreadSafeVocabularyPtr _node_vocab;
+  std::unordered_map<std::string, uint32_t> _node_id_to_num_map;
   BlockList _input_blocks;
   BlockList _label_blocks;
   ColumnIdentifier _source_col;

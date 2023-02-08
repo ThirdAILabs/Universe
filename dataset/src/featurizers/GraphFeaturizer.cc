@@ -65,6 +65,16 @@ void GraphFeaturizer::updateNeighbours(
   }
 }
 
+void GraphFeaturizer::updateNodeIdMap(const ColumnNumberMap& column_number_map) {
+  auto temp = column_number_map.getColumnNumToColNameMap();
+  for(const auto& node: temp) {
+    auto present_size = _node_id_to_num_map.size();
+    if(!_node_id_to_num_map.count(node)) {
+      _node_id_to_num_map[node] = present_size;
+    }
+  }
+}
+
 std::vector<std::vector<BoltVector>> GraphFeaturizer::featurize(
     const LineInputBatch& input_batch) {
   CsvBatchRef input_batch_ref(input_batch, _delimiter, _expected_num_cols);
@@ -108,7 +118,7 @@ BoltVector GraphFeaturizer::buildTokenVector(ColumnarInputSample& sample) {
     if (i >= _max_neighbours) {
       break;
     }
-    indices[i] = _node_vocab->getUid(*it);
+    indices[i] = _node_id_to_num_map.at(*it);
   }
   }
   std::vector<float> values(_max_neighbours, 1.0);

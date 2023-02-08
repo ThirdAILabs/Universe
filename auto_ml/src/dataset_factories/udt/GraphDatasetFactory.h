@@ -53,6 +53,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
         _config->_max_neighbours, _config->_delimeter, 100000);
 
     _batch_processor->updateNeighbours(_neighbours);
+
+    _batch_processor->updateNodeIdMap(_node_id_map);
   }
 
   std::vector<uint32_t> getInputDims() final {
@@ -151,8 +153,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     uint32_t num_nodes = adjacency_list.size();
     std::unordered_map<std::string, std::unordered_set<std::string>> neighbours(
         num_nodes);
-    // #pragma omp parallel for default(none)
-    //     shared(num_nodes, k_hop, adjacency_list, neighbours)
+// #pragma omp parallel for default(none) shared(num_nodes, k_hop, adjacency_list, neighbours)
     for (const auto& temp : adjacency_list) {
       std::unordered_set<std::string> neighbours_for_node;
       std::vector<bool> visited(num_nodes, false);
@@ -216,12 +217,12 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
 
       adjacency_list = createGraph(rows, relationship_col_nums, source_col_num);
     } else {
-      std::unordered_map<std::string, std::vector<std::string>>
-          adjacency_list_provided(_config->_adj_list->size());
+      std::vector<std::string> nodes;
       for (const auto& temp : *_config->_adj_list) {
         adjacency_list[temp.first] = temp.second;
+        nodes.push_back(temp.first);
       }
-      adjacency_list = adjacency_list_provided;
+      _node_id_map = ColumnNumberMap(nodes);
     }
 
     std::cout << "h 2" << std::endl;
