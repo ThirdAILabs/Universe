@@ -216,7 +216,8 @@ std::vector<std::string> ColumnMap::columns() const {
   return columns;
 }
 
-ColumnMap ColumnMap::createStringColumnMapFromFile(const dataset::DataSourcePtr& source) {
+ColumnMap ColumnMap::createStringColumnMapFromFile(
+    const dataset::DataSourcePtr& source) {
   auto header_string = source->nextLine();
   if (!header_string.has_value()) {
     throw std::invalid_argument("Source was found to be empty.");
