@@ -2,7 +2,6 @@
 
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/FeatureComposer.h>
@@ -54,6 +53,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
         _config->_max_neighbours, _config->_delimeter, 100000);
 
     _batch_processor->updateNeighbours(_neighbours);
+
+    _batch_processor->updateNodeIdMap(_node_id_map);
   }
 
   std::vector<uint32_t> getInputDims() final {
@@ -152,8 +153,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     uint32_t num_nodes = adjacency_list.size();
     std::unordered_map<std::string, std::unordered_set<std::string>> neighbours(
         num_nodes);
-    // #pragma omp parallel for default(none)
-    //     shared(num_nodes, k_hop, adjacency_list, neighbours)
+// #pragma omp parallel for default(none) shared(num_nodes, k_hop, adjacency_list, neighbours)
     for (const auto& temp : adjacency_list) {
       std::unordered_set<std::string> neighbours_for_node;
       std::vector<bool> visited(num_nodes, false);
@@ -172,8 +172,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       uint32_t source_col_num) {
     std::vector<std::vector<std::string>> processed_numerical_columns(
         rows.size(), std::vector<std::string>(numerical_columns.size()));
-    // #pragma omp parallel for default(none)                                       \
-//     shared(rows, numerical_columns, processed_numerical_columns, neighbours, \
+    // #pragma omp parallel for default(none)                                       
+//     shared(rows, numerical_columns, processed_numerical_columns, neighbours, 
 //            source_col_num)
     for (uint32_t i = 0; i < rows.size(); i++) {
       for (uint32_t j = 0; j < numerical_columns.size(); j++) {
@@ -185,7 +185,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
           }
           processed_numerical_columns[i][j] =
               std::to_string(static_cast<float>(value) /
-                             neighbours.at(rows[i][source_col_num]).size());
+                             (neighbours.at(rows[i][source_col_num]).size()+1));
         } else {
           processed_numerical_columns[i][j] = std::to_string(value);
         }
@@ -217,12 +217,12 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
 
       adjacency_list = createGraph(rows, relationship_col_nums, source_col_num);
     } else {
-      std::unordered_map<std::string, std::vector<std::string>>
-          adjacency_list_provided(_config->_adj_list->size());
+      std::vector<std::string> nodes;
       for (const auto& temp : *_config->_adj_list) {
         adjacency_list[temp.first] = temp.second;
+        nodes.push_back(temp.first);
       }
-      adjacency_list = adjacency_list_provided;
+      _node_id_map = ColumnNumberMap(nodes);
     }
 
     std::cout << "h 2" << std::endl;

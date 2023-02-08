@@ -2,6 +2,7 @@
 
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <optional>
+#include <stdexcept>
 #include <unordered_map>
 #include <utility>
 namespace thirdai::automl::data {
@@ -29,7 +30,11 @@ struct GraphConfig {
         _label_context(label_context),
         _kth_neighbourhood(kth_neighbourhood),
         _delimeter(delimeter),
-        _adj_list(std::move(adj_list)) {}
+        _adj_list(std::move(adj_list)) {
+          if(! _relationship_columns && ! _adj_list) {
+            throw std::invalid_argument("Atleast one of relationship columns or adj_list has to be provided.");
+          }
+        }
 
   ColumnDataTypes _data_types;
   std::string _graph_file_name;
