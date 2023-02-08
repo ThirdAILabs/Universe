@@ -77,8 +77,9 @@ void ColdStartTextAugmentation::validateGreaterThanZero(
 }
 
 ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
-  auto label_column = columns.getTokenArrayColumn(_label_column_name);
-  std::vector<std::vector<uint32_t>> augmented_labels;
+  auto label_column = columns.getStringColumn(_label_column_name);
+  
+  std::vector<std::string> augmented_labels;
   std::vector<std::string> augmented_data;
 
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
@@ -93,10 +94,7 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
     PhraseCollection phrases = getWeakPhrases(weak_text);
     mergeStrongWithWeak(phrases, strong_phrase);
 
-    std::vector<uint32_t> labels;
-    for (const auto& label : (*label_column)[row_id]) {
-      labels.push_back(label);
-    }
+    std::string labels = (*label_column)[row_id];
     for (const auto& phrase : phrases) {
       // Add (label, phrase) to the output data.
       std::string output_text;
@@ -117,19 +115,9 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
   std::shuffle(augmented_data.begin(), augmented_data.end(), rng_1);
   std::shuffle(augmented_labels.begin(), augmented_labels.end(), rng_2);
 
-  // Finally, make a new ColumnMap (i.e. dataset) out of the augmented data and
-  // augmented labels. Note that the VectorSparseArrayColumn constructor takes
-  // an optional uint32_t dimension instead of an optional DimensionInfo.
-  std::optional<columns::DimensionInfo> label_dimension_info =
-      label_column->dimension();
-  std::optional<uint32_t> label_dimension = std::nullopt;
-  if (label_dimension_info) {
-    label_dimension = label_dimension_info.value().dim;
-  }
+  columns::StringColumnPtr augmented_label_column =
+      std::make_shared<columns::CppStringColumn>(augmented_labels);
 
-  columns::TokenArrayColumnPtr augmented_label_column =
-      std::make_shared<columns::CppTokenArrayColumn>(augmented_labels,
-                                                     label_dimension);
   columns::StringColumnPtr augmented_data_column =
       std::make_shared<columns::CppStringColumn>(augmented_data);
 

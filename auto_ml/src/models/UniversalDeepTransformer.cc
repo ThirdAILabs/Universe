@@ -18,6 +18,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/StringManipulation.h>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -251,9 +252,6 @@ void UniversalDeepTransformer::coldStartPretraining(
 
   auto metadata = cold_start::getColdStartMetadata(dataset_config);
 
-  cold_start::convertLabelColumnToTokenArray(dataset, dataset_config->target,
-                                             metadata.label_delimiter);
-
   thirdai::data::ColdStartTextAugmentation augmentation(
       /* strong_column_names= */ strong_column_names,
       /* weak_column_names= */ weak_column_names,
@@ -280,7 +278,7 @@ void UniversalDeepTransformer::coldStartPretraining(
 
   train(data_source, train_config, /* validation= */ validation,
         /* max_in_memory_batches= */ std::nullopt,
-        /* batch_size = */ _train_eval_config.defaultBatchSize());
+        /* batch_size_opt= */ _train_eval_config.defaultBatchSize());
 }
 
 std::pair<OutputProcessorPtr, std::optional<dataset::RegressionBinningStrategy>>

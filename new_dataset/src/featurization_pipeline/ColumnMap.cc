@@ -2,6 +2,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
+#include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <exception>
 #include <stdexcept>
 #include <unordered_map>
@@ -215,7 +216,7 @@ std::vector<std::string> ColumnMap::columns() const {
   return columns;
 }
 
-ColumnMap createStringColumnMapFromFile(const dataset::DataSourcePtr& source) {
+ColumnMap ColumnMap::createStringColumnMapFromFile(const dataset::DataSourcePtr& source) {
   auto header_string = source->nextLine();
   if (!header_string.has_value()) {
     throw std::invalid_argument("Source was found to be empty.");
@@ -239,7 +240,7 @@ ColumnMap createStringColumnMapFromFile(const dataset::DataSourcePtr& source) {
   std::unordered_map<std::string, columns::ColumnPtr> column_map;
   for (size_t i = 0; i < columns.size(); i++) {
     column_map[std::string(header.at(i))] =
-        std::make_shared<columns::StringColumn>(columns.at(i));
+        std::make_shared<columns::CppStringColumn>(columns.at(i));
   }
 
   return ColumnMap(column_map);

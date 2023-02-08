@@ -44,14 +44,12 @@ class ColdStartDataSource final : public dataset::DataSource {
   // map and returns it as a string.
   std::optional<std::string> getNextRowAsString();
 
-  std::string getLabelsAsString();
-
   std::string getHeader() const {
     return _label_column_name + _column_delimiter + _text_column_name;
   }
 
   thirdai::data::columns::StringColumnPtr _text_column;
-  thirdai::data::columns::TokenArrayColumnPtr _label_column;
+  thirdai::data::columns::StringColumnPtr _label_column;
   uint64_t _row_idx;
 
   std::string _text_column_name;
