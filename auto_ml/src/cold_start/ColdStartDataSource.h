@@ -24,7 +24,7 @@ class ColdStartDataSource final : public dataset::DataSource {
                    std::string resource_name) {
     return std::make_shared<ColdStartDataSource>(
         column_map, std::move(text_column_name), std::move(label_column_name),
-        column_delimiter, label_delimiter, resource_name);
+        column_delimiter, label_delimiter, std::move(resource_name));
   }
 
   std::optional<std::vector<std::string>> nextBatch(
