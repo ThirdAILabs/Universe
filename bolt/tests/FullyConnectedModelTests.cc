@@ -75,20 +75,18 @@ void trainModel(model::ModelPtr& model, const train::LabeledDataset& data,
 
 std::vector<float> computeAccuracy(model::ModelPtr& model,
                                    const train::LabeledDataset& data) {
-  const auto& outputs = model->outputs();
-
-  std::vector<uint32_t> correct(outputs.size(), 0);
-  std::vector<uint32_t> total(outputs.size(), 0);
+  std::vector<uint32_t> correct(model->outputs().size(), 0);
+  std::vector<uint32_t> total(model->outputs().size(), 0);
 
   // NOLINTNEXTLINE (clang tidy things this can be a range-based for loop?)
   for (uint32_t batch_idx = 0; batch_idx < data.first.size(); batch_idx++) {
-    model->forward(data.first.at(batch_idx), /* use_sparsity= */ false);
+    auto outputs =
+        model->forward(data.first.at(batch_idx), /* use_sparsity= */ false);
 
     for (uint32_t output_idx = 0; output_idx < outputs.size(); output_idx++) {
       for (uint32_t sample_idx = 0;
            sample_idx < data.first.at(batch_idx)->batchSize(); sample_idx++) {
         uint32_t prediction = outputs.at(output_idx)
-                                  ->tensor()
                                   ->getVector(sample_idx)
                                   .getHighestActivationId();
 
@@ -105,7 +103,7 @@ std::vector<float> computeAccuracy(model::ModelPtr& model,
   }
 
   std::vector<float> accuracies;
-  for (uint32_t i = 0; i < outputs.size(); i++) {
+  for (uint32_t i = 0; i < correct.size(); i++) {
     accuracies.push_back(static_cast<float>(correct[i]) / total[i]);
   }
   return accuracies;

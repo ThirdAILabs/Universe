@@ -29,7 +29,10 @@ ops::OpPtr Computation::op() const { return _op; }
 
 const ComputationList& Computation::inputs() const { return _inputs; }
 
-tensor::TensorPtr& Computation::tensor() { return _output; }
+tensor::TensorPtr& Computation::tensor() {
+  assert(_output);
+  return _output;
+}
 
 void Computation::forward(uint32_t index_in_batch, bool training) {
   _op->forward(_inputs, _output, index_in_batch, training);

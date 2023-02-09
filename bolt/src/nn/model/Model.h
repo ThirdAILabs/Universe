@@ -36,9 +36,11 @@ class Model {
    * labels are not provided. For this type of sampling trainOnBatch must be
    * used.
    */
-  void forward(const tensor::TensorList& inputs, bool use_sparsity);
+  tensor::TensorList forward(const tensor::TensorList& inputs,
+                             bool use_sparsity);
 
-  void forward(const tensor::TensorPtr& inputs, bool use_sparsity);
+  tensor::TensorList forward(const tensor::TensorPtr& inputs,
+                             bool use_sparsity);
 
   /**
    * Performs the foward and backward pass through the model for the given
@@ -54,18 +56,18 @@ class Model {
 
   /**
    * Performs the forward pass through the model on a given batch. Differs from
-   * forward because the labels can be provided so that they are set and can
-   * thus be used in metrics during validation. The labels are not used at all
-   * during the forward pass (i.e. not used in sparse layer sampling) or
-   * anywhere else in the model. This does not return anything because it is
-   * just intended to perform the forward pass through the model so that metrics
-   * can be computed.
+   * forward methods above because the labels can be provided so that they are
+   * set and can thus be used in metrics during validation. The labels are not
+   * used at all during the forward pass (i.e. not used in sparse layer
+   * sampling) or anywhere else in the model.
    */
-  void validateOnBatch(const tensor::TensorList& inputs,
-                       const tensor::TensorList& labels, bool use_sparsity);
+  tensor::TensorList forward(const tensor::TensorList& inputs,
+                             const tensor::TensorList& labels,
+                             bool use_sparsity);
 
-  void validateOnBatch(const tensor::TensorPtr& inputs,
-                       const tensor::TensorPtr& labels, bool use_sparsity);
+  tensor::TensorList forward(const tensor::TensorPtr& inputs,
+                             const tensor::TensorPtr& labels,
+                             bool use_sparsity);
 
   /**
    * Updates the parameters in the model. Loops through all ops in the model
@@ -117,7 +119,7 @@ class Model {
    * Helper function for forward and forwardSingleInput. Handles all of
    * the logic after setting the inputs and labels.
    */
-  void forward(uint32_t input_batch_size, bool use_sparsity);
+  tensor::TensorList forward(uint32_t input_batch_size, bool use_sparsity);
 
   /**
    * Helper method for trainOnBatch and trainOnSingleInputBatch. Handles all of

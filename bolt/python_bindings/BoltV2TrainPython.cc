@@ -10,8 +10,6 @@
 
 namespace py = pybind11;
 
-PYBIND11_MAKE_OPAQUE(thirdai::bolt::nn::tensor::TensorList)
-
 namespace thirdai::bolt::train::python {
 
 void createBoltV2TrainSubmodule(py::module_& module) {
@@ -25,8 +23,6 @@ void createBoltV2TrainSubmodule(py::module_& module) {
         return convertDataset(std::move(*dataset), dim);
       },
       py::arg("dataset"), py::arg("dim"));
-
-  py::bind_vector<std::vector<nn::tensor::TensorPtr>>(train, "TensorDataset");
 
   py::class_<Trainer>(train, "Trainer")
       .def(py::init<nn::model::ModelPtr>(), py::arg("model"))

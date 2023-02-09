@@ -46,16 +46,18 @@ std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,
                                  std::move(losses));
 }
 
-void Model::forward(const tensor::TensorList& inputs, bool use_sparsity) {
+tensor::TensorList Model::forward(const tensor::TensorList& inputs,
+                                  bool use_sparsity) {
   uint32_t input_batch_size = setInput(inputs);
 
-  forward(input_batch_size, use_sparsity);
+  return forward(input_batch_size, use_sparsity);
 }
 
-void Model::forward(const tensor::TensorPtr& inputs, bool use_sparsity) {
+tensor::TensorList Model::forward(const tensor::TensorPtr& inputs,
+                                  bool use_sparsity) {
   setInput(inputs);
 
-  forward(inputs->batchSize(), use_sparsity);
+  return forward(inputs->batchSize(), use_sparsity);
 }
 
 void Model::trainOnBatch(const tensor::TensorList& inputs,
@@ -74,18 +76,18 @@ void Model::trainOnBatch(const tensor::TensorPtr& inputs,
   trainOnBatch(inputs->batchSize(), labels->batchSize());
 }
 
-void Model::validateOnBatch(const tensor::TensorList& inputs,
-                            const tensor::TensorList& labels,
-                            bool use_sparsity) {
+tensor::TensorList Model::forward(const tensor::TensorList& inputs,
+                                  const tensor::TensorList& labels,
+                                  bool use_sparsity) {
   setLabels(labels);
-  forward(inputs, use_sparsity);
+  return forward(inputs, use_sparsity);
 }
 
-void Model::validateOnBatch(const tensor::TensorPtr& inputs,
-                            const tensor::TensorPtr& labels,
-                            bool use_sparsity) {
+tensor::TensorList Model::forward(const tensor::TensorPtr& inputs,
+                                  const tensor::TensorPtr& labels,
+                                  bool use_sparsity) {
   setLabels(labels);
-  forward(inputs, use_sparsity);
+  return forward(inputs, use_sparsity);
 }
 
 void Model::updateParameters(float learning_rate) {
@@ -155,7 +157,8 @@ std::string Model::summary(bool print) const {
 
 uint32_t Model::trainSteps() const { return _train_steps; }
 
-void Model::forward(uint32_t input_batch_size, bool use_sparsity) {
+tensor::TensorList Model::forward(uint32_t input_batch_size,
+                                  bool use_sparsity) {
   _allocation_manager.reallocateIfNeeded(input_batch_size, use_sparsity);
 
 #pragma omp parallel for default(none) shared(input_batch_size)
@@ -163,6 +166,12 @@ void Model::forward(uint32_t input_batch_size, bool use_sparsity) {
        index_in_batch++) {
     forwardVector(index_in_batch, /* training= */ false);
   }
+
+  tensor::TensorList outputs;
+  for (auto& output : _outputs) {
+    outputs.push_back(output->tensor());
+  }
+  return outputs;
 }
 
 void Model::trainOnBatch(uint32_t input_batch_size, uint32_t label_batch_size) {
