@@ -40,6 +40,7 @@ TEST(DlrmAttentionNodeTest, TestSetMembership) {
                        /* num_embedding_lookups */ 4, /* lookup_size= */ 5,
                        /* log_embedding_block_size= */ 14,
                        /* reduction= */ "concatenation",
+                       /* chunk_size= */ 5,
                        /* num_tokens_per_input= */ n_tokens)
                        ->addInput(token_input);
 

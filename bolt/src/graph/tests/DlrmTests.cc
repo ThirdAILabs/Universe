@@ -49,7 +49,7 @@ BoltGraph getModel() {
   auto embedding = EmbeddingNode::make(
       /* num_embedding_lookups= */ 8, /* lookup_size= */ 4,
       /* log_embedding_block_size= */ 12,
-      /* reduction= */ "sum");
+      /* reduction= */ "sum", /* chunk_size= */ 4);
   embedding->addInput(token_input);
 
   auto concat = ConcatenateNode::make();

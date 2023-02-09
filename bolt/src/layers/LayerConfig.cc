@@ -83,12 +83,13 @@ ConvLayerConfig::ConvLayerConfig(uint64_t _num_filters, float _sparsity,
 }
 
 EmbeddingLayerConfig::EmbeddingLayerConfig(
-    uint32_t num_embedding_lookups, uint32_t lookup_size,
-    uint32_t log_embedding_block_size, const std::string& reduction,
-    std::optional<uint32_t> num_tokens_per_input)
+    uint64_t num_embedding_lookups, uint64_t lookup_size,
+    uint64_t log_embedding_block_size, uint64_t chunk_size,
+    const std::string& reduction, std::optional<uint64_t> num_tokens_per_input)
     : _num_embedding_lookups(num_embedding_lookups),
       _lookup_size(lookup_size),
       _log_embedding_block_size(log_embedding_block_size),
+      _embedding_chunk_size(chunk_size),
       _reduction(getReductionType(reduction)),
       _num_tokens_per_input(num_tokens_per_input) {
   if (_reduction == EmbeddingReductionType::CONCATENATION &&

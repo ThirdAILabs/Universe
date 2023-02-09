@@ -24,7 +24,7 @@ TEST(EmbeddingNodeTest, SimpleTokenDataset) {
   auto embedding_layer = EmbeddingNode::make(
       /* num_embedding_lookups= */ 4, /* lookup_size= */ 8,
       /* log_embedding_block_size= */ 14,
-      /* reduction= */ "sum");
+      /* reduction= */ "sum", /* chunk_size= */ 8);
   embedding_layer->addInput(token_input);
 
   auto fully_connected_layer = FullyConnectedNode::makeDense(
