@@ -37,12 +37,11 @@ void ModelPipeline::train(const dataset::DataSourcePtr& data_source,
     // minutes for the sha256 hash to run, only to fail. Instead, we'll just
     // fail fast. This also hides an extra feature (streaming) if you're using
     // the demo license, which is never a bad thing.
-    licensing::TrainPermissionsToken token = licensing::TrainPermissionsToken();
+    licensing::TrainPermissionsToken token;
     trainOnStream(dataset, train_config, max_in_memory_batches.value(),
                   validation, batch_size, token);
   } else {
-    licensing::TrainPermissionsToken token =
-        licensing::TrainPermissionsToken(data_source->resourceName());
+    licensing::TrainPermissionsToken token(data_source->resourceName());
     trainInMemory(dataset, train_config, validation, batch_size, token);
   }
 

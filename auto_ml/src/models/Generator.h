@@ -257,8 +257,7 @@ class QueryCandidateGenerator {
    * and there is a source column in the passed in filename.
    */
   void train(const std::string& filename, bool use_supervised = true) {
-    licensing::TrainPermissionsToken token =
-        licensing::TrainPermissionsToken(filename);
+    licensing::TrainPermissionsToken token(filename);
 
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
         /* file_name = */ filename);
