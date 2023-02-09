@@ -1,8 +1,9 @@
-from thirdai.dataset import Wordpiece
-from argparse import ArgumentParser
-from transformers import AutoTokenizer
 import os
+from argparse import ArgumentParser
+
+from thirdai.dataset import Wordpiece
 from tqdm import tqdm
+from transformers import AutoTokenizer
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -31,7 +32,11 @@ if __name__ == "__main__":
             )
             for idx, line in enumerate(wrapper(fp)):
                 line = line.strip()
-                hf_ids = hf_tokenizer.encode(line, add_special_tokens=False)
+
+                hf_ids = hf_tokenizer.encode(line)
+                assert len(hf_ids) >= 2  # bos, eos is expected.
+                # Trim both eos, bos. Keep unk, which is also a special token.
+                hf_ids = hf_ids[1 : len(hf_ids) - 1]
                 hf_tokens = hf_tokenizer.convert_ids_to_tokens(hf_ids)
                 hf_decoded = " ".join(hf_tokens)
 
