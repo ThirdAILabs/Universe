@@ -48,10 +48,8 @@ def test_census_demo_key_fails_save_load():
 
 def test_census_demo_key_fails_with_bolt_api():
     thirdai.licensing.activate(SMALL_CENSUS_KEY)
-    input = bolt.nn.Input(dim=1)
-    output = bolt.nn.FullyConnected(dim=1, activation="relu")(input)
-    model = bolt.nn.Model(inputs=[input], output=output)
-    model.compile(bolt.nn.losses.MeanSquaredError())
+    udt_model = get_udt_census_income_model()
+    bolt_model = udt_model._get_model()
     input_data = thirdai.dataset.from_numpy(
         data=np.array([[1.0]], dtype="float32"), batch_size=1
     )
@@ -62,7 +60,7 @@ def test_census_demo_key_fails_with_bolt_api():
     with pytest.raises(
         RuntimeError, match="You must have a full license to perform this operation"
     ):
-        model.train(input_data, output_data, train_config)
+        bolt_model.train(input_data, output_data, train_config)
 
 
 def test_census_demo_key_fails_on_udt():
