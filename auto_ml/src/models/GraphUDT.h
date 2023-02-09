@@ -79,37 +79,44 @@ class GraphUDT : public ModelPipeline {
       input_nodes.push_back(bolt::Input::make(input_dim));
     }
     auto token_input = bolt::Input::makeTokenInput(
-        4294967295, {max_neighbours, max_neighbours});
+        /*expected_dim=*/4294967295,
+        /*num_tokens_range*/ {max_neighbours, max_neighbours});
 
     input_nodes.push_back(token_input);
 
     auto embedding_1 = bolt::EmbeddingNode::make(
-        4, 64, 4294967295, "concatenation", max_neighbours);
+        /*num_embedding_lookups=*/4, /*lookup_size=*/64,
+        /*log_embedding_block_size=*/4294967295, /*reduction=*/"concatenation",
+        /*num_tokens_per_input=*/max_neighbours);
 
-    auto hidden_1 = bolt::FullyConnectedNode::makeAutotuned(512, 1, "relu");
+    auto hidden_1 = bolt::FullyConnectedNode::makeAutotuned(
+        /*dim=*/512, /*sparsity=*/1, /*activation=*/"relu");
 
     hidden_1->addPredecessor(input_nodes[0]);
 
     embedding_1->addInput(token_input);
 
-    auto hidden_2 = bolt::FullyConnectedNode::makeAutotuned(256, 1, "relu");
+    auto hidden_2 = bolt::FullyConnectedNode::makeAutotuned(
+        /*dim=*/256, /*sparsity=*/1, /*activation=*/"relu");
 
     hidden_2->addPredecessor(hidden_1);
 
     auto concat_node = bolt::ConcatenateNode::make();
 
-    concat_node->setConcatenatedNodes({hidden_2, embedding_1});
+    concat_node->setConcatenatedNodes(/*nodes=*/{hidden_2, embedding_1});
 
-    auto hidden_3 = bolt::FullyConnectedNode::makeAutotuned(256, 1, "relu");
+    auto hidden_3 = bolt::FullyConnectedNode::makeAutotuned(
+        /*dim=*/256, /*sparsity=*/1, /*activation=*/"relu");
 
     hidden_3->addPredecessor(concat_node);
 
-    auto hidden_4 = bolt::FullyConnectedNode::makeAutotuned(256, 1, "relu");
+    auto hidden_4 = bolt::FullyConnectedNode::makeAutotuned(
+        /*dim=*/256, /*sparsity=*/1, /*activation=*/"relu");
 
     hidden_4->addPredecessor(hidden_3);
 
-    auto output =
-        bolt::FullyConnectedNode::makeAutotuned(output_dim, 1, "softmax");
+    auto output = bolt::FullyConnectedNode::makeAutotuned(
+        /*dim=*/output_dim, /*sparsity=*/1, /*activation=*/"softmax");
 
     output->addPredecessor(hidden_4);
 

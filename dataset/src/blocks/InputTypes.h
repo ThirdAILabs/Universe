@@ -148,14 +148,8 @@ class CsvSampleRef final : public ColumnarInputSample {
     }
   }
 
-  std::string_view at(uint32_t index) { return _columns[index]; }
-
   std::string_view column(const ColumnIdentifier& column) final {
     return RowSampleRef(_columns).column(column);
-  }
-
-  void insert(const RowInput& values) {
-    _columns.insert(_columns.end(), values.begin(), values.end());
   }
 
   uint32_t size() final { return _columns.size(); }
@@ -248,21 +242,6 @@ class CsvBatchRef final : public ColumnarInputBatch {
         _expected_num_columns(expected_num_columns) {}
 
   ColumnarInputSample& at(uint32_t index) final {
-    checkCorrectness(index);
-    return *_ref_batch.at(index);
-  }
-
-  CsvSampleRef& get(uint32_t index) {
-    checkCorrectness(index);
-    return *_ref_batch.at(index);
-  }
-
-  void insert(uint32_t index, const RowInput& values) {
-    checkCorrectness(index);
-    _ref_batch.at(index)->insert(values);
-  }
-
-  void checkCorrectness(uint32_t index) {
     assertIndexInRange(index);
     /*
       Constructing CsvSampleRef also parses the CSV string. This is an
@@ -274,6 +253,7 @@ class CsvBatchRef final : public ColumnarInputBatch {
       _ref_batch.at(index) =
           CsvSampleRef(_batch.at(index), _delimiter, _expected_num_columns);
     }
+    return *_ref_batch.at(index);
   }
 
   uint32_t size() const final { return _batch.size(); }
@@ -290,7 +270,6 @@ class CsvRolledBatch final : public ColumnarInputBatch {
   explicit CsvRolledBatch(std::vector<std::vector<std::string>> rows)
       : _rows(std::move(rows)) {
     for (const auto& row : _rows) {
-      // std::cout<<ro
       _batch_values.push_back(GraphSampleRef(row));
     }
   }
