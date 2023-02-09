@@ -161,8 +161,8 @@ std::vector<std::wstring> Wordpiece::wordpieceTokenize(
 
   // TODO(jerin-thirdai): The following block looks like it can be simplified.
   // It is currently riddled with jump statements and can be more structured.
-
-  for (const std::wstring& token : text::splitOnWhitespace(text)) {
+  std::vector<std::wstring> words = text::splitOnWhitespace(text);
+  for (const std::wstring& token : words) {
     if (token.size() > max_chars_per_wordpiece) {
       wordpieces.push_back(unk);
       continue;
