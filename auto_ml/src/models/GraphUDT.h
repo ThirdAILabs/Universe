@@ -86,13 +86,13 @@ class GraphUDT : public ModelPipeline {
     auto embedding_1 = bolt::EmbeddingNode::make(
         4, 64, 4294967295, "concatenation", max_neighbours);
 
-    auto hidden_1 = bolt::FullyConnectedNode::makeAutotuned(512, 0.2, "relu");
+    auto hidden_1 = bolt::FullyConnectedNode::makeAutotuned(512, 1, "relu");
 
     hidden_1->addPredecessor(input_nodes[0]);
 
     embedding_1->addInput(token_input);
 
-    auto hidden_2 = bolt::FullyConnectedNode::makeAutotuned(256, 0.2, "relu");
+    auto hidden_2 = bolt::FullyConnectedNode::makeAutotuned(256, 1, "relu");
 
     hidden_2->addPredecessor(hidden_1);
 
@@ -100,11 +100,11 @@ class GraphUDT : public ModelPipeline {
 
     concat_node->setConcatenatedNodes({hidden_2, embedding_1});
 
-    auto hidden_3 = bolt::FullyConnectedNode::makeAutotuned(256, 0.2, "relu");
+    auto hidden_3 = bolt::FullyConnectedNode::makeAutotuned(256, 1, "relu");
 
     hidden_3->addPredecessor(concat_node);
 
-    auto hidden_4 = bolt::FullyConnectedNode::makeAutotuned(256, 0.2, "relu");
+    auto hidden_4 = bolt::FullyConnectedNode::makeAutotuned(256, 1, "relu");
 
     hidden_4->addPredecessor(hidden_3);
 
