@@ -138,9 +138,9 @@ uint32_t FixedVocabulary::add(const std::string_view& token_view) {
 Wordpiece::WordToId Wordpiece::load(const std::string& vocab_fpath) {
   Wordpiece::WordToId vocab;
   size_t index = 0;
-  std::ifstream ifs(vocab_fpath, std::ifstream::in);
+  std::ifstream vocab_stream = SafeFileIO::ifstream(vocab_fpath);
   std::string line;
-  while (getline(ifs, line)) {
+  while (getline(vocab_stream, line)) {
     std::wstring token = text::toUnicode(line);
     if (token.empty()) {
       break;
