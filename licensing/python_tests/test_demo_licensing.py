@@ -41,7 +41,7 @@ def test_census_demo_key_fails_save_load():
     thirdai.licensing.activate(SMALL_CENSUS_KEY)
     model = get_udt_census_income_model()
     with pytest.raises(
-        RuntimeError, match=".*You must have a full license to save and load models.*"
+        RuntimeError, match=".*You must have a full license to perform this operation.*"
     ):
         model.save("test")
 
