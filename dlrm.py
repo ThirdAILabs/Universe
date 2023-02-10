@@ -15,7 +15,7 @@ class DLRM:
 
         embedding = bolt.nn.Embedding(
             num_embedding_lookups=8,
-            lookup_size=8,
+            lookup_size=4,
             log_embedding_block_size=29,
             chunk_size=chunk_size,
             reduction="concat",
@@ -31,7 +31,7 @@ class DLRM:
         hidden_output = concat
         for _ in range(3):
             hidden_output = bolt.nn.FullyConnected(
-                dim=512,
+                dim=500,
                 sparsity=0.4,
                 activation="relu",
                 sampling_config=bolt.nn.RandomSamplingConfig(),
@@ -40,7 +40,7 @@ class DLRM:
         output = bolt.nn.FullyConnected(dim=1, activation="sigmoid")(hidden_output)
 
         self.model = bolt.nn.Model(inputs=[int_input, cat_input], output=output)
-        self.model.compile(bolt.nn.losses.BinaryCrossEntropyLoss())
+        self.model.compile(bolt.nn.losses.BinaryCrossEntropy())
 
     def train(
         self,
@@ -137,8 +137,7 @@ def load_data(filename):
 
 results = []
 
-
-def run(chunk_size):
+def main():
     (X_int_train, X_cat_train, y_train), (X_int_test, X_cat_test, y_test) = load_data(
         sys.argv[1]
     )
@@ -150,26 +149,28 @@ def run(chunk_size):
     print("X_cat_test: ", X_cat_test.shape)
     print("y_test: ", y_test.shape)
 
-    model = DLRM(
-        num_int_features=X_int_test.shape[1],
-        num_cat_features=X_cat_test.shape[1],
-        chunk_size=chunk_size,
-    )
 
-    time = model.train(x_int=X_int_train, x_cat=X_cat_train, y=y_train, batch_size=512)
+    # for cs in [1] + list(range(2, 51, 2)):
+    for cs in [1, 2, 4, 8, 16, 32, 64, 128]:
+        model = DLRM(
+            num_int_features=X_int_test.shape[1],
+            num_cat_features=X_cat_test.shape[1],
+            chunk_size=cs,
+        )
 
-    scores = model.predict(x_int=X_int_test, x_cat=X_cat_test)
+        time = model.train(x_int=X_int_train, x_cat=X_cat_train, y=y_train, batch_size=512)
 
-    roc_auc = sklearn.metrics.roc_auc_score(y_test, scores)
+        scores = model.predict(x_int=X_int_test, x_cat=X_cat_test)
 
-    print(f"Chunk size={chunk_size}, time={time}, roc auc={roc_auc}")
+        roc_auc = sklearn.metrics.roc_auc_score(y_test, scores)
 
-    results.append((chunk_size, time, roc_auc))
+        print(f"Chunk size={cs}, time={time}, roc auc={roc_auc}")
+
+        results.append((cs, time, roc_auc))
 
 
 if __name__ == "__main__":
 
-    for cs in [1] + list(range(2, 51, 2)):
-        run(cs)
+    main()
 
     print(results)
