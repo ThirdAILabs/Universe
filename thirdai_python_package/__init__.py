@@ -18,6 +18,7 @@ import thirdai.dataset as dataset
 import thirdai.hashing as hashing
 import thirdai.licensing as licensing
 import thirdai.search as search
+import thirdai.matrix as search
 
 # Relay __version__ from C++
 from thirdai._thirdai import __version__, logging

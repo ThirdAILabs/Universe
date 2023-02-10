@@ -421,7 +421,8 @@ pybind11_add_module(
   auto_ml/src/models/TextClassifier.cc
   auto_ml/src/models/UniversalDeepTransformer.cc
   telemetry/python_bindings/TelemetryPython.cc
-  licensing/python_bindings/LicensingPython.cc)
+  licensing/python_bindings/LicensingPython.cc
+  matrix/python_bindings/MatrixPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
 

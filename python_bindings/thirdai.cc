@@ -6,6 +6,7 @@
 #include <auto_ml/python_bindings/AutomlPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <licensing/python_bindings/LicensingPython.h>
+#include <matrix/python_bindings/MatrixPython.h>
 #include <new_dataset/python_bindings/DatasetPython.h>
 #include <new_dataset/python_bindings/FeaturizationPython.h>
 #include <search/python_bindings/DocSearchPython.h>
@@ -146,4 +147,7 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Deployment submodule
   thirdai::automl::python::createDeploymentSubmodule(m);
+
+  // Matrix
+  thirdai::matrix::python::createMatrixSubmodule(m);
 }
