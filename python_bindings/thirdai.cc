@@ -12,7 +12,6 @@
 #include <telemetry/python_bindings/TelemetryPython.h>
 #include <utils/Logging.h>
 #include <utils/Version.h>
-#include <matrix/python_bindings/MatrixPython.h>
 
 // Pybind11 library
 #include <pybind11/cast.h>
@@ -147,7 +146,4 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   // Deployment submodule
   thirdai::automl::python::createDeploymentSubmodule(m);
-
-  // Matrix submodule
-  thirdai::matrix::python::createMatrixSubmodule(m);
 }
