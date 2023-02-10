@@ -256,8 +256,9 @@ set(THIRDAI_GTEST_DISCOVERY_TIMEOUT
     CACHE STRING
           "Timeout for GoogleTest discovery, configurable from command-line.")
 
-# Header only dependencies
-include_directories(deps/eigen)
+# Header only dependencies. 
+# Use SYSTEM to avoid compiler warnings in these header files.
+include_directories(SYSTEM deps/eigen)
 
 # Source dependencies
 add_subdirectory(deps/pybind11 EXCLUDE_FROM_ALL)
@@ -280,7 +281,8 @@ add_subdirectory(deps/cereal EXCLUDE_FROM_ALL)
 # This is so we can include cryptopp/*.h. We want this even if the build flag
 # isn't there so it always gets included in the compile_commands.json file and
 # can work with vscode
-include_directories(deps)
+# Use SYSTEM to avoid compiler warnings in these header files.
+include_directories(SYSTEM deps)
 
 find_package(Python3 COMPONENTS Interpreter Development)
 
