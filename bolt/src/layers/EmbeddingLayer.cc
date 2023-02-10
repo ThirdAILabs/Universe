@@ -12,7 +12,7 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
       _lookup_size(config.lookupSize()),
       _total_embedding_dim(config.numEmbeddingLookups() * config.lookupSize()),
       _log_embedding_block_size(config.logEmbeddingBlockSize()),
-      _embedding_chunk_size(config.embeddingChunkSize()),
+      _update_chunk_size(config.updateChunkSize()),
       _reduction(config.reduction()),
       _num_tokens_per_input(config.numTokensPerInput()),
       _hash_fn(seed),
@@ -34,9 +34,9 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   // the end of 2^_embedding_block_size we don't have to worry about wrapping it
   // around.
   _embedding_block_size = (1 << _log_embedding_block_size) + _lookup_size;
-  uint64_t n_chunks = (_embedding_block_size + _embedding_chunk_size - 1) /
-                      _embedding_chunk_size;
-  _embedding_block_size = n_chunks * _embedding_chunk_size;
+  uint64_t n_chunks =
+      (_embedding_block_size + _update_chunk_size - 1) / _update_chunk_size;
+  _embedding_block_size = n_chunks * _update_chunk_size;
   _embedding_block = std::vector<float>(_embedding_block_size, 0);
 
   initOptimizer();
@@ -154,8 +154,8 @@ void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
 
     _embedding_chunks_used[chunk_id] = false;
 
-    for (uint64_t n = chunk_id * _embedding_chunk_size;
-         n < (chunk_id + 1) * _embedding_chunk_size; n++) {
+    for (uint64_t n = chunk_id * _update_chunk_size;
+         n < (chunk_id + 1) * _update_chunk_size; n++) {
       float grad = _optimizer->gradients[n];
       assert(!std::isnan(grad));
 

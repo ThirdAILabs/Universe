@@ -88,7 +88,7 @@ class EmbeddingLayerConfig {
 
   EmbeddingLayerConfig(
       uint64_t num_embedding_lookups, uint64_t lookup_size,
-      uint64_t log_embedding_block_size, uint64_t chunk_size,
+      uint64_t log_embedding_block_size, uint64_t update_chunk_size,
       const std::string& reduction,
       std::optional<uint64_t> num_tokens_per_input = std::nullopt);
 
@@ -98,7 +98,7 @@ class EmbeddingLayerConfig {
 
   uint64_t logEmbeddingBlockSize() const { return _log_embedding_block_size; }
 
-  uint64_t embeddingChunkSize() const { return _embedding_chunk_size; }
+  uint64_t updateChunkSize() const { return _update_chunk_size; }
 
   EmbeddingReductionType reduction() const { return _reduction; }
 
@@ -118,7 +118,7 @@ class EmbeddingLayerConfig {
   uint64_t _num_embedding_lookups;
   uint64_t _lookup_size;
   uint64_t _log_embedding_block_size;
-  uint64_t _embedding_chunk_size;
+  uint64_t _update_chunk_size;
 
   EmbeddingReductionType _reduction;
   std::optional<uint64_t> _num_tokens_per_input;

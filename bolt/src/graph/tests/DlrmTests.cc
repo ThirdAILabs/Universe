@@ -48,8 +48,8 @@ BoltGraph getModel() {
       /* num_tokens_range= */ std::pair<uint32_t, uint32_t>(1, 1));
   auto embedding = EmbeddingNode::make(
       /* num_embedding_lookups= */ 8, /* lookup_size= */ 4,
-      /* log_embedding_block_size= */ 12,
-      /* reduction= */ "sum", /* chunk_size= */ 4);
+      /* log_embedding_block_size= */ 12, /* update_chunk_size= */ 4,
+      /* reduction= */ "sum");
   embedding->addInput(token_input);
 
   auto concat = ConcatenateNode::make();

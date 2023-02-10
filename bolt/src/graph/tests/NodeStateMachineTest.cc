@@ -186,8 +186,8 @@ class EmbeddingStateMachineTest final : public NodeStateMachineTest {
 TEST(NodeStateMachineTest, EmbeddingStateMachine) {
   auto embedding_node = EmbeddingNode::make(
       /* num_embedding_lookups= */ 10, /* lookup_size= */ 8,
-      /* log_embedding_block_size= */ 5, /* reduction= */ "sum",
-      /* chunk_size= */ 8);
+      /* log_embedding_block_size= */ 5, /* update_chunk_size= */ 8,
+      /* reduction= */ "sum");
 
   EmbeddingStateMachineTest test(embedding_node);
 

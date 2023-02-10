@@ -86,8 +86,8 @@ class EmbeddingLayer {
 
   void markUsedChunks(uint64_t block_offset) {
     for (uint64_t i = block_offset; i < block_offset + _lookup_size;
-         i += _embedding_chunk_size) {
-      _embedding_chunks_used[i / _embedding_chunk_size] = true;
+         i += _update_chunk_size) {
+      _embedding_chunks_used[i / _update_chunk_size] = true;
     }
   }
 
@@ -113,7 +113,7 @@ class EmbeddingLayer {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_num_lookups_per_token, _lookup_size, _total_embedding_dim,
-            _log_embedding_block_size, _embedding_chunk_size, _reduction,
+            _log_embedding_block_size, _update_chunk_size, _reduction,
             _num_tokens_per_input, _embedding_block_size, _hash_fn,
             _embedding_block, _embedding_chunks_used,
             _disable_sparse_parameter_updates);
@@ -123,7 +123,7 @@ class EmbeddingLayer {
   uint64_t _lookup_size;
   uint64_t _total_embedding_dim;
   uint64_t _log_embedding_block_size;
-  uint64_t _embedding_chunk_size;
+  uint64_t _update_chunk_size;
   uint64_t _embedding_block_size;
 
   EmbeddingReductionType _reduction;
