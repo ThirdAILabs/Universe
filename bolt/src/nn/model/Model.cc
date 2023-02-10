@@ -3,6 +3,7 @@
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <licensing/src/CheckLicense.h>
 #include <algorithm>
 #include <memory>
 #include <optional>
@@ -20,6 +21,8 @@ Model::Model(autograd::ComputationList inputs,
       _losses(std::move(losses)),
       _allocation_manager({}),
       _train_steps(0) {
+  licensing::checkLicense();
+
   for (const auto& loss : _losses) {
     auto labels = loss->labels();
     _labels.insert(_labels.end(), labels.begin(), labels.end());
