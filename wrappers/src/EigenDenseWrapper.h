@@ -18,6 +18,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/cereal.hpp>
 #include <Eigen/Dense>
+#include <eigen/unsupported/Eigen/CXX11/Tensor>
 
 // See the following link for further reference
 // https://stackoverflow.com/questions/22884216/serializing-eigenmatrix-using-cereal-library/22885856
