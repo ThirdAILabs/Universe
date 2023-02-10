@@ -15,13 +15,13 @@ void createMatrixSubmodule(py::module_& module) {
   matrix_submodule.def("eigen_2dconv", &eigenConv, py::arg("image"),
                        py::arg("filters"));
 
-  matrix_submodule.def(
-      "eigen_2dconv_tf", &tfEigenConv, py::arg("image"), py::arg("filters"),
-      py::arg("row_stride") = 1, py::arg("col_stride") = 1,
-      py::arg("padding_type") = 2, py::arg("row_in_stride") = 1,
-      py::arg("col_in_stride") = 1, py::arg("padding_top") = 0,
-      py::arg("padding_bottom") = 0, py::arg("padding_left") = 0,
-      py::arg("padding_right") = 0);
+  // matrix_submodule.def(
+  //     "eigen_2dconv_tf", &tfEigenConv, py::arg("image"), py::arg("filters"),
+  //     py::arg("row_stride") = 1, py::arg("col_stride") = 1,
+  //     py::arg("padding_type") = 2, py::arg("row_in_stride") = 1,
+  //     py::arg("col_in_stride") = 1, py::arg("padding_top") = 0,
+  //     py::arg("padding_bottom") = 0, py::arg("padding_left") = 0,
+  //     py::arg("padding_right") = 0);
 }
 
 }  // namespace thirdai::matrix::python
