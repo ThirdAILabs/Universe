@@ -2,6 +2,7 @@ from thirdai import bolt, dataset
 import numpy as np
 import sklearn.metrics
 import sys
+import time
 
 
 class DLRM:
@@ -16,7 +17,7 @@ class DLRM:
         embedding = bolt.nn.Embedding(
             num_embedding_lookups=8,
             lookup_size=4,
-            log_embedding_block_size=29,
+            log_embedding_block_size=20,
             chunk_size=chunk_size,
             reduction="concat",
             num_tokens_per_input=num_cat_features,
@@ -62,13 +63,15 @@ class DLRM:
 
         train_cfg = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
 
-        metrics = self.model.train(
+        s = time.perf_counter()
+        self.model.train(
             train_data=[x_int_dataset, x_cat_dataset],
             train_labels=y_dataset,
             train_config=train_cfg,
         )
+        e = time.perf_counter()
 
-        return metrics["epoch_times"][0]
+        return e-s
 
     def predict(self, x_int: np.ndarray, x_cat: np.ndarray) -> np.ndarray:
         assert x_int.dtype == np.float32
@@ -82,7 +85,7 @@ class DLRM:
         _, activations = self.model.evaluate(
             test_data=[x_int_dataset, x_cat_dataset],
             test_labels=None,
-            predict_config=eval_cfg,
+            eval_config=eval_cfg,
         )
 
         assert activations.shape == (len(x_int), 1)
@@ -158,15 +161,15 @@ def main():
             chunk_size=cs,
         )
 
-        time = model.train(x_int=X_int_train, x_cat=X_cat_train, y=y_train, batch_size=512)
+        t = model.train(x_int=X_int_train, x_cat=X_cat_train, y=y_train, batch_size=512)
 
         scores = model.predict(x_int=X_int_test, x_cat=X_cat_test)
 
         roc_auc = sklearn.metrics.roc_auc_score(y_test, scores)
 
-        print(f"Chunk size={cs}, time={time}, roc auc={roc_auc}")
+        print(f"Chunk size={cs}, time={t}, roc auc={roc_auc}")
 
-        results.append((cs, time, roc_auc))
+        results.append((cs, t, roc_auc))
 
 
 if __name__ == "__main__":
