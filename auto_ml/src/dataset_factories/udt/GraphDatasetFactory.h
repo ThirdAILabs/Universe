@@ -373,7 +373,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     return FeatureComposer::makeNonTemporalFeatureBlocks(
         feature_config, empty_temporal_relationships, empty_vectors_map,
         /*text_pairgrams_word_limit=*/5,
-        /*contextual_columns=*/false);
+        /*contextual_columns=*/true);
   }
 
   dataset::BlockPtr getLabelBlock() {

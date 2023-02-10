@@ -90,14 +90,14 @@ class GraphUDT : public ModelPipeline {
         /*num_tokens_per_input=*/max_neighbours);
 
     auto hidden_1 = bolt::FullyConnectedNode::makeAutotuned(
-        /*dim=*/512, /*sparsity=*/0.2, /*activation=*/"relu");
+        /*dim=*/512, /*sparsity=*/1, /*activation=*/"relu");
 
     hidden_1->addPredecessor(input_nodes[0]);
 
     embedding_1->addInput(token_input);
 
     auto hidden_2 = bolt::FullyConnectedNode::makeAutotuned(
-        /*dim=*/256, /*sparsity=*/0.2, /*activation=*/"relu");
+        /*dim=*/256, /*sparsity=*/1, /*activation=*/"relu");
 
     hidden_2->addPredecessor(hidden_1);
 
@@ -106,12 +106,12 @@ class GraphUDT : public ModelPipeline {
     concat_node->setConcatenatedNodes(/*nodes=*/{hidden_2, embedding_1});
 
     auto hidden_3 = bolt::FullyConnectedNode::makeAutotuned(
-        /*dim=*/256, /*sparsity=*/0.2, /*activation=*/"relu");
+        /*dim=*/256, /*sparsity=*/1, /*activation=*/"relu");
 
     hidden_3->addPredecessor(concat_node);
 
     auto hidden_4 = bolt::FullyConnectedNode::makeAutotuned(
-        /*dim=*/256, /*sparsity=*/0.2, /*activation=*/"relu");
+        /*dim=*/256, /*sparsity=*/1, /*activation=*/"relu");
 
     hidden_4->addPredecessor(hidden_3);
 

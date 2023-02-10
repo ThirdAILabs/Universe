@@ -1,34 +1,12 @@
-from thirdai import bolt
+import pdb
+import pickle
+
 import pandas as pd
 from sklearn.metrics import roc_auc_score
-import pickle
-import pdb
-df = pd.read_csv('processed_test.csv')
-y_test = df['target'].tolist()
+from thirdai import bolt
 
-# model = bolt.UniversalDeepTransformer(
-#     data_types={
-#         "node_id": bolt.types.categorical(),
-#         "rel_1": bolt.types.categorical(),
-#         "rel_2": bolt.types.categorical(),
-#         "target": bolt.types.categorical(),
-#         # "n1": bolt.types.numerical(range=(0, 48)),
-#         # "n2": bolt.types.numerical(range=(0, 44)),
-#         # "n3": bolt.types.numerical(range=(0, 42)),
-#         "n1": bolt.types.numerical(range=(0, 78)),
-#         "n2": bolt.types.numerical(range=(0, 170)),
-#         "n3": bolt.types.numerical(range=(0, 84)),
-#         "n4": bolt.types.categorical(),
-#     },
-#     graph_file_name="/share/data/capillary/graph_total.csv",
-#     source="node_id",
-#     target="target",
-#     relationship_columns=["rel_1", "rel_2"],
-#     n_target_classes=2,
-#     neighbourhood_context=True,
-#     kth_neighbourhood=1,
-#     label_context=True,
-# )
+df = pd.read_csv("/share/data/capillary/processed_test.csv")
+y_test = df["target"].tolist()
 
 cols = []
 for i in range(32):
@@ -36,7 +14,7 @@ for i in range(32):
 
 mins = []
 maxs = []
-total_df = pd.read_csv('/share/data/capillary/processed_32.csv')
+total_df = pd.read_csv("/share/data/capillary/processed_32.csv")
 for i in cols:
     mins.append(total_df[i].min())
     maxs.append(total_df[i].max())
@@ -44,44 +22,50 @@ for i in cols:
 dic = {}
 
 for i in range(len(cols)):
-    dic[cols[i]] = bolt.types.numerical(range=(mins[i],maxs[i]))
+    dic[cols[i]] = bolt.types.numerical(range=(mins[i], maxs[i]))
 
 
-data = pd.read_pickle('/share/shubh/current_project/experiments-misc-shubh/swiggy_graphs/graph_datasets/yelp_fraud/yelpcareprocessed/yelp_homo_adjlists.pickle')
+data = pd.read_pickle(
+    "/share/shubh/current_project/experiments-misc-shubh/swiggy_graphs/graph_datasets/yelp_fraud/yelpcareprocessed/yelp_homo_adjlists.pickle"
+)
 
 
 adj = {}
 for key in data.keys():
     data[key].remove(key)
-    adj[key] = list(data[key])
+    adj[str(key)] = list(map(str, list(data[key])))
 
-model = bolt.UniversalDeepTransformer(
-    data_types = {
-        "node_id":bolt.types.categorical(),
+model = bolt.UDTGraph(
+    data_types={
+        "node_id": bolt.types.categorical(),
         **dic,
-        "target":bolt.types.categorical(),
+        "target": bolt.types.categorical(),
     },
-    graph_file_name='/share/data/capillary/processed_32.csv',
+    graph_file_name="/share/data/capillary/processed_32.csv",
     source="node_id",
     target="target",
     n_target_classes=2,
-    neighbourhood_context=True,
-    kth_neighbourhood=1,
+    max_neighbours=1,
+    numerical_context=True,
+    k_hop=1,
     adj_list=adj,
 )
-# pdb.set_trace()
 
-# model.train(
-#     filename="/share/data/capillary/train_total.csv", epochs=1,
-# )
+for i in range(5):
+    model.train(
+        filename="/share/data/capillary/processed_train.csv",
+        epochs=1,
+        learning_rate=0.001,
+        metrics=["categorical_accuracy"],
+    )
 
-# activations = model.evaluate(filename="/share/data/capillary/test_total.csv", metrics=["categorical_accuracy"])
+    activations = model.evaluate(
+        filename="/share/data/capillary/processed_test_0.csv",
+        metrics=["categorical_accuracy"],
+    )
 
-# print(activations)
+    print(activations)
 
-# print(roc_auc_score(y_test,activations[:,0]))
+    print(roc_auc_score(y_test, activations[:, 0]))
 
-# print(roc_auc_score(y_test,activations[:,1]))
-
-
-
+    print(roc_auc_score(y_test, activations[:, 1]))
