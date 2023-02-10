@@ -313,6 +313,22 @@ endif()
 
 set(THIRDAI_SOURCES
     bolt_vector/src/BoltVector.cc
+    bolt/src/nn/autograd/Computation.cc
+    bolt/src/nn/autograd/ComputationGraph.cc
+    bolt/src/nn/model/AllocationManager.cc
+    bolt/src/nn/model/Model.cc
+    bolt/src/nn/ops/FullyConnected.cc
+    bolt/src/nn/ops/Input.cc
+    bolt/src/nn/tensor/Tensor.cc
+    bolt/src/nn/loss/ComparativeLoss.cc
+    bolt/src/nn/loss/CategoricalCrossEntropy.cc
+    bolt/src/nn/loss/BinaryCrossEntropy.cc
+    bolt/src/train/metrics/Metric.cc
+    bolt/src/train/callbacks/Callback.cc
+    bolt/src/train/metrics/LossMetric.cc
+    bolt/src/train/metrics/CategoricalAccuracy.cc
+    bolt/src/train/trainer/Trainer.cc
+    bolt/src/train/trainer/Dataset.cc
     bolt/src/graph/Graph.cc
     bolt/src/graph/ExecutionConfig.cc
     bolt/src/graph/nodes/FullyConnected.cc
@@ -408,6 +424,8 @@ pybind11_add_module(
   bolt/python_bindings/BoltPython.cc
   bolt/python_bindings/BoltNNPython.cc
   bolt/python_bindings/CallbacksPython.cc
+  bolt/python_bindings/BoltV2NNPython.cc
+  bolt/python_bindings/BoltV2TrainPython.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
   new_dataset/python_bindings/DatasetPython.cc
