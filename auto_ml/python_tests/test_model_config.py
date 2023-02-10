@@ -3,7 +3,7 @@ import os
 import textwrap
 
 import pytest
-from thirdai import bolt, deployment
+from thirdai import bolt
 
 
 def get_config(have_user_specified_parameters: bool = False):
@@ -68,6 +68,8 @@ def get_config(have_user_specified_parameters: bool = False):
 
 @pytest.mark.unit
 def test_load_model_from_config():
+    from thirdai import deployment
+
     CONFIG_FILE = "./model_config"
 
     config = get_config(have_user_specified_parameters=True)
@@ -86,9 +88,9 @@ def test_load_model_from_config():
     ======================= Bolt Model =======================
     input_1 (Input): dim=100
     input_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=Tanh
-    fc_1 -> fc_2 (FullyConnected): dim=20, sparsity=0.25, act_func=ReLU (using random sampling)
-    fc_2 -> fc_3 (FullyConnected): dim=30, sparsity=0.3, act_func=Tanh (hash_function=DWTA, num_tables=154, range=512, reservoir_size=4)
-    fc_3 -> fc_4 (FullyConnected): dim=50, sparsity=0.1, act_func=Softmax (hash_function=DWTA, num_tables=4, range=64, reservoir_size=10)
+    fc_1 -> fc_2 (FullyConnected): dim=20, sparsity=0.25, act_func=ReLU, sampling=(random)
+    fc_2 -> fc_3 (FullyConnected): dim=30, sparsity=0.3, act_func=Tanh, sampling=(hash_function=DWTA, num_tables=154, range=512, reservoir_size=4)
+    fc_3 -> fc_4 (FullyConnected): dim=50, sparsity=0.1, act_func=Softmax, sampling=(hash_function=DWTA, num_tables=4, range=64, reservoir_size=10)
     ============================================================
     """
 
@@ -99,6 +101,8 @@ def test_load_model_from_config():
 
 @pytest.mark.unit
 def test_udt_model_config_override():
+    from thirdai import deployment
+
     CONFIG_FILE = "./model_config"
 
     deployment.dump_config(json.dumps(get_config()), CONFIG_FILE)
@@ -116,9 +120,9 @@ def test_udt_model_config_override():
     ======================= Bolt Model =======================
     input_1 (Input): dim=100000
     input_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=Tanh
-    fc_1 -> fc_2 (FullyConnected): dim=20, sparsity=0.5, act_func=ReLU (using random sampling)
-    fc_2 -> fc_3 (FullyConnected): dim=30, sparsity=0.3, act_func=ReLU (hash_function=DWTA, num_tables=154, range=512, reservoir_size=4)
-    fc_3 -> fc_4 (FullyConnected): dim=40, sparsity=0.1, act_func=Softmax (hash_function=DWTA, num_tables=4, range=64, reservoir_size=10)
+    fc_1 -> fc_2 (FullyConnected): dim=20, sparsity=0.5, act_func=ReLU, sampling=(random)
+    fc_2 -> fc_3 (FullyConnected): dim=30, sparsity=0.3, act_func=ReLU, sampling=(hash_function=DWTA, num_tables=154, range=512, reservoir_size=4)
+    fc_3 -> fc_4 (FullyConnected): dim=40, sparsity=0.1, act_func=Softmax, sampling=(hash_function=DWTA, num_tables=4, range=64, reservoir_size=10)
     ============================================================
     """
 
@@ -129,6 +133,8 @@ def test_udt_model_config_override():
 
 @pytest.mark.unit
 def test_config_dump_load():
+    from thirdai import deployment
+
     config = get_config()
 
     CONFIG_FILE = "./simple_model_config"
@@ -142,6 +148,8 @@ def test_config_dump_load():
 
 @pytest.mark.unit
 def test_config_encryption():
+    from thirdai import deployment
+
     config_str = json.dumps(get_config())
 
     CONFIG_FILE = "./encrypted_model_config"

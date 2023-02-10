@@ -1,8 +1,8 @@
+#include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
 #include <dataset/src/InMemoryDataset.h>
-#include <licensing/src/CheckLicense.h>
 #include <search/src/Flash.h>
 #include <utils/Logging.h>
 #include <algorithm>
@@ -37,7 +37,14 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
 
 template <typename LABEL_T>
 void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
-                              const std::vector<LABEL_T>& labels) {
+                              const std::vector<LABEL_T>& labels,
+                              licensing::TrainPermissionsToken token) {
+  // A token can only be constructed if the user has a full access
+  // license or is using a dataset that is allowed under their demo license.
+  // Hence this method successfully being called with a token is enough to
+  // continue, and we don't actually need to use the token object.
+  (void)token;
+
   if (batch.getBatchSize() != labels.size()) {
     throw std::invalid_argument("Batch size and number of labels must match.");
   }
@@ -131,6 +138,18 @@ Flash<LABEL_T>::getTopKUsingPriorityQueue(std::vector<LABEL_T>& query_result,
   std::reverse(result.begin(), result.end());
   std::reverse(scores.begin(), scores.end());
   return {result, scores};
+}
+
+template void Flash<uint32_t>::serialize(cereal::BinaryInputArchive&);
+template void Flash<uint32_t>::serialize(cereal::BinaryOutputArchive&);
+template void Flash<uint64_t>::serialize(cereal::BinaryInputArchive&);
+template void Flash<uint64_t>::serialize(cereal::BinaryOutputArchive&);
+
+template <typename LABEL_T>
+template <class Archive>
+void Flash<LABEL_T>::serialize(Archive& archive) {
+  licensing::disableForDemoLicenses();
+  archive(_hash_function, _num_tables, _range, _hashtable);
 }
 
 template class Flash<uint32_t>;

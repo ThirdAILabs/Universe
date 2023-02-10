@@ -57,12 +57,16 @@ class BoltGraph {
 
   MetricData train(const std::vector<dataset::BoltDatasetPtr>& train_data,
                    const dataset::BoltDatasetPtr& train_labels,
-                   const TrainConfig& train_config);
+                   const TrainConfig& train_config,
+                   licensing::TrainPermissionsToken token =
+                       licensing::TrainPermissionsToken());
 
   void trainOnBatch(std::vector<BoltBatch>&& inputs, const BoltBatch& labels,
                     float learning_rate, MetricAggregator& metrics,
                     uint32_t rebuild_hash_tables_interval,
-                    uint32_t reconstruct_hash_functions_interval);
+                    uint32_t reconstruct_hash_functions_interval,
+                    licensing::TrainPermissionsToken token =
+                        licensing::TrainPermissionsToken());
 
   InferenceResult evaluate(
       const std::vector<dataset::BoltDatasetPtr>& test_data,
@@ -223,7 +227,10 @@ class BoltGraph {
 
   class BatchProcessingState {
    public:
-    BatchProcessingState() : _allocated_batch_size(0), _using_sparsity(false) {}
+    BatchProcessingState()
+        : _allocated_batch_size(0),
+          _using_sparsity(false),
+          _optimizer_initialized(false) {}
 
     BatchProcessingState(uint32_t batch_size, bool using_sparsity)
         : _allocated_batch_size(batch_size),
