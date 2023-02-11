@@ -103,6 +103,10 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
         blocks.push_back(dataset::NGramTextBlock::make(
             col_name, /* n= */ 2,
             /* dim= */ std::numeric_limits<uint32_t>::max()));
+      } else if (text_meta->contextual_encoding == TextEncodingType::NGrams) {
+        blocks.push_back(dataset::NGramTextBlock::make(
+            col_name, /* n= */ text_meta->n_for_ngrams.value(),
+            /* dim= */ std::numeric_limits<uint32_t>::max()));
       } else {
         blocks.push_back(dataset::NGramTextBlock::make(
             col_name, /* n= */ 1,

@@ -73,9 +73,14 @@ enum class TextEncodingType {
   Unigrams,
   Bigrams,
   Pairgrams,
+  NGrams,
 };
 
 inline TextEncodingType getTextEncodingFromString(const std::string& encoding) {
+  if (encoding.substr(0, 6) == "ngram-") {
+    return TextEncodingType::NGrams;
+  }
+
   std::unordered_map<std::string, TextEncodingType> contextual_encodings = {
       {"none", TextEncodingType::Unigrams},
       {"local", TextEncodingType::Bigrams},
@@ -94,10 +99,21 @@ struct TextDataType : DataType {
   explicit TextDataType(std::optional<double> average_n_words = std::nullopt,
                         const std::string& contextual_encoding = "none")
       : average_n_words(average_n_words),
-        contextual_encoding(getTextEncodingFromString(contextual_encoding)) {}
+        contextual_encoding(getTextEncodingFromString(contextual_encoding)) {
+    if (contextual_encoding.substr(0, 6) == "ngram-") {
+      auto n = std::stoi(contextual_encoding.substr(6, 7));
+
+      if (n < 0) {
+        throw std::invalid_argument("n must be > 0");
+      }
+      std::cout << "making ngram block with n = " << n << std::endl;
+      n_for_ngrams = n;
+    }
+  }
 
   std::optional<double> average_n_words;
   TextEncodingType contextual_encoding;
+  std::optional<uint32_t> n_for_ngrams = std::nullopt;
 
   std::string toString() const final { return R"({"type": "text"})"; }
 

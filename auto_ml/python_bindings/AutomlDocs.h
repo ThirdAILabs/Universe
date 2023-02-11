@@ -1398,7 +1398,7 @@ Args:
     average_n_words (float): Optional. Average number of words in the 
         text column in each row. If provided, UDT may make 
         optimizations as appropriate.
-    contextual_encoding (int): Optional. Either "local", "global", or "none", 
+    contextual_encoding (int): Optional. Either "local", "global", "ngram-N", or "none", 
         defaults to "none". If not "none", udt is guaranteed to use this encoding
         type when processing this text column. Otherwise, udt will determine the
         appropriate encoding type.
