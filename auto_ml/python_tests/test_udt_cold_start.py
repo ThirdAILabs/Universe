@@ -9,78 +9,50 @@ from model_test_utils import compute_evaluate_accuracy
 from thirdai import bolt
 
 
-@pytest.fixture(scope="module")
-def cold_start_dataset(download_clinc_dataset):
-    """
-    This constructs a dataset for cold start where the strong column is the original
-    query for each sample and the weak column is another query that maps to the
-    same label.
-    """
-    COLD_START_TRAIN_FILE = "./clinc_cold_start.csv"
-    TEXT_COLUMN_NAME = "text"
-    WEAK_COLUMN_NAME = "additional_text"
+def test_udt_cold_start_kaggle():
+    os.system(
+        "curl -L https://www.dropbox.com/s/tf7e5m0cikhcb95/amazon-kaggle-product-catalog-sampled-0.05.csv?dl=0 -o amazon-kaggle-product-catalog.csv"
+    )
 
-    train_filename, _, _ = download_clinc_dataset
+    catalog_file = "amazon-kaggle-product-catalog.csv"
 
-    df = pd.read_csv(train_filename)
-
-    classes = defaultdict(list)
-    for _, row in df.iterrows():
-        classes[row["category"]].append(row[TEXT_COLUMN_NAME])
-
-    additional_text = []
-
-    for _, row in df.iterrows():
-        additional_text.append(random.choice(classes[row["category"]]))
-
-    df[WEAK_COLUMN_NAME] = additional_text
-
-    df.to_csv(COLD_START_TRAIN_FILE, index=False)
-
-    return COLD_START_TRAIN_FILE, TEXT_COLUMN_NAME, WEAK_COLUMN_NAME
-
-
-def test_udt_cold_start(download_clinc_dataset, cold_start_dataset):
-    _, test_filename, inference_samples = download_clinc_dataset
-    cold_start_filename, text_column_name, weak_column_name = cold_start_dataset
+    df = pd.read_csv(catalog_file)
 
     model = bolt.UniversalDeepTransformer(
         data_types={
-            "category": bolt.types.categorical(),
-            "text": bolt.types.text(),
+            "QUERY": bolt.types.text(),
+            "PRODUCT_ID": bolt.types.categorical(),
         },
-        target="category",
-        n_target_classes=150,
+        target="PRODUCT_ID",
+        n_target_classes=df.shape[0],
         integer_target=True,
     )
 
+    class FinalMetricCallback(bolt.callbacks.Callback):
+        def __init__(self):
+            super().__init__()
+            self.ending_train_metric = 0
+
+        def on_train_end(self, model, train_state):
+            self.ending_train_metric = train_state.get_train_metric_values(
+                "categorical_accuracy"
+            )[-1]
+
+    final_metric = FinalMetricCallback()
+
     model.cold_start(
-        filename=cold_start_filename,
-        strong_column_names=[text_column_name],
-        weak_column_names=[weak_column_name],
-        learning_rate=0.01,
+        filename=catalog_file,
+        strong_column_names=["TITLE"],
+        weak_column_names=["DESCRIPTION", "BULLET_POINTS", "BRAND"],
+        learning_rate=0.001,
+        epochs=5,
+        metrics=["categorical_accuracy"],
+        callbacks=[final_metric],
     )
 
-    # We need to train on a file so that UDT initializes the dataset loader.
-    # Initializing the dataset loaders requires knowing the order of the columns
-    # in the CSV file which UDT parses during the first call to train.
-    empty_train_file = "./empty_clinc.csv"
-    with open(empty_train_file, "w") as file:
-        file.write("category,text\n")
-        file.write(
-            "131,what expression would i use to say i love you if i were an italian\n"
-        )
+    os.remove(catalog_file)
 
-    model.train(empty_train_file, epochs=1, learning_rate=0.01)
-
-    os.remove(empty_train_file)
-
-    acc = compute_evaluate_accuracy(
-        model, test_filename, inference_samples, use_class_name=False
-    )
-
-    # Accuracy is around 78-80%, with regular training it is a few percent lower.
-    assert acc >= 0.7
+    assert final_metric.ending_train_metric > 0.5
 
 
 def setup_testing_file(missing_values):
@@ -162,13 +134,13 @@ def test_coldstart_callbacks():
 def test_coldstart_missing_strong_or_weak():
     with pytest.raises(
         ValueError,
-        match=r"Column SOME RANDOM NAME not found in dataset.",
+        match=r"Unable to find column with name 'SOME RANDOM NAME'.",
     ):
         run_coldstart(strong_columns=["SOME RANDOM NAME"])
 
     with pytest.raises(
         ValueError,
-        match=r"Column SOME RANDOM NAME not found in dataset.",
+        match=r"Unable to find column with name 'SOME RANDOM NAME'.",
     ):
         run_coldstart(weak_columns=["SOME RANDOM NAME"])
 

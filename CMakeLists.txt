@@ -53,6 +53,9 @@ endif(THIRDAI_REPORT_BUILD_STEP_TIMES)
 # will be a linker error.
 list(FIND THIRDAI_FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
 set(LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
+list(FIND THIRDAI_FEATURE_FLAGS "THIRDAI_CHECK_LICENSE" _index)
+set(LICENSE_CHECK_FLAG_FOUND ${_index} GREATER -1)
+
 if(${LICENSE_BUILD_FLAG_FOUND})
   # Use our own source, also don't build tests.
   set(CRYPTOPP_BUILD_TESTING OFF)
@@ -304,8 +307,28 @@ add_subdirectory(hashtable)
 add_subdirectory(compression)
 add_subdirectory(utils)
 
+if(${LICENSE_BUILD_FLAG_FOUND})
+  add_subdirectory(licensing)
+endif()
+
 set(THIRDAI_SOURCES
     bolt_vector/src/BoltVector.cc
+    bolt/src/nn/autograd/Computation.cc
+    bolt/src/nn/autograd/ComputationGraph.cc
+    bolt/src/nn/model/AllocationManager.cc
+    bolt/src/nn/model/Model.cc
+    bolt/src/nn/ops/FullyConnected.cc
+    bolt/src/nn/ops/Input.cc
+    bolt/src/nn/tensor/Tensor.cc
+    bolt/src/nn/loss/ComparativeLoss.cc
+    bolt/src/nn/loss/CategoricalCrossEntropy.cc
+    bolt/src/nn/loss/BinaryCrossEntropy.cc
+    bolt/src/train/metrics/Metric.cc
+    bolt/src/train/callbacks/Callback.cc
+    bolt/src/train/metrics/LossMetric.cc
+    bolt/src/train/metrics/CategoricalAccuracy.cc
+    bolt/src/train/trainer/Trainer.cc
+    bolt/src/train/trainer/Dataset.cc
     bolt/src/graph/Graph.cc
     bolt/src/graph/ExecutionConfig.cc
     bolt/src/graph/nodes/FullyConnected.cc
@@ -339,7 +362,6 @@ set(THIRDAI_SOURCES
     hashing/src/UniversalHash.cc
     hashtable/src/SampledHashTable.cc
     hashtable/src/VectorHashTable.cc
-    licensing/src/CheckLicense.cc
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
@@ -371,11 +393,12 @@ set(THIRDAI_SOURCES
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set
-if(${LICENSE_BUILD_FLAG_FOUND})
-  add_subdirectory(licensing)
+if(${LICENSE_CHECK_FLAG_FOUND})
   set(THIRDAI_SOURCES
       ${THIRDAI_SOURCES} licensing/src/keygen/KeygenCommunication.cc
-      licensing/src/heartbeat/Heartbeat.cc)
+      licensing/src/heartbeat/Heartbeat.cc licensing/src/CheckLicenseEnabled.cc)
+else()
+  set(THIRDAI_SOURCES ${THIRDAI_SOURCES} licensing/src/CheckLicenseDisabled.cc)
 endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
@@ -401,6 +424,8 @@ pybind11_add_module(
   bolt/python_bindings/BoltPython.cc
   bolt/python_bindings/BoltNNPython.cc
   bolt/python_bindings/CallbacksPython.cc
+  bolt/python_bindings/BoltV2NNPython.cc
+  bolt/python_bindings/BoltV2TrainPython.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
   new_dataset/python_bindings/DatasetPython.cc

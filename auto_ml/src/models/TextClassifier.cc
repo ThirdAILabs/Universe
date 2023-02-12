@@ -49,8 +49,6 @@ TextClassifier::TextClassifier(uint32_t input_vocab_size, uint32_t metadata_dim,
 float TextClassifier::trainOnBatch(const py::dict& data,
                                    NumpyArray<float>& labels,
                                    float learning_rate) {
-  licensing::verifyAllowedDataset(std::nullopt);
-
   auto bolt_input = featurize(data);
 
   uint32_t batch_size = bolt_input[0].getBatchSize();
