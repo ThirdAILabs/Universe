@@ -217,18 +217,16 @@ std::vector<std::string> ColumnMap::columns() const {
 }
 
 ColumnMap ColumnMap::createStringColumnMapFromFile(
-    const dataset::DataSourcePtr& source) {
+    const dataset::DataSourcePtr& source, char delimiter) {
   auto header_string = source->nextLine();
   if (!header_string.has_value()) {
     throw std::invalid_argument("Source was found to be empty.");
   }
-  auto header = dataset::ProcessorUtils::parseCsvRow(*header_string,
-                                                     /* delimiter = */ ',');
+  auto header = dataset::ProcessorUtils::parseCsvRow(*header_string, delimiter);
 
   std::vector<std::vector<std::string>> columns(header.size());
   while (auto line_str = source->nextLine()) {
-    auto line =
-        dataset::ProcessorUtils::parseCsvRow(*line_str, /* delimiter = */ ',');
+    auto line = dataset::ProcessorUtils::parseCsvRow(*line_str, delimiter);
     if (line.size() != header.size()) {
       throw std::invalid_argument(
           "Different number of entries in row than in the header.");
