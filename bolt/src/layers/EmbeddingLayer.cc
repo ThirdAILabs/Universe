@@ -201,7 +201,7 @@ void EmbeddingLayer::updateParametersDense(float lr, uint32_t iter, float B1,
   }
 }
 
-void EmbeddingLayer::buildLayerSummary(std::stringstream& summary) const {
+void EmbeddingLayer::buildLayerSummary(std::ostream& summary) const {
   summary << " num_embedding_lookups=" << _num_lookups_per_token;
   summary << ", lookup_size=" << _lookup_size;
   summary << ", log_embedding_block_size=" << _log_embedding_block_size;
