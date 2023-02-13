@@ -1,7 +1,9 @@
 #include "TextGenerationFeaturizer.h"
+#include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <dataset/src/DataSource.h>
 #include <algorithm>
 #include <cctype>
 #include <iterator>
@@ -86,4 +88,33 @@ std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
   return {std::move(vector)};
 }
 
+void TextGenerationFeaturizer::save(const std::string& filename) const {
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  save_stream(filestream);
+}
+
+void TextGenerationFeaturizer::save_stream(std::ostream& output_stream) const {
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
+
+TextGenerationFeaturizerPtr TextGenerationFeaturizer::load(
+    const std::string& filename) {
+  std::ifstream filestream =
+      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  return load_stream(filestream);
+}
+
+TextGenerationFeaturizerPtr TextGenerationFeaturizer::load_stream(
+    std::istream& input_stream) {
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<TextGenerationFeaturizer> deserialize_into(
+      new TextGenerationFeaturizer());
+  iarchive(*deserialize_into);
+  return deserialize_into;
+}
+
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::TextGenerationFeaturizer)

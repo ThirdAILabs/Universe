@@ -45,30 +45,25 @@ class DistributedMultiDatasourceloader(DistributedDatasetLoader):
     def __init__(
         self,
         batch_size,
-        datasource_type,
+        datasource,
         max_in_memory_batches=None,
         featurizer=None,
         shuffle=True,
         *args,
         **kwargs,
     ):
-        self.dispatch_train_sources = {
-            "file": dataset.FileDataSource,
-            "csv": dataset.CSVDataSource,
-            "Parquet": dataset.ParquetSource,
-        }
         self.featurizer = featurizer
         self.batch_size = batch_size
         self.max_in_memory_batches = max_in_memory_batches
         self.shuffle = shuffle
-        self.datasource_type = datasource_type
+        self.datasource = datasource
         self.args = args
         self.kwargs = kwargs
+        self.dataset_finished = False
+    
 
     def load(self):
-        data_source = self.dispatch_train_sources[self.datasource_type](
-            self.args, self.kwargs
-        )
+        data_source = self.datasource(*self.args, **self.kwargs)
         self.generator = dataset.DatasetLoader(
             data_source=data_source,
             featurizer=self.featurizer,
@@ -84,7 +79,7 @@ class DistributedMultiDatasourceloader(DistributedDatasetLoader):
             self.dataset_finished = True
         else:
             load = self.generator.load_some(
-                self.max_in_memory_batches, batch_size=self.batch_size
+                num_batches=self.max_in_memory_batches, batch_size=self.batch_size
             )
 
         return load
