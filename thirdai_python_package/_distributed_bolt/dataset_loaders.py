@@ -41,6 +41,56 @@ class DistributedDatasetLoader(ABC):
         """
         pass
 
+class DistributedMultiDatasourceloader(DistributedDatasetLoader):
+    def __init__(
+        self,
+        batch_size,
+        datasource_type,
+        max_in_memory_batches=None,
+        featurizer=None,
+        shuffle=True,
+        *args,
+        **kwargs,
+    ):
+        self.dispatch_train_sources = {
+            "file": dataset.FileDataSource,
+            "csv": dataset.CSVDataSource,
+            "Parquet": dataset.ParquetSource,
+        }
+        self.featurizer = featurizer
+        self.batch_size = batch_size
+        self.max_in_memory_batches = max_in_memory_batches
+        self.shuffle = shuffle
+        self.datasource_type = datasource_type
+        self.args = args
+        self.kwargs = kwargs
+
+    def load(self):
+        data_source = self.dispatch_train_sources[self.datasource_type](
+            self.args, self.kwargs
+        )
+        self.generator = dataset.DatasetLoader(
+            data_source=data_source,
+            featurizer=self.featurizer,
+            shuffle=self.shuffle,
+        )
+
+    def next(self):
+        if self.dataset_finished:
+            return None
+
+        if self.max_in_memory_batches == None:
+            load = self.generator.load_all(batch_size=self.batch_size)
+            self.dataset_finished = True
+        else:
+            load = self.generator.load_some(
+                self.max_in_memory_batches, batch_size=self.batch_size
+            )
+
+        return load
+
+    def restart(self):
+        self.generator.restart()
 
 class DistributedUDTDatasetLoader(DistributedDatasetLoader):
     def __init__(
