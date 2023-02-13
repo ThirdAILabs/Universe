@@ -3,6 +3,7 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Concatenate.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -73,6 +74,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
           py::return_value_policy::reference_internal);
 
   py::class_<autograd::Computation, autograd::ComputationPtr>(nn, "Computation")
+      .def("dim", &autograd::Computation::dim)
+      .def("tensor", &autograd::Computation::tensor)
       .def("name", &autograd::Computation::name);
 
   py::class_<ops::Op, ops::OpPtr>(nn, "Op").def("name", &ops::Op::name);
@@ -92,6 +95,10 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def_property_readonly("biases", [](const ops::FullyConnected& op) {
         return toNumpy(op.biasesPtr(), {op.dimensions()[0]});
       });
+
+  py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
+      .def(py::init(&ops::Concatenate::make))
+      .def("__call__", &ops::Concatenate::apply);
 
   nn.def("Input", &ops::Input::make, py::arg("dim"));
 
