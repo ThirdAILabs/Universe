@@ -3,11 +3,8 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
-<<<<<<< HEAD
 #include <bolt/src/nn/ops/Embedding.h>
-=======
 #include <bolt/src/nn/ops/Concatenate.h>
->>>>>>> 293405b3e1bb1aebc226f6c85416ee06b0753d18
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
