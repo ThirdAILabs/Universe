@@ -6,7 +6,8 @@
 
 namespace thirdai::bolt::nn::ops {
 
-class Embedding final : public Op, std::enable_shared_from_this<Embedding> {
+class Embedding final : public Op,
+                        public std::enable_shared_from_this<Embedding> {
  public:
   static std::shared_ptr<Embedding> make(
       uint64_t num_embedding_lookups, uint64_t lookup_size,

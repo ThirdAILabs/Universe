@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from thirdai import dataset
 from thirdai import bolt_v2 as bolt
+import math
 
 
 def get_sum_model(input_dim):
@@ -28,30 +29,45 @@ def get_sum_model(input_dim):
 
     concat_layer = bolt.nn.Concatenate()([embedding_bottom, embedding_top])
 
-    output_layer = bolt.nn.FullyConnected(dim=input_dim * 2, activation="softmax")(
-        concat_layer
+    output_layer = bolt.nn.FullyConnected(
+        dim=input_dim * 2, input_dim=concat_layer.dim(), activation="softmax"
+    )(concat_layer)
+
+    labels = bolt.nn.Input(dim=input_dim * 2)
+
+    loss = bolt.nn.losses.CategoricalCrossEntropy(
+        activations=output_layer, labels=labels
     )
 
-    model = bolt.nn.Model(inputs=[input_1, input_2], output=output_layer)
-
-    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
+    model = bolt.nn.Model(
+        inputs=[input_1, input_2], outputs=[output_layer], losses=[loss]
+    )
 
     return model
 
 
-def generate_sum_datasets_and_labels(input_dim, num_examples):
+def generate_sum_datasets_and_labels(input_dim, num_examples, batch_size=64):
     data_1 = np.random.randint(0, input_dim, size=num_examples, dtype="uint32")
     data_2 = np.random.randint(0, input_dim, size=num_examples, dtype="uint32")
-    labels = dataset.from_numpy(data_1 + data_2, batch_size=64)
-    data_1 = dataset.from_numpy(data_1, batch_size=64)
-    data_2 = dataset.from_numpy(data_2, batch_size=64)
-    return data_1, data_2, labels
+
+    labels_np = data_1 + data_2
+
+    labels = bolt.train.convert_dataset(
+        dataset.from_numpy(labels_np, batch_size=batch_size), dim=input_dim * 2
+    )
+    data_1 = bolt.train.convert_dataset(
+        dataset.from_numpy(data_1, batch_size=batch_size), dim=input_dim
+    )
+    data_2 = bolt.train.convert_dataset(
+        dataset.from_numpy(data_2, batch_size=batch_size), dim=input_dim
+    )
+    return (data_1, data_2, labels, [labels_np])
 
 
 # This test ensures we can learn how to add (probably by memorizing)
 # The real thing it tests is 1. multiple inputs and 2. numpy to token datasets
 @pytest.mark.unit
-def test_token_sum():
+def test_embedding_op():
 
     input_dim = 10
     num_train = 10000
@@ -60,23 +76,26 @@ def test_token_sum():
 
     model = get_sum_model(input_dim)
 
-    train_1, train_2, train_labels = generate_sum_datasets_and_labels(
+    train_1, train_2, train_labels, _ = generate_sum_datasets_and_labels(
         input_dim=input_dim, num_examples=num_train
     )
-    train_config = bolt.TrainConfig(learning_rate=0.01, epochs=num_epochs).silence()
-    model.train(
-        train_data=[train_1, train_2],
-        train_labels=train_labels,
-        train_config=train_config,
+
+    for _ in range(5):
+        for x1, x2, y in zip(train_1, train_2, train_labels):
+            model.train_on_batch([x1, x2], [y])
+            model.update_parameters(0.01)
+
+    test_1, test_2, _, test_labels = generate_sum_datasets_and_labels(
+        input_dim=input_dim, num_examples=num_test, batch_size=100
     )
 
-    test_1, test_2, test_labels = generate_sum_datasets_and_labels(
-        input_dim=input_dim, num_examples=num_test
-    )
-    eval_config = bolt.EvalConfig().silence().with_metrics(["categorical_accuracy"])
-    metrics = model.evaluate(
-        test_data=[test_1, test_2],
-        test_labels=test_labels,
-        eval_config=eval_config,
-    )
-    assert metrics[0]["categorical_accuracy"] > 0.8
+    for x1, x2, y in zip(test_1, test_2, test_labels):
+        output = model.forward([x1, x2], use_sparsity=False)
+
+        print("A: ", np.argmax(output[0].activations, axis=1))
+        print("Y: ", y)
+
+        correct = np.sum(np.argmax(output[0].activations, axis=1) == y)
+        total = len(y)
+
+        assert correct / total > 0.8
