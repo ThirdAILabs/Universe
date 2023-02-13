@@ -51,15 +51,8 @@ class FeatureComposer {
       const PreprocessedVectorsMap& vectors_map, TemporalContext& context,
       bool should_update_history);
 
-  static uint32_t getNumberOfBins(const std::string& granularity_size);
-
-  static dataset::TabularHashFeaturesPtr makeTabularHashFeaturesBlock(
-      const std::vector<dataset::TabularDataType>& tabular_datatypes,
-      const std::unordered_map<uint32_t, std::pair<double, double>>& col_ranges,
-      const std::vector<std::string>& num_to_name, bool contextual_columns,
-      std::unordered_map<uint32_t, uint32_t> col_num_bins);
-
  private:
+  static uint32_t getNumberOfBins(const std::string& granularity_size);
   /**
    * A column is encoded in a non-temporal way when it fulfils any
    * of the following:
@@ -94,6 +87,12 @@ class FeatureComposer {
       TemporalContext& context, const TemporalConfig& temporal_config,
       const std::string& key_column, const std::string& timestamp_column,
       bool should_update_history);
+
+  static dataset::TabularHashFeaturesPtr makeTabularHashFeaturesBlock(
+      const std::vector<dataset::TabularDataType>& tabular_datatypes,
+      const std::unordered_map<uint32_t, std::pair<double, double>>& col_ranges,
+      const std::vector<std::string>& num_to_name, bool contextual_columns,
+      std::unordered_map<uint32_t, uint32_t> col_num_bins);
 
   static dataset::ThreadSafeVocabularyPtr& vocabForColumn(
       ColumnVocabularies& column_vocabs, const std::string& column_name,

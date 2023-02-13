@@ -65,7 +65,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("n_target_classes"), py::arg("max_neighbours"),
            py::arg("relationship_columns") = std::nullopt,
            py::arg("numerical_context") = false,
-           py::arg("features_context") = false, py::arg("k_hop") = 0,
+           py::arg("features_context") = false, py::arg("k_hop") = 1,
            py::arg("delimeter") = ',', py::arg("adj_list") = std::nullopt)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
@@ -232,7 +232,7 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("n_target_classes"), py::arg("max_neighbours"),
            py::arg("relationship_columns") = std::nullopt,
            py::arg("numerical_context") = false,
-           py::arg("features_context") = false, py::arg("k_hop") = 0,
+           py::arg("features_context") = false, py::arg("k_hop") = 1,
            py::arg("delimeter") = ',', py::arg("adj_list") = std::nullopt);
 
   py::class_<QueryCandidateGenerator, std::shared_ptr<QueryCandidateGenerator>>(

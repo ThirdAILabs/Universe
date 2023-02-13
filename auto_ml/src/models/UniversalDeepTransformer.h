@@ -174,10 +174,6 @@ class UniversalDeepTransformer final : public ModelPipeline {
 
   void setPredictionThreshold(float threshold);
 
-  static bolt::BoltGraphPtr buildUDTBoltGraph(
-      const std::vector<uint32_t>& input_dims, uint32_t output_dim,
-      uint32_t hidden_layer_size);
-
  private:
   explicit UniversalDeepTransformer(ModelPipeline&& model,
                                     std::string target_column,
@@ -198,6 +194,10 @@ class UniversalDeepTransformer final : public ModelPipeline {
   static bolt::BoltGraphPtr loadUDTBoltGraph(
       const std::vector<uint32_t>& input_dims, uint32_t output_dim,
       const std::string& saved_model_config);
+
+  static bolt::BoltGraphPtr buildUDTBoltGraph(
+      const std::vector<uint32_t>& input_dims, uint32_t output_dim,
+      uint32_t hidden_layer_size);
 
   data::UDTDatasetFactory& udtDatasetFactory() const {
     /*

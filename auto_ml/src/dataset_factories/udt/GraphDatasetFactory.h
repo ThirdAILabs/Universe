@@ -7,6 +7,7 @@
 #include <auto_ml/src/dataset_factories/udt/FeatureComposer.h>
 #include <auto_ml/src/dataset_factories/udt/GraphConfig.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
@@ -25,69 +26,72 @@
 namespace thirdai::automl::data {
 
 class GraphDatasetFactory : public DatasetLoaderFactory {
-  static constexpr const uint32_t DEFAULT_BATCH_SIZE = 2048;
+  static constexpr const uint32_t DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE =
+      2048;
 
  public:
   explicit GraphDatasetFactory(GraphConfigPtr conifg)
-      : _config(std::move(conifg)) {}
-
-  void prepareTheBatchProcessor() {
-    auto input_blocks = buildInputBlocks();
-
-    auto label_block = getLabelBlock();
-    auto data_loader = dataset::FileDataSource::make(_config->_graph_file_name);
+      : _config(std::move(conifg)) {
+    auto data_source = dataset::FileDataSource::make(_config->_graph_file_name);
 
     _column_number_map = UDTDatasetFactory::makeColumnNumberMapFromHeader(
-        *data_loader, _config->_delimeter);
+        *data_source, _config->_delimeter);
 
-    auto rows = getRawData(*data_loader);
+    auto rows = getRawData(*data_source);
 
-    if ((_config->_numerical_context || _config->_features_context) &&
-        _config->_k_hop) {
-      makeGraphProcessing(rows);
+    _featurizer = prepareTheFeaturizer(_config, rows);
+  }
 
-      if (_config->_features_context) {
-        _feature_vectors = makeFeatureProcessedVectors(rows);
+  dataset::GraphFeaturizerPtr prepareTheFeaturizer(
+      const GraphConfigPtr& config,
+      const std::vector<std::vector<std::string>>& rows) {
+    std::vector<dataset::BlockPtr> input_blocks = buildInputBlocks(config);
 
-        auto graph_block = dataset::GraphCategoricalBlock::make(
-            _config->_source, _feature_vectors, _neighbours);
+    dataset::BlockPtr label_block = getLabelBlock(config);
 
-        input_blocks.push_back(graph_block);
-      }
-      if (_config->_numerical_context) {
-        _numerical_vectors = makeNumericalProcessedVectors(rows);
+    auto [adjacency_list, node_id_map] = getGraphStructureInfo(rows);
 
-        auto graph_numerical_block = dataset::MetadataCategoricalBlock::make(
-            _config->_source, _numerical_vectors);
+    std::unordered_map<std::string, std::unordered_set<std::string>>
+        neighbours = findNeighboursForAllNodes(adjacency_list, config->_k_hop,
+                                               node_id_map);
 
-        input_blocks.push_back(graph_numerical_block);
-      }
+    if (config->_features_context) {
+      dataset::PreprocessedVectorsPtr feature_vectors =
+          makeFeatureProcessedVectors(rows);
+
+      auto graph_block = dataset::GraphCategoricalBlock::make(
+          config->_source, feature_vectors, neighbours);
+
+      input_blocks.push_back(graph_block);
+    }
+    if (config->_numerical_context) {
+      dataset::PreprocessedVectorsPtr numerical_vectors =
+          makeNumericalProcessedVectors(rows, node_id_map, neighbours);
+
+      auto graph_numerical_block = dataset::MetadataCategoricalBlock::make(
+          config->_source, numerical_vectors);
+
+      input_blocks.push_back(graph_numerical_block);
     }
 
-    _batch_processor = dataset::GraphFeaturizer::make(
-        std::move(input_blocks), {std::move(label_block)}, _config->_source,
-        _config->_max_neighbours, _config->_delimeter, /*hash_range=*/100000);
+    auto featurizer = dataset::GraphFeaturizer::make(
+        std::move(input_blocks), {std::move(label_block)}, config->_source,
+        config->_max_neighbours, config->_delimeter, /*hash_range=*/100000);
 
-    _batch_processor->updateNeighbours(_neighbours);
+    featurizer->updateNeighbours(neighbours);
 
-    _batch_processor->updateNodeIdMap(_node_id_map);
+    featurizer->updateNodeIdMap(node_id_map);
+
+    return featurizer;
   }
 
   std::vector<uint32_t> getInputDims() final {
-    return {_batch_processor->getInputDim()};
+    return {_featurizer->getInputDim()};
   }
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataSource> data_source, bool training) final {
-    _column_number_map = UDTDatasetFactory::makeColumnNumberMapFromHeader(
-        *data_source, _config->_delimeter);
-
-    // The batch processor will treat the next line as a header
-    // Restart so batch processor does not skip a sample.
-    data_source->restart();
-
-    return std::make_unique<dataset::DatasetLoader>(data_source,
-                                                    _batch_processor,
+    return std::make_unique<dataset::DatasetLoader>(data_source, _featurizer,
                                                     /* shuffle= */ training);
   }
 
@@ -98,7 +102,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   std::vector<BoltBatch> featurizeInputBatch(
       const LineInputBatch& inputs) final {
     std::vector<BoltBatch> result;
-    for (auto& batch : _batch_processor->featurize(inputs)) {
+    for (auto& batch : _featurizer->featurize(inputs)) {
       result.emplace_back(std::move(batch));
     }
     return result;
@@ -112,9 +116,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     return _target_vocab->getUid(label_str);
   }
 
-  uint32_t getLabelDim() final { return _batch_processor->getLabelDim(); }
-
-  dataset::GraphFeaturizerPtr getBatchProcessor() { return _batch_processor; }
+  uint32_t getLabelDim() final { return _featurizer->getLabelDim(); }
 
   std::vector<dataset::Explanation> explain(
       const std::optional<std::vector<uint32_t>>& /*gradients_indices*/,
@@ -125,38 +127,35 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
 
   bool hasTemporalTracking() const final { return false; }
 
-  std::unordered_map<std::string, std::vector<std::string>> createGraph(
-      const std::vector<std::vector<std::string>>& rows,
-      const std::vector<uint32_t>& relationship_col_nums,
-      uint32_t source_col_num) {
+  static std::pair<std::unordered_map<std::string, std::vector<std::string>>,
+                   ColumnNumberMap>
+  createGraph(const std::vector<std::vector<std::string>>& rows,
+              const std::vector<uint32_t>& relationship_col_nums,
+              uint32_t source_col_num) {
     std::unordered_map<std::string, std::vector<std::string>> adjacency_list;
     std::vector<std::string> nodes(rows.size());
     for (uint32_t i = 0; i < rows.size(); i++) {
       nodes[i] = rows[i][source_col_num];
       for (uint32_t j = i + 1; j < rows.size(); j++) {
-        if (rows[i][source_col_num] != rows[j][source_col_num]) {
-          for (unsigned int relationship_col_num : relationship_col_nums) {
-            if (rows[i][relationship_col_num] ==
-                rows[j][relationship_col_num]) {
-              adjacency_list[rows[i][source_col_num]].push_back(
-                  rows[j][source_col_num]);
-              adjacency_list[rows[j][source_col_num]].push_back(
-                  rows[i][source_col_num]);
-              break;
-            }
+        for (unsigned int relationship_col_num : relationship_col_nums) {
+          if (rows[i][relationship_col_num] == rows[j][relationship_col_num]) {
+            adjacency_list[rows[i][source_col_num]].push_back(
+                rows[j][source_col_num]);
+            adjacency_list[rows[j][source_col_num]].push_back(
+                rows[i][source_col_num]);
+            break;
           }
         }
       }
     }
-    _node_id_map = ColumnNumberMap(nodes);
-    return adjacency_list;
+    return {adjacency_list, ColumnNumberMap(nodes)};
   }
 
   std::unordered_map<std::string, std::unordered_set<std::string>>
   findNeighboursForAllNodes(
       const std::unordered_map<std::string, std::vector<std::string>>&
           adjacency_list,
-      uint32_t k) {
+      uint32_t k, const ColumnNumberMap& node_id_map) {
     uint32_t num_nodes = adjacency_list.size();
     std::unordered_map<std::string, std::unordered_set<std::string>> neighbours(
         num_nodes);
@@ -164,18 +163,19 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       std::unordered_set<std::string> neighbours_for_node;
       std::vector<bool> visited(num_nodes, false);
       findAllNeighboursForNode(k, /*node_id=*/temp.first, visited,
-                               neighbours_for_node, adjacency_list);
+                               neighbours_for_node, adjacency_list,
+                               node_id_map);
       neighbours[temp.first] = neighbours_for_node;
     }
     return neighbours;
   }
 
-  std::vector<std::vector<std::string>> processNumerical(
+  static std::vector<std::vector<std::string>> processNumerical(
       const std::vector<std::vector<std::string>>& rows,
       const std::vector<uint32_t>& numerical_columns,
       const std::unordered_map<std::string, std::unordered_set<std::string>>&
           neighbours,
-      uint32_t source_col_num) {
+      uint32_t source_col_num, const ColumnNumberMap& node_id_map) {
     std::vector<std::vector<std::string>> processed_numerical_columns(
         rows.size(), std::vector<std::string>(numerical_columns.size()));
     for (uint32_t i = 0; i < rows.size(); i++) {
@@ -184,7 +184,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
         if (neighbours.find(rows[i][source_col_num]) != neighbours.end()) {
           for (const auto& neighbour : neighbours.at(rows[i][source_col_num])) {
             value += std::stoi(
-                rows[_node_id_map.at(neighbour)][numerical_columns[j]]);
+                rows[node_id_map.at(neighbour)][numerical_columns[j]]);
           }
           processed_numerical_columns[i][j] = std::to_string(
               static_cast<float>(value) /
@@ -209,32 +209,32 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     return relationship_col_nums;
   }
 
-  void makeGraphProcessing(const std::vector<std::vector<std::string>>& rows) {
-    std::unordered_map<std::string, std::vector<std::string>> adjacency_list;
+  std::pair<std::unordered_map<std::string, std::vector<std::string>>,
+            ColumnNumberMap>
+  getGraphStructureInfo(const std::vector<std::vector<std::string>>& rows) {
     uint32_t source_col_num = _column_number_map.at(_config->_source);
     if (!_config->_adj_list) {
       std::vector<uint32_t> relationship_col_nums = getRelationshipColumns(
           *_config->_relationship_columns, _column_number_map);
 
-      adjacency_list = createGraph(rows, relationship_col_nums, source_col_num);
-    } else {
-      std::vector<std::string> nodes;
-      for (const auto& temp : *_config->_adj_list) {
-        adjacency_list[temp.first] = temp.second;
-        nodes.push_back(temp.first);
-      }
-      _node_id_map = ColumnNumberMap(nodes);
+      return createGraph(rows, relationship_col_nums, source_col_num);
     }
-
-    _neighbours = findNeighboursForAllNodes(adjacency_list, _config->_k_hop);
+    std::vector<std::string> nodes;
+    for (const auto& temp : *_config->_adj_list) {
+      nodes.push_back(temp.first);
+    }
+    return {*_config->_adj_list, ColumnNumberMap(nodes)};
   }
 
   dataset::CsvRolledBatch getFinalProcessedData(
       const std::vector<std::vector<std::string>>& rows,
-      const std::vector<uint32_t>& numerical_columns) {
+      const std::vector<uint32_t>& numerical_columns,
+      const ColumnNumberMap& node_id_map,
+      const std::unordered_map<std::string, std::unordered_set<std::string>>&
+          neighbours) {
     uint32_t source_col_num = _column_number_map.at(_config->_source);
-    auto values =
-        processNumerical(rows, numerical_columns, _neighbours, source_col_num);
+    auto values = processNumerical(rows, numerical_columns, neighbours,
+                                   source_col_num, node_id_map);
 
     auto copied_rows = rows;
 
@@ -252,7 +252,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       dataset::DataSource& data_loader) {
     std::vector<std::string> full_data;
 
-    while (auto data = data_loader.nextBatch(DEFAULT_BATCH_SIZE)) {
+    while (auto data = data_loader.nextBatch(
+               DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE)) {
       full_data.insert(full_data.end(), data->begin(), data->end());
     }
 
@@ -268,7 +269,10 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   }
 
   dataset::PreprocessedVectorsPtr makeNumericalProcessedVectors(
-      const std::vector<std::vector<std::string>>& rows) {
+      const std::vector<std::vector<std::string>>& rows,
+      const ColumnNumberMap& node_id_map,
+      const std::unordered_map<std::string, std::unordered_set<std::string>>&
+          neighbours) {
     std::vector<uint32_t> numerical_columns;
     std::vector<dataset::BlockPtr> input_blocks;
     uint32_t original_num_cols = _column_number_map.numCols();
@@ -279,10 +283,9 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       }
     }
 
-    if (_config->_numerical_context) {
-      input_blocks.push_back(dataset::DenseArrayBlock::make(
-          original_num_cols, numerical_columns.size()));
-    }
+    input_blocks.push_back(dataset::DenseArrayBlock::make(
+        original_num_cols, numerical_columns.size()));
+
     auto key_vocab = dataset::ThreadSafeVocabulary::make(
         /* vocab_size= */ 0, /* limit_vocab_size= */ false);
     auto label_block = dataset::StringLookupCategoricalBlock::make(
@@ -294,7 +297,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
         /* has_header= */ false, /* delimiter= */ _config->_delimeter,
         /* parallel= */ true);
 
-    auto final_data = getFinalProcessedData(rows, numerical_columns);
+    auto final_data =
+        getFinalProcessedData(rows, numerical_columns, node_id_map, neighbours);
 
     return makePreprocessedVectors(processor, *key_vocab, final_data);
   }
@@ -359,12 +363,13 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     return makePreprocessedVectors(processor, *key_vocab, final_data);
   }
 
-  std::vector<dataset::BlockPtr> buildInputBlocks() {
+  static std::vector<dataset::BlockPtr> buildInputBlocks(
+      const GraphConfigPtr& config) {
     UDTConfig feature_config(
-        /* data_types= */ _config->_data_types,
+        /* data_types= */ config->_data_types,
         /* temporal_tracking_relationships= */ {},
-        /* target= */ _config->_target,
-        /* n_target_classes= */ _config->_n_target_classes);
+        /* target= */ config->_target,
+        /* n_target_classes= */ config->_n_target_classes);
 
     TemporalRelationships empty_temporal_relationships;
 
@@ -376,12 +381,12 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
         /*contextual_columns=*/true);
   }
 
-  dataset::BlockPtr getLabelBlock() {
+  dataset::BlockPtr getLabelBlock(const GraphConfigPtr& config) {
     if (!_target_vocab) {
       _target_vocab = dataset::ThreadSafeVocabulary::make(
-          /* vocab_size= */ _config->_n_target_classes);
+          /* vocab_size= */ config->_n_target_classes);
     }
-    return dataset::StringLookupCategoricalBlock::make(_config->_target,
+    return dataset::StringLookupCategoricalBlock::make(config->_target,
                                                        _target_vocab);
   }
 
@@ -389,17 +394,18 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       uint32_t k, const std::string& node_id, std::vector<bool>& visited,
       std::unordered_set<std::string>& neighbours,
       const std::unordered_map<std::string, std::vector<std::string>>&
-          adjacency_list) {
+          adjacency_list,
+      const ColumnNumberMap& node_id_map) {
     if (k == 0) {
       return;
     }
-    visited[_node_id_map.at(node_id)] = true;
+    visited[node_id_map.at(node_id)] = true;
 
     for (const auto& neighbour : adjacency_list.at(node_id)) {
-      if (!visited[_node_id_map.at(neighbour)]) {
+      if (!visited[node_id_map.at(neighbour)]) {
         neighbours.insert(neighbour);
         findAllNeighboursForNode(k - 1, neighbour, visited, neighbours,
-                                 adjacency_list);
+                                 adjacency_list, node_id_map);
       }
     }
   }
@@ -423,12 +429,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   }
 
   GraphConfigPtr _config;
-  dataset::PreprocessedVectorsPtr _feature_vectors;
-  dataset::PreprocessedVectorsPtr _numerical_vectors;
   ColumnNumberMap _column_number_map;
-  ColumnNumberMap _node_id_map;
-  std::unordered_map<std::string, std::unordered_set<std::string>> _neighbours;
-  dataset::GraphFeaturizerPtr _batch_processor;
+  dataset::GraphFeaturizerPtr _featurizer;
   dataset::ThreadSafeVocabularyPtr _target_vocab;
 };
 
