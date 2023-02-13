@@ -51,9 +51,6 @@ class GraphFeaturizer final : public Featurizer {
 
   uint32_t getLabelDim() const { return _label_blocks.featureDim(); }
 
-  void updateColumns(const std::string& header,
-                     std::vector<ColumnIdentifier>& columns) const;
-
   bool expectsHeader() const final { return true; }
 
   void processHeader(const std::string& header) final;
@@ -64,7 +61,7 @@ class GraphFeaturizer final : public Featurizer {
       const std::unordered_map<std::string, std::unordered_set<std::string>>&
           neighbours);
 
-  void updateNodeIdMap(const ColumnNumberMap& column_number_map);
+  void updateNodeIdMap(const ColumnNumberMap& node_id_map);
 
  private:
   std::exception_ptr featurizeSampleInBatch(

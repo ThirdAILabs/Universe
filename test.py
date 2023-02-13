@@ -1,8 +1,9 @@
-from thirdai import bolt
+import pdb
+import pickle
+
 import pandas as pd
 from sklearn.metrics import roc_auc_score
-import pickle
-import pdb
+from thirdai import bolt
 
 graph_file = "/share/data/capillary/tfinance.csv"
 train_file = "/share/data/capillary/tfinance_train.csv"
@@ -43,7 +44,6 @@ y_test = df[target].tolist()
 #     numerical_context=True,
 #     k_hop=1,
 # )
-
 cols = []
 for i in range(num_numerical):
     cols.append("feature_{}".format(i))
@@ -58,7 +58,7 @@ for i in cols:
 dic = {}
 
 for i in range(len(cols)):
-    dic[cols[i]] = bolt.types.numerical(range=(mins[i],maxs[i]))
+    dic[cols[i]] = bolt.types.numerical(range=(mins[i], maxs[i]))
 
 
 data = pd.read_pickle(adj_pickle_file)
@@ -66,12 +66,8 @@ data = pd.read_pickle(adj_pickle_file)
 
 adj = {}
 for key in data.keys():
-    # data[key].remove(key)
-    adj[str(key)] = list(map(str,list(data[key])))
-    # break
-# adj = {0:[1,2],1:[2,0]}
-
-# print(adj)
+    data[key].remove(key)
+    adj[str(key)] = list(map(str, list(data[key])))
 
 model = bolt.UDTGraph(
     data_types={
@@ -101,6 +97,3 @@ for i in range(15):
     print(roc_auc_score(y_test,activations[:,0]))
 
     print(roc_auc_score(y_test,activations[:,1]))
-
-
-

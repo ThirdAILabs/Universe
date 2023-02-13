@@ -33,6 +33,10 @@ class ColumnNumberMap {
 
   ColumnNumberMap() {}
 
+  std::unordered_map<std::string, uint32_t> getColumnNameToColNumMap() const {
+    return _name_to_num;
+  }
+
   uint32_t at(const std::string& col_name) const {
     if (_name_to_num.count(col_name) == 0) {
       std::stringstream error_ss;

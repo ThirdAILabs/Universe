@@ -16,7 +16,7 @@ struct GraphConfig {
       std::optional<std::vector<std::string>> relationship_columns =
           std::nullopt,
       bool numerical_context = false, bool features_context = false,
-      uint32_t k_hop = 0, char delimeter = ',',
+      uint32_t k_hop = 1, char delimeter = ',',
       std::optional<std::unordered_map<std::string, std::vector<std::string>>>
           adj_list = std::nullopt)
       : _data_types(std::move(data_types)),
@@ -33,7 +33,7 @@ struct GraphConfig {
         _adj_list(std::move(adj_list)) {
     if (!_relationship_columns && !_adj_list) {
       throw std::invalid_argument(
-          "Atleast one of relationship columns or adj_list has to be "
+          "At least one of relationship columns or adj_list has to be "
           "provided.");
     }
   }

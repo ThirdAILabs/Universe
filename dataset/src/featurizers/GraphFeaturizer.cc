@@ -13,14 +13,6 @@ void GraphFeaturizer::processHeader(const std::string& header) {
   _source_col.updateColumnNumber(column_number_map);
 }
 
-void GraphFeaturizer::updateColumns(
-    const std::string& header, std::vector<ColumnIdentifier>& columns) const {
-  ColumnNumberMap column_number_map(header, _delimiter);
-  for (auto col : columns) {
-    col.updateColumnNumber(column_number_map);
-  }
-}
-
 std::vector<std::vector<BoltVector>> GraphFeaturizer::featurize(
     ColumnarInputBatch& input_batch) {
   std::vector<BoltVector> batch_inputs(input_batch.size());
@@ -65,9 +57,12 @@ void GraphFeaturizer::updateNeighbours(
   }
 }
 
-void GraphFeaturizer::updateNodeIdMap(
-    const ColumnNumberMap& column_number_map) {
-  auto temp = column_number_map.getColumnNumToColNameMap();
+void GraphFeaturizer::updateNodeIdMap(const ColumnNumberMap& node_id_map) {
+  if (_node_id_to_num_map.empty()) {
+    _node_id_to_num_map = node_id_map.getColumnNameToColNumMap();
+    return;
+  }
+  auto temp = node_id_map.getColumnNumToColNameMap();
   for (const auto& node : temp) {
     auto present_size = _node_id_to_num_map.size();
     if (!_node_id_to_num_map.count(node)) {

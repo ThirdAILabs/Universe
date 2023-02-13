@@ -30,7 +30,7 @@ class GraphUDT : public ModelPipeline {
       std::optional<std::vector<std::string>> relationship_columns =
           std::nullopt,
       bool numerical_context = false, bool features_context = false,
-      uint32_t k_hop = 0, char delimeter = ',',
+      uint32_t k_hop = 1, char delimeter = ',',
       std::optional<std::unordered_map<std::string, std::vector<std::string>>>
           adj_list = std::nullopt) {
     auto dataset_config = std::make_shared<data::GraphConfig>(
@@ -41,8 +41,6 @@ class GraphUDT : public ModelPipeline {
 
     auto graph_dataset_factory =
         std::make_shared<data::GraphDatasetFactory>(dataset_config);
-
-    graph_dataset_factory->prepareTheBatchProcessor();
 
     bolt::BoltGraphPtr model;
     model = GraphUDT::buildGraphUDTBoltGraph(
