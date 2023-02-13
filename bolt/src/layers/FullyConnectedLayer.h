@@ -248,6 +248,8 @@ class FullyConnectedLayer final {
 
   void eigenDenseDenseForward(const BoltVector& input, BoltVector& output);
 
+  void eigenSparseDenseForward(const BoltVector& input, BoltVector& output);
+
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
   void backpropagateImpl(BoltVector& input, BoltVector& output);
 

@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <numeric>
 #include <random>
@@ -55,7 +56,7 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
     if (input.isDense()) {
       eigenDenseDenseForward(input, output);
     } else {
-      forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/false>(input, output, labels);
+      eigenSparseDenseForward(input, output);
     }
   } else {
     if (input.isDense()) {
@@ -189,6 +190,54 @@ void FullyConnectedLayer::eigenDenseDenseForward(const BoltVector& input,
   Eigen::Map<Eigen::VectorXf> eigen_biases(_biases.data(), _dim);
 
   Eigen::Map<Eigen::VectorXf> eigen_input(input.activations, input.len);
+  Eigen::Map<Eigen::VectorXf> eigen_output(output.activations, output.len);
+
+  eigen_output.noalias() = eigen_weights * eigen_input;
+
+  eigen_biases.array().addTo(eigen_output);
+
+  switch (_act_func) {
+    case ActivationFunction::ReLU:
+      eigen_output = eigen_output.array().max(0.0);
+      break;
+    case ActivationFunction::Softmax:
+      eigenSoftmax(eigen_output);
+      break;
+    case ActivationFunction::Linear:
+      break;
+    case ActivationFunction::Sigmoid:
+      eigen_output = 1 + (-eigen_output.array()).exp();
+      eigen_output = eigen_output.array().rsqrt();
+      break;
+    case ActivationFunction::Tanh:
+      eigen_output = eigen_output.array().tanh();
+      break;
+  }
+}
+
+void FullyConnectedLayer::eigenSparseDenseForward(const BoltVector& input,
+                                                  BoltVector& output) {
+  _prev_is_dense = false;
+  _this_is_dense = true;
+
+  Eigen::Map<
+      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+      eigen_weights(_weights.data(), _dim, _prev_dim);
+  Eigen::Map<Eigen::VectorXf> eigen_biases(_biases.data(), _dim);
+
+  Eigen::SparseVector<float> eigen_input(input.len);
+  for (size_t i = 0; i < input.len; i++) {
+    eigen_input.coeffRef(input.active_neurons[i]) = input.activations[i];
+  }
+  // std::memcpy(eigen_input.innerIndexPtr(), input.active_neurons, input.len * 4);
+  // std::memcpy(eigen_input.valuePtr(), input.activations, input.len * 4);
+
+  // Eigen::Map<Eigen::SparseMatrix<float>> eigen_input(
+  //     /* rows = */ input.len, /* cols = */ 1, /* nnz = */ input.len, 
+  //     /* outerIndexPtr = */ reinterpret_cast<int*>(input.active_neurons),
+  //     /* innerIndexPtr = */ reinterpret_cast<int*>(input.active_neurons),
+  //     /* valuePtr = */ input.activations,
+  //     /* innerNonZerosPtr = */ reinterpret_cast<int*>(input.active_neurons));
   Eigen::Map<Eigen::VectorXf> eigen_output(output.activations, output.len);
 
   eigen_output.noalias() = eigen_weights * eigen_input;

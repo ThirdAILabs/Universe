@@ -99,7 +99,6 @@ inline RowTensor3DFloat tfEigenConv(
       Eigen::internal::traits<RowTensor3DFloat>::Layout, TensorIndex> >
       in(input);
 
-
   // Number of filters to apply. This is the same as the output depth of the
   // result
   const TensorIndex kernelFilters = kern.dimensions()[3];
