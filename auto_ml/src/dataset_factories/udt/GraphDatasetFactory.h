@@ -151,7 +151,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
     return {adjacency_list, ColumnNumberMap(nodes)};
   }
 
-  std::unordered_map<std::string, std::unordered_set<std::string>>
+  static std::unordered_map<std::string, std::unordered_set<std::string>>
   findNeighboursForAllNodes(
       const std::unordered_map<std::string, std::vector<std::string>>&
           adjacency_list,
@@ -390,7 +390,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
                                                        _target_vocab);
   }
 
-  void findAllNeighboursForNode(  // NOLINT
+  static void findAllNeighboursForNode(  // NOLINT
       uint32_t k, const std::string& node_id, std::vector<bool>& visited,
       std::unordered_set<std::string>& neighbours,
       const std::unordered_map<std::string, std::vector<std::string>>&
