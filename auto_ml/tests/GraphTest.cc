@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <_types/_uint32_t.h>
 #include <auto_ml/src/dataset_factories/udt/GraphConfig.h>
 #include <auto_ml/src/dataset_factories/udt/GraphDatasetFactory.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
