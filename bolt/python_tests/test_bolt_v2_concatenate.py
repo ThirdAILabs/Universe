@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from thirdai import bolt_v2 as bolt
 
 from utils import gen_numpy_training_data
@@ -46,12 +47,16 @@ def get_data(n_classes: int):
     return x, y
 
 
-def test_concatenation_op():
+@pytest.mark.unit
+@pytest.mark.parametrize("use_sparsity", [True, False])
+def test_concatenation_op(use_sparsity):
     n_classes = 100
     input_layer = bolt.nn.Input(dim=n_classes)
 
     hidden_layers = []
-    for dim, sparsity in [(10, 1.0), (20, 0.4), (5, 1.0), (10, 0.5)]:
+    for dim, sparsity in [(10, 1.0), (20, 0.4), (10, 0.5), (5, 1.0)]:
+        if not use_sparsity:
+            sparsity = 1.0
         layer = bolt.nn.FullyConnected(
             dim=dim, input_dim=n_classes, sparsity=sparsity, activation="linear"
         )
@@ -74,9 +79,12 @@ def test_concatenation_op():
         model.train_on_batch(x, y)
         model.update_parameters(0.0001)
 
-        assert np.array_equal(
-            concat_active_neurons(hidden_layers), concat.tensor().active_neurons
-        )
+        if use_sparsity:
+            assert np.array_equal(
+                concat_active_neurons(hidden_layers), concat.tensor().active_neurons
+            )
+        else:
+            assert concat.tensor().active_neurons == None
 
         assert np.array_equal(
             concat_activations(hidden_layers), concat.tensor().activations
