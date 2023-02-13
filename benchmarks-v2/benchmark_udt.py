@@ -1,31 +1,19 @@
 import argparse
 import json
+
 import udt_configs
-from configs import udt_configs, UDTBenchmarkConfig
+from configs import udt_configs
 from thirdai import bolt, deployment
 from thirdai.experimental import MlflowCallback
 
 
-def run_udt_benchmark(
-    config: UDTBenchmarkConfig, run_name: str, mlflow_uri: str
-) -> None:
-    if not issubclass(config, UDTBenchmarkConfig):
-        raise ValueError(
-            f"The input config must be a UDT config. Given a config of type {config.__bases__}"
-        )
+def run_udt_benchmark(config, run_name, mlflow_uri):
     if config.model_config is not None:
-        assert hasattr(config, "model_config_path")
         deployment.dump_config(
             config=json.dumps(config.model_config), filename=config.model_config_path
         )
 
-    if hasattr(config, "data_types"):
-        data_types = config.data_types
-    elif hasattr(config, "get_data_types"):
-        data_types = config.get_data_types()
-    else:
-        raise ValueError("Data types for UDT config must be specified.")
-
+    data_types = config.data_types
     model = bolt.UniversalDeepTransformer(
         data_types=data_types,
         target=config.target,
@@ -59,6 +47,12 @@ def run_udt_benchmark(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Benchmark a dataset with UDT")
     parser.add_argument(
+        "--runner",
+        default="udt",
+        required=True,
+        help="Specify the runner type for UDT benchmarks. It should always be 'udt'",
+    )
+    parser.add_argument(
         "--mlflow_uri", required=True, help="MLflow URI to log metrics and artifacts."
     )
     parser.add_argument(
@@ -71,8 +65,10 @@ if __name__ == "__main__":
         help="The python class name of the UDT benchmark config",
     )
 
-    arguments = parser.parse_args()
-    config = getattr(udt_configs, arguments.config_name)
-    run_udt_benchmark(
-        config=config, run_name=arguments.run_name, mlflow_uri=arguments.mlflow_uri
-    )
+    args = parser.parse_args()
+    config = getattr(udt_configs, args.config_name)
+
+    if args.runner.lower() != "udt":
+        raise ValueError(f"Invalid runner type {args.runner} for UDT benchmark.")
+
+    run_udt_benchmark(config=config, run_name=args.run_name, mlflow_uri=args.mlflow_uri)
