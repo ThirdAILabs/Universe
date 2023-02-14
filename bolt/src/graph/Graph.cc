@@ -113,7 +113,13 @@ void BoltGraph::logValidateAndSave(const TrainConfig& train_config,
 MetricData BoltGraph::train(
     const std::vector<dataset::BoltDatasetPtr>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
-    const TrainConfig& train_config) {
+    const TrainConfig& train_config, licensing::TrainPermissionsToken token) {
+  // A token can only be constructed if the user has a full access
+  // license or is using a dataset that is allowed under their demo license.
+  // Hence this method successfully being called with a token is enough to
+  // continue, and we don't actually need to use the token object.
+  (void)token;
+
   DatasetContext dataset_context(train_data, train_labels);
 
   verifyCanTrain(dataset_context);
@@ -254,7 +260,14 @@ void BoltGraph::trainOnBatch(std::vector<BoltBatch>&& inputs,
                              const BoltBatch& labels, float learning_rate,
                              MetricAggregator& metrics,
                              uint32_t rebuild_hash_tables_interval,
-                             uint32_t reconstruct_hash_functions_interval) {
+                             uint32_t reconstruct_hash_functions_interval,
+                             licensing::TrainPermissionsToken token) {
+  // A token can only be constructed if the user has a full access
+  // license or is using a dataset that is allowed under their demo license.
+  // Hence this method successfully being called with a token is enough to
+  // continue, and we don't actually need to use the token object.
+  (void)token;
+
   SingleBatchDatasetContext dataset_context(std::move(inputs));
   verifyInputForGraph(dataset_context);
 
@@ -838,6 +851,7 @@ template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
+  licensing::disableForDemoLicenses();
   archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
           _epoch, _updates);
 }

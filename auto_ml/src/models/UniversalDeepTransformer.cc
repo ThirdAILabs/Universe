@@ -244,10 +244,10 @@ void UniversalDeepTransformer::coldStartPretraining(
     const std::vector<std::string>& weak_column_names,
     bolt::TrainConfig& train_config,
     const std::optional<ValidationOptions>& validation) {
-  auto dataset =
-      thirdai::data::ColumnMap::createStringColumnMapFromFile(original_source);
-
   auto dataset_config = udtDatasetFactory().config();
+
+  auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
+      original_source, dataset_config->delimiter);
 
   auto metadata = cold_start::getColdStartMetadata(dataset_config);
 
