@@ -351,6 +351,7 @@ set(THIRDAI_SOURCES
     dataset/src/featurizers/ProcessorUtils.cc
     dataset/src/featurizers/SvmFeaturizer.cc
     dataset/src/featurizers/TabularFeaturizer.cc
+    dataset/src/featurizers/FeaturizerUtils.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
@@ -363,6 +364,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/dataset_factories/udt/DataTypes.cc
     auto_ml/src/dataset_factories/udt/FeatureComposer.cc
     auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
+    auto_ml/src/dataset_factories/udt/GraphDatasetFactory.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartDataSource.cc
@@ -414,6 +416,7 @@ pybind11_add_module(
   auto_ml/src/models/OutputProcessor.cc
   auto_ml/src/models/TextClassifier.cc
   auto_ml/src/models/UniversalDeepTransformer.cc
+  auto_ml/src/models/GraphUDT.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 

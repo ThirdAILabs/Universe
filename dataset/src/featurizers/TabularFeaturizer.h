@@ -100,19 +100,11 @@ class TabularFeaturizer : public Featurizer {
         parallel, hash_range);
   }
 
-  static std::exception_ptr buildVector(BoltVector& vector, BlockList& blocks,
-                                        ColumnarInputSample& sample,
-                                        std::optional<uint32_t> hash_range);
-
  private:
   std::exception_ptr featurizeSampleInBatch(
       uint32_t index_in_batch, ColumnarInputBatch& input_batch,
       std::vector<BoltVector>& batch_inputs,
       std::vector<BoltVector>& batch_labels);
-
-  static std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
-      bool blocks_dense, std::optional<uint32_t> hash_range,
-      bool store_segment_feature_map);
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;

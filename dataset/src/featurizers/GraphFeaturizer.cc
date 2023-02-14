@@ -1,7 +1,9 @@
 #include "GraphFeaturizer.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
+#include <dataset/src/featurizers/FeaturizerUtils.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
@@ -43,6 +45,9 @@ std::vector<std::vector<BoltVector>> GraphFeaturizer::featurize(
           std::move(batch_labels)};
 }
 
+/*
+The function updates the neighbours of each node.
+*/
 void GraphFeaturizer::updateNeighbours(
     const std::unordered_map<std::string, std::unordered_set<std::string>>&
         neighbours) {
@@ -57,6 +62,10 @@ void GraphFeaturizer::updateNeighbours(
   }
 }
 
+/*
+The purpose of the function is to assign a unique id for each node, written to
+also support dynamic graph.
+*/
 void GraphFeaturizer::updateNodeIdMap(const ColumnNumberMap& node_id_map) {
   if (_node_id_to_num_map.empty()) {
     _node_id_to_num_map = node_id_map.getColumnNameToColNumMap();
@@ -90,21 +99,25 @@ std::exception_ptr GraphFeaturizer::featurizeSampleInBatch(
   */
   try {
     auto& sample = input_batch.at(index_in_batch);
-    if (auto err = TabularFeaturizer::buildVector(
+    if (auto err = FeaturizerUtils::buildVector(
             batch_inputs[index_in_batch], _input_blocks, sample, _hash_range)) {
       return err;
     }
-    batch_token_inputs[index_in_batch] = buildTokenVector(sample);
-    return TabularFeaturizer::buildVector(batch_labels[index_in_batch],
-                                          _label_blocks, sample,
-                                          // Label is never hashed.
-                                          /* hash_range= */ std::nullopt);
+    batch_token_inputs[index_in_batch] = buildNeighbourVector(sample);
+    return FeaturizerUtils::buildVector(batch_labels[index_in_batch],
+                                        _label_blocks, sample,
+                                        // Label is never hashed.
+                                        /* hash_range= */ std::nullopt);
   } catch (std::invalid_argument& error) {
     return std::make_exception_ptr(error);
   }
 }
 
-BoltVector GraphFeaturizer::buildTokenVector(ColumnarInputSample& sample) {
+BoltVector GraphFeaturizer::buildNeighbourVector(ColumnarInputSample& sample) {
+  if (_neighbours.empty()) {
+    throw std::invalid_argument("Haven't updated the neighbours.");
+  }
+
   auto node_value = std::string(sample.column(_source_col));
   std::vector<uint32_t> indices(_max_neighbours, 0);
   uint32_t i = 0;

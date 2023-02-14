@@ -7,6 +7,31 @@
 #include <utility>
 namespace thirdai::automl::data {
 
+/**
+ * data_types: mapping from column names (strings) to DataType objects,
+ *   e.g. {"user_id_column": types.categorical()}
+ *
+ * graph_file_name: path to file from which we can generate static graph.
+ *
+ * source: column with node id's.
+ * target: column name of target variable.
+ *
+ * n_target_classes: number of target classes.
+ *
+ * max_neighbours: number of neighbours we want to consider for input of
+ * embedding node.
+ *
+ * relationship_columns: columns using which we are creating adjacency list.
+ *
+ * numerical_context: consider the numerical values of neighbours.
+ *
+ * feature_context: consider remaining features if any from the neighbours.
+ *
+ * k_hop: how much far you want to consider the neighbourhood.
+ *
+ * adj_list: adj_list of the graph if provided we bypass calculation of
+ * adj_list.
+ */
 struct GraphConfig {
  public:
   GraphConfig(

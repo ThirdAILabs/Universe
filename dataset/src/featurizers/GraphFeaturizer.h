@@ -13,6 +13,17 @@
 
 namespace thirdai::dataset {
 
+/**
+ * This featurizer creates two input vectors and a label vector for each row in
+ * the data. It uses input blocks to create an input for Input node, and it will
+ * use the neighbours to create token input for Token input node and label block
+ * for label vector.
+ *
+ * If the number of neighbours for a node is less than the max neighbours(number
+ * of neighbours we want to consider for token input) then we add remaining with
+ * null node.
+ */
+
 class GraphFeaturizer final : public Featurizer {
  public:
   GraphFeaturizer(std::vector<std::shared_ptr<Block>> input_blocks,
@@ -70,7 +81,7 @@ class GraphFeaturizer final : public Featurizer {
       std::vector<BoltVector>& batch_token_inputs,
       std::vector<BoltVector>& batch_labels);
 
-  BoltVector buildTokenVector(ColumnarInputSample& sample);
+  BoltVector buildNeighbourVector(ColumnarInputSample& sample);
 
   std::unordered_map<std::string, std::unordered_set<std::string>> _neighbours;
   std::unordered_map<std::string, uint32_t> _node_id_to_num_map;
