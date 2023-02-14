@@ -84,6 +84,17 @@ ConvLayerConfig::ConvLayerConfig(uint64_t _num_filters, float _sparsity,
 
 EmbeddingLayerConfig::EmbeddingLayerConfig(
     uint64_t num_embedding_lookups, uint64_t lookup_size,
+    uint64_t log_embedding_block_size, const std::string& reduction,
+    std::optional<uint64_t> num_tokens_per_input)
+    : EmbeddingLayerConfig(
+          /* num_embedding_lookups= */ num_embedding_lookups,
+          /* lookup_size= */ lookup_size,
+          /* log_embedding_block_size= */ log_embedding_block_size,
+          /* update_chunk_size= */ 4, /* reduction= */ reduction,
+          /* num_tokens_per_input= */ num_tokens_per_input) {}
+
+EmbeddingLayerConfig::EmbeddingLayerConfig(
+    uint64_t num_embedding_lookups, uint64_t lookup_size,
     uint64_t log_embedding_block_size, uint64_t update_chunk_size,
     const std::string& reduction, std::optional<uint64_t> num_tokens_per_input)
     : _num_embedding_lookups(num_embedding_lookups),

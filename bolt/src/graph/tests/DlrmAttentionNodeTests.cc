@@ -39,7 +39,6 @@ TEST(DlrmAttentionNodeTest, TestSetMembership) {
   auto embedding = EmbeddingNode::make(
                        /* num_embedding_lookups */ 4, /* lookup_size= */ 5,
                        /* log_embedding_block_size= */ 14,
-                       /* update_chunk_size= */ 5,
                        /* reduction= */ "concatenation",
                        /* num_tokens_per_input= */ n_tokens)
                        ->addInput(token_input);
