@@ -115,7 +115,6 @@ void Concatenate::summary(std::ostream& summary,
 
 autograd::ComputationPtr Concatenate::apply(
     const autograd::ComputationList& inputs) {
-  uint32_t total_output_dim = 0;
   if (_input_dims.empty()) {
     uint32_t current_neuron_offset = 0;
     for (const auto& input : inputs) {
@@ -123,7 +122,6 @@ autograd::ComputationPtr Concatenate::apply(
       _neuron_offsets.push_back(current_neuron_offset);
       current_neuron_offset += input->dim();
     }
-    total_output_dim = current_neuron_offset;
   } else {
     if (inputs.size() != _input_dims.size()) {
       std::stringstream error;
@@ -140,7 +138,6 @@ autograd::ComputationPtr Concatenate::apply(
               << ".";
         throw std::invalid_argument(error.str());
       }
-      total_output_dim += _input_dims[input_idx];
     }
   }
 
