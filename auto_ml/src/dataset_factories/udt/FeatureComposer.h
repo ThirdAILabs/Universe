@@ -87,10 +87,6 @@ class FeatureComposer {
       TemporalContext& context, const TemporalConfig& temporal_config,
       const std::string& key_column, const std::string& timestamp_column,
       bool should_update_history);
-
-  static dataset::ThreadSafeVocabularyPtr& vocabForColumn(
-      ColumnVocabularies& column_vocabs, const std::string& column_name,
-      uint32_t vocab_size);
 };
 
 }  // namespace thirdai::automl::data
