@@ -63,30 +63,4 @@ ColdStartMetadata getColdStartMetadata(
   return metadata;
 }
 
-void convertLabelColumnToTokenArray(thirdai::data::ColumnMap& columns,
-                                    const std::string& label_column_name,
-                                    std::optional<char> label_delimiter) {
-  auto label_column = columns.getColumn(label_column_name);
-
-  if (auto token_column =
-          std::dynamic_pointer_cast<thirdai::data::columns::TokenColumn>(
-              label_column)) {
-    auto token_array_column =
-        thirdai::data::columns::CppTokenArrayColumn::fromTokenColumn(
-            token_column);
-    columns.setColumn(label_column_name, token_array_column);
-  } else if (auto str_column = std::dynamic_pointer_cast<
-                 thirdai::data::columns::StringColumn>(label_column)) {
-    auto token_array_column =
-        thirdai::data::columns::CppTokenArrayColumn::fromStringColumn(
-            str_column, label_delimiter);
-    columns.setColumn(label_column_name, token_array_column);
-  } else if (!std::dynamic_pointer_cast<
-                 thirdai::data::columns::TokenArrayColumn>(label_column)) {
-    throw std::invalid_argument(
-        "Expected the label column to contain strings, integers, or lists of "
-        "integers.");
-  }
-}
-
 }  // namespace thirdai::automl::cold_start

@@ -8,8 +8,8 @@
 #include <bolt/src/layers/SamplingConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
-#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -149,34 +149,38 @@ bolt::BoltGraphPtr buildModel(const json& config, const ArgumentMap& args,
 
 /**
  * This is a helper function to both encrypt and decrypt a config by XORing each
- * byte in the config string with a random byte from a random generator. This
- * ensures that the config is not human readable, and also that the same byte
- * will be unlikely to have the same encoded value in different places. Because
- * of the nature of XOR this function can both encrypt and decrypt the configs.
- * Because the seed is fixed the sequence of random bytes for XORing will always
- * be the same, this is essentially a shortcut for having to store a long byte
- * string in the code for encrypting/decrypting configs.
+ * byte in the config string with a byte from a random cipher. This ensures that
+ * the config is not human readable, and also that the same byte will be
+ * unlikely to have the same encoded value in different places (unless they a
+ * seperated by a number of bytes that is a multiple of the cipher). Because of
+ * the nature of XOR this function can both encrypt and decrypt the configs.
  */
 std::string xorConfig(const std::string& config) {
-  std::mt19937 rand(8256387);
-  std::uniform_int_distribution<uint8_t> dist;
+  std::vector<uint8_t> cipher = {
+      198, 31,  146, 160, 113, 8,   62,  25,  83,  68,  67,  97,  227, 93,  243,
+      19,  159, 186, 148, 247, 179, 62,  2,   203, 211, 147, 105, 192, 220, 195,
+      118, 145, 34,  168, 110, 75,  87,  28,  121, 221, 213, 102, 70,  141, 189,
+      67,  126, 157, 139, 38,  210, 56,  245, 159, 146, 210, 189, 196, 121, 45,
+      144, 233, 81,  82,  218, 55,  57,  114, 24,  180, 30,  127, 36,  43,  38,
+      9,   157, 244, 224, 102, 159, 83,  213, 42,  172, 150, 187, 24,  77,  185,
+      90,  8,   221, 77,  147, 130, 137, 172, 14,  111};
 
   std::string output;
 
-  for (char c : config) {
-    output.push_back(c ^ dist(rand));
+  for (uint32_t i = 0; i < config.size(); i++) {
+    output.push_back(config[i] ^ cipher[i % cipher.size()]);
   }
 
   return output;
 }
 
 void dumpConfig(const std::string& config, const std::string& filename) {
-  std::ofstream file(filename);
+  std::ofstream file = dataset::SafeFileIO::ofstream(filename);
   file << xorConfig(config);
 }
 
 std::string loadConfig(const std::string& filename) {
-  std::ifstream file(filename);
+  std::ifstream file = dataset::SafeFileIO::ifstream(filename);
 
   std::stringstream buffer;
   buffer << file.rdbuf();
