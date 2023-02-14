@@ -124,6 +124,7 @@ def modify_udt_classifier():
         metrics: List[str] = [],
         validation: Optional[bolt.Validation] = None,
         callbacks: List[bolt.callbacks.Callback] = [],
+        max_in_memory_batches: Optional[int] = None,
     ):
         train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
 
@@ -141,6 +142,7 @@ def modify_udt_classifier():
             weak_column_names,
             train_config,
             validation,
+            max_in_memory_batches,
         )
 
     wrapped_cold_start.__doc__ = udt_cold_start_doc

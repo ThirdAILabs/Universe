@@ -130,7 +130,8 @@ class UniversalDeepTransformer final : public ModelPipeline {
       const std::vector<std::string>& strong_column_names,
       const std::vector<std::string>& weak_column_names,
       bolt::TrainConfig& train_config,
-      const std::optional<ValidationOptions>& validation = std::nullopt);
+      const std::optional<ValidationOptions>& validation = std::nullopt,
+      std::optional<uint32_t> max_in_memory_batches = std::nullopt);
 
   void resetTemporalTrackers() { udtDatasetFactory().resetTemporalTrackers(); }
 

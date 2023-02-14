@@ -243,7 +243,8 @@ void UniversalDeepTransformer::coldStartPretraining(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     bolt::TrainConfig& train_config,
-    const std::optional<ValidationOptions>& validation) {
+    const std::optional<ValidationOptions>& validation,
+    std::optional<uint32_t> max_in_memory_batches) {
   auto dataset_config = udtDatasetFactory().config();
 
   auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
@@ -276,7 +277,7 @@ void UniversalDeepTransformer::coldStartPretraining(
   // queries which are just phrases of 3-4 consecutive words.
 
   train(data_source, train_config, /* validation= */ validation,
-        /* max_in_memory_batches= */ std::nullopt,
+        /* max_in_memory_batches= */ max_in_memory_batches,
         /* batch_size_opt= */ _train_eval_config.defaultBatchSize());
 }
 
