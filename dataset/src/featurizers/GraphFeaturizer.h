@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
@@ -68,9 +69,7 @@ class GraphFeaturizer final : public Featurizer {
 
   size_t getNumDatasets() final { return 3; }
 
-  void updateNeighbours(
-      const std::unordered_map<std::string, std::unordered_set<std::string>>&
-          neighbours);
+  void updateNeighbours(const automl::Neighbours& neighbours);
 
   void updateNodeIdMap(const ColumnNumberMap& node_id_map);
 
@@ -83,7 +82,7 @@ class GraphFeaturizer final : public Featurizer {
 
   BoltVector buildNeighbourVector(ColumnarInputSample& sample);
 
-  std::unordered_map<std::string, std::unordered_set<std::string>> _neighbours;
+  automl::Neighbours _neighbours;
   std::unordered_map<std::string, uint32_t> _node_id_to_num_map;
   BlockList _input_blocks;
   BlockList _label_blocks;

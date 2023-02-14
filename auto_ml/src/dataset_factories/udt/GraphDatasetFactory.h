@@ -2,6 +2,7 @@
 
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/FeatureComposer.h>
@@ -84,8 +85,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
               const std::vector<uint32_t>& relationship_col_nums,
               uint32_t source_col_num);
 
-  static std::unordered_map<std::string, std::unordered_set<std::string>>
-  findNeighboursForAllNodes(
+  static Neighbours findNeighboursForAllNodes(
       const std::unordered_map<std::string, std::vector<std::string>>&
           adjacency_list,
       uint32_t k, const ColumnNumberMap& node_id_map);
@@ -98,9 +98,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   static std::vector<std::vector<std::string>> processNumericalColumns(
       const std::vector<std::vector<std::string>>& rows,
       const std::vector<uint32_t>& numerical_columns,
-      const std::unordered_map<std::string, std::unordered_set<std::string>>&
-          neighbours,
-      uint32_t source_col_num, const ColumnNumberMap& node_id_map);
+      const Neighbours& neighbours, uint32_t source_col_num,
+      const ColumnNumberMap& node_id_map);
 
   std::pair<std::unordered_map<std::string, std::vector<std::string>>,
             ColumnNumberMap>
@@ -109,18 +108,14 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   dataset::CsvRolledBatch getFinalProcessedData(
       const std::vector<std::vector<std::string>>& rows,
       const std::vector<uint32_t>& numerical_columns,
-      const ColumnNumberMap& node_id_map,
-      const std::unordered_map<std::string, std::unordered_set<std::string>>&
-          neighbours);
+      const ColumnNumberMap& node_id_map, const Neighbours& neighbours);
 
   std::vector<std::vector<std::string>> getRawData(
       dataset::DataSource& data_loader);
 
   dataset::PreprocessedVectorsPtr makeNumericalProcessedVectors(
       const std::vector<std::vector<std::string>>& rows,
-      const ColumnNumberMap& node_id_map,
-      const std::unordered_map<std::string, std::unordered_set<std::string>>&
-          neighbours);
+      const ColumnNumberMap& node_id_map, const Neighbours& neighbours);
 
   dataset::PreprocessedVectorsPtr makeFeatureProcessedVectors(
       const std::vector<std::vector<std::string>>& rows);

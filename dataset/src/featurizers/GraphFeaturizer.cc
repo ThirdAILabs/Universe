@@ -1,5 +1,6 @@
 #include "GraphFeaturizer.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/featurizers/FeaturizerUtils.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
@@ -48,9 +49,7 @@ std::vector<std::vector<BoltVector>> GraphFeaturizer::featurize(
 /*
 The function updates the neighbours of each node.
 */
-void GraphFeaturizer::updateNeighbours(
-    const std::unordered_map<std::string, std::unordered_set<std::string>>&
-        neighbours) {
+void GraphFeaturizer::updateNeighbours(const automl::Neighbours& neighbours) {
   for (auto [node, node_neighbours] : neighbours) {
     if (_neighbours.find(node) != _neighbours.end()) {
       for (const auto& neighbour : node_neighbours) {

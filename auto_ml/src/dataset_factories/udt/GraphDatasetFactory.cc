@@ -1,4 +1,5 @@
 #include "GraphDatasetFactory.h"
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/udt/DatasetFactoryUtils.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 
@@ -25,7 +26,7 @@ dataset::GraphFeaturizerPtr GraphDatasetFactory::prepareTheFeaturizer(
 
   auto [adjacency_list, node_id_map] = getGraphStructureInfo(rows);
 
-  std::unordered_map<std::string, std::unordered_set<std::string>> neighbours =
+  Neighbours neighbours =
       findNeighboursForAllNodes(adjacency_list, config->_k_hop, node_id_map);
 
   if (config->_features_context) {
@@ -94,14 +95,12 @@ GraphDatasetFactory::createGraph(
   return {adjacency_list, ColumnNumberMap(nodes)};
 }
 
-std::unordered_map<std::string, std::unordered_set<std::string>>
-GraphDatasetFactory::findNeighboursForAllNodes(
+Neighbours GraphDatasetFactory::findNeighboursForAllNodes(
     const std::unordered_map<std::string, std::vector<std::string>>&
         adjacency_list,
     uint32_t k, const ColumnNumberMap& node_id_map) {
   uint32_t num_nodes = adjacency_list.size();
-  std::unordered_map<std::string, std::unordered_set<std::string>> neighbours(
-      num_nodes);
+  Neighbours neighbours(num_nodes);
   for (const auto& temp : adjacency_list) {
     std::unordered_set<std::string> neighbours_for_node;
     std::vector<bool> visited(num_nodes, false);
@@ -120,9 +119,8 @@ std::vector<std::vector<std::string>>
 GraphDatasetFactory::processNumericalColumns(
     const std::vector<std::vector<std::string>>& rows,
     const std::vector<uint32_t>& numerical_columns,
-    const std::unordered_map<std::string, std::unordered_set<std::string>>&
-        neighbours,
-    uint32_t source_col_num, const ColumnNumberMap& node_id_map) {
+    const Neighbours& neighbours, uint32_t source_col_num,
+    const ColumnNumberMap& node_id_map) {
   std::vector<std::vector<std::string>> processed_numerical_columns(
       rows.size(), std::vector<std::string>(numerical_columns.size()));
   for (uint32_t i = 0; i < rows.size(); i++) {
@@ -176,9 +174,7 @@ GraphDatasetFactory::getGraphStructureInfo(
 dataset::CsvRolledBatch GraphDatasetFactory::getFinalProcessedData(
     const std::vector<std::vector<std::string>>& rows,
     const std::vector<uint32_t>& numerical_columns,
-    const ColumnNumberMap& node_id_map,
-    const std::unordered_map<std::string, std::unordered_set<std::string>>&
-        neighbours) {
+    const ColumnNumberMap& node_id_map, const Neighbours& neighbours) {
   uint32_t source_col_num = _column_number_map.at(_config->_source);
   auto values = processNumericalColumns(rows, numerical_columns, neighbours,
                                         source_col_num, node_id_map);
@@ -218,9 +214,7 @@ std::vector<std::vector<std::string>> GraphDatasetFactory::getRawData(
 dataset::PreprocessedVectorsPtr
 GraphDatasetFactory::makeNumericalProcessedVectors(
     const std::vector<std::vector<std::string>>& rows,
-    const ColumnNumberMap& node_id_map,
-    const std::unordered_map<std::string, std::unordered_set<std::string>>&
-        neighbours) {
+    const ColumnNumberMap& node_id_map, const Neighbours& neighbours) {
   std::vector<uint32_t> numerical_columns;
   std::vector<dataset::BlockPtr> input_blocks;
   uint32_t original_num_cols = _column_number_map.numCols();

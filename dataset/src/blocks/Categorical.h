@@ -6,6 +6,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
+#include <auto_ml/src/Aliases.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
@@ -283,10 +284,8 @@ using MetadataCategoricalBlockPtr = std::shared_ptr<MetadataCategoricalBlock>;
 
 class GraphCategoricalBlock : public CategoricalBlock {
  public:
-  GraphCategoricalBlock(
-      ColumnIdentifier col, PreprocessedVectorsPtr vectors,
-      std::unordered_map<std::string, std::unordered_set<std::string>>
-          neighbours)
+  GraphCategoricalBlock(ColumnIdentifier col, PreprocessedVectorsPtr vectors,
+                        automl::Neighbours neighbours)
       : CategoricalBlock(std::move(col), vectors->dim, std::nullopt),
         _vectors(std::move(vectors)),
         _neighbours(std::move(neighbours)) {}
@@ -297,10 +296,8 @@ class GraphCategoricalBlock : public CategoricalBlock {
     return "Neighbours for the node '" + std::string(category_value) + "'";
   }
 
-  static auto make(
-      ColumnIdentifier col, PreprocessedVectorsPtr vectors,
-      std::unordered_map<std::string, std::unordered_set<std::string>>
-          neighbours) {
+  static auto make(ColumnIdentifier col, PreprocessedVectorsPtr vectors,
+                   automl::Neighbours neighbours) {
     return std::make_shared<GraphCategoricalBlock>(
         std::move(col), std::move(vectors), std::move(neighbours));
   }
@@ -318,7 +315,7 @@ class GraphCategoricalBlock : public CategoricalBlock {
 
  private:
   PreprocessedVectorsPtr _vectors;
-  std::unordered_map<std::string, std::unordered_set<std::string>> _neighbours;
+  automl::Neighbours _neighbours;
 };
 
 /**
