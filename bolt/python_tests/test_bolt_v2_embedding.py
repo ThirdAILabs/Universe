@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 from thirdai import dataset
 from thirdai import bolt_v2 as bolt
-import math
 
 
 def get_sum_model(input_dim):
@@ -46,6 +45,13 @@ def get_sum_model(input_dim):
     return model
 
 
+def chunk(array, chunksize):
+    chunks = []
+    for i in range(0, len(array), chunksize):
+        chunks.append(np.array(array[i : i + chunksize]))
+    return chunks
+
+
 def generate_sum_datasets_and_labels(input_dim, num_examples, batch_size=64):
     data_1 = np.random.randint(0, input_dim, size=num_examples, dtype="uint32")
     data_2 = np.random.randint(0, input_dim, size=num_examples, dtype="uint32")
@@ -61,10 +67,10 @@ def generate_sum_datasets_and_labels(input_dim, num_examples, batch_size=64):
     data_2 = bolt.train.convert_dataset(
         dataset.from_numpy(data_2, batch_size=batch_size), dim=input_dim
     )
-    return (data_1, data_2, labels, [labels_np])
+    return data_1, data_2, labels, chunk(labels_np, batch_size)
 
 
-# This test ensures we can learn how to add (probably by memorizing)
+# This test ensures we can learn how to add (almost certainly by memorizing)
 # The real thing it tests is 1. multiple inputs and 2. numpy to token datasets
 @pytest.mark.unit
 def test_embedding_op():
@@ -72,7 +78,6 @@ def test_embedding_op():
     input_dim = 10
     num_train = 10000
     num_test = 100
-    num_epochs = 5
 
     model = get_sum_model(input_dim)
 
@@ -86,16 +91,16 @@ def test_embedding_op():
             model.update_parameters(0.01)
 
     test_1, test_2, _, test_labels = generate_sum_datasets_and_labels(
-        input_dim=input_dim, num_examples=num_test, batch_size=100
+        input_dim=input_dim,
+        num_examples=num_test,
     )
 
+    correct = 0
+    total = 0
     for x1, x2, y in zip(test_1, test_2, test_labels):
         output = model.forward([x1, x2], use_sparsity=False)
 
-        print("A: ", np.argmax(output[0].activations, axis=1))
-        print("Y: ", y)
+        correct += np.sum(np.argmax(output[0].activations, axis=1) == y)
+        total += len(y)
 
-        correct = np.sum(np.argmax(output[0].activations, axis=1) == y)
-        total = len(y)
-
-        assert correct / total > 0.8
+    assert correct / total > 0.8
