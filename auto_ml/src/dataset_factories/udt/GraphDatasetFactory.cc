@@ -1,4 +1,5 @@
 #include "GraphDatasetFactory.h"
+#include <dataset/src/blocks/TabularHashFeatures.h>
 
 namespace thirdai::automl::data {
 
