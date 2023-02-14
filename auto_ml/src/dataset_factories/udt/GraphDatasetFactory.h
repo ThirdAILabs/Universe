@@ -26,10 +26,9 @@
 #include <utility>
 namespace thirdai::automl::data {
 
-class GraphDatasetFactory : public DatasetLoaderFactory {
-  static constexpr const uint32_t DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE =
-      2048;
+using dataset::ColumnNumberMap;
 
+class GraphDatasetFactory : public DatasetLoaderFactory {
  public:
   explicit GraphDatasetFactory(GraphConfigPtr conifg);
 
@@ -96,7 +95,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       const std::vector<std::string>& columns,
       const dataset::ColumnNumberMap& column_number_map);
 
-  static std::vector<std::vector<std::string>> processNumerical(
+  static std::vector<std::vector<std::string>> processNumericalColumns(
       const std::vector<std::vector<std::string>>& rows,
       const std::vector<uint32_t>& numerical_columns,
       const std::unordered_map<std::string, std::unordered_set<std::string>>&
@@ -138,7 +137,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
                                                        _target_vocab);
   }
 
-  static void findAllNeighboursForNode(  // NOLINT
+  static void findAllNeighboursForNode(
       uint32_t k, const std::string& node_id, std::vector<bool>& visited,
       std::unordered_set<std::string>& neighbours,
       const std::unordered_map<std::string, std::vector<std::string>>&

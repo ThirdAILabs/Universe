@@ -1,4 +1,5 @@
 #include "GraphDatasetFactory.h"
+#include <auto_ml/src/dataset_factories/udt/DatasetFactoryUtils.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 
 namespace thirdai::automl::data {
@@ -7,7 +8,7 @@ GraphDatasetFactory::GraphDatasetFactory(GraphConfigPtr conifg)
     : _config(std::move(conifg)) {
   auto data_source = dataset::FileDataSource::make(_config->_graph_file_name);
 
-  _column_number_map = UDTDatasetFactory::makeColumnNumberMapFromHeader(
+  _column_number_map = DatasetFactoryUtils::makeColumnNumberMapFromHeader(
       *data_source, _config->_delimeter);
 
   auto rows = getRawData(*data_source);
@@ -58,6 +59,15 @@ dataset::GraphFeaturizerPtr GraphDatasetFactory::prepareTheFeaturizer(
   return featurizer;
 }
 
+// TODO(YASH): Try with assigning weights to the edges based on number of
+// matched values on relationship columns.
+
+/*
+ * This takes in the rows and set of relationship columns, if two nodes have
+ * same value on any relationship column then we make the edge.
+ *
+ * returns an adjacency list and node to id map.
+ **/
 std::pair<std::unordered_map<std::string, std::vector<std::string>>,
           ColumnNumberMap>
 GraphDatasetFactory::createGraph(
@@ -102,7 +112,12 @@ GraphDatasetFactory::findNeighboursForAllNodes(
   return neighbours;
 }
 
-std::vector<std::vector<std::string>> GraphDatasetFactory::processNumerical(
+// TODO(YASH): We have to support anytype of arithmetic operations on these
+// numerical columns.
+
+// Averages the numerical columns across its neighbours.
+std::vector<std::vector<std::string>>
+GraphDatasetFactory::processNumericalColumns(
     const std::vector<std::vector<std::string>>& rows,
     const std::vector<uint32_t>& numerical_columns,
     const std::unordered_map<std::string, std::unordered_set<std::string>>&
@@ -165,8 +180,8 @@ dataset::CsvRolledBatch GraphDatasetFactory::getFinalProcessedData(
     const std::unordered_map<std::string, std::unordered_set<std::string>>&
         neighbours) {
   uint32_t source_col_num = _column_number_map.at(_config->_source);
-  auto values = processNumerical(rows, numerical_columns, neighbours,
-                                 source_col_num, node_id_map);
+  auto values = processNumericalColumns(rows, numerical_columns, neighbours,
+                                        source_col_num, node_id_map);
 
   auto copied_rows = rows;
 
@@ -184,8 +199,8 @@ std::vector<std::vector<std::string>> GraphDatasetFactory::getRawData(
     dataset::DataSource& data_loader) {
   std::vector<std::string> full_data;
 
-  while (auto data =
-             data_loader.nextBatch(DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE)) {
+  while (auto data = data_loader.nextBatch(
+             DatasetFactoryUtils::DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE)) {
     full_data.insert(full_data.end(), data->begin(), data->end());
   }
 
@@ -285,6 +300,7 @@ GraphDatasetFactory::makeFeatureProcessedVectors(
   auto label_block = dataset::StringLookupCategoricalBlock::make(
       _column_number_map.at(_config->_source), key_vocab);
 
+  // TODO(YASH): Configure the hash range from user provided options.
   auto processor = dataset::TabularFeaturizer::make(
       /* input_blocks= */ std::move(input_blocks),
       /* label_blocks= */ {std::move(label_block)},
@@ -295,6 +311,7 @@ GraphDatasetFactory::makeFeatureProcessedVectors(
   return makePreprocessedVectors(processor, *key_vocab, final_data);
 }
 
+// TODO(YASH): Autotune or make user provided options for the hardcoded ones.
 std::vector<dataset::BlockPtr> GraphDatasetFactory::buildInputBlocks(
     const GraphConfigPtr& config) {
   UDTConfig feature_config(
@@ -333,6 +350,8 @@ void GraphDatasetFactory::findAllNeighboursForNode(  // NOLINT
   }
 }
 
+// TODO(YASH): When we have more data, preprocess them in batches rather than in
+// a single batch.
 dataset::PreprocessedVectorsPtr GraphDatasetFactory::makePreprocessedVectors(
     const dataset::TabularFeaturizerPtr& processor,
     dataset::ThreadSafeVocabulary& key_vocab, dataset::CsvRolledBatch rows) {

@@ -40,7 +40,6 @@
 
 namespace thirdai::automl::data {
 
-using dataset::ColumnNumberMap;
 class UDTDatasetFactory;
 using UDTDatasetFactoryPtr = std::shared_ptr<UDTDatasetFactory>;
 
@@ -177,8 +176,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   UDTConfigPtr config() { return _config; }
 
-  static ColumnNumberMap makeColumnNumberMapFromHeader(
-      dataset::DataSource& data_source, char delimiter);
   void enableTargetCategoryNormalization() {
     _normalize_target_categories = true;
   }
