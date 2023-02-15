@@ -29,8 +29,8 @@ class GraphUDT : public ModelPipeline {
       uint32_t max_neighbours,
       std::optional<std::vector<std::string>> relationship_columns =
           std::nullopt,
-      bool numerical_context = false, bool features_context = false,
-      uint32_t k_hop = 1, char delimeter = ',',
+      bool integer_target = false, bool numerical_context = false,
+      bool features_context = false, uint32_t k_hop = 1, char delimeter = ',',
       std::optional<std::unordered_map<std::string, std::vector<std::string>>>
           adj_list = std::nullopt);
 

@@ -7,15 +7,15 @@ GraphUDT GraphUDT::buildGraphUDT(
     std::string source, std::string target, uint32_t n_target_classes,
     uint32_t max_neighbours,
     std::optional<std::vector<std::string>> relationship_columns,
-    bool numerical_context, bool features_context, uint32_t k_hop,
-    char delimeter,
+    bool integer_target, bool numerical_context, bool features_context,
+    uint32_t k_hop, char delimeter,
     std::optional<std::unordered_map<std::string, std::vector<std::string>>>
         adj_list) {
   auto dataset_config = std::make_shared<data::GraphConfig>(
       std::move(data_types), std::move(graph_file_name), std::move(source),
       std::move(target), n_target_classes, max_neighbours,
-      std::move(relationship_columns), numerical_context, features_context,
-      k_hop, delimeter, std::move(adj_list));
+      std::move(relationship_columns), integer_target, numerical_context,
+      features_context, k_hop, delimeter, std::move(adj_list));
 
   auto graph_dataset_factory =
       std::make_shared<data::GraphDatasetFactory>(dataset_config);

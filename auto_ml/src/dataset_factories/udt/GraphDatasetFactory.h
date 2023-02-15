@@ -62,7 +62,13 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
 
   uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
     if (std::holds_alternative<uint32_t>(label)) {
-      throw std::invalid_argument("Received an integer label");
+      if (!_config->_integer_target) {
+        throw std::invalid_argument(
+            "Received an integer but integer_target is set to False (it is "
+            "False by default). Target must be passed "
+            "in as a string.");
+      }
+      return std::get<uint32_t>(label);
     }
     const std::string& label_str = std::get<std::string>(label);
     return _target_vocab->getUid(label_str);
@@ -124,6 +130,14 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       const GraphConfigPtr& config);
 
   dataset::BlockPtr getLabelBlock(const GraphConfigPtr& config) {
+    auto target_type = _config->_data_types.at(_config->_target);
+    auto target_config = asCategorical(target_type);
+    if (_config->_integer_target) {
+      return dataset::NumericalCategoricalBlock::make(
+          /* col= */ _config->_target,
+          /* n_classes= */ _config->_n_target_classes,
+          /* delimiter= */ target_config->delimiter);
+    }
     if (!_target_vocab) {
       _target_vocab = dataset::ThreadSafeVocabulary::make(
           /* vocab_size= */ config->_n_target_classes);
