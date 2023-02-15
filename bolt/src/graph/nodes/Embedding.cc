@@ -6,10 +6,6 @@ namespace thirdai::bolt {
 EmbeddingNode::EmbeddingNode(uint64_t num_embedding_lookups,
                              uint64_t lookup_size,
                              uint64_t log_embedding_block_size,
-<<<<<<< HEAD
-                             uint64_t update_chunk_size,
-=======
->>>>>>> c4d44d829751c3795760fdc0b0883178b0fc97d4
                              const std::string& reduction,
                              std::optional<uint64_t> num_tokens_per_input)
     : _embedding_layer(nullptr),
@@ -17,7 +13,6 @@ EmbeddingNode::EmbeddingNode(uint64_t num_embedding_lookups,
           /* num_embedding_lookups= */ num_embedding_lookups,
           /* lookup_size= */ lookup_size,
           /* log_embedding_block_size= */ log_embedding_block_size,
-          /* update_chunk_size= */ update_chunk_size,
           /* reduction= */ reduction,
           /* num_tokens_per_input= */ num_tokens_per_input)),
       _outputs(std::nullopt),
