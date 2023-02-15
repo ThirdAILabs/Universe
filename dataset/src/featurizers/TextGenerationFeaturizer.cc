@@ -5,42 +5,47 @@
 #include <algorithm>
 #include <cctype>
 #include <iterator>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
 TextGenerationFeaturizer::TextGenerationFeaturizer(uint32_t sequence_len,
-                                                   uint32_t vocab_size)
-    : _sequence_len(sequence_len), _vocab_size(vocab_size) {}
+                                                   uint32_t vocab_size,
+                                                   uint32_t last_n_tokens)
+    : _sequence_len(sequence_len),
+      _vocab_size(vocab_size),
+      _last_n_tokens(last_n_tokens) {
+  if (_last_n_tokens >= sequence_len) {
+    throw std::invalid_argument(
+        "Last n tokens must be less than the sequence length.");
+  }
+}
 
 std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
     const std::vector<std::string>& lines) {
-  std::vector<std::pair<std::vector<BoltVector>, std::vector<BoltVector>>>
-      featurized_samples(lines.size());
+  std::vector<std::vector<std::vector<BoltVector>>> featurized_samples(
+      lines.size());
 
-  // #pragma omp parallel for default(none) shared(lines, featurized_samples)
+#pragma omp parallel for default(none) shared(lines, featurized_samples)
   for (uint32_t i = 0; i < lines.size(); i++) {
     featurized_samples[i] = featurizeText(lines[i]);
   }
 
-  std::vector<BoltVector> vectors;
-  std::vector<BoltVector> labels;
+  std::vector<std::vector<BoltVector>> data;
 
-  for (auto& [vec, label] : featurized_samples) {
-    vectors.insert(vectors.end(), std::make_move_iterator(vec.begin()),
-                   std::make_move_iterator(vec.end()));
-    labels.insert(labels.end(), std::make_move_iterator(label.begin()),
-                  std::make_move_iterator(label.end()));
+  for (auto& vectors : featurized_samples) {
+    data.insert(data.end(), std::make_move_iterator(vectors.begin()),
+                std::make_move_iterator(vectors.end()));
   }
 
-  return {std::move(vectors), std::move(labels)};
+  return data;
 }
 
-std::pair<std::vector<BoltVector>, std::vector<BoltVector>>
-TextGenerationFeaturizer::featurizeText(const std::string& line) const {
+std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
+    const std::string& line) const {
   std::vector<uint32_t> tokens = parseTokens(line);
 
-  std::vector<BoltVector> vectors;
-  std::vector<BoltVector> labels;
+  std::vector<std::vector<BoltVector>> vectors;
 
   for (uint32_t i = _sequence_len; i < tokens.size(); i++) {
     const uint32_t* phrase_start = tokens.data() + i - _sequence_len;
@@ -51,13 +56,20 @@ TextGenerationFeaturizer::featurizeText(const std::string& line) const {
     std::copy(pairgrams.begin(), pairgrams.end(), vector.active_neurons);
     std::fill_n(vector.activations, vector.len, 1.0);
 
+    BoltVector last_tokens(/* l= */ _last_n_tokens, /* is_dense= */ false,
+                           /* has_gradient= */ false);
+    for (uint32_t t = 0; t < _last_n_tokens; t++) {
+      last_tokens.active_neurons[t] = tokens[i - _last_n_tokens + t];
+      last_tokens.activations[t] = 1.0;
+    }
+
     BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
 
-    vectors.emplace_back(std::move(vector));
-    labels.emplace_back(std::move(label));
+    vectors.push_back(
+        {std::move(vector), std::move(last_tokens), std::move(label)});
   }
 
-  return std::make_pair(std::move(vectors), std::move(labels));
+  return vectors;
 }
 
 std::vector<uint32_t> TextGenerationFeaturizer::parseTokens(
@@ -77,13 +89,20 @@ std::vector<uint32_t> TextGenerationFeaturizer::parseTokens(
 }
 
 std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
-    const std::vector<uint32_t>& tokens) {
+    const std::vector<uint32_t>& tokens) const {
   auto pairgrams = token_encoding::pairgrams(tokens);
 
   BoltVector vector = BoltVector::makeSparseVector(
       pairgrams, std::vector<float>(pairgrams.size(), 1.0));
 
-  return {std::move(vector)};
+  BoltVector last_tokens(/* l= */ _last_n_tokens, /* is_dense= */ false,
+                         /* has_gradient= */ false);
+  for (uint32_t t = 0; t < _last_n_tokens; t++) {
+    last_tokens.active_neurons[t] = tokens[tokens.size() - _last_n_tokens + t];
+    last_tokens.activations[t] = 1.0;
+  }
+
+  return {std::move(vector), std::move(last_tokens)};
 }
 
 }  // namespace thirdai::dataset
