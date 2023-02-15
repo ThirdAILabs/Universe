@@ -23,7 +23,7 @@ def get_num_cpus():
         import multiprocessing
 
         return multiprocessing.cpu_count()
-    except (ImportError):
+    except ImportError:
         print("Could not find num_cpus, setting num_cpus to DEFAULT=1")
         return 1
 

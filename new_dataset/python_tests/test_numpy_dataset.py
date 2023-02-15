@@ -36,7 +36,6 @@ def test_simple_slice():
 
 @pytest.mark.unit
 def test_shuffle_works():
-
     np.random.seed(42)
     np_data = np.random.rand(10, 10).astype("float32")
     np.random.shuffle(np_data)

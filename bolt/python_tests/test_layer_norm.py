@@ -37,7 +37,6 @@ def get_simple_model(num_classes, sparsity=1.0):
 
 @pytest.mark.unit
 def test_normalize_layer_activations():
-
     model_with_normalization = get_simple_model(num_classes=100)
 
     train_data, train_labels = gen_numpy_training_data(
