@@ -133,6 +133,12 @@ class EmbeddingLayer {
 
   std::vector<float> _embedding_block;
 
+  /**
+   * The embedding block is grouped into chunks of size _update_chunk_size.
+   * During backpropagation the layer tracks which chunks are used and gradients
+   * are computed for. Then during update parameters only the used chunks are
+   * updated.
+   */
   std::vector<bool> _embedding_chunks_used;
   std::optional<AdamOptimizer> _optimizer = std::nullopt;
   bool _disable_sparse_parameter_updates;

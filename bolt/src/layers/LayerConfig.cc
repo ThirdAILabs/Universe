@@ -82,6 +82,27 @@ ConvLayerConfig::ConvLayerConfig(uint64_t _num_filters, float _sparsity,
   }
 }
 
+/**
+ * During sparse updates in the embedding table the only chunks of the embedding
+ * table which are accessed are updated. This parameter controls the size of
+ * those chunks. The default value 4 was determined by doing a search over
+ * different values on the criteo dataset using different batch sizes, embedding
+ * table sizes, and lookup sizes.
+ */
+constexpr uint32_t DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE = 4;
+
+EmbeddingLayerConfig::EmbeddingLayerConfig(
+    uint64_t num_embedding_lookups, uint64_t lookup_size,
+    uint64_t log_embedding_block_size, const std::string& reduction,
+    std::optional<uint64_t> num_tokens_per_input)
+    : EmbeddingLayerConfig(
+          /* num_embedding_lookups= */ num_embedding_lookups,
+          /* lookup_size= */ lookup_size,
+          /* log_embedding_block_size= */ log_embedding_block_size,
+          /* update_chunk_size= */ DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
+          /* reduction= */ reduction,
+          /* num_tokens_per_input= */ num_tokens_per_input) {}
+
 EmbeddingLayerConfig::EmbeddingLayerConfig(
     uint64_t num_embedding_lookups, uint64_t lookup_size,
     uint64_t log_embedding_block_size, uint64_t update_chunk_size,
