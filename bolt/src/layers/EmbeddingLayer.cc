@@ -1,5 +1,4 @@
 #include "EmbeddingLayer.h"
-#include <bolt/src/layers/LayerConfig.h>
 #include <hashing/src/MurmurHash.h>
 #include <algorithm>
 #include <random>
@@ -19,7 +18,6 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
       _hash_fn(seed),
       _disable_sparse_parameter_updates(false) {
   switch (_reduction) {
-    case EmbeddingReductionType::AVERAGE:
     case EmbeddingReductionType::SUM:
     case EmbeddingReductionType::AVERAGE:
       break;
@@ -82,7 +80,6 @@ void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
       assert(embedding_block_offset < _embedding_block_size - _lookup_size);
 
       switch (_reduction) {
-        case EmbeddingReductionType::AVERAGE:
         case EmbeddingReductionType::SUM:
         case EmbeddingReductionType::AVERAGE:
           // Safe since we allocated 2^_log_embedding_block_size+_lookup_size
@@ -230,9 +227,6 @@ void EmbeddingLayer::buildLayerSummary(std::stringstream& summary) const {
   summary << ", lookup_size=" << _lookup_size;
   summary << ", log_embedding_block_size=" << _log_embedding_block_size;
   switch (_reduction) {
-    case EmbeddingReductionType::AVERAGE:
-      summary << ", reduction=average";
-      break;
     case EmbeddingReductionType::SUM:
       summary << ", reduction=sum";
       break;
