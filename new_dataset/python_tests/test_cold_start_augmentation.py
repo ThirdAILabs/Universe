@@ -39,7 +39,7 @@ def get_real_dataset():
         "four gases injection-molded legs include a built-in footrest and "
         "structural stretchers.",
     ]
-    label_list = [0, 1, 2]
+    label_list = ["0", "1", "2"]
     return strong_list, weak_list, label_list
 
 
@@ -53,10 +53,7 @@ def create_test_column_map(text_columns, labels):
         text_columns: Dictionary from string name to lists of strings.
         labels: Array-like of integer labels.
     """
-    label_list = np.array(labels, dtype=np.uint32).reshape([-1, 1])
-    label_column = data.columns.TokenArrayColumn(
-        array=label_list, dim=np.max(label_list) + 1
-    )
+    label_column = data.columns.StringColumn(labels)
     column_dict = {"labels": label_column}
     for name in text_columns.keys():
         column_dict[name] = data.columns.StringColumn(text_columns[name])
@@ -97,7 +94,7 @@ def test_duplicated_natural_separators():
     """
     strong_list = [""]
     weak_list = [",,.,,.,.,,weak,,,...,, weak weak"]
-    label_list = [0]
+    label_list = ["0"]
     augmentation = data.augmentations.ColdStartText(
         strong_columns=["strong"],
         weak_columns=["weak"],
@@ -139,7 +136,7 @@ def test_long_input():
     """
     strong_list = ["strong"]
     weak_list = ["a b c d e f g h i j k l m n o"]
-    label_list = [0]
+    label_list = ["0"]
 
     augmentation = data.augmentations.ColdStartText(
         strong_columns=["strong"],
@@ -171,7 +168,7 @@ def test_sample_strong_words():
     """
     strong_list = ["extremely ridiculously strong language"]
     weak_list = ["a b c d e f g h i j k l m n o"]
-    label_list = [0]
+    label_list = ["0"]
 
     augmentation = data.augmentations.ColdStartText(
         strong_columns=["strong"],
@@ -203,7 +200,7 @@ def test_shuffle_correct():
     """
     strong_list = ["A", "B", "C", "D"]
     weak_list = ["x x, x x", "x, x, x", "x x x", "x x x x"]
-    label_list = [2, 1, 3, 4]
+    label_list = ["2", "1", "3", "4"]
 
     augmentation = data.augmentations.ColdStartText(
         strong_columns=["strong"],
@@ -222,12 +219,11 @@ def test_shuffle_correct():
     )
     new_columns = apply_augmentation_and_unigrams(columns, augmentation)
     unigrams_dataset = new_columns.convert_to_dataset(["unigrams"], batch_size=10)
-    label_dataset = new_columns.convert_to_dataset(["labels"], batch_size=10)
 
-    for unigram_batch, label_batch in zip(unigrams_dataset, label_dataset):
-        for row_id in range(len(label_batch)):
+    for unigram_batch in unigrams_dataset:
+        for row_id in range(len(unigram_batch)):
             row = unigram_batch[row_id].to_numpy()[0]
-            label = label_batch[row_id].to_numpy()[0][0]
+            label = int(new_columns["labels"][row_id])
             assert len(row) == label + 1
 
 
@@ -240,7 +236,7 @@ def test_sample_weak_words():
     weak_list = [
         "blah blah blah hashing blah blah lsh" " blah blah bloom filters blah blah"
     ]
-    label_list = [0]
+    label_list = ["0"]
 
     num_examples_per_phrase = 17
     augmentation = data.augmentations.ColdStartText(
@@ -275,7 +271,7 @@ def test_long_strong_phrase():
     """
     strong_list = ["run on title that just goes on and on forever and ever"]
     weak_list = ["blah blah blah"]
-    label_list = [0]
+    label_list = ["0"]
 
     augmentation = data.augmentations.ColdStartText(
         strong_columns=["strong"],
@@ -318,7 +314,7 @@ def test_multiple_weak_columns():
         "From Reviewer 3: I have provided a list of 437 papers that"
         " this paper did not cite. All of them were written by me"
     ]
-    label_list = np.array([0], dtype=np.uint32).reshape([-1, 1])
+    label_list = ["0"]
 
     augmentation = data.augmentations.ColdStartText(
         strong_columns=["strong"],
@@ -358,7 +354,7 @@ def test_multiple_strong_columns():
         "These techniques are common components of randomized "
         "algorithms that trade accuracy for efficiency."
     ]
-    label_list = np.array([0], dtype=np.uint32).reshape([-1, 1])
+    label_list = ["0"]
 
     augmentation = data.augmentations.ColdStartText(
         strong_columns=["strong_0", "strong_1", "strong_2"],

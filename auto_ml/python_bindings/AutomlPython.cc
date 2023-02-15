@@ -165,7 +165,7 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("input_samples"), py::arg("use_sparse_inference") = false,
            py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
       .def("cold_start", &UniversalDeepTransformer::coldStartPretraining,
-           py::arg("dataset"), py::arg("strong_column_names"),
+           py::arg("data_source"), py::arg("strong_column_names"),
            py::arg("weak_column_names"), py::arg("train_config"),
            py::arg("validation"), bolt::python::OutputRedirect())
       .def(
