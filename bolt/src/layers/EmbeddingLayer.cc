@@ -19,6 +19,7 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
       _disable_sparse_parameter_updates(false) {
   switch (_reduction) {
     case EmbeddingReductionType::SUM:
+    case EmbeddingReductionType::AVERAGE:
       break;
     case EmbeddingReductionType::CONCATENATION:
       if (!_num_tokens_per_input) {
@@ -56,7 +57,7 @@ void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
          _num_tokens_per_input.value() == tokens.len);
   assert(output.active_neurons == nullptr);
 
-  if (_reduction == EmbeddingReductionType::SUM) {
+  if (_reduction != EmbeddingReductionType::CONCATENATION) {
     std::fill_n(output.activations, _total_embedding_dim, 0);
   }
   if (tokens.isDense()) {
@@ -80,6 +81,7 @@ void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
 
       switch (_reduction) {
         case EmbeddingReductionType::SUM:
+        case EmbeddingReductionType::AVERAGE:
           // Safe since we allocated 2^_log_embedding_block_size+_lookup_size
           for (uint64_t i = 0; i < _lookup_size; i++) {
             output_start[i] += _embedding_block[embedding_block_offset + i];
@@ -95,6 +97,12 @@ void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
           // output vector.
           output_start += _num_lookups_per_token * _lookup_size;
           break;
+      }
+    }
+
+    if (_reduction == EmbeddingReductionType::AVERAGE) {
+      for (uint32_t i = 0; i < _lookup_size; i++) {
+        output_start[i] /= tokens.len;
       }
     }
   }
@@ -117,8 +125,14 @@ void EmbeddingLayer::backpropagate(const BoltVector& tokens,
 
       float* update_loc = _optimizer->gradients.data() + embedding_block_offset;
 
-      for (uint64_t i = 0; i < _lookup_size; i++) {
-        update_loc[i] += output_gradients[i];
+      if (_reduction == EmbeddingReductionType::AVERAGE) {
+        for (uint32_t i = 0; i < _lookup_size; i++) {
+          update_loc[i] += output_gradients[i] / tokens.len;
+        }
+      } else {
+        for (uint32_t i = 0; i < _lookup_size; i++) {
+          update_loc[i] += output_gradients[i];
+        }
       }
 
       if (_reduction == EmbeddingReductionType::CONCATENATION) {
@@ -216,8 +230,12 @@ void EmbeddingLayer::buildLayerSummary(std::stringstream& summary) const {
     case EmbeddingReductionType::SUM:
       summary << ", reduction=sum";
       break;
+    case EmbeddingReductionType::AVERAGE:
+      summary << ", reduction=average";
+      break;
     case EmbeddingReductionType::CONCATENATION:
       summary << ", reduction=concatenation";
+      break;
   }
   if (_num_tokens_per_input) {
     summary << ", num_tokens_per_input=" << _num_tokens_per_input.value();
