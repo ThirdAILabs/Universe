@@ -39,12 +39,7 @@ def parse_args():
         default=False,
         help="Label a benchmarking job as a sanity test instead of an official run.",
     )
-    parser.add_argument(
-        "--engine",
-        default="bolt",
-        required=True,
-        help="Specify the engine(Bolt or UDT) to benchmark.",
-    )
+
     parser.add_argument(
         "--runner",
         required=True,
@@ -62,22 +57,21 @@ def main():
 
     prefix = "test_run" if args.test_run else "benchmark_run"
 
-    engine = args.engine
     runner = args.runner
 
-    if engine.lower() == "bolt":
+    if runner.lower() == "bolt":
         from configs.bolt_configs import BoltBenchmarkConfig, DLRMConfig
 
         configs = BoltBenchmarkConfig.__subclasses__()
         configs.extend(DLRMConfig.__subclasses__())
 
-    elif engine.lower() == "udt":
+    elif runner.lower() == "udt":
         from configs.udt_configs import UDTBenchmarkConfig
 
         configs = UDTBenchmarkConfig.__subclasses__()
 
     else:
-        raise ValueError(f"Invalid benchmark engine: {engine}")
+        raise ValueError(f"Invalid benchmark runner: {runner}")
 
     exit_code = 0
     mlflow_uri = get_mlflow_uri()
@@ -86,7 +80,7 @@ def main():
         run_name = f"{prefix}_{current_date}"
 
         command = (
-            f"python3 benchmarks-v2/benchmark_{engine.lower()}.py "
+            f"python3 benchmarks-v2/main.py "
             f"--runner={runner}"
             f"--mlflow_uri={mlflow_uri} "
             f"--run_name={run_name} "

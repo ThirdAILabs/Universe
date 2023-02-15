@@ -17,6 +17,11 @@ class Runner(ABC):
     @property
     @abstractmethod
     def name(cls):
+        """
+        This property is needed only for convenience so that
+        benchmarking scripts can pass in shorter names instead
+        of having to provide the actual class name.
+        """
         raise NotImplementedError
 
     @abstractmethod

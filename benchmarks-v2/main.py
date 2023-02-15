@@ -41,9 +41,11 @@ if __name__ == "__main__":
     else:
         raise ValueError(f"Invalid runner name: {args.runner}")
 
+    # This list should be of length one since we expect the
+    # runner name to be unique.
     runner = list(
         filter(
-            lambda runner_class: runner_class.name == args.runner,
+            lambda runner_class: runner_class.name == args.runner.lower(),
             Runner.__subclasses__(),
         )
     )

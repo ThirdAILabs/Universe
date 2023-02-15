@@ -1,3 +1,5 @@
+import numpy as np
+from sklearn.metrics import roc_auc_score
 from thirdai import bolt
 from thirdai.experimental import MlflowCallback
 
@@ -100,9 +102,8 @@ def compute_roc_auc(predict_output, test_labels_path, mlflow_callback=None):
         raise ValueError(
             "Activations must have shape (n,1) or (n,2) to compute the AUC"
         )
+    auc = roc_auc_score(test_labels, scores)
+    print(f"AUC : {auc}")
 
-    # auc = roc_auc_score(test_labels, scores)
-    # print(f"AUC : {auc}")
-
-    # if mlflow_callback is not None:
-    #     mlflow_callback.log_additional_metric(key="roc_auc", value=auc)
+    if mlflow_callback is not None:
+        mlflow_callback.log_additional_metric(key="roc_auc", value=auc)
