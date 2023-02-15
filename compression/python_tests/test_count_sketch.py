@@ -10,6 +10,7 @@ from utils import compressed_training
 LEARNING_RATE = 0.002
 ACCURACY_THRESHOLD = 0.8
 
+
 # Tests compressed training by compressing and decompressing weights between
 # every batch update
 def test_compressed_count_sketch_training():

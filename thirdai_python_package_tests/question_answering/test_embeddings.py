@@ -12,7 +12,6 @@ MOCK_DIR_NAME = "MockModel"
 
 @pytest.mark.unit
 def test_dropbox_model_download():
-
     global MOCK_URL, MOCK_DIR_NAME
 
     from thirdai import embeddings
@@ -25,7 +24,6 @@ def test_dropbox_model_download():
 
 @pytest.mark.unit
 def test_model_caching():
-
     global MOCK_URL, MOCK_DIR_NAME
 
     from thirdai._download import ensure_targz_installed
