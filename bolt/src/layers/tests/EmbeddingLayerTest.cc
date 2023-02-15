@@ -20,7 +20,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
   static std::unique_ptr<EmbeddingLayer> createEmbeddingLayer(
       const std::string& reduction) {
     EmbeddingLayerConfig config(NUM_LOOKUPS, LOOKUP_SIZE, LOG_BLOCK_SIZE,
-                                LOOKUP_SIZE, reduction, NUM_TOKENS_PER_INPUT);
+                                reduction, NUM_TOKENS_PER_INPUT);
 
     auto layer = std::make_unique<EmbeddingLayer>(config, seed);
 
