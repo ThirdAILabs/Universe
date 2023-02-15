@@ -9,7 +9,6 @@ pytestmark = [pytest.mark.release]
 
 
 def this_should_require_a_license_search():
-
     from thirdai import search
 
     search.DocRetrieval(
@@ -18,7 +17,6 @@ def this_should_require_a_license_search():
 
 
 def this_should_require_a_license_query_reformulation():
-
     from thirdai import bolt
 
     bolt.UniversalDeepTransformer(

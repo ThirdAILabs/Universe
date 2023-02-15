@@ -40,7 +40,6 @@ def _create_data_source(path):
 # object and deletes the existing evaluate and train functions so that the user
 # interface is clean.
 def modify_udt_classifier():
-
     original_train_method = bolt.models.Pipeline.train_with_source
     original_eval_method = bolt.models.Pipeline.evaluate_with_source
     original_cold_start_method = bolt.models.UDTClassifier.cold_start
