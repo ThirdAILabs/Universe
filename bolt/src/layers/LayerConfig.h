@@ -88,37 +88,46 @@ class EmbeddingLayerConfig {
   EmbeddingLayerConfig() {}
 
   EmbeddingLayerConfig(
-      uint32_t num_embedding_lookups, uint32_t lookup_size,
-      uint32_t log_embedding_block_size, const std::string& reduction,
-      std::optional<uint32_t> num_tokens_per_input = std::nullopt);
+      uint64_t num_embedding_lookups, uint64_t lookup_size,
+      uint64_t log_embedding_block_size, const std::string& reduction,
+      std::optional<uint64_t> num_tokens_per_input = std::nullopt);
 
-  uint32_t numEmbeddingLookups() const { return _num_embedding_lookups; }
+  EmbeddingLayerConfig(
+      uint64_t num_embedding_lookups, uint64_t lookup_size,
+      uint64_t log_embedding_block_size, uint64_t update_chunk_size,
+      const std::string& reduction,
+      std::optional<uint64_t> num_tokens_per_input = std::nullopt);
 
-  uint32_t lookupSize() const { return _lookup_size; }
+  uint64_t numEmbeddingLookups() const { return _num_embedding_lookups; }
 
-  uint32_t logEmbeddingBlockSize() const { return _log_embedding_block_size; }
+  uint64_t lookupSize() const { return _lookup_size; }
+
+  uint64_t logEmbeddingBlockSize() const { return _log_embedding_block_size; }
+
+  uint64_t updateChunkSize() const { return _update_chunk_size; }
 
   EmbeddingReductionType reduction() const { return _reduction; }
 
-  uint32_t getOutputDim() const {
-    uint32_t output_dim = _num_embedding_lookups * _lookup_size;
+  uint64_t getOutputDim() const {
+    uint64_t output_dim = _num_embedding_lookups * _lookup_size;
     if (_reduction == EmbeddingReductionType::CONCATENATION) {
       output_dim *= _num_tokens_per_input.value();
     }
     return output_dim;
   }
 
-  std::optional<uint32_t> numTokensPerInput() const {
+  std::optional<uint64_t> numTokensPerInput() const {
     return _num_tokens_per_input;
   }
 
  private:
-  uint32_t _num_embedding_lookups;
-  uint32_t _lookup_size;
-  uint32_t _log_embedding_block_size;
+  uint64_t _num_embedding_lookups;
+  uint64_t _lookup_size;
+  uint64_t _log_embedding_block_size;
+  uint64_t _update_chunk_size;
 
   EmbeddingReductionType _reduction;
-  std::optional<uint32_t> _num_tokens_per_input;
+  std::optional<uint64_t> _num_tokens_per_input;
 
   friend class cereal::access;
   template <class Archive>

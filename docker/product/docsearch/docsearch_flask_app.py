@@ -26,7 +26,6 @@ app.logger.info("Index and model loaded")
 
 @app.route("/documents", methods=["GET"])
 def perform_query_top_1():
-
     if "query" not in request.args:
         app.logger.error(f"query not in args, args were {request.args}, aborting")
         abort(400)

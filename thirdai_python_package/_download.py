@@ -3,6 +3,7 @@ import pathlib
 
 CACHE_DIR = pathlib.Path.home() / ".cache" / "thirdai"
 
+
 # TODO(josh): These methods aren't robust (they relies on the user having curl
 # and tar working on their machine), but the python requests library wasn't
 # working to download from dropbox so I am just going with this for now.
@@ -25,7 +26,6 @@ def ensure_targz_installed(download_url, unzipped_dir_name):
 
     cached = False
     if not unzipped_dir_path.exists():
-
         print(
             f"Downloading {download_url}, which will be unzipped and saved in directory {unzipped_dir_path}"
         )
