@@ -157,6 +157,13 @@ void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
     for (uint64_t n = chunk_id * _update_chunk_size;
          n < (chunk_id + 1) * _update_chunk_size; n++) {
       float grad = _optimizer->gradients[n];
+      if (grad == 0.0) {
+        // Because the chunk being updated may not have entirely been used we
+        // check for this to avoid updating unused elements of the embedding
+        // table. It is highly unlikely that the gradient would be zero if the
+        // section of the embedding table was used.
+        continue;
+      }
       assert(!std::isnan(grad));
 
       _optimizer->momentum[n] = B1 * _optimizer->momentum[n] + (1 - B1) * grad;
