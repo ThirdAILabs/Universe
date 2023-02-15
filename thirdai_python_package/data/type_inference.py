@@ -72,7 +72,7 @@ def _infer_col_type(column: pd.Series) -> Dict[str, str]:
 
     if len(column) < 2:
         raise ValueError(
-            f"Column {column} has less than less than 2 non-missing values so we cannot do type inference"
+            f"Column {column} has less than 2 non-missing values so we cannot do type inference"
         )
 
     if _is_float_col(column):
