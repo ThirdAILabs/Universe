@@ -31,7 +31,11 @@ using dataset::ColumnNumberMap;
 
 class GraphDatasetFactory : public DatasetLoaderFactory {
  public:
-  explicit GraphDatasetFactory(GraphConfigPtr conifg);
+  explicit GraphDatasetFactory(data::ColumnDataTypes data_types,
+                               std::string target_col,
+                               std::optional<uint32_t> n_target_classes,
+                               bool integer_target, char delimiter,
+                               uint32_t max_neighbors, uint32_t k_hop);
 
   dataset::GraphFeaturizerPtr prepareTheFeaturizer(
       const GraphConfigPtr& config,

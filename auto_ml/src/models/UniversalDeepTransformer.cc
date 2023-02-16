@@ -1,4 +1,5 @@
 #include "UniversalDeepTransformer.h"
+#include "Utils.h"
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
@@ -10,6 +11,7 @@
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/OutputProcessor.h>
+#include <auto_ml/src/models/TrainEvalParameters.h>
 #include <dataset/src/DataSource.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
@@ -34,12 +36,10 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
     const config::ArgumentMap& options) {
-  // we don't put this check in the config constructor itself because its also
-  // used for metadata which doesn't use this same check
-  if (!data_types.count(target_col)) {
-    throw std::invalid_argument(
-        "Target column provided was not found in data_types.");
-  }
+  verifyDataTypesContainTarget(data_types, target_col);
+
+  auto [output_processor, regression_binning] =
+      getOutputProcessor(data_types, target_col, n_target_classes);
 
   auto dataset_config = std::make_shared<data::UDTConfig>(
       std::move(data_types), std::move(temporal_tracking_relationships),
@@ -72,9 +72,6 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
       }
     }
   }
-
-  auto [output_processor, regression_binning] =
-      getOutputProcessor(dataset_config);
 
   auto dataset_factory = data::UDTDatasetFactory::make(
       /* config= */ dataset_config,
@@ -110,12 +107,8 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
     dataset_factory->enableTargetCategoryNormalization();
   }
 
-  TrainEvalParameters train_eval_parameters(
-      /* rebuild_hash_tables_interval= */ std::nullopt,
-      /* reconstruct_hash_functions_interval= */ std::nullopt,
-      /* default_batch_size= */ DEFAULT_INFERENCE_BATCH_SIZE,
-      /* freeze_hash_tables= */ freeze_hash_tables,
-      /* prediction_threshold= */ std::nullopt);
+  TrainEvalParameters train_eval_parameters =
+      defaultTrainEvalParams(freeze_hash_tables);
 
   return UniversalDeepTransformer({std::move(dataset_factory), std::move(model),
                                    output_processor, train_eval_parameters},
@@ -278,28 +271,6 @@ void UniversalDeepTransformer::coldStartPretraining(
   train(data_source, train_config, /* validation= */ validation,
         /* max_in_memory_batches= */ std::nullopt,
         /* batch_size_opt= */ _train_eval_config.defaultBatchSize());
-}
-
-std::pair<OutputProcessorPtr, std::optional<dataset::RegressionBinningStrategy>>
-UniversalDeepTransformer::getOutputProcessor(
-    const data::UDTConfigPtr& dataset_config) {
-  if (auto num_config = data::asNumerical(
-          dataset_config->data_types.at(dataset_config->target))) {
-    uint32_t num_bins = dataset_config->n_target_classes.value_or(
-        data::UDTConfig::REGRESSION_DEFAULT_NUM_BINS);
-
-    auto regression_binning = dataset::RegressionBinningStrategy(
-        num_config->range.first, num_config->range.second, num_bins);
-
-    auto output_processor = RegressionOutputProcessor::make(regression_binning);
-    return {output_processor, regression_binning};
-  }
-
-  if (dataset_config->n_target_classes == 2) {
-    return {BinaryOutputProcessor::make(), std::nullopt};
-  }
-
-  return {CategoricalOutputProcessor::make(), std::nullopt};
 }
 
 bolt::BoltGraphPtr UniversalDeepTransformer::loadUDTBoltGraph(

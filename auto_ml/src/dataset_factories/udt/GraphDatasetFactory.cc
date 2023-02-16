@@ -5,8 +5,10 @@
 
 namespace thirdai::automl::data {
 
-GraphDatasetFactory::GraphDatasetFactory(GraphConfigPtr conifg)
-    : _config(std::move(conifg)) {
+GraphDatasetFactory::GraphDatasetFactory(
+    data::ColumnDataTypes data_types, std::string target_col,
+    std::optional<uint32_t> n_target_classes, bool integer_target,
+    char delimiter, uint32_t max_neighbors, uint32_t k_hop) {
   auto data_source = dataset::FileDataSource::make(_config->_graph_file_name);
 
   _column_number_map = DatasetFactoryUtils::makeColumnNumberMapFromHeader(

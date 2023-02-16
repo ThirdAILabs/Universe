@@ -44,8 +44,8 @@ class GraphFeaturizer final : public Featurizer {
   static std::shared_ptr<GraphFeaturizer> make(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks,
-      ColumnIdentifier source_col, uint32_t max_neighbors,
-      char delimiter = ',', std::optional<uint32_t> hash_range = std::nullopt) {
+      ColumnIdentifier source_col, uint32_t max_neighbors, char delimiter = ',',
+      std::optional<uint32_t> hash_range = std::nullopt) {
     return std::make_shared<GraphFeaturizer>(
         std::move(input_blocks), std::move(label_blocks), std::move(source_col),
         max_neighbors, delimiter, hash_range);

@@ -29,7 +29,6 @@ namespace thirdai::automl::models {
  * deployment config file.
  */
 class UniversalDeepTransformer final : public ModelPipeline {
-  static constexpr const uint32_t DEFAULT_INFERENCE_BATCH_SIZE = 2048;
   static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;
   static constexpr const uint32_t DEFAULT_HIDDEN_DIM = 512;
 
@@ -181,15 +180,6 @@ class UniversalDeepTransformer final : public ModelPipeline {
       : ModelPipeline(model),
         _target_column(std::move(target_column)),
         _prediction_depth(prediction_depth) {}
-
-  /**
-   * Returns the output processor to use to create the ModelPipeline. Also
-   * returns a RegressionBinningStrategy if the output is a regression task as
-   * this binning logic must be shared with the dataset pipeline.
-   */
-  static std::pair<OutputProcessorPtr,
-                   std::optional<dataset::RegressionBinningStrategy>>
-  getOutputProcessor(const data::UDTConfigPtr& dataset_config);
 
   static bolt::BoltGraphPtr loadUDTBoltGraph(
       const std::vector<uint32_t>& input_dims, uint32_t output_dim,
