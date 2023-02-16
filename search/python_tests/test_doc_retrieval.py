@@ -71,7 +71,6 @@ def expect_error_on_construction(
 )
 @pytest.mark.unit
 def test_error_inputs():
-
     start = time.time()
     expect_error_on_construction(num_tables=0)
     expect_error_on_construction(num_tables=-7)

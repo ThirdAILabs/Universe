@@ -49,7 +49,6 @@ class ParsedWebsite:
         soup = BeautifulSoup(html, "html.parser")
         links = []
         for link in soup.find_all("a", href=True):
-
             link_str = str(link["href"])
             if link_str.startswith("//"):
                 link_str = "https:" + link_str

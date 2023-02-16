@@ -27,7 +27,6 @@ class PrimaryWorker(Worker):
         communication_type: str,
         log_dir: str,
     ):
-
         super().__init__(
             train_source=train_source,
             train_config=train_config,

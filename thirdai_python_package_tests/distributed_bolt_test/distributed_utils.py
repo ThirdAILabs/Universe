@@ -6,7 +6,6 @@ import pytest
 
 @pytest.fixture(scope="module")
 def ray_two_node_cluster_config():
-
     # Do these imports here so pytest collection doesn't fail if ray isn't installed
     import ray
     import thirdai.distributed_bolt as db
@@ -26,7 +25,6 @@ def ray_two_node_cluster_config():
     # . doing it this way make sure we are getting the cluster_config for the
     # communication type provided
     def _make_cluster_config(communication_type="linear"):
-
         # We set the working_dir for the cluster equal to this directory
         # so that pickle works. Otherwise, unpickling functions
         # defined in the test files would not work, since pickle needs to be

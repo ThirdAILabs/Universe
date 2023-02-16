@@ -14,7 +14,6 @@ import thirdai
 # of words_per_doc normal distributions. A ground truth query is made up of
 # some words from a single doc's word distributions and some random words.
 def get_build_and_run_functions_random(num_docs=100, num_queries=100):
-
     hashes_per_table = 7
     num_tables = 32
     data_dim = 100
