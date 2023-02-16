@@ -29,13 +29,13 @@ class GraphFeaturizer final : public Featurizer {
  public:
   GraphFeaturizer(std::vector<std::shared_ptr<Block>> input_blocks,
                   std::vector<std::shared_ptr<Block>> label_blocks,
-                  ColumnIdentifier source_col, uint32_t max_neighbours,
+                  ColumnIdentifier source_col, uint32_t max_neighbors,
                   char delimiter = ',',
                   std::optional<uint32_t> hash_range = std::nullopt)
       : _input_blocks(std::move(input_blocks)),
         _label_blocks(std::move(label_blocks)),
         _source_col(std::move(source_col)),
-        _max_neighbours(max_neighbours),
+        _max_neighbors(max_neighbors),
         _delimiter(delimiter),
         _hash_range(hash_range) {
     _node_id_to_num_map.insert({"null_node", 0});
@@ -44,11 +44,11 @@ class GraphFeaturizer final : public Featurizer {
   static std::shared_ptr<GraphFeaturizer> make(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks,
-      ColumnIdentifier source_col, uint32_t max_neighbours,
+      ColumnIdentifier source_col, uint32_t max_neighbors,
       char delimiter = ',', std::optional<uint32_t> hash_range = std::nullopt) {
     return std::make_shared<GraphFeaturizer>(
         std::move(input_blocks), std::move(label_blocks), std::move(source_col),
-        max_neighbours, delimiter, hash_range);
+        max_neighbors, delimiter, hash_range);
   }
 
   std::vector<std::vector<BoltVector>> featurize(
@@ -88,7 +88,7 @@ class GraphFeaturizer final : public Featurizer {
   BlockList _label_blocks;
   ColumnIdentifier _source_col;
   uint32_t _expected_num_cols;
-  uint32_t _max_neighbours;
+  uint32_t _max_neighbors;
   char _delimiter;
   std::optional<uint32_t> _hash_range;
 };

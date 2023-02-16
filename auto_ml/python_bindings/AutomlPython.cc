@@ -5,7 +5,7 @@
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
-#include <auto_ml/src/models/GraphUDT.h>
+#include <auto_ml/src/models/GraphNetwork.h>
 #include <auto_ml/src/models/OutputProcessor.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -13,12 +13,8 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pytypes.h>
 #include <limits>
-#include <memory>
-#include <optional>
 
 namespace thirdai::automl::python {
-
-using models::GraphUDT;
 
 void defineAutomlInModule(py::module_& module) {
   py::class_<models::ValidationOptions>(module, "Validation")
@@ -60,14 +56,6 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("input_vocab_size"), py::arg("metadata_dim"),
            py::arg("n_classes"), py::arg("model_size"),
            docs::TEXT_CLASSIFIER_INIT)
-      .def("__new__", &UDTFactory::buildGraphUDT, py::arg("data_types"),
-           py::arg("graph_file_name"), py::arg("source"), py::arg("target"),
-           py::arg("n_target_classes"), py::arg("max_neighbours"),
-           py::arg("relationship_columns") = std::nullopt,
-           py::arg("integer_target") = false,
-           py::arg("numerical_context") = false,
-           py::arg("features_context") = false, py::arg("k_hop") = 1,
-           py::arg("delimeter") = ',', py::arg("adj_list") = std::nullopt)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 }
@@ -226,16 +214,6 @@ void createModelsSubmodule(py::module_& module) {
            docs::UDT_EXPLAIN)
       .def("save", &UDTFactory::save_classifier, py::arg("filename"),
            docs::UDT_SAVE);
-  py::class_<GraphUDT, ModelPipeline, std::shared_ptr<GraphUDT>>(module,
-                                                                 "UDTGraph")
-      .def(py::init(&GraphUDT::buildGraphUDT), py::arg("data_types"),
-           py::arg("graph_file_name"), py::arg("source"), py::arg("target"),
-           py::arg("n_target_classes"), py::arg("max_neighbours"),
-           py::arg("relationship_columns") = std::nullopt,
-           py::arg("integer_target") = false,
-           py::arg("numerical_context") = false,
-           py::arg("features_context") = false, py::arg("k_hop") = 1,
-           py::arg("delimeter") = ',', py::arg("adj_list") = std::nullopt);
 
   py::class_<QueryCandidateGenerator, std::shared_ptr<QueryCandidateGenerator>>(
       models_submodule, "UDTGenerator")
@@ -293,6 +271,16 @@ void createModelsSubmodule(py::module_& module) {
            docs::TEXT_CLASSIFIER_PREDICT)
       .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"),
            docs::TEXT_CLASSIFIER_SAVE);
+
+  // TODO(Josh): Add max_neighbors field/a way to turn off neighbors entirely
+  py::class_<models::GraphNetwork, ModelPipeline, models::GraphNetworkPtr>(module,
+                                                            "UDTGraphNetwork")
+      .def(py::init(&models::GraphNetwork::create),
+           py::arg("data_types"), py::arg("target"),
+           py::arg("n_target_classes") = std::nullopt,
+           py::arg("integer_target") = false, py::arg("delimiter") = ',',
+           py::arg("max_neighbors") = std::numeric_limits<uint64_t>::max(),
+           bolt::python::OutputRedirect());
 }
 
 void createUDTTypesSubmodule(py::module_& module) {
@@ -482,23 +470,6 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
       /* lookahead = */ lookahead, /* delimiter = */ delimiter,
       /* model_config= */ model_config,
       /* options = */ createArgumentMap(options));
-}
-
-GraphUDT UDTFactory::buildGraphUDT(
-    py::object& obj, data::ColumnDataTypes data_types,
-    std::string graph_file_name, std::string source, std::string target,
-    uint32_t n_target_classes, uint32_t max_neighbours,
-    std::vector<std::string> relationship_columns, bool integer_target,
-    bool numerical_context, bool features_context, uint32_t k_hop,
-    char delimeter,
-    std::optional<std::unordered_map<std::string, std::vector<std::string>>>
-        adj_list) {
-  (void)obj;
-  return GraphUDT::buildGraphUDT(
-      std::move(data_types), std::move(graph_file_name), std::move(source),
-      std::move(target), n_target_classes, max_neighbours,
-      std::move(relationship_columns), integer_target, numerical_context,
-      features_context, k_hop, delimeter, std::move(adj_list));
 }
 
 void UDTFactory::save_classifier(const UniversalDeepTransformer& classifier,

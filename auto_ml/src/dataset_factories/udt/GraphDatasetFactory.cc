@@ -51,7 +51,7 @@ dataset::GraphFeaturizerPtr GraphDatasetFactory::prepareTheFeaturizer(
   // TODO(YASH): remove the hard code of 100000 in hash range.
   auto featurizer = dataset::GraphFeaturizer::make(
       std::move(input_blocks), {std::move(label_block)}, config->_source,
-      config->_max_neighbours, config->_delimeter, /*hash_range=*/100000);
+      config->_max_neighbors, config->_delimeter, /*hash_range=*/100000);
 
   featurizer->updateNeighbours(neighbours);
 

@@ -2,7 +2,6 @@
 
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/models/Generator.h>
-#include <auto_ml/src/models/GraphUDT.h>
 #include <auto_ml/src/models/ModelPipeline.h>
 #include <auto_ml/src/models/TextClassifier.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
@@ -12,7 +11,6 @@ namespace py = pybind11;
 
 namespace thirdai::automl::python {
 
-using models::GraphUDT;
 using models::ModelPipeline;
 using models::QueryCandidateGenerator;
 using models::TextClassifier;
@@ -61,16 +59,6 @@ class UDTFactory {
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
       const py::dict& options);
-
-  static GraphUDT buildGraphUDT(
-      py::object& obj, data::ColumnDataTypes data_types,
-      std::string graph_file_name, std::string source, std::string target,
-      uint32_t n_target_classes, uint32_t max_neighbours,
-      std::vector<std::string> relationship_columns, bool integer_target,
-      bool numerical_context, bool features_context, uint32_t k_hop,
-      char delimeter,
-      std::optional<std::unordered_map<std::string, std::vector<std::string>>>
-          adj_list);
 
   // These need to be here instead of inside UDTFactory because otherwise I was
   // getting weird linking errors

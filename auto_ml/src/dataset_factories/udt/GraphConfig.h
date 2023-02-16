@@ -18,7 +18,7 @@ namespace thirdai::automl::data {
  *
  * n_target_classes: number of target classes.
  *
- * max_neighbours: number of neighbours we want to consider for input of
+ * max_neighbors: number of neighbours we want to consider for input of
  * embedding node.
  *
  * relationship_columns: columns using which we are creating adjacency list.
@@ -37,7 +37,7 @@ struct GraphConfig {
   GraphConfig(
       ColumnDataTypes data_types, std::string graph_file_name,
       std::string source, std::string target, uint32_t n_target_classes,
-      uint32_t max_neighbours,
+      uint32_t max_neighbors,
       std::optional<std::vector<std::string>> relationship_columns =
           std::nullopt,
       bool integer_target = false, bool numerical_context = false,
@@ -48,7 +48,7 @@ struct GraphConfig {
         _graph_file_name(std::move(graph_file_name)),
         _source(std::move(source)),
         _target(std::move(target)),
-        _max_neighbours(max_neighbours),
+        _max_neighbors(max_neighbors),
         _relationship_columns(std::move(relationship_columns)),
         _n_target_classes(n_target_classes),
         _integer_target(integer_target),
@@ -68,7 +68,7 @@ struct GraphConfig {
   std::string _graph_file_name;
   std::string _source;
   std::string _target;
-  uint32_t _max_neighbours;
+  uint32_t _max_neighbors;
   std::optional<std::vector<std::string>> _relationship_columns;
   uint32_t _n_target_classes;
   bool _integer_target;
