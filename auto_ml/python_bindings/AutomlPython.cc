@@ -279,7 +279,8 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("target"), py::arg("n_target_classes") = std::nullopt,
            py::arg("integer_target") = false, py::arg("delimiter") = ',',
            py::arg("max_neighbors") = std::numeric_limits<uint32_t>::max(),
-           py::arg("k_hop") = 1, bolt::python::OutputRedirect());
+           py::arg("k_hop") = 1, py::arg("store_node_features") = true,
+           bolt::python::OutputRedirect());
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

@@ -11,7 +11,8 @@ class GraphNetwork : public ModelPipeline {
                              std::string target_col,
                              std::optional<uint32_t> n_target_classes,
                              bool integer_target, char delimiter,
-                             uint32_t max_neighbors, uint32_t k_hop);
+                             uint32_t max_neighbors, uint32_t k_hop,
+                             bool store_node_features);
 
  private:
   // Inherit ModelPipeline constructor privately

@@ -1,6 +1,7 @@
 #include "Utils.h"
 #include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <auto_ml/src/models/TrainEvalParameters.h>
+#include <stdexcept>
 
 namespace thirdai::automl::models {
 
@@ -38,6 +39,11 @@ getOutputProcessor(const data::ColumnDataTypes& data_types,
   if (!n_target_classes) {
     throw std::invalid_argument(
         "n_target_classes must be specified for a classification task.");
+  }
+
+  if (n_target_classes < 2) {
+    throw std::invalid_argument(
+        "There must be at least two target classes for a classification task.");
   }
 
   if (n_target_classes == 2) {

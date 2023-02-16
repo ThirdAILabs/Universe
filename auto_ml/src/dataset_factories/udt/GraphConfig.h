@@ -41,7 +41,7 @@ struct GraphConfig {
       std::optional<std::vector<std::string>> relationship_columns =
           std::nullopt,
       bool integer_target = false, bool numerical_context = false,
-      bool features_context = false, uint32_t k_hop = 1, char delimeter = ',',
+      bool features_context = false, uint32_t k_hop = 1, char delimiter = ',',
       std::optional<std::unordered_map<std::string, std::vector<std::string>>>
           adj_list = std::nullopt)
       : _data_types(std::move(data_types)),
@@ -55,7 +55,7 @@ struct GraphConfig {
         _numerical_context(numerical_context),
         _features_context(features_context),
         _k_hop(k_hop),
-        _delimeter(delimeter),
+        _delimiter(delimiter),
         _adj_list(std::move(adj_list)) {
     if (!_relationship_columns && !_adj_list) {
       throw std::invalid_argument(
@@ -75,7 +75,7 @@ struct GraphConfig {
   bool _numerical_context;
   bool _features_context;
   uint32_t _k_hop;
-  char _delimeter;
+  char _delimiter;
   std::optional<std::unordered_map<std::string, std::vector<std::string>>>
       _adj_list;
 };

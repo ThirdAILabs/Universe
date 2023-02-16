@@ -11,12 +11,12 @@
 
 namespace thirdai::automl::models {
 
-bolt::BoltGraphPtr createGNN(uint32_t input_dim, uint32_t output_dim,
-                             uint32_t max_neighbors) {
-  auto node_features_input = bolt::Input::make(input_dim);
+bolt::BoltGraphPtr createGNN(std::vector<uint32_t> input_dims,
+                             uint32_t output_dim, uint32_t max_neighbors) {
+  auto node_features_input = bolt::Input::make(input_dims.at(0));
 
   auto neighbor_token_input = bolt::Input::makeTokenInput(
-      /*expected_dim = */ std::numeric_limits<uint32_t>::max(),
+      /*expected_dim = */ input_dims.at(1),
       /*num_tokens_range = */ {0, max_neighbors});
 
   auto embedding_1 = bolt::EmbeddingNode::make(
@@ -71,7 +71,8 @@ GraphNetwork GraphNetwork::create(data::ColumnDataTypes data_types,
                                   std::string target_col,
                                   std::optional<uint32_t> n_target_classes,
                                   bool integer_target, char delimiter,
-                                  uint32_t max_neighbors, uint32_t k_hop) {
+                                  uint32_t max_neighbors, uint32_t k_hop,
+                                  bool store_node_features) {
   verifyDataTypesContainTarget(data_types, target_col);
 
   auto [output_processor, regression_binning] =
@@ -81,12 +82,17 @@ GraphNetwork GraphNetwork::create(data::ColumnDataTypes data_types,
         "We do not yet support regression on graphs.");
   }
 
+  if (!integer_target) {
+    throw exceptions::NotImplemented(
+        "We do not yet support non integer classes on graphs.");
+  }
+
   auto graph_dataset_factory = std::make_shared<data::GraphDatasetFactory>(
-      data_types, target_col, n_target_classes, integer_target, delimiter,
-      max_neighbors, k_hop);
+      data_types, target_col, n_target_classes, delimiter, max_neighbors, k_hop,
+      store_node_features);
 
   bolt::BoltGraphPtr model = createGNN(
-      /* input_dim = */ graph_dataset_factory->getInputDims().at(0),
+      /* input_dims = */ graph_dataset_factory->getInputDims(),
       /* output_dim = */ graph_dataset_factory->getLabelDim(),
       /* max_neighbors = */ max_neighbors);
 

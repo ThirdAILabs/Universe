@@ -441,7 +441,7 @@ pybind11_add_module(
   auto_ml/src/models/OutputProcessor.cc
   auto_ml/src/models/TextClassifier.cc
   auto_ml/src/models/UniversalDeepTransformer.cc
-  auto_ml/src/models/GraphUDT.cc
+  auto_ml/src/models/GraphNetwork.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 
