@@ -59,11 +59,30 @@ class UDT {
   }
 
   py::object embedding(const std::variant<uint32_t, std::string>& label) {
-    return _backend->embedding(label);
+    return _backend->entityEmbedding(label);
   }
 
   std::string className(uint32_t class_id) const {
     return _backend->className(class_id);
+  }
+
+  void updateTemporalTrackers(const MapInput& sample) {
+    _backend->updateTemporalTrackers(sample);
+  }
+
+  void updateTemporalTrackersBatch(const MapInputBatch& samples) {
+    _backend->updateTemporalTrackersBatch(samples);
+  }
+
+  void resetTemporalTrackers() { _backend->resetTemporalTrackers(); }
+
+  void updateMetadata(const std::string& column, const MapInput& sample) {
+    _backend->updateMetadata(column, sample);
+  }
+
+  void updateMetadataBatch(const std::string& column,
+                           const MapInputBatch& samples) {
+    _backend->updateMetadataBatch(column, samples);
   }
 
  private:

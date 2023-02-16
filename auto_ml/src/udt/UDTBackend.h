@@ -65,8 +65,7 @@ class UDTBackend {
       const std::optional<std::variant<uint32_t, std::string>>& target_class) {
     (void)sample;
     (void)target_class;
-    throw std::runtime_error(
-        "Explainations are not available for this type of model.");
+    throw notSupported("explain");
   }
 
   virtual void coldstart(const dataset::DataSourcePtr& original_source,
@@ -84,35 +83,58 @@ class UDTBackend {
     (void)train_metrics;
     (void)validation;
     (void)verbose;
-    throw std::runtime_error(
-        "Coldstart pretraining is not available for this type of model.");
+    throw notSupported("cold_start");
   }
 
   virtual py::object embedding(const MapInput& sample) {
     (void)sample;
-    throw std::runtime_error(
-        "Embeddings are not available for this type of model.");
+    throw notSupported("embedding");
   }
 
-  virtual py::object embedding(
+  virtual py::object entityEmbedding(
       const std::variant<uint32_t, std::string>& label) {
     (void)label;
-    throw std::runtime_error(
-        "Embeddings are not available for this type of model.");
+    throw notSupported("entity_embedding");
   }
 
   virtual std::string className(uint32_t class_id) const {
     (void)class_id;
-    throw std::runtime_error(
-        "Class names are not available for this type of model.");
+    throw notSupported("class_name");
   }
 
-  /**
-   * Other methods:
-   *    1. update (and reset) temporal trackers (single/batch) -> return object
-   *       to do this.
-   *    2. update categorial metadata (single/batch) -> return object to do this
-   */
+  virtual void updateTemporalTrackers(const MapInput& sample) {
+    (void)sample;
+    throw notSupported("index");
+  }
+
+  virtual void updateTemporalTrackersBatch(const MapInputBatch& samples) {
+    (void)samples;
+    throw notSupported("index_batch");
+  }
+
+  virtual void resetTemporalTrackers() {
+    throw notSupported("reset_temporal_trackers");
+  }
+
+  virtual void updateMetadata(const std::string& column,
+                              const MapInput& sample) {
+    (void)column;
+    (void)sample;
+    throw notSupported("index_metadata");
+  }
+
+  virtual void updateMetadataBatch(const std::string& column,
+                                   const MapInputBatch& samples) {
+    (void)column;
+    (void)samples;
+    throw notSupported("index_metadata_batch");
+  }
+
+ private:
+  static std::runtime_error notSupported(const std::string& name) {
+    return std::runtime_error("Method '" + name +
+                              "' is not supported for this type of model.");
+  }
 };
 
 }  // namespace thirdai::automl::udt
