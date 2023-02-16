@@ -14,6 +14,7 @@ set(ENV{LD_PRELOAD} "")
 
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # See [1] https://gcc.gnu.org/wiki/Visibility [2]
 # https://stackoverflow.com/a/31157258/4565794
