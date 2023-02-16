@@ -45,14 +45,14 @@ jobs:
         with:
           cmake-version: '3.20.1'
 
-      - name: install cpanm and multiple modules
-        uses: perl-actions/install-with-cpanm@v1
-        with:
-          install: |
-            Locale::Maketext::Simple
-
-      - name: Print cmake version
-        run: cmake --version
+      - name: Install dependencies with vcpkg
+        working-directory: C:\vcpkg
+        run: |
+          $Env:VCPKG_BUILD_TYPE = 'release'
+          $Env:VCPKG_DEFAULT_TRIPLET = 'x64-windows-static' 
+          .\vcpkg install zlib:x64-windows-static openssl:x64-windows-static
+          .\vcpkg upgrade --no-dry-run # In case there are new builds available after cache restoration
+        shell: powershell
 
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
@@ -73,7 +73,7 @@ jobs:
           #
           # TODO(GH-779): Fix the multiple libraries existing.
           CIBW_ENVIRONMENT_WINDOWS: >
-              CMAKE_ARGS="-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30 -DTHIRDAI_BUILD_OPENSSL_FROM_SOURCE=ON -DTHIRDAI_COMPILE_ZLIB_FROM_SOURCE=ON -DOPENSSL_COMPILE_WINDOWS=ON"
+              CMAKE_ARGS="-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30 -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake"
               KMP_DUPLICATE_LIB_OK=TRUE
 
           CIBW_ENVIRONMENT_MACOS:
