@@ -46,39 +46,6 @@ std::vector<std::vector<BoltVector>> GraphFeaturizer::featurize(
           std::move(batch_labels)};
 }
 
-/*
-The function updates the neighbours of each node.
-*/
-void GraphFeaturizer::updateNeighbours(const automl::Neighbours& neighbours) {
-  for (auto [node, node_neighbours] : neighbours) {
-    if (_neighbours.find(node) != _neighbours.end()) {
-      for (const auto& neighbour : node_neighbours) {
-        _neighbours[node].insert(neighbour);
-      }
-    } else {
-      _neighbours[node] = node_neighbours;
-    }
-  }
-}
-
-/*
-The purpose of the function is to assign a unique id for each node, written to
-also support dynamic graph.
-*/
-void GraphFeaturizer::updateNodeIdMap(const ColumnNumberMap& node_id_map) {
-  if (_node_id_to_num_map.empty()) {
-    _node_id_to_num_map = node_id_map.getColumnNameToColNumMap();
-    return;
-  }
-  auto temp = node_id_map.getColumnNumToColNameMap();
-  for (const auto& node : temp) {
-    auto present_size = _node_id_to_num_map.size();
-    if (!_node_id_to_num_map.count(node)) {
-      _node_id_to_num_map[node] = present_size;
-    }
-  }
-}
-
 std::vector<std::vector<BoltVector>> GraphFeaturizer::featurize(
     const LineInputBatch& input_batch) {
   CsvBatchRef input_batch_ref(input_batch, _delimiter, _expected_num_cols);
@@ -98,15 +65,14 @@ std::exception_ptr GraphFeaturizer::featurizeSampleInBatch(
   */
   try {
     auto& sample = input_batch.at(index_in_batch);
-    if (auto err = FeaturizerUtils::buildVector(
-            batch_inputs[index_in_batch], _input_blocks, sample, _hash_range)) {
+    if (auto err = buildVector(batch_inputs[index_in_batch], _input_blocks,
+                               sample, _hash_range)) {
       return err;
     }
     batch_token_inputs[index_in_batch] = buildNeighbourVector(sample);
-    return FeaturizerUtils::buildVector(batch_labels[index_in_batch],
-                                        _label_blocks, sample,
-                                        // Label is never hashed.
-                                        /* hash_range= */ std::nullopt);
+    return buildVector(batch_labels[index_in_batch], _label_blocks, sample,
+                       // Label is never hashed.
+                       /* hash_range= */ std::nullopt);
   } catch (std::invalid_argument& error) {
     return std::make_exception_ptr(error);
   }
@@ -120,7 +86,7 @@ BoltVector GraphFeaturizer::buildNeighbourVector(ColumnarInputSample& sample) {
   auto node_value = std::string(sample.column(_source_col));
   std::vector<uint32_t> indices(_max_neighbours, 0);
   uint32_t i = 0;
-  if (_neighbours.find(node_value) != _neighbours.end()) {
+  if (_neighbours.count(node_value)) {
     for (auto it = _neighbours[node_value].begin();
          it != _neighbours[node_value].end(); it++, i++) {
       if (i >= _max_neighbours) {

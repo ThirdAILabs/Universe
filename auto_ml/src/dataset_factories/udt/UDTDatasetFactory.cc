@@ -9,6 +9,9 @@
 
 namespace thirdai::automl::data {
 
+static constexpr const uint32_t DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE =
+    2048;
+
 UDTDatasetFactory::UDTDatasetFactory(
     const UDTConfigPtr& config, bool force_parallel,
     uint32_t text_pairgram_word_limit, bool contextual_columns,
@@ -30,8 +33,8 @@ UDTDatasetFactory::UDTDatasetFactory(
 
 dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     dataset::DataSourcePtr data_source, bool training) {
-  auto column_number_map = DatasetFactoryUtils::makeColumnNumberMapFromHeader(
-      *data_source, _config->delimiter);
+  auto column_number_map =
+      makeColumnNumberMapFromHeader(*data_source, _config->delimiter);
   _column_number_to_name = column_number_map.getColumnNumToColNameMap();
 
   // The featurizer will treat the next line as a header
@@ -110,8 +113,8 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
 
   auto data_source = dataset::FileDataSource::make(metadata->metadata_file);
 
-  auto column_numbers = DatasetFactoryUtils::makeColumnNumberMapFromHeader(
-      *data_source, metadata->delimiter);
+  auto column_numbers =
+      makeColumnNumberMapFromHeader(*data_source, metadata->delimiter);
   data_source->restart();
 
   auto input_blocks = buildMetadataInputBlocks(*metadata);
@@ -163,8 +166,8 @@ UDTDatasetFactory::preprocessedVectorsFromDataset(
   // vectors as metadata, not training on them. Thus, we choose the somewhat
   // arbitrary value 2048 since it is large enough to use all threads.
   auto [datasets, ids] =
-      dataset_loader.loadAll(/* batch_size = */ DatasetFactoryUtils::
-                                 DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
+      dataset_loader.loadAll(/* batch_size = */
+                             DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
 
   if (datasets.size() != 1) {
     throw std::runtime_error(
