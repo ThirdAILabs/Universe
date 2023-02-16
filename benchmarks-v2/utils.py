@@ -73,7 +73,7 @@ def get_train_and_eval_configs(benchmark_config, callbacks=None):
         train_config.with_rebuild_hash_tables(benchmark_config.rebuild_hash_tables)
 
     eval_config = bolt.EvalConfig().with_metrics(metrics)
-    if benchmark_config.compute_roc_auc == True:
+    if hasattr(benchmark_config, "compute_roc_auc"):
         eval_config.return_activations()
 
     return train_config, eval_config

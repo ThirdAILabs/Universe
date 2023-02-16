@@ -16,7 +16,7 @@ class Amazon670kConfig(BoltBenchmarkConfig):
     experiment_name = "Bolt_Amazon670k"
     reconstruct_hash_functions = 6400
     rebuild_hash_tables = 128000
-    num_epochs = 5
+    num_epochs = 1
     learning_rate = 1e-04
 
     train_dataset_path = "/share/data/amazon-670k/train_shuffled_noHeader.txt"
@@ -44,7 +44,7 @@ class Amazon131kConfig(BoltBenchmarkConfig):
     experiment_name = "Bolt_Amazon131k"
     reconstruct_hash_functions = 6400
     rebuild_hash_tables = 128000
-    num_epochs = 5
+    num_epochs = 1
     learning_rate = 1e-04
 
     train_dataset_path = "/share/data/amazon-131k/train_shuffled_noHeader.txt"
@@ -72,7 +72,7 @@ class AmazonPolarityConfig(BoltBenchmarkConfig):
     experiment_name = "Bolt_AmazonPolarity"
     reconstruct_hash_functions = 6400
     rebuild_hash_tables = 128000
-    num_epochs = 5
+    num_epochs = 1
     learning_rate = 1e-04
 
     train_dataset_path = "/share/data/amazon_polarity/svm_train.txt"
@@ -100,7 +100,7 @@ class WayfairConfig(BoltBenchmarkConfig):
     experiment_name = "Bolt_Wayfair"
     reconstruct_hash_functions = 10000
     rebuild_hash_tables = 50000
-    num_epochs = 5
+    num_epochs = 1
     learning_rate = 1e-04
 
     train_dataset_path = "/share/data/wayfair/train_raw_queries.txt"

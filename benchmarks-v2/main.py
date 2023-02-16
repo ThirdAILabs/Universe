@@ -12,9 +12,7 @@ def parse_arguments():
         required=True,
         help="Specify the runner name for the benchmark. Options include 'fully_connected', 'udt', 'dlrm'",
     )
-    parser.add_argument(
-        "--mlflow_uri", required=True, help="MLflow URI to log metrics and artifacts."
-    )
+    parser.add_argument("--mlflow_uri", help="MLflow URI to log metrics and artifacts.")
     parser.add_argument(
         "--run_name", required=True, help="The job name to track in MLflow"
     )
@@ -30,7 +28,7 @@ def parse_arguments():
 if __name__ == "__main__":
     args = parse_arguments()
 
-    if args.runner.lower() == "bolt":
+    if args.runner.lower() == "fully_connected":
         config = getattr(bolt_configs, args.config_name)
 
     elif args.runner.lower() == "udt":

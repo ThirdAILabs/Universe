@@ -62,9 +62,6 @@ class BoltFullyConnectedRunner(Runner):
             predict_output = model.evaluate(
                 test_data=test_set, test_labels=test_labels, eval_config=eval_config
             )
-            mlflow_callback.log_additional_metric(
-                key=predict_output[0][0], value=predict_output[0][1]
-            )
 
 
 class DLRMRunner(Runner):

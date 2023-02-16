@@ -8,6 +8,7 @@ from datetime import date
 from pathlib import Path
 
 import requests
+import toml
 from dotenv import load_dotenv
 from mlflow_extraction import extract_mlflow_data
 
@@ -19,10 +20,11 @@ SLACK_WEBHOOK = (
 
 
 def get_mlflow_uri():
-    # load_dotenv() assumes that there is a file named .env
-    # in the working directory, containing a variable `MLFLOW_URI`
-    load_dotenv()
-    return os.getenv("MLFLOW_URI")
+    file_dir = os.path.dirname(os.path.abspath(__file__))
+    file_name = os.path.join(file_dir, "config.toml")
+    with open(file_name) as f:
+        parsed_config = toml.load(f)
+        return parsed_config["tracking"]["uri"]
 
 
 def send_slack_message(experiment_name):
@@ -59,11 +61,15 @@ def main():
 
     runner = args.runner
 
-    if runner.lower() == "bolt":
-        from configs.bolt_configs import BoltBenchmarkConfig, DLRMConfig
+    if runner.lower() == "fully_connected":
+        from configs.bolt_configs import BoltBenchmarkConfig
 
         configs = BoltBenchmarkConfig.__subclasses__()
-        configs.extend(DLRMConfig.__subclasses__())
+
+    elif runner.lower() == "dlrm":
+        from configs.dlrm_configs import DLRMConfig
+
+        configs = DLRMConfig.__subclasses__()
 
     elif runner.lower() == "udt":
         from configs.udt_configs import UDTBenchmarkConfig
@@ -81,7 +87,7 @@ def main():
 
         command = (
             f"python3 benchmarks-v2/main.py "
-            f"--runner={runner}"
+            f"--runner={runner} "
             f"--mlflow_uri={mlflow_uri} "
             f"--run_name={run_name} "
             f"--config_name={config_name}"

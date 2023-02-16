@@ -205,7 +205,6 @@ setup(
             "mock",
         ],
         "benchmark": [
-            "python-dotenv",
             "toml",
             "psutil",
             "scikit-learn",
