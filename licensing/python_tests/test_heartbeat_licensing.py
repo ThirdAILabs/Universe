@@ -137,7 +137,6 @@ def test_valid_heartbeat(normal_license_server):
 
 
 def test_heartbeat_multiple_machines(normal_license_server):
-
     for _ in range(max_num_workers_normal):
         assert (
             subprocess.run(
