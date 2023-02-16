@@ -28,10 +28,11 @@
 namespace thirdai::automl::data {
 
 using dataset::ColumnNumberMap;
+using dataset::Neighbours;
 
 class GraphDatasetFactory : public DatasetLoaderFactory {
  public:
-  explicit GraphDatasetFactory(GraphConfigPtr conifg);
+  explicit GraphDatasetFactory(GraphConfigPtr config);
 
   dataset::GraphFeaturizerPtr prepareTheFeaturizer(
       const GraphConfigPtr& config,
@@ -116,7 +117,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       const std::vector<uint32_t>& numerical_columns,
       const ColumnNumberMap& node_id_map, const Neighbours& neighbours);
 
-  std::vector<std::vector<std::string>> getRawData(
+  std::vector<std::vector<std::string>> getCsvData(
       dataset::DataSource& data_loader);
 
   dataset::PreprocessedVectorsPtr makeNumericalProcessedVectors(

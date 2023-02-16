@@ -33,8 +33,13 @@ class ColumnNumberMap {
 
   ColumnNumberMap() {}
 
-  std::unordered_map<std::string, uint32_t> getColumnNameToColNumMap() const {
-    return _name_to_num;
+  std::unordered_map<std::string, uint32_t> getColumnNameToColNumMap(
+      uint32_t start_col) const {
+    std::unordered_map<std::string, uint32_t> name_to_num;
+    for (const auto& [name, num] : _name_to_num) {
+      name_to_num[name] = start_col + num;
+    }
+    return name_to_num;
   }
 
   uint32_t at(const std::string& col_name) const {

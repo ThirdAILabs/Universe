@@ -7,21 +7,7 @@ namespace thirdai::automl::data {
 
 using dataset::ColumnNumberMap;
 
-class DatasetFactoryUtils {
- public:
-  static constexpr const uint32_t DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE =
-      2048;
-
-  static ColumnNumberMap makeColumnNumberMapFromHeader(
-      dataset::DataSource& data_source, char delimiter) {
-    auto header = data_source.nextLine();
-    if (!header) {
-      throw std::invalid_argument(
-          "The dataset must have a header that contains column names.");
-    }
-
-    return {*header, delimiter};
-  }
-};
+ColumnNumberMap makeColumnNumberMapFromHeader(dataset::DataSource& data_source,
+                                              char delimiter);
 
 }  // namespace thirdai::automl::data

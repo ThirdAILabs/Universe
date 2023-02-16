@@ -70,8 +70,7 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
 
 BoltVector TabularFeaturizer::makeInputVector(ColumnarInputSample& sample) {
   BoltVector vector;
-  if (auto err = FeaturizerUtils::buildVector(vector, _input_blocks, sample,
-                                              _hash_range)) {
+  if (auto err = buildVector(vector, _input_blocks, sample, _hash_range)) {
     std::rethrow_exception(err);
   }
   return vector;
@@ -88,9 +87,9 @@ BoltVector TabularFeaturizer::makeInputVector(ColumnarInputSample& sample) {
 IndexToSegmentFeatureMap TabularFeaturizer::getIndexToSegmentFeatureMap(
     ColumnarInputSample& input) {
   BoltVector vector;
-  auto segmented_vector = FeaturizerUtils::makeSegmentedFeatureVector(
-      _input_blocks.areDense(), _hash_range,
-      /* store_segment_feature_map= */ true);
+  auto segmented_vector =
+      makeSegmentedFeatureVector(_input_blocks.areDense(), _hash_range,
+                                 /* store_segment_feature_map= */ true);
 
   if (auto err = _input_blocks.addVectorSegments(input, *segmented_vector)) {
     std::rethrow_exception(err);
@@ -118,14 +117,13 @@ std::exception_ptr TabularFeaturizer::featurizeSampleInBatch(
   */
   try {
     auto& sample = input_batch.at(index_in_batch);
-    if (auto err = FeaturizerUtils::buildVector(
-            batch_inputs[index_in_batch], _input_blocks, sample, _hash_range)) {
+    if (auto err = buildVector(batch_inputs[index_in_batch], _input_blocks,
+                               sample, _hash_range)) {
       return err;
     }
-    return FeaturizerUtils::buildVector(batch_labels[index_in_batch],
-                                        _label_blocks, sample,
-                                        // Label is never hashed.
-                                        /* hash_range= */ std::nullopt);
+    return buildVector(batch_labels[index_in_batch], _label_blocks, sample,
+                       // Label is never hashed.
+                       /* hash_range= */ std::nullopt);
   } catch (std::invalid_argument& error) {
     return std::make_exception_ptr(error);
   }

@@ -5,14 +5,14 @@
 
 namespace thirdai::automl::data {
 
-GraphDatasetFactory::GraphDatasetFactory(GraphConfigPtr conifg)
-    : _config(std::move(conifg)) {
+GraphDatasetFactory::GraphDatasetFactory(GraphConfigPtr config)
+    : _config(std::move(config)) {
   auto data_source = dataset::FileDataSource::make(_config->_graph_file_name);
 
-  _column_number_map = DatasetFactoryUtils::makeColumnNumberMapFromHeader(
-      *data_source, _config->_delimeter);
+  _column_number_map =
+      makeColumnNumberMapFromHeader(*data_source, _config->_delimeter);
 
-  auto rows = getRawData(*data_source);
+  auto rows = getCsvData(*data_source);
 
   _featurizer = prepareTheFeaturizer(_config, rows);
 }
@@ -51,11 +51,9 @@ dataset::GraphFeaturizerPtr GraphDatasetFactory::prepareTheFeaturizer(
   // TODO(YASH): remove the hard code of 100000 in hash range.
   auto featurizer = dataset::GraphFeaturizer::make(
       std::move(input_blocks), {std::move(label_block)}, config->_source,
-      config->_max_neighbours, config->_delimeter, /*hash_range=*/100000);
-
-  featurizer->updateNeighbours(neighbours);
-
-  featurizer->updateNodeIdMap(node_id_map);
+      config->_max_neighbours, neighbours,
+      node_id_map.getColumnNameToColNumMap(/*start_col=*/1), config->_delimeter,
+      /*hash_range=*/100000);
 
   return featurizer;
 }
@@ -191,14 +189,10 @@ dataset::CsvRolledBatch GraphDatasetFactory::getFinalProcessedData(
   return input;
 }
 
-std::vector<std::vector<std::string>> GraphDatasetFactory::getRawData(
+std::vector<std::vector<std::string>> GraphDatasetFactory::getCsvData(
     dataset::DataSource& data_loader) {
-  std::vector<std::string> full_data;
-
-  while (auto data = data_loader.nextBatch(
-             DatasetFactoryUtils::DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE)) {
-    full_data.insert(full_data.end(), data->begin(), data->end());
-  }
+  std::vector<std::string> full_data =
+      *data_loader.nextBatch(std::numeric_limits<uint32_t>::max());
 
   std::vector<std::vector<std::string>> rows(full_data.size());
 

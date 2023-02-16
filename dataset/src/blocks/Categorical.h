@@ -282,10 +282,15 @@ class MetadataCategoricalBlock final : public CategoricalBlock {
 
 using MetadataCategoricalBlockPtr = std::shared_ptr<MetadataCategoricalBlock>;
 
+// Neighbours is a map from node to its neighbours set, where each node is
+// represented by a string.
+using Neighbours =
+    std::unordered_map<std::string, std::unordered_set<std::string>>;
+
 class GraphCategoricalBlock : public CategoricalBlock {
  public:
   GraphCategoricalBlock(ColumnIdentifier col, PreprocessedVectorsPtr vectors,
-                        automl::Neighbours neighbours)
+                        Neighbours neighbours)
       : CategoricalBlock(std::move(col), vectors->dim, std::nullopt),
         _vectors(std::move(vectors)),
         _neighbours(std::move(neighbours)) {}
@@ -297,7 +302,7 @@ class GraphCategoricalBlock : public CategoricalBlock {
   }
 
   static auto make(ColumnIdentifier col, PreprocessedVectorsPtr vectors,
-                   automl::Neighbours neighbours) {
+                   Neighbours neighbours) {
     return std::make_shared<GraphCategoricalBlock>(
         std::move(col), std::move(vectors), std::move(neighbours));
   }
@@ -315,7 +320,7 @@ class GraphCategoricalBlock : public CategoricalBlock {
 
  private:
   PreprocessedVectorsPtr _vectors;
-  automl::Neighbours _neighbours;
+  Neighbours _neighbours;
 };
 
 /**
