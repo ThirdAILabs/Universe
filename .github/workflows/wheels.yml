@@ -47,8 +47,7 @@ jobs:
 
       - uses: shogo82148/actions-setup-perl@v1
         with:
-          perl-version: '5.32'
-          distribution: strawberry
+          perl-version: '5.34'
 
       - name: Print cmake version
         run: cmake --version
