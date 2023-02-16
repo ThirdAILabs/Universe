@@ -40,6 +40,14 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+        with:
+          cmake-version: '3.20.1'
+
+      - name: Print cmake version
+        run: cmake --version
+
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
         env:
