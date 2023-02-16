@@ -19,7 +19,6 @@ def run_simple_test(
     learning_rate=0.001,
     accuracy_threshold=0.8,
 ):
-
     model = get_simple_concat_model(
         num_classes=num_classes,
         hidden_layer_top_dim=hidden_layer_top_dim,

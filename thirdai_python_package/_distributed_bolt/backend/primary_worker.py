@@ -28,7 +28,6 @@ class PrimaryWorker(Worker):
         communication_type: str,
         log_dir: str,
     ):
-
         super().__init__(
             num_workers=num_workers,
             model_to_wrap=model_to_wrap,

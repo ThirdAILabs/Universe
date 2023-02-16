@@ -18,12 +18,12 @@ class UniversalHash {
   /**
    * Hash string key.
    */
-  uint32_t gethash(const std::string& key) const;
+  uint64_t gethash(const std::string& key) const;
 
   /**
    * Hash integer key. Allows for smaller int sizes.
    */
-  uint32_t gethash(uint64_t key) const;
+  uint64_t gethash(uint64_t key) const;
 
   /**
    * Returns the seed of the universal hash.
@@ -37,11 +37,11 @@ class UniversalHash {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_seed, T);
+    archive(_seed, _table);
   }
 
   uint32_t _seed;
-  std::array<std::array<uint32_t, 256>, 8> T;
+  std::array<std::array<uint64_t, 256>, 8> _table;
 };
 
 }  // namespace thirdai::hashing

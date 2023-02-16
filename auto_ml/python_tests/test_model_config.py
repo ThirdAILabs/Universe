@@ -7,7 +7,6 @@ from thirdai import bolt
 
 
 def get_config(have_user_specified_parameters: bool = False):
-
     if have_user_specified_parameters:
         layer_2_sparsity = {
             "param_name": "use_sparsity",

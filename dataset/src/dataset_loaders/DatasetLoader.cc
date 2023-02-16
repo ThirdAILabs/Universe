@@ -18,7 +18,7 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
       _buffer_size(shuffle_config.min_buffer_size),
       _buffer(/* should_shuffle = */ _shuffle,
               /* shuffle_seed = */ shuffle_config.seed,
-              /* num_vector_streams = */ _featurizer->getNumDatasets()),
+              /* num_datasets = */ _featurizer->getNumDatasets()),
       _featurization_batch_size(internal_featurization_batch_size) {
   // Different formats of data may or may not contain headers. Thus we
   // delegate to the particular featurizer to determine if a header is

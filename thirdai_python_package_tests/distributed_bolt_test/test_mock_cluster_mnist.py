@@ -19,6 +19,7 @@ from thirdai import bolt, dataset
 
 pytestmark = [pytest.mark.distributed]
 
+
 # TODO(Josh): This is quite a bit of duplicated code, but we can't easily share
 # it until we change the structure of our python tests
 def setup_module():
