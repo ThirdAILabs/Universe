@@ -11,71 +11,31 @@ namespace thirdai::dataset {
 void GraphFeaturizer::processHeader(const std::string& header) {
   ColumnNumberMap column_number_map(header, _delimiter);
   _expected_num_cols = column_number_map.numCols();
-  _input_blocks.updateColumnNumbers(column_number_map);
-  _label_blocks.updateColumnNumbers(column_number_map);
+  _tabular_featurizer.updateColumnNumbers(column_number_map);
   _source_col.updateColumnNumber(column_number_map);
 }
 
 std::vector<std::vector<BoltVector>> GraphFeaturizer::featurize(
     ColumnarInputBatch& input_batch) {
-  std::vector<BoltVector> batch_inputs(input_batch.size());
   std::vector<BoltVector> batch_token_inputs(input_batch.size());
-  std::vector<BoltVector> batch_labels(input_batch.size());
 
-  _input_blocks.prepareForBatch(input_batch);
-  _label_blocks.prepareForBatch(input_batch);
+  auto batches = _tabular_featurizer.featurize(input_batch);
 
-  std::exception_ptr featurization_err;
-#pragma omp parallel for default(none)                                  \
-    shared(input_batch, batch_inputs, batch_token_inputs, batch_labels, \
-           featurization_err)
+#pragma omp parallel for default(none) shared(input_batch, batch_token_inputs)
   for (size_t index_in_batch = 0; index_in_batch < input_batch.size();
        ++index_in_batch) {
-    if (auto error =
-            featurizeSampleInBatch(index_in_batch, input_batch, batch_inputs,
-                                   batch_token_inputs, batch_labels)) {
-#pragma omp critical
-      featurization_err = error;
-      continue;
-    }
+    auto& sample = input_batch.at(index_in_batch);
+    batch_token_inputs[index_in_batch] = buildNeighbourVector(sample);
   }
-  if (featurization_err) {
-    std::rethrow_exception(featurization_err);
-  }
-  return {std::move(batch_inputs), std::move(batch_token_inputs),
-          std::move(batch_labels)};
+
+  return {std::move(batches[0]), std::move(batch_token_inputs),
+          std::move(batches[1])};
 }
 
 std::vector<std::vector<BoltVector>> GraphFeaturizer::featurize(
     const LineInputBatch& input_batch) {
   CsvBatchRef input_batch_ref(input_batch, _delimiter, _expected_num_cols);
   return featurize(input_batch_ref);
-}
-
-std::exception_ptr GraphFeaturizer::featurizeSampleInBatch(
-    uint32_t index_in_batch, ColumnarInputBatch& input_batch,
-    std::vector<BoltVector>& batch_inputs,
-    std::vector<BoltVector>& batch_token_inputs,
-    std::vector<BoltVector>& batch_labels) {
-  /*
-    Try-catch block is for capturing invalid argument exceptions from
-    input_batch.at(). Since we don't know the concrete type of the object
-    returned by input_batch.at(), we can't take it out of the scope of the
-    block. Thus, buildVector() also needs to be in this try-catch block.
-  */
-  try {
-    auto& sample = input_batch.at(index_in_batch);
-    if (auto err = buildVector(batch_inputs[index_in_batch], _input_blocks,
-                               sample, _hash_range)) {
-      return err;
-    }
-    batch_token_inputs[index_in_batch] = buildNeighbourVector(sample);
-    return buildVector(batch_labels[index_in_batch], _label_blocks, sample,
-                       // Label is never hashed.
-                       /* hash_range= */ std::nullopt);
-  } catch (std::invalid_argument& error) {
-    return std::make_exception_ptr(error);
-  }
 }
 
 BoltVector GraphFeaturizer::buildNeighbourVector(ColumnarInputSample& sample) {
