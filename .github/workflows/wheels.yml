@@ -45,9 +45,11 @@ jobs:
         with:
           cmake-version: '3.20.1'
 
-      - uses: shogo82148/actions-setup-perl@v1
+      - name: install cpanm and multiple modules
+        uses: perl-actions/install-with-cpanm@v1
         with:
-          perl-version: '5.34'
+          install: |
+            Locale::Maketext::Simple
 
       - name: Print cmake version
         run: cmake --version
