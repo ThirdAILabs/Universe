@@ -139,6 +139,12 @@ FetchContent_Declare(
   GIT_TAG        04f42ceca40f73e2978b50e93806c2a18c1281fc # v1.2.13 
 )
 
+if(THIRDAI_COMPILE_ZLIB_FROM_SOURCE)
+  FetchContent_MakeAvailable(zlib)
+  set(ZLIB_LIBRARY zlibstatic)
+  mark_as_advanced(ZLIB_LIBRARY)
+endif(THIRDAI_COMPILE_ZLIB_FROM_SOURCE)
+
 if(MSVC)
   if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     message(
@@ -155,16 +161,6 @@ if(MSVC)
   target_compile_options(_thirdai_windows_llvm_openmp INTERFACE "/openmp:llvm")
   add_library(OpenMP::OpenMP_CXX ALIAS _thirdai_windows_llvm_openmp)
 
-  if(THIRDAI_COMPILE_ZLIB_FROM_SOURCE)
-      FetchContent_MakeAvailable(zlib)
-      set(ZLIB_LIBRARY zlibstatic)
-      mark_as_advanced(ZLIB_LIBRARY)
-
-      include(FindPackageHandleStandardArgs)
-      find_package_handle_standard_args(RapidJSON
-          REQUIRED_VARS ZLIB_LIBRARY
-      )
-  endif(THIRDAI_COMPILE_ZLIB_FROM_SOURCE)
 
 
 else()
