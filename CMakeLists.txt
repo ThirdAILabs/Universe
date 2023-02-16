@@ -157,6 +157,7 @@ if(MSVC)
   if(THIRDAI_COMPILE_ZLIB_FROM_SOURCE)
       FetchContent_MakeAvailable(zlib deps/zlib)
       add_subdirectory(deps/zlib)
+      set(ZLIB_LIBRARY zlibstatic)
   endif(THIRDAI_COMPILE_ZLIB_FROM_SOURCE)
 
 
