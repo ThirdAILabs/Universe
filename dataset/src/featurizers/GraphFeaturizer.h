@@ -25,6 +25,9 @@ namespace thirdai::dataset {
  * If the number of neighbours for a node is less than the max neighbours(number
  * of neighbours we want to consider for token input) then we add remaining with
  * null node.
+ *
+ * Here node_id_map expects the node number starts from 1 because we insert a
+ * null node with number 0.
  */
 
 class GraphFeaturizer final : public Featurizer {
