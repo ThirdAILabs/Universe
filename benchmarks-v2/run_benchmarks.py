@@ -27,8 +27,8 @@ def get_mlflow_uri():
         return parsed_config["tracking"]["uri"]
 
 
-def send_slack_message(experiment_name):
-    df_md = extract_mlflow_data(experiment_name, markdown=True)
+def send_slack_message(mlflow_uri, experiment_name):
+    df_md = extract_mlflow_data(mlflow_uri=mlflow_uri, experiment_name=experiment_name, markdown=True)
     payload = {"text": f"*{experiment_name}* \n ```{df_md}```"}
     return requests.post(SLACK_WEBHOOK, json.dumps(payload))
 
@@ -83,6 +83,8 @@ def main():
     mlflow_uri = get_mlflow_uri()
     for config in configs:
         config_name = config.__name__
+        if config_name != "AmazonPolarityConfig":
+            continue
         run_name = f"{prefix}_{current_date}"
 
         command = (
@@ -105,7 +107,7 @@ def main():
         exit(exit_code)
 
     for config in configs:
-        send_slack_message(experiment_name=config.experiment_name)
+        send_slack_message(mlflow_uri=mlflow_uri, experiment_name=config.experiment_name)
 
 
 if __name__ == "__main__":

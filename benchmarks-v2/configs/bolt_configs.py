@@ -10,7 +10,16 @@ def load_svm_dataset(filename, batch_size):
     return data, labels
 
 
-# TODO(blaise): Add config for Movie Lens
+class MovieLensConfig(BoltBenchmarkConfig):
+    dataset_name = "movielens1m"
+    experiment_name = "Bolt_MovieLens1M"
+    reconstruct_hash_functions = 6400
+    rebuild_hash_tables = 128000
+    num_epochs = 5
+    learning_rate = 1e-04
+
+
+
 class Amazon670kConfig(BoltBenchmarkConfig):
     dataset_name = "amazon_670k"
     experiment_name = "Bolt_Amazon670k"
