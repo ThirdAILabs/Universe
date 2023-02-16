@@ -20,7 +20,6 @@ from utils import (
 
 
 def main():
-
     config, args = start_experiment(
         description="Creates, trains, and tests a bolt network on the specified config."
     )
@@ -151,7 +150,6 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
         eval_config.return_activations()
 
     for epoch_num in range(num_epochs):
-
         freeze_hash_table_if_needed(model, experiment_config, epoch_num)
         switch_to_sparse_inference_if_needed(eval_config, experiment_config, epoch_num)
 

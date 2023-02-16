@@ -9,6 +9,7 @@ from tokenizers import Tokenizer
 
 METADATA_DIM = 10
 
+
 # This function takes in the clinc data and converts it into the format expected
 # by the CSDisco classifier. This means it applies a bert tokenizer to the text,
 # and converts the resulting tokens into a CSR representation. The labels are one
@@ -64,7 +65,7 @@ def compute_bce_loss(scores, labels):
 
 
 def train_epoch(model, train_x, train_y, learning_rate=0.05):
-    for (x, y) in zip(train_x, train_y):
+    for x, y in zip(train_x, train_y):
         val_loss = model.validate(data=x, labels=y)
 
         scores = model.predict(data=x)
@@ -81,7 +82,7 @@ def train_epoch(model, train_x, train_y, learning_rate=0.05):
 def accuracy(model, test_x, test_y):
     correct = 0
     total = 0
-    for (x, y) in zip(test_x, test_y):
+    for x, y in zip(test_x, test_y):
         pred = model.predict(x)
         correct += np.sum(np.argmax(pred, axis=1) == np.argmax(y, axis=1))
         total += len(pred)
