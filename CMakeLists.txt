@@ -137,7 +137,7 @@ if(MSVC)
       FATAL_ERROR "For now, we only support building in release mode using MSVC"
     )
   endif()
-  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w")
+  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w /std:c++17")
 
   # We create an interface to plant compile flags and be cohesive with the rest
   # of the OpenMP::OpenMP_CXX linkages. This converts project wide compile flags
