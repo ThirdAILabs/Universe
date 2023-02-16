@@ -158,6 +158,12 @@ if(MSVC)
       FetchContent_MakeAvailable(zlib deps/zlib)
       add_subdirectory(deps/zlib)
       set(ZLIB_LIBRARY zlibstatic)
+      mark_as_advanced(ZLIB_LIBRARY)
+
+      include(FindPackageHandleStandardArgs)
+      find_package_handle_standard_args(RapidJSON
+          REQUIRED_VARS ZLIB_LIBRARY
+      )
   endif(THIRDAI_COMPILE_ZLIB_FROM_SOURCE)
 
 
