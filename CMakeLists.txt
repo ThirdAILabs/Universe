@@ -131,20 +131,6 @@ set(JSON_BuildTests
     CACHE INTERNAL "")
 add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 
-include(FetchContent)
-
-FetchContent_Declare(
-  zlib
-  GIT_REPOSITORY https://github.com/madler/zlib.git
-  GIT_TAG        04f42ceca40f73e2978b50e93806c2a18c1281fc # v1.2.13 
-)
-
-if(THIRDAI_COMPILE_ZLIB_FROM_SOURCE)
-  FetchContent_MakeAvailable(zlib)
-  set(ZLIB_LIBRARY zlibstatic)
-  mark_as_advanced(ZLIB_LIBRARY)
-endif(THIRDAI_COMPILE_ZLIB_FROM_SOURCE)
-
 if(MSVC)
   if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     message(
@@ -160,9 +146,6 @@ if(MSVC)
   add_library(_thirdai_windows_llvm_openmp INTERFACE)
   target_compile_options(_thirdai_windows_llvm_openmp INTERFACE "/openmp:llvm")
   add_library(OpenMP::OpenMP_CXX ALIAS _thirdai_windows_llvm_openmp)
-
-
-
 else()
 
   find_package(OpenMP)
@@ -426,12 +409,6 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
                                        OpenSSL::SSL)
 endif()
-
-if(MSVC)
-    if(THIRDAI_COMPILE_ZLIB_FROM_SOURCE)
-       target_link_libraries(thirdai PUBLIC zlibstatic)
-    endif(THIRDAI_COMPILE_ZLIB_FROM_SOURCE)
-endif(MSVC)
 
 target_link_libraries(thirdai PUBLIC nlohmann_json::nlohmann_json)
 

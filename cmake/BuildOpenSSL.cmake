@@ -99,11 +99,7 @@ else()
         ./Configure ${CONFIGURE_OPENSSL_PARAMS} ${OPENSSL_CROSS_COMPILE_TARGET}
         ${CONFIGURE_OPENSSL_MODULES} --prefix=/usr/local/)
     set(COMMAND_TEST "true")
-  elseif(OPENSSL_COMPILE_WINDOWS)
-    message(STATUS "Compiling OpenSSL for Windows")
-    set(COMMAND_CONFIGURE
-        perl Configure ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
-    set(COMMAND_TEST "true")
+
   else() # detect host system automatically
     set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS}
                           ${CONFIGURE_OPENSSL_MODULES})
