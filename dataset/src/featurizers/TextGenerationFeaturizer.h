@@ -36,7 +36,7 @@ class TextGenerationFeaturizer final : public Featurizer {
 
   void processHeader(const std::string& header) final { (void)header; }
 
-  size_t getNumDatasets() final { return 2; }
+  size_t getNumDatasets() final { return 3; }
 
   std::vector<uint32_t> getDimensions() final {
     return {std::numeric_limits<uint32_t>::max(), _vocab_size, _vocab_size};
