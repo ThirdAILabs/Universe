@@ -138,8 +138,9 @@ if(MSVC)
       FATAL_ERROR "For now, we only support building in release mode using MSVC"
     )
   endif()
-  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w /std:c++17")
-  set(VCPKG_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w /std:c++17")
+  # Read this for /permissive- https://stackoverflow.com/a/24414279/4565794
+  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w /std:c++17 /permissive-")
+  set(VCPKG_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w /std:c++17 /permissive-")
   message(STATUS "Setting CXX_FLAGS")
   message(STATUS "    ${CMAKE_CXX_FLAGS}")
   message(STATUS "    ${VCPKG_CXX_FLAGS}")
