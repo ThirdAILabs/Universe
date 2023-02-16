@@ -2,6 +2,7 @@
 
 #include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/featurization/tabular/TabularDatasetFactory.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <pybind11/pybind11.h>
@@ -102,32 +103,9 @@ class UDTBackend {
     throw notSupported("class_name");
   }
 
-  virtual void updateTemporalTrackers(const MapInput& sample) {
-    (void)sample;
-    throw notSupported("index");
-  }
-
-  virtual void updateTemporalTrackersBatch(const MapInputBatch& samples) {
-    (void)samples;
-    throw notSupported("index_batch");
-  }
-
-  virtual void resetTemporalTrackers() {
-    throw notSupported("reset_temporal_trackers");
-  }
-
-  virtual void updateMetadata(const std::string& column,
-                              const MapInput& sample) {
-    (void)column;
-    (void)sample;
-    throw notSupported("index_metadata");
-  }
-
-  virtual void updateMetadataBatch(const std::string& column,
-                                   const MapInputBatch& samples) {
-    (void)column;
-    (void)samples;
-    throw notSupported("index_metadata_batch");
+  virtual data::tabular::TabularDatasetFactoryPtr tabularDatasetFactory()
+      const {
+    return nullptr;
   }
 
  private:

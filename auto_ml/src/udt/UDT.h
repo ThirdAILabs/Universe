@@ -67,22 +67,34 @@ class UDT {
   }
 
   void updateTemporalTrackers(const MapInput& sample) {
-    _backend->updateTemporalTrackers(sample);
+    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
+      tabular_factory->updateTemporalTrackers(sample);
+    }
   }
 
   void updateTemporalTrackersBatch(const MapInputBatch& samples) {
-    _backend->updateTemporalTrackersBatch(samples);
+    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
+      tabular_factory->updateTemporalTrackersBatch(samples);
+    }
   }
 
-  void resetTemporalTrackers() { _backend->resetTemporalTrackers(); }
+  void resetTemporalTrackers() {
+    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
+      tabular_factory->resetTemporalTrackers();
+    }
+  }
 
   void updateMetadata(const std::string& column, const MapInput& sample) {
-    _backend->updateMetadata(column, sample);
+    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
+      tabular_factory->updateMetadata(column, sample);
+    }
   }
 
   void updateMetadataBatch(const std::string& column,
                            const MapInputBatch& samples) {
-    _backend->updateMetadataBatch(column, samples);
+    if (auto tabular_factory = _backend->tabularDatasetFactory()) {
+      tabular_factory->updateMetadataBatch(column, samples);
+    }
   }
 
  private:

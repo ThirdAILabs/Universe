@@ -384,6 +384,8 @@ set(THIRDAI_SOURCES
     auto_ml/src/dataset_factories/udt/DataTypes.cc
     auto_ml/src/dataset_factories/udt/FeatureComposer.cc
     auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
+    auto_ml/src/featurization/tabular/TabularBlockComposer.cc
+    auto_ml/src/featurization/tabular/TabularDatasetFactory.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartDataSource.cc

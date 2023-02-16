@@ -55,15 +55,15 @@ struct UDTConfig {
   UDTConfig(ColumnDataTypes data_types,
             UserProvidedTemporalRelationships temporal_tracking_relationships,
             std::string target, std::optional<uint32_t> n_target_classes,
-            bool integer_target = false, std::string time_granularity = "d",
-            uint32_t lookahead = 0, char delimiter = ',')
+            bool integer_target = false,
+            const std::string& time_granularity = "d", uint32_t lookahead = 0,
+            char delimiter = ',')
       : data_types(std::move(data_types)),
         provided_relationships(std::move(temporal_tracking_relationships)),
         target(std::move(target)),
         n_target_classes(n_target_classes),
         integer_target(integer_target),
-        time_granularity(
-            dataset::stringToGranularity(std::move(time_granularity))),
+        time_granularity(dataset::stringToGranularity(time_granularity)),
         lookahead(lookahead),
         delimiter(delimiter) {}
 
