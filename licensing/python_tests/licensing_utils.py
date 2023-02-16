@@ -1,5 +1,4 @@
 def this_should_require_a_license_bolt():
-
     from thirdai import bolt
 
     bolt.UniversalDeepTransformer(

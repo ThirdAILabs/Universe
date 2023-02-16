@@ -12,7 +12,6 @@ N_CLASSES = 10
 def train_model_with_scheduler(
     epochs, base_learning_rate, lr_schedule, lambda_schedule, custom_scheduler=False
 ):
-
     train_data, train_labels = gen_numpy_training_data(
         n_classes=N_CLASSES, n_samples=50, noise_std=0.3
     )
@@ -46,7 +45,6 @@ def train_model_with_scheduler(
 
 @pytest.mark.unit
 def test_multiplicative_lr_scheduler():
-
     lr_schedule = bolt.callbacks.MultiplicativeLR(gamma=0.5)
     learning_rate_scheduler = train_model_with_scheduler(
         base_learning_rate=0.01,
