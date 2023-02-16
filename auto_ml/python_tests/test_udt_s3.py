@@ -9,6 +9,7 @@ from thirdai import bolt
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
+
 # These fixtures allow us to take in a parameter to our tests called "s3" that
 # ensures all s3 calls will not call "actual" s3
 # See http://docs.getmoto.org/en/latest/docs/getting_started.html#example-on-usage

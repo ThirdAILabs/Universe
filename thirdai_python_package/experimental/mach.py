@@ -19,7 +19,6 @@ class Mach:
         use_softmax,
         seed_for_group_assigments=0,
     ):
-
         self.num_classifiers = num_classifiers
         self.max_label = max_label
         self.input_dim = input_dim
@@ -60,7 +59,6 @@ class Mach:
             classifiers.freeze_hash_tables()
 
     def save(self, folder):
-
         if not os.path.exists(folder):
             os.mkdir(folder)
 
@@ -88,7 +86,6 @@ class Mach:
             )
 
     def load(folder):
-
         if not os.path.exists(folder):
             raise FileNotFoundError(f"The passed in path {folder} does not exist")
 
@@ -142,7 +139,6 @@ class Mach:
 
         for epoch in range(num_epochs):
             for classifier_id, classifier in enumerate(self.classifiers):
-
                 mapped_train_y = self.map_labels_to_groups(train_y_np, classifier_id)
                 mapped_train_y = dataset.from_numpy(mapped_train_y, batch_size)
 
@@ -207,7 +203,6 @@ class Mach:
 
         scores = np.zeros(shape=(num_query_results, self.max_label))
         for vec_id in range(num_query_results):
-
             label_set = set()
             for classifier_id in range(self.num_classifiers):
                 for group in top_m_groups[classifier_id, vec_id]:

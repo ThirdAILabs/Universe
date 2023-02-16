@@ -95,6 +95,6 @@ def test_short_file_with_missing_vals_throws_error():
     for filename in FILENAMES:
         with pytest.raises(
             ValueError,
-            match=".*has less than less than 2 non-missing values so we cannot do type inference",
+            match=".*has less than 2 non-missing values so we cannot do type inference",
         ):
             semantic_type_inference(filename)
