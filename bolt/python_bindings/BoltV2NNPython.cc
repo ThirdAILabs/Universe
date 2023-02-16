@@ -89,9 +89,13 @@ void createBoltV2NNSubmodule(py::module_& module) {
                              [](const ops::FullyConnected& op) {
                                return toNumpy(op.weightsPtr(), op.dimensions());
                              })
-      .def_property_readonly("biases", [](const ops::FullyConnected& op) {
-        return toNumpy(op.biasesPtr(), {op.dimensions()[0]});
-      });
+      .def_property_readonly("biases",
+                             [](const ops::FullyConnected& op) {
+                               return toNumpy(op.biasesPtr(),
+                                              {op.dimensions()[0]});
+                             })
+      .def("set_eigen_forward", &ops::FullyConnected::set_eigen_forward,
+           py::arg("value"));
 
   nn.def("Input", &ops::Input::make, py::arg("dim"));
 

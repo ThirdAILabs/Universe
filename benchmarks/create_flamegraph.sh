@@ -48,9 +48,9 @@ esac
 
 
 perf record -F 99 --call-graph dwarf python3 $SCRIPT
-perf script > out.perf
+perf script -f > out.perf
 
 $BASEDIR/../deps/flamegraph/stackcollapse-perf.pl out.perf | $BASEDIR/../deps/flamegraph/flamegraph.pl  > $2.svg
 
-rm out.perf
-rm perf.data
+# rm out.perf
+# rm perf.data

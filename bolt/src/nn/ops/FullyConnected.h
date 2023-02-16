@@ -69,6 +69,10 @@ class FullyConnected final
    */
   const float* biasesPtr() const;
 
+  void set_eigen_forward(bool value) {
+    _kernel->set_eigen_forward(value);
+  }
+
  private:
   FullyConnected(
       uint32_t dim, uint32_t input_dim, float sparsity,

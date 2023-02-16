@@ -16,9 +16,7 @@ inline RowMatrixXf eigenMult(const Eigen::Ref<const RowMatrixXf>& m1,
   return m1 * m2;
 }
 
-
-
-/** 
+/**
  * Applies a 2D convolution over a multichannel input image.
  *
  * The input parameter is expected to be a tensor with a rank of 3 or more
@@ -53,50 +51,63 @@ EIGEN_ALWAYS_INLINE std::conditional_t<
     Eigen::internal::traits<Input>::Layout == Eigen::ColMajor,
     Eigen::TensorReshapingOp<
         const Eigen::DSizes<typename Eigen::internal::traits<Input>::Index,
-                     Eigen::internal::traits<Input>::NumDimensions>,
+                            Eigen::internal::traits<Input>::NumDimensions>,
         const Eigen::TensorContractionOp<
-            const Eigen::array<Eigen::IndexPair<typename Eigen::internal::traits<Input>::Index>, 1>,
+            const Eigen::array<Eigen::IndexPair<typename Eigen::internal::
+                                                    traits<Input>::Index>,
+                               1>,
             const Eigen::TensorReshapingOp<
-                const Eigen::DSizes<typename Eigen::internal::traits<Input>::Index, 2>,
+                const Eigen::DSizes<
+                    typename Eigen::internal::traits<Input>::Index, 2>,
                 const Kernel>,
             const Eigen::TensorReshapingOp<
-                const Eigen::DSizes<typename Eigen::internal::traits<Input>::Index, 2>,
-                const Eigen::TensorImagePatchOp<Eigen::Dynamic, Eigen::Dynamic, const Input> >,
+                const Eigen::DSizes<
+                    typename Eigen::internal::traits<Input>::Index, 2>,
+                const Eigen::TensorImagePatchOp<Eigen::Dynamic, Eigen::Dynamic,
+                                                const Input> >,
             const OutputKernel> >,
     Eigen::TensorReshapingOp<
         const Eigen::DSizes<typename Eigen::internal::traits<Input>::Index,
-                     Eigen::internal::traits<Input>::NumDimensions>,
+                            Eigen::internal::traits<Input>::NumDimensions>,
         const Eigen::TensorContractionOp<
-            const Eigen::array<Eigen::IndexPair<typename Eigen::internal::traits<Input>::Index>, 1>,
+            const Eigen::array<Eigen::IndexPair<typename Eigen::internal::
+                                                    traits<Input>::Index>,
+                               1>,
             const Eigen::TensorReshapingOp<
-                const Eigen::DSizes<typename Eigen::internal::traits<Input>::Index, 2>,
-                const Eigen::TensorImagePatchOp<Eigen::Dynamic, Eigen::Dynamic, const Input> >,
+                const Eigen::DSizes<
+                    typename Eigen::internal::traits<Input>::Index, 2>,
+                const Eigen::TensorImagePatchOp<Eigen::Dynamic, Eigen::Dynamic,
+                                                const Input> >,
             const Eigen::TensorReshapingOp<
-                const Eigen::DSizes<typename Eigen::internal::traits<Input>::Index, 2>,
+                const Eigen::DSizes<
+                    typename Eigen::internal::traits<Input>::Index, 2>,
                 const Kernel>,
             const OutputKernel> > >
-SpatialConvolution(const Input& input, const Kernel& kernel,
-                   const Eigen::Index row_stride = 1, const Eigen::Index col_stride = 1,
-                   const Eigen::PaddingType padding_type = Eigen::PADDING_SAME,
-                   const Eigen::Index row_in_stride = 1, const Eigen::Index col_in_stride = 1,
-                   const OutputKernel& output_kernel = OutputKernel(),
-                   Eigen::Index padding_top = 0, Eigen::Index padding_bottom = 0,
-                   Eigen::Index padding_left = 0, Eigen::Index padding_right = 0) {
-       
+SpatialConvolution(
+    const Input& input, const Kernel& kernel, const Eigen::Index row_stride = 1,
+    const Eigen::Index col_stride = 1,
+    const Eigen::PaddingType padding_type = Eigen::PADDING_SAME,
+    const Eigen::Index row_in_stride = 1, const Eigen::Index col_in_stride = 1,
+    const OutputKernel& output_kernel = OutputKernel(),
+    Eigen::Index padding_top = 0, Eigen::Index padding_bottom = 0,
+    Eigen::Index padding_left = 0, Eigen::Index padding_right = 0) {
   typedef typename Eigen::internal::traits<Input>::Index TensorIndex;
   typedef typename Eigen::internal::traits<Input>::Scalar InputScalar;
-  Eigen::TensorRef<Eigen::Tensor<InputScalar, Eigen::internal::traits<Input>::NumDimensions,
-                   Eigen::internal::traits<Input>::Layout, TensorIndex> >
+  Eigen::TensorRef<
+      Eigen::Tensor<InputScalar, Eigen::internal::traits<Input>::NumDimensions,
+                    Eigen::internal::traits<Input>::Layout, TensorIndex> >
       in(input);
-  Eigen::TensorRef<Eigen::Tensor<typename Eigen::internal::traits<Kernel>::Scalar,
-                   Eigen::internal::traits<Kernel>::NumDimensions,
-                   Eigen::internal::traits<Kernel>::Layout, TensorIndex> >
+  Eigen::TensorRef<
+      Eigen::Tensor<typename Eigen::internal::traits<Kernel>::Scalar,
+                    Eigen::internal::traits<Kernel>::NumDimensions,
+                    Eigen::internal::traits<Kernel>::Layout, TensorIndex> >
       kern(kernel);
 
-  EIGEN_STATIC_ASSERT(
-      Eigen::internal::traits<Input>::Layout == Eigen::internal::traits<Kernel>::Layout,
-      YOU_MADE_A_PROGRAMMING_MISTAKE)
-  const bool isColMajor = (Eigen::internal::traits<Input>::Layout == Eigen::ColMajor);
+  EIGEN_STATIC_ASSERT(Eigen::internal::traits<Input>::Layout ==
+                          Eigen::internal::traits<Kernel>::Layout,
+                      YOU_MADE_A_PROGRAMMING_MISTAKE)
+  const bool isColMajor =
+      (Eigen::internal::traits<Input>::Layout == Eigen::ColMajor);
 
   const int NumDims = Eigen::internal::traits<Input>::NumDimensions;
 
@@ -147,7 +158,7 @@ SpatialConvolution(const Input& input, const Kernel& kernel,
       // Initialize unused variables to avoid a compiler warning
       out_height = 0;
       out_width = 0;
-      eigen_assert(false && "unexpected padding"); // NOLINT
+      eigen_assert(false && "unexpected padding");  // NOLINT
     }
   }
 
@@ -203,7 +214,8 @@ SpatialConvolution(const Input& input, const Kernel& kernel,
   }
   if (padding_explicit) {
     return Eigen::choose(
-        Eigen::Cond<Eigen::internal::traits<Input>::Layout == Eigen::ColMajor>(),
+        Eigen::Cond<Eigen::internal::traits<Input>::Layout ==
+                    Eigen::ColMajor>(),
         kernel.reshape(kernel_dims)
             .contract(input
                           .extract_image_patches(
@@ -227,33 +239,28 @@ SpatialConvolution(const Input& input, const Kernel& kernel,
             .reshape(pre_contract_dims)
             .contract(kernel.reshape(kernel_dims), contract_dims, output_kernel)
             .reshape(post_contract_dims));
-  }      
-  
+  }
+
   return Eigen::choose(
-        Eigen::Cond<Eigen::internal::traits<Input>::Layout == Eigen::ColMajor>(),
-        kernel.reshape(kernel_dims)
-            .contract(input
-                          .extract_image_patches(
-                              kernelRows, kernelCols, row_stride, col_stride,
-                              row_in_stride, col_in_stride, padding_type)
-                          .reshape(pre_contract_dims),
-                      contract_dims, output_kernel)
-            .reshape(post_contract_dims),
-        input
-            .extract_image_patches(kernelRows, kernelCols, row_stride,
-                                   col_stride, row_in_stride, col_in_stride,
-                                   padding_type)
-            .reshape(pre_contract_dims)
-            .contract(kernel.reshape(kernel_dims), contract_dims, output_kernel)
-            .reshape(post_contract_dims));
- 
+      Eigen::Cond<Eigen::internal::traits<Input>::Layout == Eigen::ColMajor>(),
+      kernel.reshape(kernel_dims)
+          .contract(input
+                        .extract_image_patches(
+                            kernelRows, kernelCols, row_stride, col_stride,
+                            row_in_stride, col_in_stride, padding_type)
+                        .reshape(pre_contract_dims),
+                    contract_dims, output_kernel)
+          .reshape(post_contract_dims),
+      input
+          .extract_image_patches(kernelRows, kernelCols, row_stride, col_stride,
+                                 row_in_stride, col_in_stride, padding_type)
+          .reshape(pre_contract_dims)
+          .contract(kernel.reshape(kernel_dims), contract_dims, output_kernel)
+          .reshape(post_contract_dims));
 }
-
-
 
 using ColTensor3DFloat = Eigen::Tensor<float, 3, Eigen::ColMajor>;
 using ColTensor4DFloat = Eigen::Tensor<float, 4, Eigen::ColMajor>;
-
 
 // This method uses Eigen to extract the patches and then contraction
 inline ColTensor3DFloat eigenConv(const ColTensor3DFloat& input,

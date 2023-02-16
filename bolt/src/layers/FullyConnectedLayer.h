@@ -134,6 +134,8 @@ class FullyConnectedLayer final {
 
   ~FullyConnectedLayer() = default;
 
+  void set_eigen_forward(bool value) { _use_eigen_forward = value; }
+
  private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
@@ -195,6 +197,8 @@ class FullyConnectedLayer final {
   // _is_active is used if _this_is_dense == false. It tracks the neurons in the
   // current layer which are active at some point in the batch.
   std::vector<bool> _is_active;
+
+  bool _use_eigen_forward = false;
 
   // -------------------------------------------------------------------------
 

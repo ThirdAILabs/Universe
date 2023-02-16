@@ -56,7 +56,12 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
     if (input.isDense()) {
       eigenDenseDenseForward(input, output);
     } else {
-      eigenSparseDenseForward(input, output);
+      if (_use_eigen_forward) {
+        eigenSparseDenseForward(input, output);
+      } else {
+        forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/false>(input, output,
+                                                          labels);
+      }
     }
   } else {
     if (input.isDense()) {
@@ -229,11 +234,11 @@ void FullyConnectedLayer::eigenSparseDenseForward(const BoltVector& input,
   for (size_t i = 0; i < input.len; i++) {
     eigen_input.coeffRef(input.active_neurons[i]) = input.activations[i];
   }
-  // std::memcpy(eigen_input.innerIndexPtr(), input.active_neurons, input.len * 4);
-  // std::memcpy(eigen_input.valuePtr(), input.activations, input.len * 4);
+  // std::memcpy(eigen_input.innerIndexPtr(), input.active_neurons, input.len *
+  // 4); std::memcpy(eigen_input.valuePtr(), input.activations, input.len * 4);
 
   // Eigen::Map<Eigen::SparseMatrix<float>> eigen_input(
-  //     /* rows = */ input.len, /* cols = */ 1, /* nnz = */ input.len, 
+  //     /* rows = */ input.len, /* cols = */ 1, /* nnz = */ input.len,
   //     /* outerIndexPtr = */ reinterpret_cast<int*>(input.active_neurons),
   //     /* innerIndexPtr = */ reinterpret_cast<int*>(input.active_neurons),
   //     /* valuePtr = */ input.activations,
