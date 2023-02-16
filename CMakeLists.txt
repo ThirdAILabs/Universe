@@ -131,6 +131,7 @@ set(JSON_BuildTests
     CACHE INTERNAL "")
 add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 
+include(FetchContent)
 FetchContent_Declare(
   zlib
   GIT_REPOSITORY https://github.com/madler/zlib.git
