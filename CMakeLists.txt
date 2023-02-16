@@ -132,6 +132,7 @@ set(JSON_BuildTests
 add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 
 include(FetchContent)
+
 FetchContent_Declare(
   zlib
   GIT_REPOSITORY https://github.com/madler/zlib.git
@@ -155,7 +156,7 @@ if(MSVC)
   add_library(OpenMP::OpenMP_CXX ALIAS _thirdai_windows_llvm_openmp)
 
   if(THIRDAI_COMPILE_ZLIB_FROM_SOURCE)
-      FetchContent_MakeAvailable(zlib deps/zlib)
+      FetchContent_MakeAvailable(zlib)
       add_subdirectory(deps/zlib)
       set(ZLIB_LIBRARY zlibstatic)
       mark_as_advanced(ZLIB_LIBRARY)
