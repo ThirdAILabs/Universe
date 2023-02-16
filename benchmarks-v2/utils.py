@@ -5,7 +5,6 @@ from thirdai.experimental import MlflowCallback
 
 
 def get_mlflow_callback(run_name, mlflow_uri, experiment_name, dataset_name):
-
     mlflow_callback = MlflowCallback(
         tracking_uri=mlflow_uri,
         experiment_name=experiment_name,
@@ -32,7 +31,6 @@ def define_fully_connected_bolt_model(config):
 
 
 def define_dlrm_model(config):
-
     input_node = bolt.nn.Input(dim=config.input_dim)
     token_input = bolt.nn.TokenInput(**config.token_input)
 
@@ -57,7 +55,6 @@ def define_dlrm_model(config):
 
 
 def get_train_and_eval_configs(benchmark_config, callbacks=None):
-
     learning_rate = benchmark_config.learning_rate
     metrics = [benchmark_config.metric_type]
 

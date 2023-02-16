@@ -48,8 +48,7 @@ if __name__ == "__main__":
             lambda runner_class: runner_class.name == args.runner.lower(),
             Runner.__subclasses__(),
         )
-    )
-    runner = runner[0]
+    )[0]
     runner.run_benchmark(
         config=config, mlflow_uri=args.mlflow_uri, run_name=args.run_name
     )
