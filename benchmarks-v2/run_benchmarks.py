@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
-import os
 import argparse
-import subprocess
 import json
-import requests
+import os
+import subprocess
 from datetime import date
 from pathlib import Path
+
+import requests
 from dotenv import load_dotenv
 from mlflow_extraction import extract_mlflow_data
-
 
 # This webhook is associated with the `MLFLOW Benchmarks` slack app. Currently, it posts
 # messages to the #weekly_udt_benchmarks channel.
@@ -39,12 +39,15 @@ def parse_args():
         default=False,
         help="Label a benchmarking job as a sanity test instead of an official run.",
     )
+
     parser.add_argument(
-        "--engine",
-        default="bolt",
+        "--runner",
         required=True,
-        tehelp="Specify the engine(Bolt or UDT) to benchmark.",
+        help="Specify the runner type for the current benchmark. "
+        "For Bolt options include 'fully_connected' and 'dlrm'. "
+        "For UDT, the runner should also be 'udt'",
     )
+
     return parser.parse_args()
 
 
@@ -54,17 +57,21 @@ def main():
 
     prefix = "test_run" if args.test_run else "benchmark_run"
 
-    engine = args.engine
-    if engine.lower() == "bolt":
+    runner = args.runner
+
+    if runner.lower() == "bolt":
         from configs.bolt_configs import BoltBenchmarkConfig, DLRMConfig
 
         configs = BoltBenchmarkConfig.__subclasses__()
         configs.extend(DLRMConfig.__subclasses__())
 
-    elif engine.lower() == "udt":
+    elif runner.lower() == "udt":
         from configs.udt_configs import UDTBenchmarkConfig
 
         configs = UDTBenchmarkConfig.__subclasses__()
+
+    else:
+        raise ValueError(f"Invalid benchmark runner: {runner}")
 
     exit_code = 0
     mlflow_uri = get_mlflow_uri()
@@ -73,8 +80,11 @@ def main():
         run_name = f"{prefix}_{current_date}"
 
         command = (
-            f"python3 benchmarks-v2/benchmark_{engine.lower()}.py --mlflow_uri={mlflow_uri} "
-            f"--run_name={run_name} --config_name={config_name}"
+            f"python3 benchmarks-v2/main.py "
+            f"--runner={runner}"
+            f"--mlflow_uri={mlflow_uri} "
+            f"--run_name={run_name} "
+            f"--config_name={config_name}"
         )
 
         if (

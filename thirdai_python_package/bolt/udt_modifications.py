@@ -40,7 +40,6 @@ def _create_data_source(path):
 # object and deletes the existing evaluate and train functions so that the user
 # interface is clean.
 def modify_udt_classifier():
-
     original_train_method = bolt.models.Pipeline.train_with_source
     original_eval_method = bolt.models.Pipeline.evaluate_with_source
     original_cold_start_method = bolt.models.UDTClassifier.cold_start
@@ -125,17 +124,6 @@ def modify_udt_classifier():
         validation: Optional[bolt.Validation] = None,
         callbacks: List[bolt.callbacks.Callback] = [],
     ):
-        # TODO(any): cold start uses new data pipeline, eventually we should
-        # move this to the old data pipeline
-
-        # We replace nans in the assumed string columns here because otherwise
-        # the pandas_to_columnmap function can't interpret the column
-        df = pd.read_csv(filename)
-        for col_name in strong_column_names + weak_column_names:
-            if col_name not in df.columns:
-                raise ValueError(f"Column {col_name} not found in dataset.")
-            df[col_name] = df[col_name].fillna("")
-
         train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
 
         if callbacks:
@@ -143,9 +131,11 @@ def modify_udt_classifier():
         if metrics:
             train_config.with_metrics(metrics)
 
+        data_source = _create_data_source(filename)
+
         original_cold_start_method(
             self,
-            thirdai.data.pandas_to_columnmap(df),
+            data_source,
             strong_column_names,
             weak_column_names,
             train_config,

@@ -1,13 +1,16 @@
 import json
 
 import numpy as np
-from configs import UDTBenchmarkConfig
-from thirdai import bolt, deployment
+from configs.base_configs import UDTBenchmarkConfig
+from thirdai import bolt
 
 
 class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     train_file = "/share/data/udt_datasets/yelp_polarity/train.csv"
     test_file = "/share/data/udt_datasets/yelp_polarity/test.csv"
+    num_epochs = 5
+    n_target_classes = 2
+    learning_rate = 1e-02
 
     data_types = {
         "text": bolt.types.text(),
@@ -23,6 +26,9 @@ class YelpPolarityUDTConfig(UDTBenchmarkConfig):
 class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     experiment_name = "AmazonPolarityUDT"
     dataset_name = "amazon_polarity"
+    num_epochs = 5
+    n_target_classes = 2
+    learning_rate = 1e-02
     train_file = (
         "/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_train.csv"
     )
@@ -44,6 +50,8 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
     train_file = "/share/data/udt_datasets/criteo/train_udt.csv"
     test_file = "/share/data/udt_datasets/criteo/test_udt.csv"
     num_epochs = 1
+    n_target_classes = 2
+    learning_rate = 1e-02
 
     def get_data_types():
         data_types = {}
@@ -68,6 +76,8 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
         data_types["label"] = bolt.types.categorical()
         return data_types
 
+    data_types = get_data_types()
+
 
 class WayfairUDTConfig(UDTBenchmarkConfig):
     experiment_name = "WayfairUDT"
@@ -75,6 +85,8 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     train_file = "/share/data/wayfair/train_raw_queries.txt"
     test_file = "/share/data/wayfair/dev_raw_queries.txt"
     model_config_path = "wayfair.config"
+    num_epochs = 5
+    n_target_classes = 2
 
     data_types = {
         "labels": bolt.types.categorical(delimiter=","),
