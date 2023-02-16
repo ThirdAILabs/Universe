@@ -13,7 +13,9 @@ namespace thirdai::bolt::train {
 class TrainState {
  public:
   explicit TrainState(float learning_rate)
-      : _learning_rate(learning_rate), _stop_training(false) {}
+      : _learning_rate(learning_rate),
+        _stop_training(false),
+        _steps_since_validation(0) {}
 
   static std::shared_ptr<TrainState> make(float learning_rate) {
     return std::make_shared<TrainState>(learning_rate);
@@ -42,9 +44,16 @@ class TrainState {
    */
   void stopTraining() { _stop_training = true; }
 
+  void incrementStepsSinceValidation() { _steps_since_validation++; }
+
+  uint32_t stepsSinceValidation() const { return _steps_since_validation; }
+
+  void resetStepsSinceValidation() { _steps_since_validation = 0; }
+
  private:
   float _learning_rate;
   bool _stop_training;
+  uint32_t _steps_since_validation;
 };
 
 using TrainStatePtr = std::shared_ptr<TrainState>;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <bolt/src/nn/tensor/Tensor.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/VectorBuffer.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -38,6 +40,12 @@ class DatasetLoader final {
                                                  bool verbose = true);
 
   std::optional<std::pair<InputDatasets, LabelDataset>> loadSome(
+      size_t batch_size, size_t num_batches, bool verbose = true);
+
+  bolt::train::LabeledDataset loadAllTensor(size_t batch_size,
+                                            bool verbose = true);
+
+  std::optional<bolt::train::LabeledDataset> loadSomeTensor(
       size_t batch_size, size_t num_batches, bool verbose = true);
 
   void restart();

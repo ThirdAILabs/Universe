@@ -4,7 +4,9 @@
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
+#include <bolt/src/train/trainer/TrainState.h>
 #include <dataset/src/Datasets.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <memory>
 #include <unordered_map>
 
@@ -40,21 +42,44 @@ class Trainer {
    *        at the end of each epoch.
    *    - callbacks: The callbacks to use during training.
    */
-  metrics::History train(const LabeledDataset& train_data, uint32_t epochs,
-                         float learning_rate,
-                         const metrics::InputMetrics& train_metrics,
-                         const std::optional<LabeledDataset>& validation_data,
-                         const metrics::InputMetrics& validation_metrics,
-                         std::optional<uint32_t> steps_per_validation,
-                         const std::vector<callbacks::CallbackPtr>& callbacks);
+  metrics::History train(
+      const LabeledDataset& train_data, uint32_t epochs, float learning_rate,
+      const metrics::InputMetrics& train_metrics_in,
+      const std::optional<LabeledDataset>& validation_data,
+      const metrics::InputMetrics& validation_metrics_in,
+      std::optional<uint32_t> steps_per_validation,
+      const std::vector<callbacks::CallbackPtr>& callbacks_in);
+
+  metrics::History trainStream(
+      const dataset::DatasetLoaderPtr& train_data, size_t batch_size,
+      std::optional<size_t> max_in_memory_batches, uint32_t epochs,
+      float learning_rate, const metrics::InputMetrics& train_metrics_in,
+      const std::optional<LabeledDataset>& validation_data,
+      const metrics::InputMetrics& validation_metrics_in,
+      std::optional<uint32_t> steps_per_validation,
+      const std::vector<callbacks::CallbackPtr>& callbacks_in);
 
  private:
+  void trainEpoch(const LabeledDataset& train_data,
+                  const TrainStatePtr& train_state,
+                  metrics::MetricCollection& train_metrics,
+                  const std::optional<LabeledDataset>& validation_data,
+                  metrics::MetricCollection& validation_metrics,
+                  std::optional<uint32_t> steps_per_validation,
+                  callbacks::CallbackList& callbacks);
+
   /**
    * Performs evaluation on the model using the given validation data and
    * metrics.
    */
   void validate(const LabeledDataset& validation_data,
-                const metrics::InputMetrics& validation_metrics);
+                metrics::MetricCollection& validation_metrics);
+
+  void validate(const LabeledDataset& validation_data,
+                const metrics::InputMetrics& validation_metrics) {
+    metrics::MetricCollection validation_metrics_collection(validation_metrics);
+    validate(validation_data, validation_metrics_collection);
+  }
 
   static void verifyNumBatchesMatch(const LabeledDataset& data);
 

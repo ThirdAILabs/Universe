@@ -13,8 +13,8 @@ inline train::LabeledDataset getLabeledDataset(uint32_t n_classes,
           /* n_classes= */ n_classes, /* n_batches= */ n_batches,
           /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
-  return {train::convertDataset(std::move(*data), n_classes),
-          train::convertDataset(std::move(*labels), n_classes)};
+  return {train::convertDataset(std::move(data), n_classes),
+          train::convertDataset(std::move(labels), n_classes)};
 }
 
 }  // namespace thirdai::bolt::nn::tests

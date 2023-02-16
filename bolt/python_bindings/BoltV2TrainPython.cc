@@ -19,8 +19,8 @@ void createBoltV2TrainSubmodule(py::module_& module) {
   // this.
   train.def(
       "convert_dataset",
-      [](const dataset::BoltDatasetPtr& dataset, uint32_t dim) {
-        return convertDataset(std::move(*dataset), dim);
+      [](dataset::BoltDatasetPtr& dataset, uint32_t dim) {
+        return convertDataset(std::move(dataset), dim);
       },
       py::arg("dataset"), py::arg("dim"));
 

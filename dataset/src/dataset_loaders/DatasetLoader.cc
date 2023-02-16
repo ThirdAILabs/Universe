@@ -1,4 +1,5 @@
 #include "DatasetLoader.h"
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
@@ -18,7 +19,7 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
       _buffer_size(shuffle_config.min_buffer_size),
       _buffer(/* should_shuffle = */ _shuffle,
               /* shuffle_seed = */ shuffle_config.seed,
-              /* num_vector_streams = */ _featurizer->getNumDatasets()),
+              /* num_datasets = */ _featurizer->getNumDatasets()),
       _featurization_batch_size(internal_featurization_batch_size) {
   // Different formats of data may or may not contain headers. Thus we
   // delegate to the particular featurizer to determine if a header is
@@ -113,6 +114,36 @@ std::optional<std::pair<InputDatasets, LabelDataset>> DatasetLoader::loadSome(
               << std::endl;
   }
   return std::make_pair(data, labels);
+}
+
+bolt::train::LabeledDataset DatasetLoader::loadAllTensor(size_t batch_size,
+                                                         bool verbose) {
+  auto datasets =
+      loadSomeTensor(/* batch_size = */ batch_size,
+                     /* num_batches = */ std::numeric_limits<size_t>::max(),
+                     /* verbose = */ verbose);
+  if (!datasets) {
+    throw std::invalid_argument(
+        "Did not find any data to load from the data source.");
+  }
+  return datasets.value();
+}
+
+std::optional<bolt::train::LabeledDataset> DatasetLoader::loadSomeTensor(
+    size_t batch_size, size_t num_batches, bool verbose) {
+  auto batches = loadSome(batch_size, num_batches, verbose);
+
+  if (!batches) {
+    return std::nullopt;
+  }
+
+  auto dims = _featurizer->getDimensions();
+  uint32_t label_dim = dims.back();
+  dims.pop_back();
+
+  return std::make_optional(std::make_pair(
+      bolt::train::convertDatasets(std::move(batches->first), dims),
+      bolt::train::convertDataset(std::move(batches->second), label_dim)));
 }
 
 void DatasetLoader::restart() {
