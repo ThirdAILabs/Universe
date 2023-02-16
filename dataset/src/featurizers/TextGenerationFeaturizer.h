@@ -39,7 +39,7 @@ class TextGenerationFeaturizer final : public Featurizer {
   size_t getNumDatasets() final { return 2; }
 
   std::vector<uint32_t> getDimensions() final {
-    return {std::numeric_limits<uint32_t>::max(), _vocab_size};
+    return {std::numeric_limits<uint32_t>::max(), _vocab_size, _vocab_size};
   }
 
   std::vector<BoltVector> featurizeInferenceSample(

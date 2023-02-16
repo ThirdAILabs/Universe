@@ -31,11 +31,14 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
     featurized_samples[i] = featurizeText(lines[i]);
   }
 
-  std::vector<std::vector<BoltVector>> data;
+  std::vector<std::vector<BoltVector>> data(3);
 
   for (auto& vectors : featurized_samples) {
-    data.insert(data.end(), std::make_move_iterator(vectors.begin()),
-                std::make_move_iterator(vectors.end()));
+    for (auto& sample : vectors) {
+      for (uint32_t i = 0; i < sample.size(); i++) {
+        data.at(i).push_back(std::move(sample[i]));
+      }
+    }
   }
 
   return data;
