@@ -55,7 +55,7 @@ def test_udt_cold_start_kaggle():
     assert final_metric.ending_train_metric > 0.5
 
 
-def setup_testing_file(missing_values):
+def setup_testing_file(missing_values, bad_csv_line):
     filename = "DUMMY_COLDSTART.csv"
     with open(filename, "w") as outfile:
         outfile.write("category,strong,weak1,weak2\n")
@@ -63,6 +63,9 @@ def setup_testing_file(missing_values):
 
         if missing_values:
             outfile.write("1,there will be no descriptions,,")
+
+        if bad_csv_line:
+            outfile.write("1,theres a new line,\n,")
 
     return filename
 
@@ -73,9 +76,10 @@ def run_coldstart(
     validation=None,
     callbacks=[],
     missing_values=False,
+    bad_csv_line=False,
     epochs=5,
 ):
-    filename = setup_testing_file(missing_values)
+    filename = setup_testing_file(missing_values, bad_csv_line)
 
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -152,3 +156,11 @@ def test_coldstart_empty_strong_or_weak():
 
 def test_coldstart_missing_values():
     run_coldstart(missing_values=True)
+
+
+def test_coldstart_bad_csv_line():
+    with pytest.raises(
+        ValueError,
+        match=r"Received a row with a different number of entries than in the header. Expected 4 entries but received 3 entries. Line: 1,theres a new line,",
+    ):
+        run_coldstart(bad_csv_line=True)
