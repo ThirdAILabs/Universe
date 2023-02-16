@@ -1,12 +1,16 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/dataset_factories/udt/DatasetFactoryUtils.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <stdexcept>
 
 namespace thirdai::automl::data {
+
+static constexpr const uint32_t DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE =
+    2048;
 
 UDTDatasetFactory::UDTDatasetFactory(
     const UDTConfigPtr& config, bool force_parallel,
@@ -138,17 +142,6 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   return preprocessedVectorsFromDataset(metadata_source, *key_vocab);
 }
 
-ColumnNumberMap UDTDatasetFactory::makeColumnNumberMapFromHeader(
-    dataset::DataSource& data_source, char delimiter) {
-  auto header = data_source.nextLine();
-  if (!header) {
-    throw std::invalid_argument(
-        "The dataset must have a header that contains column names.");
-  }
-
-  return {*header, delimiter};
-}
-
 std::vector<dataset::BlockPtr> UDTDatasetFactory::buildMetadataInputBlocks(
     const CategoricalMetadataConfig& metadata_config) const {
   UDTConfig feature_config(
@@ -172,7 +165,9 @@ UDTDatasetFactory::preprocessedVectorsFromDataset(
   // The batch size does not really matter here because we are storing these
   // vectors as metadata, not training on them. Thus, we choose the somewhat
   // arbitrary value 2048 since it is large enough to use all threads.
-  auto [datasets, ids] = dataset_loader.loadAll(/* batch_size = */ 2048);
+  auto [datasets, ids] =
+      dataset_loader.loadAll(/* batch_size = */
+                             DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
 
   if (datasets.size() != 1) {
     throw std::runtime_error(

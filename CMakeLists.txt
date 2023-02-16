@@ -365,6 +365,7 @@ set(THIRDAI_SOURCES
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
+    dataset/src/blocks/TabularHashFeatures.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
     dataset/src/utils/TokenEncoding.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
@@ -383,6 +384,7 @@ set(THIRDAI_SOURCES
     new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
+    auto_ml/src/dataset_factories/udt/DatasetFactoryUtils.cc
     auto_ml/src/dataset_factories/udt/DataTypes.cc
     auto_ml/src/dataset_factories/udt/FeatureComposer.cc
     auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
@@ -430,7 +432,6 @@ pybind11_add_module(
   bolt/python_bindings/BoltV2NNPython.cc
   bolt/python_bindings/BoltV2TrainPython.cc
   dataset/python_bindings/DatasetPython.cc
-  dataset/src/blocks/TabularHashFeatures.cc
   new_dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc

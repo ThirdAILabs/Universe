@@ -1,15 +1,18 @@
 #include "GraphDatasetFactory.h"
+#include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/dataset_factories/udt/DatasetFactoryUtils.h>
+#include <dataset/src/blocks/TabularHashFeatures.h>
 
 namespace thirdai::automl::data {
 
-GraphDatasetFactory::GraphDatasetFactory(GraphConfigPtr conifg)
-    : _config(std::move(conifg)) {
+GraphDatasetFactory::GraphDatasetFactory(GraphConfigPtr config)
+    : _config(std::move(config)) {
   auto data_source = dataset::FileDataSource::make(_config->_graph_file_name);
 
-  _column_number_map = UDTDatasetFactory::makeColumnNumberMapFromHeader(
-      *data_source, _config->_delimeter);
+  _column_number_map =
+      makeColumnNumberMapFromHeader(*data_source, _config->_delimeter);
 
-  auto rows = getRawData(*data_source);
+  auto rows = getCsvData(*data_source);
 
   _featurizer = prepareTheFeaturizer(_config, rows);
 }
@@ -23,7 +26,7 @@ dataset::GraphFeaturizerPtr GraphDatasetFactory::prepareTheFeaturizer(
 
   auto [adjacency_list, node_id_map] = getGraphStructureInfo(rows);
 
-  std::unordered_map<std::string, std::unordered_set<std::string>> neighbours =
+  Neighbours neighbours =
       findNeighboursForAllNodes(adjacency_list, config->_k_hop, node_id_map);
 
   if (config->_features_context) {
@@ -48,15 +51,22 @@ dataset::GraphFeaturizerPtr GraphDatasetFactory::prepareTheFeaturizer(
   // TODO(YASH): remove the hard code of 100000 in hash range.
   auto featurizer = dataset::GraphFeaturizer::make(
       std::move(input_blocks), {std::move(label_block)}, config->_source,
-      config->_max_neighbours, config->_delimeter, /*hash_range=*/100000);
-
-  featurizer->updateNeighbours(neighbours);
-
-  featurizer->updateNodeIdMap(node_id_map);
+      config->_max_neighbours, neighbours,
+      node_id_map.getColumnNameToColNumMap(/*start_col=*/1), config->_delimeter,
+      /*hash_range=*/100000);
 
   return featurizer;
 }
 
+// TODO(YASH): Try with assigning weights to the edges based on number of
+// matched values on relationship columns.
+
+/*
+ * This takes in the rows and set of relationship columns, if two nodes have
+ * same value on any relationship column then we make the edge.
+ *
+ * returns an adjacency list and node to id map.
+ **/
 std::pair<std::unordered_map<std::string, std::vector<std::string>>,
           ColumnNumberMap>
 GraphDatasetFactory::createGraph(
@@ -83,14 +93,12 @@ GraphDatasetFactory::createGraph(
   return {adjacency_list, ColumnNumberMap(nodes)};
 }
 
-std::unordered_map<std::string, std::unordered_set<std::string>>
-GraphDatasetFactory::findNeighboursForAllNodes(
+Neighbours GraphDatasetFactory::findNeighboursForAllNodes(
     const std::unordered_map<std::string, std::vector<std::string>>&
         adjacency_list,
     uint32_t k, const ColumnNumberMap& node_id_map) {
   uint32_t num_nodes = adjacency_list.size();
-  std::unordered_map<std::string, std::unordered_set<std::string>> neighbours(
-      num_nodes);
+  Neighbours neighbours(num_nodes);
   for (const auto& temp : adjacency_list) {
     std::unordered_set<std::string> neighbours_for_node;
     std::vector<bool> visited(num_nodes, false);
@@ -101,12 +109,16 @@ GraphDatasetFactory::findNeighboursForAllNodes(
   return neighbours;
 }
 
-std::vector<std::vector<std::string>> GraphDatasetFactory::processNumerical(
+// TODO(YASH): We have to support anytype of arithmetic operations on these
+// numerical columns.
+
+// Averages the numerical columns across its neighbours.
+std::vector<std::vector<std::string>>
+GraphDatasetFactory::processNumericalColumns(
     const std::vector<std::vector<std::string>>& rows,
     const std::vector<uint32_t>& numerical_columns,
-    const std::unordered_map<std::string, std::unordered_set<std::string>>&
-        neighbours,
-    uint32_t source_col_num, const ColumnNumberMap& node_id_map) {
+    const Neighbours& neighbours, uint32_t source_col_num,
+    const ColumnNumberMap& node_id_map) {
   std::vector<std::vector<std::string>> processed_numerical_columns(
       rows.size(), std::vector<std::string>(numerical_columns.size()));
   for (uint32_t i = 0; i < rows.size(); i++) {
@@ -160,12 +172,10 @@ GraphDatasetFactory::getGraphStructureInfo(
 dataset::CsvRolledBatch GraphDatasetFactory::getFinalProcessedData(
     const std::vector<std::vector<std::string>>& rows,
     const std::vector<uint32_t>& numerical_columns,
-    const ColumnNumberMap& node_id_map,
-    const std::unordered_map<std::string, std::unordered_set<std::string>>&
-        neighbours) {
+    const ColumnNumberMap& node_id_map, const Neighbours& neighbours) {
   uint32_t source_col_num = _column_number_map.at(_config->_source);
-  auto values = processNumerical(rows, numerical_columns, neighbours,
-                                 source_col_num, node_id_map);
+  auto values = processNumericalColumns(rows, numerical_columns, neighbours,
+                                        source_col_num, node_id_map);
 
   auto copied_rows = rows;
 
@@ -179,14 +189,10 @@ dataset::CsvRolledBatch GraphDatasetFactory::getFinalProcessedData(
   return input;
 }
 
-std::vector<std::vector<std::string>> GraphDatasetFactory::getRawData(
+std::vector<std::vector<std::string>> GraphDatasetFactory::getCsvData(
     dataset::DataSource& data_loader) {
-  std::vector<std::string> full_data;
-
-  while (auto data =
-             data_loader.nextBatch(DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE)) {
-    full_data.insert(full_data.end(), data->begin(), data->end());
-  }
+  std::vector<std::string> full_data =
+      *data_loader.nextBatch(std::numeric_limits<uint32_t>::max());
 
   std::vector<std::vector<std::string>> rows(full_data.size());
 
@@ -202,9 +208,7 @@ std::vector<std::vector<std::string>> GraphDatasetFactory::getRawData(
 dataset::PreprocessedVectorsPtr
 GraphDatasetFactory::makeNumericalProcessedVectors(
     const std::vector<std::vector<std::string>>& rows,
-    const ColumnNumberMap& node_id_map,
-    const std::unordered_map<std::string, std::unordered_set<std::string>>&
-        neighbours) {
+    const ColumnNumberMap& node_id_map, const Neighbours& neighbours) {
   std::vector<uint32_t> numerical_columns;
   std::vector<dataset::BlockPtr> input_blocks;
   uint32_t original_num_cols = _column_number_map.numCols();
@@ -284,6 +288,7 @@ GraphDatasetFactory::makeFeatureProcessedVectors(
   auto label_block = dataset::StringLookupCategoricalBlock::make(
       _column_number_map.at(_config->_source), key_vocab);
 
+  // TODO(YASH): Configure the hash range from user provided options.
   auto processor = dataset::TabularFeaturizer::make(
       /* input_blocks= */ std::move(input_blocks),
       /* label_blocks= */ {std::move(label_block)},
@@ -294,6 +299,7 @@ GraphDatasetFactory::makeFeatureProcessedVectors(
   return makePreprocessedVectors(processor, *key_vocab, final_data);
 }
 
+// TODO(YASH): Autotune or make user provided options for the hardcoded ones.
 std::vector<dataset::BlockPtr> GraphDatasetFactory::buildInputBlocks(
     const GraphConfigPtr& config) {
   UDTConfig feature_config(
@@ -332,6 +338,8 @@ void GraphDatasetFactory::findAllNeighboursForNode(  // NOLINT
   }
 }
 
+// TODO(YASH): When we have more data, preprocess them in batches rather than in
+// a single batch.
 dataset::PreprocessedVectorsPtr GraphDatasetFactory::makePreprocessedVectors(
     const dataset::TabularFeaturizerPtr& processor,
     dataset::ThreadSafeVocabulary& key_vocab, dataset::CsvRolledBatch rows) {

@@ -2,6 +2,7 @@
 
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/FeatureComposer.h>
@@ -26,12 +27,12 @@
 #include <utility>
 namespace thirdai::automl::data {
 
-class GraphDatasetFactory : public DatasetLoaderFactory {
-  static constexpr const uint32_t DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE =
-      2048;
+using dataset::ColumnNumberMap;
+using dataset::Neighbours;
 
+class GraphDatasetFactory : public DatasetLoaderFactory {
  public:
-  explicit GraphDatasetFactory(GraphConfigPtr conifg);
+  explicit GraphDatasetFactory(GraphConfigPtr config);
 
   dataset::GraphFeaturizerPtr prepareTheFeaturizer(
       const GraphConfigPtr& config,
@@ -62,7 +63,13 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
 
   uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
     if (std::holds_alternative<uint32_t>(label)) {
-      throw std::invalid_argument("Received an integer label");
+      if (!_config->_integer_target) {
+        throw std::invalid_argument(
+            "Received an integer but integer_target is set to False (it is "
+            "False by default). Target must be passed "
+            "in as a string.");
+      }
+      return std::get<uint32_t>(label);
     }
     const std::string& label_str = std::get<std::string>(label);
     return _target_vocab->getUid(label_str);
@@ -85,8 +92,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
               const std::vector<uint32_t>& relationship_col_nums,
               uint32_t source_col_num);
 
-  static std::unordered_map<std::string, std::unordered_set<std::string>>
-  findNeighboursForAllNodes(
+  static Neighbours findNeighboursForAllNodes(
       const std::unordered_map<std::string, std::vector<std::string>>&
           adjacency_list,
       uint32_t k, const ColumnNumberMap& node_id_map);
@@ -96,12 +102,11 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       const std::vector<std::string>& columns,
       const dataset::ColumnNumberMap& column_number_map);
 
-  static std::vector<std::vector<std::string>> processNumerical(
+  static std::vector<std::vector<std::string>> processNumericalColumns(
       const std::vector<std::vector<std::string>>& rows,
       const std::vector<uint32_t>& numerical_columns,
-      const std::unordered_map<std::string, std::unordered_set<std::string>>&
-          neighbours,
-      uint32_t source_col_num, const ColumnNumberMap& node_id_map);
+      const Neighbours& neighbours, uint32_t source_col_num,
+      const ColumnNumberMap& node_id_map);
 
   std::pair<std::unordered_map<std::string, std::vector<std::string>>,
             ColumnNumberMap>
@@ -110,18 +115,14 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   dataset::CsvRolledBatch getFinalProcessedData(
       const std::vector<std::vector<std::string>>& rows,
       const std::vector<uint32_t>& numerical_columns,
-      const ColumnNumberMap& node_id_map,
-      const std::unordered_map<std::string, std::unordered_set<std::string>>&
-          neighbours);
+      const ColumnNumberMap& node_id_map, const Neighbours& neighbours);
 
-  std::vector<std::vector<std::string>> getRawData(
+  std::vector<std::vector<std::string>> getCsvData(
       dataset::DataSource& data_loader);
 
   dataset::PreprocessedVectorsPtr makeNumericalProcessedVectors(
       const std::vector<std::vector<std::string>>& rows,
-      const ColumnNumberMap& node_id_map,
-      const std::unordered_map<std::string, std::unordered_set<std::string>>&
-          neighbours);
+      const ColumnNumberMap& node_id_map, const Neighbours& neighbours);
 
   dataset::PreprocessedVectorsPtr makeFeatureProcessedVectors(
       const std::vector<std::vector<std::string>>& rows);
@@ -130,6 +131,14 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
       const GraphConfigPtr& config);
 
   dataset::BlockPtr getLabelBlock(const GraphConfigPtr& config) {
+    auto target_type = _config->_data_types.at(_config->_target);
+    auto target_config = asCategorical(target_type);
+    if (_config->_integer_target) {
+      return dataset::NumericalCategoricalBlock::make(
+          /* col= */ _config->_target,
+          /* n_classes= */ _config->_n_target_classes,
+          /* delimiter= */ target_config->delimiter);
+    }
     if (!_target_vocab) {
       _target_vocab = dataset::ThreadSafeVocabulary::make(
           /* vocab_size= */ config->_n_target_classes);
@@ -138,7 +147,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
                                                        _target_vocab);
   }
 
-  static void findAllNeighboursForNode(  // NOLINT
+  static void findAllNeighboursForNode(
       uint32_t k, const std::string& node_id, std::vector<bool>& visited,
       std::unordered_set<std::string>& neighbours,
       const std::unordered_map<std::string, std::vector<std::string>>&

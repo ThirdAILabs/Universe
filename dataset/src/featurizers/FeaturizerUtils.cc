@@ -3,9 +3,9 @@
 
 namespace thirdai::dataset {
 
-std::exception_ptr FeaturizerUtils::buildVector(
-    BoltVector& vector, BlockList& blocks, ColumnarInputSample& sample,
-    std::optional<uint32_t> hash_range) {
+std::exception_ptr buildVector(BoltVector& vector, BlockList& blocks,
+                               ColumnarInputSample& sample,
+                               std::optional<uint32_t> hash_range) {
   auto segmented_vector =
       makeSegmentedFeatureVector(blocks.areDense(), hash_range,
                                  /* store_segment_feature_map= */ false);
@@ -16,10 +16,9 @@ std::exception_ptr FeaturizerUtils::buildVector(
   return nullptr;
 }
 
-std::shared_ptr<SegmentedFeatureVector>
-FeaturizerUtils::makeSegmentedFeatureVector(bool blocks_dense,
-                                            std::optional<uint32_t> hash_range,
-                                            bool store_segment_feature_map) {
+std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
+    bool blocks_dense, std::optional<uint32_t> hash_range,
+    bool store_segment_feature_map) {
   if (hash_range) {
     return std::make_shared<HashedSegmentedFeatureVector>(
         *hash_range, store_segment_feature_map);

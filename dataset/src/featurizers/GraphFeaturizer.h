@@ -1,9 +1,12 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/Aliases.h>
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
+#include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <sys/types.h>
 #include <memory>
@@ -29,9 +32,13 @@ class GraphFeaturizer final : public Featurizer {
   GraphFeaturizer(std::vector<std::shared_ptr<Block>> input_blocks,
                   std::vector<std::shared_ptr<Block>> label_blocks,
                   ColumnIdentifier source_col, uint32_t max_neighbours,
+                  Neighbours neighbours,
+                  std::unordered_map<std::string, uint32_t> node_id_map,
                   char delimiter = ',',
                   std::optional<uint32_t> hash_range = std::nullopt)
-      : _input_blocks(std::move(input_blocks)),
+      : _neighbours(std::move(neighbours)),
+        _node_id_to_num_map(std::move(node_id_map)),
+        _input_blocks(std::move(input_blocks)),
         _label_blocks(std::move(label_blocks)),
         _source_col(std::move(source_col)),
         _max_neighbours(max_neighbours),
@@ -44,10 +51,13 @@ class GraphFeaturizer final : public Featurizer {
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks,
       ColumnIdentifier source_col, uint32_t max_neighbours,
+      Neighbours neighbours,
+      std::unordered_map<std::string, uint32_t> node_id_map,
       char delimiter = ',', std::optional<uint32_t> hash_range = std::nullopt) {
     return std::make_shared<GraphFeaturizer>(
         std::move(input_blocks), std::move(label_blocks), std::move(source_col),
-        max_neighbours, delimiter, hash_range);
+        max_neighbours, std::move(neighbours), std::move(node_id_map),
+        delimiter, hash_range);
   }
 
   std::vector<std::vector<BoltVector>> featurize(
@@ -68,12 +78,6 @@ class GraphFeaturizer final : public Featurizer {
 
   size_t getNumDatasets() final { return 3; }
 
-  void updateNeighbours(
-      const std::unordered_map<std::string, std::unordered_set<std::string>>&
-          neighbours);
-
-  void updateNodeIdMap(const ColumnNumberMap& node_id_map);
-
  private:
   std::exception_ptr featurizeSampleInBatch(
       uint32_t index_in_batch, ColumnarInputBatch& input_batch,
@@ -83,7 +87,7 @@ class GraphFeaturizer final : public Featurizer {
 
   BoltVector buildNeighbourVector(ColumnarInputSample& sample);
 
-  std::unordered_map<std::string, std::unordered_set<std::string>> _neighbours;
+  Neighbours _neighbours;
   std::unordered_map<std::string, uint32_t> _node_id_to_num_map;
   BlockList _input_blocks;
   BlockList _label_blocks;

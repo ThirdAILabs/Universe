@@ -40,8 +40,8 @@ struct GraphConfig {
       uint32_t max_neighbours,
       std::optional<std::vector<std::string>> relationship_columns =
           std::nullopt,
-      bool numerical_context = false, bool features_context = false,
-      uint32_t k_hop = 1, char delimeter = ',',
+      bool integer_target = false, bool numerical_context = false,
+      bool features_context = false, uint32_t k_hop = 1, char delimeter = ',',
       std::optional<std::unordered_map<std::string, std::vector<std::string>>>
           adj_list = std::nullopt)
       : _data_types(std::move(data_types)),
@@ -51,6 +51,7 @@ struct GraphConfig {
         _max_neighbours(max_neighbours),
         _relationship_columns(std::move(relationship_columns)),
         _n_target_classes(n_target_classes),
+        _integer_target(integer_target),
         _numerical_context(numerical_context),
         _features_context(features_context),
         _k_hop(k_hop),
@@ -70,6 +71,7 @@ struct GraphConfig {
   uint32_t _max_neighbours;
   std::optional<std::vector<std::string>> _relationship_columns;
   uint32_t _n_target_classes;
+  bool _integer_target;
   bool _numerical_context;
   bool _features_context;
   uint32_t _k_hop;
