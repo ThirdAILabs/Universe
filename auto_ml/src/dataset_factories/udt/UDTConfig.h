@@ -4,6 +4,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
 #include "DataTypes.h"
+#include "DatasetFactoryUtils.h"
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <utils/StringManipulation.h>
 #include <algorithm>
@@ -12,7 +13,6 @@
 #include <map>
 #include <memory>
 #include <optional>
-#include "DatasetFactoryUtils.h"
 
 namespace thirdai::automl::data {
 

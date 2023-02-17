@@ -338,13 +338,16 @@ class Block {
  * "for block in blocks, do something".
  */
 struct BlockList {
-  explicit BlockList(std::vector<BlockPtr>&& blocks)
+  explicit BlockList(std::vector<BlockPtr>&& blocks,
+                     std::optional<uint32_t> hash_range = std::nullopt)
       : _blocks(std::move(blocks)),
         _are_dense(computeAreDense(_blocks)),
         _feature_dim(computeFeatureDim(_blocks)),
+        // TODO(Josh): Can we get rid of this?
         _expected_num_columns(allBlocksHaveColumnNumbers(_blocks)
                                   ? computeExpectedNumColumns(_blocks)
-                                  : 0) {}
+                                  : 0),
+        _hash_range(hash_range) {}
 
   BlockList() {}
 
@@ -390,6 +393,8 @@ struct BlockList {
   uint64_t featureDim() const { return _feature_dim; }
 
   uint32_t expectedNumColumns() const { return _expected_num_columns; }
+
+  std::optional<uint32_t> hashRange() const { return _hash_range; }
 
  private:
   static bool computeAreDense(const std::vector<BlockPtr>& blocks) {
@@ -438,6 +443,7 @@ struct BlockList {
   bool _are_dense;
   uint32_t _feature_dim;
   uint32_t _expected_num_columns;
+  std::optional<uint32_t> _hash_range;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;

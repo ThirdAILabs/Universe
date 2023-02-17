@@ -3,11 +3,11 @@
 
 namespace thirdai::dataset {
 
-std::exception_ptr FeaturizerUtils::buildVector(
-    BoltVector& vector, BlockList& blocks, ColumnarInputSample& sample,
-    std::optional<uint32_t> hash_range) {
+std::exception_ptr FeaturizerUtils::buildVector(BoltVector& vector,
+                                                BlockList& blocks,
+                                                ColumnarInputSample& sample) {
   auto segmented_vector =
-      makeSegmentedFeatureVector(blocks.areDense(), hash_range,
+      makeSegmentedFeatureVector(blocks.areDense(), blocks.hashRange(),
                                  /* store_segment_feature_map= */ false);
   if (auto err = blocks.addVectorSegments(sample, *segmented_vector)) {
     return err;

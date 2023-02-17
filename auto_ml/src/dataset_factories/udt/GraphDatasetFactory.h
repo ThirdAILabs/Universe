@@ -109,6 +109,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   bool _store_node_features;
   dataset::TabularFeaturizerPtr _graph_builder;
   dataset::TabularFeaturizerPtr _featurizer;
+  GraphInfoPtr _graph_info;
 };
 
 using GraphDatasetFactoryPtr = std::shared_ptr<GraphDatasetFactory>;

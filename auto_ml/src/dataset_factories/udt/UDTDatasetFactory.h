@@ -153,11 +153,14 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   }
 
   std::vector<uint32_t> getInputDims() final {
-    return {_labeled_history_updating_processor->getInputDim()};
+    std::vector<uint32_t> all_dims =
+        _labeled_history_updating_processor->getDimensions();
+    all_dims.pop_back();
+    return all_dims;
   }
 
   uint32_t getLabelDim() final {
-    return _labeled_history_updating_processor->getLabelDim();
+    return _labeled_history_updating_processor->getDimensions().back();
   }
 
   void save(const std::string& filename) const;
@@ -185,9 +188,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
 
   dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
       const std::string& col_name, const CategoricalDataTypePtr& categorical);
-
-  std::vector<dataset::BlockPtr> buildMetadataInputBlocks(
-      const CategoricalMetadataConfig& metadata_config) const;
 
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
       dataset::DatasetLoader& dataset_loader,
@@ -222,12 +222,13 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
    * should not update the history.
    */
   dataset::TabularFeaturizerPtr makeUnlabeledNonUpdatingProcessor() {
+    auto input_blocks = buildInputBlocks(
+        /* should_update_history= */ false);
     auto processor = dataset::TabularFeaturizer::make(
-        buildInputBlocks(
-            /* should_update_history= */ false),
+        /* block_lists = */ {dataset::BlockList(
+            std::move(input_blocks), /* hash_range= */ _config->hash_range)},
         /* label_blocks= */ {}, /* has_header= */ false,
-        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
-        /* hash_range= */ _config->hash_range);
+        /* delimiter= */ _config->delimiter, /* parallel= */ _parallel);
     return processor;
   }
 

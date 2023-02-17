@@ -1,6 +1,7 @@
 #include "UDTDatasetFactory.h"
 #include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/DatasetFactoryUtils.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -118,7 +119,13 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
       makeColumnNumberMapFromHeader(*data_source, metadata->delimiter);
   data_source->restart();
 
-  auto input_blocks = buildMetadataInputBlocks(*metadata);
+  auto input_blocks = FeatureComposer::makeNonTemporalFeatureBlocks(
+      /* data_types = */ metadata->column_data_types,
+      /* target = */ metadata->key,
+      /* temporal_relationships = */ TemporalRelationships(),
+      /* vectors_map = */ PreprocessedVectorsMap(),
+      /* text_pairgrams_word_limit = */ _text_pairgram_word_limit,
+      /* contextual_columns = */ _contextual_columns);
 
   auto key_vocab = dataset::ThreadSafeVocabulary::make(
       /* vocab_size= */ 0, /* limit_vocab_size= */ false);
@@ -126,10 +133,12 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
       dataset::StringLookupCategoricalBlock::make(metadata->key, key_vocab);
 
   _metadata_processors[col_name] = dataset::TabularFeaturizer::make(
-      /* input_blocks= */ std::move(input_blocks),
-      /* label_blocks= */ {std::move(label_block)},
-      /* has_header= */ true, /* delimiter= */ metadata->delimiter,
-      /* parallel= */ true, /* hash_range= */ _config->hash_range);
+      /* block_lists = */ {dataset::BlockList(
+                               std::move(input_blocks),
+                               /* hash_range= */ _config->hash_range),
+                           dataset::BlockList({label_block})},
+      /* has_header= */ true,
+      /* delimiter= */ metadata->delimiter, /* parallel= */ _parallel);
 
   _metadata_processors[col_name]->updateColumnNumbers(column_numbers);
 
@@ -141,22 +150,6 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
       /* shuffle = */ false);
 
   return preprocessedVectorsFromDataset(metadata_source, *key_vocab);
-}
-
-std::vector<dataset::BlockPtr> UDTDatasetFactory::buildMetadataInputBlocks(
-    const CategoricalMetadataConfig& metadata_config) const {
-  UDTConfig feature_config(
-      /* data_types= */ metadata_config.column_data_types,
-      /* temporal_tracking_relationships= */ {},
-      /* target= */ metadata_config.key,
-      /* n_target_classes= */ 0);
-  TemporalRelationships empty_temporal_relationships;
-
-  PreprocessedVectorsMap empty_vectors_map;
-
-  return FeatureComposer::makeNonTemporalFeatureBlocks(
-      feature_config, empty_temporal_relationships, empty_vectors_map,
-      _text_pairgram_word_limit, _contextual_columns);
 }
 
 dataset::PreprocessedVectorsPtr
@@ -226,9 +219,12 @@ UDTDatasetFactory::makeLabeledUpdatingProcessor() {
   auto input_blocks = buildInputBlocks(/* should_update_history= */ true);
 
   auto processor = dataset::TabularFeaturizer::make(
-      std::move(input_blocks), {label_block}, /* has_header= */ true,
-      /* delimiter= */ _config->delimiter, /* parallel= */ _parallel,
-      /* hash_range= */ _config->hash_range);
+      /* block_lists = */ {dataset::BlockList(
+                               std::move(input_blocks),
+                               /* hash_range= */ _config->hash_range),
+                           dataset::BlockList({label_block})},
+      /* has_header= */ true,
+      /* delimiter= */ _config->delimiter, /* parallel= */ _parallel);
   return processor;
 }
 

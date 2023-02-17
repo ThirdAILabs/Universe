@@ -7,8 +7,7 @@ namespace thirdai::dataset {
 class FeaturizerUtils {
  public:
   static std::exception_ptr buildVector(BoltVector& vector, BlockList& blocks,
-                                        ColumnarInputSample& sample,
-                                        std::optional<uint32_t> hash_range);
+                                        ColumnarInputSample& sample);
 
   static std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
       bool blocks_dense, std::optional<uint32_t> hash_range,

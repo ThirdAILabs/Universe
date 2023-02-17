@@ -42,7 +42,6 @@ std::pair<GraphInfoPtr, dataset::BlockPtr> createGraphInfoAndBuilder(
 
 dataset::BlockPtr popNeighborTokensBlock(
     std::vector<dataset::BlockPtr> blocks) {
-  
   int64_t neighbor_tokens_block_index = -1;
   for (size_t block_id = 0; block_id < blocks.size(); block_id++) {
     if (dynamic_cast<dataset::NeighborTokensBlock*>(
@@ -89,9 +88,9 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
   std::vector<dataset::BlockPtr> feature_blocks =
       FeatureComposer::makeNonTemporalFeatureBlocks(
           data_types, target_col,
-          /* _temporal_relationships = */ TemporalRelationships(),
-          /* _vectors_map = */ PreprocessedVectorsMap(),
-          /* _text_pairgram_word_limit = */ models::TEXT_PAIRGRAM_WORD_LIMIT,
+          /* temporal_relationships = */ TemporalRelationships(),
+          /* vectors_map = */ PreprocessedVectorsMap(),
+          /* text_pairgrams_word_limit = */ models::TEXT_PAIRGRAM_WORD_LIMIT,
           /* contextual_columns = */ true, /* graph_info = */ graph_info);
 
   dataset::BlockPtr label_block = dataset::NumericalCategoricalBlock::make(
@@ -102,14 +101,22 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
       popNeighborTokensBlock(feature_blocks);
 
   _featurizer = dataset::TabularFeaturizer::make(
-      /* input_blocks = */ std::move(feature_blocks), /* label_blocks = */ {label_block}, /* has_header= */ true,
+      /* block_lists = */ {dataset::BlockList(
+                               std::move(feature_blocks),
+                               /* hash_range = */ DEFAULT_HASH_RANGE),
+                           dataset::BlockList({sparse_neighbor_block}),
+                           dataset::BlockList({label_block})},
+      /* has_header= */ true,
       /* delimiter= */ delimiter, /* parallel= */ true,
       /* hash_range= */ DEFAULT_HASH_RANGE);
 
   _graph_builder = dataset::TabularFeaturizer::make(
-      /* input_blocks = */ {graph_builder_block}, /* label_blocks = */ {}, /* has_header= */ true,
+      /* blocks = */ {dataset::BlockList({graph_builder_block})},
+      /* has_header= */ true,
       /* delimiter= */ delimiter, /* parallel= */ true,
       /* hash_range= */ DEFAULT_HASH_RANGE);
+
+  _graph_info = graph_info;
 }
 
 dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(
@@ -128,8 +135,14 @@ dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(
   _featurizer->updateColumnNumbers(column_number_map);
   _graph_builder->updateColumnNumbers(column_number_map);
 
-  dataset::DatasetLoader graph_builder_loader(data_source, _graph_builder, /* shuffle = */ false);
-  graph_builder_loader.loadAll(/* batch_size = */ DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
+  // If we want to save memory by not storing node features, we clear it here
+  if (!_store_node_features) {
+    _graph_info->clear();
+  }
+  dataset::DatasetLoader graph_builder_loader(data_source, _graph_builder,
+                                              /* shuffle = */ false);
+  graph_builder_loader.loadAll(
+      /* batch_size = */ DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
 
   // The featurizer will treat the next line as a header
   // Restart so featurizer does not skip a sample.
