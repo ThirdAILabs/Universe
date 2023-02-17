@@ -19,6 +19,10 @@ DateDataTypePtr asDate(const DataTypePtr& data_type) {
   return std::dynamic_pointer_cast<DateDataType>(data_type);
 }
 
+NeighborsDataTypePtr asNeighbors(const DataTypePtr& data_type) {
+  return std::dynamic_pointer_cast<NeighborsDataType>(data_type);
+}
+
 }  // namespace thirdai::automl::data
 
 CEREAL_REGISTER_TYPE(thirdai::automl::data::CategoricalDataType)

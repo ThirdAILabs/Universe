@@ -8,8 +8,7 @@ namespace thirdai::automl::models {
 class GraphNetwork : public ModelPipeline {
  public:
   static GraphNetwork create(data::ColumnDataTypes data_types,
-                             std::string target_col,
-                             std::optional<uint32_t> n_target_classes,
+                             std::string target_col, uint32_t n_target_classes,
                              bool integer_target, char delimiter,
                              uint32_t max_neighbors, uint32_t k_hop,
                              bool store_node_features);

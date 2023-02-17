@@ -272,11 +272,10 @@ void createModelsSubmodule(py::module_& module) {
       .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"),
            docs::TEXT_CLASSIFIER_SAVE);
 
-  // TODO(Josh): Add max_neighbors field/a way to turn off neighbors entirely
   py::class_<models::GraphNetwork, ModelPipeline, models::GraphNetworkPtr>(
       module, "UDTGraphNetwork")
       .def(py::init(&models::GraphNetwork::create), py::arg("data_types"),
-           py::arg("target"), py::arg("n_target_classes") = std::nullopt,
+           py::arg("target"), py::arg("n_target_classes"),
            py::arg("integer_target") = false, py::arg("delimiter") = ',',
            py::arg("max_neighbors") = std::numeric_limits<uint32_t>::max(),
            py::arg("k_hop") = 1, py::arg("store_node_features") = true,
@@ -324,6 +323,11 @@ void createUDTTypesSubmodule(py::module_& module) {
   py::class_<automl::data::DateDataType, automl::data::DataType,
              automl::data::DateDataTypePtr>(udt_types_submodule, "date")
       .def(py::init<>(), docs::UDT_DATE_TYPE);
+
+  // TODO(Josh): Add docs here and elsewhere
+  py::class_<automl::data::DateDataType, automl::data::DataType,
+             automl::data::DateDataTypePtr>(udt_types_submodule, "neighbors")
+      .def(py::init<>());
 }
 
 void createUDTTemporalSubmodule(py::module_& module) {

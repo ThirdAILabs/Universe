@@ -6,9 +6,9 @@
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/FeatureComposer.h>
-#include <auto_ml/src/dataset_factories/udt/GraphConfig.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/Featurizer.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
@@ -39,14 +39,31 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataSource> data_source, bool training) final;
 
-  std::vector<BoltVector> featurizeInput(const LineInput& input) final;
+  std::vector<BoltVector> featurizeInput(const LineInput& input) final {
+    (void)input;
+    throw exceptions::NotImplemented(
+        "Predict is not yet implemented for graph neural networks");
+  }
 
-  std::vector<BoltVector> featurizeInput(const MapInput& input) final;
+  std::vector<BoltVector> featurizeInput(const MapInput& input) final {
+    (void)input;
+    throw exceptions::NotImplemented(
+        "Predict is not yet implemented for graph neural networks");
+  }
 
   std::vector<BoltBatch> featurizeInputBatch(
-      const LineInputBatch& inputs) final;
+      const LineInputBatch& inputs) final {
+    (void)inputs;
+    throw exceptions::NotImplemented(
+        "Predict is not yet implemented for graph neural networks");
+  }
 
-  std::vector<BoltBatch> featurizeInputBatch(const MapInputBatch& inputs) final;
+  std::vector<BoltBatch> featurizeInputBatch(
+      const MapInputBatch& inputs) final {
+    (void)inputs;
+    throw exceptions::NotImplemented(
+        "Predict is not yet implemented for graph neural networks");
+  }
 
   uint32_t labelToNeuronId(std::variant<uint32_t, std::string> label) final {
     (void)label;
@@ -75,7 +92,9 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
         "Explain is not yet implemented for graph neural networks");
   }
 
-  std::vector<uint32_t> getInputDims() final;
+  std::vector<uint32_t> getInputDims() final {
+    return _featurizer->getDimensions();
+  };
 
   uint32_t getLabelDim() final { return _n_target_classes; };
 
@@ -89,6 +108,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   uint32_t _max_neighbors;
   uint32_t _k_hop;
   bool _store_node_features;
+  dataset::GraphFeaturizerPtr _featurizer;
 };
 
 using GraphDatasetFactoryPtr = std::shared_ptr<GraphDatasetFactory>;

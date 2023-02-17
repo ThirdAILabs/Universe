@@ -261,8 +261,6 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   TemporalContextPtr _context;
   std::unordered_map<std::string, dataset::ThreadSafeVocabularyPtr> _vocabs;
 
-  std::vector<std::string> _column_number_to_name;
-
   /*
     The labeled history-updating processor is used for training and evaluation,
     which automatically updates the temporal context, as well as for manually
@@ -297,7 +295,7 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
   void serialize(Archive& archive) {
     archive(cereal::base_class<DatasetLoaderFactory>(this), _config,
             _temporal_relationships, _context, _vocabs, _vectors_map,
-            _column_number_to_name, _labeled_history_updating_processor,
+            _labeled_history_updating_processor,
             _unlabeled_non_updating_processor, _metadata_processors, _parallel,
             _text_pairgram_word_limit, _contextual_columns,
             _normalize_target_categories, _regression_binning);

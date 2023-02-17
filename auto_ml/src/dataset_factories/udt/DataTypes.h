@@ -151,6 +151,19 @@ struct DateDataType : DataType {
 
 using DateDataTypePtr = std::shared_ptr<DateDataType>;
 
+struct NeighborsDataType : DataType {
+  std::string toString() const final { return R"({"type": "neighbors"})"; }
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<DataType>(this));
+  }
+};
+
+using NeighborsDataTypePtr = std::shared_ptr<NeighborsDataType>;
+
 CategoricalDataTypePtr asCategorical(const DataTypePtr& data_type);
 
 NumericalDataTypePtr asNumerical(const DataTypePtr& data_type);
@@ -158,6 +171,8 @@ NumericalDataTypePtr asNumerical(const DataTypePtr& data_type);
 TextDataTypePtr asText(const DataTypePtr& data_type);
 
 DateDataTypePtr asDate(const DataTypePtr& data_type);
+
+NeighborsDataTypePtr asNeighbors(const DataTypePtr& data_type);
 
 using ColumnDataTypes = std::map<std::string, DataTypePtr>;
 

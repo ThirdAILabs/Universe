@@ -32,7 +32,8 @@ dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     dataset::DataSourcePtr data_source, bool training) {
   auto column_number_map = DatasetFactoryUtils::makeColumnNumberMapFromHeader(
       *data_source, _config->delimiter);
-  _column_number_to_name = column_number_map.getColumnNumToColNameMap();
+  std::vector<std::string> column_number_to_name =
+      column_number_map.getColumnNumToColNameMap();
 
   // The featurizer will treat the next line as a header
   // Restart so featurizer does not skip a sample.
@@ -217,11 +218,6 @@ void UDTDatasetFactory::updateMetadataBatch(const std::string& col_name,
 
 dataset::TabularFeaturizerPtr
 UDTDatasetFactory::makeLabeledUpdatingProcessor() {
-  if (!_config->data_types.count(_config->target)) {
-    throw std::invalid_argument(
-        "data_types parameter must include the target column.");
-  }
-
   dataset::BlockPtr label_block = getLabelBlock();
 
   auto input_blocks = buildInputBlocks(/* should_update_history= */ true);

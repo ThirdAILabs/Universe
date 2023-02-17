@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 
