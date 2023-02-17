@@ -18,8 +18,9 @@ class UDTClassifier final : public UDTBackend {
       data::UserProvidedTemporalRelationships temporal_tracking_relationships,
       const std::string& target_name, data::CategoricalDataTypePtr target,
       uint32_t n_target_classes, bool integer_target,
-      std::string time_granularity, uint32_t lookahead, char delimiter,
-      const config::ArgumentMap& options);
+      const data::TabularOptions& tabular_options,
+      const std::optional<std::string>& model_config,
+      const config::ArgumentMap& user_args);
 
   void train(const dataset::DataSourcePtr& train_data, uint32_t epochs,
              float learning_rate, const std::optional<Validation>& validation,

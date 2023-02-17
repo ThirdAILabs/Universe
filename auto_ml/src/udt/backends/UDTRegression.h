@@ -14,8 +14,10 @@ class UDTRegression final : public UDTBackend {
       const data::ColumnDataTypes& input_data_types,
       data::UserProvidedTemporalRelationships temporal_tracking_relationships,
       const std::string& target_name, const data::NumericalDataTypePtr& target,
-      std::optional<uint32_t> num_bins, std::string time_granularity,
-      uint32_t lookahead, char delimiter, const config::ArgumentMap& options);
+      std::optional<uint32_t> num_bins,
+      const data::TabularOptions& tabular_options,
+      const std::optional<std::string>& model_config,
+      const config::ArgumentMap& user_args);
 
   void train(const dataset::DataSourcePtr& train_data, uint32_t epochs,
              float learning_rate, const std::optional<Validation>& validation,

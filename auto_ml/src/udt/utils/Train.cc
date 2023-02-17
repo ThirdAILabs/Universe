@@ -1,4 +1,5 @@
 #include "Train.h"
+#include <auto_ml/src/udt/Defaults.h>
 
 namespace thirdai::automl::udt::utils {
 
@@ -103,7 +104,7 @@ bolt::TrainConfig getTrainConfig(
         dataset_factory
             ->getDatasetLoader(validation->data(),
                                /* training= */ false)
-            ->loadAll(/* batch_size= */ DEFAULT_BATCH_SIZE, verbose);
+            ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
 
     bolt::EvalConfig val_config = getEvalConfig(
         validation->metrics(), validation->sparseInference(), verbose);

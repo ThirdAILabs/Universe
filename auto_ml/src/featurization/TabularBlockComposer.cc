@@ -40,7 +40,7 @@ std::vector<dataset::BlockPtr> makeTabularInputBlocks(
     const TemporalRelationships& temporal_relationships,
     const PreprocessedVectorsMap& vectors_map,
     TemporalContext& temporal_context, bool should_update_history,
-    const TabularBlockOptions& options) {
+    const TabularOptions& options) {
   std::vector<dataset::BlockPtr> blocks = makeNonTemporalInputBlocks(
       input_data_types, temporal_relationships, vectors_map, options);
 
@@ -60,8 +60,7 @@ std::vector<dataset::BlockPtr> makeTabularInputBlocks(
 std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
     const ColumnDataTypes& input_data_types,
     const TemporalRelationships& temporal_relationships,
-    const PreprocessedVectorsMap& vectors_map,
-    const TabularBlockOptions& options) {
+    const PreprocessedVectorsMap& vectors_map, const TabularOptions& options) {
   std::vector<dataset::BlockPtr> blocks;
 
   auto non_temporal_columns =
@@ -145,7 +144,7 @@ std::vector<dataset::BlockPtr> makeTemporalInputBlocks(
     const TemporalRelationships& temporal_relationships,
     const PreprocessedVectorsMap& vectors_map,
     TemporalContext& temporal_context, bool should_update_history,
-    const TabularBlockOptions& options) {
+    const TabularOptions& options) {
   std::vector<dataset::BlockPtr> blocks;
 
   auto timestamp_col_name = getTimestampColumnName(input_data_types);

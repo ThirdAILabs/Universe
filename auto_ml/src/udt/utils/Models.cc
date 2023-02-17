@@ -3,6 +3,7 @@
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <auto_ml/src/config/ModelConfig.h>
 
 namespace thirdai::automl::udt::utils {
 
@@ -44,6 +45,24 @@ bolt::BoltGraphPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
       bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
 
   return graph;
+}
+
+bolt::BoltGraphPtr loadModel(const std::vector<uint32_t>& input_dims,
+                             uint32_t output_dim,
+                             const std::string& config_path) {
+  config::ArgumentMap parameters;
+  parameters.insert("output_dim", output_dim);
+
+  auto json_config = json::parse(config::loadConfig(config_path));
+
+  return config::buildModel(json_config, parameters, input_dims);
+}
+
+bool hasSoftmaxOutput(const bolt::BoltGraphPtr& model) {
+  auto fc_output =
+      std::dynamic_pointer_cast<bolt::FullyConnectedNode>(model->output());
+  return fc_output && (fc_output->getActivationFunction() ==
+                       bolt::ActivationFunction::Softmax);
 }
 
 }  // namespace thirdai::automl::udt::utils

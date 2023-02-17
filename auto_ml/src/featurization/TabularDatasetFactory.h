@@ -19,7 +19,7 @@ class TabularDatasetFactory {
       const ColumnDataTypes& input_data_types,
       const UserProvidedTemporalRelationships& provided_temporal_relationships,
       const std::vector<dataset::BlockPtr>& label_blocks,
-      const TabularBlockOptions& options, char delimiter, bool force_parallel);
+      const TabularOptions& options, bool force_parallel);
 
   dataset::DatasetLoaderPtr getDatasetLoader(
       const dataset::DataSourcePtr& data_source, bool training);
@@ -77,17 +77,15 @@ class TabularDatasetFactory {
   dataset::TabularFeaturizerPtr makeFeaturizer(
       const ColumnDataTypes& input_data_types,
       const TemporalRelationships& temporal_relationships,
-      bool should_update_history, const TabularBlockOptions& options,
-      const std::vector<dataset::BlockPtr>& label_blocks, char delimiter,
-      bool parallel);
+      bool should_update_history, const TabularOptions& options,
+      const std::vector<dataset::BlockPtr>& label_blocks, bool parallel);
 
   PreprocessedVectorsMap processAllMetadata(
-      const ColumnDataTypes& input_data_types,
-      const TabularBlockOptions& options);
+      const ColumnDataTypes& input_data_types, const TabularOptions& options);
 
   dataset::PreprocessedVectorsPtr makeProcessedVectorsForCategoricalColumn(
       const std::string& col_name, const CategoricalDataTypePtr& categorical,
-      const TabularBlockOptions& options);
+      const TabularOptions& options);
 
   auto getColumnMetadataConfig(const std::string& col_name) {
     return asCategorical(_input_data_types.at(col_name))->metadata_config;

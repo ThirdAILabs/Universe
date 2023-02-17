@@ -1,5 +1,6 @@
 #include "TabularDatasetFactory.h"
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
+#include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
@@ -10,8 +11,8 @@ TabularDatasetFactory::TabularDatasetFactory(
     const ColumnDataTypes& input_data_types,
     const UserProvidedTemporalRelationships& provided_temporal_relationships,
     const std::vector<dataset::BlockPtr>& label_blocks,
-    const TabularBlockOptions& options, char delimiter, bool force_parallel)
-    : _input_data_types(input_data_types), _delimiter(delimiter) {
+    const TabularOptions& options, bool force_parallel)
+    : _input_data_types(input_data_types), _delimiter(options.delimiter) {
   processAllMetadata(input_data_types, options);
 
   TemporalRelationships temporal_relationships =
@@ -19,14 +20,12 @@ TabularDatasetFactory::TabularDatasetFactory(
           input_data_types, provided_temporal_relationships, options.lookahead);
 
   bool parallel = force_parallel || temporal_relationships.empty();
-  _labeled_featurizer =
-      makeFeaturizer(input_data_types, temporal_relationships,
-                     /* should_update_history= */ true, options, label_blocks,
-                     delimiter, parallel);
-  _inference_featurizer =
-      makeFeaturizer(input_data_types, temporal_relationships,
-                     /* should_update_history= */ false, options, label_blocks,
-                     delimiter, parallel);
+  _labeled_featurizer = makeFeaturizer(input_data_types, temporal_relationships,
+                                       /* should_update_history= */ true,
+                                       options, label_blocks, parallel);
+  _inference_featurizer = makeFeaturizer(
+      input_data_types, temporal_relationships,
+      /* should_update_history= */ false, options, label_blocks, parallel);
 }
 
 namespace {
@@ -48,7 +47,8 @@ dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
   // The batch size does not really matter here because we are storing these
   // vectors as metadata, not training on them. Thus, we choose the somewhat
   // arbitrary value 2048 since it is large enough to use all threads.
-  auto [datasets, ids] = dataset_loader.loadAll(/* batch_size = */ 2048);
+  auto [datasets, ids] =
+      dataset_loader.loadAll(/* batch_size = */ udt::defaults::BATCH_SIZE);
 
   if (datasets.size() != 1) {
     throw std::runtime_error(
@@ -120,22 +120,20 @@ void TabularDatasetFactory::updateMetadataBatch(const std::string& col_name,
 dataset::TabularFeaturizerPtr TabularDatasetFactory::makeFeaturizer(
     const ColumnDataTypes& input_data_types,
     const TemporalRelationships& temporal_relationships,
-    bool should_update_history, const TabularBlockOptions& options,
-    const std::vector<dataset::BlockPtr>& label_blocks, char delimiter,
-    bool parallel) {
+    bool should_update_history, const TabularOptions& options,
+    const std::vector<dataset::BlockPtr>& label_blocks, bool parallel) {
   auto input_blocks = makeTabularInputBlocks(
       input_data_types, temporal_relationships, _vectors_map, _temporal_context,
       should_update_history, options);
 
   return dataset::TabularFeaturizer::make(
       std::move(input_blocks), label_blocks, /* has_header= */ true,
-      /* delimiter= */ delimiter, /* parallel= */ parallel,
+      /* delimiter= */ options.delimiter, /* parallel= */ parallel,
       /* hash_range= */ options.feature_hash_range);
 }
 
 PreprocessedVectorsMap TabularDatasetFactory::processAllMetadata(
-    const ColumnDataTypes& input_data_types,
-    const TabularBlockOptions& options) {
+    const ColumnDataTypes& input_data_types, const TabularOptions& options) {
   PreprocessedVectorsMap metadata_vectors;
   for (const auto& [col_name, col_type] : input_data_types) {
     if (auto categorical = asCategorical(col_type)) {
@@ -151,7 +149,7 @@ PreprocessedVectorsMap TabularDatasetFactory::processAllMetadata(
 dataset::PreprocessedVectorsPtr
 TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
     const std::string& col_name, const CategoricalDataTypePtr& categorical,
-    const TabularBlockOptions& options) {
+    const TabularOptions& options) {
   if (!categorical->metadata_config) {
     throw std::invalid_argument("The given categorical column (" + col_name +
                                 ") does not have a metadata config.");

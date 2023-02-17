@@ -1,4 +1,5 @@
 #include "UDTRegression.h"
+#include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
@@ -9,36 +10,39 @@ UDTRegression::UDTRegression(
     const data::ColumnDataTypes& input_data_types,
     data::UserProvidedTemporalRelationships temporal_tracking_relationships,
     const std::string& target_name, const data::NumericalDataTypePtr& target,
-    std::optional<uint32_t> num_bins, std::string time_granularity,
-    uint32_t lookahead, char delimiter, const config::ArgumentMap& options) {
-  data::TabularBlockOptions tabular_options;
+    std::optional<uint32_t> num_bins,
+    const data::TabularOptions& tabular_options,
+    const std::optional<std::string>& model_config,
+    const config::ArgumentMap& user_args) {
+  uint32_t output_bins = num_bins.value_or(defaults::REGRESSION_BINS);
 
-  tabular_options.contextual_columns =
-      options.get<bool>("contextual_columns", "boolean", false);
-  tabular_options.time_granularity = std::move(time_granularity);
-  tabular_options.lookahead = lookahead;
+  if (model_config) {
+    _model = utils::loadModel({tabular_options.feature_hash_range}, output_bins,
+                              *model_config);
+  } else {
+    uint32_t hidden_dim = user_args.get<uint32_t>("embedding_dim", "integer",
+                                                  defaults::HIDDEN_DIM);
+    _model = utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
+                                 output_bins);
+  }
 
   _binning = dataset::RegressionBinningStrategy(
-      target->range.first, target->range.second, num_bins.value());
+      target->range.first, target->range.second, output_bins);
 
-  auto label_block =
-      dataset::RegressionCategoricalBlock::make(target_name, _binning, 3,
-                                                /* labels_sum_to_one= */ true);
+  bool normalize_target_categories = utils::hasSoftmaxOutput(_model);
+  auto label_block = dataset::RegressionCategoricalBlock::make(
+      target_name, _binning, defaults::REGRESSION_CORRECT_LABEL_RADIUS,
+      /* labels_sum_to_one= */ normalize_target_categories);
 
-  bool force_parallel = options.get<bool>("force_parallel", "boolean", false);
+  bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
 
   _dataset_factory = std::make_shared<data::TabularDatasetFactory>(
       input_data_types, temporal_tracking_relationships,
-      std::vector<dataset::BlockPtr>{label_block}, tabular_options, delimiter,
+      std::vector<dataset::BlockPtr>{label_block}, tabular_options,
       force_parallel);
 
-  uint32_t hidden_dim = options.get<uint32_t>("embedding_dim", "integer", 512);
-
-  _model = utils::defaultModel(_dataset_factory->inputDim(), hidden_dim,
-                               num_bins.value());
-
-  _freeze_hash_tables =
-      options.get<bool>("freeze_hash_tables", "boolean", true);
+  _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
+                                            defaults::FREEZE_HASH_TABLES);
 }
 
 void UDTRegression::train(
@@ -49,7 +53,7 @@ void UDTRegression::train(
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
-  size_t batch_size = batch_size_opt.value_or(utils::DEFAULT_BATCH_SIZE);
+  size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
   bolt::TrainConfig train_config = utils::getTrainConfig(
       epochs, learning_rate, validation, train_metrics, callbacks, verbose,
@@ -74,7 +78,7 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
 
   auto [test_data, test_labels] =
       _dataset_factory->getDatasetLoader(data, /* training= */ false)
-          ->loadAll(/* batch_size= */ utils::DEFAULT_BATCH_SIZE, verbose);
+          ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
 
   auto [_, output] = _model->evaluate(test_data, test_labels, eval_config);
 

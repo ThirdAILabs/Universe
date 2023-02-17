@@ -3,6 +3,7 @@
 #include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
@@ -19,35 +20,32 @@ UDTClassifier::UDTClassifier(
     data::UserProvidedTemporalRelationships temporal_tracking_relationships,
     const std::string& target_name, data::CategoricalDataTypePtr target,
     uint32_t n_target_classes, bool integer_target,
-    std::string time_granularity, uint32_t lookahead, char delimiter,
-    const config::ArgumentMap& options) {
-  data::TabularBlockOptions tabular_options;
+    const data::TabularOptions& tabular_options,
+    const std::optional<std::string>& model_config,
+    const config::ArgumentMap& user_args) {
+  if (model_config) {
+    _model = utils::loadModel({tabular_options.feature_hash_range},
+                              n_target_classes, *model_config);
+  } else {
+    uint32_t hidden_dim = user_args.get<uint32_t>("embedding_dim", "integer",
+                                                  defaults::HIDDEN_DIM);
+    _model = utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
+                                 n_target_classes);
+  }
 
-  tabular_options.contextual_columns =
-      options.get<bool>("contextual_columns", "boolean", false);
-  tabular_options.time_granularity = std::move(time_granularity);
-  tabular_options.lookahead = lookahead;
-
-  bool normalize_target_categories =
-      options.get<bool>("normalize_target_categories", "boolean", false);
-
+  bool normalize_target_categories = utils::hasSoftmaxOutput(_model);
   _label_block = labelBlock(target_name, target, n_target_classes,
                             integer_target, normalize_target_categories);
 
-  bool force_parallel = options.get<bool>("force_parallel", "boolean", false);
+  bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
 
   _dataset_factory = std::make_shared<data::TabularDatasetFactory>(
       input_data_types, temporal_tracking_relationships,
-      std::vector<dataset::BlockPtr>{_label_block}, tabular_options, delimiter,
+      std::vector<dataset::BlockPtr>{_label_block}, tabular_options,
       force_parallel);
 
-  uint32_t hidden_dim = options.get<uint32_t>("embedding_dim", "integer", 512);
-
-  _model = utils::defaultModel(_dataset_factory->inputDim(), hidden_dim,
-                               n_target_classes);
-
-  _freeze_hash_tables =
-      options.get<bool>("freeze_hash_tables", "boolean", true);
+  _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
+                                            defaults::FREEZE_HASH_TABLES);
 }
 
 void UDTClassifier::train(
@@ -58,7 +56,7 @@ void UDTClassifier::train(
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
-  size_t batch_size = batch_size_opt.value_or(utils::DEFAULT_BATCH_SIZE);
+  size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
   bolt::TrainConfig train_config = utils::getTrainConfig(
       epochs, learning_rate, validation, train_metrics, callbacks, verbose,
@@ -104,7 +102,7 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
 
   auto [test_data, test_labels] =
       _dataset_factory->getDatasetLoader(data, /* training= */ false)
-          ->loadAll(/* batch_size= */ utils::DEFAULT_BATCH_SIZE, verbose);
+          ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
 
   auto [_, output] = _model->evaluate(test_data, test_labels, eval_config);
 
@@ -286,20 +284,18 @@ uint32_t UDTClassifier::labelToNeuronId(
   throw std::invalid_argument("Invalid entity type.");
 }
 
-constexpr uint32_t MAX_SAMPLES_FOR_THRESHOLD_TUNING = 1000000;
-constexpr uint32_t NUM_THRESHOLDS_TO_CHECK = 1000;
-
 std::optional<float> UDTClassifier::tuneBinaryClassificationPredictionThreshold(
     const dataset::DataSourcePtr& data_source, const std::string& metric_name,
     size_t batch_size) {
-  uint32_t num_batches = MAX_SAMPLES_FOR_THRESHOLD_TUNING / batch_size;
+  uint32_t num_batches =
+      defaults::MAX_SAMPLES_FOR_THRESHOLD_TUNING / batch_size;
 
   auto dataset =
       _dataset_factory->getDatasetLoader(data_source, /* training= */ false);
 
   auto loaded_data_opt =
-      dataset->loadSome(/* batch_size = */ utils::DEFAULT_BATCH_SIZE,
-                        num_batches, /* verbose = */ false);
+      dataset->loadSome(/* batch_size = */ defaults::BATCH_SIZE, num_batches,
+                        /* verbose = */ false);
   if (!loaded_data_opt.has_value()) {
     throw std::invalid_argument("No data found for training.");
   }
@@ -318,10 +314,11 @@ std::optional<float> UDTClassifier::tuneBinaryClassificationPredictionThreshold(
 
 #pragma omp parallel for default(none) shared( \
     labels, best_metric_value, best_threshold, metric_name, activations)
-  for (uint32_t t_idx = 1; t_idx < NUM_THRESHOLDS_TO_CHECK; t_idx++) {
+  for (uint32_t t_idx = 1; t_idx < defaults::NUM_THRESHOLDS_TO_CHECK; t_idx++) {
     auto metric = bolt::makeMetric(metric_name);
 
-    float threshold = static_cast<float>(t_idx) / NUM_THRESHOLDS_TO_CHECK;
+    float threshold =
+        static_cast<float>(t_idx) / defaults::NUM_THRESHOLDS_TO_CHECK;
 
     uint32_t sample_idx = 0;
     for (const auto& label_batch : *labels) {
