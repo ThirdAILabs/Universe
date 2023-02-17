@@ -85,7 +85,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     train_file = "/share/data/wayfair/train_raw_queries.txt"
     test_file = "/share/data/wayfair/dev_raw_queries.txt"
     model_config_path = "wayfair.config"
-    num_epochs = 1
+    num_epochs = 5
     n_target_classes = 2
 
     data_types = {
