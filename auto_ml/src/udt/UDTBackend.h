@@ -40,14 +40,14 @@ class Validation {
 
 class UDTBackend {
  public:
-  virtual void train(const dataset::DataSourcePtr& train_data, uint32_t epochs,
-                     float learning_rate,
-                     const std::optional<Validation>& validation,
-                     std::optional<size_t> batch_size,
-                     std::optional<size_t> max_in_memory_batches,
-                     const std::vector<std::string>& train_metrics,
-                     const bolt::CallbackList& callbacks, bool verbose,
-                     std::optional<uint32_t> logging_interval) = 0;
+  virtual void train(
+      const dataset::DataSourcePtr& train_data, uint32_t epochs,
+      float learning_rate, const std::optional<Validation>& validation,
+      std::optional<size_t> batch_size,
+      std::optional<size_t> max_in_memory_batches,
+      const std::vector<std::string>& train_metrics,
+      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
+      bool verbose, std::optional<uint32_t> logging_interval) = 0;
 
   virtual py::object evaluate(const dataset::DataSourcePtr& data,
                               const std::vector<std::string>& metrics,

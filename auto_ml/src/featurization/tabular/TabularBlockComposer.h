@@ -11,11 +11,11 @@ using PreprocessedVectorsMap =
     std::unordered_map<std::string, dataset::PreprocessedVectorsPtr>;
 
 struct TabularBlockOptions {
-  uint32_t text_pairgrams_word_limit;
-  bool contextual_columns;
-  std::string time_granularity;
-  uint32_t lookahead;
-  uint32_t feature_hash_range;
+  uint32_t text_pairgrams_word_limit = 15;
+  bool contextual_columns = false;
+  std::string time_granularity = "d";
+  uint32_t lookahead = 0;
+  uint32_t feature_hash_range = 100000;
 };
 
 std::vector<dataset::BlockPtr> makeTabularInputBlocks(

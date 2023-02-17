@@ -11,8 +11,8 @@ class UDT {
              std::optional<size_t> batch_size,
              std::optional<size_t> max_in_memory_batches,
              const std::vector<std::string>& train_metrics,
-             const bolt::CallbackList& callbacks, bool verbose,
-             std::optional<uint32_t> logging_interval) {
+             const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
+             bool verbose, std::optional<uint32_t> logging_interval) {
     _backend->train(train_data, epochs, learning_rate, validation, batch_size,
                     max_in_memory_batches, train_metrics, callbacks, verbose,
                     logging_interval);
@@ -99,6 +99,6 @@ class UDT {
 
  private:
   std::unique_ptr<UDTBackend> _backend;
-};
+}; 
 
 }  // namespace thirdai::automl::udt

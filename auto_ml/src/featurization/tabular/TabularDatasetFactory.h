@@ -65,6 +65,12 @@ class TabularDatasetFactory {
         gradients_indices, gradients_ratio, sample_ref, _inference_featurizer);
   }
 
+  bool hasTemporalRelationships() const { return !_temporal_context.empty(); }
+
+  uint32_t inputDim() const {
+    return _labeled_featurizer->getInputDim();
+  }
+
  private:
   dataset::TabularFeaturizerPtr makeFeaturizer(
       const ColumnDataTypes& input_data_types,
