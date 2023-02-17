@@ -28,7 +28,7 @@ class DateBlock final : public Block {
  public:
   explicit DateBlock(ColumnIdentifier col) : _col(std::move(col)) {}
 
-  uint32_t featureDim() const final {
+  uint64_t featureDim() const final {
     return day_of_week_dim + month_of_year_dim + week_of_month_dim +
            week_of_year_dim;
   };

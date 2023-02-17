@@ -36,20 +36,24 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
           /* _vectors_map = */ PreprocessedVectorsMap(),
           /* _text_pairgram_word_limit = */ models::TEXT_PAIRGRAM_WORD_LIMIT,
           /* contextual_columns = */ true, /* graph_info =*/graph_info);
+
+  
 }
 
 dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(
     std::shared_ptr<dataset::DataSource> data_source, bool training) {
   auto column_number_map =
       makeColumnNumberMapFromHeader(*data_source, _delimiter);
-  // std::vector<std::string> column_number_to_name =
-  // column_number_map.getColumnNumToColNameMap();
 
-  // // The featurizer will treat the next line as a header
-  // // Restart so featurizer does not skip a sample.
-  // data_source->restart();
+  // TODO(Josh): Abstract this
+  std::vector<std::string> column_number_to_name =
+  column_number_map.getColumnNumToColNameMap();
 
-  // _featurizer->updateColumnNumbers(column_number_map);
+  // The featurizer will treat the next line as a header
+  // Restart so featurizer does not skip a sample.
+  data_source->restart();
+
+  _featurizer->updateColumnNumbers(column_number_map);
 
   return std::make_unique<dataset::DatasetLoader>(data_source, _featurizer,
                                                   /* shuffle= */ training);

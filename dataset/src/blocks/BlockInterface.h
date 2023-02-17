@@ -227,7 +227,7 @@ class Block {
   /**
    * Returns the dimension of the vector encoding.
    */
-  virtual uint32_t featureDim() const = 0;
+  virtual uint64_t featureDim() const = 0;
 
   /**
    * True if the block produces dense features, False otherwise.
@@ -387,7 +387,7 @@ struct BlockList {
 
   bool areDense() const { return _are_dense; }
 
-  uint32_t featureDim() const { return _feature_dim; }
+  uint64_t featureDim() const { return _feature_dim; }
 
   uint32_t expectedNumColumns() const { return _expected_num_columns; }
 

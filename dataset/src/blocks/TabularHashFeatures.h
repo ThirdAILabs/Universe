@@ -72,7 +72,7 @@ class TabularHashFeatures final : public Block {
   TabularHashFeatures(const std::vector<TabularColumn>& columns,
                       uint32_t output_range, bool with_pairgrams = true);
 
-  uint32_t featureDim() const final { return _output_range; };
+  uint64_t featureDim() const final { return _output_range; };
 
   bool isDense() const final { return false; };
 

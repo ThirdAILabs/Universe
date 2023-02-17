@@ -15,7 +15,6 @@
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
-#include <dataset/src/featurizers/GraphFeaturizer.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <cstddef>
@@ -108,8 +107,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   uint32_t _max_neighbors;
   uint32_t _k_hop;
   bool _store_node_features;
-  dataset::FeaturizerPtr _graph_builder;
-  dataset::FeaturizerPtr _featurizer;
+  dataset::TabularFeaturizerPtr _graph_builder;
+  dataset::TabularFeaturizerPtr _featurizer;
 };
 
 using GraphDatasetFactoryPtr = std::shared_ptr<GraphDatasetFactory>;

@@ -45,7 +45,7 @@ class FeatureComposer {
       const TemporalRelationships& temporal_relationships,
       const PreprocessedVectorsMap& vectors_map,
       uint32_t text_pairgrams_word_limit, bool contextual_columns,
-      const GraphInfoPtr &graph_info = nullptr);
+      const GraphInfoPtr& graph_info = nullptr);
 
   static std::vector<dataset::BlockPtr> makeTemporalFeatureBlocks(
       const UDTConfig& config,

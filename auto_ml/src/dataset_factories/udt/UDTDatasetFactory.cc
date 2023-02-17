@@ -28,7 +28,7 @@ UDTDatasetFactory::UDTDatasetFactory(
       _labeled_history_updating_processor(makeLabeledUpdatingProcessor()),
       _unlabeled_non_updating_processor(makeUnlabeledNonUpdatingProcessor()) {
   verifyExpectedNumberOfGraphTypes(_config->data_types,
-                                      /* expected_count = */ 0);
+                                   /* expected_count = */ 0);
 }
 
 dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(

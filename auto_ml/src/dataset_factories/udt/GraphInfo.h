@@ -10,7 +10,7 @@ namespace thirdai::automl::data {
 
 class GraphInfo {
  public:
-  explicit GraphInfo(uint64_t feature_dim): _feature_dim(feature_dim) {}
+  explicit GraphInfo(uint64_t feature_dim) : _feature_dim(feature_dim) {}
 
   void clear();
 
@@ -24,7 +24,6 @@ class GraphInfo {
   uint64_t featureDim();
 
  private:
-
   uint64_t _feature_dim;
   // TODO(Josh): Consider replacing with Eigen
   std::unordered_map<uint64_t, std::vector<float>> _node_id_to_feature_vector;

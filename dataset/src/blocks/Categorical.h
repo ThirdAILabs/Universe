@@ -35,7 +35,7 @@ class CategoricalBlock : public Block {
                    std::optional<char> delimiter)
       : _dim(dim), _col(std::move(col)), _delimiter(delimiter) {}
 
-  uint32_t featureDim() const final { return _dim; };
+  uint64_t featureDim() const final { return _dim; };
 
   bool isDense() const final { return false; };
 

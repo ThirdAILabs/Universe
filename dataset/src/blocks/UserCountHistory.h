@@ -28,7 +28,7 @@ class UserCountHistoryBlock final : public Block {
         _should_update_history(should_update_history),
         _include_current_row(include_current_row) {}
 
-  uint32_t featureDim() const final { return _history->historyLength(); }
+  uint64_t featureDim() const final { return _history->historyLength(); }
   bool isDense() const final { return true; }
 
   void prepareForBatch(ColumnarInputBatch& incoming_batch) final {

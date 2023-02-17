@@ -2,9 +2,9 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/DatasetFactoryUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/GraphBlocks.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <stdexcept>
-#include <dataset/src/blocks/GraphBlocks.h>
 
 namespace thirdai::automl::data {
 
@@ -46,7 +46,8 @@ UDTConfigPtr FeatureComposer::verifyConfigIsValid(
   return config;
 }
 
-std::vector<dataset::BlockPtr> makeGraphFeatureBlocks(const data::ColumnDataTypes& data_types, const GraphInfoPtr &graph_info) {
+std::vector<dataset::BlockPtr> makeGraphFeatureBlocks(
+    const data::ColumnDataTypes& data_types, const GraphInfoPtr& graph_info) {
   std::vector<dataset::BlockPtr> blocks;
   for (const auto& [col_name, data_type] : data_types) {
     if (asNodeID(data_type)) {
@@ -58,19 +59,16 @@ std::vector<dataset::BlockPtr> makeGraphFeatureBlocks(const data::ColumnDataType
       blocks.push_back(
           dataset::NeighborTokensBlock::make(col_name, graph_info));
     }
-
   }
   return blocks;
 }
-
 
 std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
     const data::ColumnDataTypes& data_types, const std::string& target,
     const TemporalRelationships& temporal_relationships,
     const PreprocessedVectorsMap& vectors_map,
     uint32_t text_pairgrams_word_limit, bool contextual_columns,
-    const GraphInfoPtr &graph_info) {
-    
+    const GraphInfoPtr& graph_info) {
   std::vector<dataset::BlockPtr> blocks;
 
   if (graph_info) {
