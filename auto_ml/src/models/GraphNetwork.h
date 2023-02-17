@@ -1,3 +1,4 @@
+#pragma once
 
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/ModelPipeline.h>
@@ -10,8 +11,7 @@ class GraphNetwork : public ModelPipeline {
   static GraphNetwork create(data::ColumnDataTypes data_types,
                              std::string target_col, uint32_t n_target_classes,
                              bool integer_target, char delimiter,
-                             uint32_t max_neighbors, uint32_t k_hop,
-                             bool store_node_features);
+                             uint32_t max_neighbors, bool store_node_features);
 
  private:
   // Inherit ModelPipeline constructor privately

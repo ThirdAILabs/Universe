@@ -24,18 +24,7 @@ class ColumnNumberMap {
     }
   }
 
-  explicit ColumnNumberMap(const std::vector<std::string>& names)
-      : _n_cols(names.size()) {
-    for (uint32_t i = 0; i < names.size(); i++) {
-      _name_to_num[names[i]] = i;
-    }
-  }
-
   ColumnNumberMap() {}
-
-  std::unordered_map<std::string, uint32_t> getColumnNameToColNumMap() const {
-    return _name_to_num;
-  }
 
   uint32_t at(const std::string& col_name) const {
     if (_name_to_num.count(col_name) == 0) {

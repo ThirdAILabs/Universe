@@ -6,9 +6,6 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
-#include <auto_ml/src/Aliases.h>
-#include <dataset/src/blocks/ColumnIdentifier.h>
-#include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -18,7 +15,6 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 namespace thirdai::dataset {
 
@@ -281,42 +277,6 @@ class MetadataCategoricalBlock final : public CategoricalBlock {
 };
 
 using MetadataCategoricalBlockPtr = std::shared_ptr<MetadataCategoricalBlock>;
-
-class GraphCategoricalBlock : public CategoricalBlock {
- public:
-  GraphCategoricalBlock(ColumnIdentifier col, PreprocessedVectorsPtr vectors,
-                        automl::Neighbours neighbours)
-      : CategoricalBlock(std::move(col), vectors->dim, std::nullopt),
-        _vectors(std::move(vectors)),
-        _neighbours(std::move(neighbours)) {}
-
-  std::string getResponsibleCategory(
-      uint32_t index, const std::string_view& category_value) const final {
-    (void)index;
-    return "Neighbours for the node '" + std::string(category_value) + "'";
-  }
-
-  static auto make(ColumnIdentifier col, PreprocessedVectorsPtr vectors,
-                   automl::Neighbours neighbours) {
-    return std::make_shared<GraphCategoricalBlock>(
-        std::move(col), std::move(vectors), std::move(neighbours));
-  }
-
- protected:
-  std::exception_ptr encodeCategory(std::string_view category,
-                                    uint32_t num_categories_in_sample,
-                                    SegmentedFeatureVector& vec) final {
-    (void)num_categories_in_sample;
-    for (const auto& neighbour : _neighbours[std::string(category)]) {
-      _vectors->appendPreprocessedFeaturesToVector(neighbour, vec);
-    }
-    return nullptr;
-  }
-
- private:
-  PreprocessedVectorsPtr _vectors;
-  automl::Neighbours _neighbours;
-};
 
 /**
  * This class represents the binning logic for a regression as classification

@@ -137,6 +137,7 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
                                std::move(input_blocks),
                                /* hash_range= */ _config->hash_range),
                            dataset::BlockList({label_block})},
+      /* expected_num_columns = */ metadata->column_data_types.size(),
       /* has_header= */ true,
       /* delimiter= */ metadata->delimiter, /* parallel= */ _parallel);
 
@@ -223,6 +224,7 @@ UDTDatasetFactory::makeLabeledUpdatingProcessor() {
                                std::move(input_blocks),
                                /* hash_range= */ _config->hash_range),
                            dataset::BlockList({label_block})},
+      /* expected_num_columns = */ _config->data_types.size(),
       /* has_header= */ true,
       /* delimiter= */ _config->delimiter, /* parallel= */ _parallel);
   return processor;

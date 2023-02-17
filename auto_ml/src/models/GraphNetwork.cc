@@ -71,7 +71,7 @@ GraphNetwork GraphNetwork::create(data::ColumnDataTypes data_types,
                                   std::string target_col,
                                   uint32_t n_target_classes,
                                   bool integer_target, char delimiter,
-                                  uint32_t max_neighbors, uint32_t k_hop,
+                                  uint32_t max_neighbors,
                                   bool store_node_features) {
   verifyDataTypesContainTarget(data_types, target_col);
 
@@ -88,7 +88,7 @@ GraphNetwork GraphNetwork::create(data::ColumnDataTypes data_types,
   }
 
   auto graph_dataset_factory = std::make_shared<data::GraphDatasetFactory>(
-      data_types, target_col, n_target_classes, delimiter, max_neighbors, k_hop,
+      data_types, target_col, n_target_classes, delimiter, max_neighbors,
       store_node_features);
 
   bolt::BoltGraphPtr model = createGNN(

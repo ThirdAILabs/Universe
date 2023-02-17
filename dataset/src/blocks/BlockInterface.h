@@ -453,4 +453,6 @@ struct BlockList {
   }
 };
 
+using BlockListPtr = std::shared_ptr<BlockList>;
+
 }  // namespace thirdai::dataset

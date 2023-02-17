@@ -366,6 +366,7 @@ set(THIRDAI_SOURCES
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
     dataset/src/blocks/TabularHashFeatures.cc
+    dataset/src/blocks/GraphBlocks.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
     dataset/src/utils/TokenEncoding.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
@@ -373,7 +374,6 @@ set(THIRDAI_SOURCES
     dataset/src/featurizers/ProcessorUtils.cc
     dataset/src/featurizers/SvmFeaturizer.cc
     dataset/src/featurizers/TabularFeaturizer.cc
-    dataset/src/featurizers/FeaturizerUtils.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
@@ -441,6 +441,7 @@ pybind11_add_module(
   auto_ml/src/models/TextClassifier.cc
   auto_ml/src/models/UniversalDeepTransformer.cc
   auto_ml/src/models/GraphNetwork.cc
+  auto_ml/src/models/UdtUtils.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 

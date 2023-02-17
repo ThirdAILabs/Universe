@@ -1,3 +1,5 @@
+#pragma once
+
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/OutputProcessor.h>
 #include <auto_ml/src/models/TrainEvalParameters.h>
@@ -5,7 +7,6 @@
 namespace thirdai::automl::models {
 
 static constexpr uint32_t DEFAULT_TRAIN_EVAL_BATCH_SIZE = 2048;
-static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;
 
 TrainEvalParameters defaultTrainEvalParams(bool freeze_hash_tables);
 

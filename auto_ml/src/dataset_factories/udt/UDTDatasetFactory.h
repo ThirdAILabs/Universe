@@ -227,7 +227,8 @@ class UDTDatasetFactory final : public DatasetLoaderFactory {
     auto processor = dataset::TabularFeaturizer::make(
         /* block_lists = */ {dataset::BlockList(
             std::move(input_blocks), /* hash_range= */ _config->hash_range)},
-        /* label_blocks= */ {}, /* has_header= */ false,
+        /* expected_num_columns = */ _config->data_types.size() - 1,
+        /* has_header= */ false,
         /* delimiter= */ _config->delimiter, /* parallel= */ _parallel);
     return processor;
   }

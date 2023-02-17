@@ -27,12 +27,13 @@
 #include <variant>
 namespace thirdai::automl::data {
 
+// TODO(Josh): Consider adding back k_hop
 class GraphDatasetFactory : public DatasetLoaderFactory {
  public:
   explicit GraphDatasetFactory(data::ColumnDataTypes data_types,
                                std::string target_col,
                                uint32_t n_target_classes, char delimiter,
-                               uint32_t max_neighbors, uint32_t k_hop,
+                               uint32_t max_neighbors,
                                bool store_node_features);
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
@@ -105,7 +106,6 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   uint32_t _n_target_classes;
   char _delimiter;
   uint32_t _max_neighbors;
-  uint32_t _k_hop;
   bool _store_node_features;
   dataset::TabularFeaturizerPtr _graph_builder;
   dataset::TabularFeaturizerPtr _featurizer;

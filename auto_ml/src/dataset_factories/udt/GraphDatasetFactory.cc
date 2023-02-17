@@ -2,8 +2,8 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/DatasetFactoryUtils.h>
-#include <auto_ml/src/models/UDTUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/blocks/GraphBlocks.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -13,7 +13,7 @@ namespace thirdai::automl::data {
 
 std::pair<GraphInfoPtr, dataset::BlockPtr> createGraphInfoAndBuilder(
     const data::ColumnDataTypes& data_types) {
-  std::vector<std::string> feature_col_names;
+  std::vector<dataset::ColumnIdentifier> feature_col_names;
   std::string neighbor_col_name, node_id_col_name;
 
   for (const auto& [col_name, data_type] : data_types) {
@@ -67,22 +67,20 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
                                          std::string target_col,
                                          uint32_t n_target_classes,
                                          char delimiter, uint32_t max_neighbors,
-                                         uint32_t k_hop,
                                          bool store_node_features)
     : _data_types(std::move(data_types)),
       _target_col(std::move(target_col)),
       _n_target_classes(n_target_classes),
       _delimiter(delimiter),
       _max_neighbors(max_neighbors),
-      _k_hop(k_hop),
       _store_node_features(store_node_features) {
+  // TODO(Josh): Delete this everywhere if not needed, otherwise implement
+  (void)_max_neighbors;
+
   verifyExpectedNumberOfGraphTypes(data_types, /* expected_count = */ 1);
 
-  if (_k_hop > 3 || _k_hop == 0) {
-    throw std::invalid_argument("K hop must be between 1 and 3 inclusive.");
-  }
-
-  auto [graph_info, graph_builder_block] =
+  dataset::BlockPtr graph_builder_block;
+  std::tie(_graph_info, graph_builder_block) =
       createGraphInfoAndBuilder(data_types);
 
   std::vector<dataset::BlockPtr> feature_blocks =
@@ -90,15 +88,15 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
           data_types, target_col,
           /* temporal_relationships = */ TemporalRelationships(),
           /* vectors_map = */ PreprocessedVectorsMap(),
-          /* text_pairgrams_word_limit = */ models::TEXT_PAIRGRAM_WORD_LIMIT,
-          /* contextual_columns = */ true, /* graph_info = */ graph_info);
+          /* text_pairgrams_word_limit = */ TEXT_PAIRGRAM_WORD_LIMIT,
+          /* contextual_columns = */ true, /* graph_info = */ _graph_info);
+
+  dataset::BlockPtr sparse_neighbor_block =
+      popNeighborTokensBlock(feature_blocks);
 
   dataset::BlockPtr label_block = dataset::NumericalCategoricalBlock::make(
       /* col = */ target_col,
       /* n_classes= */ n_target_classes);
-
-  dataset::BlockPtr sparse_neighbor_block =
-      popNeighborTokensBlock(feature_blocks);
 
   _featurizer = dataset::TabularFeaturizer::make(
       /* block_lists = */ {dataset::BlockList(
@@ -106,17 +104,15 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
                                /* hash_range = */ DEFAULT_HASH_RANGE),
                            dataset::BlockList({sparse_neighbor_block}),
                            dataset::BlockList({label_block})},
+      /* expected_num_columns = */ data_types.size(),
       /* has_header= */ true,
-      /* delimiter= */ delimiter, /* parallel= */ true,
-      /* hash_range= */ DEFAULT_HASH_RANGE);
+      /* delimiter= */ delimiter, /* parallel= */ true);
 
   _graph_builder = dataset::TabularFeaturizer::make(
       /* blocks = */ {dataset::BlockList({graph_builder_block})},
+      /* expected_num_columns = */ data_types.size(),
       /* has_header= */ true,
-      /* delimiter= */ delimiter, /* parallel= */ true,
-      /* hash_range= */ DEFAULT_HASH_RANGE);
-
-  _graph_info = graph_info;
+      /* delimiter= */ delimiter, /* parallel= */ true);
 }
 
 dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(

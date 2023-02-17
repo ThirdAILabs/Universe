@@ -1,3 +1,5 @@
+#pragma once
+
 #include "BlockInterface.h"
 #include <auto_ml/src/dataset_factories/udt/GraphInfo.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
