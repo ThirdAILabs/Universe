@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/graph/Graph.h>
+#include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/tabular/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
@@ -79,6 +80,17 @@ class UDTClassifier final : public UDTBackend {
 
   bool integerTarget() const { return !_class_name_to_neuron; }
 
+  /**
+   * Computes the optimal binary prediction threshold to maximize the given
+   * metric on max_num_batches batches of the given dataset. Note: does not
+   * shuffle the data to obtain the batches.
+   */
+  std::optional<float> tuneBinaryClassificationPredictionThreshold(
+      const dataset::DataSourcePtr& data_source, const std::string& metric_name,
+      size_t batch_size);
+
+  uint32_t predictedClass(const BoltVector& vector);
+
   dataset::ThreadSafeVocabularyPtr _class_name_to_neuron;
   dataset::CategoricalBlockPtr _label_block;
 
@@ -86,6 +98,8 @@ class UDTClassifier final : public UDTBackend {
   data::tabular::TabularDatasetFactoryPtr _dataset_factory;
 
   bool _freeze_hash_tables;
+
+  std::optional<float> _binary_prediction_threshold;
 };
 
 }  // namespace thirdai::automl::udt

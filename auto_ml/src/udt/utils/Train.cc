@@ -99,10 +99,11 @@ bolt::TrainConfig getTrainConfig(
     train_config.silence();
   }
   if (validation && !dataset_factory->hasTemporalRelationships()) {
-    auto val_data = dataset_factory
-                        ->getDatasetLoader(validation->data(),
-                                           /* training= */ false)
-                        ->loadAll(/* batch_size= */ 2048, verbose);
+    auto val_data =
+        dataset_factory
+            ->getDatasetLoader(validation->data(),
+                               /* training= */ false)
+            ->loadAll(/* batch_size= */ DEFAULT_BATCH_SIZE, verbose);
 
     bolt::EvalConfig val_config = getEvalConfig(
         validation->metrics(), validation->sparseInference(), verbose);
