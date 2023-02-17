@@ -12,6 +12,7 @@ namespace thirdai::automl::data {
 using dataset::ColumnNumberMap;
 
 constexpr const uint32_t DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE = 2048;
+constexpr uint32_t DEFAULT_HASH_RANGE = 100000;
 
 inline ColumnNumberMap makeColumnNumberMapFromHeader(
     dataset::DataSource& data_source, char delimiter) {

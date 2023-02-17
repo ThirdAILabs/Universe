@@ -23,11 +23,13 @@ uint64_t parseFloat(const ColumnIdentifier& identifier,
   return std::strtof(input.column(identifier).data(), &end);
 }
 
-std::vector<uint64_t> parseUint64Array(const std::string& array_string, char delimiter) {
-  std::vector<std::string_view> parsed_array = ProcessorUtils::parseCsvRow(array_string, delimiter);
+std::vector<uint64_t> parseUint64Array(const std::string& array_string,
+                                       char delimiter) {
+  std::vector<std::string_view> parsed_array =
+      ProcessorUtils::parseCsvRow(array_string, delimiter);
   std::vector<uint64_t> uint64_array;
   uint64_array.reserve(parsed_array.size());
-for (const auto& uint64_str : parsed_array) {
+  for (const auto& uint64_str : parsed_array) {
     uint64_array.push_back(parseUint64(uint64_str));
   }
   return uint64_array;
@@ -98,7 +100,7 @@ Explanation GraphBuilderBlock::explainIndex(uint32_t index_within_block,
 std::exception_ptr GraphBuilderBlock::buildSegment(
     ColumnarInputSample& input, SegmentedFeatureVector& vec) {
   (void)vec;
-  
+
   uint64_t node_id = parseUint64(_node_id_col, input);
 
   std::vector<float> dense_feature_vector;
@@ -107,12 +109,12 @@ std::exception_ptr GraphBuilderBlock::buildSegment(
     dense_feature_vector.push_back(parseFloat(feature_col, input));
   }
 
-  std::vector<uint64_t> neighbors = parseUint64Array(input.column(_neighbor_col).data(), /* delimiter = */ ' ');
+  std::vector<uint64_t> neighbors = parseUint64Array(
+      input.column(_neighbor_col).data(), /* delimiter = */ ' ');
 
   _graph_ptr->insertNode(node_id, dense_feature_vector, neighbors);
 
   return nullptr;
-
 }
 
 }  // namespace thirdai::dataset

@@ -12,11 +12,11 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include "DatasetFactoryUtils.h"
 
 namespace thirdai::automl::data {
 
 struct UDTConfig {
-  static constexpr uint32_t DEFAULT_HASH_RANGE = 100000;
   static constexpr uint32_t REGRESSION_CORRECT_LABEL_RADIUS = 2;
   static constexpr uint32_t REGRESSION_DEFAULT_NUM_BINS = 100;
 

@@ -3,10 +3,66 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/DatasetFactoryUtils.h>
 #include <auto_ml/src/models/UDTUtils.h>
+#include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/GraphBlocks.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <stdexcept>
 
 namespace thirdai::automl::data {
+
+std::pair<GraphInfoPtr, dataset::BlockPtr> createGraphInfoAndBuilder(
+    const data::ColumnDataTypes& data_types) {
+  std::vector<std::string> feature_col_names;
+  std::string neighbor_col_name, node_id_col_name;
+
+  for (const auto& [col_name, data_type] : data_types) {
+    if (asNeighbors(data_type)) {
+      neighbor_col_name = col_name;
+    } else if (asNodeID(data_type)) {
+      node_id_col_name = col_name;
+    } else if (asNumerical(data_type)) {
+      feature_col_names.push_back(col_name);
+    }
+  }
+
+  GraphInfoPtr graph_info =
+      std::make_shared<GraphInfo>(/* feature_dim = */ feature_col_names.size());
+
+  dataset::BlockPtr builder_block = dataset::GraphBuilderBlock::make(
+      neighbor_col_name, node_id_col_name, feature_col_names, graph_info);
+
+  return {graph_info, builder_block};
+}
+
+/*
+ * Pops and returns the NeighborTokensBlock from the passed in block list.
+ * The block list must have a single NeighborTokensBlock.
+ */
+
+dataset::BlockPtr popNeighborTokensBlock(
+    std::vector<dataset::BlockPtr> blocks) {
+  
+  int64_t neighbor_tokens_block_index = -1;
+  for (size_t block_id = 0; block_id < blocks.size(); block_id++) {
+    if (dynamic_cast<dataset::NeighborTokensBlock*>(
+            blocks.at(block_id).get())) {
+      neighbor_tokens_block_index = block_id;
+      break;
+    }
+  }
+
+  if (neighbor_tokens_block_index < 0) {
+    throw std::logic_error(
+        "The passed in block list should have a NeighborTokensBlock");
+  }
+
+  dataset::BlockPtr neighbor_tokens_block =
+      blocks.at(neighbor_tokens_block_index);
+  blocks.erase(blocks.begin() + neighbor_tokens_block_index);
+
+  return neighbor_tokens_block;
+}
 
 GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
                                          std::string target_col,
@@ -27,17 +83,33 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
     throw std::invalid_argument("K hop must be between 1 and 3 inclusive.");
   }
 
-  GraphInfoPtr graph_info = std::make_shared<GraphInfo>();
+  auto [graph_info, graph_builder_block] =
+      createGraphInfoAndBuilder(data_types);
 
-  std::vector<dataset::BlockPtr> blocks =
+  std::vector<dataset::BlockPtr> feature_blocks =
       FeatureComposer::makeNonTemporalFeatureBlocks(
           data_types, target_col,
           /* _temporal_relationships = */ TemporalRelationships(),
           /* _vectors_map = */ PreprocessedVectorsMap(),
           /* _text_pairgram_word_limit = */ models::TEXT_PAIRGRAM_WORD_LIMIT,
-          /* contextual_columns = */ true, /* graph_info =*/graph_info);
+          /* contextual_columns = */ true, /* graph_info = */ graph_info);
 
-  dataset::BlockPtr graph_builder_block =
+  dataset::BlockPtr label_block = dataset::NumericalCategoricalBlock::make(
+      /* col = */ target_col,
+      /* n_classes= */ n_target_classes);
+
+  dataset::BlockPtr sparse_neighbor_block =
+      popNeighborTokensBlock(feature_blocks);
+
+  _featurizer = dataset::TabularFeaturizer::make(
+      /* input_blocks = */ std::move(feature_blocks), /* label_blocks = */ {label_block}, /* has_header= */ true,
+      /* delimiter= */ delimiter, /* parallel= */ true,
+      /* hash_range= */ DEFAULT_HASH_RANGE);
+
+  _graph_builder = dataset::TabularFeaturizer::make(
+      /* input_blocks = */ {graph_builder_block}, /* label_blocks = */ {}, /* has_header= */ true,
+      /* delimiter= */ delimiter, /* parallel= */ true,
+      /* hash_range= */ DEFAULT_HASH_RANGE);
 }
 
 dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(
@@ -54,6 +126,14 @@ dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(
   data_source->restart();
 
   _featurizer->updateColumnNumbers(column_number_map);
+  _graph_builder->updateColumnNumbers(column_number_map);
+
+  dataset::DatasetLoader graph_builder_loader(data_source, _graph_builder, /* shuffle = */ false);
+  graph_builder_loader.loadAll(/* batch_size = */ DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
+
+  // The featurizer will treat the next line as a header
+  // Restart so featurizer does not skip a sample.
+  data_source->restart();
 
   return std::make_unique<dataset::DatasetLoader>(data_source, _featurizer,
                                                   /* shuffle= */ training);
