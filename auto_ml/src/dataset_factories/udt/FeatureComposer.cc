@@ -1,5 +1,10 @@
 #include "FeatureComposer.h"
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/dataset_factories/udt/DatasetFactoryUtils.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
+#include <stdexcept>
+#include <dataset/src/blocks/GraphBlocks.h>
 
 namespace thirdai::automl::data {
 
@@ -41,15 +46,39 @@ UDTConfigPtr FeatureComposer::verifyConfigIsValid(
   return config;
 }
 
+std::vector<dataset::BlockPtr> makeGraphFeatureBlocks(const data::ColumnDataTypes& data_types, const GraphInfoPtr &graph_info) {
+  std::vector<dataset::BlockPtr> blocks;
+  for (const auto& [col_name, data_type] : data_types) {
+    if (asNodeID(data_type)) {
+      blocks.push_back(
+          dataset::NormalizedNeighborVectorsBlock::make(col_name, graph_info));
+      // We could alternatively build the neighbors block with the neighbors
+      // column, but using graph_info instead allows us to potentially not
+      // have to have a neighbors column for inference.
+      blocks.push_back(
+          dataset::NeighborTokensBlock::make(col_name, graph_info));
+    }
+
+  }
+  return blocks;
+}
+
+
 std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
-    const UDTConfig& config,
+    const data::ColumnDataTypes& data_types, const std::string& target,
     const TemporalRelationships& temporal_relationships,
     const PreprocessedVectorsMap& vectors_map,
-    uint32_t text_pairgrams_word_limit, bool contextual_columns) {
+    uint32_t text_pairgrams_word_limit, bool contextual_columns,
+    const GraphInfoPtr &graph_info) {
+    
   std::vector<dataset::BlockPtr> blocks;
 
+  if (graph_info) {
+    blocks = makeGraphFeatureBlocks(data_types, graph_info);
+  }
+
   auto non_temporal_columns =
-      getNonTemporalColumns(config.data_types, temporal_relationships);
+      getNonTemporalColumns(data_types, temporal_relationships);
 
   std::vector<dataset::TabularColumn> tabular_columns;
 
@@ -58,8 +87,8 @@ std::vector<dataset::BlockPtr> FeatureComposer::makeNonTemporalFeatureBlocks(
     data_types is an ordered map. Thus, the order of the input blocks
     remains consistent and so does the order of the vector segments.
   */
-  for (const auto& [col_name, data_type] : config.data_types) {
-    if (!non_temporal_columns.count(col_name) || col_name == config.target) {
+  for (const auto& [col_name, data_type] : data_types) {
+    if (!non_temporal_columns.count(col_name) || col_name == target) {
       continue;
     }
 

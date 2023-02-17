@@ -4,6 +4,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/models/GraphNetwork.h>
 #include <auto_ml/src/models/OutputProcessor.h>
@@ -325,8 +326,12 @@ void createUDTTypesSubmodule(py::module_& module) {
       .def(py::init<>(), docs::UDT_DATE_TYPE);
 
   // TODO(Josh): Add docs here and elsewhere
-  py::class_<automl::data::DateDataType, automl::data::DataType,
-             automl::data::DateDataTypePtr>(udt_types_submodule, "neighbors")
+  py::class_<automl::data::NeighborsDataType, automl::data::DataType,
+             automl::data::NeighborsDataTypePtr>(udt_types_submodule, "neighbors")
+      .def(py::init<>());
+
+  py::class_<automl::data::NodeIDDataType, automl::data::DataType,
+             automl::data::NodeIDDataTypePtr>(udt_types_submodule, "neighbors")
       .def(py::init<>());
 }
 

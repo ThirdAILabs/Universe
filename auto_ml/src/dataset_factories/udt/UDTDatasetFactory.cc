@@ -26,12 +26,15 @@ UDTDatasetFactory::UDTDatasetFactory(
       _regression_binning(regression_binning),
       _vectors_map(processAllMetadata()),
       _labeled_history_updating_processor(makeLabeledUpdatingProcessor()),
-      _unlabeled_non_updating_processor(makeUnlabeledNonUpdatingProcessor()) {}
+      _unlabeled_non_updating_processor(makeUnlabeledNonUpdatingProcessor()) {
+  verifyExpectedNumberOfGraphTypes(_config->data_types,
+                                      /* expected_count = */ 0);
+}
 
 dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     dataset::DataSourcePtr data_source, bool training) {
-  auto column_number_map = DatasetFactoryUtils::makeColumnNumberMapFromHeader(
-      *data_source, _config->delimiter);
+  auto column_number_map =
+      makeColumnNumberMapFromHeader(*data_source, _config->delimiter);
   std::vector<std::string> column_number_to_name =
       column_number_map.getColumnNumToColNameMap();
 
@@ -111,8 +114,8 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
 
   auto data_source = dataset::FileDataSource::make(metadata->metadata_file);
 
-  auto column_numbers = DatasetFactoryUtils::makeColumnNumberMapFromHeader(
-      *data_source, metadata->delimiter);
+  auto column_numbers =
+      makeColumnNumberMapFromHeader(*data_source, metadata->delimiter);
   data_source->restart();
 
   auto input_blocks = buildMetadataInputBlocks(*metadata);
@@ -164,8 +167,8 @@ UDTDatasetFactory::preprocessedVectorsFromDataset(
   // vectors as metadata, not training on them. Thus, we choose the somewhat
   // arbitrary value 2048 since it is large enough to use all threads.
   auto [datasets, ids] =
-      dataset_loader.loadAll(/* batch_size = */ DatasetFactoryUtils::
-                                 DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
+      dataset_loader.loadAll(/* batch_size = */
+                             DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
 
   if (datasets.size() != 1) {
     throw std::runtime_error(
@@ -275,8 +278,8 @@ std::vector<dataset::BlockPtr> UDTDatasetFactory::buildInputBlocks(
     bool should_update_history) {
   std::vector<dataset::BlockPtr> blocks =
       FeatureComposer::makeNonTemporalFeatureBlocks(
-          *_config, _temporal_relationships, _vectors_map,
-          _text_pairgram_word_limit, _contextual_columns);
+          _config->data_types, _config->target, _temporal_relationships,
+          _vectors_map, _text_pairgram_word_limit, _contextual_columns);
 
   if (_temporal_relationships.empty()) {
     return blocks;

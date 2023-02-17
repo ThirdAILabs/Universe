@@ -2,6 +2,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/DatasetFactoryUtils.h>
+#include <auto_ml/src/models/UDTUtils.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <stdexcept>
 
@@ -20,22 +21,27 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
       _max_neighbors(max_neighbors),
       _k_hop(k_hop),
       _store_node_features(store_node_features) {
-  if (_data_types.count("neighbors") == 0 ||
-      !asNeighbors(_data_types.at("neighbors"))) {
-    throw std::invalid_argument(
-        "There must be a neighbors column with data type "
-        "bolt.types.neighbors() to use a graph neural network.");
-  }
+  verifyExpectedNumberOfGraphTypes(data_types, /* expected_count = */ 1);
 
   if (_k_hop > 3 || _k_hop == 0) {
     throw std::invalid_argument("K hop must be between 1 and 3 inclusive.");
   }
+
+  GraphInfoPtr graph_info = std::make_shared<GraphInfo>();
+
+  std::vector<dataset::BlockPtr> blocks =
+      FeatureComposer::makeNonTemporalFeatureBlocks(
+          data_types, target_col,
+          /* _temporal_relationships = */ TemporalRelationships(),
+          /* _vectors_map = */ PreprocessedVectorsMap(),
+          /* _text_pairgram_word_limit = */ models::TEXT_PAIRGRAM_WORD_LIMIT,
+          /* contextual_columns = */ true, /* graph_info =*/graph_info);
 }
 
 dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(
     std::shared_ptr<dataset::DataSource> data_source, bool training) {
-  auto column_number_map = DatasetFactoryUtils::makeColumnNumberMapFromHeader(
-      *data_source, _delimiter);
+  auto column_number_map =
+      makeColumnNumberMapFromHeader(*data_source, _delimiter);
   // std::vector<std::string> column_number_to_name =
   // column_number_map.getColumnNumToColNameMap();
 

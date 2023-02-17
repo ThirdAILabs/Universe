@@ -4,6 +4,7 @@
 #include <cereal/types/string.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include "DataTypes.h"
+#include "GraphInfo.h"
 #include "TemporalContext.h"
 #include "UDTConfig.h"
 #include <dataset/src/blocks/BlockInterface.h>
@@ -40,10 +41,11 @@ class FeatureComposer {
       const TemporalRelationships& temporal_relationships);
 
   static std::vector<dataset::BlockPtr> makeNonTemporalFeatureBlocks(
-      const UDTConfig& config,
+      const data::ColumnDataTypes& data_types, const std::string& target,
       const TemporalRelationships& temporal_relationships,
       const PreprocessedVectorsMap& vectors_map,
-      uint32_t text_pairgrams_word_limit, bool contextual_columns);
+      uint32_t text_pairgrams_word_limit, bool contextual_columns,
+      const GraphInfoPtr &graph_info = nullptr);
 
   static std::vector<dataset::BlockPtr> makeTemporalFeatureBlocks(
       const UDTConfig& config,

@@ -108,7 +108,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   uint32_t _max_neighbors;
   uint32_t _k_hop;
   bool _store_node_features;
-  dataset::GraphFeaturizerPtr _featurizer;
+  dataset::FeaturizerPtr _graph_builder;
+  dataset::FeaturizerPtr _featurizer;
 };
 
 using GraphDatasetFactoryPtr = std::shared_ptr<GraphDatasetFactory>;

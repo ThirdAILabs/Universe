@@ -29,7 +29,6 @@ namespace thirdai::automl::models {
  * deployment config file.
  */
 class UniversalDeepTransformer final : public ModelPipeline {
-  static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;
   static constexpr const uint32_t DEFAULT_HIDDEN_DIM = 512;
 
  public:
