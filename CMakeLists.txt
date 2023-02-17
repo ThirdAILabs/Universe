@@ -139,11 +139,7 @@ if(MSVC)
     )
   endif()
   # Read this for /permissive- https://stackoverflow.com/a/24414279/4565794
-  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w /std:c++17 /permissive-")
-  set(VCPKG_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w /std:c++17 /permissive-")
-  message(STATUS "Setting CXX_FLAGS")
-  message(STATUS "    ${CMAKE_CXX_FLAGS}")
-  message(STATUS "    ${VCPKG_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w /permissive-")
 
   # We create an interface to plant compile flags and be cohesive with the rest
   # of the OpenMP::OpenMP_CXX linkages. This converts project wide compile flags
