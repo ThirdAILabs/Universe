@@ -67,9 +67,11 @@ class TabularDatasetFactory {
 
   bool hasTemporalRelationships() const { return !_temporal_context.empty(); }
 
-  uint32_t inputDim() const {
-    return _labeled_featurizer->getInputDim();
-  }
+  uint32_t inputDim() const { return _labeled_featurizer->getInputDim(); }
+
+  char delimiter() const { return _delimiter; }
+
+  const ColumnDataTypes& inputDataTypes() const { return _input_data_types; }
 
  private:
   dataset::TabularFeaturizerPtr makeFeaturizer(
