@@ -126,6 +126,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
                 "type": "fully_connected",
                 "dim": {"param_name": "output_dim"},
                 "sparsity": 0.1,
+                "activation": "sigmoid",
                 "sampling_config": {
                     "num_tables": 64,
                     "hashes_per_table": 4,
@@ -135,5 +136,5 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
             },
         ],
         "output": "output",
-        "loss": "CategoricalCrossEntropyLoss",
+        "loss": "BinaryCrossEntropyLoss",
     }
