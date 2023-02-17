@@ -1,11 +1,20 @@
 #pragma once
 
+#include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 
 namespace thirdai::automl::udt {
 
 class UDT {
  public:
+  UDT(data::ColumnDataTypes data_types,
+      const data::UserProvidedTemporalRelationships&
+          temporal_tracking_relationships,
+      const std::string& target_col, std::optional<uint32_t> n_target_classes,
+      bool integer_target, std::string time_granularity, uint32_t lookahead,
+      char delimiter, const std::optional<std::string>& model_config,
+      const config::ArgumentMap& user_args);
+
   void train(const dataset::DataSourcePtr& train_data, uint32_t epochs,
              float learning_rate, const std::optional<Validation>& validation,
              std::optional<size_t> batch_size,
@@ -99,6 +108,6 @@ class UDT {
 
  private:
   std::unique_ptr<UDTBackend> _backend;
-}; 
+};
 
 }  // namespace thirdai::automl::udt
