@@ -37,7 +37,7 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
           /* _text_pairgram_word_limit = */ models::TEXT_PAIRGRAM_WORD_LIMIT,
           /* contextual_columns = */ true, /* graph_info =*/graph_info);
 
-  
+  dataset::BlockPtr graph_builder_block =
 }
 
 dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(
@@ -47,7 +47,7 @@ dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(
 
   // TODO(Josh): Abstract this
   std::vector<std::string> column_number_to_name =
-  column_number_map.getColumnNumToColNameMap();
+      column_number_map.getColumnNumToColNameMap();
 
   // The featurizer will treat the next line as a header
   // Restart so featurizer does not skip a sample.

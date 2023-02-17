@@ -7,7 +7,6 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include <utility>
 
 namespace thirdai::dataset {
 
@@ -66,31 +65,6 @@ class MapSampleRef final : public ColumnarInputSample {
 
  private:
   const MapInput& _columns;
-};
-
-class GraphSampleRef final : public ColumnarInputSample {
- public:
-  explicit GraphSampleRef(const std::vector<std::string>& columns)
-      : _columns(columns) {}
-
-  std::string_view column(const ColumnIdentifier& column) final {
-    if (column.number() >= _columns.size()) {
-      std::stringstream error;
-      error << "Tried to access " << column.number()
-            << "-th column but this row only has " << _columns.size()
-            << " columns:" << std::endl;
-      for (const auto& column : _columns) {
-        error << " \"" << column << "\"";
-      }
-      throw std::invalid_argument(error.str());
-    }
-    return _columns.at(column.number());
-  }
-
-  uint32_t size() final { return _columns.size(); }
-
- private:
-  const std::vector<std::string>& _columns;
 };
 
 /**
@@ -263,23 +237,5 @@ class CsvBatchRef final : public ColumnarInputBatch {
   std::vector<std::optional<CsvSampleRef>> _ref_batch;
   char _delimiter;
   std::optional<uint32_t> _expected_num_columns;
-};
-
-class CsvRolledBatch final : public ColumnarInputBatch {
- public:
-  explicit CsvRolledBatch(std::vector<std::vector<std::string>> rows)
-      : _rows(std::move(rows)) {
-    for (const auto& row : _rows) {
-      _batch_values.push_back(GraphSampleRef(row));
-    }
-  }
-
-  ColumnarInputSample& at(uint32_t index) final { return _batch_values[index]; }
-
-  uint32_t size() const final { return _batch_values.size(); }
-
- private:
-  std::vector<std::vector<std::string>> _rows;
-  std::vector<GraphSampleRef> _batch_values;
 };
 }  // namespace thirdai::dataset

@@ -1,5 +1,6 @@
 #include "BlockInterface.h"
 #include <auto_ml/src/dataset_factories/udt/GraphInfo.h>
+#include <dataset/src/blocks/ColumnIdentifier.h>
 #include <exceptions/src/Exceptions.h>
 #include <cstdlib>
 #include <exception>
@@ -53,7 +54,9 @@ class NeighborTokensBlock final : public Block {
   // This is a bit of a hack/leaky abstraction, because if we ever try to append
   // this block with other blocks it will overflow. However, this block should
   // only ever be used on it's own.
-  uint64_t featureDim() const final { return std::numeric_limits<uint64_t>::max(); };
+  uint64_t featureDim() const final {
+    return std::numeric_limits<uint64_t>::max();
+  };
 
   bool isDense() const final { return true; };
 
@@ -61,8 +64,7 @@ class NeighborTokensBlock final : public Block {
                            ColumnarInputSample& input) final;
 
   static auto make(ColumnIdentifier col, automl::data::GraphInfoPtr graph_ptr) {
-    return std::make_shared<NeighborTokensBlock>(std::move(col),
-                                                            graph_ptr);
+    return std::make_shared<NeighborTokensBlock>(std::move(col), graph_ptr);
   }
 
  protected:
@@ -75,6 +77,46 @@ class NeighborTokensBlock final : public Block {
 
  private:
   ColumnIdentifier _node_id_col;
+  automl::data::GraphInfoPtr _graph_ptr;
+};
+
+/** Populates the passed in graph info ptr with adjacency and node feature data
+ */
+class GraphBuilderBlock final : public Block {
+ public:
+  explicit GraphBuilderBlock(ColumnIdentifier neighbor_col,
+                             ColumnIdentifier node_id_col,
+                             std::vector<ColumnIdentifier> feature_cols,
+                             automl::data::GraphInfoPtr graph_ptr)
+      : _node_id_col(std::move(node_id_col)),
+        _neighbor_col(std::move(neighbor_col)),
+        _feature_cols(std::move(feature_cols)),
+        _graph_ptr(std::move(graph_ptr)) {}
+
+  // This is 0 because we are not adding anything to the vector, only adding to
+  // the passed in graph info pointer
+  uint64_t featureDim() const final { return 0; };
+
+  bool isDense() const final { return true; };
+
+  Explanation explainIndex(uint32_t index_within_block,
+                           ColumnarInputSample& input) final;
+
+  static auto make(ColumnIdentifier col, automl::data::GraphInfoPtr graph_ptr) {
+    return std::make_shared<GraphBuilderBlock>(std::move(col), graph_ptr);
+  }
+
+ protected:
+  std::exception_ptr buildSegment(ColumnarInputSample& input,
+                                  SegmentedFeatureVector& vec) final;
+
+  std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
+    return {&_node_id_col};
+  }
+
+ private:
+  ColumnIdentifier _node_id_col, _neighbor_col;
+  std::vector<ColumnIdentifier> _feature_cols;
   automl::data::GraphInfoPtr _graph_ptr;
 };
 
