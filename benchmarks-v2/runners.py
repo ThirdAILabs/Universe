@@ -25,25 +25,26 @@ class Runner(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def run_benchmark(config, mlflow_uri, run_name):
+    def run_benchmark(config, run_name, mlflow_uri=None):
         pass
 
 
 class BoltFullyConnectedRunner(Runner):
     name = "fully_connected"
 
-    def run_benchmark(config, mlflow_uri, run_name):
+    def run_benchmark(config, run_name, mlflow_uri=None):
         model = define_fully_connected_bolt_model(config)
         train_set, train_labels, test_set, test_labels = config.load_datasets()
 
-        mlflow_callback = get_mlflow_callback(
-            run_name=run_name,
-            mlflow_uri=mlflow_uri,
-            experiment_name=config.experiment_name,
-            dataset_name=config.dataset_name,
-        )
-        callbacks = [mlflow_callback]
-        callbacks.extend(config.callbacks)
+        callbacks = config.callbacks
+        if mlflow_uri is not None:
+            mlflow_callback = get_mlflow_callback(
+                run_name=run_name,
+                mlflow_uri=mlflow_uri,
+                experiment_name=config.experiment_name,
+                dataset_name=config.dataset_name,
+            )
+            callbacks.append(mlflow_callback)
 
         train_config, eval_config = get_train_and_eval_configs(
             benchmark_config=config, callbacks=callbacks
@@ -67,18 +68,19 @@ class BoltFullyConnectedRunner(Runner):
 class DLRMRunner(Runner):
     name = "dlrm"
 
-    def run_benchmark(config, mlflow_uri, run_name):
+    def run_benchmark(config, run_name, mlflow_uri=None):
         model = define_dlrm_model(config)
         train_set, train_labels, test_set, test_labels = config.load_datasets()
 
-        mlflow_callback = get_mlflow_callback(
-            run_name=run_name,
-            mlflow_uri=mlflow_uri,
-            experiment_name=config.experiment_name,
-            dataset_name=config.dataset_name,
-        )
-        callbacks = [mlflow_callback]
-        callbacks.extend(config.callbacks)
+        callbacks = config.callbacks
+        if mlflow_uri is not None:
+            mlflow_callback = get_mlflow_callback(
+                run_name=run_name,
+                mlflow_uri=mlflow_uri,
+                experiment_name=config.experiment_name,
+                dataset_name=config.dataset_name,
+            )
+            callbacks.append(mlflow_callback)
 
         train_config, eval_config = get_train_and_eval_configs(
             benchmark_config=config, callbacks=callbacks
@@ -109,7 +111,7 @@ class DLRMRunner(Runner):
 class UDTRunner(Runner):
     name = "udt"
 
-    def run_benchmark(config, mlflow_uri, run_name):
+    def run_benchmark(config, run_name, mlflow_uri=None):
         if config.model_config is not None:
             deployment.dump_config(
                 config=json.dumps(config.model_config),
@@ -124,14 +126,15 @@ class UDTRunner(Runner):
             delimiter=config.delimiter,
             model_config=config.model_config_path,
         )
-        mlflow_callback = get_mlflow_callback(
-            run_name=run_name,
-            mlflow_uri=mlflow_uri,
-            experiment_name=config.experiment_name,
-            dataset_name=config.dataset_name,
-        )
-        callbacks = [mlflow_callback]
-        callbacks.extend(config.callbacks)
+        callbacks = config.callbacks
+        if mlflow_uri is not None:
+            mlflow_callback = get_mlflow_callback(
+                run_name=run_name,
+                mlflow_uri=mlflow_uri,
+                experiment_name=config.experiment_name,
+                dataset_name=config.dataset_name,
+            )
+            callbacks.append(mlflow_callback)
 
         model.train(
             config.train_file,

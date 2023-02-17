@@ -85,7 +85,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     train_file = "/share/data/wayfair/train_raw_queries.txt"
     test_file = "/share/data/wayfair/dev_raw_queries.txt"
     model_config_path = "wayfair.config"
-    num_epochs = 5
+    num_epochs = 1
     n_target_classes = 2
 
     data_types = {
@@ -126,6 +126,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
                 "type": "fully_connected",
                 "dim": {"param_name": "output_dim"},
                 "sparsity": 0.1,
+                "activation": "sigmoid",
                 "sampling_config": {
                     "num_tables": 64,
                     "hashes_per_table": 4,
@@ -135,5 +136,5 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
             },
         ],
         "output": "output",
-        "loss": "CategoricalCrossEntropyLoss",
+        "loss": "BinaryCrossEntropyLoss",
     }
