@@ -1,8 +1,45 @@
 #include "UDTRegression.h"
 #include <auto_ml/src/udt/utils/Conversion.h>
+#include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
 
 namespace thirdai::automl::udt {
+
+UDTRegression::UDTRegression(
+    const data::ColumnDataTypes& input_data_types,
+    data::UserProvidedTemporalRelationships temporal_tracking_relationships,
+    const std::string& target_name, const data::NumericalDataTypePtr& target,
+    std::optional<uint32_t> num_bins, std::string time_granularity,
+    uint32_t lookahead, char delimiter, const config::ArgumentMap& options) {
+  data::TabularBlockOptions tabular_options;
+
+  tabular_options.contextual_columns =
+      options.get<bool>("contextual_columns", "boolean", false);
+  tabular_options.time_granularity = std::move(time_granularity);
+  tabular_options.lookahead = lookahead;
+
+  _binning = dataset::RegressionBinningStrategy(
+      target->range.first, target->range.second, num_bins.value());
+
+  auto label_block =
+      dataset::RegressionCategoricalBlock::make(target_name, _binning, 3,
+                                                /* labels_sum_to_one= */ true);
+
+  bool force_parallel = options.get<bool>("force_parallel", "boolean", false);
+
+  _dataset_factory = std::make_shared<data::TabularDatasetFactory>(
+      input_data_types, temporal_tracking_relationships,
+      std::vector<dataset::BlockPtr>{label_block}, tabular_options, delimiter,
+      force_parallel);
+
+  uint32_t hidden_dim = options.get<uint32_t>("embedding_dim", "integer", 512);
+
+  _model = utils::defaultModel(_dataset_factory->inputDim(), hidden_dim,
+                               num_bins.value());
+
+  _freeze_hash_tables =
+      options.get<bool>("freeze_hash_tables", "boolean", true);
+}
 
 void UDTRegression::train(
     const dataset::DataSourcePtr& train_data, uint32_t epochs,
