@@ -3,7 +3,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
-#include <auto_ml/src/featurization/tabular/TabularDatasetFactory.h>
+#include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -65,7 +65,7 @@ class UDTClassifier final : public UDTBackend {
     return std::to_string(class_id);
   }
 
-  data::tabular::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
+  data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
   }
 
@@ -95,7 +95,7 @@ class UDTClassifier final : public UDTBackend {
   dataset::CategoricalBlockPtr _label_block;
 
   bolt::BoltGraphPtr _model;
-  data::tabular::TabularDatasetFactoryPtr _dataset_factory;
+  data::TabularDatasetFactoryPtr _dataset_factory;
 
   bool _freeze_hash_tables;
 

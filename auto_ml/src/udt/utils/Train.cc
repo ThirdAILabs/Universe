@@ -87,7 +87,7 @@ bolt::TrainConfig getTrainConfig(
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval,
-    data::tabular::TabularDatasetFactoryPtr& dataset_factory) {
+    data::TabularDatasetFactoryPtr& dataset_factory) {
   bolt::TrainConfig train_config =
       bolt::TrainConfig::makeConfig(learning_rate, epochs)
           .withMetrics(train_metrics)

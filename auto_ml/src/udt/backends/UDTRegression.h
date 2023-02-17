@@ -1,7 +1,7 @@
 #pragma once
 
 #include <bolt/src/graph/Graph.h>
-#include <auto_ml/src/featurization/tabular/TabularDatasetFactory.h>
+#include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/blocks/Categorical.h>
 
@@ -28,7 +28,7 @@ class UDTRegression final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class) final;
 
-  data::tabular::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
+  data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
   }
 
@@ -36,7 +36,7 @@ class UDTRegression final : public UDTBackend {
   float unbinActivations(const BoltVector& output) const;
 
   bolt::BoltGraphPtr _model;
-  data::tabular::TabularDatasetFactoryPtr _dataset_factory;
+  data::TabularDatasetFactoryPtr _dataset_factory;
 
   dataset::RegressionBinningStrategy _binning;
 

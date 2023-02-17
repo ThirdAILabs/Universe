@@ -5,13 +5,13 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/TemporalContext.h>
 #include <auto_ml/src/dataset_factories/udt/TemporalRelationshipsAutotuner.h>
-#include <auto_ml/src/featurization/tabular/TabularBlockComposer.h>
+#include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 
-namespace thirdai::automl::data::tabular {
+namespace thirdai::automl::data {
 
 class TabularDatasetFactory {
  public:
@@ -119,4 +119,4 @@ class TabularDatasetFactory {
 
 using TabularDatasetFactoryPtr = std::shared_ptr<TabularDatasetFactory>;
 
-}  // namespace thirdai::automl::data::tabular
+}  // namespace thirdai::automl::data

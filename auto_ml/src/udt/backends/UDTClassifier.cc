@@ -21,7 +21,7 @@ UDTClassifier::UDTClassifier(
     uint32_t n_target_classes, bool integer_target,
     std::string time_granularity, uint32_t lookahead, char delimiter,
     const config::ArgumentMap& options) {
-  data::tabular::TabularBlockOptions tabular_options;
+  data::TabularBlockOptions tabular_options;
 
   tabular_options.contextual_columns =
       options.get<bool>("contextual_columns", "boolean", false);
@@ -36,7 +36,7 @@ UDTClassifier::UDTClassifier(
 
   bool force_parallel = options.get<bool>("force_parallel", "boolean", false);
 
-  _dataset_factory = std::make_shared<data::tabular::TabularDatasetFactory>(
+  _dataset_factory = std::make_shared<data::TabularDatasetFactory>(
       input_data_types, temporal_tracking_relationships,
       std::vector<dataset::BlockPtr>{_label_block}, tabular_options, delimiter,
       force_parallel);

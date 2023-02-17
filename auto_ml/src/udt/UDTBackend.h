@@ -2,7 +2,7 @@
 
 #include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/featurization/tabular/TabularDatasetFactory.h>
+#include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <pybind11/pybind11.h>
@@ -103,8 +103,7 @@ class UDTBackend {
     throw notSupported("class_name");
   }
 
-  virtual data::tabular::TabularDatasetFactoryPtr tabularDatasetFactory()
-      const {
+  virtual data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return nullptr;
   }
 

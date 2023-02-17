@@ -1,10 +1,10 @@
 #include "TabularDatasetFactory.h"
-#include <auto_ml/src/featurization/tabular/TabularBlockComposer.h>
+#include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 
-namespace thirdai::automl::data::tabular {
+namespace thirdai::automl::data {
 
 TabularDatasetFactory::TabularDatasetFactory(
     const ColumnDataTypes& input_data_types,
@@ -191,4 +191,4 @@ TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   return preprocessedVectorsFromDataset(metadata_source, *key_vocab);
 }
 
-}  // namespace thirdai::automl::data::tabular
+}  // namespace thirdai::automl::data

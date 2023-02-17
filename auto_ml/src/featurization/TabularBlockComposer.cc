@@ -7,7 +7,7 @@
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 
-namespace thirdai::automl::data::tabular {
+namespace thirdai::automl::data {
 
 namespace {
 
@@ -327,4 +327,4 @@ dataset::BlockPtr makeTemporalNumericalBlock(
 
 }  // namespace
 
-}  // namespace thirdai::automl::data::tabular
+}  // namespace thirdai::automl::data
