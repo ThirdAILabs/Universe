@@ -51,21 +51,21 @@ UDTRegression::UDTRegression(
 }
 
 void UDTRegression::train(
-    const dataset::DataSourcePtr& train_data, uint32_t epochs,
-    float learning_rate, const std::optional<Validation>& validation,
+    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+    const std::optional<Validation>& validation,
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& train_metrics,
+    const std::vector<std::string>& metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
   bolt::TrainConfig train_config = utils::getTrainConfig(
-      epochs, learning_rate, validation, train_metrics, callbacks, verbose,
+      epochs, learning_rate, validation, metrics, callbacks, verbose,
       logging_interval, _dataset_factory);
 
   auto train_dataset =
-      _dataset_factory->getDatasetLoader(train_data, /* training= */ true);
+      _dataset_factory->getDatasetLoader(data, /* training= */ true);
 
   utils::train(_model, train_dataset, train_config, batch_size,
                max_in_memory_batches,

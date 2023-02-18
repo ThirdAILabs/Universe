@@ -41,11 +41,11 @@ class Validation {
 class UDTBackend {
  public:
   virtual void train(
-      const dataset::DataSourcePtr& train_data, uint32_t epochs,
-      float learning_rate, const std::optional<Validation>& validation,
+      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+      const std::optional<Validation>& validation,
       std::optional<size_t> batch_size,
       std::optional<size_t> max_in_memory_batches,
-      const std::vector<std::string>& train_metrics,
+      const std::vector<std::string>& metrics,
       const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
       bool verbose, std::optional<uint32_t> logging_interval) = 0;
 
@@ -70,20 +70,22 @@ class UDTBackend {
     throw notSupported("explain");
   }
 
-  virtual void coldstart(const dataset::DataSourcePtr& original_source,
+  virtual void coldstart(const dataset::DataSourcePtr& data,
                          const std::vector<std::string>& strong_column_names,
                          const std::vector<std::string>& weak_column_names,
-                         uint32_t epochs, float learning_rate,
-                         const std::vector<std::string>& train_metrics,
+                         float learning_rate, uint32_t epochs,
+                         const std::vector<std::string>& metrics,
                          const std::optional<Validation>& validation,
+                         const std::vector<bolt::CallbackPtr>& callbacks,
                          bool verbose) {
-    (void)original_source;
+    (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
-    (void)epochs;
     (void)learning_rate;
-    (void)train_metrics;
+    (void)epochs;
+    (void)metrics;
     (void)validation;
+    (void)callbacks;
     (void)verbose;
     throw notSupported("cold_start");
   }

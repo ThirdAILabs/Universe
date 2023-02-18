@@ -54,21 +54,21 @@ UDTClassifier::UDTClassifier(
 }
 
 void UDTClassifier::train(
-    const dataset::DataSourcePtr& train_data, uint32_t epochs,
-    float learning_rate, const std::optional<Validation>& validation,
+    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+    const std::optional<Validation>& validation,
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& train_metrics,
+    const std::vector<std::string>& metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
   bolt::TrainConfig train_config = utils::getTrainConfig(
-      epochs, learning_rate, validation, train_metrics, callbacks, verbose,
+      epochs, learning_rate, validation, metrics, callbacks, verbose,
       logging_interval, _dataset_factory);
 
   auto train_dataset =
-      _dataset_factory->getDatasetLoader(train_data, /* training= */ true);
+      _dataset_factory->getDatasetLoader(data, /* training= */ true);
 
   utils::train(_model, train_dataset, train_config, batch_size,
                max_in_memory_batches,
@@ -89,10 +89,10 @@ void UDTClassifier::train(
     } else if (!train_config.metrics().empty()) {
       // The number of training batches used is capped at 100 in case there is a
       // large training dataset.
-      train_data->restart();
+      data->restart();
       _binary_prediction_threshold =
           tuneBinaryClassificationPredictionThreshold(
-              /* data_source= */ train_data,
+              /* data_source= */ data,
               /* metric_name= */ train_config.metrics().at(0), batch_size);
     }
   }
@@ -176,11 +176,12 @@ std::vector<dataset::Explanation> UDTClassifier::explain(
 }
 
 void UDTClassifier::coldstart(
-    const dataset::DataSourcePtr& original_source,
+    const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names, uint32_t epochs,
-    float learning_rate, const std::vector<std::string>& train_metrics,
-    const std::optional<Validation>& validation, bool verbose) {
+    const std::vector<std::string>& weak_column_names, float learning_rate,
+    uint32_t epochs, const std::vector<std::string>& metrics,
+    const std::optional<Validation>& validation,
+    const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
   if (!integerTarget()) {
     throw std::invalid_argument(
         "Cold start pretraining currently only supports integer labels.");
@@ -200,7 +201,7 @@ void UDTClassifier::coldstart(
       _dataset_factory->inputDataTypes().begin()->first;
 
   auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
-      original_source, _dataset_factory->delimiter());
+      data, _dataset_factory->delimiter());
 
   thirdai::data::ColdStartTextAugmentation augmentation(
       /* strong_column_names= */ strong_column_names,
@@ -216,7 +217,7 @@ void UDTClassifier::coldstart(
       /* label_column_name= */ _label_block->columnName(),
       /* column_delimiter= */ _dataset_factory->delimiter(),
       /* label_delimiter= */ _label_block->delimiter(),
-      /* resource_name = */ original_source->resourceName());
+      /* resource_name = */ data->resourceName());
 
   // TODO(david): reconsider validation. Instead of forcing users to pass in a
   // supervised dataset of query product pairs, can we create a synthetic
@@ -226,10 +227,10 @@ void UDTClassifier::coldstart(
   // One idea here is to, for each product, generate a couple of fake user
   // queries which are just phrases of 3-4 consecutive words.
 
-  train(data_source, epochs, learning_rate, validation,
+  train(data_source, learning_rate, epochs, validation,
         /* batch_size = */ std::nullopt,
-        /* max_in_memory_batches= */ std::nullopt, train_metrics,
-        /* callbacks= */ {}, verbose,
+        /* max_in_memory_batches= */ std::nullopt, metrics,
+        /* callbacks= */ callbacks, /* verbose= */ verbose,
         /* logging_interval= */ std::nullopt);
 }
 

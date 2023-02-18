@@ -95,11 +95,11 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict())
-      .def("train", &udt::UDT::train, py::arg("train_data"), py::arg("epochs"),
-           py::arg("learning_rate"), py::arg("validation") = std::nullopt,
+      .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),
+           py::arg("epochs"), py::arg("validation") = std::nullopt,
            py::arg("batch_size") = std::nullopt,
            py::arg("max_in_memory_batches") = std::nullopt,
-           py::arg("train_metrics") = std::vector<std::string>{},
+           py::arg("metrics") = std::vector<std::string>{},
            py::arg("callbacks") = std::vector<bolt::CallbackPtr>{},
            py::arg("verbose") = true,
            py::arg("logging_interval") = std::nullopt)
@@ -114,6 +114,10 @@ void defineAutomlInModule(py::module_& module) {
       .def("predict_batch", &udt::UDT::predictBatch, py::arg("samples"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false)
+      .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
+           py::arg("strong_column_names"), py::arg("weak_column_names"),
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
+           py::arg("validation"), py::arg("callbacks"), py::arg("verbose"))
       .def("class_name", &udt::UDT::className)
       .def("save", &udt::UDT::save, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"));

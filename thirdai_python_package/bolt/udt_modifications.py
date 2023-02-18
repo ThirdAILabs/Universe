@@ -156,6 +156,17 @@ def modify_udt_classifier():
 def modify_udt():
     original_train = bolt.UDT.train
     original_evaluate = bolt.UDT.evaluate
+    original_cold_start = bolt.UDT.cold_start
+
+    def _convert_validation(validation: Optional[bolt.Validation]) -> None:
+        if validation is not None:
+            return bolt.UDTValidation(
+                data=_create_data_source(validation.filename()),
+                metrics=validation.metrics(),
+                steps_per_validation=validation.interval(),
+                sparse_inference=validation.sparse_inference(),
+            )
+        return None
 
     def wrapped_train(
         self,
@@ -172,23 +183,17 @@ def modify_udt():
     ):
         data_source = _create_data_source(filename)
 
-        if validation is not None:
-            validation = bolt.UDTValidation(
-                data=_create_data_source(validation.filename()),
-                metrics=validation.metrics(),
-                steps_per_validation=validation.interval(),
-                sparse_inference=validation.sparse_inference(),
-            )
+        validation = _convert_validation(validation)
 
         return original_train(
             self,
-            train_data=data_source,
+            data=data_source,
             learning_rate=learning_rate,
             epochs=epochs,
             validation=validation,
             batch_size=batch_size,
             max_in_memory_batches=max_in_memory_batches,
-            train_metrics=metrics,
+            metrics=metrics,
             callbacks=callbacks,
             verbose=verbose,
             logging_interval=logging_interval,
@@ -205,7 +210,6 @@ def modify_udt():
     ):
         data_source = _create_data_source(filename)
 
-        # TODO(Nicholas): add support for return metrics
         return original_evaluate(
             self,
             data=data_source,
@@ -216,8 +220,39 @@ def modify_udt():
             return_metrics=return_metrics,
         )
 
+    def wrapped_cold_start(
+        self,
+        filename: str,
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+        learning_rate: float = 0.001,
+        epochs: int = 5,
+        metrics: List[str] = [],
+        validation: Optional[bolt.Validation] = None,
+        callbacks: List[bolt.callbacks.Callback] = [],
+        verbose: bool = True,
+    ):
+        data_source = _create_data_source(filename)
+
+        validation = _convert_validation(validation)
+
+        original_cold_start(
+            self,
+            data=data_source,
+            strong_column_names=strong_column_names,
+            weak_column_names=weak_column_names,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            metrics=metrics,
+            validation=validation,
+            callbacks=callbacks,
+            verbose=verbose,
+        )
+
     delattr(bolt.UDT, "train")
     delattr(bolt.UDT, "evaluate")
+    delattr(bolt.UDT, "cold_start")
 
     bolt.UDT.train = wrapped_train
     bolt.UDT.evaluate = wrapped_evaluate
+    bolt.UDT.cold_start = wrapped_cold_start

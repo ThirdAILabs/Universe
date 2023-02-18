@@ -22,11 +22,11 @@ class UDTClassifier final : public UDTBackend {
       const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
-  void train(const dataset::DataSourcePtr& train_data, uint32_t epochs,
-             float learning_rate, const std::optional<Validation>& validation,
+  void train(const dataset::DataSourcePtr& data, float learning_rate,
+             uint32_t epochs, const std::optional<Validation>& validation,
              std::optional<size_t> batch_size,
              std::optional<size_t> max_in_memory_batches,
-             const std::vector<std::string>& train_metrics,
+             const std::vector<std::string>& metrics,
              const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
              bool verbose, std::optional<uint32_t> logging_interval) final;
 
@@ -46,12 +46,13 @@ class UDTClassifier final : public UDTBackend {
       const std::optional<std::variant<uint32_t, std::string>>& target_class)
       final;
 
-  void coldstart(const dataset::DataSourcePtr& original_source,
+  void coldstart(const dataset::DataSourcePtr& data,
                  const std::vector<std::string>& strong_column_names,
                  const std::vector<std::string>& weak_column_names,
-                 uint32_t epochs, float learning_rate,
-                 const std::vector<std::string>& train_metrics,
+                 float learning_rate, uint32_t epochs,
+                 const std::vector<std::string>& metrics,
                  const std::optional<Validation>& validation,
+                 const std::vector<bolt::CallbackPtr>& callbacks,
                  bool verbose) final;
 
   py::object embedding(const MapInput& sample) final;

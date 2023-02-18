@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <string>
@@ -16,15 +17,15 @@ class UDT {
       char delimiter, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
-  void train(const dataset::DataSourcePtr& train_data, uint32_t epochs,
-             float learning_rate, const std::optional<Validation>& validation,
+  void train(const dataset::DataSourcePtr& data, float learning_rate,
+             uint32_t epochs, const std::optional<Validation>& validation,
              std::optional<size_t> batch_size,
              std::optional<size_t> max_in_memory_batches,
-             const std::vector<std::string>& train_metrics,
+             const std::vector<std::string>& metrics,
              const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
              bool verbose, std::optional<uint32_t> logging_interval) {
-    _backend->train(train_data, epochs, learning_rate, validation, batch_size,
-                    max_in_memory_batches, train_metrics, callbacks, verbose,
+    _backend->train(data, learning_rate, epochs, validation, batch_size,
+                    max_in_memory_batches, metrics, callbacks, verbose,
                     logging_interval);
   }
 
@@ -53,15 +54,17 @@ class UDT {
     return _backend->explain(sample, target_class);
   }
 
-  void coldstart(const dataset::DataSourcePtr& original_source,
+  void coldstart(const dataset::DataSourcePtr& data,
                  const std::vector<std::string>& strong_column_names,
                  const std::vector<std::string>& weak_column_names,
-                 uint32_t epochs, float learning_rate,
-                 const std::vector<std::string>& train_metrics,
-                 const std::optional<Validation>& validation, bool verbose) {
-    return _backend->coldstart(original_source, strong_column_names,
-                               weak_column_names, epochs, learning_rate,
-                               train_metrics, validation, verbose);
+                 float learning_rate, uint32_t epochs,
+                 const std::vector<std::string>& metrics,
+                 const std::optional<Validation>& validation,
+                 const std::vector<bolt::CallbackPtr>& callbacks,
+                 bool verbose) {
+    return _backend->coldstart(data, strong_column_names, weak_column_names,
+                               learning_rate, epochs, metrics, validation,
+                               callbacks, verbose);
   }
 
   py::object embedding(const MapInput& sample) {
