@@ -7,6 +7,7 @@
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/models/OutputProcessor.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
+#include <auto_ml/src/udt/UDT.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
@@ -14,6 +15,20 @@
 #include <limits>
 
 namespace thirdai::automl::python {
+
+std::shared_ptr<udt::UDT> createUDT(
+    data::ColumnDataTypes data_types,
+    const data::UserProvidedTemporalRelationships&
+        temporal_tracking_relationships,
+    const std::string& target_col, std::optional<uint32_t> n_target_classes,
+    bool integer_target, std::string time_granularity, uint32_t lookahead,
+    char delimiter, const std::optional<std::string>& model_config,
+    const py::dict& user_args) {
+  return std::make_shared<udt::UDT>(
+      data_types, temporal_tracking_relationships, target_col, n_target_classes,
+      integer_target, time_granularity, lookahead, delimiter, model_config,
+      createArgumentMap(user_args));
+}
 
 void defineAutomlInModule(py::module_& module) {
   py::class_<models::ValidationOptions>(module, "Validation")
@@ -57,6 +72,45 @@ void defineAutomlInModule(py::module_& module) {
            docs::TEXT_CLASSIFIER_INIT)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
+
+#if THIRDAI_EXPOSE_ALL
+
+  py::class_<udt::Validation>(module, "UDTValidation")
+      .def(py::init<dataset::DataSourcePtr, std::vector<std::string>,
+                    std::optional<uint32_t>, bool>(),
+           py::arg("data"), py::arg("metrics"),
+           py::arg("steps_per_validation") = std::nullopt,
+           py::arg("sparse_inference") = false);
+
+  py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module, "UDT")
+      .def(py::init(&createUDT), py::arg("data_types"),
+           py::arg("temporal_tracking_relationships") =
+               data::UserProvidedTemporalRelationships(),
+           py::arg("target"), py::arg("n_target_classes") = std::nullopt,
+           py::arg("integer_target") = false,
+           py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
+           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("options") = py::dict())
+      .def("train", &udt::UDT::train, py::arg("train_data"), py::arg("epochs"),
+           py::arg("learning_rate"), py::arg("validation") = std::nullopt,
+           py::arg("batch_size") = std::nullopt,
+           py::arg("max_in_memory_batches") = std::nullopt,
+           py::arg("train_metrics") = std::vector<std::string>{},
+           py::arg("callbacks") = std::vector<bolt::CallbackPtr>{},
+           py::arg("verbose") = true,
+           py::arg("logging_interval") = std::nullopt)
+      .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
+           py::arg("metrics") = std::vector<std::string>{},
+           py::arg("sparse_inference") = false,
+           py::arg("return_predicted_class") = false, py::arg("verbose") = true)
+      .def("predict", &udt::UDT::predict, py::arg("sample"),
+           py::arg("sparse_inference") = false,
+           py::arg("return_predicted_class") = false)
+      .def("predict_batch", &udt::UDT::predictBatch, py::arg("samples"),
+           py::arg("sparse_inference") = false,
+           py::arg("return_predicted_class") = false);
+
+#endif
 }
 
 void createModelsSubmodule(py::module_& module) {
