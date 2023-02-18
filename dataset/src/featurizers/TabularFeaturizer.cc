@@ -40,8 +40,6 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     featurized_batch.push_back(std::vector<BoltVector>(input_batch.size()));
   }
 
-  std::cout << "NUM BLOCK LISTS " << _block_lists.size() << std::endl;
-
   /*
     These variables keep track of the presence of an erroneous input line.
     We do this instead of throwing an error directly because throwing

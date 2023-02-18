@@ -12,8 +12,9 @@ class DateBlockTests : public testing::Test {
   static std::vector<BoltVector> featurize(
       const std::vector<std::string>& input_rows) {
     TabularFeaturizer processor(
-        /* input_blocks = */ {std::make_shared<DateBlock>(/* col = */ 0)},
-        /* label_blocks = */ {});
+        /* block_lists = */ {dataset::BlockList(
+            {std::make_shared<DateBlock>(/* col = */ 0)})},
+        /* expected_num_cols = */ 1);
     return processor.featurize(input_rows).at(0);
   }
 

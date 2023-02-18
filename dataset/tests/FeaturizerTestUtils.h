@@ -31,20 +31,19 @@ class FeaturizerTestUtils {
   }
 
   /**
-   * Helper function that generates a vector of mock blocks
+   * Helper function that generates a BlockList of mock blocks
    * according to the given density configurations.
    * E.g. makeMockBlocks({true, false, true}) creates a
    * vector consisting of a dense block, followed by a
    * sparse block, followed by another dense block.
    */
-  static std::vector<std::shared_ptr<Block>> makeMockBlocks(
-      std::vector<bool> dense_configs) {
+  static dataset::BlockList makeMockBlocks(std::vector<bool> dense_configs) {
     std::vector<std::shared_ptr<Block>> blocks;
     for (uint32_t i = 0; i < dense_configs.size(); i++) {
       blocks.push_back(std::make_shared<MockBlock>(
           /* column = */ i, /* dense = */ dense_configs[i]));
     }
-    return blocks;
+    return dataset::BlockList(std::move(blocks));
   }
 
   static std::vector<std::string> floatVecToStringVec(

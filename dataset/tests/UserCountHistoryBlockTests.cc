@@ -14,7 +14,8 @@ namespace thirdai::dataset {
 static std::vector<BoltVector> processBatch(
     BlockPtr block, const std::vector<std::string>& input_rows) {
   TabularFeaturizer processor(
-      /* input_blocks= */ {std::move(block)}, /* label_blocks= */ {},
+      /* block_lists = */ {dataset::BlockList({std::move(block)})},
+      /* expected_num_cols = */ 3,
       /* has_header= */ false, /* delimiter= */ ',', /* parallel= */ false);
   auto batch = processor.featurize(input_rows).at(0);
   return std::move(batch);

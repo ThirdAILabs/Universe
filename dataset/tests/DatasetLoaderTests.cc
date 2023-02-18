@@ -32,17 +32,16 @@ class DatasetLoaderTests : public ::testing::Test {
     auto mock_block =
         std::make_shared<MockBlock>(/* column = */ 0, /* dense = */ true);
 
+    auto data_source = std::make_shared<FileDataSource>(_mock_file_name);
+
     /*
       2 input blocks vs 1 label block to distinguish
       between input and label vectors.
     */
-    std::vector<std::shared_ptr<Block>> input_blocks({mock_block, mock_block});
-    std::vector<std::shared_ptr<Block>> label_blocks({mock_block});
-
-    auto data_source = std::make_shared<FileDataSource>(_mock_file_name);
-
-    auto featurizer =
-        std::make_shared<TabularFeaturizer>(input_blocks, label_blocks);
+    auto featurizer = TabularFeaturizer::make(
+        /* block_lists = */ {dataset::BlockList({mock_block, mock_block}),
+                             dataset::BlockList({mock_block})},
+        /* expected_num_cols = */ 1);
 
     return DatasetLoader(data_source, featurizer, shuffle,
                          DatasetShuffleConfig(n_vecs_in_shuffle_buffer, seed));

@@ -1,5 +1,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/UserItemHistory.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -99,8 +100,9 @@ std::vector<BoltVector> processSamples(std::vector<std::string>& samples,
       track_last_n, ITEM_HASH_RANGE);
 
   TabularFeaturizer processor(
-      /* input_blocks = */ {user_item_history_block},
-      /* label_blocks = */ {}, /* has_header= */ false, /* delimiter= */ ',',
+      /* block_lists = */ {dataset::BlockList({user_item_history_block})},
+      /* expected_num_cols = */ 3, /* has_header= */ false,
+      /* delimiter= */ ',',
       /* parallel= */ parallel);
 
   auto batch = processor.featurize(samples).at(0);
@@ -235,14 +237,14 @@ TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
   auto records = ItemHistoryCollection::make();
 
   TabularFeaturizer processor(
-      /* input_blocks= */ {UserItemHistoryBlock::make(
+      /* block_lists = */ {dataset::BlockList({UserItemHistoryBlock::make(
           /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
           /* records= */ records, /* track_last_n= */ 3,
           /* item_hash_range= */ ITEM_HASH_RANGE,
           /* should_update_history= */ true,
           /* include_current_row= */ false,
-          /* item_col_delimiter= */ ' ')},
-      /* label_blocks= */ {},
+          /* item_col_delimiter= */ ' ')})},
+      /* expected_num_cols = */ 3,
       /* has_header= */ false,
       /* delimiter= */ ',',
       /* parallel= */ false);
@@ -271,15 +273,15 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
   auto records = ItemHistoryCollection::make();
 
   TabularFeaturizer processor(
-      /* input_blocks= */ {UserItemHistoryBlock::make(
+      /* input_blocks= */ {dataset::BlockList({UserItemHistoryBlock::make(
           /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
           /* records= */ records, /* track_last_n= */ 3,
           /* item_hash_range= */ 10000,
           /* should_update_history= */ true,
           /* include_current_row= */ false,
           /* item_col_delimiter= */ ' ',
-          /* time_lag= */ TimeObject::SECONDS_IN_DAY * 3)},
-      /* label_blocks= */ {},
+          /* time_lag= */ TimeObject::SECONDS_IN_DAY * 3)})},
+      /* eexpected_num_cols = */ 3,
       /* has_header= */ false,
       /* delimiter= */ ',',
       /* parallel= */ false);
@@ -293,12 +295,12 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
 TabularFeaturizer makeItemHistoryFeaturizer(ItemHistoryCollectionPtr history,
                                             uint32_t track_last_n,
                                             bool should_update_history) {
-  return {/* input_blocks= */ {UserItemHistoryBlock::make(
+  return {/* block_lists = */ {dataset::BlockList({UserItemHistoryBlock::make(
               /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
               std::move(history), track_last_n, ITEM_HASH_RANGE,
               should_update_history,
-              /* include_current_row= */ true)},
-          /* label_blocks= */ {},
+              /* include_current_row= */ true)})},
+          /* expected_num_cols = */ 3,
           /* has_header= */ false,
           /* delimiter= */ ',',
           /* parallel= */ false};
