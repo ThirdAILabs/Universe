@@ -160,16 +160,17 @@ UDTDatasetFactory::preprocessedVectorsFromDataset(
   // The batch size does not really matter here because we are storing these
   // vectors as metadata, not training on them. Thus, we choose the somewhat
   // arbitrary value 2048 since it is large enough to use all threads.
-  auto [datasets, ids] =
+  auto datasets =
       dataset_loader.loadAll(/* batch_size = */
                              DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
 
-  if (datasets.size() != 1) {
+  if (datasets.size() != 2) {
     throw std::runtime_error(
         "For now, the featurizer should return just a single input "
-        "dataset.");
+        "dataset and a single label dataset.");
   }
   auto vectors = datasets.at(0);
+  auto ids = datasets.at(1);
 
   std::unordered_map<std::string, BoltVector> preprocessed_vectors(ids->len());
 

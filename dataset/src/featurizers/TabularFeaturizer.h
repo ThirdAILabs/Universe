@@ -17,20 +17,12 @@ namespace thirdai::dataset {
  */
 class TabularFeaturizer : public Featurizer {
  public:
-  TabularFeaturizer(
-      std::vector<BlockList> block_lists, uint32_t expected_num_cols,
-      bool has_header = false, char delimiter = ',', bool parallel = true,
-      /*
-        If hash_range has a value, then features from different blocks
-        will be aggregated by hashing them to the same range but with
-        different hash salts. Otherwise, the features will be treated
-        as sparse vectors, which are then concatenated.
-      */
-      std::optional<uint32_t> hash_range = std::nullopt)
+  TabularFeaturizer(std::vector<BlockList> block_lists,
+                    uint32_t expected_num_cols, bool has_header = false,
+                    char delimiter = ',', bool parallel = true)
       : _expects_header(has_header),
         _delimiter(delimiter),
         _parallel(parallel),
-        _hash_range(hash_range),
         _num_cols_in_header(std::nullopt),
         _block_lists(std::move(block_lists)),
         _expected_num_cols(expected_num_cols) {}
@@ -55,7 +47,6 @@ class TabularFeaturizer : public Featurizer {
     std::vector<uint32_t> dims;
     dims.reserve(_block_lists.size());
     for (const auto& block_list : _block_lists) {
-      std::cout << "FEATURE DIM " << block_list.featureDim() << std::endl;
       dims.push_back(block_list.featureDim());
     }
     return dims;
@@ -103,8 +94,7 @@ class TabularFeaturizer : public Featurizer {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<Featurizer>(this), _expects_header, _delimiter,
-            _parallel, _hash_range, _num_cols_in_header, _expected_num_cols,
-            _block_lists);
+            _parallel, _num_cols_in_header, _expected_num_cols, _block_lists);
   }
 
   // Private constructor for cereal.
@@ -113,7 +103,6 @@ class TabularFeaturizer : public Featurizer {
   bool _expects_header;
   char _delimiter;
   bool _parallel;
-  std::optional<uint32_t> _hash_range;
   std::optional<uint32_t> _num_cols_in_header;
 
   std::vector<BlockList> _block_lists;

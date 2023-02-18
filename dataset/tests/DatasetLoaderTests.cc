@@ -54,8 +54,8 @@ class DatasetLoaderTests : public ::testing::Test {
     std::vector<BoltBatch> label_batches;
     while (auto batch = pipeline.loadSome(/* batch_size = */ batch_size,
                                           /* num_batches = */ 1)) {
-      input_batches.push_back(std::move(batch->first.at(0)->at(0)));
-      label_batches.push_back(std::move(batch->second->at(0)));
+      input_batches.push_back(std::move(batch->at(0)->at(0)));
+      label_batches.push_back(std::move(batch->at(1)->at(0)));
     }
     return {std::make_shared<BoltDataset>(std::move(input_batches)),
             std::make_shared<BoltDataset>(std::move(label_batches))};
@@ -244,8 +244,8 @@ TEST_F(DatasetLoaderTests, CorrectUnshuffledInMemoryData) {
   DatasetLoaderTests::setUp("mock0.txt");
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ false);
   auto in_memory_data = unshuffled_pipeline.loadAll(batch_size);
-  assertCorrectVectors(in_memory_data.first.at(0), in_memory_data.second);
-  ASSERT_TRUE(isOrdered(in_memory_data.first.at(0)));
+  assertCorrectVectors(in_memory_data.at(0), in_memory_data.at(1));
+  ASSERT_TRUE(isOrdered(in_memory_data.at(0)));
 }
 
 TEST_F(DatasetLoaderTests, CorrectUnshuffledStreamedData) {
@@ -260,8 +260,8 @@ TEST_F(DatasetLoaderTests, CorrectVectorsInShuffledInMemoryData) {
   DatasetLoaderTests::setUp("mock2.txt");
   auto shuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto in_memory_data = shuffled_pipeline.loadAll(batch_size);
-  assertCorrectVectors(in_memory_data.first.at(0), in_memory_data.second);
-  ASSERT_FALSE(isOrdered(in_memory_data.first.at(0)));
+  assertCorrectVectors(in_memory_data.at(0), in_memory_data.at(1));
+  ASSERT_FALSE(isOrdered(in_memory_data.at(0)));
 }
 
 TEST_F(DatasetLoaderTests, CorrectVectorsInShuffledStreamedData) {
@@ -279,8 +279,7 @@ TEST_F(DatasetLoaderTests, ShuffledInMemoryDataSameSeedSameOrder) {
   auto shuffled_pipeline_2 = makeMockPipeline(/* shuffle = */ true, seed);
   auto in_memory_data_1 = shuffled_pipeline_1.loadAll(batch_size);
   auto in_memory_data_2 = shuffled_pipeline_2.loadAll(batch_size);
-  ASSERT_TRUE(
-      sameOrder(in_memory_data_1.first.at(0), in_memory_data_2.first.at(0)));
+  ASSERT_TRUE(sameOrder(in_memory_data_1.at(0), in_memory_data_2.at(0)));
 }
 
 TEST_F(DatasetLoaderTests, ShuffledStreamedDataSameSeedSameOrder) {
@@ -303,8 +302,7 @@ TEST_F(DatasetLoaderTests, ShuffledInMemoryDataDifferentSeedDifferentOrder) {
       makeMockPipeline(/* shuffle = */ true, /* seed = */ 2);
   auto in_memory_data_1 = shuffled_pipeline_1.loadAll(batch_size);
   auto in_memory_data_2 = shuffled_pipeline_2.loadAll(batch_size);
-  ASSERT_FALSE(
-      sameOrder(in_memory_data_1.first.at(0), in_memory_data_2.first.at(0)));
+  ASSERT_FALSE(sameOrder(in_memory_data_1.at(0), in_memory_data_2.at(0)));
 }
 
 TEST_F(DatasetLoaderTests, ShuffledStreamedDataDifferentSeedDifferentOrder) {
@@ -324,7 +322,7 @@ TEST_F(DatasetLoaderTests, ShuffledInMemoryDataIsShuffledEnough) {
   DatasetLoaderTests::setUp("mock8.txt");
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto in_memory_data = unshuffled_pipeline.loadAll(batch_size);
-  assertShuffledEnough(in_memory_data.first.at(0));
+  assertShuffledEnough(in_memory_data.at(0));
 }
 
 TEST_F(DatasetLoaderTests, ShuffledStreamedDataIsShuffledEnough) {

@@ -602,7 +602,7 @@ class QueryCandidateGenerator {
     return dataset_loader
         ->loadAll(/* batch_size = */ _query_generator_config->batchSize(),
                   /* verbose = */ verbose)
-        .first.at(0);
+        .at(0);
   }
 
   std::tuple<uint32_t, uint32_t> mapColumnNamesToIndices(

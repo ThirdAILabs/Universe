@@ -27,7 +27,7 @@ struct SvmDatasetLoader {
     auto dataset_loader = DatasetLoader(data_source, featurizer,
                                         /* shuffle = */ false);
     auto datasets = dataset_loader.loadAll(batch_size);
-    return {datasets.first.at(0), datasets.second};
+    return {datasets.at(0), datasets.at(1)};
   }
 };
 
@@ -50,7 +50,7 @@ struct ClickThroughDatasetLoader {
     auto dataset_loader = DatasetLoader(data_source, featurizer,
                                         /* shuffle = */ false);
     auto datasets = dataset_loader.loadAll(batch_size);
-    return {datasets.first.at(0), datasets.first.at(1), datasets.second};
+    return {datasets.at(0), datasets.at(1), datasets.at(2)};
   }
 };
 

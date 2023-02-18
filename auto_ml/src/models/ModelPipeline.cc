@@ -3,6 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
+#include <dataset/src/Datasets.h>
 #include <licensing/src/CheckLicense.h>
 #include <pybind11/stl.h>
 #include <telemetry/src/PrometheusClient.h>
@@ -89,9 +90,11 @@ py::object ModelPipeline::evaluate(
   bolt::EvalConfig eval_config =
       eval_config_opt.value_or(bolt::EvalConfig::makeConfig());
 
-  auto [data, labels] =
+  std::vector<dataset::BoltDatasetPtr> datasets =
       dataset->loadAll(/* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
                        /* verbose = */ eval_config.verbose());
+  auto data = datasets.at(0);
+  auto labels = datasets.at(1);
 
   eval_config.returnActivations();
 
@@ -220,18 +223,21 @@ void ModelPipeline::trainInMemory(
     licensing::TrainPermissionsToken token) {
   auto loaded_data = dataset_loader->loadAll(
       /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
-  auto [train_data, train_labels] = std::move(loaded_data);
+  auto train_data = loaded_data.at(0);
+  auto train_labels = loaded_data.at(1);
 
   if (validation) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
         dataset::FileDataSource::make(validation->filename()),
         /* training= */ false);
 
-    auto [val_data, val_labels] = validation_dataset->loadAll(
+    auto val_data_and_labels = validation_dataset->loadAll(
         /* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
         /* verbose = */ train_config.verbose());
+    auto val_data = val_data_and_labels.at(0);
+    auto val_labels = val_data_and_labels.at(1);
 
-    train_config.withValidation(val_data, val_labels,
+    train_config.withValidation({val_data}, val_labels,
                                 validation->validationConfig(),
                                 validation->interval());
   }
@@ -241,14 +247,14 @@ void ModelPipeline::trainInMemory(
   if (_train_eval_config.freezeHashTables() && epochs > 1) {
     train_config.setEpochs(/* new_epochs=*/1);
 
-    _model->train(train_data, train_labels, train_config);
+    _model->train({train_data}, train_labels, train_config);
 
     _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
     train_config.setEpochs(/* new_epochs= */ epochs - 1);
   }
 
-  _model->train(train_data, train_labels, train_config, token);
+  _model->train({train_data}, train_labels, train_config, token);
 }
 
 // We take in the TrainConfig by value to copy it so we can modify the number
@@ -276,11 +282,13 @@ void ModelPipeline::trainOnStream(
         dataset::FileDataSource::make(validation->filename()),
         /* training= */ false);
 
-    auto [val_data, val_labels] = validation_dataset->loadAll(
+    auto val_data_and_labels = validation_dataset->loadAll(
         /* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
         /* verbose = */ validation->validationConfig().verbose());
+    auto val_data = val_data_and_labels.at(0);
+    auto val_labels = val_data_and_labels.at(1);
 
-    train_config.withValidation(val_data, val_labels,
+    train_config.withValidation({val_data}, val_labels,
                                 validation->validationConfig(),
                                 validation->interval());
   } else if (validation && !_dataset_factory->hasTemporalTracking()) {
@@ -316,7 +324,8 @@ void ModelPipeline::trainSingleEpochOnStream(
   while (auto datasets = dataset_loader->loadSome(
              batch_size, /* num_batches = */ max_in_memory_batches,
              /* verbose = */ train_config.verbose())) {
-    auto& [data, labels] = datasets.value();
+    auto data = datasets->at(0);
+    auto labels = datasets->at(1);
 
     _model->train({data}, labels, train_config, token);
   }
@@ -351,10 +360,9 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
   if (!loaded_data_opt.has_value()) {
     throw std::invalid_argument("No data found for training.");
   }
-  auto loaded_data = *loaded_data_opt;
 
-  auto data = std::move(loaded_data.first);
-  auto labels = std::move(loaded_data.second);
+  auto data = loaded_data_opt->at(0);
+  auto labels = loaded_data_opt->at(1);
 
   auto eval_config =
       bolt::EvalConfig::makeConfig().returnActivations().silence();

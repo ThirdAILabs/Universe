@@ -40,6 +40,8 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     featurized_batch.push_back(std::vector<BoltVector>(input_batch.size()));
   }
 
+  std::cout << "NUM BLOCK LISTS " << _block_lists.size() << std::endl;
+
   /*
     These variables keep track of the presence of an erroneous input line.
     We do this instead of throwing an error directly because throwing
@@ -94,9 +96,9 @@ BoltVector TabularFeaturizer::makeInputVector(ColumnarInputSample& sample) {
 IndexToSegmentFeatureMap TabularFeaturizer::getIndexToSegmentFeatureMap(
     ColumnarInputSample& input) {
   BoltVector vector;
-  auto segmented_vector =
-      makeSegmentedFeatureVector(_block_lists.at(0).areDense(), _hash_range,
-                                 /* store_segment_feature_map= */ true);
+  auto segmented_vector = makeSegmentedFeatureVector(
+      _block_lists.at(0).areDense(), _block_lists.at(0).hashRange(),
+      /* store_segment_feature_map= */ true);
 
   if (auto err =
           _block_lists.at(0).addVectorSegments(input, *segmented_vector)) {

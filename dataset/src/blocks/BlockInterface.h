@@ -339,6 +339,12 @@ class Block {
  */
 struct BlockList {
   explicit BlockList(std::vector<BlockPtr>&& blocks,
+                     /*
+                     If hash_range has a value, then features from different
+                     blocks will be aggregated by hashing them to the same range
+                     but with different hash salts. Otherwise, the features will
+                     be treated as sparse vectors, which are then concatenated.
+                   */
                      std::optional<uint32_t> hash_range = std::nullopt)
       : _blocks(std::move(blocks)),
         _are_dense(computeAreDense(_blocks)),
@@ -449,7 +455,8 @@ struct BlockList {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_blocks, _are_dense, _expected_num_columns, _feature_dim);
+    archive(_blocks, _are_dense, _expected_num_columns, _feature_dim,
+            _hash_range);
   }
 };
 

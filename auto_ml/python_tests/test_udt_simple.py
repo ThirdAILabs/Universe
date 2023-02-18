@@ -371,3 +371,6 @@ def test_return_metrics():
 @pytest.mark.parametrize("encoding", ["none", "local", "global"])
 def test_udt_accepts_valid_text_encodings(encoding):
     make_simple_trained_model(text_encoding_type=encoding)
+
+
+test_explanations_total_percentage()
