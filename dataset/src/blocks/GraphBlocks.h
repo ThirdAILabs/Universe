@@ -61,7 +61,7 @@ class NeighborTokensBlock final : public Block {
     return std::numeric_limits<uint32_t>::max();
   };
 
-  bool isDense() const final { return true; };
+  bool isDense() const final { return false; };
 
   Explanation explainIndex(uint32_t index_within_block,
                            ColumnarInputSample& input) final;
@@ -100,7 +100,10 @@ class GraphBuilderBlock final : public Block {
   // the passed in graph info pointer
   uint32_t featureDim() const final { return 0; };
 
-  bool isDense() const final { return true; };
+  bool isDense() const final {
+    // featureDim of 0 is "dense"
+    return true;
+  };
 
   Explanation explainIndex(uint32_t index_within_block,
                            ColumnarInputSample& input) final;

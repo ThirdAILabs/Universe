@@ -84,21 +84,21 @@ py::object ModelPipeline::evaluate(
     bool return_predicted_class, bool return_metrics) {
   auto start_time = std::chrono::system_clock::now();
 
-  auto dataset = _dataset_factory->getLabeledDatasetLoader(
+  auto dataset_loader = _dataset_factory->getLabeledDatasetLoader(
       data_source, /* training= */ false);
 
   bolt::EvalConfig eval_config =
       eval_config_opt.value_or(bolt::EvalConfig::makeConfig());
 
   std::vector<dataset::BoltDatasetPtr> datasets =
-      dataset->loadAll(/* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
-                       /* verbose = */ eval_config.verbose());
-  auto data = datasets.at(0);
-  auto labels = datasets.at(1);
+      dataset_loader->loadAll(/* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
+                              /* verbose = */ eval_config.verbose());
+  auto labels = datasets.back();
+  datasets.pop_back();
 
   eval_config.returnActivations();
 
-  auto [metrics, output] = _model->evaluate({data}, labels, eval_config);
+  auto [metrics, output] = _model->evaluate(datasets, labels, eval_config);
 
   auto py_output = return_metrics ? py::cast(metrics)
                                   : _output_processor->processOutputTracker(
@@ -221,23 +221,23 @@ void ModelPipeline::trainInMemory(
     dataset::DatasetLoaderPtr& dataset_loader, bolt::TrainConfig train_config,
     const std::optional<ValidationOptions>& validation, size_t batch_size,
     licensing::TrainPermissionsToken token) {
-  auto loaded_data = dataset_loader->loadAll(
+  auto datasets = dataset_loader->loadAll(
       /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
-  auto train_data = loaded_data.at(0);
-  auto train_labels = loaded_data.at(1);
+  auto labels = datasets.back();
+  datasets.pop_back();
 
   if (validation) {
     auto validation_dataset = _dataset_factory->getLabeledDatasetLoader(
         dataset::FileDataSource::make(validation->filename()),
         /* training= */ false);
 
-    auto val_data_and_labels = validation_dataset->loadAll(
+    auto val_datasets = validation_dataset->loadAll(
         /* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
         /* verbose = */ train_config.verbose());
-    auto val_data = val_data_and_labels.at(0);
-    auto val_labels = val_data_and_labels.at(1);
+    auto val_labels = val_datasets.back();
+    val_datasets.pop_back();
 
-    train_config.withValidation({val_data}, val_labels,
+    train_config.withValidation(val_datasets, val_labels,
                                 validation->validationConfig(),
                                 validation->interval());
   }
@@ -247,14 +247,14 @@ void ModelPipeline::trainInMemory(
   if (_train_eval_config.freezeHashTables() && epochs > 1) {
     train_config.setEpochs(/* new_epochs=*/1);
 
-    _model->train({train_data}, train_labels, train_config);
+    _model->train(datasets, labels, train_config);
 
     _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
     train_config.setEpochs(/* new_epochs= */ epochs - 1);
   }
 
-  _model->train({train_data}, train_labels, train_config, token);
+  _model->train(datasets, labels, train_config, token);
 }
 
 // We take in the TrainConfig by value to copy it so we can modify the number
@@ -282,13 +282,13 @@ void ModelPipeline::trainOnStream(
         dataset::FileDataSource::make(validation->filename()),
         /* training= */ false);
 
-    auto val_data_and_labels = validation_dataset->loadAll(
+    auto val_datasets = validation_dataset->loadAll(
         /* batch_size = */ DEFAULT_EVALUATE_BATCH_SIZE,
         /* verbose = */ validation->validationConfig().verbose());
-    auto val_data = val_data_and_labels.at(0);
-    auto val_labels = val_data_and_labels.at(1);
+    auto val_labels = val_datasets.back();
+    val_datasets.pop_back();
 
-    train_config.withValidation({val_data}, val_labels,
+    train_config.withValidation(val_datasets, val_labels,
                                 validation->validationConfig(),
                                 validation->interval());
   } else if (validation && !_dataset_factory->hasTemporalTracking()) {
@@ -324,10 +324,10 @@ void ModelPipeline::trainSingleEpochOnStream(
   while (auto datasets = dataset_loader->loadSome(
              batch_size, /* num_batches = */ max_in_memory_batches,
              /* verbose = */ train_config.verbose())) {
-    auto data = datasets->at(0);
-    auto labels = datasets->at(1);
+    auto labels = datasets->back();
+    datasets->pop_back();
 
-    _model->train({data}, labels, train_config, token);
+    _model->train(*datasets, labels, train_config, token);
   }
 
   dataset_loader->restart();
@@ -361,12 +361,12 @@ std::optional<float> ModelPipeline::tuneBinaryClassificationPredictionThreshold(
     throw std::invalid_argument("No data found for training.");
   }
 
-  auto data = loaded_data_opt->at(0);
-  auto labels = loaded_data_opt->at(1);
+  auto labels = loaded_data_opt->back();
+  loaded_data_opt->pop_back();
 
   auto eval_config =
       bolt::EvalConfig::makeConfig().returnActivations().silence();
-  auto output = _model->evaluate({data}, labels, eval_config);
+  auto output = _model->evaluate(*loaded_data_opt, labels, eval_config);
   auto& activations = output.second;
 
   double best_metric_value = bolt::makeMetric(metric_name)->worst();
