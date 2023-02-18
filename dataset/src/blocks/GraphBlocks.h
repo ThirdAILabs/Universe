@@ -118,7 +118,14 @@ class GraphBuilderBlock final : public Block {
                                   SegmentedFeatureVector& vec) final;
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
-    return {&_node_id_col};
+    std::vector<ColumnIdentifier*> column_identifiers;
+    column_identifiers.reserve(_feature_cols.size());
+    for (auto& _feature_col : _feature_cols) {
+      column_identifiers.push_back(&_feature_col);
+    }
+    column_identifiers.push_back(&_node_id_col);
+    column_identifiers.push_back(&_neighbor_col);
+    return column_identifiers;
   }
 
  private:

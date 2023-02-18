@@ -1,4 +1,5 @@
 #include "GraphInfo.h"
+#include <utility>
 
 namespace thirdai::automl::data {
 
@@ -22,8 +23,11 @@ std::vector<uint64_t>& GraphInfo::neighbors(uint64_t node_id) {
 
 void GraphInfo::insertNode(uint64_t node_id, std::vector<float> features,
                            std::vector<uint64_t> neighbors) {
-  _node_id_to_feature_vector.at(node_id) = std::move(features);
-  _node_id_to_neighbors.at(node_id) = std::move(neighbors);
+#pragma omp critical
+  {
+    _node_id_to_feature_vector[node_id] = std::move(features);
+    _node_id_to_neighbors[node_id] = std::move(neighbors);
+  }
 }
 
 void GraphInfo::clear() {
