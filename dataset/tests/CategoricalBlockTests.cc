@@ -198,7 +198,7 @@ TEST_F(CategoricalBlockTest, RegressionCategoricalBlock) {
   std::vector<std::string> rows = {"3.7", "2.8",  "9.2",  "5.9",
                                    "1.3", "10.8", "12.1", "-3.2"};
 
-  auto labels = featurizer.featurize(rows).at(1);
+  auto labels = featurizer.featurize(rows).at(0);
 
   std::vector<std::vector<uint32_t>> expected_labels = {
       {4, 5, 6}, {2, 3, 4}, {15, 16, 17}, {8, 9, 10},

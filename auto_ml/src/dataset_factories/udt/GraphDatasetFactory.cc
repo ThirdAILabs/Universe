@@ -77,15 +77,15 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
   // TODO(Josh): Delete this everywhere if not needed, otherwise implement
   (void)_max_neighbors;
 
-  verifyExpectedNumberOfGraphTypes(data_types, /* expected_count = */ 1);
+  verifyExpectedNumberOfGraphTypes(_data_types, /* expected_count = */ 1);
 
   dataset::BlockPtr graph_builder_block;
   std::tie(_graph_info, graph_builder_block) =
-      createGraphInfoAndBuilder(data_types);
+      createGraphInfoAndBuilder(_data_types);
 
   std::vector<dataset::BlockPtr> feature_blocks =
       FeatureComposer::makeNonTemporalFeatureBlocks(
-          data_types, target_col,
+          _data_types, _target_col,
           /* temporal_relationships = */ TemporalRelationships(),
           /* vectors_map = */ PreprocessedVectorsMap(),
           /* text_pairgrams_word_limit = */ TEXT_PAIRGRAM_WORD_LIMIT,
@@ -95,7 +95,7 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
       popNeighborTokensBlock(feature_blocks);
 
   dataset::BlockPtr label_block = dataset::NumericalCategoricalBlock::make(
-      /* col = */ target_col,
+      /* col = */ _target_col,
       /* n_classes= */ n_target_classes);
 
   _featurizer = dataset::TabularFeaturizer::make(
@@ -104,13 +104,13 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
                                /* hash_range = */ DEFAULT_HASH_RANGE),
                            dataset::BlockList({sparse_neighbor_block}),
                            dataset::BlockList({label_block})},
-      /* expected_num_columns = */ data_types.size(),
+      /* expected_num_columns = */ _data_types.size(),
       /* has_header= */ true,
       /* delimiter= */ delimiter, /* parallel= */ true);
 
   _graph_builder = dataset::TabularFeaturizer::make(
       /* blocks = */ {dataset::BlockList({graph_builder_block})},
-      /* expected_num_columns = */ data_types.size(),
+      /* expected_num_columns = */ _data_types.size(),
       /* has_header= */ true,
       /* delimiter= */ delimiter, /* parallel= */ true);
 }
