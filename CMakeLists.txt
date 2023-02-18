@@ -269,6 +269,7 @@ add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 # copies of gmock
 set(ENABLE_TESTING OFF)
 set(ENABLE_PUSH OFF)
+set(ENABLE_COMPRESSION OFF)
 add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
 
 # PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
@@ -407,6 +408,7 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal prometheus-cpp::pull)
+
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
                                        OpenSSL::SSL)
