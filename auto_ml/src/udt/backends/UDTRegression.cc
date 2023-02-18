@@ -116,7 +116,7 @@ py::object UDTRegression::predictBatch(const MapInputBatch& samples,
   BoltBatch outputs = _model->predictSingleBatch(
       _dataset_factory->featurizeInputBatch(samples), sparse_inference);
 
-  utils::NumpyArray<uint32_t> predictions(outputs.getBatchSize());
+  utils::NumpyArray<float> predictions(outputs.getBatchSize());
   for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
     predictions.mutable_at(i) = unbinActivations(outputs[i]);
   }
