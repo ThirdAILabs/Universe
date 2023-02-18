@@ -30,7 +30,7 @@ class UDTRegression final : public UDTBackend {
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool return_predicted_class,
-                      bool verbose) final;
+                      bool verbose, bool return_metrics) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class) final;

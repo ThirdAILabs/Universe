@@ -10,6 +10,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
+#include <pybind11/stl.h>
 #include <stdexcept>
 #include <variant>
 
@@ -96,7 +97,8 @@ void UDTClassifier::train(
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
                                    bool sparse_inference,
-                                   bool return_predicted_class, bool verbose) {
+                                   bool return_predicted_class, bool verbose,
+                                   bool return_metrics) {
   bolt::EvalConfig eval_config =
       utils::getEvalConfig(metrics, sparse_inference, verbose);
 
@@ -104,7 +106,11 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
       _dataset_factory->getDatasetLoader(data, /* training= */ false)
           ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
 
-  auto [_, output] = _model->evaluate(test_data, test_labels, eval_config);
+  auto [output_metrics, output] =
+      _model->evaluate(test_data, test_labels, eval_config);
+  if (return_metrics) {
+    return py::cast(output_metrics);
+  }
 
   if (return_predicted_class) {
     utils::NumpyArray<uint32_t> predictions(output.numSamples());

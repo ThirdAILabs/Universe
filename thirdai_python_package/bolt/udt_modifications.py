@@ -213,8 +213,8 @@ def modify_udt():
             sparse_inference=use_sparse_inference,
             return_predicted_class=return_predicted_class,
             verbose=verbose,
+            return_metrics=return_metrics,
         )
-
 
     delattr(bolt.UDT, "train")
     delattr(bolt.UDT, "evaluate")

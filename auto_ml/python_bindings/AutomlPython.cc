@@ -36,7 +36,11 @@ void defineAutomlInModule(py::module_& module) {
                     std::optional<uint32_t>, bool>(),
            py::arg("filename"), py::arg("metrics"),
            py::arg("interval") = std::nullopt,
-           py::arg("use_sparse_inference") = false, docs::VALIDATION);
+           py::arg("use_sparse_inference") = false, docs::VALIDATION)
+      .def("filename", &models::ValidationOptions::filename)
+      .def("metrics", &models::ValidationOptions::metrics)
+      .def("interval", &models::ValidationOptions::interval)
+      .def("sparse_inference", &models::ValidationOptions::sparseInference);
 
   /**
    * This class definition overrides the __new__ method because we want to
@@ -102,13 +106,15 @@ void defineAutomlInModule(py::module_& module) {
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false,
-           py::arg("return_predicted_class") = false, py::arg("verbose") = true)
+           py::arg("return_predicted_class") = false, py::arg("verbose") = true,
+           py::arg("return_metrics") = false)
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false)
       .def("predict_batch", &udt::UDT::predictBatch, py::arg("samples"),
            py::arg("sparse_inference") = false,
-           py::arg("return_predicted_class") = false);
+           py::arg("return_predicted_class") = false)
+      .def("class_name", &udt::UDT::className);
 
 #endif
 }

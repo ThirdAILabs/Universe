@@ -3,6 +3,7 @@
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
+#include <pybind11/stl.h>
 
 namespace thirdai::automl::udt {
 
@@ -70,7 +71,8 @@ void UDTRegression::train(
 py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
                                    bool sparse_inference,
-                                   bool return_predicted_class, bool verbose) {
+                                   bool return_predicted_class, bool verbose,
+                                   bool return_metrics) {
   (void)return_predicted_class;  // No classes to return in regression;
 
   bolt::EvalConfig eval_config =
@@ -80,7 +82,11 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
       _dataset_factory->getDatasetLoader(data, /* training= */ false)
           ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
 
-  auto [_, output] = _model->evaluate(test_data, test_labels, eval_config);
+  auto [output_metrics, output] =
+      _model->evaluate(test_data, test_labels, eval_config);
+  if (return_metrics) {
+    return py::cast(output_metrics);
+  }
 
   utils::NumpyArray<float> output_array(output.numSamples());
 

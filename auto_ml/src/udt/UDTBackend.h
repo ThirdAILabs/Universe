@@ -52,7 +52,8 @@ class UDTBackend {
   virtual py::object evaluate(const dataset::DataSourcePtr& data,
                               const std::vector<std::string>& metrics,
                               bool sparse_inference,
-                              bool return_predicted_class, bool verbose) = 0;
+                              bool return_predicted_class, bool verbose,
+                              bool return_metrics) = 0;
 
   virtual py::object predict(const MapInput& sample, bool sparse_inference,
                              bool return_predicted_class) = 0;
