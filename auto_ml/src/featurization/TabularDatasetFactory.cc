@@ -23,9 +23,10 @@ TabularDatasetFactory::TabularDatasetFactory(
   _labeled_featurizer = makeFeaturizer(input_data_types, temporal_relationships,
                                        /* should_update_history= */ true,
                                        options, label_blocks, parallel);
-  _inference_featurizer = makeFeaturizer(
-      input_data_types, temporal_relationships,
-      /* should_update_history= */ false, options, label_blocks, parallel);
+  _inference_featurizer =
+      makeFeaturizer(input_data_types, temporal_relationships,
+                     /* should_update_history= */ false, options,
+                     /* label_blocks= */ {}, parallel);
 }
 
 namespace {

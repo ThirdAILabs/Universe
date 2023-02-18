@@ -52,6 +52,8 @@ class ValidationOptions {
 
   const std::vector<std::string>& metrics() const { return _metrics; }
 
+  bool sparseInference() const { return _use_sparse_inference; }
+
  private:
   std::string _filename;
   std::vector<std::string> _metrics;

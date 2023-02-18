@@ -151,3 +151,73 @@ def modify_udt_classifier():
     bolt.models.Pipeline.train = wrapped_train
     bolt.models.Pipeline.evaluate = wrapped_evaluate
     bolt.models.UDTClassifier.cold_start = wrapped_cold_start
+
+
+def modify_udt():
+    original_train = bolt.UDT.train
+    original_evaluate = bolt.UDT.evaluate
+
+    def wrapped_train(
+        self,
+        filename: str,
+        learning_rate: float = 0.001,
+        epochs: int = 3,
+        validation: Optional[bolt.Validation] = None,
+        batch_size: Optional[int] = None,
+        max_in_memory_batches: Optional[int] = None,
+        verbose: bool = True,
+        callbacks: List[bolt.callbacks.Callback] = [],
+        metrics: List[str] = [],
+        logging_interval: Optional[int] = None,
+    ):
+        data_source = _create_data_source(filename)
+
+        if validation is not None:
+            validation = bolt.UDTValidation(
+                data=_create_data_source(validation.filename()),
+                metrics=validation.metrics(),
+                steps_per_validation=validation.interval(),
+                sparse_inference=validation.sparse_inference(),
+            )
+
+        return original_train(
+            self,
+            train_data=data_source,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            validation=validation,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            train_metrics=metrics,
+            callbacks=callbacks,
+            verbose=verbose,
+            logging_interval=logging_interval,
+        )
+
+    def wrapped_evaluate(
+        self,
+        filename: str,
+        metrics: List[str] = [],
+        use_sparse_inference: bool = False,
+        return_predicted_class: bool = False,
+        return_metrics: bool = False,
+        verbose: bool = True,
+    ):
+        data_source = _create_data_source(filename)
+
+        # TODO(Nicholas): add support for return metrics
+        return original_evaluate(
+            self,
+            data=data_source,
+            metrics=metrics,
+            sparse_inference=use_sparse_inference,
+            return_predicted_class=return_predicted_class,
+            verbose=verbose,
+        )
+
+
+    delattr(bolt.UDT, "train")
+    delattr(bolt.UDT, "evaluate")
+
+    bolt.UDT.train = wrapped_train
+    bolt.UDT.evaluate = wrapped_evaluate

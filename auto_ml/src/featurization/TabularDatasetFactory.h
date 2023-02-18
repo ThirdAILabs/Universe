@@ -33,9 +33,9 @@ class TabularDatasetFactory {
     dataset::MapBatchRef inputs_ref(inputs);
 
     std::vector<BoltBatch> result;
-    for (auto& batch : _inference_featurizer->featurize(inputs_ref)) {
-      result.emplace_back(std::move(batch));
-    }
+
+    result.emplace_back(
+        std::move(_inference_featurizer->featurize(inputs_ref).at(0)));
 
     return result;
   }
