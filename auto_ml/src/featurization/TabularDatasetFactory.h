@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt/src/root_cause_analysis/RootCauseAnalysis.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
@@ -100,6 +101,13 @@ class TabularDatasetFactory {
       throw std::invalid_argument("'" + col_name + "' is an invalid column.");
     }
   }
+
+  TabularDatasetFactory() {}
+
+  friend cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive);
 
   dataset::TabularFeaturizerPtr _labeled_featurizer;
   dataset::TabularFeaturizerPtr _inference_featurizer;

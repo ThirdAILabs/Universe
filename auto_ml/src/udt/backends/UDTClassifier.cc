@@ -1,4 +1,8 @@
 #include "UDTClassifier.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
@@ -377,4 +381,16 @@ uint32_t UDTClassifier::predictedClass(const BoltVector& vector) {
   return vector.getHighestActivationId();
 }
 
+template void UDTClassifier::serialize(cereal::BinaryInputArchive&);
+template void UDTClassifier::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void UDTClassifier::serialize(Archive& archive) {
+  archive(cereal::base_class<UDTBackend>(this), _class_name_to_neuron,
+          _label_block, _model, _dataset_factory, _freeze_hash_tables,
+          _binary_prediction_threshold);
+}
+
 }  // namespace thirdai::automl::udt
+
+CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTClassifier)

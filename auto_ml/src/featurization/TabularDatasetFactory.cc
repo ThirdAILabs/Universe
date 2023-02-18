@@ -1,4 +1,8 @@
 #include "TabularDatasetFactory.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/map.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/unordered_map.hpp>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
@@ -188,6 +192,15 @@ TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
       /* shuffle = */ false);
 
   return preprocessedVectorsFromDataset(metadata_source, *key_vocab);
+}
+
+template void TabularDatasetFactory::serialize(cereal::BinaryInputArchive&);
+template void TabularDatasetFactory::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void TabularDatasetFactory::serialize(Archive& archive) {
+  archive(_labeled_featurizer, _inference_featurizer, _metadata_processors,
+          _vectors_map, _temporal_context, _input_data_types, _delimiter);
 }
 
 }  // namespace thirdai::automl::data

@@ -1,4 +1,8 @@
 #include "UDTRegression.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
@@ -131,4 +135,15 @@ float UDTRegression::unbinActivations(const BoltVector& output) const {
   return _binning.unbin(predicted_bin_index);
 }
 
+template void UDTRegression::serialize(cereal::BinaryInputArchive&);
+template void UDTRegression::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void UDTRegression::serialize(Archive& archive) {
+  archive(cereal::base_class<UDTBackend>(this), _model, _dataset_factory,
+          _binning, _freeze_hash_tables);
+}
+
 }  // namespace thirdai::automl::udt
+
+CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTRegression)

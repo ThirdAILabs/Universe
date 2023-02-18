@@ -45,6 +45,13 @@ class UDTRegression final : public UDTBackend {
  private:
   float unbinActivations(const BoltVector& output) const;
 
+  UDTRegression() {}
+
+  friend cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive);
+
   bolt::BoltGraphPtr _model;
   data::TabularDatasetFactoryPtr _dataset_factory;
 

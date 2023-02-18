@@ -2,6 +2,7 @@
 
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <string>
 
 namespace thirdai::automl::udt {
 
@@ -106,7 +107,18 @@ class UDT {
     }
   }
 
+  void save(const std::string& filename);
+
+  static std::shared_ptr<UDT> load(const std::string& filename);
+
  private:
+  UDT() {}
+
+  friend class cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive);
+
   std::unique_ptr<UDTBackend> _backend;
 };
 

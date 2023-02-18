@@ -114,7 +114,9 @@ void defineAutomlInModule(py::module_& module) {
       .def("predict_batch", &udt::UDT::predictBatch, py::arg("samples"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false)
-      .def("class_name", &udt::UDT::className);
+      .def("class_name", &udt::UDT::className)
+      .def("save", &udt::UDT::save, py::arg("filename"))
+      .def_static("load", &udt::UDT::load, py::arg("filename"));
 
 #endif
 }

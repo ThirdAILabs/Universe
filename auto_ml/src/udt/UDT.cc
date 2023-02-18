@@ -1,4 +1,6 @@
 #include "UDT.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/memory.hpp>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
@@ -34,6 +36,31 @@ UDT::UDT(data::ColumnDataTypes data_types,
         data_types, temporal_tracking_relationships, target_col, numerical,
         n_target_classes, tabular_options, model_config, user_args);
   }
+}
+
+void UDT::save(const std::string& filename) {
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  cereal::BinaryOutputArchive oarchive(filestream);
+  oarchive(*this);
+}
+
+std::shared_ptr<UDT> UDT::load(const std::string& filename) {
+  std::ifstream filestream =
+      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  cereal::BinaryInputArchive iarchive(filestream);
+  std::shared_ptr<UDT> deserialize_into(new UDT());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
+}
+
+template void UDT::serialize(cereal::BinaryInputArchive&);
+template void UDT::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void UDT::serialize(Archive& archive) {
+  archive(_backend);
 }
 
 }  // namespace thirdai::automl::udt

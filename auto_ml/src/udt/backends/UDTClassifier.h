@@ -92,6 +92,13 @@ class UDTClassifier final : public UDTBackend {
 
   uint32_t predictedClass(const BoltVector& vector);
 
+  UDTClassifier() {}
+
+  friend cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive);
+
   dataset::ThreadSafeVocabularyPtr _class_name_to_neuron;
   dataset::CategoricalBlockPtr _label_block;
 

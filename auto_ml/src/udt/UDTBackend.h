@@ -108,7 +108,17 @@ class UDTBackend {
     return nullptr;
   }
 
+ protected:
+  UDTBackend() {}
+
  private:
+  friend cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
+
   static std::runtime_error notSupported(const std::string& name) {
     return std::runtime_error("Method '" + name +
                               "' is not supported for this type of model.");
