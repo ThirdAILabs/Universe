@@ -115,7 +115,7 @@ class UserItemHistoryBlock final : public Block {
         _item_col_delimiter(item_col_delimiter),
         _time_lag(time_lag) {}
 
-  uint64_t featureDim() const final {
+  uint32_t featureDim() const final {
     return _item_vectors ? _item_vectors->dim : _item_hash_range;
   }
 

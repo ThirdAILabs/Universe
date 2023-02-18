@@ -55,6 +55,7 @@ class TabularFeaturizer : public Featurizer {
     std::vector<uint32_t> dims;
     dims.reserve(_block_lists.size());
     for (const auto& block_list : _block_lists) {
+      std::cout << "FEATURE DIM " << block_list.featureDim() << std::endl;
       dims.push_back(block_list.featureDim());
     }
     return dims;

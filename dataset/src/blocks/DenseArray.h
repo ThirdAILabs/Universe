@@ -38,7 +38,7 @@ class DenseArrayBlock final : public Block {
     return std::make_shared<DenseArrayBlock>(start_col, /* dim= */ 1);
   }
 
-  uint64_t featureDim() const final { return _dim; };
+  uint32_t featureDim() const final { return _dim; };
 
   bool isDense() const final { return true; };
 

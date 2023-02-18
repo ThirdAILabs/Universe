@@ -332,7 +332,7 @@ void createUDTTypesSubmodule(py::module_& module) {
       .def(py::init<>());
 
   py::class_<automl::data::NodeIDDataType, automl::data::DataType,
-             automl::data::NodeIDDataTypePtr>(udt_types_submodule, "neighbors")
+             automl::data::NodeIDDataTypePtr>(udt_types_submodule, "node_id")
       .def(py::init<>());
 }
 

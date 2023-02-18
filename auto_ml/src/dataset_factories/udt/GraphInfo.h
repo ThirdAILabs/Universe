@@ -23,7 +23,7 @@ class GraphInfo {
   void insertNode(uint64_t node_id, std::vector<float> features,
                   std::vector<uint64_t> neighbors);
 
-  uint64_t featureDim();
+  uint32_t featureDim() const { return _feature_dim; }
 
  private:
   uint64_t _feature_dim;

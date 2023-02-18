@@ -1,5 +1,6 @@
 #include "UniversalDeepTransformer.h"
 #include "UDTUtils.h"
+#include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
@@ -82,15 +83,15 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
 
   bolt::BoltGraphPtr model;
 
-  std::vector<uint32_t> input_dims = dataset_factory->getInputDims();
+  uint32_t input_dim = dataset_factory->getInputDims().at(0);
 
   if (model_config) {
-    model = loadUDTBoltGraph(/* input_dims= */ input_dims,
+    model = loadUDTBoltGraph(/* input_dim = */ input_dim,
                              /* output_dim= */ dataset_factory->getLabelDim(),
                              /* saved_model_config= */ model_config.value());
   } else {
     model = buildUDTBoltGraph(
-        /* input_dims= */ input_dims,
+        /* input_dim = */ input_dim,
         /* output_dim= */ dataset_factory->getLabelDim(),
         /* hidden_layer_size= */ embedding_dimension);
   }
@@ -274,7 +275,7 @@ void UniversalDeepTransformer::coldStartPretraining(
 }
 
 bolt::BoltGraphPtr UniversalDeepTransformer::loadUDTBoltGraph(
-    const std::vector<uint32_t>& input_dims, uint32_t output_dim,
+    uint32_t input_dim, uint32_t output_dim,
     const std::string& saved_model_config) {
   // This will pass the output (label) dimension of the model into the model
   // config so that it can be used to determine the model architecture.
@@ -284,7 +285,7 @@ bolt::BoltGraphPtr UniversalDeepTransformer::loadUDTBoltGraph(
 
   auto json_config = json::parse(config::loadConfig(saved_model_config));
 
-  return config::buildModel(json_config, parameters, input_dims);
+  return config::buildModel(json_config, parameters, {input_dim});
 }
 
 float autotuneSparsity(uint32_t dim) {
@@ -301,18 +302,13 @@ float autotuneSparsity(uint32_t dim) {
 }
 
 bolt::BoltGraphPtr UniversalDeepTransformer::buildUDTBoltGraph(
-    const std::vector<uint32_t>& input_dims, uint32_t output_dim,
-    uint32_t hidden_layer_size) {
+    uint32_t input_dim, uint32_t output_dim, uint32_t hidden_layer_size) {
   auto hidden = bolt::FullyConnectedNode::makeDense(hidden_layer_size,
                                                     /* activation= */ "relu");
 
-  std::vector<bolt::InputPtr> input_nodes;
-  input_nodes.reserve(input_dims.size());
-  for (uint32_t input_dim : input_dims) {
-    input_nodes.push_back(bolt::Input::make(input_dim));
-  }
+  bolt::InputPtr input_node = bolt::Input::make(input_dim);
 
-  hidden->addPredecessor(input_nodes[0]);
+  hidden->addPredecessor(input_node);
 
   auto sparsity = autotuneSparsity(output_dim);
   const auto* activation = "softmax";
@@ -320,8 +316,8 @@ bolt::BoltGraphPtr UniversalDeepTransformer::buildUDTBoltGraph(
       bolt::FullyConnectedNode::makeAutotuned(output_dim, sparsity, activation);
   output->addPredecessor(hidden);
 
-  auto graph = std::make_shared<bolt::BoltGraph>(
-      /* inputs= */ input_nodes, output);
+  std::vector<bolt::InputPtr> inputs = {input_node};
+  auto graph = std::make_shared<bolt::BoltGraph>(inputs, output);
 
   graph->compile(
       bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());

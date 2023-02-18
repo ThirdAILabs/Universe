@@ -19,7 +19,7 @@ class TextBlock : public Block {
   explicit TextBlock(ColumnIdentifier col, uint32_t dim)
       : _dim(dim), _col(std::move(col)) {}
 
-  uint64_t featureDim() const final { return _dim; };
+  uint32_t featureDim() const final { return _dim; };
 
   bool isDense() const final { return false; };
 

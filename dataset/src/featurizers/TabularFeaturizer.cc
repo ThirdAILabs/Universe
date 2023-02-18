@@ -16,9 +16,8 @@
 
 namespace thirdai::dataset {
 
-std::exception_ptr buildVector(
-    BoltVector& vector, BlockList& blocks, ColumnarInputSample& sample,
-    std::optional<uint32_t> hash_range = std::nullopt);
+std::exception_ptr buildVector(BoltVector& vector, BlockList& blocks,
+                               ColumnarInputSample& sample);
 
 std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
     bool blocks_dense, std::optional<uint32_t> hash_range,
@@ -34,10 +33,11 @@ void TabularFeaturizer::updateColumnNumbers(
 
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     ColumnarInputBatch& input_batch) {
-  std::vector<std::vector<BoltVector>> featurized_batch(input_batch.size());
+  std::vector<std::vector<BoltVector>> featurized_batch;
 
   for (BlockList& block_list : _block_lists) {
     block_list.prepareForBatch(input_batch);
+    featurized_batch.push_back(std::vector<BoltVector>(input_batch.size()));
   }
 
   /*
@@ -140,10 +140,10 @@ std::exception_ptr TabularFeaturizer::featurizeSampleInBatch(
 }
 
 std::exception_ptr buildVector(BoltVector& vector, BlockList& blocks,
-                               ColumnarInputSample& sample,
-                               std::optional<uint32_t> hash_range) {
+                               ColumnarInputSample& sample) {
   auto segmented_vector =
-      makeSegmentedFeatureVector(blocks.areDense(), hash_range,
+      makeSegmentedFeatureVector(/* blocks_dense = */ blocks.areDense(),
+                                 /* hash_range = */ blocks.hashRange(),
                                  /* store_segment_feature_map= */ false);
   if (auto err = blocks.addVectorSegments(sample, *segmented_vector)) {
     return err;

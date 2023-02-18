@@ -227,7 +227,7 @@ class Block {
   /**
    * Returns the dimension of the vector encoding.
    */
-  virtual uint64_t featureDim() const = 0;
+  virtual uint32_t featureDim() const = 0;
 
   /**
    * True if the block produces dense features, False otherwise.
@@ -342,7 +342,7 @@ struct BlockList {
                      std::optional<uint32_t> hash_range = std::nullopt)
       : _blocks(std::move(blocks)),
         _are_dense(computeAreDense(_blocks)),
-        _feature_dim(computeFeatureDim(_blocks)),
+        _feature_dim(hash_range.value_or(computeFeatureDim(_blocks))),
         // TODO(Josh): Can we get rid of this?
         _expected_num_columns(allBlocksHaveColumnNumbers(_blocks)
                                   ? computeExpectedNumColumns(_blocks)
@@ -390,7 +390,7 @@ struct BlockList {
 
   bool areDense() const { return _are_dense; }
 
-  uint64_t featureDim() const { return _feature_dim; }
+  uint32_t featureDim() const { return _feature_dim; }
 
   uint32_t expectedNumColumns() const { return _expected_num_columns; }
 
