@@ -69,9 +69,7 @@ class FullyConnected final
    */
   const float* biasesPtr() const;
 
-  void set_eigen_forward(bool value) {
-    _kernel->set_eigen_forward(value);
-  }
+  void set_eigen_forward(bool value) { _kernel->set_eigen_forward(value); }
 
  private:
   FullyConnected(

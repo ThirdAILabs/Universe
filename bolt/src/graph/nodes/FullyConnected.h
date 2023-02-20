@@ -78,6 +78,12 @@ class FullyConnectedNode final
 
   std::string type() const final { return "fc"; }
 
+  void set_eigen_forward(bool value) {
+    if (_layer != nullptr) {
+      _layer->set_eigen_forward(value);
+    }
+  }
+
  private:
   void compileImpl() final;
 
