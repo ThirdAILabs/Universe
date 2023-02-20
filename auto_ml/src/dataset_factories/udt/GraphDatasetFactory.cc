@@ -221,12 +221,13 @@ GraphDatasetFactory::makeNumericalProcessedVectors(
   // For calculating preprocessed vectors from numerical columns, passing the
   // data in this format. source_column,... followed by processed numerical
   // values.
-  input_blocks.push_back(
-      dataset::DenseArrayBlock::make(1, numerical_columns.size()));
+  input_blocks.push_back(dataset::DenseArrayBlock::make(
+      /*start_col=*/1, numerical_columns.size()));
 
   auto key_vocab = dataset::ThreadSafeVocabulary::make(
       /* vocab_size= */ 0, /* limit_vocab_size= */ false);
-  auto label_block = dataset::StringLookupCategoricalBlock::make(0, key_vocab);
+  auto label_block =
+      dataset::StringLookupCategoricalBlock::make(/*col=*/0, key_vocab);
 
   auto processor = dataset::TabularFeaturizer::make(
       /* input_blocks= */ std::move(input_blocks),
