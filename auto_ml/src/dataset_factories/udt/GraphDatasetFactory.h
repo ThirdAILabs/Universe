@@ -32,14 +32,14 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
  public:
   explicit GraphDatasetFactory(data::ColumnDataTypes data_types,
                                std::string target_col,
-                               uint32_t n_target_classes, char delimiter,
-                               uint32_t max_neighbors,
-                               bool store_node_features);
+                               uint32_t n_target_classes, char delimiter);
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataSource> data_source, bool training) final;
 
   void index(const std::shared_ptr<dataset::DataSource>& data_source);
+
+  void clearGraph() { _graph_info->clear(); }
 
   // TODO(Josh/Nick): Move these over to using an _unlabeled_featurizer when
   // we refactor UDT and remove makeInputVector from TabularFeaturizer
@@ -110,8 +110,6 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   std::string _target_col;
   uint32_t _n_target_classes;
   char _delimiter;
-  uint32_t _max_neighbors;
-  bool _store_node_features;
   dataset::TabularFeaturizerPtr _graph_builder, _featurizer;
   GraphInfoPtr _graph_info;
 };

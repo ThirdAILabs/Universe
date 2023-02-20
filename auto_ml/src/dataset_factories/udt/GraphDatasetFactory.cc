@@ -66,17 +66,11 @@ dataset::BlockPtr popNeighborTokensBlock(
 GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
                                          std::string target_col,
                                          uint32_t n_target_classes,
-                                         char delimiter, uint32_t max_neighbors,
-                                         bool store_node_features)
+                                         char delimiter)
     : _data_types(std::move(data_types)),
       _target_col(std::move(target_col)),
       _n_target_classes(n_target_classes),
-      _delimiter(delimiter),
-      _max_neighbors(max_neighbors),
-      _store_node_features(store_node_features) {
-  // TODO(Josh): Delete this everywhere if not needed, otherwise implement
-  (void)_max_neighbors;
-
+      _delimiter(delimiter) {
   verifyExpectedNumberOfGraphTypes(_data_types, /* expected_count = */ 1);
 
   dataset::BlockPtr graph_builder_block;
@@ -115,12 +109,9 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
 
 dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(
     std::shared_ptr<dataset::DataSource> data_source, bool training) {
+  // TODO(Josh): Abstract this
   auto column_number_map =
       makeColumnNumberMapFromHeader(*data_source, _delimiter);
-
-  // TODO(Josh): Abstract this
-  std::vector<std::string> column_number_to_name =
-      column_number_map.getColumnNumToColNameMap();
 
   // The featurizer will treat the next line as a header
   // Restart so featurizer does not skip a sample.
@@ -129,14 +120,11 @@ dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(
   _featurizer->updateColumnNumbers(column_number_map);
   _graph_builder->updateColumnNumbers(column_number_map);
 
-  // If we want to save memory by not storing node features, we clear it here
-  if (!_store_node_features) {
-    _graph_info->clear();
-  }
   dataset::DatasetLoader graph_builder_loader(data_source, _graph_builder,
                                               /* shuffle = */ false);
   graph_builder_loader.loadAll(
-      /* batch_size = */ DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
+      /* batch_size = */ DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE,
+      /* verbose = */ false);
 
   // The featurizer will treat the next line as a header
   // Restart so featurizer does not skip a sample.
@@ -152,8 +140,7 @@ void GraphDatasetFactory::index(
   auto column_number_map =
       makeColumnNumberMapFromHeader(*data_source, _delimiter);
 
-  std::vector<std::string> column_number_to_name =
-      column_number_map.getColumnNumToColNameMap();
+  _graph_builder->updateColumnNumbers(column_number_map);
 
   // The featurizer will treat the next line as a header
   // Restart so featurizer does not skip a sample.
@@ -162,7 +149,6 @@ void GraphDatasetFactory::index(
   dataset::DatasetLoader graph_builder_loader(data_source, _graph_builder,
                                               /* shuffle = */ false);
 
-  std::cout << "LOADING" << std::endl;
   graph_builder_loader.loadAll(
       /* batch_size = */ DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
 }

@@ -278,10 +278,9 @@ void createModelsSubmodule(py::module_& module) {
       .def(py::init(&models::GraphNetwork::create), py::arg("data_types"),
            py::arg("target"), py::arg("n_target_classes"),
            py::arg("integer_target") = false, py::arg("delimiter") = ',',
-           py::arg("max_neighbors") = std::numeric_limits<uint32_t>::max(),
-           py::arg("store_node_features") = true,
            bolt::python::OutputRedirect())
-      .def("index", &models::GraphNetwork::index, py::arg("data_source"));
+      .def("index", &models::GraphNetwork::index, py::arg("data_source"))
+      .def("clear_graph", &models::GraphNetwork::clearGraph);
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

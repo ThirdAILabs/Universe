@@ -13,12 +13,12 @@
 namespace thirdai::automl::models {
 
 bolt::BoltGraphPtr createGNN(std::vector<uint32_t> input_dims,
-                             uint32_t output_dim, uint32_t max_neighbors) {
+                             uint32_t output_dim) {
   auto node_features_input = bolt::Input::make(input_dims.at(0));
 
   auto neighbor_token_input = bolt::Input::makeTokenInput(
       /* expected_dim = */ input_dims.at(1),
-      /* num_tokens_range = */ {0, max_neighbors});
+      /* num_tokens_range = */ {0, std::numeric_limits<uint32_t>::max()});
 
   auto embedding_1 = bolt::EmbeddingNode::make(
       /* num_embedding_lookups = */ 4, /* lookup_size = */ 64,
@@ -70,9 +70,7 @@ bolt::BoltGraphPtr createGNN(std::vector<uint32_t> input_dims,
 GraphNetwork GraphNetwork::create(data::ColumnDataTypes data_types,
                                   std::string target_col,
                                   uint32_t n_target_classes,
-                                  bool integer_target, char delimiter,
-                                  uint32_t max_neighbors,
-                                  bool store_node_features) {
+                                  bool integer_target, char delimiter) {
   verifyDataTypesContainTarget(data_types, target_col);
 
   auto [output_processor, regression_binning] =
@@ -88,13 +86,11 @@ GraphNetwork GraphNetwork::create(data::ColumnDataTypes data_types,
   }
 
   auto graph_dataset_factory = std::make_shared<data::GraphDatasetFactory>(
-      data_types, target_col, n_target_classes, delimiter, max_neighbors,
-      store_node_features);
+      data_types, target_col, n_target_classes, delimiter);
 
   bolt::BoltGraphPtr model = createGNN(
       /* input_dims = */ graph_dataset_factory->getInputDims(),
-      /* output_dim = */ graph_dataset_factory->getLabelDim(),
-      /* max_neighbors = */ max_neighbors);
+      /* output_dim = */ graph_dataset_factory->getLabelDim());
 
   TrainEvalParameters train_eval_parameters =
       defaultTrainEvalParams(/* freeze_hash_tables = */ false);
@@ -111,6 +107,17 @@ void GraphNetwork::index(const dataset::DataSourcePtr& source) {
     throw std::logic_error(
         "Internal dataset factory was expected to be a GraphDatasetFactory but "
         "was not, so indexing failed.");
+  }
+}
+
+void GraphNetwork::clearGraph() {
+  if (auto* graph_dataset_factory =
+          dynamic_cast<data::GraphDatasetFactory*>(getDataProcessor().get())) {
+    graph_dataset_factory->clearGraph();
+  } else {
+    throw std::logic_error(
+        "Internal dataset factory was expected to be a GraphDatasetFactory but "
+        "was not, so clearing failed.");
   }
 }
 
