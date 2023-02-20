@@ -1,34 +1,56 @@
-import json
-
 import numpy as np
-from configs.base_configs import UDTBenchmarkConfig
 from thirdai import bolt
+from abc import ABC, abstractmethod
+
+
+class UDTBenchmarkConfig(ABC):
+    config_name = None
+    dataset_name = None
+
+    train_file = None
+    test_file = None
+
+    target = None
+    n_target_classes = None
+    delimiter = ","
+    model_config = None
+
+    learning_rate = None
+    num_epochs = None
+    callbacks = []
+    metric_name = "categorical_accuracy"
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types():
+        pass
 
 
 class YelpPolarityUDTConfig(UDTBenchmarkConfig):
+    config_name = "yelp_polarity_udt"
+    dataset_name = "yelp_polarity"
+
     train_file = "/share/data/udt_datasets/yelp_polarity/train.csv"
     test_file = "/share/data/udt_datasets/yelp_polarity/test.csv"
-    num_epochs = 5
-    n_target_classes = 2
-    learning_rate = 1e-02
-
-    data_types = {
-        "text": bolt.types.text(),
-        "label": bolt.types.categorical(),
-    }
 
     target = "label"
+    n_target_classes = 2
     delimiter = "\t"
-    experiment_name = "YelpPolarityUDT"
-    dataset_name = "yelp_polarity"
+
+    learning_rate = 1e-2
+    num_epochs = 5
+
+    def get_data_types():
+        return {
+            "text": bolt.types.text(),
+            "label": bolt.types.categorical(),
+        }
 
 
 class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
-    experiment_name = "AmazonPolarityUDT"
+    config_name = "amazon_polarity_udt"
     dataset_name = "amazon_polarity"
-    num_epochs = 5
-    n_target_classes = 2
-    learning_rate = 1e-02
+
     train_file = (
         "/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_train.csv"
     )
@@ -36,22 +58,32 @@ class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
         "/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_test.csv"
     )
 
-    data_types = {
-        "content": bolt.types.text(),
-        "label": bolt.types.categorical(),
-    }
-
+    target = "label"
+    n_target_classes = 2
     delimiter = "\t"
+
+    learning_rate = 1e-2
+    num_epochs = 5
+
+    def get_data_types():
+        return {
+            "content": bolt.types.text(),
+            "label": bolt.types.categorical(),
+        }
 
 
 class CriteoUDTConfig(UDTBenchmarkConfig):
-    experiment_name = "CriteoUDT"
+    config_name = "criteo_udt"
     dataset_name = "criteo_46m"
+
     train_file = "/share/data/udt_datasets/criteo/train_udt.csv"
     test_file = "/share/data/udt_datasets/criteo/test_udt.csv"
-    num_epochs = 1
+
+    target = "label"
     n_target_classes = 2
-    learning_rate = 1e-02
+
+    learning_rate = 1e-2
+    num_epochs = 1
 
     def get_data_types():
         data_types = {}
@@ -76,40 +108,17 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
         data_types["label"] = bolt.types.categorical()
         return data_types
 
-    data_types = get_data_types()
-
 
 class WayfairUDTConfig(UDTBenchmarkConfig):
-    experiment_name = "WayfairUDT"
+    config_name = "wayfair_udt"
     dataset_name = "wayfair"
+
     train_file = "/share/data/wayfair/train_raw_queries.txt"
     test_file = "/share/data/wayfair/dev_raw_queries.txt"
-    model_config_path = "wayfair.config"
-    num_epochs = 5
-    n_target_classes = 2
 
-    data_types = {
-        "labels": bolt.types.categorical(delimiter=","),
-        "query": bolt.types.text(),
-    }
     target = "labels"
     n_target_classes = 931
-
-    # TODO: mlflow does not support parenthetical characters in metric names.
-    # We may need to revise our metric naming patterns to use this metric
-    # metric_type = "f_measure(0.95)"
-
-    learning_rate = 0.001
     delimiter = "\t"
-    # Learning rate scheduler that decreases the learning rate by a factor of 10
-    # after the third epoch. This scheduling is what gives us the optimal
-    # f-measure on the wayfair dataset.
-    callbacks = [
-        bolt.callbacks.LearningRateScheduler(
-            schedule=bolt.callbacks.MultiStepLR(gamma=0.1, milestones=[3])
-        )
-    ]
-
     model_config = {
         "inputs": ["input"],
         "nodes": [
@@ -138,3 +147,24 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
         "output": "output",
         "loss": "BinaryCrossEntropyLoss",
     }
+
+    def get_data_types():
+        return {
+            "labels": bolt.types.categorical(delimiter=","),
+            "query": bolt.types.text(),
+        }
+
+    # TODO: mlflow does not support parenthetical characters in metric names.
+    # We may need to revise our metric naming patterns to use this metric
+    # metric_type = "f_measure(0.95)"
+
+    learning_rate = 0.001
+    num_epochs = 5
+    # Learning rate scheduler that decreases the learning rate by a factor of 10
+    # after the third epoch. This scheduling is what gives us the optimal
+    # f-measure on the wayfair dataset.
+    callbacks = [
+        bolt.callbacks.LearningRateScheduler(
+            schedule=bolt.callbacks.MultiStepLR(gamma=0.1, milestones=[3])
+        )
+    ]
