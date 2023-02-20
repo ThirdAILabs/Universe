@@ -124,7 +124,6 @@ class EmbeddingLayer {
     if (_should_save_optimizer) {
       archive(_optimizer);
     }
-            
   }
 
   uint64_t _num_lookups_per_token;
@@ -154,7 +153,6 @@ class EmbeddingLayer {
   // A flag to determine whether the current network saves the optimizer states
   // or not. If true, it saves the optimizer states, else doesn't.
   bool _should_save_optimizer;
-
 };
 
 }  // namespace thirdai::bolt
