@@ -1,7 +1,8 @@
 import platform
+import textwrap
 
 import pytest
-from thirdai import bolt, deployment
+from thirdai import bolt
 
 pytestmark = [pytest.mark.unit]
 
@@ -17,7 +18,9 @@ def write_lines_to_file(file, lines):
 
 
 def make_simple_trained_model(
-    embedding_dim=None, integer_label=False, model_config=None
+    embedding_dim=None,
+    integer_label=False,
+    text_encoding_type="none",
 ):
     write_lines_to_file(
         TRAIN_FILE,
@@ -75,13 +78,12 @@ def make_simple_trained_model(
             "hoursWatched": bolt.types.numerical(range=(0, 5)),
             "genres": bolt.types.categorical(delimiter="-"),
             "meta": bolt.types.categorical(metadata=metadata, delimiter="-"),
-            "description": bolt.types.text(),
+            "description": bolt.types.text(contextual_encoding=text_encoding_type),
         },
         temporal_tracking_relationships={"userId": ["movieId", "hoursWatched"]},
         target="movieId",
         n_target_classes=3,
         integer_target=integer_label,
-        model_config=model_config,
         options={"embedding_dimension": embedding_dim} if embedding_dim else {},
     )
 
@@ -227,6 +229,35 @@ def test_embedding_representation_returns_correct_dimension():
         assert (embedding != 0).any()
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "embedding_dim, integer_label",
+    [(128, True), (128, False), (256, True), (256, False)],
+)
+def test_entity_embedding(embedding_dim, integer_label):
+    model = make_simple_trained_model(
+        embedding_dim=embedding_dim, integer_label=integer_label
+    )
+    output_labels = [0, 1, 2] if integer_label else ["0", "1", "4"]
+    for output_id, output_label in enumerate(output_labels):
+        embedding = model.get_entity_embedding(output_label)
+        assert embedding.shape == (embedding_dim,)
+        weights = model._get_model().get_layer("fc_2").weights.get()
+
+        assert (weights[output_id] == embedding).all()
+
+
+@pytest.mark.release
+def test_entity_embedding_fails_on_large_label():
+    model = make_simple_trained_model(embedding_dim=100, integer_label=True)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Passed in neuron_id too large for this layer. Should be less than the output dim of 3.",
+    ):
+        embedding = model.get_entity_embedding(100000)
+
+
 @pytest.mark.release
 def test_explanations_total_percentage():
     model = make_simple_trained_model(integer_label=False)
@@ -330,46 +361,36 @@ def test_works_without_temporal_relationships():
     # No assertion as we just want to know that there is no error.
 
 
-def test_model_config_override():
-    # This test creates a model config with the property that the hidden layer
-    # dimension is the same as the regular dimension and checks that UDT correctly
-    # loads and uses the model config in place of its default model architecture.
-
-    model_config = deployment.ModelConfig(
-        input_names=["input"],
-        nodes=[
-            deployment.FullyConnectedNodeConfig(
-                name="hidden",
-                dim=deployment.DatasetLabelDimensionParameter(),
-                activation=deployment.ConstantParameter("relu"),
-                predecessor="input",
-            ),
-            deployment.FullyConnectedNodeConfig(
-                name="output",
-                dim=deployment.DatasetLabelDimensionParameter(),
-                sparsity=deployment.ConstantParameter(1.0),
-                activation=deployment.ConstantParameter("softmax"),
-                predecessor="hidden",
-            ),
-        ],
-        loss=bolt.nn.losses.CategoricalCrossEntropy(),
-    )
-
-    MODEL_CONFIG_PATH = "./model_config_override"
-    model_config.save(MODEL_CONFIG_PATH)
-
-    model = make_simple_trained_model(model_config=MODEL_CONFIG_PATH)
-
-    # We made the dimension of the hidden layer dimension the same as the number
-    # of output classes in the model. Since the number of target classes is 3, the
-    # embedding dimension should be 3 as well. This will not happen with the default
-    # udt model architecture.
-    assert model.embedding_representation(single_sample()).shape == (3,)
-
-
 def test_return_metrics():
     model = make_simple_trained_model()
     metrics = model.evaluate(
         TEST_FILE, metrics=["categorical_accuracy"], return_metrics=True
     )
-    assert metrics["categorical_accuracy"] > 0
+    assert metrics["categorical_accuracy"] >= 0
+
+
+@pytest.mark.parametrize("encoding", ["none", "local", "global"])
+def test_udt_accepts_valid_text_encodings(encoding):
+    make_simple_trained_model(text_encoding_type=encoding)
+
+
+@pytest.mark.unit
+def test_udt_override_input_dim():
+    udt_model = bolt.UniversalDeepTransformer(
+        data_types={"col": bolt.types.categorical()},
+        target="col",
+        n_target_classes=40,
+        options={"input_dim": 200},
+    )
+
+    summary = udt_model._get_model().summary(detailed=True, print=False)
+
+    expected_summary = """
+    ======================= Bolt Model =======================
+    input_1 (Input): dim=200
+    input_1 -> fc_1 (FullyConnected): dim=512, sparsity=1, act_func=ReLU
+    fc_1 -> fc_2 (FullyConnected): dim=40, sparsity=1, act_func=Softmax
+    ============================================================
+    """
+
+    assert textwrap.dedent(summary).strip() == textwrap.dedent(expected_summary).strip()

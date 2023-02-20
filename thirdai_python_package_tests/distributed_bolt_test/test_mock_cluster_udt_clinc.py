@@ -32,17 +32,17 @@ def get_clinc_udt_model(integer_target=False):
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
 def test_distributed_udt_clinc(ray_two_node_cluster_config):
-
     udt_model = get_clinc_udt_model(integer_target=True)
 
     udt_model.train_distributed(
         cluster_config=ray_two_node_cluster_config("linear"),
         filenames=[f"{os.getcwd()}/{TRAIN_FILE_1}", f"{os.getcwd()}/{TRAIN_FILE_2}"],
         batch_size=256,
-        epochs=6,
-        learning_rate=0.01,
+        epochs=1,
+        learning_rate=0.02,
         metrics=["mean_squared_error"],
         verbose=True,
+        max_in_memory_batches=10,
     )
 
     assert (
@@ -57,7 +57,6 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
 def test_non_integer_target_throws(ray_two_node_cluster_config):
-
     udt_model = get_clinc_udt_model(integer_target=False)
 
     with pytest.raises(

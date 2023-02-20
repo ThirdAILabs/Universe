@@ -1,6 +1,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
-#include <dataset/src/DatasetLoaders.h>
+#include <dataset/src/DatasetLoaderWrappers.h>
 #include <algorithm>
 #include <cmath>
 #include <cstddef>

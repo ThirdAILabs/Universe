@@ -82,13 +82,35 @@ ConvLayerConfig::ConvLayerConfig(uint64_t _num_filters, float _sparsity,
   }
 }
 
+/**
+ * During sparse updates in the embedding table the only chunks of the embedding
+ * table which are accessed are updated. This parameter controls the size of
+ * those chunks. The default value 4 was determined by doing a search over
+ * different values on the criteo dataset using different batch sizes, embedding
+ * table sizes, and lookup sizes.
+ */
+constexpr uint32_t DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE = 4;
+
 EmbeddingLayerConfig::EmbeddingLayerConfig(
-    uint32_t num_embedding_lookups, uint32_t lookup_size,
-    uint32_t log_embedding_block_size, const std::string& reduction,
-    std::optional<uint32_t> num_tokens_per_input)
+    uint64_t num_embedding_lookups, uint64_t lookup_size,
+    uint64_t log_embedding_block_size, const std::string& reduction,
+    std::optional<uint64_t> num_tokens_per_input)
+    : EmbeddingLayerConfig(
+          /* num_embedding_lookups= */ num_embedding_lookups,
+          /* lookup_size= */ lookup_size,
+          /* log_embedding_block_size= */ log_embedding_block_size,
+          /* update_chunk_size= */ DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE,
+          /* reduction= */ reduction,
+          /* num_tokens_per_input= */ num_tokens_per_input) {}
+
+EmbeddingLayerConfig::EmbeddingLayerConfig(
+    uint64_t num_embedding_lookups, uint64_t lookup_size,
+    uint64_t log_embedding_block_size, uint64_t update_chunk_size,
+    const std::string& reduction, std::optional<uint64_t> num_tokens_per_input)
     : _num_embedding_lookups(num_embedding_lookups),
       _lookup_size(lookup_size),
       _log_embedding_block_size(log_embedding_block_size),
+      _update_chunk_size(update_chunk_size),
       _reduction(getReductionType(reduction)),
       _num_tokens_per_input(num_tokens_per_input) {
   if (_reduction == EmbeddingReductionType::CONCATENATION &&
@@ -101,16 +123,20 @@ EmbeddingLayerConfig::EmbeddingLayerConfig(
 
 EmbeddingReductionType EmbeddingLayerConfig::getReductionType(
     const std::string& reduction_name) {
-  std::string lower_name = utils::lower(reduction_name);
+  std::string lower_name = text::lower(reduction_name);
   if (lower_name == "sum") {
     return EmbeddingReductionType::SUM;
   }
   if (lower_name == "concat" || lower_name == "concatenation") {
     return EmbeddingReductionType::CONCATENATION;
   }
-  throw std::invalid_argument(
-      "Invalid embedding reduction time '" + reduction_name +
-      "', supported options are 'sum' or 'concat'/'concatenation'");
+  if (lower_name == "average" || lower_name == "avg") {
+    return EmbeddingReductionType::AVERAGE;
+  }
+  throw std::invalid_argument("Invalid embedding reduction time '" +
+                              reduction_name +
+                              "', supported options are 'sum', "
+                              "'average'/'avg', or 'concat'/'concatenation'");
 }
 
 template <class Archive>

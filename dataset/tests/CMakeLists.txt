@@ -11,10 +11,11 @@ set(DATASET_TESTS
     ThreadSafeVocabularyTests
     UserItemHistoryBlockTests
     UserCountHistoryBlockTests
-    GenericBatchProcessorTests
-    MlmBatchProcessorTests
+    TabularFeaturizerTests
+    MlmFeaturizerTests
     SaveLoadInMemoryDatasetTest
-    StreamingGenericDatasetLoaderTests)
+    DatasetLoaderTests
+    TokenEncodingTests)
 
 include(GoogleTest)
 

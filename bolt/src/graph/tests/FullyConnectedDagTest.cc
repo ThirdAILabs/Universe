@@ -5,6 +5,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/metrics/MetricAggregator.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <optional>
@@ -193,6 +194,37 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
       model.evaluate(/* test_data= */ {data}, labels, getEvalConfig());
 
   ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
+}
+
+TEST(FullyConnectedDagTest, TrainOnBatch) {
+  auto model = getMultiLayerModel("relu", "softmax");
+
+  std::vector<uint32_t> batch_sizes = {10, 20, 30, 20, 30};
+
+  MetricAggregator metrics({});
+  for (uint32_t batch_size_i : batch_sizes) {
+    auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+        /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+        /* batch_size= */ batch_size_i, /* noisy_dataset= */ false);
+
+    for (uint32_t i = 0; i < data->numBatches(); i++) {
+      std::vector<BoltBatch> batch_list;
+      batch_list.emplace_back(std::move(data->at(i)));
+      model.trainOnBatch(std::move(batch_list), labels->at(i),
+                         /* learning_rate= */ 0.001, metrics,
+                         /* rebuild_hash_tables_interval= */ 10,
+                         /* reconstruct_hash_functions_interval= */ 50);
+    }
+  }
+
+  auto [test_data, test_labels] =
+      TestDatasetGenerators::generateSimpleVectorDataset(
+          /* n_classes= */ n_classes, /* n_batches= */ 20,
+          /* batch_size= */ batch_size, /* noisy_dataset= */ false);
+
+  auto test_metrics = model.evaluate(/* test_data= */ {test_data}, test_labels,
+                                     getEvalConfig());
+  ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.95);
 }
 
 }  // namespace thirdai::bolt::tests

@@ -3,6 +3,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <random>
 #include <string>
 #include <unordered_map>
@@ -81,7 +82,8 @@ class TextBlockTest : public testing::Test {
       input_row_view[i] =
           std::string_view(input_row[i].c_str(), input_row[i].size());
     }
-    if (auto err = block.addVectorSegment(input_row_view, vec)) {
+    RowSampleRef input_row_view_ref(input_row_view);
+    if (auto err = block.addVectorSegment(input_row_view_ref, vec)) {
       std::rethrow_exception(err);
     }
   }
@@ -99,10 +101,9 @@ class TextBlockTest : public testing::Test {
       const std::vector<std::string>& words, uint32_t dim, uint32_t offset) {
     std::unordered_map<uint32_t, float> feats;
     for (const auto& word : words) {
-      auto hash = hashing::MurmurHash(word.c_str(), word.length(),
-                                      TextEncodingUtils::HASH_SEED) %
-                      dim +
-                  offset;
+      auto hash =
+          token_encoding::seededMurmurHash(word.c_str(), word.length()) % dim +
+          offset;
       feats[hash]++;
     }
     return feats;
@@ -116,17 +117,14 @@ class TextBlockTest : public testing::Test {
       for (uint32_t second_word_idx = first_word_idx;
            second_word_idx < words.size(); second_word_idx++) {
         const auto& first_word = words[first_word_idx];
-        uint32_t first_word_hash =
-            hashing::MurmurHash(first_word.c_str(), first_word.length(),
-                                TextEncodingUtils::HASH_SEED);
+        uint32_t first_word_hash = token_encoding::seededMurmurHash(
+            first_word.c_str(), first_word.length());
         const auto& second_word = words[second_word_idx];
-        uint32_t second_word_hash =
-            hashing::MurmurHash(second_word.c_str(), second_word.length(),
-                                TextEncodingUtils::HASH_SEED);
-        auto pairgram_hash = (hashing::HashUtils::combineHashes(
-                                  first_word_hash, second_word_hash) %
-                              dim) +
-                             offset;
+        uint32_t second_word_hash = token_encoding::seededMurmurHash(
+            second_word.c_str(), second_word.length());
+        auto pairgram_hash =
+            (hashing::combineHashes(first_word_hash, second_word_hash) % dim) +
+            offset;
         feats[pairgram_hash]++;
       }
     }
@@ -138,9 +136,7 @@ class TextBlockTest : public testing::Test {
     std::unordered_map<uint32_t, float> feats;
     for (uint32_t i = 0; i < sentence.size() - (k - 1); i++) {
       auto hash =
-          hashing::MurmurHash(&sentence[i], k, TextEncodingUtils::HASH_SEED) %
-              dim +
-          offset;
+          token_encoding::seededMurmurHash(&sentence[i], k) % dim + offset;
       feats[hash]++;
     }
 
@@ -174,7 +170,8 @@ TEST_F(TextBlockTest, TestTextBlockWithUniGramPairGramCharTriGram) {
   uint32_t dim_for_encodings = 50;
   uint32_t k_chars = 3;
   std::vector<TextBlockPtr> blocks;
-  blocks.push_back(UniGramTextBlock::make(/* col= */ 0, dim_for_encodings));
+  blocks.push_back(
+      NGramTextBlock::make(/* col= */ 0, /* n= */ 1, dim_for_encodings));
   blocks.push_back(PairGramTextBlock::make(/* col= */ 1, dim_for_encodings));
   blocks.push_back(
       CharKGramTextBlock::make(/* col= */ 2, k_chars, dim_for_encodings));
@@ -243,8 +240,10 @@ TEST_F(TextBlockTest, TestEncodingsDeterministic) {
   std::vector<TextBlockPtr> blocks_2;
   // Duplicate each block. They will independently produce features
   // and we can check that the resulting vectors are equal.
-  blocks_1.push_back(UniGramTextBlock::make(/* col= */ 0, dim_for_encodings));
-  blocks_2.push_back(UniGramTextBlock::make(/* col= */ 0, dim_for_encodings));
+  blocks_1.push_back(
+      NGramTextBlock::make(/* col= */ 0, /* n= */ 1, dim_for_encodings));
+  blocks_2.push_back(
+      NGramTextBlock::make(/* col= */ 0, /* n= */ 1, dim_for_encodings));
   blocks_1.push_back(PairGramTextBlock::make(/* col= */ 1, dim_for_encodings));
   blocks_2.push_back(PairGramTextBlock::make(/* col= */ 1, dim_for_encodings));
   blocks_1.push_back(
@@ -283,8 +282,9 @@ TEST_F(TextBlockTest, TextUnigramBlockWithDelimiter) {
 
   std::vector<TextBlockPtr> blocks;
 
-  blocks.push_back(UniGramTextBlock::make(/* col= */ 0, /* dim= */ 100,
-                                          /* delimiter= */ '-'));
+  blocks.push_back(NGramTextBlock::make(/* col= */ 0, /* n= */ 1,
+                                        /* dim= */ 100,
+                                        /* delimiter= */ '-'));
 
   std::vector<SegmentedSparseFeatureVector> vecs =
       makeSegmentedVecs(sentence_matrix, blocks);

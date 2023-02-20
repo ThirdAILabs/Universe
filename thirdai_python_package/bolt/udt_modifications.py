@@ -8,33 +8,30 @@ import thirdai._thirdai.bolt as bolt
 from .udt_docs import *
 
 
-def _create_parquet_source(path, batch_size):
-    return thirdai.dataset.ParquetSource(parquet_path=path, batch_size=batch_size)
+def _create_parquet_source(path):
+    return thirdai.dataset.ParquetSource(parquet_path=path)
 
 
-def _create_data_source(path, batch_size, **kwargs):
+def _create_data_source(path):
+    """
+    Reading data from S3 and GCS assumes that the credentials are already
+    set. For S3, pandas.read_csv method in the data loader will look for
+    credentials in ~/.aws/credentials while for GCS the path will be assumed to be
+    ~/.config/gcloud/credentials or ~/.config/gcloud/application_default_credentials.json.
+    """
+
     # This also handles parquet on s3, so it comes before the general s3 and gcs
     # handling and file handling below which assume the target files are
-    # CSVs
+    # CSVs.
     if path.endswith(".parquet") or path.endswith(".pqt"):
-        return _create_parquet_source(path, batch_size)
+        return _create_parquet_source(path)
 
-    gcs_credentials_path = (
-        kwargs["gcs_credentials_path"] if "gcs_crentials_file" in kwargs else None
-    )
-    if path.startswith("s3://"):
+    if path.startswith("s3://") or path.startswith("gcs://"):
         return thirdai.dataset.CSVDataSource(
             storage_path=path,
-            batch_size=batch_size,
-        )
-    elif path.startswith("gcs://"):
-        return thirdai.dataset.CSVDataSource(
-            storage_path=path,
-            batch_size=batch_size,
-            gcs_credentials_path=gcs_credentials_path,
         )
 
-    return thirdai.dataset.FileDataSource(path, batch_size)
+    return thirdai.dataset.FileDataSource(path)
 
 
 # This function defines train and eval methods that wrap the UDT train and
@@ -43,7 +40,6 @@ def _create_data_source(path, batch_size, **kwargs):
 # object and deletes the existing evaluate and train functions so that the user
 # interface is clean.
 def modify_udt_classifier():
-
     original_train_method = bolt.models.Pipeline.train_with_source
     original_eval_method = bolt.models.Pipeline.evaluate_with_source
     original_cold_start_method = bolt.models.UDTClassifier.cold_start
@@ -60,7 +56,6 @@ def modify_udt_classifier():
         callbacks: List[bolt.callbacks.Callback] = [],
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
-        gcp_credentials_path: Optional[str] = None,
     ):
         if batch_size is None:
             batch_size = self.default_train_batch_size
@@ -76,11 +71,7 @@ def modify_udt_classifier():
         if logging_interval:
             train_config.with_log_loss_frequency(logging_interval)
 
-        data_source = _create_data_source(
-            filename,
-            batch_size,
-            gcs_credentials_path=gcp_credentials_path,
-        )
+        data_source = _create_data_source(filename)
 
         return original_train_method(
             self,
@@ -88,6 +79,7 @@ def modify_udt_classifier():
             train_config=train_config,
             validation=validation,
             max_in_memory_batches=max_in_memory_batches,
+            batch_size=batch_size,
         )
 
     wrapped_train.__doc__ = classifier_train_doc
@@ -100,7 +92,6 @@ def modify_udt_classifier():
         return_predicted_class: bool = False,
         return_metrics: bool = False,
         verbose: bool = True,
-        gcs_credentials_path: Optional[str] = None,
     ):
         eval_config = bolt.EvalConfig()
         if not verbose:
@@ -110,11 +101,7 @@ def modify_udt_classifier():
         if use_sparse_inference:
             eval_config.enable_sparse_inference()
 
-        data_source = _create_data_source(
-            filename,
-            bolt.models.UDTClassifier.default_evaluate_batch_size,
-            gcs_credentials_path=gcs_credentials_path,
-        )
+        data_source = _create_data_source(filename)
 
         return original_eval_method(
             self,
@@ -131,14 +118,28 @@ def modify_udt_classifier():
         filename: str,
         strong_column_names: List[str],
         weak_column_names: List[str],
-        learning_rate: float,
+        learning_rate: float = 0.001,
+        epochs: int = 5,
+        metrics: List[str] = [],
+        validation: Optional[bolt.Validation] = None,
+        callbacks: List[bolt.callbacks.Callback] = [],
     ):
+        train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
+
+        if callbacks:
+            train_config.with_callbacks(callbacks)
+        if metrics:
+            train_config.with_metrics(metrics)
+
+        data_source = _create_data_source(filename)
+
         original_cold_start_method(
             self,
-            thirdai.data.pandas_to_columnmap(pd.read_csv(filename)),
+            data_source,
             strong_column_names,
             weak_column_names,
-            learning_rate,
+            train_config,
+            validation,
         )
 
     wrapped_cold_start.__doc__ = udt_cold_start_doc

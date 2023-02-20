@@ -37,7 +37,7 @@ static std::string activationFunctionToStr(ActivationFunction act_func) {
 
 static ActivationFunction getActivationFunction(
     const std::string& act_func_name) {
-  std::string lower_name = utils::lower(act_func_name);
+  std::string lower_name = text::lower(act_func_name);
   if (lower_name == "relu") {
     return ActivationFunction::ReLU;
   }

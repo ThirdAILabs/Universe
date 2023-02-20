@@ -11,6 +11,7 @@ batch_size = 64
 num_lines_per_file = 100
 bucket_name = "test_bucket"
 
+
 # These fixtures allow us to take in a parameter to our tests called "s3" that
 # ensures all s3 calls will not call "actual" s3
 # See http://docs.getmoto.org/en/latest/docs/getting_started.html#example-on-usage
@@ -43,10 +44,10 @@ def setup_mock_s3(s3):
 def load_all_batches(storage_path, batch_size):
     from thirdai import dataset
 
-    source = dataset.CSVDataSource(storage_path=storage_path, batch_size=batch_size)
+    source = dataset.CSVDataSource(storage_path=storage_path)
     batches = []
     while True:
-        next_batch = source.next_batch()
+        next_batch = source.next_batch(batch_size)
         if not next_batch:
             break
         batches.append(next_batch)
@@ -56,7 +57,7 @@ def load_all_batches(storage_path, batch_size):
 def load_all_lines(storage_path, batch_size):
     from thirdai import dataset
 
-    source = dataset.CSVDataSource(storage_path=storage_path, batch_size=batch_size)
+    source = dataset.CSVDataSource(storage_path=storage_path)
     lines = []
     while True:
         next_line = source.next_line()
@@ -89,7 +90,6 @@ def test_s3_data_source_by_batch(s3):
 # that the linewise loading is correct
 @mock_s3
 def test_s3_data_source_by_line(s3):
-
     setup_mock_s3(s3)
 
     lines = load_all_lines(

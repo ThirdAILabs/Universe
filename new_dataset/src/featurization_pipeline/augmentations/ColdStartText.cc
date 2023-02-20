@@ -13,23 +13,19 @@ namespace thirdai::data {
 ColdStartTextAugmentation::ColdStartTextAugmentation(
     std::vector<std::string> strong_column_names,
     std::vector<std::string> weak_column_names, std::string label_column_name,
-    std::string output_column_name, std::optional<uint32_t> weak_min_len,
-    std::optional<uint32_t> weak_max_len,
-    std::optional<uint32_t> weak_chunk_len,
-    std::optional<uint32_t> weak_sample_num_words, uint32_t weak_sample_reps,
-    std::optional<uint32_t> strong_max_len,
-    std::optional<uint32_t> strong_sample_num_words, uint32_t seed)
+    std::string output_column_name, const ColdStartConfig& config,
+    uint32_t seed)
     : _strong_column_names(std::move(strong_column_names)),
       _weak_column_names(std::move(weak_column_names)),
       _label_column_name(std::move(label_column_name)),
       _output_column_name(std::move(output_column_name)),
-      _weak_min_len(weak_min_len),
-      _weak_max_len(weak_max_len),
-      _weak_chunk_len(weak_chunk_len),
-      _weak_sample_num_words(weak_sample_num_words),
-      _weak_sample_reps(weak_sample_reps),
-      _strong_max_len(strong_max_len),
-      _strong_sample_num_words(strong_sample_num_words),
+      _weak_min_len(config.weak_min_len),
+      _weak_max_len(config.weak_max_len),
+      _weak_chunk_len(config.weak_chunk_len),
+      _weak_sample_num_words(config.weak_sample_num_words),
+      _weak_sample_reps(config.weak_sample_reps),
+      _strong_max_len(config.strong_max_len),
+      _strong_sample_num_words(config.strong_sample_num_words),
       _seed(seed) {
   // Validate input parameters.
   validateGreaterThanZero(_weak_min_len, "weak_min_len");
@@ -39,12 +35,12 @@ ColdStartTextAugmentation::ColdStartTextAugmentation(
   validateGreaterThanZero(_strong_max_len, "strong_max_len");
   validateGreaterThanZero(_strong_sample_num_words, "strong_sample_num_words");
 
-  if (weak_sample_reps <= 0) {
+  if (_weak_sample_reps <= 0) {
     throw std::invalid_argument(
         "Invalid parameter: weak_sample_reps "
         "must be greater than 0.");
   }
-  if (weak_sample_reps > 1000) {
+  if (_weak_sample_reps > 1000) {
     throw std::invalid_argument(
         "Invalid parameter: weak_sample_reps "
         "should be smaller than 1000");
@@ -81,8 +77,9 @@ void ColdStartTextAugmentation::validateGreaterThanZero(
 }
 
 ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
-  auto label_column = columns.getTokenArrayColumn(_label_column_name);
-  std::vector<std::vector<uint32_t>> augmented_labels;
+  auto label_column = columns.getStringColumn(_label_column_name);
+
+  std::vector<std::string> augmented_labels;
   std::vector<std::string> augmented_data;
 
   for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
@@ -97,10 +94,7 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
     PhraseCollection phrases = getWeakPhrases(weak_text);
     mergeStrongWithWeak(phrases, strong_phrase);
 
-    std::vector<uint32_t> labels;
-    for (const auto& label : (*label_column)[row_id]) {
-      labels.push_back(label);
-    }
+    std::string labels = (*label_column)[row_id];
     for (const auto& phrase : phrases) {
       // Add (label, phrase) to the output data.
       std::string output_text;
@@ -121,19 +115,9 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
   std::shuffle(augmented_data.begin(), augmented_data.end(), rng_1);
   std::shuffle(augmented_labels.begin(), augmented_labels.end(), rng_2);
 
-  // Finally, make a new ColumnMap (i.e. dataset) out of the augmented data and
-  // augmented labels. Note that the VectorSparseArrayColumn constructor takes
-  // an optional uint32_t dimension instead of an optional DimensionInfo.
-  std::optional<columns::DimensionInfo> label_dimension_info =
-      label_column->dimension();
-  std::optional<uint32_t> label_dimension = std::nullopt;
-  if (label_dimension_info) {
-    label_dimension = label_dimension_info.value().dim;
-  }
+  columns::StringColumnPtr augmented_label_column =
+      std::make_shared<columns::CppStringColumn>(augmented_labels);
 
-  columns::TokenArrayColumnPtr augmented_label_column =
-      std::make_shared<columns::CppTokenArrayColumn>(augmented_labels,
-                                                     label_dimension);
   columns::StringColumnPtr augmented_data_column =
       std::make_shared<columns::CppStringColumn>(augmented_data);
 
@@ -313,6 +297,13 @@ std::string ColdStartTextAugmentation::concatenateStringColumnEntries(
 void ColdStartTextAugmentation::mergeStrongWithWeak(
     ColdStartTextAugmentation::PhraseCollection& weak_phrases,
     Phrase& strong_phrase) const {
+  if (weak_phrases.empty()) {
+    // TODO(any) evaluate alternatives for if we have no weak phrases. Maybe
+    // sampling from the title?
+    weak_phrases = {strong_phrase};
+    return;
+  }
+
   ColdStartTextAugmentation::PhraseCollection downsampled_strong_phrases;
   if (_strong_sample_num_words) {
     // If we have to sample from the strong phrase, we create N independently

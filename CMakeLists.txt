@@ -14,6 +14,7 @@ set(ENV{LD_PRELOAD} "")
 
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # See [1] https://gcc.gnu.org/wiki/Visibility [2]
 # https://stackoverflow.com/a/31157258/4565794
@@ -53,6 +54,9 @@ endif(THIRDAI_REPORT_BUILD_STEP_TIMES)
 # will be a linker error.
 list(FIND THIRDAI_FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
 set(LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
+list(FIND THIRDAI_FEATURE_FLAGS "THIRDAI_CHECK_LICENSE" _index)
+set(LICENSE_CHECK_FLAG_FOUND ${_index} GREATER -1)
+
 if(${LICENSE_BUILD_FLAG_FOUND})
   # Use our own source, also don't build tests.
   set(CRYPTOPP_BUILD_TESTING OFF)
@@ -121,11 +125,12 @@ if(${LICENSE_BUILD_FLAG_FOUND})
     find_package(OpenSSL 1.1.1 REQUIRED)
   endif()
 
-  set(JSON_BuildTests
-      OFF
-      CACHE INTERNAL "")
-  add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 endif()
+
+set(JSON_BuildTests
+    OFF
+    CACHE INTERNAL "")
+add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 
 if(MSVC)
   if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
@@ -133,7 +138,8 @@ if(MSVC)
       FATAL_ERROR "For now, we only support building in release mode using MSVC"
     )
   endif()
-  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w")
+  # Read this for /permissive- https://stackoverflow.com/a/24414279/4565794
+  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w /permissive-")
 
   # We create an interface to plant compile flags and be cohesive with the rest
   # of the OpenMP::OpenMP_CXX linkages. This converts project wide compile flags
@@ -303,8 +309,28 @@ add_subdirectory(hashtable)
 add_subdirectory(compression)
 add_subdirectory(utils)
 
+if(${LICENSE_BUILD_FLAG_FOUND})
+  add_subdirectory(licensing)
+endif()
+
 set(THIRDAI_SOURCES
     bolt_vector/src/BoltVector.cc
+    bolt/src/nn/autograd/Computation.cc
+    bolt/src/nn/autograd/ComputationGraph.cc
+    bolt/src/nn/model/AllocationManager.cc
+    bolt/src/nn/model/Model.cc
+    bolt/src/nn/ops/FullyConnected.cc
+    bolt/src/nn/ops/Input.cc
+    bolt/src/nn/tensor/Tensor.cc
+    bolt/src/nn/loss/ComparativeLoss.cc
+    bolt/src/nn/loss/CategoricalCrossEntropy.cc
+    bolt/src/nn/loss/BinaryCrossEntropy.cc
+    bolt/src/train/metrics/Metric.cc
+    bolt/src/train/callbacks/Callback.cc
+    bolt/src/train/metrics/LossMetric.cc
+    bolt/src/train/metrics/CategoricalAccuracy.cc
+    bolt/src/train/trainer/Trainer.cc
+    bolt/src/train/trainer/Dataset.cc
     bolt/src/graph/Graph.cc
     bolt/src/graph/ExecutionConfig.cc
     bolt/src/graph/nodes/FullyConnected.cc
@@ -338,9 +364,16 @@ set(THIRDAI_SOURCES
     hashing/src/UniversalHash.cc
     hashtable/src/SampledHashTable.cc
     hashtable/src/VectorHashTable.cc
-    licensing/src/CheckLicense.cc
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
+    dataset/src/VectorBuffer.cc
+    dataset/src/dataset_loaders/DatasetLoader.cc
+    dataset/src/utils/TokenEncoding.cc
+    dataset/src/featurizers/ClickThroughFeaturizer.cc
+    dataset/src/featurizers/MaskedSentenceFeaturizer.cc
+    dataset/src/featurizers/ProcessorUtils.cc
+    dataset/src/featurizers/SvmFeaturizer.cc
+    dataset/src/featurizers/TabularFeaturizer.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
@@ -350,28 +383,24 @@ set(THIRDAI_SOURCES
     new_dataset/src/featurization_pipeline/FeaturizationPipeline.cc
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
-    auto_ml/src/dataset_factories/SingleBlockDatasetFactory.cc
     auto_ml/src/dataset_factories/udt/DataTypes.cc
     auto_ml/src/dataset_factories/udt/FeatureComposer.cc
     auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
-    auto_ml/src/deployment_config/BlockConfig.cc
-    auto_ml/src/deployment_config/DeploymentConfig.cc
-    auto_ml/src/deployment_config/HyperParameter.cc
-    auto_ml/src/deployment_config/ModelConfig.cc
-    auto_ml/src/deployment_config/NodeConfig.cc
-    auto_ml/src/deployment_config/dataset_configs/SingleBlockDatasetFactoryConfig.cc
-    auto_ml/src/deployment_config/dataset_configs/UDTDatasetFactoryConfig.cc
+    auto_ml/src/config/ModelConfig.cc
+    auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartDataSource.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
-    utils/Logging.cc)
+    utils/Logging.cc
+    utils/StringManipulation.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set
-if(${LICENSE_BUILD_FLAG_FOUND})
-  add_subdirectory(licensing)
+if(${LICENSE_CHECK_FLAG_FOUND})
   set(THIRDAI_SOURCES
       ${THIRDAI_SOURCES} licensing/src/keygen/KeygenCommunication.cc
-      licensing/src/heartbeat/Heartbeat.cc)
+      licensing/src/heartbeat/Heartbeat.cc licensing/src/CheckLicenseEnabled.cc)
+else()
+  set(THIRDAI_SOURCES ${THIRDAI_SOURCES} licensing/src/CheckLicenseDisabled.cc)
 endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
@@ -379,10 +408,11 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
                                      cereal::cereal prometheus-cpp::pull)
 if(${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(
-    thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto OpenSSL::SSL
-                   nlohmann_json::nlohmann_json)
+  target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
+                                       OpenSSL::SSL)
 endif()
+
+target_link_libraries(thirdai PUBLIC nlohmann_json::nlohmann_json)
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and Debug
 # builds, but not our ASan builds. This means that for now we can't run ASan
@@ -396,15 +426,19 @@ pybind11_add_module(
   bolt/python_bindings/BoltPython.cc
   bolt/python_bindings/BoltNNPython.cc
   bolt/python_bindings/CallbacksPython.cc
+  bolt/python_bindings/BoltV2NNPython.cc
+  bolt/python_bindings/BoltV2TrainPython.cc
   dataset/python_bindings/DatasetPython.cc
+  dataset/src/blocks/TabularHashFeatures.cc
   new_dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
+  search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
-  auto_ml/python_bindings/DeploymentPython.cc
   auto_ml/src/models/ModelPipeline.cc
   auto_ml/src/models/OutputProcessor.cc
+  auto_ml/src/models/TextClassifier.cc
   auto_ml/src/models/UniversalDeepTransformer.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)

@@ -14,19 +14,19 @@ class UDTBenchmarkConfig:
     callbacks = []
 
 
-class ClincUDTConfig(UDTBenchmarkConfig):
-    train_file = "/share/data/udt_datasets/clinc/clinc_train.csv"
-    test_file = "/share/data/udt_datasets/clinc/clinc_test.csv"
+class YelpPolarityUDTConfig(UDTBenchmarkConfig):
+    train_file = "/share/data/udt_datasets/yelp_polarity/train.csv"
+    test_file = "/share/data/udt_datasets/yelp_polarity/test.csv"
 
     data_types = {
         "text": bolt.types.text(),
-        "category": bolt.types.categorical(),
+        "label": bolt.types.categorical(),
     }
 
-    target = "category"
-    n_target_classes = 151
-    experiment_name = "ClincUDT"
-    dataset_name = "clinc"
+    target = "label"
+    delimiter = "\t"
+    experiment_name = "YelpPolarityUDT"
+    dataset_name = "yelp_polarity"
 
 
 class AmazonPolarityUDTConfig(UDTBenchmarkConfig):

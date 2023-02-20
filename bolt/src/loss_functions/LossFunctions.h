@@ -62,6 +62,10 @@ class BinaryCrossEntropyLoss final : public LossFunction {
  private:
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
+    // This is a special case csdisco asked for to handle missing labels.
+    if (label == -1.0) {
+      return 0.0;
+    }
     /* Derivation
 
     Note: we are assuming that BCE is used along with a signmoid activation in
@@ -176,7 +180,7 @@ class MarginBCE final : public LossFunction {
 };
 
 static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
-  std::string lower_name = utils::lower(name);
+  std::string lower_name = text::lower(name);
   if (lower_name == "categoricalcrossentropyloss") {
     return CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss();
   }

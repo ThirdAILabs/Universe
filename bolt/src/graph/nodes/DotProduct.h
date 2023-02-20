@@ -55,8 +55,6 @@ class DotProductNode final
     return (*_outputs)[vec_index];
   }
 
-  void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
-
   void summarizeImpl(std::stringstream& summary, bool detailed) const final;
 
   std::string type() const final { return "dot_product"; }

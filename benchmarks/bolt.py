@@ -20,7 +20,6 @@ from utils import (
 
 
 def main():
-
     config, args = start_experiment(
         description="Creates, trains, and tests a bolt network on the specified config."
     )
@@ -115,14 +114,6 @@ def load_all_datasets(dataset_config):
             loaded_datasets = load_click_through_dataset(single_dataset_config, use_s3)
         elif format == "click_labels":
             loaded_datasets = load_click_through_labels(single_dataset_config, use_s3)
-        elif format == "mlm_with_tokens":
-            loaded_datasets = load_mlm_datasets(
-                single_dataset_config, use_s3, return_tokens=True
-            )
-        elif format == "mlm_without_tokens":
-            loaded_datasets = load_mlm_datasets(
-                single_dataset_config, return_tokens=False
-            )
         else:
             raise ValueError(f"{format} is an unrecognized dataformat")
 
@@ -159,7 +150,6 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
         eval_config.return_activations()
 
     for epoch_num in range(num_epochs):
-
         freeze_hash_table_if_needed(model, experiment_config, epoch_num)
         switch_to_sparse_inference_if_needed(eval_config, experiment_config, epoch_num)
 
@@ -351,32 +341,6 @@ def load_click_through_labels(dataset_config, use_s3):
     dataset_path = find_full_filepath(config_get_required(dataset_config, "path"))
     with open(dataset_path) as file:
         return [np.array([int(line[0]) for line in file.readlines()])]
-
-
-def load_mlm_datasets(dataset_config, use_s3, return_tokens):
-    if use_s3:
-        raise ValueError("S3 not supported yet for loading mlm datasets")
-
-    # We load the train and test data at the same time because the need to use
-    # the same loader to ensure that the words in the vocabulary are mapped to
-    # the same output neuron.
-    train_path = find_full_filepath(config_get_required(dataset_config, "train_path"))
-    test_path = find_full_filepath(config_get_required(dataset_config, "test_path"))
-
-    mlm_loader = dataset.MLMDatasetLoader(
-        pairgram_range=config_get_required(dataset_config, "pairgram_range")
-    )
-
-    batch_size = config_get_required(dataset_config, "batch_size")
-
-    train_data = mlm_loader.load(filename=train_path, batch_size=batch_size)
-
-    test_data = mlm_loader.load(filename=test_path, batch_size=batch_size)
-
-    if return_tokens:
-        return train_data + test_data
-
-    return train_data[0], train_data[2], test_data[0], test_data[2]
 
 
 # Because of how our experiment works, we always set num_epochs=1 and return

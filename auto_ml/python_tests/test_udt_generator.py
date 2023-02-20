@@ -116,12 +116,6 @@ def prepared_datasets(grammar_correction_dataset) -> None:
     )
 
 
-def delete_created_files() -> None:
-    for file in [MODEL_PATH, TRAIN_SOURCE_TARGET_FILE, TRAIN_TARGET_ONLY_FILE]:
-        if os.path.exists(file):
-            os.remove(file)
-
-
 def run_generator_test(
     model: bolt.models.UDTGenerator, source_col_index: int, target_col_index: int
 ) -> None:
@@ -135,7 +129,7 @@ def run_generator_test(
     query_pairs = read_csv_file(file_name=TRAIN_SOURCE_TARGET_FILE)
 
     queries = [query_pair[source_col_index] for query_pair in query_pairs]
-    generated_candidates = model.predict_batch(queries=queries, top_k=5)
+    (generated_candidates,) = model.predict_batch(queries=queries, top_k=5)
 
     correct_results = 0
     for query_index in range(len(query_pairs)):
@@ -157,6 +151,7 @@ def train_udt_query_reformulation_model(
         source_column="source_column",
         target_column="target_column",
         dataset_size="small",
+        delimiter=",",
     )
     model.train(filename=train_file_name)
     return model
@@ -176,7 +171,15 @@ def test_udt_generator_source_not_specified(prepared_datasets):
     run_generator_test(model=model, source_col_index=1, target_col_index=0)
 
 
-# This test is for a query reformuulation model that was created with only the
+def test_udt_generator_eval_no_source(prepared_datasets):
+    model = train_udt_query_reformulation_model(TRAIN_TARGET_ONLY_FILE)
+    result = model.evaluate(filename=TRAIN_TARGET_ONLY_FILE, top_k=5)
+
+    # This assertion ensures that the result is in the format we expect
+    assert len(result) == 1 and len(result[0]) > 0
+
+
+# This test is for a query reformulation model that was created with only the
 # target column specified, and trained on a dataset which doesn't contain
 # a source column.
 def test_udt_generator_target_only(prepared_datasets):
@@ -195,14 +198,31 @@ def test_udt_generator_load_and_save(prepared_datasets):
     trained_model.save(filename=MODEL_PATH)
 
     deserialized_model = bolt.UniversalDeepTransformer.load(filename=MODEL_PATH)
-    model_eval_outputs = trained_model.evaluate(
+    (model_eval_outputs,) = trained_model.evaluate(
         filename=TRAIN_SOURCE_TARGET_FILE, top_k=5
     )
-    deserialized_model_outputs = deserialized_model.evaluate(
+    (deserialized_model_outputs,) = deserialized_model.evaluate(
         filename=TRAIN_SOURCE_TARGET_FILE, top_k=5
     )
 
     for index in range(len(model_eval_outputs)):
         assert model_eval_outputs[index] == deserialized_model_outputs[index]
 
-    delete_created_files()
+
+# This test checks whether the returned scores are sorted and have valid lengths
+def test_udt_generator_return_scores(prepared_datasets):
+    trained_model = train_udt_query_reformulation_model(TRAIN_SOURCE_TARGET_FILE)
+
+    source_col_index = 1
+    query_pairs = read_csv_file(file_name=TRAIN_SOURCE_TARGET_FILE)
+    queries = [query_pair[source_col_index] for query_pair in query_pairs]
+
+    top_k = 5
+    generated_candidates, scores = trained_model.predict_batch(
+        queries=queries, top_k=top_k, return_scores=True
+    )
+
+    assert len(generated_candidates) == len(scores)
+    for index, score in enumerate(scores):
+        assert len(score) == len(generated_candidates[index])
+        assert all(a >= b for a, b in zip(score, score[1:]))

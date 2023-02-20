@@ -9,11 +9,20 @@ pytestmark = [pytest.mark.release]
 
 
 def this_should_require_a_license_search():
-
     from thirdai import search
 
     search.DocRetrieval(
         centroids=[[0.0]], hashes_per_table=1, num_tables=1, dense_input_dimension=1
+    )
+
+
+def this_should_require_a_license_query_reformulation():
+    from thirdai import bolt
+
+    bolt.UniversalDeepTransformer(
+        source_column="source_queries",
+        target_column="target_queries",
+        dataset_size="medium",
     )
 
 
@@ -32,6 +41,7 @@ def test_with_valid_license():
     thirdai.licensing.set_path(str(valid_license_path))
     this_should_require_a_license_search()
     this_should_require_a_license_bolt()
+    this_should_require_a_license_query_reformulation()
 
 
 @pytest.mark.skipif(
@@ -46,6 +56,8 @@ def test_with_expired_license():
         this_should_require_a_license_search()
     with pytest.raises(Exception, match=r".*license file is expired.*"):
         this_should_require_a_license_bolt()
+    with pytest.raises(Exception, match=r".*license file is expired.*"):
+        this_should_require_a_license_query_reformulation()
 
 
 @pytest.mark.skipif(
@@ -60,6 +72,8 @@ def test_with_invalid_license():
         this_should_require_a_license_search()
     with pytest.raises(Exception, match=r".*license verification failure.*"):
         this_should_require_a_license_bolt()
+    with pytest.raises(Exception, match=r".*license verification failure.*"):
+        this_should_require_a_license_query_reformulation()
 
 
 # See e.g. https://stackoverflow.com/questions/34931263/how-to-run-specific-code-after-all-tests-are-executed

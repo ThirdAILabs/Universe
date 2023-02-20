@@ -27,8 +27,6 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
     std::iota(layer->_embedding_block.begin(), layer->_embedding_block.end(),
               1.0);
 
-    layer->initializeLayer(/* new_batch_size= */ 4);
-
     return layer;
   }
 
@@ -40,13 +38,6 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
   static uint64_t getHashLocFromLayer(std::unique_ptr<EmbeddingLayer>& layer,
                                       uint32_t token, uint32_t lookup_index) {
     return layer->getEmbeddingBlockOffset(token, lookup_index);
-  }
-
-  static std::vector<std::pair<uint64_t, uint64_t>> getDisjointRangesFromLayer(
-      EmbeddingLayer& layer, std::vector<std::vector<uint64_t>>& hash_locs) {
-    layer._embedding_block_offsets = std::move(hash_locs);
-
-    return layer.getDisjointUpdateRanges();
   }
 
   static float* getEmbeddingBlock(std::unique_ptr<EmbeddingLayer>& layer) {
@@ -64,7 +55,6 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 
     for (uint32_t i = 0; i < tokens.size(); i++) {
       layer->forward(
-          i,
           BoltVector::makeSparseVector(
               tokens.at(i), std::vector<float>(tokens.at(i).size(), 1.0)),
           output[i]);
@@ -89,7 +79,11 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
         output[batch_index].gradients[i] = 0.5 * i + batch_index * 0.125;
       }
 
-      layer->backpropagate(batch_index, output[batch_index]);
+      layer->backpropagate(
+          BoltVector::makeSparseVector(
+              tokens.at(batch_index),
+              std::vector<float>(tokens.at(batch_index).size(), 1.0)),
+          output[batch_index]);
 
       /**
        * The location in the embedding block of a token's embedding originates
@@ -253,32 +247,6 @@ TEST_F(EmbeddingLayerTestFixture, BackpropagationConcatReduction) {
       {7, 4, 18}, {98, 34, 55}, {9, 2, 24}, {61, 75, 11}};
 
   testEmbeddingBackpropagation(/* use_concat_reduction= */ true, tokens);
-}
-
-// Test that the disjoint ranges are computed correctly for gradient updates,
-// based off of the areas of the embedding block that are used.
-TEST_F(EmbeddingLayerTestFixture, UpdateRangeCorrectness) {
-  std::vector<std::vector<uint64_t>> test_hash_locs = {
-      {4, 21, 68, 32, 99, 45, 2, 79}, {23, 82, 20, 32, 86, 63, 54, 47}};
-
-  EmbeddingLayerConfig config(/* num_embedding_lookups= */ 4,
-                              /* lookup_size= */ 5,
-                              /* log_embedding_block_size= */ 7,
-                              /* reduction= */ "sum");
-  EmbeddingLayer layer(config);
-
-  std::vector<std::pair<uint64_t, uint64_t>> ranges =
-      getDisjointRangesFromLayer(layer, test_hash_locs);
-
-  std::vector<std::pair<uint64_t, uint64_t>> expected_ranges = {
-      {2, 9},   {20, 28}, {32, 37}, {45, 52},
-      {54, 59}, {63, 73}, {79, 91}, {99, 104}};
-
-  ASSERT_EQ(ranges.size(), expected_ranges.size());
-
-  for (uint32_t i = 0; i < ranges.size(); i++) {
-    ASSERT_EQ(ranges.at(i), expected_ranges.at(i));
-  }
 }
 
 }  // namespace thirdai::bolt::tests

@@ -7,10 +7,10 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
-#include <auto_ml/src/deployment_config/HyperParameter.h>
 #include <auto_ml/src/models/ModelPipeline.h>
 #include <new_dataset/src/featurization_pipeline/ColumnMap.h>
 #include <memory>
@@ -55,7 +55,7 @@ class UniversalDeepTransformer final : public ModelPipeline {
       bool integer_target = false, std::string time_granularity = "d",
       uint32_t lookahead = 0, char delimiter = ',',
       const std::optional<std::string>& model_config = std::nullopt,
-      const deployment::UserInputMap& options = {});
+      const config::ArgumentMap& options = {});
 
   /**
    * This wraps the predict method of the ModelPipeline to handle recusive
@@ -109,6 +109,14 @@ class UniversalDeepTransformer final : public ModelPipeline {
   }
 
   /**
+   * Given a class name (or class id in the case of integer_target = true),
+   * return an embedding for that entity. This is really just the weight vector
+   * for the neuron in the output layer corresponding to the given label.
+   */
+  std::vector<float> getEntityEmbedding(
+      std::variant<uint32_t, std::string> label);
+
+  /**
    * This method will perform cold start pretraining on the model if the model
    * is a text classification model with a single text column as input and a
    * categorical column as the target. For this pretraining the strong and weak
@@ -117,10 +125,12 @@ class UniversalDeepTransformer final : public ModelPipeline {
    * the augmentation refer to the comments in:
    * new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h
    */
-  void coldStartPretraining(thirdai::data::ColumnMap dataset,
-                            const std::vector<std::string>& strong_column_names,
-                            const std::vector<std::string>& weak_column_names,
-                            float learning_rate);
+  void coldStartPretraining(
+      const dataset::DataSourcePtr& source,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names,
+      bolt::TrainConfig& train_config,
+      const std::optional<ValidationOptions>& validation = std::nullopt);
 
   void resetTemporalTrackers() { udtDatasetFactory().resetTemporalTrackers(); }
 
@@ -182,11 +192,11 @@ class UniversalDeepTransformer final : public ModelPipeline {
   getOutputProcessor(const data::UDTConfigPtr& dataset_config);
 
   static bolt::BoltGraphPtr loadUDTBoltGraph(
-      const std::vector<bolt::InputPtr>& input_nodes, uint32_t output_dim,
+      const std::vector<uint32_t>& input_dims, uint32_t output_dim,
       const std::string& saved_model_config);
 
   static bolt::BoltGraphPtr buildUDTBoltGraph(
-      std::vector<bolt::InputPtr> input_nodes, uint32_t output_dim,
+      const std::vector<uint32_t>& input_dims, uint32_t output_dim,
       uint32_t hidden_layer_size);
 
   data::UDTDatasetFactory& udtDatasetFactory() const {
@@ -205,10 +215,10 @@ class UniversalDeepTransformer final : public ModelPipeline {
     bool freeze_hash_tables = true;
     uint32_t embedding_dimension = DEFAULT_HIDDEN_DIM;
     uint32_t prediction_depth = 1;
+    uint32_t feature_hash_range = data::UDTConfig::DEFAULT_HASH_RANGE;
   };
 
-  static UDTOptions processUDTOptions(
-      const deployment::UserInputMap& options_map);
+  static UDTOptions processUDTOptions(const config::ArgumentMap& options_map);
 
   static void throwOptionError(const std::string& option_name,
                                const std::string& given_option_value,

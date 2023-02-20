@@ -91,8 +91,6 @@ class SwitchNode final : public Node,
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final;
 
-  void cleanupAfterBatchProcessingImpl() final;
-
   void summarizeImpl(std::stringstream& summary, bool detailed) const final;
 
   std::string type() const final { return "switch"; }

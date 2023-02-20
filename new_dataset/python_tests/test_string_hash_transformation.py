@@ -10,7 +10,6 @@ def get_str_col(col_length):
 
 
 def get_two_col_hashed_string_dataset(col_length, output_range):
-
     column1, column2 = get_str_col(col_length), get_str_col(col_length)
 
     columns = data.ColumnMap({"column1": column1, "column2": column2})

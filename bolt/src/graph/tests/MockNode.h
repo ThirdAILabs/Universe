@@ -40,8 +40,6 @@ class MockNode : public Node {
   MOCK_METHOD(BoltVector&, getOutputVectorImpl, (uint32_t vec_index),
               (override));
 
-  MOCK_METHOD(void, cleanupAfterBatchProcessingImpl, (), (override));
-
   MOCK_METHOD(void, summarizeImpl, (std::stringstream & summary, bool detailed),
               (const override));
 

@@ -1,4 +1,5 @@
 #include "Heartbeat.h"
+#include <exceptions/src/Exceptions.h>
 #include <stdexcept>
 #include <string>
 #define CPPHTTPLIB_OPENSSL_SUPPORT
@@ -33,7 +34,7 @@ HeartbeatThread::HeartbeatThread(
   }
 
   if (!doSingleHeartbeat(url)) {
-    throw std::runtime_error(
+    throw exceptions::LicenseCheckException(
         "Could not establish initial connection to licensing server.");
   }
   _heartbeat_thread = std::thread(&HeartbeatThread::heartbeatThread, this, url);
@@ -41,7 +42,7 @@ HeartbeatThread::HeartbeatThread(
 
 void HeartbeatThread::verify() {
   if (!_verified) {
-    throw std::runtime_error(
+    throw exceptions::LicenseCheckException(
         "The heartbeat thread could not verify with the server because there "
         "has not been a successful heartbeat in " +
         std::to_string(_no_heartbeat_grace_period_seconds) +
