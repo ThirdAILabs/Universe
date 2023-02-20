@@ -5,8 +5,8 @@ from sklearn.model_selection import train_test_split
 from thirdai import bolt
 
 all_data = pd.read_csv("yelp_all.csv")
-numerical_col_ranges = all_data.agg([min, max]).T.values.tolist()
 numerical_col_names = ["col_" + str(i) for i in range(32)]
+numerical_col_ranges = all_data[numerical_col_names].agg([min, max]).T.values.tolist()
 
 train_data, test_data = train_test_split(all_data, test_size=0.5)
 
