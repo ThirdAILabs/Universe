@@ -129,7 +129,6 @@ def run_clang_tidy():
 
 
 def main():
-
     os.chdir(universe_dir())
 
     ensure_compile_commands_db_created()

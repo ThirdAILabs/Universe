@@ -25,16 +25,13 @@ class EmbeddingLayer {
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
                           uint32_t seed = time(nullptr));
 
-  void forward(uint32_t vec_index, const BoltVector& tokens,
-               BoltVector& output);
+  void forward(const BoltVector& tokens, BoltVector& output);
 
-  void backpropagate(uint32_t vec_index, const BoltVector& output);
+  void backpropagate(const BoltVector& tokens, const BoltVector& output);
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
-  uint32_t getOutputDim() const { return _total_embedding_dim; }
-
-  void initializeLayer(uint32_t new_batch_size);
+  uint64_t getOutputDim() const { return _total_embedding_dim; }
 
   BoltBatch createBatchState(const uint32_t batch_size) const {
     return BoltBatch(_total_embedding_dim, batch_size, true);
@@ -66,45 +63,32 @@ class EmbeddingLayer {
   ~EmbeddingLayer() = default;
 
  private:
-  std::vector<std::pair<uint64_t, uint64_t>> getDisjointUpdateRanges() const;
-
   void updateParametersSparse(float lr, uint32_t iter, float B1, float B2,
                               float eps);
 
   void updateParametersDense(float lr, uint32_t iter, float B1, float B2,
                              float eps);
 
-  inline uint32_t getEmbeddingBlockOffset(uint32_t token,
-                                          uint32_t lookup_index) {
+  inline uint64_t getEmbeddingBlockOffset(uint32_t token,
+                                          uint64_t lookup_index) {
     uint64_t id = token * _num_lookups_per_token + lookup_index;
-    uint32_t hash = _hash_fn.gethash(id);
+    uint64_t hash = _hash_fn.gethash(id);
 
     // We bit shift to make sure that the hash loc is within the range of the
     // embedding block.
-    return hash >> (32 - _log_embedding_block_size);
+    return hash >> (64 - _log_embedding_block_size);
   }
 
-  constexpr uint32_t getOutputOffsetWithinEmbedding(
-      uint32_t lookup_index) const {
+  constexpr uint64_t getOutputOffsetWithinEmbedding(
+      uint64_t lookup_index) const {
     return lookup_index * _lookup_size;
   }
 
-  static constexpr uint32_t getHashLocIndex(uint32_t lookup_index,
-                                            uint32_t token_index,
-                                            uint32_t num_tokens) {
-    return lookup_index * num_tokens + token_index;
-  }
-
-  void recordEmbeddingBlockOffset(uint32_t vec_index, uint64_t hash_loc) {
-    _embedding_block_offsets[vec_index].push_back(hash_loc);
-  }
-
-  uint64_t retrieveEmbeddingBlockOffset(uint32_t vec_index,
-                                        uint32_t lookup_index,
-                                        uint32_t token_index,
-                                        uint32_t num_tokens) {
-    return _embedding_block_offsets[vec_index][getHashLocIndex(
-        lookup_index, token_index, num_tokens)];
+  void markUsedChunks(uint64_t block_offset) {
+    for (uint64_t i = block_offset; i < block_offset + _lookup_size;
+         i += _update_chunk_size) {
+      _embedding_chunks_used[i / _update_chunk_size] = true;
+    }
   }
 
   // Private constructor for cereal.
@@ -129,28 +113,35 @@ class EmbeddingLayer {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_num_lookups_per_token, _lookup_size, _total_embedding_dim,
-            _log_embedding_block_size, _reduction, _num_tokens_per_input,
-            _embedding_block_size, _hash_fn, _embedding_block,
+            _log_embedding_block_size, _update_chunk_size, _reduction,
+            _num_tokens_per_input, _embedding_block_size, _hash_fn,
+            _embedding_block, _embedding_chunks_used,
             _disable_sparse_parameter_updates);
   }
 
-  uint32_t _num_lookups_per_token, _lookup_size, _total_embedding_dim,
-      _log_embedding_block_size;
+  uint64_t _num_lookups_per_token;
+  uint64_t _lookup_size;
+  uint64_t _total_embedding_dim;
+  uint64_t _log_embedding_block_size;
+  uint64_t _update_chunk_size;
   uint64_t _embedding_block_size;
+
   EmbeddingReductionType _reduction;
-  std::optional<uint32_t> _num_tokens_per_input;
+  std::optional<uint64_t> _num_tokens_per_input;
 
   hashing::UniversalHash _hash_fn;
 
   std::vector<float> _embedding_block;
 
+  /**
+   * The embedding block is grouped into chunks of size _update_chunk_size.
+   * During backpropagation the layer tracks which chunks are used and gradients
+   * are computed for. Then during update parameters only the used chunks are
+   * updated.
+   */
+  std::vector<bool> _embedding_chunks_used;
   std::optional<AdamOptimizer> _optimizer = std::nullopt;
   bool _disable_sparse_parameter_updates;
-
-  // This structure stores the embedding block offset for each token in each
-  // input. This is used for backpropagation and for update paramters to know
-  // what parts of the embedding block were used.
-  std::vector<std::vector<uint64_t>> _embedding_block_offsets;
 };
 
 }  // namespace thirdai::bolt

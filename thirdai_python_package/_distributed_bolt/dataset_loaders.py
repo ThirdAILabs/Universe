@@ -7,12 +7,14 @@ from thirdai.bolt.udt_modifications import _create_data_source
 
 class DistributedDatasetLoader(ABC):
     @abstractmethod
-    def next() -> Optional[
-        Tuple[
-            Union[dataset.BoltDataset, List[dataset.BoltDataset]],
-            dataset.BoltDataset,
+    def next() -> (
+        Optional[
+            Tuple[
+                Union[dataset.BoltDataset, List[dataset.BoltDataset]],
+                dataset.BoltDataset,
+            ]
         ]
-    ]:
+    ):
         """
         This function returns training data and labels if there is training data left for
         ingestion for a epoch else, will return NULL.

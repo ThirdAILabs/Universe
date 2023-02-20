@@ -16,7 +16,8 @@ class TextGenerationFeaturizer;
 using TextGenerationFeaturizerPtr = std::shared_ptr<TextGenerationFeaturizer>;
 class TextGenerationFeaturizer final : public Featurizer {
  public:
-  TextGenerationFeaturizer(uint32_t sequence_len, uint32_t vocab_size);
+  TextGenerationFeaturizer(uint32_t sequence_len, uint32_t vocab_size,
+                           uint32_t last_n_tokens);
 
   /**
    * Featurizes a list of rows from a text dataset for next word prediction.
@@ -40,14 +41,14 @@ class TextGenerationFeaturizer final : public Featurizer {
 
   void processHeader(const std::string& header) final { (void)header; }
 
-  size_t getNumDatasets() final { return 2; }
+  size_t getNumDatasets() final { return 3; }
 
   std::vector<uint32_t> getDimensions() final {
-    return {std::numeric_limits<uint32_t>::max(), _vocab_size};
+    return {std::numeric_limits<uint32_t>::max(), _vocab_size, _vocab_size};
   }
 
-  static std::vector<BoltVector> featurizeInferenceSample(
-      const std::vector<uint32_t>& tokens);
+  std::vector<BoltVector> featurizeInferenceSample(
+      const std::vector<uint32_t>& tokens) const;
 
   void save(const std::string& filename) const;
 
@@ -70,13 +71,14 @@ class TextGenerationFeaturizer final : public Featurizer {
    * Helper function to featurize a single line from the text dataset and
    * returns the created input samples and labels.
    */
-  std::pair<std::vector<BoltVector>, std::vector<BoltVector>> featurizeText(
+  std::vector<std::vector<BoltVector>> featurizeText(
       const std::string& line) const;
 
   static std::vector<uint32_t> parseTokens(const std::string& line);
 
   uint32_t _sequence_len;
   uint32_t _vocab_size;
+  uint32_t _last_n_tokens;
 };
 
 }  // namespace thirdai::dataset

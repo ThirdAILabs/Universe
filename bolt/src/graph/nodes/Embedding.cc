@@ -3,11 +3,11 @@
 
 namespace thirdai::bolt {
 
-EmbeddingNode::EmbeddingNode(uint32_t num_embedding_lookups,
-                             uint32_t lookup_size,
-                             uint32_t log_embedding_block_size,
+EmbeddingNode::EmbeddingNode(uint64_t num_embedding_lookups,
+                             uint64_t lookup_size,
+                             uint64_t log_embedding_block_size,
                              const std::string& reduction,
-                             std::optional<uint32_t> num_tokens_per_input)
+                             std::optional<uint64_t> num_tokens_per_input)
     : _embedding_layer(nullptr),
       _config(EmbeddingLayerConfig(
           /* num_embedding_lookups= */ num_embedding_lookups,
@@ -80,7 +80,6 @@ void EmbeddingNode::prepareForBatchProcessingImpl(uint32_t batch_size,
                                                   bool use_sparsity) {
   (void)use_sparsity;
 
-  _embedding_layer->initializeLayer(batch_size);
   _outputs = _embedding_layer->createBatchState(batch_size);
 }
 
@@ -88,14 +87,13 @@ void EmbeddingNode::forwardImpl(uint32_t vec_index, const BoltVector* labels) {
   (void)labels;
 
   _embedding_layer->forward(
-      /* vec_index= */ vec_index,
       /* tokens= */ _token_input->getOutputVector(vec_index),
       /* output= */ (*_outputs)[vec_index]);
 }
 
 void EmbeddingNode::backpropagateImpl(uint32_t vec_index) {
   _embedding_layer->backpropagate(
-      /* vec_index= */ vec_index,
+      /* tokens= */ _token_input->getOutputVector(vec_index),
       /* output= */ (*_outputs)[vec_index]);
 }
 

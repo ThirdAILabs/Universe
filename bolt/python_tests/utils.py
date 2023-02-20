@@ -116,7 +116,6 @@ def get_simple_concat_model(
     hidden_layer_bottom_sparsity,
     num_classes,
 ):
-
     input_layer = bolt.nn.Input(dim=num_classes)
 
     hidden_layer_top = bolt.nn.FullyConnected(
