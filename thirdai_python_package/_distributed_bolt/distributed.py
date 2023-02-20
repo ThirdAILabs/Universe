@@ -317,7 +317,7 @@ class DistributedDataParallel:
                 friend=(
                     self.primary_worker
                     if worker_id == 1
-                    else self.replica_workers[worker_id - 1]
+                    else self.replica_workers[worker_id - 2]
                 ),
             )
             self.replica_workers.append(replica_worker)
