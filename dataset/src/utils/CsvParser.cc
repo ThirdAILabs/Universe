@@ -48,13 +48,13 @@ std::vector<std::string_view> parseLine(const std::string& line,
                                         char delimiter) {
   validateDelimiter(delimiter);
   std::vector<std::string_view> parsed_columns;
-  uint32_t column_start = 0;
 
   ParserState state = ParserState::NewColumn;
+  uint32_t column_start = 0;
   uint32_t position = 0;
-  for (char c : line) {
+  for (char current_char : line) {
     auto prev_state = state;
-    state = nextState(state, /* current_char= */ c, delimiter);
+    state = nextState(state, current_char, delimiter);
     if (state == ParserState::UnexpectedEOL) {
       break;
     }
@@ -111,6 +111,7 @@ static std::string_view lastColumn(const std::string& line,
                                    ParserState prev_state, uint32_t start,
                                    uint32_t end) {
   if (prev_state == ParserState::PotentialEndQuote) {
+    // If the previous state is PotentialEndQuote, then
     start++;
     end--;
   }
@@ -173,6 +174,7 @@ static ParserState inQuotes(char current_char) {
 }
 
 static ParserState outsideQuotes(char current_char, char delimiter) {
+  // Separate conditional since delimiter is not a constant.
   if (current_char == delimiter) {
     return ParserState::NewColumn;
   }
@@ -187,18 +189,27 @@ static ParserState outsideQuotes(char current_char, char delimiter) {
   }
 }
 
+// The character after the escape character is ignored.
 static ParserState escapeInQuotes() { return ParserState::InQuotes; }
-
 static ParserState escapeOutsideQuotes() { return ParserState::OutsideQuotes; }
 
 static ParserState potentialEndQuote(char current_char, char delimiter) {
+  // Separate conditional since delimiter is not a constant.
   if (current_char == delimiter) {
     return ParserState::NewColumn;
   }
 
   switch (current_char) {
+    /*
+      CSV standard: Two double quotes inside quoted string are treated like
+      escaped double quotes. E.g. "I just saw ""Dear Evan Hansen"", 10/10!"
+      is interpreted as:
+      I just saw "Dear Evan Hansen", 10/10!
+    */
     case '"':
       return ParserState::InQuotes;
+    // In all the other cases, since we've only seen one double quotation mark,
+    // we treat it as the end quote, thus we are now "outside quotes".
     case '\\':
       return ParserState::EscapeOutsideQuotes;
     case '\n':
