@@ -26,7 +26,7 @@ class GraphUDT : public ModelPipeline {
   static GraphUDT buildGraphUDT(
       data::ColumnDataTypes data_types, std::string graph_file_name,
       std::string source, std::string target, uint32_t n_target_classes,
-      uint32_t max_neighbours,
+      uint32_t num_neighbours,
       std::optional<std::vector<std::string>> relationship_columns =
           std::nullopt,
       bool integer_target = false, bool numerical_context = false,
@@ -42,7 +42,7 @@ class GraphUDT : public ModelPipeline {
 
   static bolt::BoltGraphPtr buildGraphUDTBoltGraph(
       const std::vector<uint32_t>& input_dims, uint32_t output_dim,
-      uint32_t max_neighbours);
+      uint32_t num_neighbours);
 };
 
 }  // namespace thirdai::automl::models

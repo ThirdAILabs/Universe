@@ -1,11 +1,13 @@
 #include "GraphUDT.h"
+#include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
 
 namespace thirdai::automl::models {
 
 GraphUDT GraphUDT::buildGraphUDT(
     data::ColumnDataTypes data_types, std::string graph_file_name,
     std::string source, std::string target, uint32_t n_target_classes,
-    uint32_t max_neighbours,
+    uint32_t num_neighbours,
     std::optional<std::vector<std::string>> relationship_columns,
     bool integer_target, bool numerical_context, bool features_context,
     uint32_t k_hop, char delimeter,
@@ -13,7 +15,7 @@ GraphUDT GraphUDT::buildGraphUDT(
         adj_list) {
   auto dataset_config = std::make_shared<data::GraphConfig>(
       std::move(data_types), std::move(graph_file_name), std::move(source),
-      std::move(target), n_target_classes, max_neighbours,
+      std::move(target), n_target_classes, num_neighbours,
       std::move(relationship_columns), integer_target, numerical_context,
       features_context, k_hop, delimeter, std::move(adj_list));
 
@@ -23,7 +25,7 @@ GraphUDT GraphUDT::buildGraphUDT(
   bolt::BoltGraphPtr model;
   model = GraphUDT::buildGraphUDTBoltGraph(
       graph_dataset_factory->getInputDims(),
-      graph_dataset_factory->getLabelDim(), max_neighbours);
+      graph_dataset_factory->getLabelDim(), num_neighbours);
 
   TrainEvalParameters train_eval_parameters(
       /* rebuild_hash_tables_interval= */ std::nullopt,
@@ -45,10 +47,17 @@ OutputProcessorPtr GraphUDT::getOutputProcessor(
   return CategoricalOutputProcessor::make();
 }
 
+bolt::NodePtr addFCNode(const bolt::NodePtr& input_node, uint32_t dim,
+                        const std::string& activation) {
+  auto node = bolt::FullyConnectedNode::makeDense(dim, activation);
+  node->addPredecessor(input_node);
+  return node;
+}
+
 // TODO(YASH): Autotune the dimension and sparsity.
 bolt::BoltGraphPtr GraphUDT::buildGraphUDTBoltGraph(
     const std::vector<uint32_t>& input_dims, uint32_t output_dim,
-    uint32_t max_neighbours) {
+    uint32_t num_neighbours) {
   std::vector<bolt::InputPtr> input_nodes;
   input_nodes.reserve(input_dims.size());
   for (uint32_t input_dim : input_dims) {
@@ -56,45 +65,30 @@ bolt::BoltGraphPtr GraphUDT::buildGraphUDTBoltGraph(
   }
   auto token_input = bolt::Input::makeTokenInput(
       /*expected_dim=*/4294967295,
-      /*num_tokens_range*/ {max_neighbours, max_neighbours});
+      /*num_tokens_range*/ {num_neighbours, num_neighbours});
 
   input_nodes.push_back(token_input);
 
-  auto embedding_1 = bolt::EmbeddingNode::make(
+  auto embedding = bolt::EmbeddingNode::make(
       /*num_embedding_lookups=*/4, /*lookup_size=*/64,
       /*log_embedding_block_size=*/29, /*reduction=*/"concatenation",
-      /*num_tokens_per_input=*/max_neighbours);
+      /*num_tokens_per_input=*/num_neighbours);
 
-  auto hidden_1 = bolt::FullyConnectedNode::makeAutotuned(
-      /*dim=*/512, /*sparsity=*/1, /*activation=*/"relu");
+  embedding->addInput(token_input);
 
-  hidden_1->addPredecessor(input_nodes[0]);
+  auto hidden_1 = addFCNode(input_nodes[0], /*dim=*/512, "relu");
 
-  embedding_1->addInput(token_input);
-
-  auto hidden_2 = bolt::FullyConnectedNode::makeAutotuned(
-      /*dim=*/256, /*sparsity=*/1, /*activation=*/"relu");
-
-  hidden_2->addPredecessor(hidden_1);
+  auto hidden_2 = addFCNode(hidden_1, /*dim=*/256, "relu");
 
   auto concat_node = bolt::ConcatenateNode::make();
 
-  concat_node->setConcatenatedNodes(/*nodes=*/{hidden_2, embedding_1});
+  concat_node->setConcatenatedNodes(/*nodes=*/{hidden_2, embedding});
 
-  auto hidden_3 = bolt::FullyConnectedNode::makeAutotuned(
-      /*dim=*/256, /*sparsity=*/1, /*activation=*/"relu");
+  auto hidden_3 = addFCNode(concat_node, /*dim=*/256, "relu");
 
-  hidden_3->addPredecessor(concat_node);
+  auto hidden_4 = addFCNode(hidden_3, /*dim=*/256, "relu");
 
-  auto hidden_4 = bolt::FullyConnectedNode::makeAutotuned(
-      /*dim=*/256, /*sparsity=*/1, /*activation=*/"relu");
-
-  hidden_4->addPredecessor(hidden_3);
-
-  auto output = bolt::FullyConnectedNode::makeAutotuned(
-      /*dim=*/output_dim, /*sparsity=*/1, /*activation=*/"softmax");
-
-  output->addPredecessor(hidden_4);
+  auto output = addFCNode(hidden_4, output_dim, "softmax");
 
   auto graph = std::make_shared<bolt::BoltGraph>(
       /* inputs= */ input_nodes, output);

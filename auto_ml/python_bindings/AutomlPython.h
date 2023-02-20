@@ -65,7 +65,7 @@ class UDTFactory {
   static GraphUDT buildGraphUDT(
       py::object& obj, data::ColumnDataTypes data_types,
       std::string graph_file_name, std::string source, std::string target,
-      uint32_t n_target_classes, uint32_t max_neighbours,
+      uint32_t n_target_classes, uint32_t num_neighbours,
       std::vector<std::string> relationship_columns, bool integer_target,
       bool numerical_context, bool features_context, uint32_t k_hop,
       char delimeter,

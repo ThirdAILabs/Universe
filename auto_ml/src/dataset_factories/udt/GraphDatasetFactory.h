@@ -112,7 +112,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
             ColumnNumberMap>
   getGraphStructureInfo(const std::vector<std::vector<std::string>>& rows);
 
-  dataset::CsvRolledBatch getFinalProcessedData(
+  dataset::CsvRolledBatch getProcessedNumericalData(
       const std::vector<std::vector<std::string>>& rows,
       const std::vector<uint32_t>& numerical_columns,
       const ColumnNumberMap& node_id_map, const Neighbours& neighbours);

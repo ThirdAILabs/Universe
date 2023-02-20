@@ -35,7 +35,7 @@ class GraphFeaturizer final : public Featurizer {
  public:
   GraphFeaturizer(std::vector<std::shared_ptr<Block>> input_blocks,
                   std::vector<std::shared_ptr<Block>> label_blocks,
-                  ColumnIdentifier source_col, uint32_t max_neighbours,
+                  ColumnIdentifier source_col, uint32_t num_neighbours,
                   Neighbours neighbours,
                   std::unordered_map<std::string, uint32_t> node_id_map,
                   char delimiter = ',',
@@ -46,7 +46,7 @@ class GraphFeaturizer final : public Featurizer {
         _neighbours(std::move(neighbours)),
         _node_id_to_num_map(std::move(node_id_map)),
         _source_col(std::move(source_col)),
-        _max_neighbours(max_neighbours),
+        _num_neighbours(num_neighbours),
         _delimiter(delimiter) {
     _node_id_to_num_map.insert({"null_node", 0});
   }
@@ -54,13 +54,13 @@ class GraphFeaturizer final : public Featurizer {
   static std::shared_ptr<GraphFeaturizer> make(
       std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks,
-      ColumnIdentifier source_col, uint32_t max_neighbours,
+      ColumnIdentifier source_col, uint32_t num_neighbours,
       Neighbours neighbours,
       std::unordered_map<std::string, uint32_t> node_id_map,
       char delimiter = ',', std::optional<uint32_t> hash_range = std::nullopt) {
     return std::make_shared<GraphFeaturizer>(
         std::move(input_blocks), std::move(label_blocks), std::move(source_col),
-        max_neighbours, std::move(neighbours), std::move(node_id_map),
+        num_neighbours, std::move(neighbours), std::move(node_id_map),
         delimiter, hash_range);
   }
 
@@ -93,7 +93,7 @@ class GraphFeaturizer final : public Featurizer {
   Neighbours _neighbours;
   std::unordered_map<std::string, uint32_t> _node_id_to_num_map;
   ColumnIdentifier _source_col;
-  uint32_t _max_neighbours;
+  uint32_t _num_neighbours;
   char _delimiter;
   uint32_t _expected_num_cols;
 };

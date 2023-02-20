@@ -30,6 +30,7 @@ dataset::GraphFeaturizerPtr GraphDatasetFactory::prepareTheFeaturizer(
   Neighbours neighbours =
       findNeighboursForAllNodes(adjacency_list, config->_k_hop, node_id_map);
 
+  // Preprocessed vectors for text or categorical features.
   if (config->_features_context) {
     dataset::PreprocessedVectorsPtr feature_vectors =
         makeFeatureProcessedVectors(rows);
@@ -50,9 +51,11 @@ dataset::GraphFeaturizerPtr GraphDatasetFactory::prepareTheFeaturizer(
   }
 
   // TODO(YASH): remove the hard code of 100000 in hash range.
+  // node_id_map starts from id 1, because we are going to add a
+  // null node with 0.
   auto featurizer = dataset::GraphFeaturizer::make(
       std::move(input_blocks), {std::move(label_block)}, config->_source,
-      config->_max_neighbours, neighbours,
+      config->_num_neighbours, neighbours,
       node_id_map.getColumnNameToColNumMap(/*start_col=*/1), config->_delimeter,
       /*hash_range=*/100000);
 
@@ -113,7 +116,7 @@ Neighbours GraphDatasetFactory::findNeighboursForAllNodes(
 // TODO(YASH): We have to support anytype of arithmetic operations on these
 // numerical columns.
 
-// Averages the numerical columns across its neighbours.
+// For each numerical column, we average on all of its neighbours for this node.
 std::vector<std::vector<std::string>>
 GraphDatasetFactory::processNumericalColumns(
     const std::vector<std::vector<std::string>>& rows,
@@ -152,6 +155,9 @@ std::vector<uint32_t> GraphDatasetFactory::getRelationshipColumns(
   return relationship_col_nums;
 }
 
+/*
+ * This gives the information of adjacency list and node id map.
+ */
 std::pair<std::unordered_map<std::string, std::vector<std::string>>,
           ColumnNumberMap>
 GraphDatasetFactory::getGraphStructureInfo(
@@ -170,7 +176,7 @@ GraphDatasetFactory::getGraphStructureInfo(
   return {*_config->_adj_list, ColumnNumberMap(nodes)};
 }
 
-dataset::CsvRolledBatch GraphDatasetFactory::getFinalProcessedData(
+dataset::CsvRolledBatch GraphDatasetFactory::getProcessedNumericalData(
     const std::vector<std::vector<std::string>>& rows,
     const std::vector<uint32_t>& numerical_columns,
     const ColumnNumberMap& node_id_map, const Neighbours& neighbours) {
@@ -235,8 +241,8 @@ GraphDatasetFactory::makeNumericalProcessedVectors(
       /* has_header= */ false, /* delimiter= */ _config->_delimeter,
       /* parallel= */ true);
 
-  auto final_data =
-      getFinalProcessedData(rows, numerical_columns, node_id_map, neighbours);
+  auto final_data = getProcessedNumericalData(rows, numerical_columns,
+                                              node_id_map, neighbours);
 
   return makePreprocessedVectors(processor, *key_vocab, final_data);
 }

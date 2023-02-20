@@ -62,7 +62,7 @@ void defineAutomlInModule(py::module_& module) {
            docs::TEXT_CLASSIFIER_INIT)
       .def("__new__", &UDTFactory::buildGraphUDT, py::arg("data_types"),
            py::arg("graph_file_name"), py::arg("source"), py::arg("target"),
-           py::arg("n_target_classes"), py::arg("max_neighbours"),
+           py::arg("n_target_classes"), py::arg("num_neighbours"),
            py::arg("relationship_columns") = std::nullopt,
            py::arg("integer_target") = false,
            py::arg("numerical_context") = false,
@@ -230,7 +230,7 @@ void createModelsSubmodule(py::module_& module) {
                                                                  "UDTGraph")
       .def(py::init(&GraphUDT::buildGraphUDT), py::arg("data_types"),
            py::arg("graph_file_name"), py::arg("source"), py::arg("target"),
-           py::arg("n_target_classes"), py::arg("max_neighbours"),
+           py::arg("n_target_classes"), py::arg("num_neighbours"),
            py::arg("relationship_columns") = std::nullopt,
            py::arg("integer_target") = false,
            py::arg("numerical_context") = false,
@@ -487,7 +487,7 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
 GraphUDT UDTFactory::buildGraphUDT(
     py::object& obj, data::ColumnDataTypes data_types,
     std::string graph_file_name, std::string source, std::string target,
-    uint32_t n_target_classes, uint32_t max_neighbours,
+    uint32_t n_target_classes, uint32_t num_neighbours,
     std::vector<std::string> relationship_columns, bool integer_target,
     bool numerical_context, bool features_context, uint32_t k_hop,
     char delimeter,
@@ -496,7 +496,7 @@ GraphUDT UDTFactory::buildGraphUDT(
   (void)obj;
   return GraphUDT::buildGraphUDT(
       std::move(data_types), std::move(graph_file_name), std::move(source),
-      std::move(target), n_target_classes, max_neighbours,
+      std::move(target), n_target_classes, num_neighbours,
       std::move(relationship_columns), integer_target, numerical_context,
       features_context, k_hop, delimeter, std::move(adj_list));
 }
