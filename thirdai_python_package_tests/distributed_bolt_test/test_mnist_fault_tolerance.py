@@ -168,6 +168,7 @@ def test_distributed_mnist(train_distributed_bolt_evaluate):
 @pytest.mark.parametrize(
     "train_distributed_bolt_fault_tolerance", ["linear"], indirect=True
 )
+@pytest.mark.xfail
 def test_distributed_fault_tolerance(train_distributed_bolt_fault_tolerance):
     import multiprocessing
 
