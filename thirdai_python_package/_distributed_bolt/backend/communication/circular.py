@@ -6,7 +6,6 @@ import ray
 
 class Circular:
     def __init__(self, model, id, primary_worker, num_workers, friend):
-    
         self.model = model
         self.id = id
         self.primary_worker = primary_worker

@@ -80,7 +80,6 @@ class DistributedGenericInMemoryDatasetLoader:
         self.current_chunk_id = 0
 
     def load(self, chunk_start_index=0):
-
         while chunk_start_index > 0:
             chunk_start_index -= 1
             self.next()
@@ -146,7 +145,6 @@ class DistributedTabularDatasetLoader:
         self.current_chunk_id = 0
 
     def load(self, chunk_start_index=0):
-
         while chunk_start_index > 0:
             chunk_start_index -= 1
             self.next()

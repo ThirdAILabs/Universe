@@ -108,7 +108,6 @@ def evaluated_distributed_mnist_model(distributed_model):
 
 @pytest.fixture(scope="module")
 def train_distributed_bolt_evaluate(request, ray_two_node_cluster_config):
-
     train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=3)
     distributed_model, mini_cluster = get_distributed_mnist_model(
         request, ray_two_node_cluster_config, train_config
@@ -123,7 +122,6 @@ def train_distributed_bolt_evaluate(request, ray_two_node_cluster_config):
 
 @pytest.fixture(scope="module")
 def train_distributed_bolt_fault_tolerance(request, ray_two_node_cluster_config):
-
     train_config = bolt.TrainConfig(learning_rate=0.0001, epochs=1)
     distributed_model, mini_cluster = get_distributed_mnist_model(
         request, ray_two_node_cluster_config, train_config

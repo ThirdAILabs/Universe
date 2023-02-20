@@ -306,7 +306,6 @@ class DistributedDataParallel:
         for worker_id, replica_worker_config in enumerate(
             cluster_config.replica_worker_configs, start=1
         ):
-
             replica_worker = replica_worker_config.remote(
                 train_source=self.train_sources[worker_id],
                 train_config=train_config,

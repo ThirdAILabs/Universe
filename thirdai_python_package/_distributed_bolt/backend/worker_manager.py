@@ -9,7 +9,6 @@ from ray.exceptions import RayActorError, RayError, RayTaskError
 
 class ResultOrError:
     def __init__(self, result: Any = None, error: Exception = None):
-
         # None is a valid result if the remote function
         # does not return anything.
         self._result = result
@@ -32,7 +31,6 @@ class ResultOrError:
 
 @dataclass
 class CallResult:
-
     worker_id: int
     result_or_error: ResultOrError
 
@@ -81,7 +79,6 @@ class FaultTolerantWorkerManager:
         return sum([s.is_healthy for s in self.remote_worker_states.values()])
 
     def get_worker_with_model(self):
-
         remote_worker_ids = list(self.workers.keys())
         remote_have_model = self.foreach_worker(
             func=lambda worker: worker.has_model(), remote_worker_ids=remote_worker_ids
@@ -102,7 +99,6 @@ class FaultTolerantWorkerManager:
         timeout_seconds=None,
         fetch_local: bool = True,
     ):
-
         remote_worker_ids = remote_worker_ids or list(self.workers.keys())
 
         remote_calls = self._call_workers(
@@ -120,7 +116,6 @@ class FaultTolerantWorkerManager:
         return remote_results
 
     def probe_unhealthy_workers(self):
-
         unhealthy_worker_ids = [
             worker_id
             for worker_id in self.workers.keys()
@@ -174,7 +169,6 @@ class FaultTolerantWorkerManager:
         *,
         remote_worker_ids: List[int] = None,
     ):
-
         if isinstance(func, list):
             assert len(remote_worker_ids) == len(
                 func

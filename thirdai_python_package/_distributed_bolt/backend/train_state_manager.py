@@ -148,7 +148,6 @@ class TrainStateManager:
                 update_id -= 1
 
     def get_remote_worker_state(self, worker_with_model):
-
         # function is called on only one worker, hence just checking for index 0
         remote_bolt_graph_model = (
             self.check_worker_availability_and_call(
@@ -213,7 +212,6 @@ class TrainStateManager:
                 f"Preparing restored workers for training: {restored_workers}"
             )
             if len(restored_workers) > 0:
-
                 # Find a worker which have model
                 worker_with_model = self.worker_manager.get_worker_with_model()
 

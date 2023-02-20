@@ -78,7 +78,6 @@ def remove_files(file_names):
 
 
 def clear_ray_workers():
-
     import ray
 
     ray.shutdown()
