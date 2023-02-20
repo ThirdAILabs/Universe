@@ -45,7 +45,7 @@ OutputProcessorPtr GraphUDT::getOutputProcessor(
   return CategoricalOutputProcessor::make();
 }
 
-// TODO(YASH): Autotune the dimesnion and sparsity.
+// TODO(YASH): Autotune the dimension and sparsity.
 bolt::BoltGraphPtr GraphUDT::buildGraphUDTBoltGraph(
     const std::vector<uint32_t>& input_dims, uint32_t output_dim,
     uint32_t max_neighbours) {
@@ -62,7 +62,7 @@ bolt::BoltGraphPtr GraphUDT::buildGraphUDTBoltGraph(
 
   auto embedding_1 = bolt::EmbeddingNode::make(
       /*num_embedding_lookups=*/4, /*lookup_size=*/64,
-      /*log_embedding_block_size=*/4294967295, /*reduction=*/"concatenation",
+      /*log_embedding_block_size=*/29, /*reduction=*/"concatenation",
       /*num_tokens_per_input=*/max_neighbours);
 
   auto hidden_1 = bolt::FullyConnectedNode::makeAutotuned(

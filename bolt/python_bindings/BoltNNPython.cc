@@ -623,6 +623,8 @@ That's all for now, folks! More docs coming soon :)
 void createLossesSubmodule(py::module_& nn_submodule) {
   auto losses_submodule = nn_submodule.def_submodule("losses");
 
+  losses_submodule.def("get_loss_function", &getLossFunction, py::arg("name"));
+
   py::class_<LossFunction, std::shared_ptr<LossFunction>>(  // NOLINT
       losses_submodule, "LossFunction", "Base class for all loss functions");
 

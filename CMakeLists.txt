@@ -14,6 +14,7 @@ set(ENV{LD_PRELOAD} "")
 
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # See [1] https://gcc.gnu.org/wiki/Visibility [2]
 # https://stackoverflow.com/a/31157258/4565794
@@ -137,7 +138,8 @@ if(MSVC)
       FATAL_ERROR "For now, we only support building in release mode using MSVC"
     )
   endif()
-  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w")
+  # Read this for /permissive- https://stackoverflow.com/a/24414279/4565794
+  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /w /permissive-")
 
   # We create an interface to plant compile flags and be cohesive with the rest
   # of the OpenMP::OpenMP_CXX linkages. This converts project wide compile flags

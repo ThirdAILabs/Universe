@@ -228,8 +228,18 @@ ColumnMap ColumnMap::createStringColumnMapFromFile(
   while (auto line_str = source->nextLine()) {
     auto line = dataset::ProcessorUtils::parseCsvRow(*line_str, delimiter);
     if (line.size() != header.size()) {
+      std::stringstream s;
+      for (const auto& substr : line) {
+        if (substr != line[0]) {
+          s << delimiter;
+        }
+        s << substr;
+      }
       throw std::invalid_argument(
-          "Different number of entries in row than in the header.");
+          "Received a row with a different number of entries than in the "
+          "header. Expected " +
+          std::to_string(header.size()) + " entries but received " +
+          std::to_string(line.size()) + " entries. Line: " + s.str());
     }
     for (size_t i = 0; i < columns.size(); i++) {
       columns.at(i).emplace_back(line.at(i));
