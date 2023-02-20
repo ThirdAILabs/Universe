@@ -115,8 +115,7 @@ TEST(ThreadSafeVocabularyTests, InBlock) {
       /* col = */ 0, vocab);
 
   TabularFeaturizer processor(
-      /* block_lists = */ {dataset::BlockList({lookup_block})},
-      /* expected_num_cols = */ 1);
+      /* block_lists = */ {dataset::BlockList({lookup_block})});
   auto batch = processor.featurize(strings).at(0);
 
   auto uids = getUidsFromBatch(batch);
@@ -126,8 +125,8 @@ TEST(ThreadSafeVocabularyTests, InBlock) {
 
 TEST(ThreadSafeVocabularyTests, InMultipleBlocks) {
   uint32_t n_unique = 1000;
-  auto strings =
-      generateRandomStrings(n_unique, /* repetitions = */ 1000, /* len = */ 10);
+  auto strings = generateRandomStrings(n_unique, /* repetitions = */ 1000,
+                                       /* len = */ 10);
   auto vocab = ThreadSafeVocabulary::make(n_unique);
   auto lookup_block_1 = StringLookupCategoricalBlock::make(
       /* col = */ 0, vocab);
@@ -138,8 +137,7 @@ TEST(ThreadSafeVocabularyTests, InMultipleBlocks) {
 
   TabularFeaturizer processor(
       /* block_lists = */ {dataset::BlockList(
-          {lookup_block_1, lookup_block_2, lookup_block_3})},
-      /* expected_num_cols = */ 1);
+          {lookup_block_1, lookup_block_2, lookup_block_3})});
   auto batch = processor.featurize(strings).at(0);
 
   uint32_t lookup_block_dim = lookup_block_1->featureDim();

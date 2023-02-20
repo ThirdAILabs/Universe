@@ -101,7 +101,7 @@ std::vector<BoltVector> processSamples(std::vector<std::string>& samples,
 
   TabularFeaturizer processor(
       /* block_lists = */ {dataset::BlockList({user_item_history_block})},
-      /* expected_num_cols = */ 3, /* has_header= */ false,
+      /* has_header= */ false,
       /* delimiter= */ ',',
       /* parallel= */ parallel);
 
@@ -244,7 +244,6 @@ TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
           /* should_update_history= */ true,
           /* include_current_row= */ false,
           /* item_col_delimiter= */ ' ')})},
-      /* expected_num_cols = */ 3,
       /* has_header= */ false,
       /* delimiter= */ ',',
       /* parallel= */ false);
@@ -281,7 +280,6 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
           /* include_current_row= */ false,
           /* item_col_delimiter= */ ' ',
           /* time_lag= */ TimeObject::SECONDS_IN_DAY * 3)})},
-      /* eexpected_num_cols = */ 3,
       /* has_header= */ false,
       /* delimiter= */ ',',
       /* parallel= */ false);
@@ -295,15 +293,15 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
 TabularFeaturizer makeItemHistoryFeaturizer(ItemHistoryCollectionPtr history,
                                             uint32_t track_last_n,
                                             bool should_update_history) {
-  return {/* block_lists = */ {dataset::BlockList({UserItemHistoryBlock::make(
-              /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
-              std::move(history), track_last_n, ITEM_HASH_RANGE,
-              should_update_history,
-              /* include_current_row= */ true)})},
-          /* expected_num_cols = */ 3,
-          /* has_header= */ false,
-          /* delimiter= */ ',',
-          /* parallel= */ false};
+  return TabularFeaturizer(
+      /* block_lists = */ {dataset::BlockList({UserItemHistoryBlock::make(
+          /* user_col= */ 0, /* item_col= */ 1, /* timestamp_col= */ 2,
+          std::move(history), track_last_n, ITEM_HASH_RANGE,
+          should_update_history,
+          /* include_current_row= */ true)})},
+      /* has_header= */ false,
+      /* delimiter= */ ',',
+      /* parallel= */ false);
 }
 
 TEST(UserItemHistoryBlockTests, HandlesNoUpdateCaseProperly) {

@@ -260,10 +260,9 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<TabularFeaturizer, Featurizer, TabularFeaturizerPtr>(
       dataset_submodule, "TabularFeaturizer")
-      .def(py::init<std::vector<BlockList>, uint32_t, bool, char, bool>(),
-           py::arg("block_lists"), py::arg("expected_num_columns"),
-           py::arg("has_header") = false, py::arg("delimiter") = ',',
-           py::arg("parallel") = true);
+      .def(py::init<std::vector<BlockList>, bool, char, bool>(),
+           py::arg("block_lists"), py::arg("has_header") = false,
+           py::arg("delimiter") = ',', py::arg("parallel") = true);
 
   py::class_<MaskedSentenceFeaturizer, Featurizer, MaskedSentenceFeaturizerPtr>(
       dataset_submodule, "MLMFeaturizer")

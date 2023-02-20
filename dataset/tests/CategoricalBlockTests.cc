@@ -165,7 +165,6 @@ TEST_F(CategoricalBlockTest, TestMultiLabelParsing) {
 
   TabularFeaturizer featurizer(
       /* block_lists = */ {dataset::BlockList(std::move(multi_label_blocks))},
-      /* expected_num_cols = */ 2,
       /* has_header= */ false, /* delimiter= */ ' ');
 
   std::vector<std::string> rows = {"4,90,77 21,43,18,0", "55,67,82 49,2",
@@ -192,7 +191,6 @@ TEST_F(CategoricalBlockTest, RegressionCategoricalBlock) {
 
   TabularFeaturizer featurizer(
       /* block_lists = */ {dataset::BlockList(std::move(blocks))},
-      /* expected_num_cols = */ 1,
       /* has_header= */ false, /* delimiter= */ ' ');
 
   std::vector<std::string> rows = {"3.7", "2.8",  "9.2",  "5.9",

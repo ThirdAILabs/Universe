@@ -54,8 +54,7 @@ TEST(TabularFeaturizerTests, DenseInputDenseLabel) {
   auto string_batch = makeCsvRows(float_batch);
   TabularFeaturizer processor(
       {FeaturizerTestUtils::makeMockBlocks({true, true, true}),
-       FeaturizerTestUtils::makeMockBlocks({true, true, true})},
-      /* expected_num_cols = */ 3);
+       FeaturizerTestUtils::makeMockBlocks({true, true, true})});
   auto processed_batch = processor.featurize(string_batch);
   checkMatrixAndProcessedBatchEquality(float_batch, processed_batch,
                                        /* expect_input_dense = */ true,
@@ -68,8 +67,7 @@ TEST(TabularFeaturizerTests, SparseInputDenseLabel) {
   auto string_batch = makeCsvRows(float_batch);
   TabularFeaturizer processor(
       {FeaturizerTestUtils::makeMockBlocks({false, false, false}),
-       FeaturizerTestUtils::makeMockBlocks({true, true, true})},
-      /* expected_num_cols = */ 3);
+       FeaturizerTestUtils::makeMockBlocks({true, true, true})});
   auto processed_batch = processor.featurize(string_batch);
   checkMatrixAndProcessedBatchEquality(float_batch, processed_batch,
                                        /* expect_input_dense = */ false,
@@ -82,8 +80,7 @@ TEST(TabularFeaturizerTests, SparseInputSparseLabel) {
   auto string_batch = makeCsvRows(float_batch);
   TabularFeaturizer processor(
       {FeaturizerTestUtils::makeMockBlocks({false, false, false}),
-       FeaturizerTestUtils::makeMockBlocks({false, false, false})},
-      /* expected_num_cols = */ 3);
+       FeaturizerTestUtils::makeMockBlocks({false, false, false})});
   auto processed_batch = processor.featurize(string_batch);
   checkMatrixAndProcessedBatchEquality(float_batch, processed_batch,
                                        /* expect_input_dense = */ false,
@@ -96,8 +93,7 @@ TEST(TabularFeaturizerTests, DenseInputSparseLabel) {
   auto string_batch = makeCsvRows(float_batch);
   TabularFeaturizer processor(
       {FeaturizerTestUtils::makeMockBlocks({true, true, true}),
-       FeaturizerTestUtils::makeMockBlocks({false, false, false})},
-      /* expected_num_cols = */ 3);
+       FeaturizerTestUtils::makeMockBlocks({false, false, false})});
   auto processed_batch = processor.featurize(string_batch);
   checkMatrixAndProcessedBatchEquality(float_batch, processed_batch,
                                        /* expect_input_dense = */ true,
@@ -110,8 +106,7 @@ TEST(TabularFeaturizerTests, Mix) {
   auto string_batch = makeCsvRows(float_batch);
   TabularFeaturizer processor(
       {FeaturizerTestUtils::makeMockBlocks({true, false, true}),
-       FeaturizerTestUtils::makeMockBlocks({false, true, false})},
-      /* expected_num_cols = */ 3);
+       FeaturizerTestUtils::makeMockBlocks({false, true, false})});
   auto processed_batch = processor.featurize(string_batch);
   checkMatrixAndProcessedBatchEquality(float_batch, processed_batch,
                                        /* expect_input_dense = */ false,

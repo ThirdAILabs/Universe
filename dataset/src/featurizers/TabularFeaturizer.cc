@@ -25,10 +25,12 @@ std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
 
 void TabularFeaturizer::updateColumnNumbers(
     const ColumnNumberMap& column_number_map) {
+  _expected_num_cols = 0;
   for (BlockList& block_list : _block_lists) {
     block_list.updateColumnNumbers(column_number_map);
+    _expected_num_cols =
+        std::max(_expected_num_cols, block_list.expectedNumColumns());
   }
-  _expected_num_cols = column_number_map.size();
 }
 
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(

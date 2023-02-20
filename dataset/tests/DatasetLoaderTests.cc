@@ -40,8 +40,7 @@ class DatasetLoaderTests : public ::testing::Test {
     */
     auto featurizer = TabularFeaturizer::make(
         /* block_lists = */ {dataset::BlockList({mock_block, mock_block}),
-                             dataset::BlockList({mock_block})},
-        /* expected_num_cols = */ 1);
+                             dataset::BlockList({mock_block})});
 
     return DatasetLoader(data_source, featurizer, shuffle,
                          DatasetShuffleConfig(n_vecs_in_shuffle_buffer, seed));

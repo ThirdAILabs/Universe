@@ -438,7 +438,6 @@ class QueryCandidateGenerator {
     _inference_featurizer = dataset::TabularFeaturizer::make(
         /* block_lists = */ {dataset::BlockList(
             std::move(inference_input_blocks))},
-        /* expected_num_columns = */ 2,
         /* has_header = */ false,
         /* delimiter = */ _query_generator_config->delimiter());
   }
@@ -473,7 +472,6 @@ class QueryCandidateGenerator {
 
     return dataset::TabularFeaturizer::make(
         /* input_blocks = */ {dataset::BlockList(std::move(input_blocks))},
-        /* expected_num_cols = */ 2,
         /* has_header = */ true,
         /* delimiter = */ _query_generator_config->delimiter());
   }

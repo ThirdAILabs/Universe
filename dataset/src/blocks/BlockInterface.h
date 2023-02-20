@@ -349,7 +349,6 @@ struct BlockList {
       : _blocks(std::move(blocks)),
         _are_dense(computeAreDense(_blocks)),
         _feature_dim(hash_range.value_or(computeFeatureDim(_blocks))),
-        // TODO(Josh): Can we get rid of this?
         _expected_num_columns(allBlocksHaveColumnNumbers(_blocks)
                                   ? computeExpectedNumColumns(_blocks)
                                   : 0),

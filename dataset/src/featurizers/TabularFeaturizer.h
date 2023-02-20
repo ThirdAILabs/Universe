@@ -17,15 +17,20 @@ namespace thirdai::dataset {
  */
 class TabularFeaturizer : public Featurizer {
  public:
-  TabularFeaturizer(std::vector<BlockList> block_lists,
-                    uint32_t expected_num_cols, bool has_header = false,
-                    char delimiter = ',', bool parallel = true)
+  explicit TabularFeaturizer(std::vector<BlockList> block_lists,
+                             bool has_header = false, char delimiter = ',',
+                             bool parallel = true)
       : _expects_header(has_header),
         _delimiter(delimiter),
         _parallel(parallel),
         _num_cols_in_header(std::nullopt),
         _block_lists(std::move(block_lists)),
-        _expected_num_cols(expected_num_cols) {}
+        _expected_num_cols(0) {
+    for (const auto& block_list : _block_lists) {
+      _expected_num_cols =
+          std::max(_expected_num_cols, block_list.expectedNumColumns());
+    }
+  }
 
   void updateColumnNumbers(const ColumnNumberMap& column_number_map);
 
@@ -77,11 +82,10 @@ class TabularFeaturizer : public Featurizer {
                              const SegmentFeature& segment_feature);
 
   static std::shared_ptr<TabularFeaturizer> make(
-      std::vector<BlockList> block_lists, uint32_t expected_num_cols,
-      bool has_header = false, char delimiter = ',', bool parallel = true) {
+      std::vector<BlockList> block_lists, bool has_header = false,
+      char delimiter = ',', bool parallel = true) {
     return std::make_shared<TabularFeaturizer>(std::move(block_lists),
-                                               expected_num_cols, has_header,
-                                               delimiter, parallel);
+                                               has_header, delimiter, parallel);
   }
 
  private:

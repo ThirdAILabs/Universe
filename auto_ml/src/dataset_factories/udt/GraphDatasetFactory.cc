@@ -104,13 +104,11 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
                                /* hash_range = */ DEFAULT_HASH_RANGE),
                            dataset::BlockList({sparse_neighbor_block}),
                            dataset::BlockList({label_block})},
-      /* expected_num_columns = */ _data_types.size(),
       /* has_header= */ true,
       /* delimiter= */ delimiter, /* parallel= */ true);
 
   _graph_builder = dataset::TabularFeaturizer::make(
       /* blocks = */ {dataset::BlockList({graph_builder_block})},
-      /* expected_num_columns = */ _data_types.size(),
       /* has_header= */ true,
       /* delimiter= */ delimiter, /* parallel= */ true);
 }
@@ -163,6 +161,8 @@ void GraphDatasetFactory::index(
 
   dataset::DatasetLoader graph_builder_loader(data_source, _graph_builder,
                                               /* shuffle = */ false);
+
+  std::cout << "LOADING" << std::endl;
   graph_builder_loader.loadAll(
       /* batch_size = */ DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
 }

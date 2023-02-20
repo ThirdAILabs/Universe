@@ -33,7 +33,6 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
             BlockList([text_block]),
             BlockList([blocks.NumericalId(col=0, n_classes=3)]),
         ],
-        expected_num_columns=2,
         delimiter=delim,
     )
     pipeline = DatasetLoader(
