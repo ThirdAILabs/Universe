@@ -2,6 +2,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/dataset_factories/udt/DatasetFactoryUtils.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
+#include <cstdint>
 
 namespace thirdai::automl::data {
 
@@ -177,14 +178,12 @@ dataset::CsvRolledBatch GraphDatasetFactory::getFinalProcessedData(
   auto values = processNumericalColumns(rows, numerical_columns, neighbours,
                                         source_col_num, node_id_map);
 
-  auto copied_rows = rows;
-
+  // inserting the source column values at the begining.
   for (uint32_t i = 0; i < rows.size(); i++) {
-    copied_rows[i].insert(copied_rows[i].end(), values[i].begin(),
-                          values[i].end());
+    values[i].insert(values[i].begin(), rows[i][source_col_num]);
   }
 
-  dataset::CsvRolledBatch input(copied_rows);
+  dataset::CsvRolledBatch input(values);
 
   return input;
 }
@@ -211,7 +210,7 @@ GraphDatasetFactory::makeNumericalProcessedVectors(
     const ColumnNumberMap& node_id_map, const Neighbours& neighbours) {
   std::vector<uint32_t> numerical_columns;
   std::vector<dataset::BlockPtr> input_blocks;
-  uint32_t original_num_cols = _column_number_map.numCols();
+
   for (const auto& [col_name, data_type] : _config->_data_types) {
     uint32_t col_num = _column_number_map.at(col_name);
     if (auto numerical = asNumerical(data_type)) {
@@ -219,13 +218,15 @@ GraphDatasetFactory::makeNumericalProcessedVectors(
     }
   }
 
-  input_blocks.push_back(dataset::DenseArrayBlock::make(
-      original_num_cols, numerical_columns.size()));
+  // For calculating preprocessed vectors from numerical columns, passing the
+  // data in this format. source_column,... followed by processed numerical
+  // values.
+  input_blocks.push_back(
+      dataset::DenseArrayBlock::make(1, numerical_columns.size()));
 
   auto key_vocab = dataset::ThreadSafeVocabulary::make(
       /* vocab_size= */ 0, /* limit_vocab_size= */ false);
-  auto label_block = dataset::StringLookupCategoricalBlock::make(
-      _column_number_map.at(_config->_source), key_vocab);
+  auto label_block = dataset::StringLookupCategoricalBlock::make(0, key_vocab);
 
   auto processor = dataset::TabularFeaturizer::make(
       /* input_blocks= */ std::move(input_blocks),
