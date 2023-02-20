@@ -120,7 +120,7 @@ class EmbeddingLayer {
             _log_embedding_block_size, _update_chunk_size, _reduction,
             _num_tokens_per_input, _embedding_block_size, _hash_fn,
             _embedding_block, _embedding_chunks_used,
-            _disable_sparse_parameter_updates);
+            _disable_sparse_parameter_updates, _should_save_optimizer);
     if (_should_save_optimizer) {
       archive(_optimizer);
     }
