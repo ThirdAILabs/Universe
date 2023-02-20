@@ -278,7 +278,7 @@ void createDatasetSubmodule(py::module_& module) {
       dataset_submodule, "TextGenerationFeaturizer")
       .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("sequence_len"),
            py::arg("vocab_size"), py::arg("last_n_tokens"))
-      .def_static("featurize_for_inference",
+      .def("featurize_for_inference",
                   &TextGenerationFeaturizer::featurizeInferenceSample,
                   py::arg("tokens"))
       .def(bolt::python::getPickleFunction<TextGenerationFeaturizer>());
