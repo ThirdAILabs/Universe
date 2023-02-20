@@ -6,6 +6,7 @@
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <auto_ml/src/dataset_factories/udt/GraphDatasetFactory.h>
 #include <auto_ml/src/models/OutputProcessor.h>
+#include <dataset/src/DataSource.h>
 #include <limits>
 #include <stdexcept>
 
@@ -100,6 +101,17 @@ GraphNetwork GraphNetwork::create(data::ColumnDataTypes data_types,
 
   return GraphNetwork(graph_dataset_factory, model, output_processor,
                       train_eval_parameters);
+}
+
+void GraphNetwork::index(const dataset::DataSourcePtr& source) {
+  if (auto* graph_dataset_factory =
+          dynamic_cast<data::GraphDatasetFactory*>(getDataProcessor().get())) {
+    graph_dataset_factory->index(source);
+  } else {
+    throw std::logic_error(
+        "Internal dataset factory was expected to be a GraphDatasetFactory but "
+        "was not, so indexing failed.");
+  }
 }
 
 }  // namespace thirdai::automl::models

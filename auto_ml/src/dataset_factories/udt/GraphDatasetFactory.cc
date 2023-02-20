@@ -148,4 +148,23 @@ dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(
                                                   /* shuffle= */ training);
 }
 
+void GraphDatasetFactory::index(
+    const std::shared_ptr<dataset::DataSource>& data_source) {
+  // TODO(Josh): Abstract this
+  auto column_number_map =
+      makeColumnNumberMapFromHeader(*data_source, _delimiter);
+
+  std::vector<std::string> column_number_to_name =
+      column_number_map.getColumnNumToColNameMap();
+
+  // The featurizer will treat the next line as a header
+  // Restart so featurizer does not skip a sample.
+  data_source->restart();
+
+  dataset::DatasetLoader graph_builder_loader(data_source, _graph_builder,
+                                              /* shuffle = */ false);
+  graph_builder_loader.loadAll(
+      /* batch_size = */ DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
+}
+
 }  // namespace thirdai::automl::data

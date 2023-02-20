@@ -1,7 +1,9 @@
 #pragma once
 
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/dataset_factories/udt/GraphDatasetFactory.h>
 #include <auto_ml/src/models/ModelPipeline.h>
+#include <dataset/src/DataSource.h>
 #include <memory>
 
 namespace thirdai::automl::models {
@@ -12,6 +14,8 @@ class GraphNetwork : public ModelPipeline {
                              std::string target_col, uint32_t n_target_classes,
                              bool integer_target, char delimiter,
                              uint32_t max_neighbors, bool store_node_features);
+
+  void index(const dataset::DataSourcePtr& source);
 
  private:
   // Inherit ModelPipeline constructor privately

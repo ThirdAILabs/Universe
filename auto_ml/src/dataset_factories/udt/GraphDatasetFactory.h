@@ -39,6 +39,11 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataSource> data_source, bool training) final;
 
+  void index(const std::shared_ptr<dataset::DataSource>& data_source);
+
+  // TODO(Josh/Nick): Move these over to using an _unlabeled_featurizer when
+  // we refactor UDT and remove makeInputVector from TabularFeaturizer
+
   std::vector<BoltVector> featurizeInput(const LineInput& input) final {
     (void)input;
     throw exceptions::NotImplemented(
@@ -107,8 +112,7 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   char _delimiter;
   uint32_t _max_neighbors;
   bool _store_node_features;
-  dataset::TabularFeaturizerPtr _graph_builder;
-  dataset::TabularFeaturizerPtr _featurizer;
+  dataset::TabularFeaturizerPtr _graph_builder, _featurizer;
   GraphInfoPtr _graph_info;
 };
 

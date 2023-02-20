@@ -274,13 +274,14 @@ void createModelsSubmodule(py::module_& module) {
            docs::TEXT_CLASSIFIER_SAVE);
 
   py::class_<models::GraphNetwork, ModelPipeline, models::GraphNetworkPtr>(
-      module, "UDTGraphNetwork")
+      models_submodule, "UDTGraphNetwork")
       .def(py::init(&models::GraphNetwork::create), py::arg("data_types"),
            py::arg("target"), py::arg("n_target_classes"),
            py::arg("integer_target") = false, py::arg("delimiter") = ',',
            py::arg("max_neighbors") = std::numeric_limits<uint32_t>::max(),
            py::arg("store_node_features") = true,
-           bolt::python::OutputRedirect());
+           bolt::python::OutputRedirect())
+      .def("index", &models::GraphNetwork::index, py::arg("data_source"));
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

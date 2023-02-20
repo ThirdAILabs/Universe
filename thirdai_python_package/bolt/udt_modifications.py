@@ -151,3 +151,20 @@ def modify_udt_classifier():
     bolt.models.Pipeline.train = wrapped_train
     bolt.models.Pipeline.evaluate = wrapped_evaluate
     bolt.models.UDTClassifier.cold_start = wrapped_cold_start
+
+
+def modify_graph_udt():
+
+    original_index_method = bolt.models.UDTGraphNetwork.index
+
+    def wrapped_index(self, filename: str):
+        data_source = _create_data_source(filename)
+
+        original_index_method(self, data_source)
+
+    # TODO(Josh)
+    # wrapped_index.__doc__ = udt_graph_index_doc
+
+    delattr(bolt.models.UDTGraphNetwork, "index")
+
+    bolt.models.UDTGraphNetwork.index = wrapped_index
