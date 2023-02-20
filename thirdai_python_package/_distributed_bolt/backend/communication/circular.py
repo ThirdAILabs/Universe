@@ -6,7 +6,6 @@ import ray
 
 class Circular:
     def __init__(self, model, id, primary_worker, num_workers):
-
         self.model = model
         self.id = id
         self.primary_worker = primary_worker
@@ -107,7 +106,6 @@ class Circular:
         start_row_index, end_row_index = self.partitions[partition_id]
 
         if start_row_index < end_row_index:
-
             # arrays should be numpy arrays for the following operation, otherwise it will just get appened to the list
             if reduce:
                 self.gradients[start_row_index:end_row_index] += self.friend_gradients

@@ -132,8 +132,8 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
   dataset::DatasetLoader metadata_source(
-      /* source= */ data_source,
-      /* processor= */ _metadata_processors[col_name],
+      /* data_source= */ data_source,
+      /* featurizer= */ _metadata_processors[col_name],
       /* shuffle = */ false);
 
   return preprocessedVectorsFromDataset(metadata_source, *key_vocab);
