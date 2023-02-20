@@ -61,9 +61,8 @@ std::vector<std::string_view> parseLine(const std::string& line,
 
     if (state == ParserState::NewColumn) {
       // If the new state is NewColumn, then we just finished parsing a column.
-      parsed_columns.push_back(lastColumn(line, prev_state,
-                                          /* start= */ column_start,
-                                          /* end= */ position));
+      parsed_columns.push_back(lastColumn(
+          line, prev_state, /* start= */ column_start, /* end= */ position));
       column_start = position + 1;
     }
 
