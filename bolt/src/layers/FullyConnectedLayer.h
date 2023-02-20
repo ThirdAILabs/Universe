@@ -31,7 +31,7 @@ enum class BoltSamplingMode {
 
 static BoltSamplingMode getSamplingModeFromString(
     const std::string& sampling_mode_string) {
-  std::string lower_name = utils::lower(sampling_mode_string);
+  std::string lower_name = sampling_mode_string;
   if (sampling_mode_string == "lsh") {
     return BoltSamplingMode::LSH;
   }
