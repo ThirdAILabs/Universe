@@ -7,6 +7,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <sys/types.h>
 #include <memory>
@@ -25,6 +26,9 @@ namespace thirdai::dataset {
  * If the number of neighbours for a node is less than the max neighbours(number
  * of neighbours we want to consider for token input) then we add remaining with
  * null node.
+ *
+ * Here node_id_map expects the node number starts from 1 because we insert a
+ * null node with number 0.
  */
 
 class GraphFeaturizer final : public Featurizer {
@@ -36,14 +40,14 @@ class GraphFeaturizer final : public Featurizer {
                   std::unordered_map<std::string, uint32_t> node_id_map,
                   char delimiter = ',',
                   std::optional<uint32_t> hash_range = std::nullopt)
-      : _neighbours(std::move(neighbours)),
+      : _tabular_featurizer(std::move(input_blocks), std::move(label_blocks),
+                            /*has_header=*/false, delimiter, /*parallel=*/true,
+                            hash_range),
+        _neighbours(std::move(neighbours)),
         _node_id_to_num_map(std::move(node_id_map)),
-        _input_blocks(std::move(input_blocks)),
-        _label_blocks(std::move(label_blocks)),
         _source_col(std::move(source_col)),
         _max_neighbours(max_neighbours),
-        _delimiter(delimiter),
-        _hash_range(hash_range) {
+        _delimiter(delimiter) {
     _node_id_to_num_map.insert({"null_node", 0});
   }
 
@@ -66,11 +70,9 @@ class GraphFeaturizer final : public Featurizer {
   std::vector<std::vector<BoltVector>> featurize(
       ColumnarInputBatch& input_batch);
 
-  uint32_t getInputDim() const {
-    return _hash_range.value_or(_input_blocks.featureDim());
-  }
+  uint32_t getInputDim() const { return _tabular_featurizer.getInputDim(); }
 
-  uint32_t getLabelDim() const { return _label_blocks.featureDim(); }
+  uint32_t getLabelDim() const { return _tabular_featurizer.getLabelDim(); }
 
   bool expectsHeader() const final { return true; }
 
@@ -87,15 +89,13 @@ class GraphFeaturizer final : public Featurizer {
 
   BoltVector buildNeighbourVector(ColumnarInputSample& sample);
 
+  TabularFeaturizer _tabular_featurizer;
   Neighbours _neighbours;
   std::unordered_map<std::string, uint32_t> _node_id_to_num_map;
-  BlockList _input_blocks;
-  BlockList _label_blocks;
   ColumnIdentifier _source_col;
-  uint32_t _expected_num_cols;
   uint32_t _max_neighbours;
   char _delimiter;
-  std::optional<uint32_t> _hash_range;
+  uint32_t _expected_num_cols;
 };
 
 using GraphFeaturizerPtr = std::shared_ptr<GraphFeaturizer>;
