@@ -41,7 +41,7 @@ TrainConfigPtr TrainConfig::load_stream(std::istream& input_stream) {
 template <class Archive>
 void TrainConfig::serialize(Archive& archive) {
   archive(_epochs, _learning_rate, _metric_names, _verbose,
-          _rebuild_hash_tables, _reconstruct_hash_functions);
+          _rebuild_hash_tables, _reconstruct_hash_functions, _save_context);
 }
 
 }  // namespace thirdai::bolt
