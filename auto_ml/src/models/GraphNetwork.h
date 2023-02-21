@@ -10,10 +10,10 @@ namespace thirdai::automl::models {
 
 class GraphNetwork : public ModelPipeline {
  public:
-  static GraphNetwork create(data::ColumnDataTypes data_types,
-                             std::string target_col, uint32_t n_target_classes,
-                             bool use_simpler_model, bool integer_target,
-                             char delimiter);
+  static GraphNetwork create(const data::ColumnDataTypes& data_types,
+                             const std::string& target_col,
+                             uint32_t n_target_classes, bool use_simpler_model,
+                             bool integer_target, char delimiter);
 
   void index(const dataset::DataSourcePtr& source);
 

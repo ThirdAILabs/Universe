@@ -58,8 +58,8 @@ bolt::BoltGraphPtr createGNN(std::vector<uint32_t> input_dims,
   return graph;
 }
 
-GraphNetwork GraphNetwork::create(data::ColumnDataTypes data_types,
-                                  std::string target_col,
+GraphNetwork GraphNetwork::create(const data::ColumnDataTypes& data_types,
+                                  const std::string& target_col,
                                   uint32_t n_target_classes,
                                   bool use_simpler_model, bool integer_target,
                                   char delimiter) {
