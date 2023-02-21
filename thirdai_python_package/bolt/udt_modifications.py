@@ -154,7 +154,6 @@ def modify_udt_classifier():
 
 
 def modify_graph_udt():
-
     original_index_method = bolt.models.UDTGraphNetwork.index
 
     def wrapped_index(self, filename: str):

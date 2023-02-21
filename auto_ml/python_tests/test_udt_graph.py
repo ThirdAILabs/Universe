@@ -9,7 +9,6 @@ from thirdai import bolt
 
 @pytest.mark.integration
 def test_udt_on_yelp_chi(download_yelp_chi_dataset):
-
     all_data = pd.read_csv("yelp_all.csv")
     numerical_col_names = ["col_" + str(i) for i in range(32)]
     numerical_col_ranges = (
