@@ -32,7 +32,9 @@ class BoltFullyConnectedRunner(Runner):
 
             if mlflow_logger:
                 for k, v in predict_output[0].items():
-                    key = k.replace("(", "")
+                    # Mlflow can't handle parentheses in metric names.
+                    # This maps "f_measure(0.95)" to "f_measure_0.95"
+                    key = k.replace("(", "_")
                     key = key.replace(")", "")
                     mlflow_logger.log_additional_metric(key=key, value=v, step=epoch)
 

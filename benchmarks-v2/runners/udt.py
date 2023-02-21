@@ -27,11 +27,12 @@ class UDTRunner(Runner):
             path + config.train_file,
             epochs=config.num_epochs,
             learning_rate=config.learning_rate,
-            metrics=[config.metric_type],
             callbacks=config.callbacks + [mlflow_logger] if mlflow_logger else [],
         )
 
-        metrics = model.evaluate(path + config.test_file, return_metrics=True)
+        metrics = model.evaluate(
+            path + config.test_file, metrics=config.metrics, return_metrics=True
+        )
 
         if mlflow_logger:
             for k, v in metrics.items():

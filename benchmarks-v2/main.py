@@ -36,10 +36,7 @@ def parse_arguments():
         help="MLflow URI to log metrics and artifacts.",
     )
     parser.add_argument(
-        "--run_name",
-        type=str,
-        default=None,
-        help="The job name to track in MLflow",
+        "--run_name", type=str, default=None, help="The job name to track in MLflow"
     )
     parser.add_argument(
         "--official_benchmark",
@@ -76,7 +73,9 @@ if __name__ == "__main__":
         if args.mlflow_uri and args.run_name:
             mlflow_logger = MlflowCallback(
                 tracking_uri=args.mlflow_uri,
-                experiment_name=experiment_name(config.config_name, args.official_benchmark),
+                experiment_name=experiment_name(
+                    config.config_name, args.official_benchmark
+                ),
                 run_name=f"{args.run_name}_{str(date.today())}",
                 dataset_name=config.dataset_name,
                 experiment_args={},
@@ -86,9 +85,7 @@ if __name__ == "__main__":
             mlflow_logger = None
 
         runner.run_benchmark(
-            config=config,
-            path=args.path_prefix,
-            mlflow_logger=mlflow_logger
+            config=config, path=args.path_prefix, mlflow_logger=mlflow_logger
         )
 
         if mlflow_logger:

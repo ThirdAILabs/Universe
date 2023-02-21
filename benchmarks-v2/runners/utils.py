@@ -6,7 +6,7 @@ def get_train_and_eval_configs(benchmark_config, callbacks=None):
     metrics = benchmark_config.metrics
 
     train_config = bolt.TrainConfig(epochs=1, learning_rate=learning_rate)
-    
+
     if callbacks is not None:
         train_config.with_callbacks(callbacks)
 

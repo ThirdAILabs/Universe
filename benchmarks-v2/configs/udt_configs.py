@@ -18,7 +18,7 @@ class UDTBenchmarkConfig(ABC):
     learning_rate = None
     num_epochs = None
     callbacks = []
-    metric_name = "categorical_accuracy"
+    metrics = ["categorical_accuracy"]
 
     @staticmethod
     @abstractmethod
@@ -41,10 +41,7 @@ class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     num_epochs = 5
 
     def get_data_types():
-        return {
-            "text": bolt.types.text(),
-            "label": bolt.types.categorical(),
-        }
+        return {"text": bolt.types.text(), "label": bolt.types.categorical()}
 
 
 class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
@@ -66,10 +63,7 @@ class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     num_epochs = 5
 
     def get_data_types():
-        return {
-            "content": bolt.types.text(),
-            "label": bolt.types.categorical(),
-        }
+        return {"content": bolt.types.text(), "label": bolt.types.categorical()}
 
 
 class CriteoUDTConfig(UDTBenchmarkConfig):
@@ -154,12 +148,10 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
             "query": bolt.types.text(),
         }
 
-    # TODO: mlflow does not support parenthetical characters in metric names.
-    # We may need to revise our metric naming patterns to use this metric
-    # metric_type = "f_measure(0.95)"
-
     learning_rate = 0.001
     num_epochs = 5
+    metrics = ["categorical_accuracy", "f_measure(0.95)"]
+
     # Learning rate scheduler that decreases the learning rate by a factor of 10
     # after the third epoch. This scheduling is what gives us the optimal
     # f-measure on the wayfair dataset.

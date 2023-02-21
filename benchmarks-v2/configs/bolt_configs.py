@@ -26,8 +26,7 @@ class BoltBenchmarkConfig(ABC):
 
 def load_svm_dataset(filename, batch_size):
     data, labels = dataset.load_bolt_svm_dataset(
-        filename=filename,
-        batch_size=batch_size,
+        filename=filename, batch_size=batch_size
     )
     return data, labels
 
@@ -124,9 +123,7 @@ class WayfairConfig(BoltBenchmarkConfig):
         )
 
         dataloader = dataset.DatasetLoader(
-            data_source=dataset.FileDataSource(
-                filename=filename
-            ),
+            data_source=dataset.FileDataSource(filename=filename),
             featurizer=featurizer,
             shuffle=shuffle,
         )
