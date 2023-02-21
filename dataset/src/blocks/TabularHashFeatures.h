@@ -118,7 +118,7 @@ class TabularHashFeatures final : public Block {
   }
 
   std::vector<std::pair<TabularColumn, uint32_t>> _columns;
-  uint64_t _output_range;
+  uint32_t _output_range;
   bool _with_pairgrams;
 };
 

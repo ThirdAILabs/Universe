@@ -83,8 +83,7 @@ class NeighborTokensBlock final : public Block {
   automl::data::GraphInfoPtr _graph_ptr;
 };
 
-/** Populates the passed in graph info ptr with adjacency and node feature data
- */
+/** Populates the passed in GraphInfoPtr with adjacency and node feature data */
 class GraphBuilderBlock final : public Block {
  public:
   explicit GraphBuilderBlock(ColumnIdentifier neighbor_col,

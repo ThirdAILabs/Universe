@@ -12,56 +12,14 @@
 namespace thirdai::automl::data {
 
 std::pair<GraphInfoPtr, dataset::BlockPtr> createGraphInfoAndBuilder(
-    const data::ColumnDataTypes& data_types) {
-  std::vector<dataset::ColumnIdentifier> feature_col_names;
-  std::string neighbor_col_name, node_id_col_name;
-
-  for (const auto& [col_name, data_type] : data_types) {
-    if (asNeighbors(data_type)) {
-      neighbor_col_name = col_name;
-    } else if (asNodeID(data_type)) {
-      node_id_col_name = col_name;
-    } else if (asNumerical(data_type)) {
-      feature_col_names.push_back(col_name);
-    }
-  }
-
-  GraphInfoPtr graph_info =
-      std::make_shared<GraphInfo>(/* feature_dim = */ feature_col_names.size());
-
-  dataset::BlockPtr builder_block = dataset::GraphBuilderBlock::make(
-      neighbor_col_name, node_id_col_name, feature_col_names, graph_info);
-
-  return {graph_info, builder_block};
-}
+    const data::ColumnDataTypes& data_types);
 
 /*
  * Pops and returns the NeighborTokensBlock from the passed in block list.
  * The block list must have a single NeighborTokensBlock.
  */
-
 dataset::BlockPtr popNeighborTokensBlock(
-    std::vector<dataset::BlockPtr>& blocks) {
-  int64_t neighbor_tokens_block_index = -1;
-  for (size_t block_id = 0; block_id < blocks.size(); block_id++) {
-    if (dynamic_cast<dataset::NeighborTokensBlock*>(
-            blocks.at(block_id).get())) {
-      neighbor_tokens_block_index = block_id;
-      break;
-    }
-  }
-
-  if (neighbor_tokens_block_index < 0) {
-    throw std::logic_error(
-        "The passed in block list should have a NeighborTokensBlock");
-  }
-
-  dataset::BlockPtr neighbor_tokens_block =
-      blocks.at(neighbor_tokens_block_index);
-  blocks.erase(blocks.begin() + neighbor_tokens_block_index);
-
-  return neighbor_tokens_block;
-}
+    std::vector<dataset::BlockPtr>& blocks);
 
 GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
                                          std::string target_col,
@@ -131,4 +89,50 @@ void GraphDatasetFactory::index(
       /* batch_size = */ DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE);
 }
 
+std::pair<GraphInfoPtr, dataset::BlockPtr> createGraphInfoAndBuilder(
+    const data::ColumnDataTypes& data_types) {
+  std::vector<dataset::ColumnIdentifier> feature_col_names;
+  std::string neighbor_col_name, node_id_col_name;
+
+  for (const auto& [col_name, data_type] : data_types) {
+    if (asNeighbors(data_type)) {
+      neighbor_col_name = col_name;
+    } else if (asNodeID(data_type)) {
+      node_id_col_name = col_name;
+    } else if (asNumerical(data_type)) {
+      feature_col_names.push_back(col_name);
+    }
+  }
+
+  GraphInfoPtr graph_info =
+      std::make_shared<GraphInfo>(/* feature_dim = */ feature_col_names.size());
+
+  dataset::BlockPtr builder_block = dataset::GraphBuilderBlock::make(
+      neighbor_col_name, node_id_col_name, feature_col_names, graph_info);
+
+  return {graph_info, builder_block};
+}
+
+dataset::BlockPtr popNeighborTokensBlock(
+    std::vector<dataset::BlockPtr>& blocks) {
+  std::optional<uint64_t> neighbor_tokens_block_index = -1;
+  for (size_t block_id = 0; block_id < blocks.size(); block_id++) {
+    if (dynamic_cast<dataset::NeighborTokensBlock*>(
+            blocks.at(block_id).get())) {
+      neighbor_tokens_block_index = block_id;
+      break;
+    }
+  }
+
+  if (!neighbor_tokens_block_index.has_value()) {
+    throw std::logic_error(
+        "The passed in block list should have a NeighborTokensBlock");
+  }
+
+  dataset::BlockPtr neighbor_tokens_block =
+      blocks.at(*neighbor_tokens_block_index);
+  blocks.erase(blocks.begin() + *neighbor_tokens_block_index);
+
+  return neighbor_tokens_block;
+}
 }  // namespace thirdai::automl::data

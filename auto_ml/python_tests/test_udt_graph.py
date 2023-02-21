@@ -40,6 +40,7 @@ def test_udt_on_yelp_chi(download_yelp_chi_dataset):
         target="target",
         n_target_classes=2,
         integer_target=True,
+        # Turn off pairgrams to make the test fast (~1 min on my m1)
         use_simpler_model=True,
     )
 
