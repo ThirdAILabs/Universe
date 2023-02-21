@@ -225,11 +225,13 @@ class TrainStateManager:
                     chunk_start_index, batch_to_run = remote_train_source_pointers.get()
                     bolt_graph_model = remote_bolt_graph_model.get()
                 else:
+                    self.logging.info("Worker {worker_with_model} failed during fetching model. Need to refetch")
                     continue
 
                 bolt_graph_model_ref = ray.put(bolt_graph_model)
                 # We are assuming atleast one of the worker have model
                 if worker_with_model != None:
+                    self.logging.info("Workers are prepared for trained {restored_workers}")
                     self.prepare_restored_worker_for_training(
                         bolt_graph_model_ref,
                         chunk_start_index,

@@ -3,7 +3,7 @@ import sys
 import textwrap
 import time
 from functools import wraps
-from time import time
+from time import time, sleep
 
 import ray
 import thirdai._distributed_bolt.backend.communication as comm
@@ -59,6 +59,7 @@ class Worker:
         self.communication_type = communication_type
         self.friend = friend
 
+    @timed
     def apply(
         self,
         func,
@@ -85,10 +86,11 @@ class Worker:
                 f"Worker Exception! Killing this worker, so Ray Core can restart it. {err=}. {func=}"
             )
             # Allow logs to propagate
-            time.sleep(0.5)
+            sleep(0.5)
             # Kill this worker so Ray Core can restart it.
             sys.exit(1)
 
+    @timed
     def prepare_for_training(
         self,
         bolt_graph,
