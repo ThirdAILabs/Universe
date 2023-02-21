@@ -54,6 +54,10 @@ TEST(CsvParserTests, HandlesMalformedQuotes) {
                 {"\"There is no\" delimiter"});
   testCsvParser("\"I wish there was no delimiter, but there is.", ',',
                 {"\"I wish there was no delimiter", " but there is."});
+  testCsvParser("\"I wish there was no delimiter, but there is.\\", ',',
+                {"\"I wish there was no delimiter", " but there is.\\"});
+  testCsvParser("\"I wish there was no delimiter, but there is.,", ',',
+                {"\"I wish there was no delimiter", " but there is.", ""});
 }
 
 TEST(CsvParserTests, DoubleQuotesInStringColumnNotMistakenAsOuterQuotes) {
