@@ -41,7 +41,7 @@ std::pair<GraphInfoPtr, dataset::BlockPtr> createGraphInfoAndBuilder(
  */
 
 dataset::BlockPtr popNeighborTokensBlock(
-    std::vector<dataset::BlockPtr> blocks) {
+    std::vector<dataset::BlockPtr>& blocks) {
   int64_t neighbor_tokens_block_index = -1;
   for (size_t block_id = 0; block_id < blocks.size(); block_id++) {
     if (dynamic_cast<dataset::NeighborTokensBlock*>(
@@ -109,26 +109,11 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
 
 dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(
     std::shared_ptr<dataset::DataSource> data_source, bool training) {
-  // TODO(Josh): Abstract this
-  auto column_number_map =
-      makeColumnNumberMapFromHeader(*data_source, _delimiter);
+  index(data_source);
 
-  // The featurizer will treat the next line as a header
-  // Restart so featurizer does not skip a sample.
   data_source->restart();
 
-  _featurizer->updateColumnNumbers(column_number_map);
-  _graph_builder->updateColumnNumbers(column_number_map);
-
-  dataset::DatasetLoader graph_builder_loader(data_source, _graph_builder,
-                                              /* shuffle = */ false);
-  graph_builder_loader.loadAll(
-      /* batch_size = */ DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE,
-      /* verbose = */ false);
-
-  // The featurizer will treat the next line as a header
-  // Restart so featurizer does not skip a sample.
-  data_source->restart();
+  updateFeaturizerWithHeader(_featurizer, data_source, _delimiter);
 
   return std::make_unique<dataset::DatasetLoader>(data_source, _featurizer,
                                                   /* shuffle= */ training);
@@ -136,15 +121,7 @@ dataset::DatasetLoaderPtr GraphDatasetFactory::getLabeledDatasetLoader(
 
 void GraphDatasetFactory::index(
     const std::shared_ptr<dataset::DataSource>& data_source) {
-  // TODO(Josh): Abstract this
-  auto column_number_map =
-      makeColumnNumberMapFromHeader(*data_source, _delimiter);
-
-  _graph_builder->updateColumnNumbers(column_number_map);
-
-  // The featurizer will treat the next line as a header
-  // Restart so featurizer does not skip a sample.
-  data_source->restart();
+  updateFeaturizerWithHeader(_graph_builder, data_source, _delimiter);
 
   dataset::DatasetLoader graph_builder_loader(data_source, _graph_builder,
                                               /* shuffle = */ false);

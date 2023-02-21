@@ -25,16 +25,11 @@ bolt::BoltGraphPtr createGNN(std::vector<uint32_t> input_dims,
       /* log_embedding_block_size = */ 20, /* reduction = */ "average");
 
   auto hidden_1 = bolt::FullyConnectedNode::makeAutotuned(
-      /* dim = */ 512, /* sparsity = */ 1, /* activation = */ "relu");
+      /* dim = */ 256, /* sparsity = */ 1, /* activation = */ "relu");
 
   hidden_1->addPredecessor(node_features_input);
 
   embedding_1->addInput(neighbor_token_input);
-
-  // auto hidden_2 = bolt::FullyConnectedNode::makeAutotuned(
-  //     /*dim=*/256, /*sparsity=*/1, /*activation=*/"relu");
-
-  // hidden_2->addPredecessor(hidden_1);
 
   auto concat_node = bolt::ConcatenateNode::make();
 
@@ -45,11 +40,6 @@ bolt::BoltGraphPtr createGNN(std::vector<uint32_t> input_dims,
       /* sampling_config = */ std::make_shared<bolt::RandomSamplingConfig>());
 
   hidden_3->addPredecessor(concat_node);
-
-  // auto hidden_4 = bolt::FullyConnectedNode::makeAutotuned(
-  //     /*dim=*/256, /*sparsity=*/1, /*activation=*/"relu");
-
-  // hidden_4->addPredecessor(hidden_3);
 
   auto output = bolt::FullyConnectedNode::makeAutotuned(
       /* dim = */ output_dim, /* sparsity = */ 1, /* activation =*/"softmax");

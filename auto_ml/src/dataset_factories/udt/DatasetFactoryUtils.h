@@ -4,6 +4,7 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <stdexcept>
 #include <string>
 
@@ -15,15 +16,22 @@ constexpr const uint32_t DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE = 2048;
 constexpr uint32_t DEFAULT_HASH_RANGE = 100000;
 static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;
 
-inline ColumnNumberMap makeColumnNumberMapFromHeader(
-    dataset::DataSource& data_source, char delimiter) {
-  auto header = data_source.nextLine();
+inline void updateFeaturizerWithHeader(
+    const dataset::TabularFeaturizerPtr& featurizer,
+    const std::shared_ptr<dataset::DataSource>& data_source, char delimiter) {
+  auto header = data_source->nextLine();
   if (!header) {
     throw std::invalid_argument(
         "The dataset must have a header that contains column names.");
   }
 
-  return {*header, delimiter};
+  ColumnNumberMap column_number_map(*header, delimiter);
+
+  featurizer->updateColumnNumbers(column_number_map);
+
+  // The featurizer will treat the next line as a header
+  // Restart so featurizer does not skip a sample.
+  data_source->restart();
 }
 
 inline void verifyExpectedNumberOfGraphTypes(

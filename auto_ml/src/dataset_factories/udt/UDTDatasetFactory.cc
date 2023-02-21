@@ -34,17 +34,10 @@ UDTDatasetFactory::UDTDatasetFactory(
 
 dataset::DatasetLoaderPtr UDTDatasetFactory::getLabeledDatasetLoader(
     dataset::DataSourcePtr data_source, bool training) {
-  auto column_number_map =
-      makeColumnNumberMapFromHeader(*data_source, _config->delimiter);
-  std::vector<std::string> column_number_to_name =
-      column_number_map.getColumnNumToColNameMap();
-
-  // The featurizer will treat the next line as a header
-  // Restart so featurizer does not skip a sample.
-  data_source->restart();
-
-  _labeled_history_updating_processor->updateColumnNumbers(column_number_map);
-  _unlabeled_non_updating_processor->updateColumnNumbers(column_number_map);
+  updateFeaturizerWithHeader(_labeled_history_updating_processor, data_source,
+                             _config->delimiter);
+  updateFeaturizerWithHeader(_unlabeled_non_updating_processor, data_source,
+                             _config->delimiter);
 
   return std::make_unique<dataset::DatasetLoader>(
       data_source, _labeled_history_updating_processor,
@@ -115,10 +108,6 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
 
   auto data_source = dataset::FileDataSource::make(metadata->metadata_file);
 
-  auto column_numbers =
-      makeColumnNumberMapFromHeader(*data_source, metadata->delimiter);
-  data_source->restart();
-
   auto input_blocks = FeatureComposer::makeNonTemporalFeatureBlocks(
       /* data_types = */ metadata->column_data_types,
       /* target = */ metadata->key,
@@ -140,7 +129,8 @@ UDTDatasetFactory::makeProcessedVectorsForCategoricalColumn(
       /* has_header= */ true,
       /* delimiter= */ metadata->delimiter, /* parallel= */ _parallel);
 
-  _metadata_processors[col_name]->updateColumnNumbers(column_numbers);
+  updateFeaturizerWithHeader(_metadata_processors[col_name], data_source,
+                             metadata->delimiter);
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.

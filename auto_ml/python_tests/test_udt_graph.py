@@ -34,7 +34,7 @@ model = bolt.models.UDTGraphNetwork(
 
 model.index("yelp_test.csv")
 
-for epoch in range(10):
+for epoch in range(20):
     model.train("yelp_train.csv", learning_rate=0.001, epochs=1)
     activations = model.evaluate("yelp_test.csv")
     print(metrics.roc_auc_score(ground_truth, activations[:, 1]))

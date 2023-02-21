@@ -27,7 +27,6 @@
 #include <variant>
 namespace thirdai::automl::data {
 
-// TODO(Josh): Consider adding back k_hop
 class GraphDatasetFactory : public DatasetLoaderFactory {
  public:
   explicit GraphDatasetFactory(data::ColumnDataTypes data_types,
@@ -104,6 +103,9 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
   uint32_t getLabelDim() final { return _n_target_classes; };
 
   bool hasTemporalTracking() const final { return false; }
+
+  void updateFeaturizersWithHeader(
+      const std::shared_ptr<dataset::DataSource>& data_source);
 
  private:
   data::ColumnDataTypes _data_types;
