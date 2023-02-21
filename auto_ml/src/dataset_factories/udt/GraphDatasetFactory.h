@@ -31,7 +31,8 @@ class GraphDatasetFactory : public DatasetLoaderFactory {
  public:
   explicit GraphDatasetFactory(data::ColumnDataTypes data_types,
                                std::string target_col,
-                               uint32_t n_target_classes, char delimiter, bool use_pairgrams);
+                               uint32_t n_target_classes, char delimiter,
+                               bool use_pairgrams);
 
   dataset::DatasetLoaderPtr getLabeledDatasetLoader(
       std::shared_ptr<dataset::DataSource> data_source, bool training) final;

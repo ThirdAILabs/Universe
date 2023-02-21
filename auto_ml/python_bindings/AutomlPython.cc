@@ -277,7 +277,8 @@ void createModelsSubmodule(py::module_& module) {
       models_submodule, "UDTGraphNetwork")
       .def(py::init(&models::GraphNetwork::create), py::arg("data_types"),
            py::arg("target"), py::arg("n_target_classes"),
-           py::arg("use_simpler_model") = false, py::arg("integer_target") = false, py::arg("delimiter") = ',',
+           py::arg("use_simpler_model") = false,
+           py::arg("integer_target") = false, py::arg("delimiter") = ',',
            bolt::python::OutputRedirect())
       .def("index", &models::GraphNetwork::index, py::arg("data_source"))
       .def("clear_graph", &models::GraphNetwork::clearGraph);

@@ -83,7 +83,8 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
           /* temporal_relationships = */ TemporalRelationships(),
           /* vectors_map = */ PreprocessedVectorsMap(),
           /* text_pairgrams_word_limit = */ TEXT_PAIRGRAM_WORD_LIMIT,
-          /* contextual_columns = */ use_pairgrams, /* graph_info = */ _graph_info);
+          /* contextual_columns = */ use_pairgrams,
+          /* graph_info = */ _graph_info);
 
   dataset::BlockPtr sparse_neighbor_block =
       popNeighborTokensBlock(feature_blocks);
