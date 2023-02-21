@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 from download_dataset_fixtures import download_yelp_chi_dataset
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
@@ -44,10 +45,11 @@ def test_udt_on_yelp_chi(download_yelp_chi_dataset):
 
     model.index("yelp_test.csv")
 
-    for epoch in range(20):
+    for epoch in range(15):
         model.train("yelp_train.csv", learning_rate=0.001, epochs=1)
         activations = model.evaluate("yelp_test.csv")
         auc = metrics.roc_auc_score(ground_truth, activations[:, 1])
+        print("AUC: ", auc)
 
-    # Usually around 0.9 - 0.91
-    assert auc > 0.88
+    # Gets around 0.91
+    assert auc > 0.89
