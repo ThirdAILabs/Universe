@@ -203,6 +203,7 @@ setup(
             "gcsfs",
             "s3fs",
             "mock",
+            "scikit-learn",
         ],
         "benchmark": [
             "toml",

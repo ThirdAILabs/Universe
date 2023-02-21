@@ -27,7 +27,8 @@ class NormalizedNeighborVectorsBlock final : public Block {
   Explanation explainIndex(uint32_t index_within_block,
                            ColumnarInputSample& input) final;
 
-  static auto make(ColumnIdentifier col, automl::data::GraphInfoPtr graph_ptr) {
+  static auto make(ColumnIdentifier col,
+                   const automl::data::GraphInfoPtr& graph_ptr) {
     return std::make_shared<NormalizedNeighborVectorsBlock>(std::move(col),
                                                             graph_ptr);
   }
@@ -66,7 +67,8 @@ class NeighborTokensBlock final : public Block {
   Explanation explainIndex(uint32_t index_within_block,
                            ColumnarInputSample& input) final;
 
-  static auto make(ColumnIdentifier col, automl::data::GraphInfoPtr graph_ptr) {
+  static auto make(ColumnIdentifier col,
+                   const automl::data::GraphInfoPtr& graph_ptr) {
     return std::make_shared<NeighborTokensBlock>(std::move(col), graph_ptr);
   }
 
@@ -109,7 +111,7 @@ class GraphBuilderBlock final : public Block {
 
   static auto make(ColumnIdentifier neighbor_col, ColumnIdentifier node_id_col,
                    std::vector<ColumnIdentifier> feature_cols,
-                   automl::data::GraphInfoPtr graph_ptr) {
+                   const automl::data::GraphInfoPtr& graph_ptr) {
     return std::make_shared<GraphBuilderBlock>(
         std::move(neighbor_col), std::move(node_id_col),
         std::move(feature_cols), graph_ptr);
