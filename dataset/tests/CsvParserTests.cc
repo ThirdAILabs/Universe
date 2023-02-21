@@ -41,6 +41,21 @@ TEST(CsvParserTests, IgnoresDelimiterInStringColumn) {
                 {"I wish there was no delimiter, but there is."});
 }
 
+TEST(CsvParserTests, HandlesMalformedQuotes) {
+  /*
+    If quoted column is malformed and we have seen delimiters inside the
+    quotes, treat the first delimiter in quotes as an unquoted delimiter.
+    Quoted column is malformed if we reach end of line without seeing an end
+    quote or if and end quote is followed by a regular character.
+  */
+  testCsvParser("\"I wish there was no\" delimiter, but there is.", ',',
+                {"\"I wish there was no\" delimiter", " but there is."});
+  testCsvParser("\"There is no\" delimiter", ',',
+                {"\"There is no\" delimiter"});
+  testCsvParser("\"I wish there was no delimiter, but there is.", ',',
+                {"\"I wish there was no delimiter", " but there is."});
+}
+
 TEST(CsvParserTests, DoubleQuotesInStringColumnNotMistakenAsOuterQuotes) {
   // CSV parsers distinguish between double quotes that wrap around a string
   // and double quotes inside of the string by duplicating the inner quotes.
@@ -69,11 +84,9 @@ TEST(CsvParserTests, BadDelimiterThrows) {
   ASSERT_THROW(testCsvParser("", '\r', {}), std::invalid_argument);
 }
 
-TEST(CsvParserTests, IllegalEOLThrows) {
+TEST(CsvParserTests, UnescapedUnquotedEOLThrows) {
   // NOLINTNEXTLINE since clang-tidy doesn't like ASSERT_THROW
   ASSERT_THROW(testCsvParser("A\n", ',', {}), std::invalid_argument);
-  // NOLINTNEXTLINE since clang-tidy doesn't like ASSERT_THROW
-  ASSERT_THROW(testCsvParser("\"A", ',', {}), std::invalid_argument);
 }
 
 }  // namespace thirdai::dataset::tests

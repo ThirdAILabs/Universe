@@ -8,77 +8,48 @@
 
 namespace thirdai::dataset::parsers::CSV {
 
-enum class ParserState {
-  NewColumn,
-  InQuotes,
-  OutsideQuotes,
-  EscapeInQuotes,
-  EscapeOutsideQuotes,
-  PotentialEndQuote,
-  UnexpectedEOL,
-};
-
-// Declare parser helpers. Defined later so main parsing function
-// isn't buried.
-
-// Error handling helpers
-static void validateDelimiter(char delimiter);
-static void throwIfUnexpectedEOL(ParserState last_state,
-                                 const std::string& line);
-// Extracts the last column seen so far from `line`.
-static std::string_view lastColumn(const std::string& line,
-                                   ParserState prev_state, uint32_t start,
-                                   uint32_t end);
-
-static ParserState nextState(ParserState last_state, char current_char,
-                             char delimiter);
-
-// These functions define the state machine transitions.
-namespace TransitionFrom {
-static ParserState newColumn(char current_char, char delimiter);
-static ParserState inQuotes(char current_char);
-static ParserState outsideQuotes(char current_char, char delimiter);
-static ParserState escapeInQuotes();
-static ParserState escapeOutsideQuotes();
-static ParserState potentialEndQuote(char current_char, char delimiter);
-}  // namespace TransitionFrom
-
-// Main parsing function.
-std::vector<std::string_view> parseLine(const std::string& line,
-                                        char delimiter) {
-  validateDelimiter(delimiter);
-  std::vector<std::string_view> parsed_columns;
-
-  ParserState state = ParserState::NewColumn;
-  uint32_t column_start = 0;
-  uint32_t position = 0;
-  for (char current_char : line) {
-    auto prev_state = state;
-    state = nextState(state, current_char, delimiter);
-    if (state == ParserState::UnexpectedEOL) {
-      break;
-    }
-
-    if (state == ParserState::NewColumn) {
-      // If the new state is NewColumn, then we just finished parsing a column.
-      parsed_columns.push_back(lastColumn(
-          line, prev_state, /* start= */ column_start, /* end= */ position));
-      column_start = position + 1;
-    }
-
-    position++;
-  }
-
-  throwIfUnexpectedEOL(state, line);
-
-  parsed_columns.push_back(lastColumn(line, /* prev_state= */ state,
-                                      /* start= */ column_start,
-                                      /* end= */ position));
-
-  return parsed_columns;
+StateMachine::StateMachine(char delimiter)
+    : _delimiter(delimiter), _state(ParserState::NewColumn) {
+  validateDelimiter(_delimiter);
 }
 
-static void validateDelimiter(char delimiter) {
+void StateMachine::transition(char current_char) {
+  switch (_state) {
+    case ParserState::NewLine:
+      // NewLine is a special case of NewColumn with the same out-transitions.
+    case ParserState::NewColumn:
+      _state = fromNewColumn(current_char);
+      break;
+    case ParserState::UnescapedDelimiterInQuotes:
+      // UnescapedDelimiterInQutoes is a special case of InQuotes with the same
+      // out-transitions.
+    case ParserState::RegularInQuotes:
+      _state = fromRegularInQuotes(current_char);
+      break;
+    case ParserState::RegularOutsideQuotes:
+      _state = fromRegularOutsideQuotes(current_char);
+      break;
+    case ParserState::EscapeInQuotes:
+      // The character after the escape character is ignored.
+      _state = ParserState::RegularInQuotes;
+      break;
+    case ParserState::EscapeOutsideQuotes:
+      // The character after the escape character is ignored.
+      _state = ParserState::RegularOutsideQuotes;
+      break;
+    case ParserState::PotentialEndQuote:
+      _state = fromPotentialEndQuote(current_char);
+      break;
+    default:
+      throw std::logic_error("Invalid parser state.");
+  }
+}
+
+ParserState StateMachine::state() const { return _state; }
+
+void StateMachine::setState(ParserState state) { _state = state; }
+
+void StateMachine::validateDelimiter(char delimiter) {
   switch (delimiter) {
     case '\\':
       throw std::invalid_argument(
@@ -95,107 +66,59 @@ static void validateDelimiter(char delimiter) {
   }
 }
 
-static void throwIfUnexpectedEOL(ParserState last_state,
-                                 const std::string& line) {
-  if (last_state == ParserState::EscapeInQuotes ||
-      last_state == ParserState::EscapeOutsideQuotes ||
-      last_state == ParserState::InQuotes ||
-      last_state == ParserState::UnexpectedEOL) {
-    throw std::invalid_argument(
-        "Found unexpected newline, return character, or EOL in this line: \"" +
-        line + "\"");
-  }
-}
-
-static std::string_view lastColumn(const std::string& line,
-                                   ParserState prev_state, uint32_t start,
-                                   uint32_t end) {
-  if (prev_state == ParserState::PotentialEndQuote) {
-    // If the previous state is PotentialEndQuote, then
-    start++;
-    end--;
-  }
-  return {line.data() + start, end - start};
-}
-
-static ParserState nextState(ParserState last_state, char current_char,
-                             char delimiter) {
-  switch (last_state) {
-    case ParserState::NewColumn:
-      return TransitionFrom::newColumn(current_char, delimiter);
-    case ParserState::InQuotes:
-      return TransitionFrom::inQuotes(current_char);
-    case ParserState::OutsideQuotes:
-      return TransitionFrom::outsideQuotes(current_char, delimiter);
-    case ParserState::EscapeInQuotes:
-      return TransitionFrom::escapeInQuotes();
-    case ParserState::EscapeOutsideQuotes:
-      return TransitionFrom::escapeOutsideQuotes();
-    case ParserState::PotentialEndQuote:
-      return TransitionFrom::potentialEndQuote(current_char, delimiter);
-      break;
-    case ParserState::UnexpectedEOL:
-      throw std::logic_error("Cannot transition from UnexpectedEOL");
-    default:
-      throw std::logic_error("Invalid parser state.");
-  }
-}
-
-namespace TransitionFrom {
-
-static ParserState newColumn(char current_char, char delimiter) {
+ParserState StateMachine::fromNewColumn(char current_char) const {
   // Separate conditional since delimiter is not a constant.
-  if (current_char == delimiter) {
+  if (current_char == _delimiter) {
     return ParserState::NewColumn;
   }
 
   switch (current_char) {
     case '"':
-      return ParserState::InQuotes;
+      return ParserState::RegularInQuotes;
     case '\\':
       return ParserState::EscapeOutsideQuotes;
     case '\n':
-    case '\r':
-      return ParserState::UnexpectedEOL;
+      return ParserState::NewLine;
     default:
-      return ParserState::OutsideQuotes;
+      return ParserState::RegularOutsideQuotes;
   }
 }
 
-static ParserState inQuotes(char current_char) {
+ParserState StateMachine::fromRegularInQuotes(char current_char) const {
+  // Separate conditional since delimiter is not a constant.
+  if (current_char == _delimiter) {
+    return ParserState::UnescapedDelimiterInQuotes;
+  }
+
   switch (current_char) {
     case '"':
       return ParserState::PotentialEndQuote;
     case '\\':
       return ParserState::EscapeInQuotes;
     default:
-      return ParserState::InQuotes;
+      return ParserState::RegularInQuotes;
   }
 }
 
-static ParserState outsideQuotes(char current_char, char delimiter) {
+ParserState StateMachine::fromRegularOutsideQuotes(char current_char) const {
   // Separate conditional since delimiter is not a constant.
-  if (current_char == delimiter) {
+  if (current_char == _delimiter) {
     return ParserState::NewColumn;
   }
+
   switch (current_char) {
     case '\\':
       return ParserState::EscapeOutsideQuotes;
     case '\n':
-    case '\r':
-      return ParserState::UnexpectedEOL;
+      return ParserState::NewLine;
     default:
-      return ParserState::OutsideQuotes;
+      return ParserState::RegularOutsideQuotes;
   }
 }
 
-// The character after the escape character is ignored.
-static ParserState escapeInQuotes() { return ParserState::InQuotes; }
-static ParserState escapeOutsideQuotes() { return ParserState::OutsideQuotes; }
-
-static ParserState potentialEndQuote(char current_char, char delimiter) {
+ParserState StateMachine::fromPotentialEndQuote(char current_char) const {
   // Separate conditional since delimiter is not a constant.
-  if (current_char == delimiter) {
+  if (current_char == _delimiter) {
     return ParserState::NewColumn;
   }
 
@@ -207,19 +130,95 @@ static ParserState potentialEndQuote(char current_char, char delimiter) {
       I just saw "Dear Evan Hansen", 10/10!
     */
     case '"':
-      return ParserState::InQuotes;
+      return ParserState::RegularInQuotes;
     // In all the other cases, since we've only seen one double quotation mark,
     // we treat it as the end quote, thus we are now "outside quotes".
     case '\\':
       return ParserState::EscapeOutsideQuotes;
     case '\n':
-    case '\r':
-      return ParserState::UnexpectedEOL;
+      return ParserState::NewLine;
     default:
-      return ParserState::OutsideQuotes;
+      return ParserState::RegularOutsideQuotes;
   }
 }
 
-}  // namespace TransitionFrom
+// Extracts the last column seen so far from `line`.
+static std::string_view lastColumn(const std::string& line,
+                                   ParserState prev_state, uint32_t start,
+                                   uint32_t end) {
+  if (prev_state == ParserState::PotentialEndQuote) {
+    // If the previous state is PotentialEndQuote, then the previous column
+    // must be quoted. Thus, we trim the quotes by incrementing start and
+    // decrementing end.
+    start++;
+    end--;
+  }
+  return {line.data() + start, end - start};
+}
+
+// Main parsing function.
+std::vector<std::string_view> parseLine(const std::string& line,
+                                        char delimiter) {
+  std::vector<std::string_view> parsed_columns;
+
+  StateMachine state_machine(delimiter);
+  uint32_t column_start = 0;
+  std::optional<uint32_t> first_delimiter_in_quotes;
+  for (uint32_t position = 0; position < line.size(); position++) {
+    auto prev_state = state_machine.state();
+    state_machine.transition(line[position]);
+    auto state = state_machine.state();
+
+    // Side effects of state transition.
+
+    if (state == ParserState::NewLine) {
+      throw std::invalid_argument(
+          "Found unexpected newline (unescaped and unquoted) in: \"" + line +
+          "\"");
+    }
+
+    if (state == ParserState::UnescapedDelimiterInQuotes &&
+        !first_delimiter_in_quotes) {
+      first_delimiter_in_quotes = position;
+    }
+
+    /*
+      If quoted column is malformed and we have seen delimiters inside the
+      quotes, reset position to first delimiter in quotes and treat it like the
+      end of the column. Quoted column is malformed if we reach end of line
+      without seeing an end quote or if and end quote is followed by a regular
+      character.
+    */
+    auto regular_char_after_end_quote =
+        prev_state == ParserState::PotentialEndQuote &&
+        state == ParserState::RegularOutsideQuotes;
+    bool last_char = position == line.size() - 1;
+    auto still_in_quotes = state == ParserState::EscapeInQuotes ||
+                           state == ParserState::RegularInQuotes ||
+                           state == ParserState::UnescapedDelimiterInQuotes;
+    if (((last_char && still_in_quotes) || regular_char_after_end_quote) &&
+        first_delimiter_in_quotes) {
+      position = *first_delimiter_in_quotes;
+      state_machine.setState(ParserState::NewColumn);
+      state = ParserState::NewColumn;
+      prev_state = ParserState::RegularOutsideQuotes;
+    }
+
+    if (state == ParserState::NewColumn) {
+      // If the new state is NewColumn, then we just finished parsing a
+      // column.
+      parsed_columns.push_back(lastColumn(
+          line, prev_state, /* start= */ column_start, /* end= */ position));
+      column_start = position + 1;
+      first_delimiter_in_quotes = {};
+    }
+  }
+
+  parsed_columns.push_back(lastColumn(line, state_machine.state(),
+                                      /* start= */ column_start,
+                                      /* end= */ line.size()));
+
+  return parsed_columns;
+}
 
 }  // namespace thirdai::dataset::parsers::CSV
