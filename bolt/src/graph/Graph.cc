@@ -74,6 +74,7 @@ void BoltGraph::logValidateAndSave(const TrainConfig& train_config,
   }
 
   const std::optional<SaveContext>& save_context = train_config.saveContext();
+  
   if (save_context && save_context->frequency() != 0 &&
       _updates % save_context->frequency() == 0) {
     const std::string checkpoint_path = save_context->prefix() + ".last.bolt";
