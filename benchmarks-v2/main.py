@@ -4,6 +4,7 @@ from .runners.runner_map import runner_map
 import re
 from thirdai.experimental import MlflowCallback
 from datetime import date
+import thirdai
 
 
 def parse_arguments():
@@ -75,17 +76,20 @@ if __name__ == "__main__":
         if args.mlflow_uri and args.run_name:
             mlflow_logger = MlflowCallback(
                 tracking_uri=args.mlflow_uri,
-                experiment_name=experiment_name(args.config_name),
+                experiment_name=experiment_name(config.config_name, args.official_benchmark),
                 run_name=f"{args.run_name}_{str(date.today())}",
                 dataset_name=config.dataset_name,
                 experiment_args={},
             )
+            mlflow_logger.log_additional_param("thirdai_version", thirdai.__version__)
         else:
             mlflow_logger = None
 
         runner.run_benchmark(
             config=config,
-            path=args.path,
-            mlflow_uri=args.mlflow_uri,
-            run_name=args.run_name,
+            path=args.path_prefix,
+            mlflow_logger=mlflow_logger
         )
+
+        if mlflow_logger:
+            mlflow_logger.end_run()

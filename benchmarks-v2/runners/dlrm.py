@@ -34,7 +34,7 @@ class DLRMRunner(Runner):
 
             if mlflow_logger:
                 for k, v in eval_metrics[0].items():
-                    mlflow_logger.log_additional_metric(key=k, value=v[0], step=epoch)
+                    mlflow_logger.log_additional_metric(key=k, value=v, step=epoch)
 
             compute_roc_auc(
                 predict_output=eval_metrics,
@@ -46,7 +46,7 @@ class DLRMRunner(Runner):
 
 def compute_roc_auc(predict_output, test_labels_path, mlflow_callback=None, step=0):
     with open(test_labels_path) as file:
-        test_labels = [np.array([int(line[0]) for line in file.readlines()])]
+        test_labels = np.array([int(line[0]) for line in file.readlines()])
 
     if len(predict_output) != 2:
         raise ValueError("Cannot compute the AUC without dense activations")
@@ -64,7 +64,7 @@ def compute_roc_auc(predict_output, test_labels_path, mlflow_callback=None, step
         raise ValueError(
             "Activations must have shape (n,1) or (n,2) to compute the AUC"
         )
-    auc = roc_auc_score(test_labels, scores)
+    auc = roc_auc_score(y_true=test_labels, y_score=scores)
     print(f"AUC : {auc}")
 
     if mlflow_callback is not None:

@@ -32,7 +32,9 @@ class BoltFullyConnectedRunner(Runner):
 
             if mlflow_logger:
                 for k, v in predict_output[0].items():
-                    mlflow_logger.log_additional_metric(key=k, value=v, step=epoch)
+                    key = k.replace("(", "")
+                    key = key.replace(")", "")
+                    mlflow_logger.log_additional_metric(key=key, value=v, step=epoch)
 
 
 def define_fully_connected_bolt_model(config: BoltBenchmarkConfig):

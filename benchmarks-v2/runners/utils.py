@@ -3,11 +3,10 @@ from thirdai import bolt
 
 def get_train_and_eval_configs(benchmark_config, callbacks=None):
     learning_rate = benchmark_config.learning_rate
-    metrics = [benchmark_config.metric_type]
+    metrics = benchmark_config.metrics
 
-    train_config = bolt.TrainConfig(epochs=1, learning_rate=learning_rate).with_metrics(
-        metrics
-    )
+    train_config = bolt.TrainConfig(epochs=1, learning_rate=learning_rate)
+    
     if callbacks is not None:
         train_config.with_callbacks(callbacks)
 

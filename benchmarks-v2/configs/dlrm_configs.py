@@ -10,7 +10,7 @@ class DLRMConfig(ABC):
     learning_rate = None
     num_epochs = None
     delimiter = None
-    metric_type = "categorical_accuracy"
+    metrics = ["categorical_accuracy"]
     compute_roc_auc = True
 
     train_dataset_path = None
@@ -38,9 +38,9 @@ class CriteoDLRMConfig(DLRMConfig):
         cat_input = bolt.nn.TokenInput(dim=4294967295, num_tokens_range=(26, 26))
 
         embedding = bolt.nn.Embedding(
-            num_embedding_lookups=8,
+            num_embedding_lookups=4,
             lookup_size=8,
-            log_embedding_block_size=29,
+            log_embedding_block_size=20,
             reduction="concat",
             num_tokens_per_input=26,
         )(cat_input)
@@ -63,7 +63,7 @@ class CriteoDLRMConfig(DLRMConfig):
         output = bolt.nn.FullyConnected(dim=2, activation="softmax")(hidden_output)
 
         model = bolt.nn.Model(inputs=[int_input, cat_input], output=output)
-        model.compile(bolt.nn.losses.BinaryCrossEntropyLoss())
+        model.compile(bolt.nn.losses.CategoricalCrossEntropy())
 
         return model
 
@@ -71,8 +71,8 @@ class CriteoDLRMConfig(DLRMConfig):
     num_epochs = 1
     delimiter = " "
 
-    train_dataset_path = "/share/data/criteo/train_shuf.txt"
-    test_dataset_path = "/share/data/criteo/test_shuf.txt"
+    train_dataset_path = "criteo/train_shuf.txt"
+    test_dataset_path = "criteo/test_shuf.txt"
 
     def _load_click_through_dataset(
         filename,
