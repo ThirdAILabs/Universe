@@ -110,6 +110,8 @@ class UDTBackend {
     return nullptr;
   }
 
+  virtual ~UDTBackend() = default;
+
  protected:
   UDTBackend() {}
 

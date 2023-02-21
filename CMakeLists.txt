@@ -441,6 +441,7 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Train.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
+  auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
   auto_ml/src/models/ModelPipeline.cc
   auto_ml/src/models/OutputProcessor.cc

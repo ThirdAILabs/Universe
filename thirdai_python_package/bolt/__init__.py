@@ -1,7 +1,7 @@
 import thirdai._thirdai.bolt
 from thirdai._thirdai.bolt import *
 
-from .udt_modifications import modify_udt_classifier, modify_udt
+from .udt_modifications import modify_udt, modify_udt_classifier
 
 modify_udt_classifier()
 modify_udt()

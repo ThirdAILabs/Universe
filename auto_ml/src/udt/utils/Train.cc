@@ -1,4 +1,5 @@
 #include "Train.h"
+#include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/udt/Defaults.h>
 
 namespace thirdai::automl::udt::utils {
@@ -44,13 +45,13 @@ void trainOnStream(bolt::BoltGraphPtr& model,
   }
 }
 
-void trainInMemory(bolt::BoltGraphPtr& model,
-                   dataset::DatasetLoaderPtr& dataset_loader,
-                   bolt::TrainConfig train_config, size_t batch_size,
-                   bool freeze_hash_tables) {
-  auto loaded_data = dataset_loader->loadAll(
-      /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
-  auto [train_data, train_labels] = std::move(loaded_data);
+}  // namespace
+
+void trainInMemory(
+    bolt::BoltGraphPtr& model,
+    std::pair<dataset::InputDatasets, dataset::LabelDataset> datasets,
+    bolt::TrainConfig train_config, bool freeze_hash_tables) {
+  auto [train_data, train_labels] = std::move(datasets);
 
   uint32_t epochs = train_config.epochs();
 
@@ -67,8 +68,6 @@ void trainInMemory(bolt::BoltGraphPtr& model,
   model->train(train_data, train_labels, train_config);
 }
 
-}  // namespace
-
 void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
            const bolt::TrainConfig& train_config, size_t batch_size,
            std::optional<size_t> max_in_memory_batches,
@@ -77,18 +76,17 @@ void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
     trainOnStream(model, dataset_loader, train_config, batch_size,
                   max_in_memory_batches.value(), freeze_hash_tables);
   } else {
-    trainInMemory(model, dataset_loader, train_config, batch_size,
-                  freeze_hash_tables);
+    auto loaded_data = dataset_loader->loadAll(
+        /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
+    trainInMemory(model, loaded_data, train_config, freeze_hash_tables);
   }
 }
 
 bolt::TrainConfig getTrainConfig(
     uint32_t epochs, float learning_rate,
-    const std::optional<Validation>& validation,
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval,
-    data::TabularDatasetFactoryPtr& dataset_factory) {
+    std::optional<uint32_t> logging_interval) {
   bolt::TrainConfig train_config =
       bolt::TrainConfig::makeConfig(learning_rate, epochs)
           .withMetrics(train_metrics)
@@ -99,6 +97,19 @@ bolt::TrainConfig getTrainConfig(
   if (!verbose) {
     train_config.silence();
   }
+  return train_config;
+}
+
+bolt::TrainConfig getTrainConfig(
+    uint32_t epochs, float learning_rate,
+    const std::optional<Validation>& validation,
+    const std::vector<std::string>& train_metrics,
+    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
+    std::optional<uint32_t> logging_interval,
+    data::TabularDatasetFactoryPtr& dataset_factory) {
+  bolt::TrainConfig train_config =
+      getTrainConfig(epochs, learning_rate, train_metrics, callbacks, verbose,
+                     logging_interval);
   if (validation && !dataset_factory->hasTemporalRelationships()) {
     auto val_data =
         dataset_factory
@@ -135,4 +146,31 @@ bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
   return eval_config;
 }
 
+uint32_t predictedClass(const BoltVector& activation_vec,
+                        std::optional<float> binary_threshold) {
+  if (!binary_threshold.has_value()) {
+    return activation_vec.getHighestActivationId();
+  }
+  return activation_vec.activations[1] >= *binary_threshold;
+}
+
+py::object predictedClasses(bolt::InferenceOutputTracker& output,
+                            std::optional<float> binary_threshold) {
+  utils::NumpyArray<uint32_t> predictions(output.numSamples());
+  for (uint32_t i = 0; i < output.numSamples(); i++) {
+    BoltVector activation_vec = output.getSampleAsNonOwningBoltVector(i);
+    predictions.mutable_at(i) =
+        predictedClass(activation_vec, binary_threshold);
+  }
+  return py::object(std::move(predictions));
+}
+
+py::object predictedClasses(const BoltBatch& outputs,
+                            std::optional<float> binary_threshold) {
+  utils::NumpyArray<uint32_t> predictions(outputs.getBatchSize());
+  for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
+    predictions.mutable_at(i) = predictedClass(outputs[i], binary_threshold);
+  }
+  return py::object(std::move(predictions));
+}
 }  // namespace thirdai::automl::udt::utils

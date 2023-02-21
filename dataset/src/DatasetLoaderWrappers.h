@@ -8,6 +8,7 @@
 #include <dataset/src/featurizers/ClickThroughFeaturizer.h>
 #include <dataset/src/featurizers/SvmFeaturizer.h>
 #include <memory>
+#include <unordered_map>
 #include <utility>
 
 namespace thirdai::dataset {
@@ -28,6 +29,26 @@ struct SvmDatasetLoader {
                                         /* shuffle = */ false);
     auto datasets = dataset_loader.loadAll(batch_size);
     return {datasets.first.at(0), datasets.second};
+  }
+
+  static BoltVector toSparseVector(const MapInput& keys_to_values) {
+    BoltVector vector(/* l = */ keys_to_values.size(), /* is_dense = */ false);
+    size_t current_index = 0;
+    for (const auto& key_and_value : keys_to_values) {
+      uint32_t key = std::stoul(key_and_value.first);
+      float value = std::stof(key_and_value.second);
+      vector.active_neurons[current_index] = key;
+      vector.activations[current_index] = value;
+    }
+    return vector;
+  }
+
+  static BoltBatch toSparseVectors(const MapInputBatch& keys_to_values_batch) {
+    std::vector<BoltVector> sparse_vectors;
+    for (const MapInput& keys_to_values : keys_to_values_batch) {
+      sparse_vectors.push_back(toSparseVector(keys_to_values));
+    }
+    return BoltBatch(std::move(sparse_vectors));
   }
 };
 

@@ -30,6 +30,14 @@ std::shared_ptr<udt::UDT> createUDT(
       createArgumentMap(user_args));
 }
 
+std::shared_ptr<udt::UDT> createUDTSpecifiedFileFormat(
+    const std::string& file_format, uint32_t n_target_classes,
+    uint32_t input_dim, const std::optional<std::string>& model_config,
+    const py::dict& user_args) {
+  return std::make_shared<udt::UDT>(file_format, n_target_classes, input_dim,
+                                    model_config, createArgumentMap(user_args));
+}
+
 void defineAutomlInModule(py::module_& module) {
   py::class_<models::ValidationOptions>(module, "Validation")
       .def(py::init<std::string, std::vector<std::string>,
@@ -94,6 +102,10 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("integer_target") = false,
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("options") = py::dict())
+      .def(py::init(&createUDTSpecifiedFileFormat), py::arg("file_format"),
+           py::arg("n_target_classes"), py::arg("input_dim"),
+           py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict())
       .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),
            py::arg("epochs"), py::arg("validation") = std::nullopt,

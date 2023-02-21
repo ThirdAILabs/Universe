@@ -117,12 +117,7 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
   }
 
   if (return_predicted_class) {
-    utils::NumpyArray<uint32_t> predictions(output.numSamples());
-    for (uint32_t i = 0; i < output.numSamples(); i++) {
-      BoltVector activation_vec = output.getSampleAsNonOwningBoltVector(i);
-      predictions.mutable_at(i) = predictedClass(activation_vec);
-    }
-    return py::object(std::move(predictions));
+    return utils::predictedClasses(output, _binary_prediction_threshold);
   }
 
   return utils::convertInferenceTrackerToNumpy(output);
@@ -134,7 +129,8 @@ py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
       _dataset_factory->featurizeInput(sample), sparse_inference);
 
   if (return_predicted_class) {
-    return py::cast(predictedClass(output));
+    return py::cast(
+        utils::predictedClass(output, _binary_prediction_threshold));
   }
 
   return utils::convertBoltVectorToNumpy(output);
@@ -147,11 +143,7 @@ py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
       _dataset_factory->featurizeInputBatch(samples), sparse_inference);
 
   if (return_predicted_class) {
-    utils::NumpyArray<uint32_t> predictions(outputs.getBatchSize());
-    for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
-      predictions.mutable_at(i) = predictedClass(outputs[i]);
-    }
-    return py::object(std::move(predictions));
+    return utils::predictedClasses(outputs);
   }
 
   return utils::convertBoltBatchToNumpy(outputs);
@@ -370,16 +362,6 @@ std::optional<float> UDTClassifier::tuneBinaryClassificationPredictionThreshold(
   }
 
   return best_threshold;
-}
-
-uint32_t UDTClassifier::predictedClass(const BoltVector& vector) {
-  if (_binary_prediction_threshold) {
-    if (vector.activations[1] >= *_binary_prediction_threshold) {
-      return 1;
-    }
-    return 0;
-  }
-  return vector.getHighestActivationId();
 }
 
 template void UDTClassifier::serialize(cereal::BinaryInputArchive&);

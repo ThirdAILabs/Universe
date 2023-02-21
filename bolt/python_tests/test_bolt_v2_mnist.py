@@ -1,7 +1,7 @@
 import os
 
 import pytest
-from download_datasets import download_mnist
+from download_dataset_fixtures import download_mnist_dataset
 from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
 from thirdai import dataset
@@ -14,8 +14,8 @@ LEARNING_RATE = 0.0001
 
 
 @pytest.fixture
-def load_mnist_bolt_v2(download_mnist):
-    train_file, test_file = download_mnist
+def load_mnist_bolt_v2(download_mnist_dataset):
+    train_file, test_file = download_mnist_dataset
     train_x, train_y = dataset.load_bolt_svm_dataset(train_file, 250)
     train_x = bolt.train.convert_dataset(train_x, dim=784)
     train_y = bolt.train.convert_dataset(train_y, dim=10)
