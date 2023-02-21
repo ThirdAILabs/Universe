@@ -540,3 +540,11 @@ def download_internet_ads_dataset(seed=42):
             inference_samples.append((column_vals, label))
 
     return TRAIN_FILE, TEST_FILE, inference_samples
+
+
+def download_yelp_chi_dataset():
+    PATH = "yelp_all.csv"
+    URL = "https://www.dropbox.com/s/ge2sr9iab16hc1x/yelp_all.csv"
+    if not os.path.exists(PATH):
+        # -L will follow the redirects to correctly download the file from dropbox
+        os.system(f"curl -L {URL} --output {PATH}")

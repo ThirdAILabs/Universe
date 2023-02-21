@@ -51,6 +51,8 @@ std::vector<dataset::BlockPtr> makeGraphFeatureBlocks(
   std::vector<dataset::BlockPtr> blocks;
   for (const auto& [col_name, data_type] : data_types) {
     if (asNodeID(data_type)) {
+      // TODO(Josh): Do a thorough ablation study (this seems only marginally
+      // useful on yelp)
       blocks.push_back(
           dataset::NormalizedNeighborVectorsBlock::make(col_name, graph_info));
       // We could alternatively build the neighbors block with the neighbors

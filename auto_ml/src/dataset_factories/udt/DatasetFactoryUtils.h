@@ -12,6 +12,8 @@ namespace thirdai::automl::data {
 
 using dataset::ColumnNumberMap;
 
+// TODO(Nick): Migrate to utils and constants files in UDT rewrite
+
 constexpr const uint32_t DEFAULT_INTERNAL_FEATURIZATION_BATCH_SIZE = 2048;
 constexpr uint32_t DEFAULT_HASH_RANGE = 100000;
 static constexpr const uint32_t TEXT_PAIRGRAM_WORD_LIMIT = 15;

@@ -20,8 +20,10 @@ bolt::BoltGraphPtr createGNN(std::vector<uint32_t> input_dims,
       /* expected_dim = */ input_dims.at(1),
       /* num_tokens_range = */ {0, std::numeric_limits<uint32_t>::max()});
 
+
+	// TODO(Josh): Add customization/autotuning for these parameters
   auto embedding_1 = bolt::EmbeddingNode::make(
-      /* num_embedding_lookups = */ 4, /* lookup_size = */ 64,
+      /* num_embedding_lookups = */ 4, /* lookup_size = */ 128,
       /* log_embedding_block_size = */ 20, /* reduction = */ "average");
 
   auto hidden_1 = bolt::FullyConnectedNode::makeAutotuned(
@@ -59,7 +61,7 @@ bolt::BoltGraphPtr createGNN(std::vector<uint32_t> input_dims,
 
 GraphNetwork GraphNetwork::create(data::ColumnDataTypes data_types,
                                   std::string target_col,
-                                  uint32_t n_target_classes,
+                                  uint32_t n_target_classes, bool use_simpler_model,
                                   bool integer_target, char delimiter) {
   verifyDataTypesContainTarget(data_types, target_col);
 
@@ -76,7 +78,7 @@ GraphNetwork GraphNetwork::create(data::ColumnDataTypes data_types,
   }
 
   auto graph_dataset_factory = std::make_shared<data::GraphDatasetFactory>(
-      data_types, target_col, n_target_classes, delimiter);
+      data_types, target_col, n_target_classes, delimiter, /* use_pairgrams = */ !use_simpler_model);
 
   bolt::BoltGraphPtr model = createGNN(
       /* input_dims = */ graph_dataset_factory->getInputDims(),

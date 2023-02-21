@@ -66,7 +66,7 @@ dataset::BlockPtr popNeighborTokensBlock(
 GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
                                          std::string target_col,
                                          uint32_t n_target_classes,
-                                         char delimiter)
+                                         char delimiter, bool use_pairgrams)
     : _data_types(std::move(data_types)),
       _target_col(std::move(target_col)),
       _n_target_classes(n_target_classes),
@@ -83,7 +83,7 @@ GraphDatasetFactory::GraphDatasetFactory(data::ColumnDataTypes data_types,
           /* temporal_relationships = */ TemporalRelationships(),
           /* vectors_map = */ PreprocessedVectorsMap(),
           /* text_pairgrams_word_limit = */ TEXT_PAIRGRAM_WORD_LIMIT,
-          /* contextual_columns = */ true, /* graph_info = */ _graph_info);
+          /* contextual_columns = */ use_pairgrams, /* graph_info = */ _graph_info);
 
   dataset::BlockPtr sparse_neighbor_block =
       popNeighborTokensBlock(feature_blocks);

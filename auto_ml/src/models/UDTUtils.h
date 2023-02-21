@@ -6,6 +6,8 @@
 #include <stdexcept>
 namespace thirdai::automl::models {
 
+// TODO(Nick): Migrate to utils and constants files in UDT rewrite
+
 static constexpr uint32_t DEFAULT_TRAIN_EVAL_BATCH_SIZE = 2048;
 
 TrainEvalParameters defaultTrainEvalParams(bool freeze_hash_tables);
