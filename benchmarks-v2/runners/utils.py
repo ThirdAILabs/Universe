@@ -23,3 +23,11 @@ def get_train_and_eval_configs(benchmark_config, callbacks=None):
         eval_config.return_activations()
 
     return train_config, eval_config
+
+
+def fix_mlflow_metric_name(original_key):
+    # Mlflow can't handle parentheses in metric names.
+    # This maps "f_measure(0.95)" to "f_measure_0.95"
+    key = original_key.replace("(", "_")
+    key = key.replace(")", "")
+    return key

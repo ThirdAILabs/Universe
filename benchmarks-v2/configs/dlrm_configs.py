@@ -1,6 +1,6 @@
-from thirdai import dataset
 from abc import ABC, abstractmethod
-from thirdai import bolt
+
+from thirdai import bolt, dataset
 
 
 class DLRMConfig(ABC):

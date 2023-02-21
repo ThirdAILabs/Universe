@@ -1,10 +1,11 @@
 import argparse
+import re
+from datetime import date
+
+import thirdai
+from thirdai.experimental import MlflowCallback
 
 from .runners.runner_map import runner_map
-import re
-from thirdai.experimental import MlflowCallback
-from datetime import date
-import thirdai
 
 
 def parse_arguments():

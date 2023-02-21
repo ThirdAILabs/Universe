@@ -1,7 +1,8 @@
-from .runner import Runner
 from thirdai import bolt
-from .utils import get_train_and_eval_configs
+
 from ..configs.bolt_configs import BoltBenchmarkConfig
+from .runner import Runner
+from .utils import fix_mlflow_metric_name, get_train_and_eval_configs
 
 
 class BoltFullyConnectedRunner(Runner):
@@ -32,10 +33,7 @@ class BoltFullyConnectedRunner(Runner):
 
             if mlflow_logger:
                 for k, v in predict_output[0].items():
-                    # Mlflow can't handle parentheses in metric names.
-                    # This maps "f_measure(0.95)" to "f_measure_0.95"
-                    key = k.replace("(", "_")
-                    key = key.replace(")", "")
+                    key = fix_mlflow_metric_name(k)
                     mlflow_logger.log_additional_metric(key=key, value=v, step=epoch)
 
 

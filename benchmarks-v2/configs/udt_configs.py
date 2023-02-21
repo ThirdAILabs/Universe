@@ -1,6 +1,7 @@
+from abc import ABC, abstractmethod
+
 import numpy as np
 from thirdai import bolt
-from abc import ABC, abstractmethod
 
 
 class UDTBenchmarkConfig(ABC):
@@ -19,6 +20,7 @@ class UDTBenchmarkConfig(ABC):
     num_epochs = None
     callbacks = []
     metrics = ["categorical_accuracy"]
+    additional_metric_fn = None
 
     @staticmethod
     @abstractmethod
@@ -30,15 +32,15 @@ class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     config_name = "yelp_polarity_udt"
     dataset_name = "yelp_polarity"
 
-    train_file = "/share/data/udt_datasets/yelp_polarity/train.csv"
-    test_file = "/share/data/udt_datasets/yelp_polarity/test.csv"
+    train_file = "udt_datasets/yelp_polarity/train.csv"
+    test_file = "udt_datasets/yelp_polarity/test.csv"
 
     target = "label"
     n_target_classes = 2
     delimiter = "\t"
 
     learning_rate = 1e-2
-    num_epochs = 5
+    num_epochs = 3
 
     def get_data_types():
         return {"text": bolt.types.text(), "label": bolt.types.categorical()}
@@ -48,19 +50,15 @@ class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     config_name = "amazon_polarity_udt"
     dataset_name = "amazon_polarity"
 
-    train_file = (
-        "/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_train.csv"
-    )
-    test_file = (
-        "/share/data/udt_datasets/amazon_polarity/amazon_polarity_content_test.csv"
-    )
+    train_file = "udt_datasets/amazon_polarity/amazon_polarity_content_train.csv"
+    test_file = "udt_datasets/amazon_polarity/amazon_polarity_content_test.csv"
 
     target = "label"
     n_target_classes = 2
     delimiter = "\t"
 
     learning_rate = 1e-2
-    num_epochs = 5
+    num_epochs = 3
 
     def get_data_types():
         return {"content": bolt.types.text(), "label": bolt.types.categorical()}
@@ -70,8 +68,8 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
     config_name = "criteo_udt"
     dataset_name = "criteo_46m"
 
-    train_file = "/share/data/udt_datasets/criteo/train_udt.csv"
-    test_file = "/share/data/udt_datasets/criteo/test_udt.csv"
+    train_file = "udt_datasets/criteo/train_udt.csv"
+    test_file = "udt_datasets/criteo/test_udt.csv"
 
     target = "label"
     n_target_classes = 2
@@ -81,18 +79,26 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
 
     def get_data_types():
         data_types = {}
-        min_vals_of_numeric_cols = np.load(
-            "/share/data/udt_datasets/criteo/min_vals_of_numeric_cols.npy"
-        )
-        max_vals_of_numeric_cols = np.load(
-            "/share/data/udt_datasets/criteo/max_vals_of_numeric_cols.npy"
-        )
+
+        numeric_col_ranges = [
+            (0.0, 8.66),
+            (0.0, 12.46),
+            (0.0, 11.09),
+            (0.0, 6.88),
+            (0.0, 16.96),
+            (0.0, 12.97),
+            (0.0, 10.94),
+            (0.0, 8.71),
+            (0.0, 10.28),
+            (0.0, 2.48),
+            (0.0, 5.45),
+            (0.0, 8.3),
+            (0.0, 8.91),
+        ]
 
         # Add numerical columns
-        for i in range(13):
-            data_types[f"num_{i+1}"] = bolt.types.numerical(
-                range=(min_vals_of_numeric_cols[i], max_vals_of_numeric_cols[i])
-            )
+        for i, min_max in enumerate(numeric_col_ranges):
+            data_types[f"num_{i+1}"] = bolt.types.numerical(range=min_max)
 
         # Add categorical columns
         for i in range(26):
@@ -107,8 +113,8 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
     config_name = "wayfair_udt"
     dataset_name = "wayfair"
 
-    train_file = "/share/data/wayfair/train_raw_queries.txt"
-    test_file = "/share/data/wayfair/dev_raw_queries.txt"
+    train_file = "wayfair/train_raw_queries.txt"
+    test_file = "wayfair/dev_raw_queries.txt"
 
     target = "labels"
     n_target_classes = 931

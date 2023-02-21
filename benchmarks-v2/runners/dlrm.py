@@ -1,9 +1,10 @@
-from .runner import Runner
-from thirdai import bolt
-from .utils import get_train_and_eval_configs
 import numpy as np
 from sklearn.metrics import roc_auc_score
+from thirdai import bolt
+
 from ..configs.dlrm_configs import DLRMConfig
+from .runner import Runner
+from .utils import get_train_and_eval_configs
 
 
 class DLRMRunner(Runner):

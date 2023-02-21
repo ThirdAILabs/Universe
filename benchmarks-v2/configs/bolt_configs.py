@@ -1,5 +1,6 @@
-from thirdai import bolt, dataset
 from abc import ABC, abstractmethod
+
+from thirdai import bolt, dataset
 
 
 class BoltBenchmarkConfig(ABC):
