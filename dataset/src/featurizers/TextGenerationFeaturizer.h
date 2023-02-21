@@ -65,7 +65,7 @@ class TextGenerationFeaturizer final : public Featurizer {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Featurizer>(this), _sequence_len, _vocab_size);
+    archive(cereal::base_class<Featurizer>(this), _sequence_len, _vocab_size, _last_n_tokens);
   }
   /**
    * Helper function to featurize a single line from the text dataset and
