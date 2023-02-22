@@ -14,11 +14,17 @@ StateMachine::StateMachine(char delimiter)
 }
 
 void StateMachine::transition(char current_char) {
+  _previous_state = _state;
+
   switch (_state) {
     case ParserState::NewLine:
       // NewLine is a special case of NewColumn with the same out-transitions.
     case ParserState::NewColumn:
       _state = fromNewColumn(current_char);
+      break;
+    case ParserState::EscapeInQuotes:
+      // The character after the escape character is ignored.
+      _state = ParserState::RegularInQuotes;
       break;
     case ParserState::UnescapedDelimiterInQuotes:
       // UnescapedDelimiterInQutoes is a special case of InQuotes with the same
@@ -26,16 +32,11 @@ void StateMachine::transition(char current_char) {
     case ParserState::RegularInQuotes:
       _state = fromRegularInQuotes(current_char);
       break;
+    case ParserState::EscapeOutsideQuotes:
+      // EscapeOutsideQutoes is a special case of RegularOutsideQuotes with the
+      // same out-transitions
     case ParserState::RegularOutsideQuotes:
       _state = fromRegularOutsideQuotes(current_char);
-      break;
-    case ParserState::EscapeInQuotes:
-      // The character after the escape character is ignored.
-      _state = ParserState::RegularInQuotes;
-      break;
-    case ParserState::EscapeOutsideQuotes:
-      // The character after the escape character is ignored.
-      _state = ParserState::RegularOutsideQuotes;
       break;
     case ParserState::PotentialEndQuote:
       _state = fromPotentialEndQuote(current_char);
@@ -47,7 +48,13 @@ void StateMachine::transition(char current_char) {
 
 ParserState StateMachine::state() const { return _state; }
 
+ParserState StateMachine::previousState() const { return _previous_state; }
+
 void StateMachine::setState(ParserState state) { _state = state; }
+
+void StateMachine::setPreviousState(ParserState state) {
+  _previous_state = state;
+}
 
 void StateMachine::validateDelimiter(char delimiter) {
   switch (delimiter) {
@@ -67,7 +74,7 @@ void StateMachine::validateDelimiter(char delimiter) {
 }
 
 ParserState StateMachine::fromNewColumn(char current_char) const {
-  // Separate conditional since delimiter is not a constant.
+  // Not checked in switch statement because delimiter is not a constant
   if (current_char == _delimiter) {
     return ParserState::NewColumn;
   }
@@ -85,7 +92,7 @@ ParserState StateMachine::fromNewColumn(char current_char) const {
 }
 
 ParserState StateMachine::fromRegularInQuotes(char current_char) const {
-  // Separate conditional since delimiter is not a constant.
+  // Not checked in switch statement because delimiter is not a constant
   if (current_char == _delimiter) {
     return ParserState::UnescapedDelimiterInQuotes;
   }
@@ -101,7 +108,7 @@ ParserState StateMachine::fromRegularInQuotes(char current_char) const {
 }
 
 ParserState StateMachine::fromRegularOutsideQuotes(char current_char) const {
-  // Separate conditional since delimiter is not a constant.
+  // Not checked in switch statement because delimiter is not a constant
   if (current_char == _delimiter) {
     return ParserState::NewColumn;
   }
@@ -117,7 +124,7 @@ ParserState StateMachine::fromRegularOutsideQuotes(char current_char) const {
 }
 
 ParserState StateMachine::fromPotentialEndQuote(char current_char) const {
-  // Separate conditional since delimiter is not a constant.
+  // Not checked in switch statement because delimiter is not a constant
   if (current_char == _delimiter) {
     return ParserState::NewColumn;
   }
@@ -143,20 +150,35 @@ ParserState StateMachine::fromPotentialEndQuote(char current_char) const {
 }
 
 // Extracts the last column seen so far from `line`.
-static std::string_view lastColumn(const std::string& line,
-                                   ParserState prev_state, uint32_t start,
-                                   uint32_t end) {
-  if (prev_state == ParserState::PotentialEndQuote) {
+static std::string_view columnView(const std::string& line,
+                                   ParserState column_end_state,
+                                   uint32_t start_index, uint32_t end_index) {
+  if (column_end_state == ParserState::PotentialEndQuote) {
     // If the previous state is PotentialEndQuote, then the previous column
     // must be quoted. Thus, we trim the quotes by incrementing start and
     // decrementing end.
-    start++;
-    end--;
+    start_index++;
+    end_index--;
   }
-  return {line.data() + start, end - start};
+  return {line.data() + start_index, end_index - start_index};
 }
 
-// Main parsing function.
+/**
+ * Quoted column is malformed if we reach end of line without seeing an end
+ * quote or if an end quote is followed by a regular character.
+ */
+static bool malformedQuotedColumn(StateMachine& state_machine,
+                                  bool is_last_char) {
+  auto regular_char_after_end_quote =
+      state_machine.previousState() == ParserState::PotentialEndQuote &&
+      state_machine.state() == ParserState::RegularOutsideQuotes;
+  auto still_in_quotes =
+      state_machine.state() == ParserState::EscapeInQuotes ||
+      state_machine.state() == ParserState::RegularInQuotes ||
+      state_machine.state() == ParserState::UnescapedDelimiterInQuotes;
+  return (is_last_char && still_in_quotes) || regular_char_after_end_quote;
+}
+
 std::vector<std::string_view> parseLine(const std::string& line,
                                         char delimiter) {
   std::vector<std::string_view> parsed_columns;
@@ -165,19 +187,17 @@ std::vector<std::string_view> parseLine(const std::string& line,
   uint32_t column_start = 0;
   std::optional<uint32_t> first_delimiter_in_quotes;
   for (uint32_t position = 0; position < line.size(); position++) {
-    auto prev_state = state_machine.state();
     state_machine.transition(line[position]);
-    auto state = state_machine.state();
 
     // Side effects of state transition.
 
-    if (state == ParserState::NewLine) {
+    if (state_machine.state() == ParserState::NewLine) {
       throw std::invalid_argument(
           "Found unexpected newline (unescaped and unquoted) in: \"" + line +
           "\"");
     }
 
-    if (state == ParserState::UnescapedDelimiterInQuotes &&
+    if (state_machine.state() == ParserState::UnescapedDelimiterInQuotes &&
         !first_delimiter_in_quotes) {
       first_delimiter_in_quotes = position;
     }
@@ -185,38 +205,32 @@ std::vector<std::string_view> parseLine(const std::string& line,
     /*
       If quoted column is malformed and we have seen delimiters inside the
       quotes, reset position to first delimiter in quotes and treat it like the
-      end of the column. Quoted column is malformed if we reach end of line
-      without seeing an end quote or if and end quote is followed by a regular
-      character.
+      end of the column.
     */
-    auto regular_char_after_end_quote =
-        prev_state == ParserState::PotentialEndQuote &&
-        state == ParserState::RegularOutsideQuotes;
-    bool last_char = position == line.size() - 1;
-    auto still_in_quotes = state == ParserState::EscapeInQuotes ||
-                           state == ParserState::RegularInQuotes ||
-                           state == ParserState::UnescapedDelimiterInQuotes;
-    if (((last_char && still_in_quotes) || regular_char_after_end_quote) &&
-        first_delimiter_in_quotes) {
+    if (first_delimiter_in_quotes &&
+        malformedQuotedColumn(
+            /* state_machine= */ state_machine,
+            /* is_last_char= */ position == line.size() - 1)) {
       position = *first_delimiter_in_quotes;
       state_machine.setState(ParserState::NewColumn);
-      state = ParserState::NewColumn;
-      prev_state = ParserState::RegularOutsideQuotes;
+      state_machine.setPreviousState(ParserState::RegularOutsideQuotes);
     }
 
-    if (state == ParserState::NewColumn) {
+    if (state_machine.state() == ParserState::NewColumn) {
       // If the new state is NewColumn, then we just finished parsing a
       // column.
-      parsed_columns.push_back(lastColumn(
-          line, prev_state, /* start= */ column_start, /* end= */ position));
+      parsed_columns.push_back(columnView(
+          line, /* column_end_state= */ state_machine.previousState(),
+          /* start_index= */ column_start, /* end_index= */ position));
       column_start = position + 1;
       first_delimiter_in_quotes = {};
     }
   }
 
-  parsed_columns.push_back(lastColumn(line, state_machine.state(),
-                                      /* start= */ column_start,
-                                      /* end= */ line.size()));
+  parsed_columns.push_back(
+      columnView(line, /* column_end_state= */ state_machine.state(),
+                 /* start_index= */ column_start,
+                 /* end_index= */ line.size()));
 
   return parsed_columns;
 }

@@ -25,11 +25,16 @@ class StateMachine {
 
   ParserState state() const;
 
+  ParserState previousState() const;
+
   void setState(ParserState);
+
+  void setPreviousState(ParserState);
 
  private:
   char _delimiter;
   ParserState _state;
+  ParserState _previous_state;
 
   static void validateDelimiter(char delimiter);
   ParserState fromNewColumn(char current_char) const;
@@ -40,7 +45,7 @@ class StateMachine {
 
 /**
  * Parses a CSV line. Expects a single line with no unescaped or unquoted
- * newline character.
+ * newline character. This is the main parsing function.
  */
 std::vector<std::string_view> parseLine(const std::string& line,
                                         char delimiter);
