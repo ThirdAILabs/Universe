@@ -14,6 +14,7 @@ namespace thirdai::dataset {
  */
 class TextGenerationFeaturizer;
 using TextGenerationFeaturizerPtr = std::shared_ptr<TextGenerationFeaturizer>;
+
 class TextGenerationFeaturizer final : public Featurizer {
  public:
   TextGenerationFeaturizer(uint32_t sequence_len, uint32_t vocab_size,
