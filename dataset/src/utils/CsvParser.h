@@ -17,6 +17,15 @@ enum class ParserState {
   PotentialEndQuote,
 };
 
+/**
+ * The state machine defines transitions between ParserStates and stores the
+ * current and previous states.
+ *
+ * This object is meant to aid left-to-right parsing of a CSV file or line.
+ * It is only concerned with the state of parsing and does not handle side
+ * effects such as splitting a string into column substrings or throwing use
+ * case-specific errors.
+ */
 class StateMachine {
  public:
   explicit StateMachine(char delimiter);
