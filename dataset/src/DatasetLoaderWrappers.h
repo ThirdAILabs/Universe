@@ -39,6 +39,7 @@ struct SvmDatasetLoader {
       float value = std::stof(key_and_value.second);
       vector.active_neurons[current_index] = key;
       vector.activations[current_index] = value;
+      current_index++;
     }
     return vector;
   }
