@@ -185,6 +185,13 @@ MetricData BoltGraph::train(
 
     auto train_start = std::chrono::high_resolution_clock::now();
 
+    // We call this before training to make sure that the state is reallocated
+    // if the sparsity is changed in the model.
+    prepareToProcessBatch(
+        /* batch_size= */ dataset_context.batchSize(),
+        /* use_sparsity= */ true,
+        /* force_reinitialization= */ true);
+
     for (uint64_t batch_idx = 0; batch_idx < dataset_context.numBatches();
          batch_idx++) {
       train_state.batch_cnt = batch_idx;
@@ -299,7 +306,8 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
       /* origin_string = */
       "Passed in label BoltVector is larger than the output dim");
 
-  prepareToProcessBatch(batch_labels.getBatchSize(), /* use_sparsity= */ true);
+  prepareToProcessBatch(batch_labels.getBatchSize(), /* use_sparsity= */ true,
+                        /* force_reinitialization= */ false);
 
 #pragma omp parallel for default(none) shared(batch_labels, metrics)
   for (uint64_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
@@ -383,7 +391,8 @@ BoltGraph::getInputGradientSingle(
   SingleBatchDatasetContext single_input_gradients_context(
       std::move(input_data));
 
-  prepareToProcessBatch(/*batch_size= */ 1, /* use_sparsity=*/true);
+  prepareToProcessBatch(/*batch_size= */ 1, /* use_sparsity=*/true,
+                        /* force_reinitialization= */ true);
 
   verifyCanGetInputGradientSingle(single_input_gradients_context,
                                   explain_prediction_using_highest_activation,
@@ -478,7 +487,8 @@ InferenceResult BoltGraph::evaluate(
   // of nonzeros in the output node and can allocate the InferenceOutputTracker.
   prepareToProcessBatch(
       /* batch_size= */ predict_context.batchSize(),
-      /* use_sparsity= */ eval_config.sparseInferenceEnabled());
+      /* use_sparsity= */ eval_config.sparseInferenceEnabled(),
+      /* force_reinitialization= */ true);
   InferenceOutputTracker outputTracker(
       _output, eval_config.shouldReturnActivations(),
       /* total_num_samples = */ predict_context.len());
@@ -543,7 +553,8 @@ BoltVector BoltGraph::predictSingle(
                    /* returning_activations = */ true,
                    /* num_metrics_tracked = */ 0);
 
-  prepareToProcessBatch(/* batch_size = */ 1, use_sparse_inference);
+  prepareToProcessBatch(/* batch_size = */ 1, use_sparse_inference,
+                        /* force_reinitialization= */ true);
 
   single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
   forward(/* vec_index = */ 0, nullptr);
@@ -569,7 +580,8 @@ BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
 
   uint32_t batch_size = single_predict_context.batchSize();
 
-  prepareToProcessBatch(batch_size, use_sparse_inference);
+  prepareToProcessBatch(batch_size, use_sparse_inference,
+                        /* force_reinitialization= */ true);
 
   single_predict_context.setInputs(/* batch_idx = */ 0, _inputs);
 
@@ -591,7 +603,8 @@ void BoltGraph::processEvaluationBatch(uint64_t batch_size,
   // Either we shouldn't track any metrics or there need to be labels
   assert((metrics.getNumMetricsTracked() == 0) || (batch_labels != nullptr));
 
-  prepareToProcessBatch(batch_size, /* use_sparsity= */ use_sparsity);
+  prepareToProcessBatch(batch_size, /* use_sparsity= */ use_sparsity,
+                        /* force_reinitailization= */ false);
 
 #pragma omp parallel for default(none) shared(batch_size, batch_labels, metrics)
   for (uint64_t vec_id = 0; vec_id < batch_size; vec_id++) {
@@ -635,8 +648,10 @@ void BoltGraph::backpropagate(uint32_t vec_index) {
   }
 }
 
-void BoltGraph::prepareToProcessBatch(uint32_t batch_size, bool use_sparsity) {
-  if (_batch_processing_state.compatableWith(batch_size, use_sparsity)) {
+void BoltGraph::prepareToProcessBatch(uint32_t batch_size, bool use_sparsity,
+                                      bool force_reinitialization) {
+  if (_batch_processing_state.compatableWith(batch_size, use_sparsity) &&
+      !force_reinitialization) {
     // If we have already allocated activation storage for the given batch size
     // and sparsity we can skip reallocating here.
     return;
