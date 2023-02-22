@@ -44,6 +44,27 @@ class DistributedDatasetLoader(ABC):
         pass
 
 
+class DistributedColdStartDatasetLoader(DistributedDatasetLoader):
+    def __init__(
+        self,
+        train_file: str,
+        batch_size: int,
+        max_in_memory_batches: int,
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+    ):
+        self.generator = None
+        self.train_file = train_file
+        self.strong_column_names = strong_column_names
+        self.weak_column_names = weak_column_names
+        self.batch_size = batch_size
+        self.max_in_memory_batches = max_in_memory_batches
+        self.dataset_finished = False
+
+    def load(self):
+        self.generator = self.data_processor.get_dataset_loader()
+
+
 class DistributedUDTDatasetLoader(DistributedDatasetLoader):
     def __init__(
         self,

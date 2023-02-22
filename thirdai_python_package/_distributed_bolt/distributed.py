@@ -129,6 +129,32 @@ def add_distributed_to_udt():
 
     setattr(bolt.models.Pipeline, "train_distributed", train_distributed)
 
+    def cold_start_distributed(
+        self,
+        cluster_config: RayTrainingClusterConfig,
+        filenames: List[str],
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+        batch_size: Optional[int] = None,
+        learning_rate: float = 0.001,
+        epochs: int = 5,
+        metrics: List[str] = [],
+    ):
+
+        data_processor = self.get_data_processor()
+
+        train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
+        if metrics:
+            train_config.with_metrics(metrics)
+
+        if batch_size is None:
+            batch_size = self.default_train_batch_size
+
+        # calculating batch size per node
+        batch_size = batch_size // cluster_config.num_workers
+
+    setattr(bolt.models.UDTClassifier, "cold_start_distributed", cold_start_distributed)
+
 
 class RayTrainingClusterConfig:
     """
