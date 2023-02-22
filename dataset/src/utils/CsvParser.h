@@ -7,6 +7,7 @@
 namespace thirdai::dataset::parsers::CSV {
 
 enum class ParserState {
+  None,
   NewLine,
   NewColumn,
   RegularInQuotes,
@@ -36,9 +37,9 @@ class StateMachine {
 
   ParserState previousState() const;
 
-  void setState(ParserState);
+  void setState(ParserState state);
 
-  void setPreviousState(ParserState);
+  void setPreviousState(ParserState state);
 
  private:
   char _delimiter;

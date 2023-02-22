@@ -9,7 +9,9 @@
 namespace thirdai::dataset::parsers::CSV {
 
 StateMachine::StateMachine(char delimiter)
-    : _delimiter(delimiter), _state(ParserState::NewLine) {
+    : _delimiter(delimiter),
+      _state(ParserState::NewLine),
+      _previous_state(ParserState::None) {
   validateDelimiter(_delimiter);
 }
 
