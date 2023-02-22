@@ -57,7 +57,7 @@ jobs:
       - name: Build python package release version and install test dependencies
         run: pip3 install .[test]
 
-      - name: Copy a license file to the current directory
+      - name: Copy a license file to the home directory
         run: cp licensing/python_tests/license.serialized ~/license.serialized
 
       - name: Run python release tests
