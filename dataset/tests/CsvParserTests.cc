@@ -84,9 +84,14 @@ TEST(CsvParserTests, BadDelimiterThrows) {
   ASSERT_THROW(testCsvParser("", '\r', {}), std::invalid_argument);
 }
 
-TEST(CsvParserTests, UnquotedEOLThrows) {
+TEST(CsvParserTests, UnquotedNewlineInMiddleOfLineThrows) {
   // NOLINTNEXTLINE since clang-tidy doesn't like ASSERT_THROW
-  ASSERT_THROW(testCsvParser("A\n", ',', {}), std::invalid_argument);
+  ASSERT_THROW(testCsvParser("A\nB", ',', {}), std::invalid_argument);
+}
+
+TEST(CsvParserTests, UnquotedNewlineAtEndOfLineIsTrimmed) {
+  testCsvParser("A\n", ',', {"A"});
+  testCsvParser("A,B,C\n", ',', {"A", "B", "C"});
 }
 
 /*

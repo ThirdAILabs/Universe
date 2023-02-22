@@ -157,10 +157,13 @@ static std::string_view columnView(const std::string& line,
                                    ParserState column_end_state,
                                    uint32_t start_index, uint32_t end_index) {
   if (column_end_state == ParserState::PotentialEndQuote) {
-    // If the previous state is PotentialEndQuote, then the previous column
+    // If the column end state is PotentialEndQuote, then the previous column
     // must be quoted. Thus, we trim the quotes by incrementing start and
     // decrementing end.
     start_index++;
+    end_index--;
+  } else if (end_index == line.size() && !line.empty() && line.back() == '\n') {
+    // Trim newline character at the end of the line.
     end_index--;
   }
   return {line.data() + start_index, end_index - start_index};
@@ -192,9 +195,11 @@ std::vector<std::string_view> parseLine(const std::string& line,
   for (uint32_t position = 0; position < line.size(); position++) {
     state_machine.transition(line[position]);
 
+    bool is_last_char = position == line.size() - 1;
+
     // Side effects of state transition.
 
-    if (state_machine.state() == ParserState::NewLine) {
+    if (state_machine.state() == ParserState::NewLine && !is_last_char) {
       throw std::invalid_argument("Found unexpected unquoted newline in: \"" +
                                   line + "\"");
     }
@@ -210,9 +215,7 @@ std::vector<std::string_view> parseLine(const std::string& line,
       end of the column.
     */
     if (first_delimiter_in_quotes &&
-        malformedQuotedColumn(
-            /* state_machine= */ state_machine,
-            /* is_last_char= */ position == line.size() - 1)) {
+        malformedQuotedColumn(state_machine, is_last_char)) {
       position = *first_delimiter_in_quotes;
       state_machine.setState(ParserState::NewColumn);
       state_machine.setPreviousState(ParserState::RegularOutsideQuotes);
