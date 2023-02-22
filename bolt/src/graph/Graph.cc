@@ -604,7 +604,7 @@ void BoltGraph::processEvaluationBatch(uint64_t batch_size,
   assert((metrics.getNumMetricsTracked() == 0) || (batch_labels != nullptr));
 
   prepareToProcessBatch(batch_size, /* use_sparsity= */ use_sparsity,
-                        /* force_reinitailization= */ false);
+                        /* force_reinitialization= */ false);
 
 #pragma omp parallel for default(none) shared(batch_size, batch_labels, metrics)
   for (uint64_t vec_id = 0; vec_id < batch_size; vec_id++) {
