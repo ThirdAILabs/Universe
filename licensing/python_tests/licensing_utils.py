@@ -6,4 +6,4 @@ def this_should_require_a_license_bolt():
     )
 
 
-LOCAL_HEARTBEAT_SERVER = f"http://localhost:8081"
+LOCAL_HEARTBEAT_SERVER = f"http://localhost:8080"

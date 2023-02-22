@@ -65,6 +65,10 @@ jobs:
       - name: Copy a license file to the home directory
         run: cp licensing/python_tests/license.serialized ~/license.serialized
 
+
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+
       - name: Run python release tests
         run: bin/python-test.sh -m release
 
