@@ -8,14 +8,14 @@ namespace {
 void trainSingleEpochOnStream(bolt::BoltGraphPtr& model,
                               dataset::DatasetLoaderPtr& dataset_loader,
                               const bolt::TrainConfig& train_config,
-                              uint32_t max_in_memory_batches,
-                              size_t batch_size) {
+                              uint32_t max_in_memory_batches, size_t batch_size,
+                              licensing::TrainPermissionsToken token) {
   while (auto datasets = dataset_loader->loadSome(
              batch_size, /* num_batches = */ max_in_memory_batches,
              /* verbose = */ train_config.verbose())) {
     auto& [data, labels] = datasets.value();
 
-    model->train({data}, labels, train_config);
+    model->train({data}, labels, train_config, token);
   }
 
   dataset_loader->restart();
@@ -24,7 +24,8 @@ void trainSingleEpochOnStream(bolt::BoltGraphPtr& model,
 void trainOnStream(bolt::BoltGraphPtr& model,
                    dataset::DatasetLoaderPtr& dataset_loader,
                    bolt::TrainConfig train_config, size_t batch_size,
-                   size_t max_in_memory_batches, bool freeze_hash_tables) {
+                   size_t max_in_memory_batches, bool freeze_hash_tables,
+                   licensing::TrainPermissionsToken token) {
   uint32_t epochs = train_config.epochs();
   // We want a single epoch in the train config in order to train for a single
   // epoch for each pass over the dataset.
@@ -32,7 +33,7 @@ void trainOnStream(bolt::BoltGraphPtr& model,
 
   if (freeze_hash_tables && epochs > 1) {
     trainSingleEpochOnStream(model, dataset_loader, train_config,
-                             max_in_memory_batches, batch_size);
+                             max_in_memory_batches, batch_size, token);
     model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
     --epochs;
@@ -40,14 +41,15 @@ void trainOnStream(bolt::BoltGraphPtr& model,
 
   for (uint32_t e = 0; e < epochs; e++) {
     trainSingleEpochOnStream(model, dataset_loader, train_config,
-                             max_in_memory_batches, batch_size);
+                             max_in_memory_batches, batch_size, token);
   }
 }
 
 void trainInMemory(bolt::BoltGraphPtr& model,
                    dataset::DatasetLoaderPtr& dataset_loader,
                    bolt::TrainConfig train_config, size_t batch_size,
-                   bool freeze_hash_tables) {
+                   bool freeze_hash_tables,
+                   licensing::TrainPermissionsToken token) {
   auto loaded_data = dataset_loader->loadAll(
       /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
   auto [train_data, train_labels] = std::move(loaded_data);
@@ -64,21 +66,21 @@ void trainInMemory(bolt::BoltGraphPtr& model,
     train_config.setEpochs(/* new_epochs= */ epochs - 1);
   }
 
-  model->train(train_data, train_labels, train_config);
+  model->train(train_data, train_labels, train_config, token);
 }
 
 }  // namespace
 
 void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
            const bolt::TrainConfig& train_config, size_t batch_size,
-           std::optional<size_t> max_in_memory_batches,
-           bool freeze_hash_tables) {
+           std::optional<size_t> max_in_memory_batches, bool freeze_hash_tables,
+           licensing::TrainPermissionsToken token) {
   if (max_in_memory_batches) {
     trainOnStream(model, dataset_loader, train_config, batch_size,
-                  max_in_memory_batches.value(), freeze_hash_tables);
+                  max_in_memory_batches.value(), freeze_hash_tables, token);
   } else {
     trainInMemory(model, dataset_loader, train_config, batch_size,
-                  freeze_hash_tables);
+                  freeze_hash_tables, token);
   }
 }
 

@@ -8,8 +8,9 @@ namespace thirdai::automl::udt::utils {
 
 void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
            const bolt::TrainConfig& train_config, size_t batch_size,
-           std::optional<size_t> max_in_memory_batches,
-           bool freeze_hash_tables);
+           std::optional<size_t> max_in_memory_batches, bool freeze_hash_tables,
+           licensing::TrainPermissionsToken token =
+               licensing::TrainPermissionsToken());
 
 bolt::TrainConfig getTrainConfig(
     uint32_t epochs, float learning_rate,
