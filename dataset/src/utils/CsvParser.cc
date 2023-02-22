@@ -192,9 +192,8 @@ std::vector<std::string_view> parseLine(const std::string& line,
     // Side effects of state transition.
 
     if (state_machine.state() == ParserState::NewLine) {
-      throw std::invalid_argument(
-          "Found unexpected newline (unescaped and unquoted) in: \"" + line +
-          "\"");
+      throw std::invalid_argument("Found unexpected unquoted newline in: \"" +
+                                  line + "\"");
     }
 
     if (state_machine.state() == ParserState::UnescapedDelimiterInQuotes &&

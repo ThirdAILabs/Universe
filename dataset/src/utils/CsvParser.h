@@ -44,7 +44,7 @@ class StateMachine {
 };
 
 /**
- * Parses a CSV line. Expects a single line with no unescaped or unquoted
+ * Parses a CSV line. Expects a single line with no unquoted
  * newline character. This is the main parsing function.
  */
 std::vector<std::string_view> parseLine(const std::string& line,
