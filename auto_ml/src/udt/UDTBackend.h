@@ -62,6 +62,8 @@ class UDTBackend {
                                   bool sparse_inference,
                                   bool return_predicted_class) = 0;
 
+  virtual bolt::BoltGraphPtr model() const = 0;
+
   virtual std::vector<dataset::Explanation> explain(
       const MapInput& sample,
       const std::optional<std::variant<uint32_t, std::string>>& target_class) {

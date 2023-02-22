@@ -110,6 +110,8 @@ class UDT {
     }
   }
 
+  bolt::BoltGraphPtr model() const { return _backend->model(); }
+
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;

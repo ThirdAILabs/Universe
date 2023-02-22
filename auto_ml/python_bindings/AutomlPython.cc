@@ -53,8 +53,7 @@ void defineAutomlInModule(py::module_& module) {
    *
    */
   py::class_<UDTFactory>(module, "UniversalDeepTransformer", docs::UDT_CLASS)
-      .def("__new__", &UDTFactory::buildUDTClassifierWrapper,
-           py::arg("data_types"),
+      .def("__new__", &UDTFactory::buildUDT, py::arg("data_types"),
            py::arg("temporal_tracking_relationships") =
                data::UserProvidedTemporalRelationships(),
            py::arg("target"), py::arg("n_target_classes") = std::nullopt,
@@ -76,8 +75,6 @@ void defineAutomlInModule(py::module_& module) {
            docs::TEXT_CLASSIFIER_INIT)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
-
-#if THIRDAI_EXPOSE_ALL
 
   py::class_<udt::Validation>(module, "UDTValidation")
       .def(py::init<dataset::DataSourcePtr, std::vector<std::string>,
@@ -133,10 +130,9 @@ void defineAutomlInModule(py::module_& module) {
       .def("explain", &udt::UDT::explain, py::arg("input_sample"),
            py::arg("target_class") = std::nullopt)
       .def("class_name", &udt::UDT::className)
-      .def("save", &udt::UDT::save, py::arg("filename"))
+      .def("_get_model", &udt::UDT::model)
+      .def("save", &UDTFactory::save_udt, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"));
-
-#endif
 }
 
 void createModelsSubmodule(py::module_& module) {
@@ -218,81 +214,6 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
            py::arg("delimiter") = ',', docs::UDT_CONFIG_INIT,
            bolt::python::OutputRedirect());
-
-  py::class_<UniversalDeepTransformer, ModelPipeline,
-             std::shared_ptr<UniversalDeepTransformer>>(models_submodule,
-                                                        "UDTClassifier")
-      .def("class_name", &UniversalDeepTransformer::className,
-           py::arg("neuron_id"), docs::UDT_CLASS_NAME)
-      .def("predict",
-           py::overload_cast<const MapInput&, bool, bool>(
-               &UniversalDeepTransformer::predict),
-           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
-           py::arg("return_predicted_class") = false, docs::UDT_PREDICT)
-      .def("predict",
-           py::overload_cast<const LineInput&, bool, bool>(
-               &UniversalDeepTransformer::predict),
-           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
-           py::arg("return_predicted_class") = false, docs::UDT_PREDICT)
-      .def("predict_batch",
-           py::overload_cast<const MapInputBatch&, bool, bool>(
-               &UniversalDeepTransformer::predictBatch),
-           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
-           py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
-      .def("predict_batch",
-           py::overload_cast<const LineInputBatch&, bool, bool>(
-               &UniversalDeepTransformer::predictBatch),
-           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
-           py::arg("return_predicted_class") = false, docs::UDT_PREDICT_BATCH)
-      .def("cold_start", &UniversalDeepTransformer::coldStartPretraining,
-           py::arg("data_source"), py::arg("strong_column_names"),
-           py::arg("weak_column_names"), py::arg("train_config"),
-           py::arg("validation"), bolt::python::OutputRedirect())
-      .def(
-          "embedding_representation",
-          [](UniversalDeepTransformer& model, const MapInput& input) {
-            return models::convertBoltVectorToNumpy(
-                model.embeddingRepresentation(input));
-          },
-          py::arg("input_sample"), docs::UDT_EMBEDDING_REPRESENTATION)
-      .def(
-          "get_entity_embedding",
-          [](UniversalDeepTransformer& model,
-             std::variant<uint32_t, std::string> label) {
-            std::vector<float> embedding =
-                model.getEntityEmbedding(std::move(label));
-            models::NumpyArray<float> numpy_array(embedding.size());
-            std::copy(embedding.begin(), embedding.end(),
-                      numpy_array.mutable_data());
-            return numpy_array;
-          },
-          py::arg("label_id"), docs::UDT_ENTITY_EMBEDDING)
-      .def("get_prediction_threshold",
-           &UniversalDeepTransformer::getPredictionThreshold)
-      .def("set_prediction_threshold",
-           &UniversalDeepTransformer::setPredictionThreshold,
-           py::arg("threshold"))
-      .def("index", &UniversalDeepTransformer::updateTemporalTrackers,
-           py::arg("input_sample"), docs::UDT_INDEX,
-           bolt::python::OutputRedirect())
-      .def("index_batch",
-           &UniversalDeepTransformer::batchUpdateTemporalTrackers,
-           py::arg("input_samples"), docs::UDT_INDEX_BATCH)
-      .def("index_metadata", &UniversalDeepTransformer::updateMetadata,
-           py::arg("column_name"), py::arg("update"), docs::UDT_INDEX_METADATA,
-           bolt::python::OutputRedirect())
-      .def("index_metadata_batch",
-           &UniversalDeepTransformer::updateMetadataBatch,
-           py::arg("column_name"), py::arg("updates"),
-           docs::UDT_INDEX_METADATA_BATCH, bolt::python::OutputRedirect())
-      .def("reset_temporal_trackers",
-           &UniversalDeepTransformer::resetTemporalTrackers,
-           docs::UDT_RESET_TEMPORAL_TRACKERS)
-      .def("explain", &UniversalDeepTransformer::explain<MapInput>,
-           py::arg("input_sample"), py::arg("target_class") = std::nullopt,
-           docs::UDT_EXPLAIN)
-      .def("save", &UDTFactory::save_classifier, py::arg("filename"),
-           docs::UDT_SAVE);
 
   py::class_<QueryCandidateGenerator, std::shared_ptr<QueryCandidateGenerator>>(
       models_submodule, "UDTGenerator")
@@ -520,7 +441,7 @@ TextClassifier UDTFactory::buildTextClassifier(py::object& obj,
   return TextClassifier(input_vocab_size, metadata_dim, n_classes, model_size);
 }
 
-UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
+std::shared_ptr<udt::UDT> UDTFactory::buildUDT(
     py::object& obj, data::ColumnDataTypes data_types,
     data::UserProvidedTemporalRelationships temporal_tracking_relationships,
     std::string target_col, std::optional<uint32_t> n_target_classes,
@@ -528,7 +449,7 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
     char delimiter, const std::optional<std::string>& model_config,
     const py::dict& options) {
   (void)obj;
-  return UniversalDeepTransformer::buildUDT(
+  return std::make_shared<udt::UDT>(
       /* data_types = */ std::move(data_types),
       /* temporal_tracking_relationships = */
       std::move(temporal_tracking_relationships),
@@ -541,12 +462,11 @@ UniversalDeepTransformer UDTFactory::buildUDTClassifierWrapper(
       /* options = */ createArgumentMap(options));
 }
 
-void UDTFactory::save_classifier(const UniversalDeepTransformer& classifier,
-                                 const std::string& filename) {
+void UDTFactory::save_udt(const udt::UDT& classifier,
+                          const std::string& filename) {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  filestream.write(reinterpret_cast<const char*>(&UDT_CLASSIFIER_IDENTIFIER),
-                   1);
+  filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);
   classifier.save_stream(filestream);
 }
 
@@ -577,8 +497,8 @@ py::object UDTFactory::load(const std::string& filename) {
     return py::cast(QueryCandidateGenerator::load_stream(filestream));
   }
 
-  if (first_byte == UDT_CLASSIFIER_IDENTIFIER) {
-    return py::cast(UniversalDeepTransformer::load_stream(filestream));
+  if (first_byte == UDT_IDENTIFIER) {
+    return py::cast(udt::UDT::load_stream(filestream));
   }
 
   if (first_byte == UDT_TEXT_CLASSIFIER_IDENTIFIER) {

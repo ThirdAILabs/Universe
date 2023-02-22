@@ -23,8 +23,12 @@ UDT::UDT(data::ColumnDataTypes data_types,
   tabular_options.lookahead = lookahead;
   tabular_options.delimiter = delimiter;
 
+  if (!data_types.count(target_col)) {
+    throw std::invalid_argument(
+        "Target column provided was not found in data_types.");
+  }
+
   auto target = data_types.at(target_col);
-  data_types.erase(target_col);
 
   if (auto categorical = data::asCategorical(target)) {
     _backend = std::make_unique<UDTClassifier>(

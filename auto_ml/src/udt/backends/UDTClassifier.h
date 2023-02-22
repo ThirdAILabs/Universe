@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
@@ -66,6 +67,8 @@ class UDTClassifier final : public UDTBackend {
     }
     return std::to_string(class_id);
   }
+
+  bolt::BoltGraphPtr model() const final { return _model; }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;

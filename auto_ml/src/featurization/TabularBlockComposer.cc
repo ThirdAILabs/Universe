@@ -36,21 +36,23 @@ dataset::BlockPtr makeTemporalNumericalBlock(
 }  // namespace
 
 std::vector<dataset::BlockPtr> makeTabularInputBlocks(
-    const ColumnDataTypes& input_data_types,
+    const ColumnDataTypes& data_types,
+    const std::set<std::string>& label_col_names,
     const TemporalRelationships& temporal_relationships,
     const PreprocessedVectorsMap& vectors_map,
     TemporalContext& temporal_context, bool should_update_history,
     const TabularOptions& options) {
-  std::vector<dataset::BlockPtr> blocks = makeNonTemporalInputBlocks(
-      input_data_types, temporal_relationships, vectors_map, options);
+  std::vector<dataset::BlockPtr> blocks =
+      makeNonTemporalInputBlocks(data_types, label_col_names,
+                                 temporal_relationships, vectors_map, options);
 
   if (temporal_relationships.empty()) {
     return blocks;
   }
 
-  auto temporal_feature_blocks = makeTemporalInputBlocks(
-      input_data_types, temporal_relationships, vectors_map, temporal_context,
-      should_update_history, options);
+  auto temporal_feature_blocks =
+      makeTemporalInputBlocks(data_types, temporal_relationships, vectors_map,
+                              temporal_context, should_update_history, options);
 
   blocks.insert(blocks.end(), temporal_feature_blocks.begin(),
                 temporal_feature_blocks.end());
@@ -58,18 +60,20 @@ std::vector<dataset::BlockPtr> makeTabularInputBlocks(
 }
 
 std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
-    const ColumnDataTypes& input_data_types,
+    const ColumnDataTypes& data_types,
+    const std::set<std::string>& label_col_names,
     const TemporalRelationships& temporal_relationships,
     const PreprocessedVectorsMap& vectors_map, const TabularOptions& options) {
   std::vector<dataset::BlockPtr> blocks;
 
   auto non_temporal_columns =
-      getNonTemporalColumnNames(input_data_types, temporal_relationships);
+      getNonTemporalColumnNames(data_types, temporal_relationships);
 
   std::vector<dataset::TabularColumn> tabular_columns;
 
-  for (const auto& [col_name, data_type] : input_data_types) {
-    if (!non_temporal_columns.count(col_name)) {
+  for (const auto& [col_name, data_type] : data_types) {
+    if (!non_temporal_columns.count(col_name) ||
+        label_col_names.count(col_name)) {
       continue;
     }
 
@@ -140,14 +144,14 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
 }
 
 std::vector<dataset::BlockPtr> makeTemporalInputBlocks(
-    const ColumnDataTypes& input_data_types,
+    const ColumnDataTypes& data_types,
     const TemporalRelationships& temporal_relationships,
     const PreprocessedVectorsMap& vectors_map,
     TemporalContext& temporal_context, bool should_update_history,
     const TabularOptions& options) {
   std::vector<dataset::BlockPtr> blocks;
 
-  auto timestamp_col_name = getTimestampColumnName(input_data_types);
+  auto timestamp_col_name = getTimestampColumnName(data_types);
 
   dataset::QuantityTrackingGranularity granularity =
       dataset::stringToGranularity(options.time_granularity);
@@ -160,17 +164,21 @@ std::vector<dataset::BlockPtr> makeTemporalInputBlocks(
   uint32_t temporal_relationship_id = 0;
   for (const auto& [tracking_key_col_name, temporal_configs] :
        temporal_relationships) {
+    if (!data_types.count(tracking_key_col_name)) {
+      throw std::invalid_argument("The tracking key '" + tracking_key_col_name +
+                                  "' is not found in data_types.");
+    }
     for (const auto& temporal_config : temporal_configs) {
       if (temporal_config.isCategorical()) {
         blocks.push_back(makeTemporalCategoricalBlock(
-            temporal_relationship_id, input_data_types, temporal_context,
+            temporal_relationship_id, data_types, temporal_context,
             temporal_config, tracking_key_col_name, timestamp_col_name,
             should_update_history,
             /* vectors= */ nullptr, granularity, options.lookahead));
         if (vectors_map.count(temporal_config.columnName()) &&
             temporal_config.asCategorical().use_metadata) {
           blocks.push_back(makeTemporalCategoricalBlock(
-              temporal_relationship_id, input_data_types, temporal_context,
+              temporal_relationship_id, data_types, temporal_context,
               temporal_config, tracking_key_col_name, timestamp_col_name,
               should_update_history,
               vectors_map.at(temporal_config.columnName()), granularity,
@@ -180,7 +188,7 @@ std::vector<dataset::BlockPtr> makeTemporalInputBlocks(
 
       if (temporal_config.isNumerical()) {
         blocks.push_back(makeTemporalNumericalBlock(
-            temporal_relationship_id, input_data_types, temporal_context,
+            temporal_relationship_id, data_types, temporal_context,
             temporal_config, tracking_key_col_name, timestamp_col_name,
             should_update_history, granularity, options.lookahead));
       }
@@ -265,6 +273,10 @@ dataset::BlockPtr makeTemporalCategoricalBlock(
     dataset::QuantityTrackingGranularity time_granularity, uint32_t lookahead) {
   const auto& tracked_column = temporal_config.columnName();
 
+  if (!input_data_types.count(tracked_column)) {
+    throw std::invalid_argument("The tracked column '" + tracked_column +
+                                "' is not found in data_types.");
+  }
   if (!asCategorical(input_data_types.at(tracked_column))) {
     throw std::invalid_argument(
         "temporal.categorical can only be used with categorical "

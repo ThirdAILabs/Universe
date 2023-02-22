@@ -14,6 +14,7 @@ using PreprocessedVectorsMap =
 
 std::vector<dataset::BlockPtr> makeTabularInputBlocks(
     const ColumnDataTypes& input_data_types,
+    const std::set<std::string>& label_col_names,
     const TemporalRelationships& temporal_relationships,
     const PreprocessedVectorsMap& vectors_map,
     TemporalContext& temporal_context, bool should_update_history,
@@ -21,6 +22,7 @@ std::vector<dataset::BlockPtr> makeTabularInputBlocks(
 
 std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
     const ColumnDataTypes& input_data_types,
+    const std::set<std::string>& label_col_names,
     const TemporalRelationships& temporal_relationships,
     const PreprocessedVectorsMap& vectors_map, const TabularOptions& options);
 

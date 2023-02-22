@@ -5,6 +5,7 @@
 #include <auto_ml/src/models/ModelPipeline.h>
 #include <auto_ml/src/models/TextClassifier.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
+#include <auto_ml/src/udt/UDT.h>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -14,7 +15,6 @@ namespace thirdai::automl::python {
 using models::ModelPipeline;
 using models::QueryCandidateGenerator;
 using models::TextClassifier;
-using models::UniversalDeepTransformer;
 
 void defineAutomlInModule(py::module_& module);
 
@@ -52,7 +52,7 @@ class UDTFactory {
                                             uint32_t n_classes,
                                             const std::string& model_size);
 
-  static UniversalDeepTransformer buildUDTClassifierWrapper(
+  static std::shared_ptr<udt::UDT> buildUDT(
       py::object& obj, data::ColumnDataTypes data_types,
       data::UserProvidedTemporalRelationships temporal_tracking_relationships,
       std::string target_col, std::optional<uint32_t> n_target_classes,
@@ -63,11 +63,10 @@ class UDTFactory {
   // These need to be here instead of inside UDTFactory because otherwise I was
   // getting weird linking errors
   static constexpr uint8_t UDT_GENERATOR_IDENTIFIER = 0;
-  static constexpr uint8_t UDT_CLASSIFIER_IDENTIFIER = 1;
+  static constexpr uint8_t UDT_IDENTIFIER = 1;
   static constexpr uint8_t UDT_TEXT_CLASSIFIER_IDENTIFIER = 2;
 
-  static void save_classifier(const UniversalDeepTransformer& classifier,
-                              const std::string& filename);
+  static void save_udt(const udt::UDT& classifier, const std::string& filename);
 
   static void save_generator(const QueryCandidateGenerator& generator,
                              const std::string& filename);

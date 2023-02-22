@@ -15,6 +15,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <pybind11/stl.h>
+#include <optional>
 #include <stdexcept>
 #include <variant>
 
@@ -32,8 +33,8 @@ UDTClassifier::UDTClassifier(
     _model = utils::loadModel({tabular_options.feature_hash_range},
                               n_target_classes, *model_config);
   } else {
-    uint32_t hidden_dim = user_args.get<uint32_t>("embedding_dim", "integer",
-                                                  defaults::HIDDEN_DIM);
+    uint32_t hidden_dim = user_args.get<uint32_t>(
+        "embedding_dimension", "integer", defaults::HIDDEN_DIM);
     _model = utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
                                  n_target_classes);
   }
@@ -46,8 +47,8 @@ UDTClassifier::UDTClassifier(
 
   _dataset_factory = std::make_shared<data::TabularDatasetFactory>(
       input_data_types, temporal_tracking_relationships,
-      std::vector<dataset::BlockPtr>{_label_block}, tabular_options,
-      force_parallel);
+      std::vector<dataset::BlockPtr>{_label_block},
+      std::set<std::string>{target_name}, tabular_options, force_parallel);
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                             defaults::FREEZE_HASH_TABLES);
@@ -81,6 +82,7 @@ void UDTClassifier::train(
      * class imbalance.
      */
     if (validation && !validation->metrics().empty()) {
+      validation->data()->restart();
       _binary_prediction_threshold =
           tuneBinaryClassificationPredictionThreshold(
               /* data_source= */ validation->data(),
@@ -160,7 +162,7 @@ py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
 std::vector<dataset::Explanation> UDTClassifier::explain(
     const MapInput& sample,
     const std::optional<std::variant<uint32_t, std::string>>& target_class) {
-  std::optional<uint32_t> target_neuron;
+  std::optional<uint32_t> target_neuron = std::nullopt;
   if (target_class) {
     target_neuron = labelToNeuronId(*target_class);
   }
@@ -286,11 +288,23 @@ dataset::CategoricalBlockPtr UDTClassifier::labelBlock(
 
 uint32_t UDTClassifier::labelToNeuronId(
     const std::variant<uint32_t, std::string>& label) const {
-  if (std::holds_alternative<uint32_t>(label) && integerTarget()) {
-    return std::get<uint32_t>(label);
+  if (std::holds_alternative<uint32_t>(label)) {
+    if (integerTarget()) {
+      return std::get<uint32_t>(label);
+    }
+    throw std::invalid_argument(
+        "Received an integer but integer_target is set to False (it is "
+        "False by default). Target must be passed "
+        "in as a string.");
   }
-  if (!integerTarget()) {
-    return _class_name_to_neuron->getUid(std::get<std::string>(label));
+  if (std::holds_alternative<std::string>(label)) {
+    if (!integerTarget()) {
+      return _class_name_to_neuron->getUid(std::get<std::string>(label));
+    }
+    throw std::invalid_argument(
+        "Received a string but integer_target is set to True. Target must be "
+        "passed in as "
+        "an integer.");
   }
   throw std::invalid_argument("Invalid entity type.");
 }

@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/map.hpp>
 #include <cereal/types/memory.hpp>
+#include <cereal/types/set.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
@@ -12,23 +13,26 @@
 namespace thirdai::automl::data {
 
 TabularDatasetFactory::TabularDatasetFactory(
-    const ColumnDataTypes& input_data_types,
+    ColumnDataTypes data_types,
     const UserProvidedTemporalRelationships& provided_temporal_relationships,
     const std::vector<dataset::BlockPtr>& label_blocks,
-    const TabularOptions& options, bool force_parallel)
-    : _input_data_types(input_data_types), _delimiter(options.delimiter) {
-  processAllMetadata(input_data_types, options);
+    std::set<std::string> label_col_names, const TabularOptions& options,
+    bool force_parallel)
+    : _data_types(std::move(data_types)),
+      _label_col_names(std::move(label_col_names)),
+      _delimiter(options.delimiter) {
+  _vectors_map = processAllMetadata(_data_types, options);
 
   TemporalRelationships temporal_relationships =
       TemporalRelationshipsAutotuner::autotune(
-          input_data_types, provided_temporal_relationships, options.lookahead);
+          _data_types, provided_temporal_relationships, options.lookahead);
 
   bool parallel = force_parallel || temporal_relationships.empty();
-  _labeled_featurizer = makeFeaturizer(input_data_types, temporal_relationships,
+  _labeled_featurizer = makeFeaturizer(temporal_relationships,
                                        /* should_update_history= */ true,
                                        options, label_blocks, parallel);
   _inference_featurizer =
-      makeFeaturizer(input_data_types, temporal_relationships,
+      makeFeaturizer(temporal_relationships,
                      /* should_update_history= */ false, options,
                      /* label_blocks= */ {}, parallel);
 }
@@ -123,13 +127,12 @@ void TabularDatasetFactory::updateMetadataBatch(const std::string& col_name,
 }
 
 dataset::TabularFeaturizerPtr TabularDatasetFactory::makeFeaturizer(
-    const ColumnDataTypes& input_data_types,
     const TemporalRelationships& temporal_relationships,
     bool should_update_history, const TabularOptions& options,
     const std::vector<dataset::BlockPtr>& label_blocks, bool parallel) {
   auto input_blocks = makeTabularInputBlocks(
-      input_data_types, temporal_relationships, _vectors_map, _temporal_context,
-      should_update_history, options);
+      _data_types, _label_col_names, temporal_relationships, _vectors_map,
+      _temporal_context, should_update_history, options);
 
   return dataset::TabularFeaturizer::make(
       std::move(input_blocks), label_blocks, /* has_header= */ true,
@@ -168,8 +171,8 @@ TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
       makeColumnNumberMapFromHeader(*data_source, metadata->delimiter);
   data_source->restart();
 
-  auto input_blocks =
-      makeNonTemporalInputBlocks(metadata->column_data_types, {}, {}, options);
+  auto input_blocks = makeNonTemporalInputBlocks(
+      metadata->column_data_types, {metadata->key}, {}, {}, options);
 
   auto key_vocab = dataset::ThreadSafeVocabulary::make(
       /* vocab_size= */ 0, /* limit_vocab_size= */ false);
@@ -200,7 +203,8 @@ template void TabularDatasetFactory::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void TabularDatasetFactory::serialize(Archive& archive) {
   archive(_labeled_featurizer, _inference_featurizer, _metadata_processors,
-          _vectors_map, _temporal_context, _input_data_types, _delimiter);
+          _vectors_map, _temporal_context, _data_types, _label_col_names,
+          _delimiter);
 }
 
 }  // namespace thirdai::automl::data

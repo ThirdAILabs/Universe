@@ -25,8 +25,8 @@ UDTRegression::UDTRegression(
     _model = utils::loadModel({tabular_options.feature_hash_range}, output_bins,
                               *model_config);
   } else {
-    uint32_t hidden_dim = user_args.get<uint32_t>("embedding_dim", "integer",
-                                                  defaults::HIDDEN_DIM);
+    uint32_t hidden_dim = user_args.get<uint32_t>(
+        "embedding_dimension", "integer", defaults::HIDDEN_DIM);
     _model = utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
                                  output_bins);
   }
@@ -43,8 +43,8 @@ UDTRegression::UDTRegression(
 
   _dataset_factory = std::make_shared<data::TabularDatasetFactory>(
       input_data_types, temporal_tracking_relationships,
-      std::vector<dataset::BlockPtr>{label_block}, tabular_options,
-      force_parallel);
+      std::vector<dataset::BlockPtr>{label_block},
+      std::set<std::string>{target_name}, tabular_options, force_parallel);
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                             defaults::FREEZE_HASH_TABLES);

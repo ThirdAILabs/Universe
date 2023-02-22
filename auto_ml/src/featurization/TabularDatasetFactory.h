@@ -17,10 +17,11 @@ namespace thirdai::automl::data {
 class TabularDatasetFactory {
  public:
   TabularDatasetFactory(
-      const ColumnDataTypes& input_data_types,
+      ColumnDataTypes input_data_types,
       const UserProvidedTemporalRelationships& provided_temporal_relationships,
       const std::vector<dataset::BlockPtr>& label_blocks,
-      const TabularOptions& options, bool force_parallel);
+      std::set<std::string> label_col_names, const TabularOptions& options,
+      bool force_parallel);
 
   dataset::DatasetLoaderPtr getDatasetLoader(
       const dataset::DataSourcePtr& data_source, bool training);
@@ -72,11 +73,18 @@ class TabularDatasetFactory {
 
   char delimiter() const { return _delimiter; }
 
-  const ColumnDataTypes& inputDataTypes() const { return _input_data_types; }
+  ColumnDataTypes inputDataTypes() const {
+    ColumnDataTypes input_data_types;
+    for (const auto& [col_name, data_type] : _data_types) {
+      if (!_label_col_names.count(col_name)) {
+        input_data_types[col_name] = data_type;
+      }
+    }
+    return input_data_types;
+  }
 
  private:
   dataset::TabularFeaturizerPtr makeFeaturizer(
-      const ColumnDataTypes& input_data_types,
       const TemporalRelationships& temporal_relationships,
       bool should_update_history, const TabularOptions& options,
       const std::vector<dataset::BlockPtr>& label_blocks, bool parallel);
@@ -89,13 +97,13 @@ class TabularDatasetFactory {
       const TabularOptions& options);
 
   auto getColumnMetadataConfig(const std::string& col_name) {
-    return asCategorical(_input_data_types.at(col_name))->metadata_config;
+    return asCategorical(_data_types.at(col_name))->metadata_config;
   }
 
   void verifyColumnMetadataExists(const std::string& col_name) {
-    if (!_input_data_types.count(col_name) ||
-        !asCategorical(_input_data_types.at(col_name)) ||
-        !asCategorical(_input_data_types.at(col_name))->metadata_config ||
+    if (!_data_types.count(col_name) ||
+        !asCategorical(_data_types.at(col_name)) ||
+        !asCategorical(_data_types.at(col_name))->metadata_config ||
         !_metadata_processors.count(col_name) ||
         !_vectors_map.count(col_name)) {
       throw std::invalid_argument("'" + col_name + "' is an invalid column.");
@@ -119,7 +127,8 @@ class TabularDatasetFactory {
 
   TemporalContext _temporal_context;
 
-  ColumnDataTypes _input_data_types;
+  ColumnDataTypes _data_types;
+  std::set<std::string> _label_col_names;
   char _delimiter;
 };
 

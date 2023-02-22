@@ -38,6 +38,8 @@ class UDTRegression final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class) final;
 
+  bolt::BoltGraphPtr model() const final { return _model; }
+
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
   }
