@@ -1,6 +1,7 @@
 #include "ColumnMap.h"
 #include <dataset/src/DataSource.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <exception>
@@ -222,11 +223,11 @@ ColumnMap ColumnMap::createStringColumnMapFromFile(
   if (!header_string.has_value()) {
     throw std::invalid_argument("Source was found to be empty.");
   }
-  auto header = dataset::ProcessorUtils::parseCsvRow(*header_string, delimiter);
+  auto header = dataset::parsers::CSV::parseLine(*header_string, delimiter);
 
   std::vector<std::vector<std::string>> columns(header.size());
   while (auto line_str = source->nextLine()) {
-    auto line = dataset::ProcessorUtils::parseCsvRow(*line_str, delimiter);
+    auto line = dataset::parsers::CSV::parseLine(*line_str, delimiter);
     if (line.size() != header.size()) {
       std::stringstream s;
       for (const auto& substr : line) {

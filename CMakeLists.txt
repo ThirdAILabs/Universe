@@ -369,6 +369,7 @@ set(THIRDAI_SOURCES
     dataset/src/VectorBuffer.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
     dataset/src/utils/TokenEncoding.cc
+    dataset/src/utils/CsvParser.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
     dataset/src/featurizers/MaskedSentenceFeaturizer.cc
     dataset/src/featurizers/ProcessorUtils.cc
