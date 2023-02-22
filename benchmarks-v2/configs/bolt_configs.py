@@ -110,7 +110,7 @@ class WayfairConfig(BoltBenchmarkConfig):
     rebuild_hash_tables = 50000
 
     learning_rate = 1e-04
-    num_epochs = 1
+    num_epochs = 5
     metrics = ["categorical_accuracy", "f_measure(0.95)"]
     callbacks = [
         bolt.callbacks.LearningRateScheduler(
