@@ -142,14 +142,7 @@ class BoltGraph {
   // Computes the backward pass through the graph.
   void backpropagate(uint32_t vec_index);
 
-  /**
-   * Force reinitialization forces the model state to be reinitialized even if
-   * the batch size and whether sparsity is used is unchanged. This is because
-   * if the sparsity of the model is changed we need to reallocate state, but
-   * the batch size and whether sparsity is used may be unchanged.
-   */
-  void prepareToProcessBatch(uint32_t batch_size, bool use_sparsity,
-                             bool force_reinitialization);
+  void prepareToProcessBatch(uint32_t batch_size, bool use_sparsity);
 
   void updateParameters(float learning_rate, uint32_t batch_cnt);
 
@@ -245,6 +238,11 @@ class BoltGraph {
     bool compatableWith(uint32_t batch_size, bool using_sparsity) const {
       return batch_size <= _allocated_batch_size &&
              using_sparsity == _using_sparsity;
+    }
+
+    void clear() {
+      _using_sparsity = false;
+      _allocated_batch_size = 0;
     }
 
     bool isOptimizerInitialized() const { return _optimizer_initialized; }
