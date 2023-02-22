@@ -143,7 +143,7 @@ class BoltGraph {
   void backpropagate(uint32_t vec_index);
 
   /**
-   * Force reinitialization forces the model state to be reinitialized even if 
+   * Force reinitialization forces the model state to be reinitialized even if
    * the batch size and whether sparsity is used is unchanged. This is because
    * if the sparsity of the model is changed we need to reallocate state, but
    * the batch size and whether sparsity is used may be unchanged.
