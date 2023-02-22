@@ -38,17 +38,25 @@ UDT::UDT(data::ColumnDataTypes data_types,
   }
 }
 
-void UDT::save(const std::string& filename) {
+void UDT::save(const std::string& filename) const {
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  cereal::BinaryOutputArchive oarchive(filestream);
+  save_stream(filestream);
+}
+
+void UDT::save_stream(std::ostream& output_stream) const {
+  cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);
 }
 
 std::shared_ptr<UDT> UDT::load(const std::string& filename) {
   std::ifstream filestream =
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  cereal::BinaryInputArchive iarchive(filestream);
+  return load_stream(filestream);
+}
+
+std::shared_ptr<UDT> UDT::load_stream(std::istream& input_stream) {
+  cereal::BinaryInputArchive iarchive(input_stream);
   std::shared_ptr<UDT> deserialize_into(new UDT());
   iarchive(*deserialize_into);
 

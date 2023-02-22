@@ -118,6 +118,20 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
            py::arg("validation"), py::arg("callbacks"), py::arg("verbose"))
+      .def("embedding_representation", &udt::UDT::embedding,
+           py::arg("input_sample"))
+      .def("get_entity_embedding", &udt::UDT::entityEmbedding,
+           py::arg("label_id"))
+      .def("index", &udt::UDT::updateTemporalTrackers, py::arg("input_sample"))
+      .def("index_batch", &udt::UDT::updateTemporalTrackersBatch,
+           py::arg("input_samples"))
+      .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
+      .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
+           py::arg("update"))
+      .def("index_metadata_batch", &udt::UDT::updateMetadataBatch,
+           py::arg("column_name"), py::arg("updates"))
+      .def("explain", &udt::UDT::explain, py::arg("input_sample"),
+           py::arg("target_class") = std::nullopt)
       .def("class_name", &udt::UDT::className)
       .def("save", &udt::UDT::save, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"));

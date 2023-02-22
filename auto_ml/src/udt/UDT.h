@@ -71,7 +71,7 @@ class UDT {
     return _backend->embedding(sample);
   }
 
-  py::object embedding(const std::variant<uint32_t, std::string>& label) {
+  py::object entityEmbedding(const std::variant<uint32_t, std::string>& label) {
     return _backend->entityEmbedding(label);
   }
 
@@ -110,9 +110,13 @@ class UDT {
     }
   }
 
-  void save(const std::string& filename);
+  void save(const std::string& filename) const;
+
+  void save_stream(std::ostream& output_stream) const;
 
   static std::shared_ptr<UDT> load(const std::string& filename);
+
+  static std::shared_ptr<UDT> load_stream(std::istream& input_stream);
 
  private:
   UDT() {}
