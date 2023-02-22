@@ -69,7 +69,8 @@ TEST(CsvParserTests, EscapeCharactersInQuotesAreEscaped) {
 
 TEST(CsvParserTests, EscapeCharactersOutsideQuotesAreIgnored) {
   testCsvParser(R"(A\,B)", ',', {"A\\", "B"});
-  // Parser expects that the line does not contain unquoted newline character.
+  // Parser expects that the line does not contain unquoted newline character in
+  // the middle of the line.
   // NOLINTNEXTLINE since clang-tidy doesn't like ASSERT_THROW
   ASSERT_THROW(testCsvParser("A\\\nB,C", ',', {}), std::invalid_argument);
 }
@@ -121,6 +122,11 @@ TEST(CsvParserTests, NoEndQuote) {
   // Properly handles multiple delimiters after opening quote.
   testCsvParser("\"I wish there was no delimiter, but there is,one", ',',
                 {"\"I wish there was no delimiter", " but there is", "one"});
+  // Once the parser detects that there is no end quote, the first column is no
+  // longer treated as a quoted column and the escape character is ignored.
+  // Thus, the ensuing delimiter is treated as a delimiter.
+  testCsvParser("\"I wish there was no delimiter\\,", ',',
+                {"\"I wish there was no delimiter\\", ""});
   // Also no end quote since the end quote is escaped.
   testCsvParser("\"I wish there was no delimiter, but there is.\\", ',',
                 {"\"I wish there was no delimiter", " but there is.\\"});

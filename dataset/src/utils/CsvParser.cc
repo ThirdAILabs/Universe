@@ -25,12 +25,10 @@ void StateMachine::transition(char current_char) {
       _state = fromNewColumn(current_char);
       break;
     case ParserState::EscapeInQuotes:
-      // The character after the escape character is treated like a regular
-      // character.
-      _state = ParserState::RegularInQuotes;
+      _state = fromEscapeInQuotes(current_char);
       break;
-    case ParserState::UnescapedDelimiterInQuotes:
-      // UnescapedDelimiterInQutoes is a special case of InQuotes with the same
+    case ParserState::DelimiterInQuotes:
+      // DelimiterInQutoes is a special case of InQuotes with the same
       // out-transitions.
     case ParserState::RegularInQuotes:
       _state = fromRegularInQuotes(current_char);
@@ -53,10 +51,10 @@ ParserState StateMachine::state() const { return _state; }
 
 ParserState StateMachine::previousState() const { return _previous_state; }
 
-void StateMachine::setState(ParserState state) { _state = state; }
-
-void StateMachine::setPreviousState(ParserState state) {
-  _previous_state = state;
+void StateMachine::setState(ParserState current_state,
+                            ParserState previous_state) {
+  _state = current_state;
+  _previous_state = previous_state;
 }
 
 void StateMachine::validateDelimiter(char delimiter) {
@@ -94,10 +92,17 @@ ParserState StateMachine::fromNewColumn(char current_char) const {
   }
 }
 
+ParserState StateMachine::fromEscapeInQuotes(char current_char) const {
+  if (current_char == _delimiter) {
+    return ParserState::DelimiterInQuotes;
+  }
+  return ParserState::RegularInQuotes;
+}
+
 ParserState StateMachine::fromRegularInQuotes(char current_char) const {
   // Not checked in switch statement because delimiter is not a constant
   if (current_char == _delimiter) {
-    return ParserState::UnescapedDelimiterInQuotes;
+    return ParserState::DelimiterInQuotes;
   }
 
   switch (current_char) {
@@ -170,15 +175,14 @@ static std::string_view columnView(std::string_view line,
  * Quoted column is malformed if we reach end of line without seeing an end
  * quote or if an end quote is followed by a regular character.
  */
-static bool malformedQuotedColumn(StateMachine& state_machine,
-                                  bool is_last_char) {
+static bool quotesAreMalformed(StateMachine& state_machine, bool is_last_char) {
   auto regular_char_after_end_quote =
       state_machine.previousState() == ParserState::PotentialEndQuote &&
       state_machine.state() == ParserState::RegularOutsideQuotes;
   auto still_in_quotes =
       state_machine.state() == ParserState::EscapeInQuotes ||
       state_machine.state() == ParserState::RegularInQuotes ||
-      state_machine.state() == ParserState::UnescapedDelimiterInQuotes;
+      state_machine.state() == ParserState::DelimiterInQuotes;
   return (is_last_char && still_in_quotes) || regular_char_after_end_quote;
 }
 
@@ -210,21 +214,17 @@ std::vector<std::string_view> parseLine(const std::string& untrimmed_line,
                                   std::string(line) + "\"");
     }
 
-    if (state_machine.state() == ParserState::UnescapedDelimiterInQuotes &&
+    if (state_machine.state() == ParserState::DelimiterInQuotes &&
         !first_delimiter_in_quotes) {
       first_delimiter_in_quotes = position;
     }
 
-    /*
-      If quoted column is malformed and we have seen delimiters inside the
-      quotes, reset position to first delimiter in quotes and treat it like the
-      end of the column.
-    */
     if (first_delimiter_in_quotes &&
-        malformedQuotedColumn(state_machine, is_last_char)) {
+        quotesAreMalformed(state_machine, is_last_char)) {
       position = *first_delimiter_in_quotes;
-      state_machine.setState(ParserState::NewColumn);
-      state_machine.setPreviousState(ParserState::RegularOutsideQuotes);
+      state_machine.setState(
+          /* current_state= */ ParserState::NewColumn,
+          /* previous_state= */ ParserState::RegularOutsideQuotes);
     }
 
     if (state_machine.state() == ParserState::NewColumn) {

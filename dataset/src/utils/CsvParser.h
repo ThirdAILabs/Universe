@@ -11,7 +11,7 @@ enum class ParserState {
   NewLine,
   NewColumn,
   RegularInQuotes,
-  UnescapedDelimiterInQuotes,
+  DelimiterInQuotes,
   RegularOutsideQuotes,
   EscapeInQuotes,
   EscapeOutsideQuotes,
@@ -37,9 +37,7 @@ class StateMachine {
 
   ParserState previousState() const;
 
-  void setState(ParserState state);
-
-  void setPreviousState(ParserState state);
+  void setState(ParserState current_state, ParserState previous_state);
 
  private:
   char _delimiter;
@@ -48,6 +46,7 @@ class StateMachine {
 
   static void validateDelimiter(char delimiter);
   ParserState fromNewColumn(char current_char) const;
+  ParserState fromEscapeInQuotes(char current_char) const;
   ParserState fromRegularInQuotes(char current_char) const;
   ParserState fromRegularOutsideQuotes(char current_char) const;
   ParserState fromPotentialEndQuote(char current_char) const;
@@ -55,7 +54,9 @@ class StateMachine {
 
 /**
  * Parses a CSV line. Expects a single line with no unquoted
- * newline character. This is the main parsing function.
+ * newline character. Throws an error if it sees an unquoted newline character
+ * in the middle of the line, and trims the character if it is at the end of the
+ * line. This is the main parsing function.
  */
 std::vector<std::string_view> parseLine(const std::string& line,
                                         char delimiter);
