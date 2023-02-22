@@ -66,7 +66,7 @@ def wait_for_server_end():
 
 
 def license_server_helper(max_workers, do_not_sign_responses=False):
-    go_run_script = str(
+    go_run_script = [str(
         (
             python_test_dir_path
             / ".."
@@ -74,11 +74,11 @@ def license_server_helper(max_workers, do_not_sign_responses=False):
             / "server"
             / f"license-server-max-{max_workers}"
         ).resolve()
-    )
+    )]
     if do_not_sign_responses:
-        go_run_script += " --do_not_sign_responses"
+        go_run_script.append("--do_not_sign_responses")
     server_process = subprocess.Popen(
-        go_run_script, stdout=subprocess.PIPE, universal_newlines=True, shell=True
+        go_run_script, stdout=subprocess.PIPE, universal_newlines=True
     )
     wait_for_server_start()
     yield server_process

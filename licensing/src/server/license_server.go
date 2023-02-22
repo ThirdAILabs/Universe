@@ -93,5 +93,5 @@ func main() {
 	doNotSignResponses = *doNotSignResponsesPtr
 
 	http.HandleFunc("/heartbeat", heartbeat)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":50421", nil))
 }
