@@ -44,6 +44,22 @@ jobs:
       - name: Run python integration tests
         run: bin/python-test.sh -m integration
 
+  python-release-tests:
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+      # the rest of the steps
+      - uses: actions/checkout@v2
+        with:           
+          submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+        
+      - name: Build python package release version and install test dependencies
+        run: pip3 install .[test]
+
+      - name: Run python release tests
+        run: bin/python-test.sh -m release
+
   distributed-python-tests:
     runs-on: ubuntu-latest
     steps:
