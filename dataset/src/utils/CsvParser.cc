@@ -23,7 +23,8 @@ void StateMachine::transition(char current_char) {
       _state = fromNewColumn(current_char);
       break;
     case ParserState::EscapeInQuotes:
-      // The character after the escape character is ignored.
+      // The character after the escape character is treated like a regular
+      // character.
       _state = ParserState::RegularInQuotes;
       break;
     case ParserState::UnescapedDelimiterInQuotes:
