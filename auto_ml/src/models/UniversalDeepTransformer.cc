@@ -5,14 +5,12 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <auto_ml/src/Aliases.h>
-#include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/OutputProcessor.h>
 #include <dataset/src/DataSource.h>
 #include <new_dataset/src/featurization_pipeline/FeaturizationPipeline.h>
-#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <new_dataset/src/featurization_pipeline/transformations/SentenceUnigram.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pytypes.h>
@@ -240,44 +238,15 @@ std::vector<float> UniversalDeepTransformer::getEntityEmbedding(
   return fc_layers.front()->getWeightsByNeuron(label_id);
 }
 
-cold_start::ColdStartDataSource UniversalDeepTransformer::coldStartDSource(
-    const dataset::DataSourcePtr& original_source,
-    const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names){
-    auto dataset_config = udtDatasetFactory().config();
-
-      auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
-          original_source, dataset_config->delimiter);
-
-      auto metadata = cold_start::getColdStartMetadata(dataset_config);
-
-      thirdai::data::ColdStartTextAugmentation augmentation(
-          /* strong_column_names= */ strong_column_names,
-          /* weak_column_names= */ weak_column_names,
-          /* label_column_name= */ dataset_config->target,
-          /* output_column_name= */ metadata.text_column_name);
-
-      auto augmented_data = augmentation.apply(dataset);
-
-      auto data_source = cold_start::ColdStartDataSource::make(
-          /* column_map= */ augmented_data,
-          /* text_column_name= */ metadata.text_column_name,
-          /* label_column_name= */ dataset_config->target,
-          /* column_delimiter= */ dataset_config->delimiter,
-          /* label_delimiter= */ metadata.label_delimiter,
-          /* resource_name = */ original_source->resourceName());
-
-        return data_source;
-    }
-
 void UniversalDeepTransformer::coldStartPretraining(
     const dataset::DataSourcePtr& original_source,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     bolt::TrainConfig& train_config,
     const std::optional<ValidationOptions>& validation) {
- 
-  auto data_source = preprocessColdStartTrainsource(original_source, strong_column_names, weak_column_names);
+  auto dataset_config = udtDatasetFactory().config();
+  auto data_source = cold_start::preprocessColdStartTrainSource(
+      original_source, strong_column_names, weak_column_names, dataset_config);
 
   // TODO(david): reconsider validation. Instead of forcing users to pass in a
   // supervised dataset of query product pairs, can we create a synthetic

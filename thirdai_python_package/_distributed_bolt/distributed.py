@@ -13,6 +13,7 @@ from thirdai._distributed_bolt.backend.train_state_manager import TrainStateMana
 from thirdai._distributed_bolt.dataset_loaders import (
     DistributedDatasetLoader,
     DistributedUDTDatasetLoader,
+    DistributedColdStartDatasetLoader,
 )
 from thirdai._thirdai import bolt
 
@@ -135,6 +136,7 @@ def add_distributed_to_udt():
         filenames: List[str],
         strong_column_names: List[str],
         weak_column_names: List[str],
+        max_in_memory_batches: Optional[int] = None,
         batch_size: Optional[int] = None,
         learning_rate: float = 0.001,
         epochs: int = 5,
@@ -152,6 +154,35 @@ def add_distributed_to_udt():
 
         # calculating batch size per node
         batch_size = batch_size // cluster_config.num_workers
+
+        model = self._get_model()
+
+        dist_model = DistributedDataParallel(
+            cluster_config=cluster_config,
+            model=model,
+            train_config=train_config,
+            train_sources=[
+                DistributedColdStartDatasetLoader(
+                    train_file=file,
+                    batch_size=batch_size,
+                    max_in_memory_batches=max_in_memory_batches,
+                    strong_column_names=strong_column_names,
+                    weak_column_names=weak_column_names,
+                    data_processor=data_processor,
+                )
+                for file in filenames
+            ],
+        )
+
+        # We are freezing hashtables by default for distributed training after one epoch,
+        # Ideally we should read freezehashtables from UDTOptions and then pass
+        # it to distributed Wrapper. However, for the time being we are just
+        # initializing freeze-hash-tables=True by default.
+        metrics = dist_model.train(freeze_hash_tables=True)
+
+        model = dist_model.get_model()
+
+        self._set_model(trained_model=model)
 
     setattr(bolt.models.UDTClassifier, "cold_start_distributed", cold_start_distributed)
 

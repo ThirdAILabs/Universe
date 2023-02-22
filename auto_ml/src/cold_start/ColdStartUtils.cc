@@ -1,6 +1,7 @@
 #include "ColdStartUtils.h"
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/dataset_factories/udt/UDTConfig.h>
+#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <stdexcept>
 
@@ -61,6 +62,34 @@ ColdStartMetadata getColdStartMetadata(
                              getLabelDelimiter(dataset_config)};
 
   return metadata;
+}
+ColdStartDataSourcePtr preprocessColdStartTrainSource(
+    const dataset::DataSourcePtr& original_source,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    data::UDTConfigPtr& dataset_config) {
+  auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
+      original_source, dataset_config->delimiter);
+
+  auto metadata = cold_start::getColdStartMetadata(dataset_config);
+
+  thirdai::data::ColdStartTextAugmentation augmentation(
+      /* strong_column_names= */ strong_column_names,
+      /* weak_column_names= */ weak_column_names,
+      /* label_column_name= */ dataset_config->target,
+      /* output_column_name= */ metadata.text_column_name);
+
+  auto augmented_data = augmentation.apply(dataset);
+
+  auto data_source = cold_start::ColdStartDataSource::make(
+      /* column_map= */ augmented_data,
+      /* text_column_name= */ metadata.text_column_name,
+      /* label_column_name= */ dataset_config->target,
+      /* column_delimiter= */ dataset_config->delimiter,
+      /* label_delimiter= */ metadata.label_delimiter,
+      /* resource_name = */ original_source->resourceName());
+
+  return data_source;
 }
 
 }  // namespace thirdai::automl::cold_start

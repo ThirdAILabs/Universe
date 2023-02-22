@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable, List, Optional, Tuple, Union
 
-from thirdai import data, dataset
+from thirdai import data, dataset, bolt
 from thirdai.bolt.udt_modifications import _create_data_source
 
 
@@ -52,6 +52,7 @@ class DistributedColdStartDatasetLoader(DistributedDatasetLoader):
         max_in_memory_batches: int,
         strong_column_names: List[str],
         weak_column_names: List[str],
+        data_processor,
     ):
         self.generator = None
         self.train_file = train_file
@@ -60,9 +61,39 @@ class DistributedColdStartDatasetLoader(DistributedDatasetLoader):
         self.batch_size = batch_size
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
+        self.data_processor = data_processor
 
     def load(self):
-        self.generator = self.data_processor.get_dataset_loader()
+        original_data_source = _create_data_source(self.train_file)
+        cold_start_data_source = (
+            bolt._ddp_data_preprocess.preprocess_cold_start_train_source(
+                original_data_source,
+                self.strong_column_names,
+                self.weak_column_names,
+                self.data_processor.config(),
+            )
+        )
+        self.generator = self.data_processor.get_dataset_loader(
+            cold_start_data_source, training=True
+        )
+
+    def next(self):
+        if self.dataset_finished:
+            return None
+
+        if self.max_in_memory_batches == None:
+            load = self.generator.load_all(batch_size=self.batch_size)
+            self.dataset_finished = True
+        else:
+            load = self.generator.load_some(
+                batch_size=self.batch_size, num_batches=self.max_in_memory_batches
+            )
+
+        return load
+
+    def restart(self):
+        self.dataset_finished = False
+        self.generator.restart()
 
 
 class DistributedUDTDatasetLoader(DistributedDatasetLoader):

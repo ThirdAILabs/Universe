@@ -4,6 +4,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
+#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/models/OutputProcessor.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
@@ -120,6 +121,7 @@ void createModelsSubmodule(py::module_& module) {
            py::overload_cast<const LineInput&>(
                &data::UDTDatasetFactory::updateTemporalTrackers),
            py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
+      .def("config", &data::UDTDatasetFactory::config)
       .def("batch_update_temporal_trackers",
            py::overload_cast<const LineInputBatch&>(
                &data::UDTDatasetFactory::batchUpdateTemporalTrackers),
@@ -360,6 +362,13 @@ void createDeploymentSubmodule(py::module_& module) {
   (void)module;
 
 #endif
+}
+void createDistributedDataProcessor(py::module_& module){
+
+  auto distributed_data_preprocess = module.def_submodule("_ddp_data_preprocess");
+  distributed_data_preprocess.def("preprocess_cold_start_train_source", 
+  &cold_start::preprocessColdStartTrainSource, py::arg("original_source"), 
+  py::arg("strong_column_names"), py::arg("weak_column_names"), py::arg("dataset_config"));
 }
 
 config::ArgumentMap createArgumentMap(const py::dict& input_args) {
