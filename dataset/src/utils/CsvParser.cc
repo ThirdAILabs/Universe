@@ -153,7 +153,7 @@ ParserState StateMachine::fromPotentialEndQuote(char current_char) const {
 }
 
 // Extracts the last column seen so far from `line`.
-static std::string_view columnView(const std::string& line,
+static std::string_view columnView(std::string_view line,
                                    ParserState column_end_state,
                                    uint32_t start_index, uint32_t end_index) {
   if (column_end_state == ParserState::PotentialEndQuote) {
@@ -161,9 +161,6 @@ static std::string_view columnView(const std::string& line,
     // must be quoted. Thus, we trim the quotes by incrementing start and
     // decrementing end.
     start_index++;
-    end_index--;
-  } else if (end_index == line.size() && !line.empty() && line.back() == '\n') {
-    // Trim newline character at the end of the line.
     end_index--;
   }
   return {line.data() + start_index, end_index - start_index};
@@ -185,9 +182,18 @@ static bool malformedQuotedColumn(StateMachine& state_machine,
   return (is_last_char && still_in_quotes) || regular_char_after_end_quote;
 }
 
-std::vector<std::string_view> parseLine(const std::string& line,
+static std::string_view trimNewlineAtEndOfLine(const std::string& line) {
+  if (!line.empty() && line.back() == '\n') {
+    return {line.data(), line.size() - 1};
+  }
+  return {line.data(), line.size()};
+}
+
+std::vector<std::string_view> parseLine(const std::string& untrimmed_line,
                                         char delimiter) {
   std::vector<std::string_view> parsed_columns;
+
+  auto line = trimNewlineAtEndOfLine(untrimmed_line);
 
   StateMachine state_machine(delimiter);
   uint32_t column_start = 0;
@@ -201,7 +207,7 @@ std::vector<std::string_view> parseLine(const std::string& line,
 
     if (state_machine.state() == ParserState::NewLine && !is_last_char) {
       throw std::invalid_argument("Found unexpected unquoted newline in: \"" +
-                                  line + "\"");
+                                  std::string(line) + "\"");
     }
 
     if (state_machine.state() == ParserState::UnescapedDelimiterInQuotes &&

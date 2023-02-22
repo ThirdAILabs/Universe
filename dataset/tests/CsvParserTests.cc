@@ -26,6 +26,7 @@ TEST(CsvParserTests, HandlesMultipleColumns) {
 }
 
 TEST(CsvParserTests, HandlesEmptyColumns) {
+  testCsvParser("", ',', {""});
   testCsvParser("A,,C,D", ',', {"A", "", "C", "D"});
   testCsvParser(",B,C,D", ',', {"", "B", "C", "D"});
   testCsvParser("A,B,C,", ',', {"A", "B", "C", ""});
@@ -90,6 +91,7 @@ TEST(CsvParserTests, UnquotedNewlineInMiddleOfLineThrows) {
 }
 
 TEST(CsvParserTests, UnquotedNewlineAtEndOfLineIsTrimmed) {
+  testCsvParser("\n", ',', {""});
   testCsvParser("A\n", ',', {"A"});
   testCsvParser("A,B,C\n", ',', {"A", "B", "C"});
 }
