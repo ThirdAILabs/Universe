@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from sklearn.metrics import roc_auc_score
 from thirdai import bolt
@@ -10,9 +12,11 @@ from .utils import get_train_and_eval_configs
 class DLRMRunner(Runner):
     config_type = DLRMConfig
 
-    def run_benchmark(config: DLRMConfig, path, mlflow_logger):
+    def run_benchmark(config: DLRMConfig, path_prefix, mlflow_logger):
         model = config.get_model()
-        train_set, train_labels, test_set, test_labels = config.load_datasets(path)
+        train_set, train_labels, test_set, test_labels = config.load_datasets(
+            path_prefix
+        )
 
         train_config, eval_config = get_train_and_eval_configs(
             benchmark_config=config, callbacks=[]
@@ -39,7 +43,7 @@ class DLRMRunner(Runner):
 
             compute_roc_auc(
                 predict_output=eval_metrics,
-                test_labels_path=path + config.test_dataset_path,
+                test_labels_path=os.path.join(path_prefix, config.test_dataset_path),
                 mlflow_callback=mlflow_logger,
                 step=epoch,
             )

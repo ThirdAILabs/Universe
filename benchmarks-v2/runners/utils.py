@@ -30,4 +30,5 @@ def fix_mlflow_metric_name(original_key):
     # This maps "f_measure(0.95)" to "f_measure_0.95"
     key = original_key.replace("(", "_")
     key = key.replace(")", "")
+    key = key.replace("@", "_")
     return key

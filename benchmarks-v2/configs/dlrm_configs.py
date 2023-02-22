@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 
 from thirdai import bolt, dataset
@@ -23,7 +24,7 @@ class DLRMConfig(ABC):
 
     @staticmethod
     @abstractmethod
-    def load_datasets(path: str):
+    def load_datasets(path_prefix: str):
         pass
 
 
@@ -90,7 +91,7 @@ class CriteoDLRMConfig(DLRMConfig):
         )
         return bolt_dataset, bolt_token_dataset, labels
 
-    def load_datasets(path: str):
+    def load_datasets(path_prefix: str):
         max_num_categorical_features = 26
         num_numerical_features = 13
         batch_size = 512
@@ -99,7 +100,7 @@ class CriteoDLRMConfig(DLRMConfig):
             train_bolt_token_dataset,
             train_labels,
         ) = CriteoDLRMConfig._load_click_through_dataset(
-            filename=path + CriteoDLRMConfig.train_dataset_path,
+            filename=os.path.join(path_prefix, CriteoDLRMConfig.train_dataset_path),
             batch_size=batch_size,
             max_categorical_features=max_num_categorical_features,
             max_num_numerical_features=num_numerical_features,
@@ -109,7 +110,7 @@ class CriteoDLRMConfig(DLRMConfig):
             test_bolt_token_dataset,
             test_labels,
         ) = CriteoDLRMConfig._load_click_through_dataset(
-            filename=path + CriteoDLRMConfig.test_dataset_path,
+            filename=os.path.join(path_prefix, CriteoDLRMConfig.test_dataset_path),
             batch_size=batch_size,
             max_categorical_features=max_num_categorical_features,
             max_num_numerical_features=num_numerical_features,

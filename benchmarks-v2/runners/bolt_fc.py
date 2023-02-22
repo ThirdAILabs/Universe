@@ -8,9 +8,11 @@ from .utils import fix_mlflow_metric_name, get_train_and_eval_configs
 class BoltFullyConnectedRunner(Runner):
     config_type = BoltBenchmarkConfig
 
-    def run_benchmark(config: BoltBenchmarkConfig, path, mlflow_logger):
+    def run_benchmark(config: BoltBenchmarkConfig, path_prefix, mlflow_logger):
         model = define_fully_connected_bolt_model(config)
-        train_set, train_labels, test_set, test_labels = config.load_datasets(path)
+        train_set, train_labels, test_set, test_labels = config.load_datasets(
+            path_prefix
+        )
 
         train_config, eval_config = get_train_and_eval_configs(
             benchmark_config=config, callbacks=config.callbacks

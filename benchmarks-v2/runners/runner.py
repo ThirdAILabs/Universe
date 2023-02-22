@@ -13,5 +13,5 @@ class Runner(ABC):
 
     @staticmethod
     @abstractmethod
-    def run_benchmark(config, path, mlflow_logger=None):
+    def run_benchmark(config, path_prefix, mlflow_logger=None):
         raise NotImplementedError

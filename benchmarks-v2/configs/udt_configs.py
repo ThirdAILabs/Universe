@@ -1,7 +1,9 @@
+import os
 from abc import ABC, abstractmethod
 
 import numpy as np
-from thirdai import bolt
+import pandas as pd
+from thirdai import bolt, data
 
 
 class UDTBenchmarkConfig(ABC):
@@ -13,8 +15,10 @@ class UDTBenchmarkConfig(ABC):
 
     target = None
     n_target_classes = None
+    temporal_relationships = {}
     delimiter = ","
     model_config = None
+    options = {}
 
     learning_rate = None
     num_epochs = None
@@ -24,7 +28,7 @@ class UDTBenchmarkConfig(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_data_types():
+    def get_data_types(path_prefix):
         pass
 
 
@@ -42,7 +46,7 @@ class YelpPolarityUDTConfig(UDTBenchmarkConfig):
     learning_rate = 1e-2
     num_epochs = 3
 
-    def get_data_types():
+    def get_data_types(path_prefix):
         return {"text": bolt.types.text(), "label": bolt.types.categorical()}
 
 
@@ -60,7 +64,7 @@ class AmazonPolarityUDTConfig(UDTBenchmarkConfig):
     learning_rate = 1e-2
     num_epochs = 3
 
-    def get_data_types():
+    def get_data_types(path_prefix):
         return {"content": bolt.types.text(), "label": bolt.types.categorical()}
 
 
@@ -77,7 +81,7 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
     learning_rate = 1e-2
     num_epochs = 1
 
-    def get_data_types():
+    def get_data_types(path_prefix):
         data_types = {}
 
         numeric_col_ranges = [
@@ -148,7 +152,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
         "loss": "BinaryCrossEntropyLoss",
     }
 
-    def get_data_types():
+    def get_data_types(path_prefix):
         return {
             "labels": bolt.types.categorical(delimiter=","),
             "query": bolt.types.text(),
@@ -166,3 +170,95 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
             schedule=bolt.callbacks.MultiStepLR(gamma=0.1, milestones=[3])
         )
     ]
+
+
+class MovieLensUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "movie_lens_udt"
+    dataset_name = "movie_lens"
+
+    train_file = "movielens1m/train.csv"
+    test_file = "movielens1m/test.csv"
+
+    target = "movieId"
+    n_target_classes = 3706
+    temporal_relationships = {
+        "userId": [
+            bolt.temporal.categorical(column_name="movieId", track_last_n=length)
+            for length in [1, 2, 5, 10, 25, 50]
+        ]
+    }
+
+    learning_rate = 0.0001
+    num_epochs = 5
+    metrics = ["recall@10"]
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types(path_prefix):
+        return {
+            "userId": bolt.types.categorical(),
+            "movieId": bolt.types.categorical(delimiter=" "),
+            "timestamp": bolt.types.date(),
+        }
+
+
+class ForestCoverTypeUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "forest_cover_type_udt"
+    dataset_name = "forest_cover_type"
+
+    train_file = "tabular_benchmarks/ForestCoverType/train_udt.csv"
+    test_file = "tabular_benchmarks/ForestCoverType/test_udt.csv"
+
+    target = "col54"
+    n_target_classes = 7
+    delimiter = ","
+    options = {"contextual_columns": True}
+
+    learning_rate = 0.01
+    num_epochs = 4
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types(path_prefix):
+        return {f"col{i}": bolt.types.categorical() for i in range(55)}
+
+
+def regression_metrics(activations, test_file, mlflow_logger, step):
+    df = pd.read_csv(test_file)
+    labels = df["Purchase"].to_numpy()
+
+    mae = np.mean(np.abs(activations - labels))
+    mse = np.mean(np.square(activations - labels))
+
+    print(f"MAE = {mae}\nMSE = {mse}")
+    if mlflow_logger:
+        mlflow_logger.log_additional_metric(key="mae", value=mae, step=step)
+        mlflow_logger.log_additional_metric(key="mse", value=mse, step=step)
+
+
+class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "black_friday_udt"
+    dataset_name = "black_friday"
+
+    train_file = "tabular_regression/reg_cat/black_friday_shuf_train_with_header.csv"
+    test_file = "tabular_regression/reg_cat/black_friday_test.csv"
+
+    target = "Purchase"
+    n_target_classes = None
+    delimiter = ","
+    model_config = None
+    options = {"contextual_columns": True}
+
+    learning_rate = 0.001
+    num_epochs = 15
+    metrics = []
+    additional_metric_fn = regression_metrics
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types(path_prefix):
+        file = os.path.join(path_prefix, BlackFridayUDTBenchmark.train_file)
+
+        col_types = data.get_udt_col_types(file)
+        del col_types["Unnamed: 0"]
+        return col_types

@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 
 from thirdai import bolt, dataset
@@ -21,7 +22,7 @@ class BoltBenchmarkConfig(ABC):
 
     @staticmethod
     @abstractmethod
-    def load_datasets(path: str):
+    def load_datasets(path_prefix: str):
         pass
 
 
@@ -45,16 +46,20 @@ class Amazon670kConfig(BoltBenchmarkConfig):
     learning_rate = 1e-4
     num_epochs = 5
 
-    def load_datasets(path: str):
-        train_dataset_path = "amazon-670k/train_shuffled_noHeader.txt"
-        test_dataset_path = "amazon-670k/test_shuffled_noHeader_sampled.txt"
+    def load_datasets(path_prefix: str):
+        train_dataset_path = os.path.join(
+            path_prefix, "amazon-670k/train_shuffled_noHeader.txt"
+        )
+        test_dataset_path = os.path.join(
+            path_prefix, "amazon-670k/test_shuffled_noHeader_sampled.txt"
+        )
         batch_size = 256
 
         train_data, train_labels = load_svm_dataset(
-            filename=path + train_dataset_path, batch_size=batch_size
+            filename=train_dataset_path, batch_size=batch_size
         )
         test_data, test_labels = load_svm_dataset(
-            filename=path + test_dataset_path, batch_size=batch_size
+            filename=test_dataset_path, batch_size=batch_size
         )
         return train_data, train_labels, test_data, test_labels
 
@@ -72,16 +77,16 @@ class AmazonPolarityConfig(BoltBenchmarkConfig):
     learning_rate = 1e-04
     num_epochs = 5
 
-    def load_datasets(path: str):
-        train_dataset_path = "amazon_polarity/svm_train.txt"
-        test_dataset_path = "amazon_polarity/svm_test.txt"
+    def load_datasets(path_prefix: str):
+        train_dataset_path = os.path.join(path_prefix, "amazon_polarity/svm_train.txt")
+        test_dataset_path = os.path.join(path_prefix, "amazon_polarity/svm_test.txt")
         batch_size = 256
 
         train_data, train_labels = load_svm_dataset(
-            filename=path + train_dataset_path, batch_size=batch_size
+            filename=train_dataset_path, batch_size=batch_size
         )
         test_data, test_labels = load_svm_dataset(
-            filename=path + test_dataset_path, batch_size=batch_size
+            filename=test_dataset_path, batch_size=batch_size
         )
         return train_data, train_labels, test_data, test_labels
 
@@ -131,17 +136,17 @@ class WayfairConfig(BoltBenchmarkConfig):
         data, labels = dataloader.load_all(batch_size=batch_size)
         return data, labels
 
-    def load_datasets(path: str):
-        train_dataset_path = "wayfair/train_raw_queries.txt"
-        test_dataset_path = "wayfair/dev_raw_queries.txt"
+    def load_datasets(path_prefix: str):
+        train_dataset_path = os.path.join(path_prefix, "wayfair/train_raw_queries.txt")
+        test_dataset_path = os.path.join(path_prefix, "wayfair/dev_raw_queries.txt")
         batch_size = 256
         train_data, train_labels = WayfairConfig._load_wayfair_dataset(
-            filename=path + train_dataset_path,
+            filename=train_dataset_path,
             batch_size=batch_size,
             output_dim=WayfairConfig.output_node["dim"],
         )
         test_data, test_labels = WayfairConfig._load_wayfair_dataset(
-            filename=path + test_dataset_path,
+            filename=test_dataset_path,
             batch_size=batch_size,
             output_dim=WayfairConfig.output_node["dim"],
             shuffle=False,

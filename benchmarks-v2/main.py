@@ -86,7 +86,7 @@ if __name__ == "__main__":
             mlflow_logger = None
 
         runner.run_benchmark(
-            config=config, path=args.path_prefix, mlflow_logger=mlflow_logger
+            config=config, path_prefix=args.path_prefix, mlflow_logger=mlflow_logger
         )
 
         if mlflow_logger:
