@@ -39,18 +39,4 @@ std::vector<std::string_view> split(std::string_view sentence, char delimiter) {
   return words;
 }
 
-std::string join(const std::vector<std::string>& strings,
-                 const std::string& delimiter) {
-  if (strings.empty()) {
-    return "";
-  }
-
-  std::stringstream joined;
-  joined << strings.front();
-  for (uint32_t i = 1; i < strings.size(); i++) {
-    joined << delimiter << strings[i];
-  }
-  return joined.str();
-}
-
 }  // namespace thirdai::text

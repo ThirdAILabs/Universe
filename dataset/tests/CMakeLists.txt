@@ -1,7 +1,6 @@
 enable_testing()
 
 set(DATASET_TESTS
-    CsvDataSourceTests
     CsvParserTests
     SvmDatasetTests
     ClickThroughDatasetTests
