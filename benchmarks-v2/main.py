@@ -1,7 +1,11 @@
 import argparse
+import re
+from datetime import date
 
-from configs import bolt_configs, dlrm_configs, udt_configs
-from runners import Runner
+import thirdai
+from thirdai.experimental import MlflowCallback
+
+from .runners.runner_map import runner_map
 
 
 def parse_arguments():
@@ -9,44 +13,81 @@ def parse_arguments():
 
     parser.add_argument(
         "--runner",
+        type=str,
         required=True,
-        help="Specify the runner name for the benchmark. Options include 'fully_connected', 'udt', 'dlrm'",
-    )
-    parser.add_argument("--mlflow_uri", help="MLflow URI to log metrics and artifacts.")
-    parser.add_argument(
-        "--run_name", required=True, help="The job name to track in MLflow"
+        choices=["udt", "bolt_fc", "dlrm"],
+        help="Which runner to use to run the benchmark.",
     )
     parser.add_argument(
-        "--config_name",
+        "--config",
+        type=str,
         default="",
-        required=True,
-        help="The python class name of the benchmark config",
+        help="Regular expression indicating which configs to run for the given runner.",
+    )
+    parser.add_argument(
+        "--path_prefix",
+        type=str,
+        default="/share/data/",
+        help="The path prefex to prepend to dataset paths. Defaults to '/share/data/'.",
+    )
+    parser.add_argument(
+        "--mlflow_uri",
+        type=str,
+        default=None,
+        help="MLflow URI to log metrics and artifacts.",
+    )
+    parser.add_argument(
+        "--run_name", type=str, default=None, help="The job name to track in MLflow"
+    )
+    parser.add_argument(
+        "--official_benchmark",
+        action="store_true",
+        help="Controls if the experiment is logged to the '_benchmark' experiment or the regular experiment. This should only be used for the github actions benchmark runner.",
     )
     return parser.parse_args()
+
+
+def experiment_name(config_name: str, official_benchmark: str):
+    if official_benchmark:
+        return f"{config_name}_benchmark"
+    return config_name
 
 
 if __name__ == "__main__":
     args = parse_arguments()
 
-    if args.runner.lower() == "fully_connected":
-        config = getattr(bolt_configs, args.config_name)
+    runner = runner_map[args.runner.lower()]
 
-    elif args.runner.lower() == "udt":
-        config = getattr(udt_configs, args.config_name)
-    elif args.runner.lower() == "dlrm":
-        config = getattr(dlrm_configs, args.config_name)
-
-    else:
-        raise ValueError(f"Invalid runner name: {args.runner}")
-
-    # This list should be of length one since we expect the
-    # runner name to be unique.
-    runner = list(
+    config_re = re.compile(args.config)
+    configs = list(
         filter(
-            lambda runner_class: runner_class.name == args.runner.lower(),
-            Runner.__subclasses__(),
+            lambda config: config_re.match(config.config_name),
+            runner.config_type.__subclasses__(),
         )
-    )[0]
-    runner.run_benchmark(
-        config=config, mlflow_uri=args.mlflow_uri, run_name=args.run_name
     )
+    if len(configs) == 0:
+        raise ValueError(
+            f"Could match regular expression '{args.config}' to any configs."
+        )
+
+    for config in configs:
+        if args.mlflow_uri and args.run_name:
+            mlflow_logger = MlflowCallback(
+                tracking_uri=args.mlflow_uri,
+                experiment_name=experiment_name(
+                    config.config_name, args.official_benchmark
+                ),
+                run_name=f"{args.run_name}_{str(date.today())}",
+                dataset_name=config.dataset_name,
+                experiment_args={},
+            )
+            mlflow_logger.log_additional_param("thirdai_version", thirdai.__version__)
+        else:
+            mlflow_logger = None
+
+        runner.run_benchmark(
+            config=config, path_prefix=args.path_prefix, mlflow_logger=mlflow_logger
+        )
+
+        if mlflow_logger:
+            mlflow_logger.end_run()

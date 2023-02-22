@@ -370,7 +370,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
           [](BoltGraph& model, const dataset::BoltDatasetList& data,
              const dataset::BoltDatasetPtr& labels,
              const TrainConfig& train_config) {
-            model.train(data, labels, train_config);
+            return model.train(data, labels, train_config);
           },
           py::arg("train_data"), py::arg("train_labels"),
           py::arg("train_config"),

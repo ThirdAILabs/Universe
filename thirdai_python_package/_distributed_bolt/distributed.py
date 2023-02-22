@@ -202,7 +202,7 @@ class RayTrainingClusterConfig:
         runtime_env = copy.deepcopy(runtime_env)
         if "env_vars" not in runtime_env:
             runtime_env["env_vars"] = {}
-        runtime_env["env_vars"]["OMP_NUM_THREADS"] = str(get_num_cpus())
+        runtime_env["env_vars"]["OMP_NUM_THREADS"] = num_omp_threads
 
         ray.init(
             address=cluster_address,
@@ -224,7 +224,7 @@ class RayTrainingClusterConfig:
 
         num_cpus_on_this_node = get_num_cpus()
         if requested_cpus_per_node != -1:
-            num_cpus_to_use = min(requested_cpus_per_node, num_cpus_on_this_node)
+            num_cpus_to_use = requested_cpus_per_node
         else:
             num_cpus_to_use = num_cpus_on_this_node
 
