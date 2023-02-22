@@ -47,7 +47,9 @@ UniversalDeepTransformer UniversalDeepTransformer::buildUDT(
       std::move(time_granularity), lookahead, delimiter);
 
   auto [contextual_columns, parallel_data_processing, freeze_hash_tables,
-        embedding_dimension, prediction_depth] = processUDTOptions(options);
+        embedding_dimension, prediction_depth, feature_hash_range] =
+      processUDTOptions(options);
+  dataset_config->hash_range = feature_hash_range;
   std::string target_column = dataset_config->target;
 
   if (prediction_depth > 1) {
@@ -385,6 +387,9 @@ UniversalDeepTransformer::processUDTOptions(
 
         throw std::invalid_argument(error.str());
       }
+    } else if (option_name == "input_dim") {
+      options.feature_hash_range =
+          options_map.get<uint32_t>("input_dim", "integer");
     } else if (option_name == "prediction_depth") {
       uint32_t int_value =
           options_map.get<uint32_t>("prediction_depth", "integer");

@@ -1,4 +1,5 @@
 import platform
+import textwrap
 
 import pytest
 from thirdai import bolt
@@ -371,3 +372,25 @@ def test_return_metrics():
 @pytest.mark.parametrize("encoding", ["none", "local", "global"])
 def test_udt_accepts_valid_text_encodings(encoding):
     make_simple_trained_model(text_encoding_type=encoding)
+
+
+@pytest.mark.unit
+def test_udt_override_input_dim():
+    udt_model = bolt.UniversalDeepTransformer(
+        data_types={"col": bolt.types.categorical()},
+        target="col",
+        n_target_classes=40,
+        options={"input_dim": 200},
+    )
+
+    summary = udt_model._get_model().summary(detailed=True, print=False)
+
+    expected_summary = """
+    ======================= Bolt Model =======================
+    input_1 (Input): dim=200
+    input_1 -> fc_1 (FullyConnected): dim=512, sparsity=1, act_func=ReLU
+    fc_1 -> fc_2 (FullyConnected): dim=40, sparsity=1, act_func=Softmax
+    ============================================================
+    """
+
+    assert textwrap.dedent(summary).strip() == textwrap.dedent(expected_summary).strip()
