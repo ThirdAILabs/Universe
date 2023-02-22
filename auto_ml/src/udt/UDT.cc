@@ -1,10 +1,12 @@
 #include "UDT.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
+#include <bolt/src/utils/Timer.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
+#include <telemetry/src/PrometheusClient.h>
 
 namespace thirdai::automl::udt {
 
@@ -40,6 +42,81 @@ UDT::UDT(data::ColumnDataTypes data_types,
         data_types, temporal_tracking_relationships, target_col, numerical,
         n_target_classes, tabular_options, model_config, user_args);
   }
+}
+
+void UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
+                uint32_t epochs, const std::optional<Validation>& validation,
+                std::optional<size_t> batch_size,
+                std::optional<size_t> max_in_memory_batches,
+                const std::vector<std::string>& metrics,
+                const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
+                bool verbose, std::optional<uint32_t> logging_interval) {
+  bolt::utils::Timer timer;
+
+  _backend->train(data, learning_rate, epochs, validation, batch_size,
+                  max_in_memory_batches, metrics, callbacks, verbose,
+                  logging_interval);
+
+  timer.stop();
+  telemetry::client.trackTraining(/* training_time_seconds= */ timer.seconds());
+}
+
+py::object UDT::evaluate(const dataset::DataSourcePtr& data,
+                         const std::vector<std::string>& metrics,
+                         bool sparse_inference, bool return_predicted_class,
+                         bool verbose, bool return_metrics) {
+  bolt::utils::Timer timer;
+
+  auto result =
+      _backend->evaluate(data, metrics, sparse_inference,
+                         return_predicted_class, verbose, return_metrics);
+
+  timer.stop();
+  telemetry::client.trackEvaluate(/* evaluate_time_seconds= */ timer.seconds());
+
+  return result;
+}
+
+py::object UDT::predict(const MapInput& sample, bool sparse_inference,
+                        bool return_predicted_class) {
+  bolt::utils::Timer timer;
+
+  auto result =
+      _backend->predict(sample, sparse_inference, return_predicted_class);
+
+  timer.stop();
+  telemetry::client.trackPrediction(
+      /* inference_time_seconds= */ timer.seconds());
+
+  return result;
+}
+
+py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
+                             bool return_predicted_class) {
+  bolt::utils::Timer timer;
+
+  auto result =
+      _backend->predictBatch(sample, sparse_inference, return_predicted_class);
+
+  timer.stop();
+  telemetry::client.trackBatchPredictions(
+      /* inference_time_seconds= */ timer.seconds(), sample.size());
+
+  return result;
+}
+
+std::vector<dataset::Explanation> UDT::explain(
+    const MapInput& sample,
+    const std::optional<std::variant<uint32_t, std::string>>& target_class) {
+  bolt::utils::Timer timer;
+
+  auto result = _backend->explain(sample, target_class);
+
+  timer.stop();
+  telemetry::client.trackExplanation(
+      /* explain_time_seconds= */ timer.seconds());
+
+  return result;
 }
 
 void UDT::save(const std::string& filename) const {

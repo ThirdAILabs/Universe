@@ -23,36 +23,22 @@ class UDT {
              std::optional<size_t> max_in_memory_batches,
              const std::vector<std::string>& metrics,
              const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-             bool verbose, std::optional<uint32_t> logging_interval) {
-    _backend->train(data, learning_rate, epochs, validation, batch_size,
-                    max_in_memory_batches, metrics, callbacks, verbose,
-                    logging_interval);
-  }
+             bool verbose, std::optional<uint32_t> logging_interval);
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool return_predicted_class,
-                      bool verbose, bool return_metrics) {
-    return _backend->evaluate(data, metrics, sparse_inference,
-                              return_predicted_class, verbose, return_metrics);
-  }
+                      bool verbose, bool return_metrics);
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class) {
-    return _backend->predict(sample, sparse_inference, return_predicted_class);
-  }
+                     bool return_predicted_class);
 
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
-                          bool return_predicted_class) {
-    return _backend->predictBatch(sample, sparse_inference,
-                                  return_predicted_class);
-  }
+                          bool return_predicted_class);
 
   std::vector<dataset::Explanation> explain(
       const MapInput& sample,
-      const std::optional<std::variant<uint32_t, std::string>>& target_class) {
-    return _backend->explain(sample, target_class);
-  }
+      const std::optional<std::variant<uint32_t, std::string>>& target_class);
 
   void coldstart(const dataset::DataSourcePtr& data,
                  const std::vector<std::string>& strong_column_names,
