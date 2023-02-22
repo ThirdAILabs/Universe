@@ -1,6 +1,7 @@
 #include "DatasetPython.h"
 #include "PyDataSource.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <bolt/python_bindings/PybindUtils.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/DatasetLoaderWrappers.h>
 #include <dataset/src/Datasets.h>
@@ -278,8 +279,9 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("sequence_len"),
            py::arg("vocab_size"), py::arg("last_n_tokens"))
       .def("featurize_for_inference",
-           &TextGenerationFeaturizer::featurizeInferenceSample,
-           py::arg("tokens"));
+                  &TextGenerationFeaturizer::featurizeInferenceSample,
+                  py::arg("tokens"))
+      .def(bolt::python::getPickleFunction<TextGenerationFeaturizer>());
 
 #endif
 

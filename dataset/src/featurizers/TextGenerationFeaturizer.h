@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
 #include <limits>
@@ -9,6 +12,9 @@ namespace thirdai::dataset {
 /**
  * Featurizes text data for next word prediction.
  */
+class TextGenerationFeaturizer;
+using TextGenerationFeaturizerPtr = std::shared_ptr<TextGenerationFeaturizer>;
+
 class TextGenerationFeaturizer final : public Featurizer {
  public:
   TextGenerationFeaturizer(uint32_t sequence_len, uint32_t vocab_size,
@@ -45,7 +51,23 @@ class TextGenerationFeaturizer final : public Featurizer {
   std::vector<BoltVector> featurizeInferenceSample(
       const std::vector<uint32_t>& tokens) const;
 
+  void save(const std::string& filename) const;
+
+  void save_stream(std::ostream& output_stream) const;
+
+  static TextGenerationFeaturizerPtr load(const std::string& filename);
+
+  static TextGenerationFeaturizerPtr load_stream(std::istream& input_stream);
+
  private:
+  // Private Constructor for Cereal
+  TextGenerationFeaturizer() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Featurizer>(this), _sequence_len, _vocab_size, _last_n_tokens);
+  }
   /**
    * Helper function to featurize a single line from the text dataset and
    * returns the created input samples and labels.
