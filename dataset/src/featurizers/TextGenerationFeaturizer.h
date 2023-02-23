@@ -18,7 +18,7 @@ using TextGenerationFeaturizerPtr = std::shared_ptr<TextGenerationFeaturizer>;
 class TextGenerationFeaturizer final : public Featurizer {
  public:
   TextGenerationFeaturizer(uint32_t sequence_len, uint32_t vocab_size,
-                           uint32_t last_n_tokens);
+                           uint32_t last_n_tokens, bool pairgrams = true);
 
   /**
    * Featurizes a list of rows from a text dataset for next word prediction.
@@ -66,7 +66,8 @@ class TextGenerationFeaturizer final : public Featurizer {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Featurizer>(this), _sequence_len, _vocab_size, _last_n_tokens);
+    archive(cereal::base_class<Featurizer>(this), _sequence_len, _vocab_size,
+            _last_n_tokens);
   }
   /**
    * Helper function to featurize a single line from the text dataset and
@@ -80,6 +81,7 @@ class TextGenerationFeaturizer final : public Featurizer {
   uint32_t _sequence_len;
   uint32_t _vocab_size;
   uint32_t _last_n_tokens;
+  bool _pairgrams;
 };
 
 }  // namespace thirdai::dataset

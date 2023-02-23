@@ -2,8 +2,8 @@
 #include <cereal/archives/binary.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashUtils.h>
-#include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <algorithm>
 #include <cctype>
 #include <iterator>
@@ -13,10 +13,12 @@ namespace thirdai::dataset {
 
 TextGenerationFeaturizer::TextGenerationFeaturizer(uint32_t sequence_len,
                                                    uint32_t vocab_size,
-                                                   uint32_t last_n_tokens)
+                                                   uint32_t last_n_tokens,
+                                                   bool pairgrams)
     : _sequence_len(sequence_len),
       _vocab_size(vocab_size),
-      _last_n_tokens(last_n_tokens) {
+      _last_n_tokens(last_n_tokens),
+      _pairgrams(pairgrams) {
   if (_last_n_tokens >= sequence_len) {
     throw std::invalid_argument(
         "Last n tokens must be less than the sequence length.");
@@ -54,11 +56,19 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
 
   for (uint32_t i = _sequence_len; i < tokens.size(); i++) {
     const uint32_t* phrase_start = tokens.data() + i - _sequence_len;
-    auto pairgrams = token_encoding::pairgrams(phrase_start, _sequence_len);
 
-    BoltVector vector(/* l= */ pairgrams.size(), /* is_dense= */ false,
+    std::vector<uint32_t> context_tokens;
+    if (_pairgrams) {
+      context_tokens = token_encoding::pairgrams(phrase_start, _sequence_len);
+    } else {
+      context_tokens =
+          std::vector<uint32_t>(phrase_start, phrase_start + _sequence_len);
+    }
+
+    BoltVector vector(/* l= */ context_tokens.size(), /* is_dense= */ false,
                       /* has_gradient= */ false);
-    std::copy(pairgrams.begin(), pairgrams.end(), vector.active_neurons);
+    std::copy(context_tokens.begin(), context_tokens.end(),
+              vector.active_neurons);
     std::fill_n(vector.activations, vector.len, 1.0);
 
     BoltVector last_tokens(/* l= */ _last_n_tokens, /* is_dense= */ false,
