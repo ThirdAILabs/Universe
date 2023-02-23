@@ -221,7 +221,7 @@ std::vector<std::string_view> parseLine(const std::string& untrimmed_line,
 
     if (first_delimiter_in_quotes &&
         quotesAreMalformed(state_machine, is_last_char)) {
-      position = *first_delimiter_in_quotes;
+      position = first_delimiter_in_quotes.value();
       state_machine.setState(
           /* current_state= */ ParserState::NewColumn,
           /* previous_state= */ ParserState::RegularOutsideQuotes);
