@@ -9,6 +9,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <stdexcept>
 
 namespace thirdai::automl::udt {
 
@@ -79,6 +80,18 @@ class UDTClassifier final : public UDTBackend {
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
+  }
+
+  void verifyCanDistribute() const final {
+    if (!integerTarget()) {
+      throw std::invalid_argument(
+          "UDT with a categorical target cannot be trained in distributed "
+          "setting without integer_target=True . Please convert the "
+          "categorical target column into an integer target to train UDT in a "
+          "distributed setting.");
+    }
+
+    _dataset_factory->verifyCanDistribute();
   }
 
  private:

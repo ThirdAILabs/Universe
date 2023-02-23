@@ -106,6 +106,8 @@ class UDT {
     return _backend->tabularDatasetFactory();
   }
 
+  void verifyCanDistribute() const { _backend->verifyCanDistribute(); }
+
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;

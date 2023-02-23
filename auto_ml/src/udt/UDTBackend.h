@@ -66,6 +66,10 @@ class UDTBackend {
 
   virtual void setModel(bolt::BoltGraphPtr model) = 0;
 
+  virtual void verifyCanDistribute() const {
+    throw notSupported("train_distributed");
+  }
+
   virtual std::vector<dataset::Explanation> explain(
       const MapInput& sample,
       const std::optional<std::variant<uint32_t, std::string>>& target_class) {
@@ -119,17 +123,17 @@ class UDTBackend {
  protected:
   UDTBackend() {}
 
+  static std::runtime_error notSupported(const std::string& name) {
+    return std::runtime_error("Method '" + name +
+                              "' is not supported for this type of model.");
+  }
+
  private:
   friend cereal::access;
 
   template <class Archive>
   void serialize(Archive& archive) {
     (void)archive;
-  }
-
-  static std::runtime_error notSupported(const std::string& name) {
-    return std::runtime_error("Method '" + name +
-                              "' is not supported for this type of model.");
   }
 };
 
