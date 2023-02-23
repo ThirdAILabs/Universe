@@ -87,9 +87,9 @@ class UDTClassifier final : public UDTBackend {
     if (!integerTarget()) {
       throw std::invalid_argument(
           "UDT with a categorical target cannot be trained in distributed "
-          "setting without integer_target=True . Please convert the "
-          "categorical target column into an integer target to train UDT in a "
-          "distributed setting.");
+          "setting without integer_target=True. Please convert the categorical "
+          "target column into an integer target to train UDT in a distributed "
+          "setting.");
     }
 
     _dataset_factory->verifyCanDistribute();
