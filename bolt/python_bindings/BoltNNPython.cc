@@ -369,7 +369,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
           [](BoltGraph& model, const dataset::BoltDatasetList& data,
              const dataset::BoltDatasetPtr& labels,
              const TrainConfig& train_config) {
-            model.train(data, labels, train_config);
+            return model.train(data, labels, train_config);
           },
           py::arg("train_data"), py::arg("train_labels"),
           py::arg("train_config"),
@@ -635,6 +635,8 @@ That's all for now, folks! More docs coming soon :)
 
 void createLossesSubmodule(py::module_& nn_submodule) {
   auto losses_submodule = nn_submodule.def_submodule("losses");
+
+  losses_submodule.def("get_loss_function", &getLossFunction, py::arg("name"));
 
   py::class_<LossFunction, std::shared_ptr<LossFunction>>(  // NOLINT
       losses_submodule, "LossFunction", "Base class for all loss functions");
