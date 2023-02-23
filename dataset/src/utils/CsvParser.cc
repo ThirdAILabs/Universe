@@ -201,7 +201,7 @@ std::vector<std::string_view> parseLine(const std::string& untrimmed_line,
 
   StateMachine state_machine(delimiter);
   uint32_t column_start = 0;
-  std::optional<uint32_t> first_delimiter_in_quotes = std::nullopt;
+  std::optional<uint32_t> first_delimiter_in_quotes;
   for (uint32_t position = 0; position < line.size(); position++) {
     state_machine.transition(line[position]);
 
@@ -234,7 +234,7 @@ std::vector<std::string_view> parseLine(const std::string& untrimmed_line,
           line, /* column_end_state= */ state_machine.previousState(),
           /* start_index= */ column_start, /* end_index= */ position));
       column_start = position + 1;
-      first_delimiter_in_quotes = std::nullopt;
+      first_delimiter_in_quotes.reset();
     }
   }
 
