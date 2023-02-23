@@ -426,6 +426,18 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
                               input.len, hashes.data());
   }
 
+  std::cout << "The hashes are:" << std::endl;
+  for (auto x : hashes) {
+    std::cout << x << "\t";
+  }
+  std::cout << std::endl;
+
+  std::cout << "The hashes are:" << std::endl;
+  for (auto x : hashes) {
+    std::cout << x << "\t";
+  }
+  std::cout << std::endl;
+
   switch (_sampling_mode) {
     case BoltSamplingMode::FrequencyRerankingWithInsertions:
       _hash_table->queryWithFrequencyRanking(
@@ -443,6 +455,15 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
       _hash_table->queryBySet(hashes.data(), active_set);
   }
 
+  std::cout
+      << "We have sampled the active neurons and printing the active set from "
+         "enquiring the hash tables. The number of active neurons is: "
+      << active_set.size() << std::endl;
+  for (auto x : active_set) {
+    std::cout << x << "\t";
+  }
+  std::cout << std::endl << "Finished printing the active set" << std::endl;
+
   if (active_set.size() < _sparse_dim) {
     // here we use hashes[0] as our random number because rand() is not thread
     // safe and we want to have deterministic sampling.
@@ -452,6 +473,14 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
       rand_offset = rand_offset % _dim;
     }
   }
+
+  std::cout << "We have added more neurons to the active neurons set. The "
+               "number of active neurons is: "
+            << active_set.size() << std::endl;
+  for (auto x : active_set) {
+    std::cout << x << "\t";
+  }
+  std::cout << std::endl << "Finished printing the active set" << std::endl;
 
   uint32_t cnt = 0;
   for (uint32_t i = 0; i < label_len; i++) {

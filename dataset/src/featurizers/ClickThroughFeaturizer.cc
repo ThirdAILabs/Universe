@@ -2,6 +2,7 @@
 #include "ProcessorUtils.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <cmath>
 #include <optional>
 #include <stdexcept>
@@ -28,7 +29,7 @@ std::vector<std::vector<BoltVector>> ClickThroughFeaturizer::featurize(
 
 std::tuple<BoltVector, BoltVector, BoltVector>
 ClickThroughFeaturizer::processRow(const std::string& row) const {
-  auto cols = ProcessorUtils::parseCsvRow(row, _delimiter);
+  auto cols = parsers::CSV::parseLine(row, _delimiter);
 
   if (cols.size() <= _num_dense_features + 1) {
     throw std::invalid_argument(
