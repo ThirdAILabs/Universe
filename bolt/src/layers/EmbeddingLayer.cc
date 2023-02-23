@@ -34,7 +34,7 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   // We allocate the extra _lookup_size elements such that if a point hashes to
   // the end of 2^_embedding_block_size we don't have to worry about wrapping it
   // around.
-  _embedding_block_size = (1 << _log_embedding_block_size) + _lookup_size;
+  _embedding_block_size = (1ULL << _log_embedding_block_size) + _lookup_size;
   uint64_t n_chunks =
       (_embedding_block_size + _update_chunk_size - 1) / _update_chunk_size;
   _embedding_block_size = n_chunks * _update_chunk_size;
