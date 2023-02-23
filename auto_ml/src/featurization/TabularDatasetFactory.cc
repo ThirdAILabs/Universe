@@ -197,6 +197,21 @@ TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   return preprocessedVectorsFromDataset(metadata_source, *key_vocab);
 }
 
+void TabularDatasetFactory::save_stream(std::ostream& output_stream) const {
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
+
+std::shared_ptr<TabularDatasetFactory> TabularDatasetFactory::load_stream(
+    std::istream& input_stream) {
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<TabularDatasetFactory> deserialize_into(
+      new TabularDatasetFactory());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
+}
+
 template void TabularDatasetFactory::serialize(cereal::BinaryInputArchive&);
 template void TabularDatasetFactory::serialize(cereal::BinaryOutputArchive&);
 
