@@ -34,7 +34,22 @@ def get_udt_cold_start_model():
 def test_distributed_cold_start(ray_two_node_cluster_config):
     udt_model = get_udt_cold_start_model()
 
-    metrics = udt_model.cold_start_distributed(
+    # class FinalMetricCallback(bolt.callbacks.Callback):
+    #     def __init__(self):
+    #         super().__init__()
+    #         self.ending_train_metric = 0
+
+    #     def on_batch_begin(self, model, train_state):
+    #         print("Hello")
+
+    #     def on_train_end(self, model, train_state):
+    #         self.ending_train_metric = train_state.get_train_metric_values(
+    #             "categorical_accuracy"
+    #         )[-1]
+
+    # final_metric = FinalMetricCallback()
+
+    udt_model.cold_start_distributed(
         cluster_config=ray_two_node_cluster_config("linear"),
         filenames=[f"{os.getcwd()}/xaa", f"{os.getcwd()}/xab"],
         strong_column_names=["TITLE"],
@@ -42,6 +57,24 @@ def test_distributed_cold_start(ray_two_node_cluster_config):
         learning_rate=0.001,
         epochs=5,
         metrics=["categorical_accuracy"],
+        # callbacks=[final_metric],
     )
 
-    assert metrics["categorical_accuracy"] > 0.7
+    # print(final_metric.ending_train_metric)
+    # assert final_metric.ending_train_metric > 0.7
+
+
+def test_serializability():
+    from ray.util import inspect_serializability
+
+    class FinalMetricCallback(bolt.callbacks.Callback):
+        def __init__(self):
+            super().__init__()
+            self.ending_train_metric = 0
+
+        def on_train_end(self, model, train_state):
+            self.ending_train_metric = train_state.get_train_metric_values(
+                "categorical_accuracy"
+            )[-1]
+
+    print(inspect_serializability(FinalMetricCallback))

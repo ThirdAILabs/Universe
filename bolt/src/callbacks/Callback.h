@@ -2,6 +2,9 @@
 
 #include <memory>
 #include <vector>
+#include <cereal/access.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 
 namespace thirdai::bolt {
 
@@ -62,10 +65,15 @@ class Callback {
   }
 
   virtual ~Callback() = default;
+  private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive){
+    (void)archive;
+  }
 };
 
 using CallbackPtr = std::shared_ptr<Callback>;
-
 /**
  * This class serves as a helpful intermediary between models and callbacks by
  * dispatching calls to the stored callbacks.
@@ -114,6 +122,11 @@ class CallbackList {
   uint64_t numCallbacks() const { return _callbacks.size(); }
 
  private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive){
+    archive(_callbacks);
+  }
   std::vector<CallbackPtr> _callbacks;
 };
 

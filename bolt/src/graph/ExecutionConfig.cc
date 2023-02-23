@@ -13,10 +13,6 @@ void TrainConfig::save(const std::string& filename) const {
 }
 
 void TrainConfig::save_stream(std::ostream& output_stream) const {
-  if (_callbacks.numCallbacks() != 0) {
-    throw std::runtime_error(
-        "Cannot serialize a training config that has callbacks.");
-  }
   if (_validation_context.has_value()) {
     throw std::runtime_error(
         "Cannot serialize a training config that has a validation context.");
@@ -41,7 +37,7 @@ TrainConfigPtr TrainConfig::load_stream(std::istream& input_stream) {
 template <class Archive>
 void TrainConfig::serialize(Archive& archive) {
   archive(_epochs, _learning_rate, _metric_names, _verbose,
-          _rebuild_hash_tables, _reconstruct_hash_functions, _save_context);
+          _rebuild_hash_tables, _reconstruct_hash_functions, _save_context, _callbacks);
 }
 
 }  // namespace thirdai::bolt

@@ -187,6 +187,8 @@ def add_distributed_to_udt():
 
         self._set_model(trained_model=model)
 
+        return metrics
+
     setattr(bolt.models.UDTClassifier, "cold_start_distributed", cold_start_distributed)
 
 

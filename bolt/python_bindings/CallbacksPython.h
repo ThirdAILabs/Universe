@@ -3,6 +3,10 @@
 #include <bolt/src/callbacks/Callback.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <cereal/access.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 namespace py = pybind11;
 
@@ -68,6 +72,12 @@ class PyCallback : public Callback {
                            std::ref(model), /* Argument(s) */
                            std::ref(train_state));
   }
+  private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive){
+    archive(cereal::base_class<Callback>(this));
+  }
 };
 
 // The following callback uses py:: and PyErr symbols, which come from Python.
@@ -95,3 +105,6 @@ class KeyboardInterrupt : public Callback {
 using KeyboardInterruptPtr = std::shared_ptr<KeyboardInterrupt>;
 
 }  // namespace thirdai::bolt::python
+
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::python::PyCallback);
