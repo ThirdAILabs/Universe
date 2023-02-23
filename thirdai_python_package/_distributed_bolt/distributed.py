@@ -124,7 +124,7 @@ def add_distributed_to_udt():
 
         return metrics
 
-    setattr(bolt.models.Pipeline, "train_distributed", train_distributed)
+    setattr(bolt.UDT, "train_distributed", train_distributed)
 
 
 class RayTrainingClusterConfig:

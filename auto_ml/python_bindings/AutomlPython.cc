@@ -3,10 +3,6 @@
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ModelConfig.h>
-#include <auto_ml/src/dataset_factories/DatasetFactory.h>
-#include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
-#include <auto_ml/src/models/OutputProcessor.h>
-#include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
@@ -16,31 +12,52 @@
 
 namespace thirdai::automl::python {
 
-std::shared_ptr<udt::UDT> createUDT(
-    data::ColumnDataTypes data_types,
-    const data::UserProvidedTemporalRelationships&
-        temporal_tracking_relationships,
-    const std::string& target_col, std::optional<uint32_t> n_target_classes,
-    bool integer_target, std::string time_granularity, uint32_t lookahead,
-    char delimiter, const std::optional<std::string>& model_config,
-    const py::dict& user_args) {
-  return std::make_shared<udt::UDT>(
-      data_types, temporal_tracking_relationships, target_col, n_target_classes,
-      integer_target, time_granularity, lookahead, delimiter, model_config,
-      createArgumentMap(user_args));
-}
+class ValidationOptions {
+ public:
+  ValidationOptions(std::string filename, std::vector<std::string> metrics,
+                    std::optional<uint32_t> interval, bool use_sparse_inference)
+      : _filename(std::move(filename)),
+        _metrics(std::move(metrics)),
+        _interval(interval),
+        _use_sparse_inference(use_sparse_inference) {}
+
+  const std::string& filename() const { return _filename; }
+
+  uint32_t interval() const { return _interval.value_or(0); }
+
+  bolt::EvalConfig validationConfig() const {
+    bolt::EvalConfig val_config =
+        bolt::EvalConfig::makeConfig().withMetrics(_metrics);
+
+    if (_use_sparse_inference) {
+      val_config.enableSparseInference();
+    }
+
+    return val_config;
+  }
+
+  const std::vector<std::string>& metrics() const { return _metrics; }
+
+  bool sparseInference() const { return _use_sparse_inference; }
+
+ private:
+  std::string _filename;
+  std::vector<std::string> _metrics;
+  std::optional<uint32_t> _interval;
+  bool _use_sparse_inference;
+};
 
 void defineAutomlInModule(py::module_& module) {
-  py::class_<models::ValidationOptions>(module, "Validation")
+  py::class_<ValidationOptions>(module, "Validation")
       .def(py::init<std::string, std::vector<std::string>,
                     std::optional<uint32_t>, bool>(),
            py::arg("filename"), py::arg("metrics"),
            py::arg("interval") = std::nullopt,
            py::arg("use_sparse_inference") = false, docs::VALIDATION)
-      .def("filename", &models::ValidationOptions::filename)
-      .def("metrics", &models::ValidationOptions::metrics)
-      .def("interval", &models::ValidationOptions::interval)
-      .def("sparse_inference", &models::ValidationOptions::sparseInference);
+      .def("filename", &ValidationOptions::filename)
+      .def("metrics", &ValidationOptions::metrics)
+      .def("interval", &ValidationOptions::interval)
+      .def("sparse_inference", &ValidationOptions::sparseInference);
 
   /**
    * This class definition overrides the __new__ method because we want to
@@ -84,14 +101,6 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("sparse_inference") = false);
 
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module, "UDT")
-      .def(py::init(&createUDT), py::arg("data_types"),
-           py::arg("temporal_tracking_relationships") =
-               data::UserProvidedTemporalRelationships(),
-           py::arg("target"), py::arg("n_target_classes") = std::nullopt,
-           py::arg("integer_target") = false,
-           py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
-           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
-           py::arg("options") = py::dict())
       .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),
            py::arg("epochs"), py::arg("validation") = std::nullopt,
            py::arg("batch_size") = std::nullopt,
@@ -141,87 +150,10 @@ void defineAutomlInModule(py::module_& module) {
 void createModelsSubmodule(py::module_& module) {
   auto models_submodule = module.def_submodule("models");
 
-  py::class_<ModelPipeline, std::shared_ptr<ModelPipeline>>(models_submodule,
-                                                            "Pipeline")
-      .def("train_with_source", &ModelPipeline::train, py::arg("data_source"),
-           py::arg("train_config"), py::arg("validation") = std::nullopt,
-           py::arg("max_in_memory_batches") = std::nullopt,
-           py::arg("batch_size") = std::nullopt,
-           docs::MODEL_PIPELINE_TRAIN_DATA_SOURCE,
-           bolt::python::OutputRedirect())
-      .def("evaluate_with_source", &ModelPipeline::evaluate,
-           py::arg("data_source"), py::arg("eval_config") = std::nullopt,
-           py::arg("return_predicted_class") = false,
-           py::arg("return_metrics") = false,
-           docs::MODEL_PIPELINE_EVALUATE_DATA_SOURCE,
-           bolt::python::OutputRedirect())
-      .def("predict",
-           py::overload_cast<const LineInput&, bool, bool>(
-               &ModelPipeline::predict),
-           py::arg("input_sample"), py::arg("use_sparse_inference") = false,
-           py::arg("return_predicted_class") = false,
-           docs::MODEL_PIPELINE_PREDICT)
-      .def("explain", &ModelPipeline::explain<LineInput>,
-           py::arg("input_sample"), py::arg("target_class") = std::nullopt,
-           docs::MODEL_PIPELINE_EXPLAIN)
-      .def("predict_tokens", &predictTokensWrapper, py::arg("tokens"),
-           py::arg("use_sparse_inference") = false,
-           docs::MODEL_PIPELINE_PREDICT_TOKENS)
-      .def("predict_batch",
-           py::overload_cast<const LineInputBatch&, bool, bool>(
-               &ModelPipeline::predictBatch),
-           py::arg("input_samples"), py::arg("use_sparse_inference") = false,
-           py::arg("return_predicted_class") = false,
-           docs::MODEL_PIPELINE_PREDICT_BATCH)
-      .def("save", &ModelPipeline::save, py::arg("filename"),
-           docs::MODEL_PIPELINE_SAVE)
-      .def_static("load", &ModelPipeline::load, py::arg("filename"),
-                  docs::MODEL_PIPELINE_LOAD)
-      .def("get_data_processor", &ModelPipeline::getDataProcessor,
-           docs::MODEL_PIPELINE_GET_DATA_PROCESSOR)
-      .def("_get_model", &ModelPipeline::getModel)
-      .def("_set_model", &ModelPipeline::setModel, py::arg("trained_model"))
-      .def_property_readonly("default_train_batch_size",
-                             &ModelPipeline::defaultBatchSize)
-      .def_property_readonly_static(
-          "default_evaluate_batch_size", [](const py::object& /* self */) {
-            return models::DEFAULT_EVALUATE_BATCH_SIZE;
-          });
-
   py::class_<data::TabularDatasetFactory, data::TabularDatasetFactoryPtr>(
       models_submodule, "TabularDatasetFactory")
       .def("get_dataset_loader", &data::TabularDatasetFactory::getDatasetLoader,
            py::arg("data_source"), py::arg("training"));
-
-  py::class_<data::UDTDatasetFactory, data::UDTDatasetFactoryPtr>(
-      models_submodule, "TemporalContext")
-      .def("get_dataset_loader",
-           &data::UDTDatasetFactory::getLabeledDatasetLoader,
-           py::arg("data_source"), py::arg("training"))
-      .def("reset", &data::UDTDatasetFactory::resetTemporalTrackers,
-           docs::TEMPORAL_CONTEXT_RESET)
-      .def("update_temporal_trackers",
-           py::overload_cast<const LineInput&>(
-               &data::UDTDatasetFactory::updateTemporalTrackers),
-           py::arg("update"), docs::TEMPORAL_CONTEXT_UPDATE)
-      .def("batch_update_temporal_trackers",
-           py::overload_cast<const LineInputBatch&>(
-               &data::UDTDatasetFactory::batchUpdateTemporalTrackers),
-           py::arg("updates"), docs::TEMPORAL_CONTEXT_UPDATE_BATCH)
-      .def("verify_can_distribute",
-           &data::UDTDatasetFactory::verifyCanDistribute)
-      .def(bolt::python::getPickleFunction<data::UDTDatasetFactory>());
-
-  py::class_<data::UDTConfig, data::UDTConfigPtr>(models_submodule, "UDTConfig")
-      .def(py::init<data::ColumnDataTypes,
-                    data::UserProvidedTemporalRelationships, std::string,
-                    uint32_t, bool, std::string, uint32_t, char>(),
-           py::arg("data_types"), py::arg("temporal_tracking_relationships"),
-           py::arg("target"), py::arg("n_target_classes"),
-           py::arg("integer_target") = false,
-           py::arg("time_granularity") = "daily", py::arg("lookahead") = 0,
-           py::arg("delimiter") = ',', docs::UDT_CONFIG_INIT,
-           bolt::python::OutputRedirect());
 
   py::class_<QueryCandidateGenerator, std::shared_ptr<QueryCandidateGenerator>>(
       models_submodule, "UDTGenerator")
@@ -402,20 +334,6 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
   return args;
 }
 
-py::object predictTokensWrapper(ModelPipeline& model,
-                                const std::vector<uint32_t>& tokens,
-                                bool use_sparse_inference) {
-  std::stringstream sentence;
-  for (uint32_t i = 0; i < tokens.size(); i++) {
-    if (i > 0) {
-      sentence << ' ';
-    }
-    sentence << tokens[i];
-  }
-  return model.predict(sentence.str(), use_sparse_inference,
-                       /* return_predicted_class= */ false);
-}
-
 // UDT Factory Methods
 
 QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapper(
@@ -451,8 +369,9 @@ TextClassifier UDTFactory::buildTextClassifier(py::object& obj,
 
 std::shared_ptr<udt::UDT> UDTFactory::buildUDT(
     py::object& obj, data::ColumnDataTypes data_types,
-    data::UserProvidedTemporalRelationships temporal_tracking_relationships,
-    std::string target_col, std::optional<uint32_t> n_target_classes,
+    const data::UserProvidedTemporalRelationships&
+        temporal_tracking_relationships,
+    const std::string& target_col, std::optional<uint32_t> n_target_classes,
     bool integer_target, std::string time_granularity, uint32_t lookahead,
     char delimiter, const std::optional<std::string>& model_config,
     const py::dict& options) {
@@ -460,8 +379,8 @@ std::shared_ptr<udt::UDT> UDTFactory::buildUDT(
   return std::make_shared<udt::UDT>(
       /* data_types = */ std::move(data_types),
       /* temporal_tracking_relationships = */
-      std::move(temporal_tracking_relationships),
-      /* target_col = */ std::move(target_col),
+      temporal_tracking_relationships,
+      /* target_col = */ target_col,
       /* n_target_classes = */ n_target_classes,
       /* integer_target = */ integer_target,
       /* time_granularity = */ std::move(time_granularity),

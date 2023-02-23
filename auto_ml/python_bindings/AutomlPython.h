@@ -1,18 +1,17 @@
 #pragma once
 
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/Generator.h>
-#include <auto_ml/src/models/ModelPipeline.h>
 #include <auto_ml/src/models/TextClassifier.h>
-#include <auto_ml/src/models/UniversalDeepTransformer.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
 namespace thirdai::automl::python {
 
-using models::ModelPipeline;
 using models::QueryCandidateGenerator;
 using models::TextClassifier;
 
@@ -29,10 +28,6 @@ void createDeploymentSubmodule(py::module_& module);
 // Python wrappers for ModelPipline methods
 
 config::ArgumentMap createArgumentMap(const py::dict& input_args);
-
-py::object predictTokensWrapper(ModelPipeline& model,
-                                const std::vector<uint32_t>& tokens,
-                                bool use_sparse_inference);
 
 // UDT Factory
 class UDTFactory {
@@ -54,8 +49,9 @@ class UDTFactory {
 
   static std::shared_ptr<udt::UDT> buildUDT(
       py::object& obj, data::ColumnDataTypes data_types,
-      data::UserProvidedTemporalRelationships temporal_tracking_relationships,
-      std::string target_col, std::optional<uint32_t> n_target_classes,
+      const data::UserProvidedTemporalRelationships&
+          temporal_tracking_relationships,
+      const std::string& target_col, std::optional<uint32_t> n_target_classes,
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
       const py::dict& options);

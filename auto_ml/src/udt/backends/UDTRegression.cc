@@ -11,14 +11,15 @@
 
 namespace thirdai::automl::udt {
 
-UDTRegression::UDTRegression(
-    const data::ColumnDataTypes& input_data_types,
-    data::UserProvidedTemporalRelationships temporal_tracking_relationships,
-    const std::string& target_name, const data::NumericalDataTypePtr& target,
-    std::optional<uint32_t> num_bins,
-    const data::TabularOptions& tabular_options,
-    const std::optional<std::string>& model_config,
-    const config::ArgumentMap& user_args) {
+UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
+                             const data::UserProvidedTemporalRelationships&
+                                 temporal_tracking_relationships,
+                             const std::string& target_name,
+                             const data::NumericalDataTypePtr& target,
+                             std::optional<uint32_t> num_bins,
+                             const data::TabularOptions& tabular_options,
+                             const std::optional<std::string>& model_config,
+                             const config::ArgumentMap& user_args) {
   uint32_t output_bins = num_bins.value_or(defaults::REGRESSION_BINS);
 
   if (model_config) {

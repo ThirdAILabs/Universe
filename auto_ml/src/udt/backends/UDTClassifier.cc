@@ -5,7 +5,6 @@
 #include <cereal/types/optional.hpp>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <auto_ml/src/cold_start/ColdStartDataSource.h>
-#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
@@ -21,14 +20,15 @@
 
 namespace thirdai::automl::udt {
 
-UDTClassifier::UDTClassifier(
-    const data::ColumnDataTypes& input_data_types,
-    data::UserProvidedTemporalRelationships temporal_tracking_relationships,
-    const std::string& target_name, data::CategoricalDataTypePtr target,
-    uint32_t n_target_classes, bool integer_target,
-    const data::TabularOptions& tabular_options,
-    const std::optional<std::string>& model_config,
-    const config::ArgumentMap& user_args) {
+UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
+                             const data::UserProvidedTemporalRelationships&
+                                 temporal_tracking_relationships,
+                             const std::string& target_name,
+                             data::CategoricalDataTypePtr target,
+                             uint32_t n_target_classes, bool integer_target,
+                             const data::TabularOptions& tabular_options,
+                             const std::optional<std::string>& model_config,
+                             const config::ArgumentMap& user_args) {
   if (model_config) {
     _model = utils::loadModel({tabular_options.feature_hash_range},
                               n_target_classes, *model_config);

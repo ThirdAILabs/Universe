@@ -384,14 +384,11 @@ set(THIRDAI_SOURCES
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/dataset_factories/udt/DataTypes.cc
-    auto_ml/src/dataset_factories/udt/FeatureComposer.cc
-    auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
     auto_ml/src/featurization/TabularBlockComposer.cc
     auto_ml/src/featurization/TabularDatasetFactory.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartDataSource.cc
-    auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc
     utils/StringManipulation.cc)
 
@@ -444,10 +441,7 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Train.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
-  auto_ml/src/models/ModelPipeline.cc
-  auto_ml/src/models/OutputProcessor.cc
   auto_ml/src/models/TextClassifier.cc
-  auto_ml/src/models/UniversalDeepTransformer.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 
