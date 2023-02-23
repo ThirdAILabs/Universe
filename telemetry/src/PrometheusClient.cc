@@ -1,8 +1,11 @@
 
 #include "PrometheusClient.h"
+#include <cpp-httplib/httplib.h>
 #include <deps/prometheus-cpp/3rdparty/civetweb/include/CivetServer.h>
 #include <utils/Logging.h>
+#include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace thirdai::telemetry {
 
@@ -15,13 +18,19 @@ namespace thirdai::telemetry {
 //  PrometheusTelemetryClient::startTelemetryFromEnvVars();
 PrometheusTelemetryClient client = PrometheusTelemetryClient::startNoop();
 
-void createGlobalTelemetryClient(uint32_t port) {
+void createGlobalTelemetryClient(uint32_t port,
+                                 std::optional<ReporterFunc> reporter_func,
+                                 uint64_t reporter_period_ms) {
   if (!client.isNoop()) {
     throw std::runtime_error(
         "Trying to start telemetry client when one is already running. You "
         "should stop the current client before starting a new one.");
   }
-  client = PrometheusTelemetryClient::start(port);
+  std::optional<Reporter> reporter = std::nullopt;
+  if (reporter_func) {
+    reporter = {reporter_func.value(), reporter_period_ms};
+  }
+  client = PrometheusTelemetryClient::start(port, reporter);
 }
 
 void stopGlobalTelemetryClient() {
@@ -50,11 +59,12 @@ PrometheusTelemetryClient PrometheusTelemetryClient::startFromEnvVars() {
   return start(port);
 }
 
-PrometheusTelemetryClient PrometheusTelemetryClient::start(uint32_t port) {
+PrometheusTelemetryClient PrometheusTelemetryClient::start(
+    uint32_t port, std::optional<Reporter> reporter) {
   std::shared_ptr<prometheus::Exposer> exposer;
+  std::string bind_address = "127.0.0.1:" + std::to_string(port);
   try {
-    exposer = std::make_shared<prometheus::Exposer>(
-        /* bind_address = */ "127.0.0.1:" + std::to_string(port));
+    exposer = std::make_shared<prometheus::Exposer>(bind_address);
   } catch (const CivetException& e) {
     logging::error(
         "Cannot start telemetry client on port " + std::to_string(port) +
@@ -65,13 +75,33 @@ PrometheusTelemetryClient PrometheusTelemetryClient::start(uint32_t port) {
   }
   auto registry = std::make_shared<prometheus::Registry>();
   exposer->RegisterCollectable(registry);
-  return PrometheusTelemetryClient(exposer, registry);
+  return PrometheusTelemetryClient(exposer, registry, bind_address,
+                                   std::move(reporter));
+}
+
+std::string getCurrentMetrics(const std::string& url) {
+  httplib::Client client(url);
+  httplib::Result response = client.Get(/* path = */ "/metrics");
+  if (!response || response->status != 200) {
+    return "";
+  }
+  return response->body;
 }
 
 PrometheusTelemetryClient::PrometheusTelemetryClient(
     std::shared_ptr<prometheus::Exposer> exposer,
-    std::shared_ptr<prometheus::Registry> registry)
+    std::shared_ptr<prometheus::Registry> registry,
+    const std::string& bind_address, std::optional<Reporter> reporter)
     : _exposer(std::move(exposer)), _registry(std::move(registry)) {
+  if (reporter.has_value()) {
+    _reporter_thread = threads::BackgroundThread::make(
+        /* func = */
+        [reporter, bind_address]() {
+          reporter->func(getCurrentMetrics(bind_address));
+        },
+        /* function_run_period_ms = */ reporter->period_ms);
+  }
+
   // See https://prometheus.io/docs/practices/histograms/ for metric naming
   // conventions
 

@@ -9,6 +9,7 @@
 #include <json/include/nlohmann/json.hpp>
 #include <licensing/src/utils.h>
 #include <chrono>
+#include <utility>
 
 namespace thirdai::licensing {
 
@@ -17,11 +18,17 @@ using json = nlohmann::json;
 const std::string THIRDAI_PUBLIC_KEY_BASE64_DER =
     "MCowBQYDK2VwAyEAqA9j+Pk81yUz7FPZfg94bez6m1j8j1jiLctTjmB2s7w=";
 
+int64_t currentEpochSeconds() {
+  return std::chrono::duration_cast<std::chrono::milliseconds>(
+             std::chrono::system_clock::now().time_since_epoch())
+      .count();
+}
+
 HeartbeatThread::HeartbeatThread(
-    const std::string& url, const std::optional<uint32_t>& heartbeat_timeout)
-    : _machine_id(getRandomIdentifier(/* numBytesRandomness = */ 32)),
-      _verified(true),
-      _should_terminate(false) {
+    std::string url, const std::optional<uint32_t>& heartbeat_timeout)
+    : _server_url(std::move(url)),
+      _machine_id(getRandomIdentifier(/* numBytesRandomness = */ 32)),
+      _verified(true) {
   if (!heartbeat_timeout.has_value()) {
     _no_heartbeat_grace_period_seconds = MAX_NO_HEARTBEAT_GRACE_PERIOD_SECONDS;
   } else {
@@ -33,11 +40,15 @@ HeartbeatThread::HeartbeatThread(
     _no_heartbeat_grace_period_seconds = *heartbeat_timeout;
   }
 
-  if (!doSingleHeartbeat(url)) {
+  if (!tryHeartbeat()) {
     throw exceptions::LicenseCheckException(
         "Could not establish initial connection to licensing server.");
   }
-  _heartbeat_thread = std::thread(&HeartbeatThread::heartbeatThread, this, url);
+  _last_validation = currentEpochSeconds();
+
+  _heartbeat_thread = threads::BackgroundThread::make(
+      /* func = */ [this]() { updateVerification(); },
+      /* function_run_period_ms = */ HEARTBEAT_PERIOD_SECONDS);
 }
 
 void HeartbeatThread::verify() {
@@ -50,29 +61,13 @@ void HeartbeatThread::verify() {
   }
 }
 
-HeartbeatThread::~HeartbeatThread() {
-  _should_terminate = true;
-  _heartbeat_thread.join();
-}
-
-int64_t currentEpochSeconds() {
-  return std::chrono::duration_cast<std::chrono::milliseconds>(
-             std::chrono::system_clock::now().time_since_epoch())
-      .count();
-}
-
-void HeartbeatThread::heartbeatThread(const std::string& url) {
-  int64_t last_validation = currentEpochSeconds();
-  while (!_should_terminate) {
-    if (doSingleHeartbeat(url)) {
-      last_validation = currentEpochSeconds();
-      _verified = true;
-    } else {
-      _verified = currentEpochSeconds() - last_validation <
-                  _no_heartbeat_grace_period_seconds;
-    }
-
-    std::this_thread::sleep_for(std::chrono::seconds(HEARTBEAT_PERIOD_SECONDS));
+void HeartbeatThread::updateVerification() {
+  if (tryHeartbeat()) {
+    _last_validation = currentEpochSeconds();
+    _verified = true;
+  } else {
+    _verified = currentEpochSeconds() - _last_validation <
+                _no_heartbeat_grace_period_seconds;
   }
 }
 
@@ -95,8 +90,8 @@ bool verifyResponse(const std::string& submitted_machine_id,
       decoded_signature.size());
 }
 
-bool HeartbeatThread::doSingleHeartbeat(const std::string& url) {
-  httplib::Client client(url);
+bool HeartbeatThread::tryHeartbeat() {
+  httplib::Client client(_server_url);
   // See KeygenCommunication.cc for why we need this
   client.enable_server_certificate_verification(false);
   json body;

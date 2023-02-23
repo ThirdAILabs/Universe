@@ -1,5 +1,6 @@
 #pragma once
 
+#include <utils/BackgroundThread.h>
 #include <atomic>
 #include <optional>
 #include <stdexcept>
@@ -20,16 +21,15 @@ constexpr uint32_t MAX_NO_HEARTBEAT_GRACE_PERIOD_SECONDS = 10000;
 
 class HeartbeatThread {
  public:
-  explicit HeartbeatThread(const std::string& url,
+  explicit HeartbeatThread(std::string url,
                            const std::optional<uint32_t>& heartbeat_timeout);
-
-  ~HeartbeatThread();
 
   void verify();
 
   void terminate();
 
  private:
+  // TODO(Josh): Update comment
   /**
    * Starts a loop that makes a request to the passed in url and then sleeps
    * for HEARTBEAT_PERIOD_SECONDS. If more than
@@ -40,14 +40,15 @@ class HeartbeatThread {
    * method is to be called in a background thread that runs as long as this
    * object exists and maintains the _verified variable.
    */
-  void heartbeatThread(const std::string& url);
+  void updateVerification();
 
-  bool doSingleHeartbeat(const std::string& url);
+  bool tryHeartbeat();
 
+  std::string _server_url;
   std::string _machine_id;
+  std::atomic_int64_t _last_validation;
   std::atomic_bool _verified;
-  std::atomic_bool _should_terminate;
-  std::thread _heartbeat_thread;
+  threads::BackgroundThreadPtr _heartbeat_thread;
   int64_t _no_heartbeat_grace_period_seconds;
 };
 

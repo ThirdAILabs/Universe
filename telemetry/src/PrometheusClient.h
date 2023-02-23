@@ -4,6 +4,8 @@
 #include <prometheus/exposer.h>
 #include <prometheus/histogram.h>
 #include <prometheus/registry.h>
+#include <utils/BackgroundThread.h>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::telemetry {
@@ -15,26 +17,38 @@ class PrometheusTelemetryClient;
 // I set this up as the actual ThirdAI default port on the wiki, so don't
 // change it unless you update it there too
 // See https://github.com/prometheus/prometheus/wiki/Default-port-allocations
-const inline uint32_t THIRDAI_DEFAULT_TELEMETRY_PORT = 9929;
+constexpr uint32_t THIRDAI_DEFAULT_TELEMETRY_PORT = 9929;
+
+constexpr uint64_t DEFAULT_REPORTER_PERIOD_MS = 10000;
 
 // Global PrometheusTelemetryClient that should be used by all C++ code that
 // wants to track telemetry.
 extern PrometheusTelemetryClient client;
 
+using ReporterFunc = std::function<void(const std::string&)>;
+
+struct Reporter {
+  ReporterFunc func;
+  uint64_t period_ms;
+};
+
 void createGlobalTelemetryClient(
-    uint32_t port = THIRDAI_DEFAULT_TELEMETRY_PORT);
+    uint32_t port = THIRDAI_DEFAULT_TELEMETRY_PORT,
+    std::optional<ReporterFunc> reporter_func = std::nullopt,
+    uint64_t reporter_period_ms = DEFAULT_REPORTER_PERIOD_MS);
 
 void stopGlobalTelemetryClient();
 
 /*
- * We need to use a C++ prometheus client to make sure that a user can't
- * bypass telemetry if we need them for licensing.
+ * We need to use a C++ prometheus client (as opposed to a python one) to make
+ * sure that a user can't manipulate telemetry if we need it for licensing.
  */
 class PrometheusTelemetryClient {
  public:
   static PrometheusTelemetryClient startFromEnvVars();
 
-  static PrometheusTelemetryClient start(uint32_t port);
+  static PrometheusTelemetryClient start(
+      uint32_t port, std::optional<Reporter> reporter = std::nullopt);
 
   static PrometheusTelemetryClient startNoop() {
     return PrometheusTelemetryClient();
@@ -60,11 +74,13 @@ class PrometheusTelemetryClient {
         _batch_prediction_histogram(nullptr),
         _explanation_histogram(nullptr),
         _evaluation_histogram(nullptr),
-        _train_histogram(nullptr) {}
+        _train_histogram(nullptr),
+        _reporter_thread(nullptr) {}
 
   explicit PrometheusTelemetryClient(
       std::shared_ptr<prometheus::Exposer> exposer,
-      std::shared_ptr<prometheus::Registry> registry);
+      std::shared_ptr<prometheus::Registry> registry,
+      const std::string& bind_address, std::optional<Reporter> reporter);
 
   // These variables are stored in this class to ensure the web server and
   // registry exist as long as this object exists.
@@ -93,6 +109,9 @@ class PrometheusTelemetryClient {
   // This will track # train calls, total train time, and a histogram of
   // train time. Same safety argument as for _prediction_histogram.
   prometheus::Histogram* _train_histogram;
+
+  // TODO(Josh): Comment
+  threads::BackgroundThreadPtr _reporter_thread;
 };
 
 }  // namespace thirdai::telemetry
