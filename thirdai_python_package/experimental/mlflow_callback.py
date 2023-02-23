@@ -83,10 +83,10 @@ class MlflowCallback(bolt.callbacks.Callback):
             mlflow.log_metric("val_" + name, values[-1])
         mlflow.log_metric("epoch_times", train_state.epoch_times[-1])
 
-    def log_additional_metric(self, key, value):
+    def log_additional_metric(self, key, value, step=0):
         import mlflow  # import inside class to not force another package dependency
 
-        mlflow.log_metric(key, value)
+        mlflow.log_metric(key, value, step=step)
 
     def log_additional_param(self, key, value):
         import mlflow  # import inside class to not force another package dependency
