@@ -14,10 +14,10 @@ def ray_two_node_cluster_config():
     mini_cluster = Cluster(
         initialize_head=True,
         head_node_args={
-            "num_cpus": 1,
+            "num_cpus": 4,
         },
     )
-    mini_cluster.add_node(num_cpus=1)
+    mini_cluster.add_node(num_cpus=4)
 
     # directly yielding mini_cluster returns a generator for cluster_config,
     # rather than cluster_config itself and those generators were just using
@@ -32,7 +32,7 @@ def ray_two_node_cluster_config():
         working_dir = os.path.dirname(os.path.realpath(__file__))
         cluster_config = db.RayTrainingClusterConfig(
             num_workers=2,
-            requested_cpus_per_node=1,
+            requested_cpus_per_node=4,
             communication_type=communication_type,
             cluster_address=mini_cluster.address,
             runtime_env={"working_dir": working_dir},

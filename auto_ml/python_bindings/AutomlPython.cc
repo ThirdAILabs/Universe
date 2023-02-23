@@ -1,6 +1,7 @@
 #include "AutomlPython.h"
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
+#include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
@@ -272,6 +273,12 @@ void createModelsSubmodule(py::module_& module) {
            docs::TEXT_CLASSIFIER_PREDICT)
       .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"),
            docs::TEXT_CLASSIFIER_SAVE);
+
+  py::class_<cold_start::ColdStartDataSource, dataset::DataSource, cold_start::ColdStartDataSourcePtr>(models_submodule, "ColdStartDataSource");
+
+  models_submodule.def("preprocess_cold_start_train_source", 
+  &cold_start::preprocessColdStartTrainSource, py::arg("original_source"), 
+  py::arg("strong_column_names"), py::arg("weak_column_names"), py::arg("dataset_config"));
 }
 
 void createUDTTypesSubmodule(py::module_& module) {
@@ -363,14 +370,6 @@ void createDeploymentSubmodule(py::module_& module) {
 
 #endif
 }
-void createDistributedDataProcessor(py::module_& module){
-
-  auto distributed_data_preprocess = module.def_submodule("_ddp_data_preprocess");
-  distributed_data_preprocess.def("preprocess_cold_start_train_source", 
-  &cold_start::preprocessColdStartTrainSource, py::arg("original_source"), 
-  py::arg("strong_column_names"), py::arg("weak_column_names"), py::arg("dataset_config"));
-}
-
 config::ArgumentMap createArgumentMap(const py::dict& input_args) {
   config::ArgumentMap args;
   for (const auto& [k, v] : input_args) {

@@ -149,8 +149,6 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // Deployment submodule
   thirdai::automl::python::createDeploymentSubmodule(m);
 
-  //DDP Data Preprocessing
-  thirdai::automl::python::createDistributedDataProcessor(m);
 
   // Bolt V2
   auto bolt_v2_submodule = m.def_submodule("bolt_v2");

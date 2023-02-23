@@ -141,11 +141,14 @@ def add_distributed_to_udt():
         learning_rate: float = 0.001,
         epochs: int = 5,
         metrics: List[str] = [],
+        callbacks: List[bolt.callbacks.Callback] = [],
     ):
 
         data_processor = self.get_data_processor()
 
         train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
+        if callbacks:
+            train_config.with_callbacks(callbacks)
         if metrics:
             train_config.with_metrics(metrics)
 
