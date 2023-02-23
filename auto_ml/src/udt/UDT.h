@@ -98,6 +98,14 @@ class UDT {
 
   bolt::BoltGraphPtr model() const { return _backend->model(); }
 
+  void setModel(bolt::BoltGraphPtr model) {
+    _backend->setModel(std::move(model));
+  }
+
+  data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
+    return _backend->tabularDatasetFactory();
+  }
+
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;

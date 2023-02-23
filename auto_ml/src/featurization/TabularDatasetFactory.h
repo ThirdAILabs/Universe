@@ -83,6 +83,14 @@ class TabularDatasetFactory {
     return input_data_types;
   }
 
+  void verifyCanDistribute() {
+    if (!_temporal_context.empty()) {
+      throw std::invalid_argument(
+          "UDT with temporal relationships cannot be trained in a distributed "
+          "setting.");
+    }
+  }
+
  private:
   dataset::TabularFeaturizerPtr makeFeaturizer(
       const TemporalRelationships& temporal_relationships,

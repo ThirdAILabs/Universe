@@ -86,7 +86,7 @@ def add_distributed_to_udt():
         data_processor.verify_can_distribute()
 
         if batch_size is None:
-            batch_size = self.default_train_batch_size
+            batch_size = 2048
 
         # calculating batch size per node
         batch_size = batch_size // cluster_config.num_workers

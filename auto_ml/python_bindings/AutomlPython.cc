@@ -130,7 +130,9 @@ void defineAutomlInModule(py::module_& module) {
       .def("explain", &udt::UDT::explain, py::arg("input_sample"),
            py::arg("target_class") = std::nullopt)
       .def("class_name", &udt::UDT::className)
+      .def("get_data_processor", &udt::UDT::tabularDatasetFactory)
       .def("_get_model", &udt::UDT::model)
+      .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("save", &UDTFactory::save_udt, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"));
 }
@@ -184,6 +186,13 @@ void createModelsSubmodule(py::module_& module) {
           "default_evaluate_batch_size", [](const py::object& /* self */) {
             return models::DEFAULT_EVALUATE_BATCH_SIZE;
           });
+
+  py::class_<data::TabularDatasetFactory, data::TabularDatasetFactoryPtr>(
+      models_submodule, "TabularDatasetFactory")
+      .def("get_dataset_loader", &data::TabularDatasetFactory::getDatasetLoader,
+           py::arg("data_source"), py::arg("training"))
+      .def("verify_can_distribute",
+           &data::TabularDatasetFactory::verifyCanDistribute);
 
   py::class_<data::UDTDatasetFactory, data::UDTDatasetFactoryPtr>(
       models_submodule, "TemporalContext")

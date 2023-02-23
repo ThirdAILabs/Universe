@@ -5,6 +5,7 @@
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <stdexcept>
 
 namespace thirdai::automl::udt {
 
@@ -39,6 +40,13 @@ class UDTRegression final : public UDTBackend {
                           bool return_predicted_class) final;
 
   bolt::BoltGraphPtr model() const final { return _model; }
+
+  void setModel(bolt::BoltGraphPtr model) final {
+    if (_model->outputDim() != model->outputDim()) {
+      throw std::invalid_argument("Output dim mismatch in set_model.");
+    }
+    _model = std::move(model);
+  }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
