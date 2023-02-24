@@ -1,4 +1,5 @@
 #include "TelemetryDocs.h"
+#include <pybind11/functional.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <telemetry/src/PrometheusClient.h>
@@ -14,11 +15,12 @@ void createTelemetrySubmodule(py::module_& thirdai_module) {
 
   submodule.def("start", &createGlobalTelemetryClient,
                 py::arg("port") = THIRDAI_DEFAULT_TELEMETRY_PORT,
-                py::arg("reporter_func") = std::nullopt,
-                py::arg("reporter_period_ms") = DEFAULT_REPORTER_PERIOD_MS,
+                py::arg("file_write_location") = std::nullopt,
+                py::arg("file_write_period") = DEFAULT_REPORTER_PERIOD_MS,
                 docs::START_TELEMETRY);
 
-  submodule.def("stop", &stopGlobalTelemetryClient, docs::STOP_TELEMETRY);
+  submodule.def("stop", &stopGlobalTelemetryClient,
+                py::call_guard<py::gil_scoped_release>(), docs::STOP_TELEMETRY);
 }
 
 }  // namespace thirdai::telemetry::python

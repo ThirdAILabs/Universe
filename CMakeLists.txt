@@ -391,7 +391,8 @@ set(THIRDAI_SOURCES
     auto_ml/src/cold_start/ColdStartDataSource.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc
-    utils/StringManipulation.cc)
+    utils/StringManipulation.cc
+    utils/BackgroundThread.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set
