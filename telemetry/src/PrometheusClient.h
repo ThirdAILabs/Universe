@@ -4,8 +4,8 @@
 #include <prometheus/exposer.h>
 #include <prometheus/histogram.h>
 #include <prometheus/registry.h>
-#include <stdexcept>
 #include <optional>
+#include <stdexcept>
 
 namespace thirdai::telemetry {
 
