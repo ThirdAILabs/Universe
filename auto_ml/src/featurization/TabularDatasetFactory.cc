@@ -37,53 +37,8 @@ TabularDatasetFactory::TabularDatasetFactory(
                      /* label_blocks= */ {}, parallel);
 }
 
-namespace {
-
-dataset::ColumnNumberMap makeColumnNumberMapFromHeader(
-    dataset::DataSource& data_source, char delimiter) {
-  auto header = data_source.nextLine();
-  if (!header) {
-    throw std::invalid_argument(
-        "The dataset must have a header that contains column names.");
-  }
-
-  return {*header, delimiter};
-}
-
-dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
-    dataset::DatasetLoader& dataset_loader,
-    dataset::ThreadSafeVocabulary& key_vocab) {
-  // The batch size does not really matter here because we are storing these
-  // vectors as metadata, not training on them. Thus, we choose the somewhat
-  // arbitrary value 2048 since it is large enough to use all threads.
-  auto [datasets, ids] =
-      dataset_loader.loadAll(/* batch_size = */ udt::defaults::BATCH_SIZE);
-
-  if (datasets.size() != 1) {
-    throw std::runtime_error(
-        "For now, the featurizer should return just a single input "
-        "dataset.");
-  }
-  auto vectors = datasets.at(0);
-
-  std::unordered_map<std::string, BoltVector> preprocessed_vectors(ids->len());
-
-  for (uint32_t batch = 0; batch < vectors->numBatches(); batch++) {
-    for (uint32_t vec = 0; vec < vectors->at(batch).getBatchSize(); vec++) {
-      auto id = ids->at(batch)[vec].active_neurons[0];
-      auto key = key_vocab.getString(id);
-      preprocessed_vectors[key] = std::move(vectors->at(batch)[vec]);
-    }
-  }
-
-  return std::make_shared<dataset::PreprocessedVectors>(
-      std::move(preprocessed_vectors), dataset_loader.getInputDim());
-}
-
-}  // namespace
-
 dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
-    const dataset::DataSourcePtr& data_source, bool training) {
+    const dataset::DataSourcePtr& data_source, bool shuffle) {
   auto column_number_map =
       makeColumnNumberMapFromHeader(*data_source, _delimiter);
 
@@ -95,7 +50,7 @@ dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
 
   return std::make_unique<dataset::DatasetLoader>(data_source,
                                                   _labeled_featurizer,
-                                                  /* shuffle= */ training);
+                                                  /* shuffle= */ shuffle);
 }
 
 void TabularDatasetFactory::updateMetadata(const std::string& col_name,
@@ -195,6 +150,48 @@ TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
       /* shuffle = */ false);
 
   return preprocessedVectorsFromDataset(metadata_source, *key_vocab);
+}
+
+dataset::ColumnNumberMap TabularDatasetFactory::makeColumnNumberMapFromHeader(
+    dataset::DataSource& data_source, char delimiter) {
+  auto header = data_source.nextLine();
+  if (!header) {
+    throw std::invalid_argument(
+        "The dataset must have a header that contains column names.");
+  }
+
+  return {*header, delimiter};
+}
+
+dataset::PreprocessedVectorsPtr
+TabularDatasetFactory::preprocessedVectorsFromDataset(
+    dataset::DatasetLoader& dataset_loader,
+    dataset::ThreadSafeVocabulary& key_vocab) {
+  // The batch size does not really matter here because we are storing these
+  // vectors as metadata, not training on them. Thus, we choose the somewhat
+  // arbitrary value 2048 since it is large enough to use all threads.
+  auto [datasets, ids] =
+      dataset_loader.loadAll(/* batch_size = */ udt::defaults::BATCH_SIZE);
+
+  if (datasets.size() != 1) {
+    throw std::runtime_error(
+        "For now, the featurizer should return just a single input "
+        "dataset.");
+  }
+  auto vectors = datasets.at(0);
+
+  std::unordered_map<std::string, BoltVector> preprocessed_vectors(ids->len());
+
+  for (uint32_t batch = 0; batch < vectors->numBatches(); batch++) {
+    for (uint32_t vec = 0; vec < vectors->at(batch).getBatchSize(); vec++) {
+      auto id = ids->at(batch)[vec].active_neurons[0];
+      auto key = key_vocab.getString(id);
+      preprocessed_vectors[key] = std::move(vectors->at(batch)[vec]);
+    }
+  }
+
+  return std::make_shared<dataset::PreprocessedVectors>(
+      std::move(preprocessed_vectors), dataset_loader.getInputDim());
 }
 
 void TabularDatasetFactory::save_stream(std::ostream& output_stream) const {

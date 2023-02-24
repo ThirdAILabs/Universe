@@ -7,6 +7,17 @@
 
 namespace thirdai::automl::udt {
 
+/**
+ * UDT is composed of various backends that implement the logic specific to
+ * different models, classification, regression, etc. This class users the
+ * arguments supplied by the user to determine what backend to use for the given
+ * task/dataset and then stores that corresponding backend within it. This
+ * pattern of composition allows us to have different backends for different
+ * model types, but without exposing that implementation detail to the user and
+ * presenting a single class for them to interact with. This class also act as a
+ * common point where we can implement common features, for instance telemetry,
+ * that we want for all types of models.
+ */
 class UDT {
  public:
   UDT(data::ColumnDataTypes data_types,

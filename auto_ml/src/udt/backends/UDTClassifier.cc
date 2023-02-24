@@ -69,19 +69,19 @@ void UDTClassifier::train(
       logging_interval, _dataset_factory);
 
   auto train_dataset =
-      _dataset_factory->getDatasetLoader(data, /* training= */ true);
+      _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
   utils::train(_model, train_dataset, train_config, batch_size,
                max_in_memory_batches,
                /* freeze_hash_tables= */ _freeze_hash_tables,
                licensing::TrainPermissionsToken(data->resourceName()));
 
+  /**
+   * For binary classification we tune the prediction threshold to optimize some
+   * metric. This can improve performance particularly on datasets with a class
+   * imbalance.
+   */
   if (_model->outputDim() == 2) {
-    /**
-     * For binary classification we tune the prediction threshold to optimize
-     * some metric. This can improve performance particularly on datasets with a
-     * class imbalance.
-     */
     if (validation && !validation->metrics().empty()) {
       validation->data()->restart();
       _binary_prediction_threshold =
@@ -90,8 +90,6 @@ void UDTClassifier::train(
               /* metric_name= */ validation->metrics().at(0), batch_size);
 
     } else if (!train_config.metrics().empty()) {
-      // The number of training batches used is capped at 100 in case there is a
-      // large training dataset.
       data->restart();
       _binary_prediction_threshold =
           tuneBinaryClassificationPredictionThreshold(
@@ -110,7 +108,7 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
       utils::getEvalConfig(metrics, sparse_inference, verbose);
 
   auto [test_data, test_labels] =
-      _dataset_factory->getDatasetLoader(data, /* training= */ false)
+      _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
           ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
 
   auto [output_metrics, output] =
@@ -313,11 +311,13 @@ uint32_t UDTClassifier::labelToNeuronId(
 std::optional<float> UDTClassifier::tuneBinaryClassificationPredictionThreshold(
     const dataset::DataSourcePtr& data_source, const std::string& metric_name,
     size_t batch_size) {
+  // The number of samples used is capped to ensure tuning is fast even for
+  // larger datasets.
   uint32_t num_batches =
       defaults::MAX_SAMPLES_FOR_THRESHOLD_TUNING / batch_size;
 
   auto dataset =
-      _dataset_factory->getDatasetLoader(data_source, /* training= */ false);
+      _dataset_factory->getDatasetLoader(data_source, /* shuffle= */ true);
 
   auto loaded_data_opt =
       dataset->loadSome(/* batch_size = */ defaults::BATCH_SIZE, num_batches,

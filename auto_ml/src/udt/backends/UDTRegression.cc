@@ -66,7 +66,7 @@ void UDTRegression::train(
       logging_interval, _dataset_factory);
 
   auto train_dataset =
-      _dataset_factory->getDatasetLoader(data, /* training= */ true);
+      _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
   utils::train(_model, train_dataset, train_config, batch_size,
                max_in_memory_batches,
@@ -84,7 +84,7 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
       utils::getEvalConfig(metrics, sparse_inference, verbose);
 
   auto [test_data, test_labels] =
-      _dataset_factory->getDatasetLoader(data, /* training= */ false)
+      _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
           ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
 
   auto [output_metrics, output] =
