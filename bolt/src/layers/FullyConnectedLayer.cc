@@ -426,17 +426,16 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  std::cout << "The hashes are:" << std::endl;
-  for (auto x : hashes) {
-    std::cout << x << "\t";
-  }
-  std::cout << std::endl;
+  std::string print_hashes = std::getenv("THIRDAI_PRINT_HASHES");
+  std::string print_neurons = std::getenv("THIRDAI_PRINT_NEURONS");
 
-  std::cout << "The hashes are:" << std::endl;
-  for (auto x : hashes) {
-    std::cout << x << "\t";
+  if (print_hashes == "1") {
+    std::cout << "The hashes are:" << std::endl;
+    for (auto x : hashes) {
+      std::cout << x << "\t";
+    }
+    std::cout << std::endl;
   }
-  std::cout << std::endl;
 
   switch (_sampling_mode) {
     case BoltSamplingMode::FrequencyRerankingWithInsertions:
@@ -455,14 +454,16 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
       _hash_table->queryBySet(hashes.data(), active_set);
   }
 
-  std::cout
-      << "We have sampled the active neurons and printing the active set from "
-         "enquiring the hash tables. The number of active neurons is: "
-      << active_set.size() << std::endl;
-  for (auto x : active_set) {
-    std::cout << x << "\t";
+  if (print_neurons == "1") {
+    std::cout
+        << "We have sampled the active neurons and printing the active set from"
+           "enquiring the hash tables. The number of active neurons is: "
+        << active_set.size() << std::endl;
+    for (auto x : active_set) {
+      std::cout << x << "\t";
+    }
+    std::cout << std::endl << "Finished printing the active set" << std::endl;
   }
-  std::cout << std::endl << "Finished printing the active set" << std::endl;
 
   if (active_set.size() < _sparse_dim) {
     // here we use hashes[0] as our random number because rand() is not thread
@@ -474,13 +475,15 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
     }
   }
 
-  std::cout << "We have added more neurons to the active neurons set. The "
-               "number of active neurons is: "
-            << active_set.size() << std::endl;
-  for (auto x : active_set) {
-    std::cout << x << "\t";
+  if (print_neurons == "1") {
+    std::cout << "We have added more neurons to the active neurons set. The "
+                 "number of active neurons is: "
+              << active_set.size() << std::endl;
+    for (auto x : active_set) {
+      std::cout << x << "\t";
+    }
+    std::cout << std::endl << "Finished printing the active set" << std::endl;
   }
-  std::cout << std::endl << "Finished printing the active set" << std::endl;
 
   uint32_t cnt = 0;
   for (uint32_t i = 0; i < label_len; i++) {
@@ -801,9 +804,28 @@ std::vector<float> FullyConnectedLayer::getWeightsByNeuron(uint32_t neuron_id) {
 
 void FullyConnectedLayer::setSparsity(float sparsity) {
   // deinitSamplingDatastructures();
-  _sparsity = sparsity;
 
-  _sparse_dim = _sparsity * _dim;
+  if (_sparsity >= 1 && sparsity < 1) {
+    _sparsity = sparsity;
+    _sparse_dim = _sparsity * _dim;
+    auto sampling_config = DWTASamplingConfig::autotune(_dim, _sparsity);
+    std::random_device rd;
+    initSamplingDatastructures(sampling_config, rd);
+    return;
+  }
+
+  if (_sparsity < 1 && sparsity >= 1) {
+    _sparsity = 1;
+    _sparse_dim = _sparsity * _dim;
+    deinitSamplingDatastructures();
+    return;
+  }
+
+  if (_sparsity < 1 && sparsity < 1) {
+    _sparsity = sparsity;
+    _sparse_dim = _sparsity * _dim;
+    return;
+  }
 
   // TODO(josh): Right now this is using the autotuning for DWTA even if this
   // hash function isn't DWTA. Add autotuning for other hash function types.
