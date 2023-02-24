@@ -5,6 +5,7 @@
 #include <prometheus/histogram.h>
 #include <prometheus/registry.h>
 #include <stdexcept>
+#include <optional>
 
 namespace thirdai::telemetry {
 
