@@ -11,6 +11,7 @@ namespace thirdai::text {
  */
 std::vector<std::string_view> split(std::string_view sentence,
                                     char delimiter = ' ');
+
 /**
  * Creates a copy of the original stringview where all characters are lowercase.
  */
