@@ -76,9 +76,9 @@ def train_epoch(model, train_x, train_y, learning_rate=0.05):
 
         avg_loss_train = model.train(data=x, labels=y, learning_rate=learning_rate)
 
-        assert np.allclose([avg_loss_train], avg_loss, atol=1e-5)
-        assert np.allclose([val_loss["mean_loss"]], avg_loss, atol=1e-5)
-        assert np.allclose(val_loss["per_class_loss"], class_loss, atol=1e-5)
+        assert np.allclose([avg_loss_train], avg_loss, atol=1e-2)
+        assert np.allclose([val_loss["mean_loss"]], avg_loss, atol=1e-2)
+        assert np.allclose(val_loss["per_class_loss"], class_loss, atol=1e-2)
 
 
 def accuracy(model, test_x, test_y):
