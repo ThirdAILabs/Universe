@@ -19,7 +19,7 @@ float autotuneSparsity(uint32_t dim) {
       return sparsity;
     }
   }
-  return 0.05;
+  return sparsity_values.back().second;
 }
 
 }  // namespace
