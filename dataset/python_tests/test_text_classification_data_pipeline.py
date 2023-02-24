@@ -4,6 +4,8 @@ import numpy as np
 import pytest
 from thirdai import bolt, dataset
 
+pytestmark = [pytest.mark.unit]
+
 
 def generate_text_classification_dataset(filename, delim):
     with open(filename, "w") as f:
@@ -54,7 +56,6 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
     os.remove(filename)
 
 
-@pytest.mark.integration
 def test_text_classification_data_pipeline_with_unigrams():
     from thirdai.dataset import blocks
 
@@ -62,7 +63,6 @@ def test_text_classification_data_pipeline_with_unigrams():
     helper_for_text_classification_data_pipeline(blocks.TextNGram(col=1, n=1), "\t")
 
 
-@pytest.mark.integration
 def test_text_classification_data_pipeline_with_pairgrams():
     from thirdai.dataset import blocks
 
@@ -70,7 +70,6 @@ def test_text_classification_data_pipeline_with_pairgrams():
     helper_for_text_classification_data_pipeline(blocks.TextPairGram(col=1), "\t")
 
 
-@pytest.mark.integration
 def test_text_classification_data_pipeline_with_chartrigrams():
     from thirdai.dataset import blocks
 

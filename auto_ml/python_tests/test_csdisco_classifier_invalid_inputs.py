@@ -8,6 +8,8 @@ SIMPLE_VOCAB_SIZE = 1000
 SIMPLE_METADATA_DIM = 100
 SIMPLE_N_CLASSES = 10
 
+pytestmark = [pytest.mark.unit]
+
 
 def get_input_data(batch_size):
     tokens_per_sample = 20
