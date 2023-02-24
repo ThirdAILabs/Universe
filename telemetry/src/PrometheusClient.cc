@@ -1,21 +1,37 @@
 
 #include "PrometheusClient.h"
+#include <cpp-httplib/httplib.h>
 #include <deps/prometheus-cpp/3rdparty/civetweb/include/CivetServer.h>
 #include <exceptions/src/Exceptions.h>
+#include <utils/BackgroundThread.h>
 #include <utils/Logging.h>
 #include <optional>
 #include <stdexcept>
-#include <utils/BackgroundThread.h>
 
 namespace thirdai::telemetry {
 
 PrometheusTelemetryClient client = PrometheusTelemetryClient::startNoop();
 
-// Store this here so that it is not destructed (and thus the thread not 
-// stopped) until the end of the program, or until we call 
-// stopGlobalTelemetryClient (the same lifetime as client). We could also store 
+// Store this here so that it is not destructed (and thus the thread not
+// stopped) until the end of the program, or until we call
+// stopGlobalTelemetryClient (the same lifetime as client). We could also store
 // it as an instance of PrometheusTelemetryClient, but this is a bit simpler.
-std::optional<threads::BackgroundThread> background_thread = std::nullopt;
+threads::BackgroundThreadPtr file_writer_thread = nullptr;
+
+std::string getCurrentMetrics(const std::string& url) {
+  httplib::Client client(url);
+  httplib::Result response = client.Get(/* path = */ "/metrics");
+  if (!response || response->status != 200) {
+    return "";
+  }
+  return response->body;
+}
+
+void writeToFile(const std::string& file_write_location,
+                 const std::string& to_write) {
+  std::ofstream out(file_write_location);
+  out << to_write;
+}
 
 void createGlobalTelemetryClient(
     uint32_t port, const std::optional<std::string>& file_write_location,
@@ -25,32 +41,40 @@ void createGlobalTelemetryClient(
         "Trying to start telemetry client when one is already running. You "
         "should stop the current client before starting a new one.");
   }
-  client = PrometheusTelemetryClient::start(port);
+  std::string bind_address = "127.0.0.1:" + std::to_string(port);
+  client = PrometheusTelemetryClient::start(bind_address);
 
   if (file_write_location) {
     if (file_write_location->rfind("s3://", 0) == 0) {
       throw exceptions::NotImplemented("S3 support not yet implemented");
-    } else {
-      background_thread = threads::BackgroundThread(, /* function_run_period_ms = */ );
     }
+    file_writer_thread = threads::BackgroundThread::make(
+        [file_write_location, bind_address]() {
+          writeToFile(*file_write_location,
+                      /* to_write = */ getCurrentMetrics(bind_address));
+        },
+        /* function_run_period_ms = */ reporter_period_ms);
   }
 }
 
 void stopGlobalTelemetryClient() {
+  // This kills the background thread thats writing to a file, if such a thread
+  // exists. The destructor of the thread will also flush the current telemetry
+  // values to the file.
+  file_writer_thread = nullptr;
   // This kills the current client because the destructor of the current client
   // will be called in the move assignment operator
   client = PrometheusTelemetryClient::startNoop();
-  background_thread = std::nullopt;
 }
 
-PrometheusTelemetryClient PrometheusTelemetryClient::start(uint32_t port) {
+PrometheusTelemetryClient PrometheusTelemetryClient::start(
+    const std::string& bind_address) {
   std::shared_ptr<prometheus::Exposer> exposer;
   try {
-    exposer = std::make_shared<prometheus::Exposer>(
-        /* bind_address = */ "127.0.0.1:" + std::to_string(port));
+    exposer = std::make_shared<prometheus::Exposer>(bind_address);
   } catch (const CivetException& e) {
     logging::error(
-        "Cannot start telemetry client on port " + std::to_string(port) +
+        "Cannot start telemetry client on " + bind_address +
         ", possibly there is already a telemetry instance on this port. Please "
         "choose a different port if you want to use telemetry. Continuing "
         "without telemetry.");

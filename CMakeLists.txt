@@ -47,6 +47,12 @@ if(THIRDAI_REPORT_BUILD_STEP_TIMES)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CMAKE_COMMAND} -E time")
 endif(THIRDAI_REPORT_BUILD_STEP_TIMES)
 
+
+# Add http subdirectory in all builds, but only build with OPENSSL if we are
+# using licensing, since that is the only time we communicate with keygen (see
+# below)
+add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
+
 # Check if there is a license flag, and only if so add the cryptopp lib We have
 # two different License flags, one for if to build the license files
 # (THIRDAI_BUILD_LICENSE) and one for if to check the license
@@ -65,7 +71,6 @@ if(${LICENSE_BUILD_FLAG_FOUND})
 
   # For now only require openssl if we are building with licensing, since we
   # only communicate with the internet (keygen) in that case
-  add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
   if(THIRDAI_BUILD_OPENSSL_FROM_SOURCE)
     # This path is meant to be activated only for M1 cross-compile on MacOS. Any
     # other paths are potentially untested.

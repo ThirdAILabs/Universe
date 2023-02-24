@@ -25,7 +25,7 @@ extern PrometheusTelemetryClient client;
 
 void createGlobalTelemetryClient(
     uint32_t port = THIRDAI_DEFAULT_TELEMETRY_PORT,
-    const std::optional<std::string> &file_write_location = std::nullopt,
+    const std::optional<std::string>& file_write_location = std::nullopt,
     uint64_t reporter_period_ms = DEFAULT_REPORTER_PERIOD_MS);
 
 void stopGlobalTelemetryClient();
@@ -36,7 +36,7 @@ void stopGlobalTelemetryClient();
  */
 class PrometheusTelemetryClient {
  public:
-  static PrometheusTelemetryClient start(uint32_t port);
+  static PrometheusTelemetryClient start(const std::string& bind_address);
 
   static PrometheusTelemetryClient startNoop() {
     return PrometheusTelemetryClient();

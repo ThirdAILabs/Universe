@@ -163,7 +163,7 @@ def run_udt_telemetry_test(method, kill_telemetry_after_udt):
 
 def test_udt_telemetry_normal():
     try:
-        telemetry.start_prometheus(THIRDAI_TEST_TELEMETRY_PORT)
+        telemetry.start(THIRDAI_TEST_TELEMETRY_PORT)
         run_udt_telemetry_test(method="normal", kill_telemetry_after_udt=False)
     finally:
         telemetry.stop()
@@ -171,7 +171,7 @@ def test_udt_telemetry_normal():
 
 def test_udt_telemetry_file():
     try:
-        telemetry.start_to_file(THIRDAI_TEST_TELEMETRY_FILE)
+        telemetry.start(file_write_location=THIRDAI_TEST_TELEMETRY_FILE)
         run_udt_telemetry_test(method="file", kill_telemetry_after_udt=True)
     finally:
         telemetry.stop()
@@ -179,7 +179,7 @@ def test_udt_telemetry_file():
 
 def test_udt_telemetry_s3():
     try:
-        telemetry.start_to_file(THIRDAI_TEST_TELEMETRY_S3_PATH)
+        telemetry.start(file_write_location=THIRDAI_TEST_TELEMETRY_S3_PATH)
         run_udt_telemetry_test(method="s3", kill_telemetry_after_udt=True)
     finally:
         telemetry.stop()
