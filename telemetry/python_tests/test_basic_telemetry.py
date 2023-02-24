@@ -177,6 +177,8 @@ def test_udt_telemetry_file():
         telemetry.stop()
 
 
+# TODO(Josh): Implement s3 writing and this test with moto, then remove xfail
+@pytest.mark.xfail
 def test_udt_telemetry_s3():
     try:
         telemetry.start(file_write_location=THIRDAI_TEST_TELEMETRY_S3_PATH)

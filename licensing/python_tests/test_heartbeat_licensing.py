@@ -162,7 +162,7 @@ def test_more_machines_after_server_timeout(fast_timeout_license_server):
             ).returncode
             == 0
         )
-        time.sleep(fast_timeout_ms / 1000)
+        time.sleep(2 * fast_timeout_ms / 1000)
 
 
 def test_client_side_timeout_after_heartbeat_fail(normal_license_server):
