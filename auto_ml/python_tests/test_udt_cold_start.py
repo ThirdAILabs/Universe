@@ -8,7 +8,7 @@ from download_dataset_fixtures import download_clinc_dataset
 from model_test_utils import compute_evaluate_accuracy
 from thirdai import bolt
 
-pytestmark = [pytest.mark.integration]
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
 def test_udt_cold_start_kaggle():

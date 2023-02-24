@@ -3,7 +3,7 @@ from download_datasets import download_mnist
 from thirdai import bolt, dataset
 
 # Add an integration test marker for all tests in this file
-pytestmark = [pytest.mark.integration]
+pytestmark = [pytest.mark.unit]
 
 
 LEARNING_RATE = 0.0001
