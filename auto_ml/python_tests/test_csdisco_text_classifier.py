@@ -9,6 +9,8 @@ from tokenizers import Tokenizer
 
 METADATA_DIM = 10
 
+pytestmark = [pytest.mark.unit, pytest.mark.release]
+
 
 # This function takes in the clinc data and converts it into the format expected
 # by the CSDisco classifier. This means it applies a bert tokenizer to the text,
