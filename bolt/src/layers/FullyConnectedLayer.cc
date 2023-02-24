@@ -426,10 +426,10 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  std::string print_hashes = std::getenv("THIRDAI_PRINT_HASHES");
-  std::string print_neurons = std::getenv("THIRDAI_PRINT_NEURONS");
+  int print_hashes = 0;
+  int print_neurons = 0;
 
-  if (print_hashes == "1") {
+  if (print_hashes == 1) {
     std::cout << "The hashes are:" << std::endl;
     for (auto x : hashes) {
       std::cout << x << "\t";
@@ -454,7 +454,7 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
       _hash_table->queryBySet(hashes.data(), active_set);
   }
 
-  if (print_neurons == "1") {
+  if (print_neurons == 1) {
     std::cout
         << "We have sampled the active neurons and printing the active set from"
            "enquiring the hash tables. The number of active neurons is: "
@@ -475,7 +475,7 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
     }
   }
 
-  if (print_neurons == "1") {
+  if (print_neurons == 1) {
     std::cout << "We have added more neurons to the active neurons set. The "
                  "number of active neurons is: "
               << active_set.size() << std::endl;
@@ -802,7 +802,7 @@ std::vector<float> FullyConnectedLayer::getWeightsByNeuron(uint32_t neuron_id) {
   return embedding;
 }
 
-void FullyConnectedLayer::setSparsity(float sparsity) {
+void FullyConnectedLayer::setSparsity(float sparsity, bool rebuild_tables) {
   // deinitSamplingDatastructures();
 
   if (_sparsity >= 1 && sparsity < 1) {
@@ -824,6 +824,13 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
   if (_sparsity < 1 && sparsity < 1) {
     _sparsity = sparsity;
     _sparse_dim = _sparsity * _dim;
+
+    if (rebuild_tables) {
+      deinitSamplingDatastructures();
+      auto sampling_config = DWTASamplingConfig::autotune(_dim, _sparsity);
+      std::random_device rd;
+      initSamplingDatastructures(sampling_config, rd);
+    }
     return;
   }
 

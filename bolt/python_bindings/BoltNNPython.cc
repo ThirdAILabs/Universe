@@ -175,7 +175,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
       // TODO(Nick, Josh): sparsity can be def_property
       .def("get_sparsity", &FullyConnectedNode::getSparsity)
       .def("set_sparsity", &FullyConnectedNode::setSparsity,
-           py::arg("sparsity"))
+           py::arg("sparsity"), py::arg("rebuild_tables") = false)
       .def("get_dim", &FullyConnectedNode::outputDim)
       .def("get_sampling_mode", &FullyConnectedNode::getSamplingMode)
       .def("set_sampling_mode", &FullyConnectedNode::setSamplingMode,
