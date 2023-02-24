@@ -25,7 +25,6 @@ def test_all_tests_run():
     with redirect_stdout(tests_we_run_buffer):
         for run in ["unit", "integration", "release", "distributed", "ignore"]:
             pytest.main([".", "--ignore-glob=deps", "--collect-only", f"-m {run}"])
-
     tests_we_run = [line.strip() for line in tests_we_run_buffer.getvalue().split("\n")]
 
     fail = False
