@@ -47,7 +47,6 @@ if(THIRDAI_REPORT_BUILD_STEP_TIMES)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CMAKE_COMMAND} -E time")
 endif(THIRDAI_REPORT_BUILD_STEP_TIMES)
 
-
 # Add http subdirectory in all builds, but only build with OPENSSL if we are
 # using licensing, since that is the only time we communicate with keygen (see
 # below)
