@@ -193,6 +193,23 @@ static std::string_view trimNewlineAtEndOfLine(const std::string& line) {
   return {line.data(), line.size()};
 }
 
+/**
+ * Theoretically, one can reset an optional x by doing any of the following:
+ * x = {};
+ * x.reset();
+ * x = std::nullopt;
+ * x = std::optional<T>();
+ * x = std::optional<T>{};
+ * But for some reason, all of these cause either the blade compiler or the CI
+ * compiler to complain. Seems to be a g++ bug. So we'll have to settle with
+ * this for now. Abstracted into a function to avoid bloating the main function
+ * with this comment.
+ */
+static void resetOptional(std::optional<uint32_t>& optional) {
+  std::optional<uint32_t> opt;
+  optional = opt;
+}
+
 std::vector<std::string_view> parseLine(const std::string& untrimmed_line,
                                         char delimiter) {
   std::vector<std::string_view> parsed_columns;
@@ -234,7 +251,7 @@ std::vector<std::string_view> parseLine(const std::string& untrimmed_line,
           line, /* column_end_state= */ state_machine.previousState(),
           /* start_index= */ column_start, /* end_index= */ position));
       column_start = position + 1;
-      first_delimiter_in_quotes = {};
+      resetOptional(first_delimiter_in_quotes);
     }
   }
 
