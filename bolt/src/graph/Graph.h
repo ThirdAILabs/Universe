@@ -240,6 +240,11 @@ class BoltGraph {
              using_sparsity == _using_sparsity;
     }
 
+    void clear() {
+      _using_sparsity = false;
+      _allocated_batch_size = 0;
+    }
+
     bool isOptimizerInitialized() const { return _optimizer_initialized; }
 
     void markOptimizerInitialized() { _optimizer_initialized = true; }
