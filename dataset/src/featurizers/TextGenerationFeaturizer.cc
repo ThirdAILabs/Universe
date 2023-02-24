@@ -105,10 +105,10 @@ std::vector<uint32_t> TextGenerationFeaturizer::parseTokens(
 
 std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
     const std::vector<uint32_t>& tokens) const {
-  auto pairgrams = token_encoding::pairgrams(tokens);
+  auto context = _pairgrams ? token_encoding::pairgrams(tokens) : tokens;
 
   BoltVector vector = BoltVector::makeSparseVector(
-      pairgrams, std::vector<float>(pairgrams.size(), 1.0));
+      context, std::vector<float>(context.size(), 1.0));
 
   BoltVector last_tokens(/* l= */ _last_n_tokens, /* is_dense= */ false,
                          /* has_gradient= */ false);
