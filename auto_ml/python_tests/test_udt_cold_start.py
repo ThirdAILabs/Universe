@@ -8,6 +8,8 @@ from download_dataset_fixtures import download_clinc_dataset
 from model_test_utils import compute_evaluate_accuracy
 from thirdai import bolt
 
+pytestmark = [pytest.mark.unit]
+
 
 def test_udt_cold_start_kaggle():
     os.system(
