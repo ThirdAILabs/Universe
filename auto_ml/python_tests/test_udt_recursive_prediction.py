@@ -4,6 +4,8 @@ import platform
 import pytest
 from thirdai import bolt
 
+pytestmark = [pytest.mark.unit]
+
 
 @pytest.fixture(scope="module")
 def recursive_model():

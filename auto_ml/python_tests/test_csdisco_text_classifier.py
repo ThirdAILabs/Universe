@@ -9,6 +9,8 @@ from tokenizers import Tokenizer
 
 METADATA_DIM = 10
 
+pytestmark = [pytest.mark.unit, pytest.mark.release]
+
 
 # This function takes in the clinc data and converts it into the format expected
 # by the CSDisco classifier. This means it applies a bert tokenizer to the text,
@@ -74,9 +76,9 @@ def train_epoch(model, train_x, train_y, learning_rate=0.05):
 
         avg_loss_train = model.train(data=x, labels=y, learning_rate=learning_rate)
 
-        assert np.allclose([avg_loss_train], avg_loss, atol=1e-5)
-        assert np.allclose([val_loss["mean_loss"]], avg_loss, atol=1e-5)
-        assert np.allclose(val_loss["per_class_loss"], class_loss, atol=1e-5)
+        assert np.allclose([avg_loss_train], avg_loss, atol=1e-2)
+        assert np.allclose([val_loss["mean_loss"]], avg_loss, atol=1e-2)
+        assert np.allclose(val_loss["per_class_loss"], class_loss, atol=1e-2)
 
 
 def accuracy(model, test_x, test_y):

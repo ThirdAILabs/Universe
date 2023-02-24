@@ -1,6 +1,6 @@
 import pytest
 
-pytestmark = [pytest.mark.unit, pytest.mark.integration]
+pytestmark = [pytest.mark.unit]
 
 import numpy as np
 from thirdai import bolt, dataset
