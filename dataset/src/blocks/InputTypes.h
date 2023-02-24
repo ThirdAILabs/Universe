@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dataset/src/blocks/ColumnIdentifier.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -109,7 +110,7 @@ class CsvSampleRef final : public ColumnarInputSample {
  public:
   CsvSampleRef(const LineInput& line, char delimiter,
                std::optional<uint32_t> expected_num_cols = std::nullopt)
-      : _columns(ProcessorUtils::parseCsvRow(line, delimiter)) {
+      : _columns(parsers::CSV::parseLine(line, delimiter)) {
     if (expected_num_cols && expected_num_cols != _columns.size()) {
       std::stringstream error;
       error << "Expected " << *expected_num_cols

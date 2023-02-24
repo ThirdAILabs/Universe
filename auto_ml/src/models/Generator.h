@@ -16,6 +16,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/CheckLicense.h>
@@ -549,7 +550,7 @@ class QueryCandidateGenerator {
 
       while (std::getline(input_file_stream, row)) {
         std::string correct_query =
-            std::string(dataset::ProcessorUtils::parseCsvRow(
+            std::string(dataset::parsers::CSV::parseLine(
                 row,
                 _query_generator_config->delimiter())[target_column_index]);
 

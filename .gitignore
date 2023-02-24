@@ -92,5 +92,5 @@ tags
 # Ignore log files
 *.log
 
-# OpenMP
-deps/openmp
+# OpenMP deps
+deps/openmp/*
