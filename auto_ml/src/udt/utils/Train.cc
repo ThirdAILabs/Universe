@@ -1,5 +1,9 @@
 #include "Train.h"
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/UDTBackend.h>
+#include <dataset/src/DataSource.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <functional>
 
 namespace thirdai::automl::udt::utils {
 
@@ -89,8 +93,8 @@ bolt::TrainConfig getTrainConfig(
     const std::optional<Validation>& validation,
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval,
-    data::TabularDatasetFactoryPtr& dataset_factory) {
+    std::optional<uint32_t> logging_interval, bool can_validate,
+    dataset::DatasetLoaderPtr validation_dataset_loader) {
   bolt::TrainConfig train_config =
       bolt::TrainConfig::makeConfig(learning_rate, epochs)
           .withMetrics(train_metrics)
@@ -101,12 +105,9 @@ bolt::TrainConfig getTrainConfig(
   if (!verbose) {
     train_config.silence();
   }
-  if (validation && !dataset_factory->hasTemporalRelationships()) {
-    auto val_data =
-        dataset_factory
-            ->getDatasetLoader(validation->data(),
-                               /* training= */ false)
-            ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
+  if (validation && can_validate) {
+    auto val_data = validation_dataset_loader->loadAll(
+        /* batch_size= */ defaults::BATCH_SIZE, verbose);
 
     bolt::EvalConfig val_config = getEvalConfig(
         validation->metrics(), validation->sparseInference(), verbose);

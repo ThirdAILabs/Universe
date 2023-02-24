@@ -10,6 +10,7 @@
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
@@ -66,7 +67,11 @@ void UDTClassifier::train(
 
   bolt::TrainConfig train_config = utils::getTrainConfig(
       epochs, learning_rate, validation, metrics, callbacks, verbose,
-      logging_interval, _dataset_factory);
+      logging_interval,
+      /* can_validate= */ !_dataset_factory->hasTemporalRelationships(),
+      /* validation_dataset_loader= */
+      _dataset_factory->getDatasetLoader(validation->data(),
+                                         /* training= */ false));
 
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* training= */ true);

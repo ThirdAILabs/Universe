@@ -17,8 +17,8 @@ bolt::TrainConfig getTrainConfig(
     const std::optional<Validation>& validation,
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval,
-    data::TabularDatasetFactoryPtr& dataset_factory);
+    std::optional<uint32_t> logging_interval, bool can_validate,
+    dataset::DatasetLoaderPtr validation_dataset_loader);
 
 bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
                                bool sparse_inference, bool verbose,

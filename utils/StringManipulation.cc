@@ -1,4 +1,5 @@
 #include "StringManipulation.h"
+#include <sstream>
 
 namespace thirdai::text {
 
@@ -36,6 +37,20 @@ std::vector<std::string_view> split(std::string_view sentence, char delimiter) {
   }
 
   return words;
+}
+
+std::string join(const std::vector<std::string>& strings,
+                 const std::string& delimiter) {
+  if (strings.empty()) {
+    return "";
+  }
+
+  std::stringstream joined_stream;
+  joined_stream << strings.front();
+  for (uint32_t i = 1; i < strings.size(); i++) {
+    joined_stream << delimiter << strings[i];
+  }
+  return joined_stream.str();
 }
 
 }  // namespace thirdai::text

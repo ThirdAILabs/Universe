@@ -91,8 +91,6 @@ dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
   // Restart so featurizer does not skip a sample.
   data_source->restart();
 
-  _labeled_featurizer->updateColumnNumbers(column_number_map);
-
   return std::make_unique<dataset::DatasetLoader>(data_source,
                                                   _labeled_featurizer,
                                                   /* shuffle= */ training);
@@ -184,8 +182,6 @@ TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
       /* label_blocks= */ {std::move(label_block)},
       /* has_header= */ true, /* delimiter= */ metadata->delimiter,
       /* parallel= */ true, /* hash_range= */ options.feature_hash_range);
-
-  _metadata_processors[col_name]->updateColumnNumbers(column_numbers);
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
