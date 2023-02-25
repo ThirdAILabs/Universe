@@ -40,6 +40,13 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
+      - name: Inject local version identifier for non tag builds
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        shell: bash
+        run: |-
+          echo "THIRDAI_BUILD_IDENTIFIER=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+
       - name: Install dependencies with vcpkg
         working-directory: C:\vcpkg
         run: |
@@ -58,6 +65,8 @@ jobs:
           # https://github.com/facebook/folly/issues/1762
           CIBW_ENVIRONMENT_LINUX: >
             CMAKE_ARGS="-DOPENSSL_ROOT_DIR:PATH=/usr/lib64/openssl11;/usr/include/openssl11"
+            THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
+
 
           # The following is to relax the discovery timeout (from a default 5) so that
           # cibuildwheel GitHub workflow does not timeout on test-discovery.
@@ -70,12 +79,15 @@ jobs:
           CIBW_ENVIRONMENT_WINDOWS: >
               CMAKE_ARGS='-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30 -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake'
               KMP_DUPLICATE_LIB_OK=TRUE
+              THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
 
           CIBW_ENVIRONMENT_MACOS:
             CMAKE_ARGS='${{ matrix.cmake_additional_args }}'
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
+            THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
+
 
           # Mac and windows will use this path, since they do not run in docker
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
