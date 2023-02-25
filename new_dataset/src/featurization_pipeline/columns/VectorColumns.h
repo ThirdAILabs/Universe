@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dataset/src/featurizers/ProcessorUtils.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <new_dataset/src/featurization_pipeline/Column.h>
 #include <cctype>
 #include <cstdlib>
@@ -124,7 +125,7 @@ class CppTokenArrayColumn final : public TokenArrayColumn {
 
       std::vector<std::string_view> token_strs;
       if (delimiter) {
-        token_strs = dataset::ProcessorUtils::parseCsvRow(item, *delimiter);
+        token_strs = dataset::parsers::CSV::parseLine(item, *delimiter);
       } else {
         token_strs = {item};
       }

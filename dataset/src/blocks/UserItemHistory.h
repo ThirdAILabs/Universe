@@ -11,6 +11,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TimeUtils.h>
@@ -206,7 +207,7 @@ class UserItemHistoryBlock final : public Block {
       return {item_str};
     }
     auto item_id_views =
-        ProcessorUtils::parseCsvRow(item_str, _item_col_delimiter.value());
+        parsers::CSV::parseLine(item_str, _item_col_delimiter.value());
     std::vector<std::string> items;
     items.reserve(item_id_views.size());
     for (auto item_id_view : item_id_views) {

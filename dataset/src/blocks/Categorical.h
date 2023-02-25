@@ -7,6 +7,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <dataset/src/featurizers/ProcessorUtils.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cstdlib>
@@ -50,6 +51,10 @@ class CategoricalBlock : public Block {
       uint32_t index_within_block,
       const std::string_view& category_value) const = 0;
 
+  std::string columnName() const { return _col.name(); }
+
+  std::optional<char> delimiter() const { return _delimiter; }
+
  protected:
   std::exception_ptr buildSegment(ColumnarInputSample& input,
                                   SegmentedFeatureVector& vec) final {
@@ -62,7 +67,7 @@ class CategoricalBlock : public Block {
 
     auto csv_category_set = std::string(column);
     auto categories =
-        ProcessorUtils::parseCsvRow(csv_category_set, _delimiter.value());
+        parsers::CSV::parseLine(csv_category_set, _delimiter.value());
     for (auto category : categories) {
       auto exception = encodeCategory(category, categories.size(), vec);
       if (exception) {

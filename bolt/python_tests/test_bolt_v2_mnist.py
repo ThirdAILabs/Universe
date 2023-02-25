@@ -6,8 +6,7 @@ from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
 from thirdai import dataset
 
-# Add an integration test marker for all tests in this file
-pytestmark = [pytest.mark.integration]
+pytestmark = [pytest.mark.unit]
 
 
 LEARNING_RATE = 0.0001
