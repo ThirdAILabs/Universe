@@ -8,6 +8,7 @@
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pytypes.h>
+#include <pybind11/stl.h>
 #include <limits>
 
 namespace thirdai::automl::python {
@@ -394,10 +395,11 @@ std::shared_ptr<udt::UDT> UDTFactory::buildUDT(
       /* options = */ createArgumentMap(options));
 }
 
-std::shared_ptr<udt::UDT> createUDTSpecifiedFileFormat(
-    const std::string& file_format, uint32_t n_target_classes,
+std::shared_ptr<udt::UDT> UDTFactory::createUDTSpecifiedFileFormat(
+    py::object& obj, const std::string& file_format, uint32_t n_target_classes,
     uint32_t input_dim, const std::optional<std::string>& model_config,
     const py::dict& user_args) {
+  (void)obj;
   return std::make_shared<udt::UDT>(file_format, n_target_classes, input_dim,
                                     model_config, createArgumentMap(user_args));
 }

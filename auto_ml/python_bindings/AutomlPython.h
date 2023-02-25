@@ -56,9 +56,10 @@ class UDTFactory {
       char delimiter, const std::optional<std::string>& model_config,
       const py::dict& options);
 
-  std::shared_ptr<udt::UDT> createUDTSpecifiedFileFormat(
-      const std::string& file_format, uint32_t n_target_classes,
-      uint32_t input_dim, const std::optional<std::string>& model_config,
+  static std::shared_ptr<udt::UDT> createUDTSpecifiedFileFormat(
+      py::object& obj, const std::string& file_format,
+      uint32_t n_target_classes, uint32_t input_dim,
+      const std::optional<std::string>& model_config,
       const py::dict& user_args);
 
   // These need to be here instead of inside UDTFactory because otherwise I was

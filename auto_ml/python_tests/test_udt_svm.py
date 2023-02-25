@@ -9,7 +9,9 @@ pytestmark = [pytest.mark.unit]
 def test_svm_udt_on_mnist(download_mnist_dataset):
     train_file, test_file = download_mnist_dataset
 
-    model = bolt.UDT(file_format="svm", n_target_classes=10, input_dim=784)
+    model = bolt.UniversalDeepTransformer(
+        file_format="svm", n_target_classes=10, input_dim=784
+    )
 
     model.train(train_file, epochs=2)
 
@@ -21,7 +23,7 @@ def test_svm_udt_on_mnist(download_mnist_dataset):
 
     model.save("udt_mnist.svm")
 
-    model = bolt.UDT.load("udt_mnist.svm")
+    model = bolt.UniversalDeepTransformer.load("udt_mnist.svm")
 
     new_metrics = model.evaluate(
         test_file, metrics=["categorical_accuracy"], return_metrics=True
@@ -35,7 +37,9 @@ def test_svm_udt_on_mnist(download_mnist_dataset):
 def test_svm_udt_predict_consistency(download_mnist_dataset):
     train_file, test_file = download_mnist_dataset
 
-    model = bolt.UDT(file_format="svm", n_target_classes=10, input_dim=784)
+    model = bolt.UniversalDeepTransformer(
+        file_format="svm", n_target_classes=10, input_dim=784
+    )
 
     one_line_train_file = "mnist_one_line.svm"
     with open(train_file) as in_file:

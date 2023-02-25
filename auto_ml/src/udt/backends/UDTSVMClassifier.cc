@@ -6,6 +6,7 @@
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
 #include <dataset/src/DatasetLoaderWrappers.h>
+#include <pybind11/stl.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
