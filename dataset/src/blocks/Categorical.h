@@ -51,6 +51,10 @@ class CategoricalBlock : public Block {
       uint32_t index_within_block,
       const std::string_view& category_value) const = 0;
 
+  std::string columnName() const { return _col.name(); }
+
+  std::optional<char> delimiter() const { return _delimiter; }
+
  protected:
   std::exception_ptr buildSegment(ColumnarInputSample& input,
                                   SegmentedFeatureVector& vec) final {

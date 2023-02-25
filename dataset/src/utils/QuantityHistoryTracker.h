@@ -19,7 +19,7 @@ namespace thirdai::dataset {
 enum class QuantityTrackingGranularity { Daily, Weekly, Biweekly, Monthly };
 
 static inline QuantityTrackingGranularity stringToGranularity(
-    std::string&& granularity_string) {
+    const std::string& granularity_string) {
   auto lower_granularity_string = text::lower(granularity_string);
   if (lower_granularity_string == "daily" || lower_granularity_string == "d") {
     return dataset::QuantityTrackingGranularity::Daily;
