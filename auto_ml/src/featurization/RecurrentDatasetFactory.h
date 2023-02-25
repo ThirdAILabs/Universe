@@ -21,6 +21,8 @@ class RecurrentDatasetFactory {
                           uint32_t n_target_classes,
                           const TabularOptions& tabular_options);
 
+  uint32_t outputDim() { return _sequence_target_block->featureDim(); }
+
   dataset::DatasetLoaderPtr getDatasetLoader(dataset::DataSourcePtr data_source,
                                              bool training);
 

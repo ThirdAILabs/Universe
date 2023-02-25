@@ -13,6 +13,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <pybind11/stl.h>
 #include <optional>
@@ -65,13 +66,16 @@ void UDTClassifier::train(
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
+  dataset::DatasetLoaderPtr validation_dataset_loader;
+  if (validation && !_dataset_factory->hasTemporalRelationships()) {
+    validation_dataset_loader =
+        _dataset_factory->getDatasetLoader(validation->data(),
+                                           /* training= */ false);
+  }
+
   bolt::TrainConfig train_config = utils::getTrainConfig(
       epochs, learning_rate, validation, metrics, callbacks, verbose,
-      logging_interval,
-      /* can_validate= */ !_dataset_factory->hasTemporalRelationships(),
-      /* validation_dataset_loader= */
-      _dataset_factory->getDatasetLoader(validation->data(),
-                                         /* training= */ false));
+      logging_interval, std::move(validation_dataset_loader));
 
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* training= */ true);

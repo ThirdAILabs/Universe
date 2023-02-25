@@ -7,6 +7,7 @@
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/stl.h>
 
 namespace thirdai::automl::udt {
@@ -61,13 +62,16 @@ void UDTRegression::train(
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
+  dataset::DatasetLoaderPtr validation_dataset_loader;
+  if (validation && !_dataset_factory->hasTemporalRelationships()) {
+    validation_dataset_loader =
+        _dataset_factory->getDatasetLoader(validation->data(),
+                                           /* training= */ false);
+  }
+
   bolt::TrainConfig train_config = utils::getTrainConfig(
       epochs, learning_rate, validation, metrics, callbacks, verbose,
-      logging_interval,
-      /* can_validate= */ !_dataset_factory->hasTemporalRelationships(),
-      /* validation_dataset_loader= */
-      _dataset_factory->getDatasetLoader(validation->data(),
-                                         /* training= */ false));
+      logging_interval, std::move(validation_dataset_loader));
 
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* training= */ true);

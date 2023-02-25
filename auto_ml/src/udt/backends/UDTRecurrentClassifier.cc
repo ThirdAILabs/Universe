@@ -4,6 +4,8 @@
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
 #include <dataset/src/RecursionWrapper.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <pybind11/pytypes.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -23,18 +25,20 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
         "classification.");
   }
 
+  _dataset_factory = std::make_shared<data::RecurrentDatasetFactory>(
+      input_data_types, target_name, target, n_target_classes, tabular_options);
+
+  auto output_dim = _dataset_factory->outputDim();
+
   if (model_config) {
-    _model = utils::loadModel({tabular_options.feature_hash_range},
-                              n_target_classes, *model_config);
+    _model = utils::loadModel({tabular_options.feature_hash_range}, output_dim,
+                              *model_config);
   } else {
     uint32_t hidden_dim = user_args.get<uint32_t>(
         "embedding_dimension", "integer", defaults::HIDDEN_DIM);
     _model = utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
-                                 n_target_classes);
+                                 output_dim);
   }
-
-  _dataset_factory = std::make_shared<data::RecurrentDatasetFactory>(
-      input_data_types, target_name, target, n_target_classes, tabular_options);
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                             defaults::FREEZE_HASH_TABLES);
@@ -50,12 +54,16 @@ void UDTRecurrentClassifier::train(
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
+  dataset::DatasetLoaderPtr validation_dataset_loader;
+  if (validation) {
+    validation_dataset_loader =
+        _dataset_factory->getDatasetLoader(validation->data(),
+                                           /* training= */ false);
+  }
+
   bolt::TrainConfig train_config = utils::getTrainConfig(
       epochs, learning_rate, validation, metrics, callbacks, verbose,
-      logging_interval, /* can_validate= */ true,
-      /* validation_dataset_loader= */
-      _dataset_factory->getDatasetLoader(validation->data(),
-                                         /* training= */ false));
+      logging_interval, std::move(validation_dataset_loader));
 
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* training= */ true);
@@ -106,11 +114,7 @@ py::object UDTRecurrentClassifier::evaluate(
 py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                                            bool sparse_inference,
                                            bool return_predicted_class) {
-  if (!return_predicted_class) {
-    throw std::invalid_argument(
-        "UDT currently does not support returning activations during recursive "
-        "predictions.");
-  }
+  (void)return_predicted_class;
 
   auto mutable_sample = sample;
 
@@ -154,12 +158,7 @@ struct PredictBatchProgress {
 py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
                                                 bool sparse_inference,
                                                 bool return_predicted_class) {
-  if (!return_predicted_class) {
-    throw std::invalid_argument(
-        "UDT currently does not support returning activations during "
-        "recursive "
-        "predictions.");
-  }
+  (void)return_predicted_class;
 
   PredictBatchProgress progress(samples.size());
   std::vector<std::vector<std::string>> all_predictions(samples.size());
@@ -188,12 +187,12 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
     }
   }
 
-  std::vector<std::string> output(mutable_samples.size());
+  py::list output(mutable_samples.size());
   for (uint32_t i = 0; i < mutable_samples.size(); i++) {
     output[i] = _dataset_factory->stitchTargetSequence(all_predictions[i]);
   }
 
-  return py::cast(std::move(output));
+  return output;
 }
 
 template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&);

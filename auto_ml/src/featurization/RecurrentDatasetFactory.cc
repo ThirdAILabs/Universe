@@ -21,7 +21,7 @@ static void validate(const ColumnDataTypes& data_types,
   }
 
   if (!target->max_length) {
-    throw std::invalid_argument("Target sequence must have maximum length.");
+    throw std::invalid_argument("Must provide max_length for target sequence.");
   }
 }
 
@@ -61,17 +61,17 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
       /* temporal_relationships= */ {},
       /* vectors_map= */ {}, tabular_options);
 
-  auto _sequence_target_block = dataset::SequenceTargetBlock::make(
+  _sequence_target_block = dataset::SequenceTargetBlock::make(
       /* target_col= */ target_name, /* step_col= */ _step_column,
       /* max_steps= */ target->max_length.value(),
       /* vocabulary_size= */ n_target_classes);
 
-  auto _labeled_featurizer = dataset::TabularFeaturizer::make(
+  _labeled_featurizer = dataset::TabularFeaturizer::make(
       input_blocks, {_sequence_target_block},
       /* has_header= */ true, _delimiter, /* parallel= */ true,
       /* hash_range= */ tabular_options.feature_hash_range);
 
-  auto _inference_featurizer = dataset::TabularFeaturizer::make(
+  _inference_featurizer = dataset::TabularFeaturizer::make(
       input_blocks, /* label_blocks= */ {},
       /* has_header= */ true, _delimiter,
       /* parallel= */ true,
@@ -88,7 +88,6 @@ dataset::DatasetLoaderPtr RecurrentDatasetFactory::getDatasetLoader(
       /* target_column= */ _current_step_target_column,
       /* step_column= */ _step_column,
       /* max_recursion_depth= */ _target->max_length.value());
-
   return std::make_unique<dataset::DatasetLoader>(source, _labeled_featurizer,
                                                   /* shuffle= */ training);
 }

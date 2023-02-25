@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <utils/StringManipulation.h>
 #include <limits>
@@ -22,7 +23,7 @@ Explanation SequenceBlock::explainIndex(uint32_t index_within_block,
   std::string keyword;
 
   auto sequence = std::string(input.column(_col));
-  auto elements = ProcessorUtils::parseCsvRow(sequence, _delimiter);
+  auto elements = parsers::CSV::parseLine(sequence, _delimiter);
   for (uint32_t i = 0; i < elements.size(); i++) {
     if (sequenceHash(elements[i], /* pos= */ i) == index_within_block) {
       keyword = std::string(elements[i]);
@@ -35,7 +36,7 @@ Explanation SequenceBlock::explainIndex(uint32_t index_within_block,
 std::exception_ptr SequenceBlock::buildSegment(ColumnarInputSample& input,
                                                SegmentedFeatureVector& vec) {
   auto sequence = std::string(input.column(_col));
-  auto elements = ProcessorUtils::parseCsvRow(sequence, _delimiter);
+  auto elements = parsers::CSV::parseLine(sequence, _delimiter);
   std::vector<uint32_t> hashes(elements.size());
   for (uint32_t i = 0; i < elements.size(); i++) {
     hashes[i] = sequenceHash(elements[i], /* pos= */ i);

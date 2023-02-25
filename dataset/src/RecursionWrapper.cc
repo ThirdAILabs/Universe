@@ -1,6 +1,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/RecursionWrapper.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <algorithm>
 #include <deque>
 #include <optional>
@@ -57,7 +58,7 @@ std::string RecursionWrapper::header() {
         "The dataset must have a header that contains column names.");
   }
 
-  auto column_names = ProcessorUtils::parseCsvRow(*header, _column_delimiter);
+  auto column_names = parsers::CSV::parseLine(*header, _column_delimiter);
   for (uint32_t i = 0; i < column_names.size(); i++) {
     if (column_names[i] == _target_column) {
       _target_column_number = i;
@@ -95,13 +96,13 @@ std::optional<std::string> RecursionWrapper::nextLineBody() {
 
 std::vector<std::string> RecursionWrapper::augment(
     const std::string& original) const {
-  auto columns = ProcessorUtils::parseCsvRow(original, _column_delimiter);
+  auto columns = parsers::CSV::parseLine(original, _column_delimiter);
 
   std::string left_of_target = substringLeftOfTarget(columns);
   std::string right_of_target = substringRightOfTarget(columns);
 
   auto target_seq = std::string(columns[_target_column_number]);
-  auto sequence = ProcessorUtils::parseCsvRow(target_seq, _target_delimiter);
+  auto sequence = parsers::CSV::parseLine(target_seq, _target_delimiter);
   if (sequence.size() < _max_recursion_depth) {
     sequence.push_back(EARLY_STOP);
   }

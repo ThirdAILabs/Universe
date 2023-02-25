@@ -80,6 +80,7 @@ void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
            std::optional<size_t> max_in_memory_batches, bool freeze_hash_tables,
            licensing::TrainPermissionsToken token) {
   if (max_in_memory_batches) {
+    std::cout << "TRAIN IN MEM" << std::endl;
     trainOnStream(model, dataset_loader, train_config, batch_size,
                   max_in_memory_batches.value(), freeze_hash_tables, token);
   } else {
@@ -93,7 +94,7 @@ bolt::TrainConfig getTrainConfig(
     const std::optional<Validation>& validation,
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval, bool can_validate,
+    std::optional<uint32_t> logging_interval,
     dataset::DatasetLoaderPtr validation_dataset_loader) {
   bolt::TrainConfig train_config =
       bolt::TrainConfig::makeConfig(learning_rate, epochs)
@@ -105,7 +106,7 @@ bolt::TrainConfig getTrainConfig(
   if (!verbose) {
     train_config.silence();
   }
-  if (validation && can_validate) {
+  if (validation && validation_dataset_loader) {
     auto val_data = validation_dataset_loader->loadAll(
         /* batch_size= */ defaults::BATCH_SIZE, verbose);
 
