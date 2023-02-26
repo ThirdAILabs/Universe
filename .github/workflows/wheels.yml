@@ -57,6 +57,7 @@ jobs:
 
 
       - name: Install dependencies with vcpkg
+        if: ${{ startsWith(runner.os, 'windows') }}
         working-directory: C:\vcpkg
         run: |
           $Env:VCPKG_BUILD_TYPE = 'release'
