@@ -88,8 +88,8 @@ std::exception_ptr SequenceTargetBlock::buildSegment(
   auto target = std::string(input.column(_target_col));
   auto target_id = _vocabulary.getUid(target);
 
-  char* end;
-  uint32_t step = std::strtoul(input.column(_step_col).data(), &end, 10);
+  uint32_t step = std::strtoul(/* str= */ input.column(_step_col).data(),
+                               /* str_end= */ nullptr, /* base= */ 10);
 
   auto label_id = _vocabulary.vocabSize() * step + target_id;
 

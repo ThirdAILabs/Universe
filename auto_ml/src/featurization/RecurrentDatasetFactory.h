@@ -34,8 +34,6 @@ class RecurrentDatasetFactory {
 
   void addPredictionToSample(MapInput& sample, const std::string& prediction);
 
-  std::string stitchTargetSequence(const std::vector<std::string>& predictions);
-
  private:
   RecurrentDatasetFactory() {}
 

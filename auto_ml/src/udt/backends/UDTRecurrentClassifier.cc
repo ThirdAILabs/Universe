@@ -6,6 +6,7 @@
 #include <dataset/src/RecursionWrapper.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/pytypes.h>
+#include <utils/StringManipulation.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -124,7 +125,7 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
     BoltVector output = _model->predictSingle(
         _dataset_factory->featurizeInput(mutable_sample), sparse_inference);
     auto predicted_class = _dataset_factory->classNameAtStep(output, step);
-    if (predicted_class == dataset::RecursionWrapper::EARLY_STOP) {
+    if (predicted_class == dataset::RecursionWrapper::EOS) {
       break;
     }
 
@@ -134,7 +135,7 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
 
   // We previously incorporated predictions at each step into the sample.
   // Now, we extract
-  return py::cast(_dataset_factory->stitchTargetSequence(predictions));
+  return py::cast(text::join(predictions, {_target->delimiter}));
 }
 
 struct PredictBatchProgress {
@@ -175,7 +176,7 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
       if (!progress.sampleIsDone(i)) {
         auto predicted_class =
             _dataset_factory->classNameAtStep(batch_activations[i], step);
-        if (predicted_class == dataset::RecursionWrapper::EARLY_STOP) {
+        if (predicted_class == dataset::RecursionWrapper::EOS) {
           progress.markSampleDone(i);
           continue;
         }
@@ -189,7 +190,7 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
 
   py::list output(mutable_samples.size());
   for (uint32_t i = 0; i < mutable_samples.size(); i++) {
-    output[i] = _dataset_factory->stitchTargetSequence(all_predictions[i]);
+    output[i] = text::join(all_predictions[i], {_target->delimiter});
   }
 
   return output;

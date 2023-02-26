@@ -104,7 +104,7 @@ std::vector<std::string> RecursionWrapper::augment(
   auto target_seq = std::string(columns[_target_column_number]);
   auto sequence = parsers::CSV::parseLine(target_seq, _target_delimiter);
   if (sequence.size() < _max_recursion_depth) {
-    sequence.push_back(EARLY_STOP);
+    sequence.push_back(EOS);
   }
   if (sequence.size() > _max_recursion_depth) {
     sequence.resize(_max_recursion_depth);

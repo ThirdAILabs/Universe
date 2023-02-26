@@ -124,11 +124,6 @@ void RecurrentDatasetFactory::addPredictionToSample(
   intermediate_column += prediction;
 }
 
-std::string RecurrentDatasetFactory::stitchTargetSequence(
-    const std::vector<std::string>& predictions) {
-  return text::join(predictions, /* delimiter= */ {_target->delimiter});
-}
-
 template void RecurrentDatasetFactory::serialize(cereal::BinaryInputArchive&);
 template void RecurrentDatasetFactory::serialize(cereal::BinaryOutputArchive&);
 
