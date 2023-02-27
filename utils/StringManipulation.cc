@@ -7,7 +7,7 @@ std::vector<std::string_view> split(std::string_view sentence, char delimiter) {
   std::vector<std::string_view> words;
 
   bool prev_is_delim = true;
-  uint32_t start_of_word_offset;
+  uint32_t start_of_word_offset = 0;
   for (uint32_t i = 0; i < sentence.size(); i++) {
     if (prev_is_delim && sentence[i] != delimiter) {
       // If we go from a space to a non-space character then we are at the
