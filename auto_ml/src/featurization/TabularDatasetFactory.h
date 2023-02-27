@@ -69,7 +69,7 @@ class TabularDatasetFactory {
 
   bool hasTemporalRelationships() const { return !_temporal_context.empty(); }
 
-  uint32_t inputDim() const { return _labeled_featurizer->getInputDim(); }
+  uint32_t inputDim() const { return _labeled_featurizer->getDimensions().at(0); }
 
   char delimiter() const { return _delimiter; }
 
@@ -100,7 +100,7 @@ class TabularDatasetFactory {
   dataset::TabularFeaturizerPtr makeFeaturizer(
       const TemporalRelationships& temporal_relationships,
       bool should_update_history, const TabularOptions& options,
-      const std::vector<dataset::BlockPtr>& label_blocks, bool parallel);
+      std::vector<dataset::BlockPtr> label_blocks, bool parallel);
 
   PreprocessedVectorsMap processAllMetadata(
       const ColumnDataTypes& input_data_types, const TabularOptions& options);
@@ -116,9 +116,6 @@ class TabularDatasetFactory {
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
       dataset::DatasetLoader& dataset_loader,
       dataset::ThreadSafeVocabulary& key_vocab);
-
-  static dataset::ColumnNumberMap makeColumnNumberMapFromHeader(
-      dataset::DataSource& data_source, char delimiter);
 
   void verifyColumnMetadataExists(const std::string& col_name) {
     if (!_data_types.count(col_name) ||

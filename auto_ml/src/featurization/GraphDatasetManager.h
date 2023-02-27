@@ -1,6 +1,6 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
-#include <auto_ml/src/udt/utils/GraphInfo.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/utils/GraphInfo.h>
 
 namespace thirdai::automl::data {
 
@@ -13,9 +13,9 @@ class GraphDatasetManager {
   // TODO(Josh): Have user call index() then getDatasetLoader()
 
   dataset::DatasetLoaderPtr indexAndGetDatasetLoader(
-      std::shared_ptr<dataset::DataSource> data_source);
+      const dataset::DataSourcePtr& data_source);
 
-  void index(const std::shared_ptr<dataset::DataSource>& data_source);
+  void index(const dataset::DataSourcePtr& data_source);
 
   std::vector<uint32_t> getInputDims() const {
     return _featurizer->getDimensions();

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "BlockInterface.h"
-#include <auto_ml/src/dataset_factories/udt/GraphInfo.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
+#include <dataset/src/utils/GraphInfo.h>
 #include <exceptions/src/Exceptions.h>
 #include <cstdlib>
 #include <exception>
