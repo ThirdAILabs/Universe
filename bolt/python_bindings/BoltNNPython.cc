@@ -615,11 +615,7 @@ That's all for now, folks! More docs coming soon :)
             return GradientReference(*node.getModel().get());
           },
           py::return_value_policy::reference_internal,
-          "Returns gradient reference for Distributed Training Wrapper")
-      .def("on_train_begin", &DistributedTrainingWrapper::train_begin)
-      .def("on_train_end", &DistributedTrainingWrapper::train_end)
-      .def("on_epoch_begin", &DistributedTrainingWrapper::epoch_begin)
-      .def("on_epoch_end", &DistributedTrainingWrapper::epoch_end);
+          "Returns gradient reference for Distributed Training Wrapper");
 
   createLossesSubmodule(nn_submodule);
 }

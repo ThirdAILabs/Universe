@@ -63,7 +63,7 @@ ColdStartMetadata getColdStartMetadata(
 
   return metadata;
 }
-dataset::ColdStartDataSourcePtr preprocessColdStartTrainSource(
+ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const dataset::DataSourcePtr& original_source,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
@@ -81,7 +81,7 @@ dataset::ColdStartDataSourcePtr preprocessColdStartTrainSource(
 
   auto augmented_data = augmentation.apply(dataset);
 
-  auto data_source = dataset::ColdStartDataSource::make(
+  auto data_source = cold_start::ColdStartDataSource::make(
       /* column_map= */ augmented_data,
       /* text_column_name= */ metadata.text_column_name,
       /* label_column_name= */ dataset_config->target,

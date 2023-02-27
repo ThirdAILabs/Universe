@@ -183,7 +183,6 @@ def add_distributed_to_udt():
         # initializing freeze-hash-tables=True by default.
         metrics = dist_model.train(freeze_hash_tables=True)
 
-        callbacks = metrics["callbacks"]
         model = dist_model.get_model()
 
         self._set_model(trained_model=model)
@@ -387,13 +386,9 @@ class DistributedDataParallel:
         self.total_batches_trained = 0
 
     def train_on_epoch(self, train_state_manager, epoch):
-        train_state_manager.on_epoch_begin()
-
         while train_state_manager.train_batch(epoch=epoch):
             self.total_batches_trained += 1
         self.total_batches_trained += 1
-
-        train_state_manager.on_epoch_end()
         train_state_manager.move_to_next_epoch()
 
     def train(self, freeze_hash_tables=False) -> Dict[str, Union[int, str]]:
@@ -418,7 +413,6 @@ class DistributedDataParallel:
             self.communication_type,
         )
 
-        train_state_manager.on_train_begin()
         starting_epoch = 0
         if freeze_hash_tables:
             self.train_on_epoch(
@@ -433,7 +427,6 @@ class DistributedDataParallel:
         for epoch in range(starting_epoch, self.train_config.num_epochs):
             self.train_on_epoch(train_state_manager=train_state_manager, epoch=epoch)
 
-        train_state_manager.on_train_end()
         return {
             "time": time.time() - train_start,
             "total_batches_trained": self.total_batches_trained,

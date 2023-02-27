@@ -247,25 +247,5 @@ class Worker:
     def freeze_hash_tables(self):
         self.model.freeze_hash_tables(True)
 
-    @timed
-    def on_train_begin(self):
-        self.model.on_train_begin()
-
-    @timed
-    def on_train_end(self):
-        self.model.on_train_end()
-
-    @timed
-    def on_epoch_begin(self):
-        self.model.on_epoch_begin()
-
-    @timed
-    def on_epoch_end(self):
-        self.model.on_epoch_end()
-
-    @timed
-    def get_callbacks_results(self):
-        self.model.get_callbacks()
-
     def model(self):
         return self.model.model

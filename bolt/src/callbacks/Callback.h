@@ -5,7 +5,6 @@
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
-#include <cereal/types/polymorphic.hpp>
 
 namespace thirdai::bolt {
 
@@ -132,5 +131,3 @@ class CallbackList {
 };
 
 }  // namespace thirdai::bolt
-
-CEREAL_REGISTER_TYPE(thirdai::bolt::Callback);
