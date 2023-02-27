@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace thirdai::automl::cold_start {
+namespace thirdai::dataset {
 
 class ColdStartDataSource final : public dataset::DataSource {
  public:
@@ -65,4 +65,4 @@ class ColdStartDataSource final : public dataset::DataSource {
 
 using ColdStartDataSourcePtr = std::shared_ptr<ColdStartDataSource>;
 
-}  // namespace thirdai::automl::cold_start
+}  // namespace thirdai::dataset

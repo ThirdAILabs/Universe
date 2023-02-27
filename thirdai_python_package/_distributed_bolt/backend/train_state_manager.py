@@ -179,3 +179,18 @@ class TrainStateManager:
         self.logging.info(
             f"Epoch No: {epoch}, Batch Count: {self.batch_id_within_epoch}, Bolt Computation Time: {self.bolt_computation_time}, Averaging and Communcation Time: {self.averaging_and_communication_time}"
         )
+
+    def on_train_begin(self):
+        ray.get([worker.on_train_begin.remote() for worker in self.workers])
+
+    def on_train_end(self):
+        ray.get([worker.on_train_end.remote() for worker in self.workers])
+
+    def on_epoch_begin(self):
+        ray.get([worker.on_epoch_begin.remote() for worker in self.workers])
+
+    def on_epoch_end(self):
+        ray.get([worker.on_epoch_end.remote() for worker in self.workers])
+
+    def get_callbacks_results(self):
+        return ray.get(self.workers[0].get_callbacks_results.remote())

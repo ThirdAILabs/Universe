@@ -1,7 +1,6 @@
 #include "AutomlPython.h"
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
-#include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
@@ -273,8 +272,6 @@ void createModelsSubmodule(py::module_& module) {
            docs::TEXT_CLASSIFIER_PREDICT)
       .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"),
            docs::TEXT_CLASSIFIER_SAVE);
-
-  py::class_<cold_start::ColdStartDataSource, dataset::DataSource, cold_start::ColdStartDataSourcePtr>(models_submodule, "ColdStartDataSource");
 
   models_submodule.def("preprocess_cold_start_train_source", 
   &cold_start::preprocessColdStartTrainSource, py::arg("original_source"), 

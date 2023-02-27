@@ -9,10 +9,10 @@ import pandas as pd
 catalog_file = "amazon-kaggle-product-catalog.csv"
 
 
-# def setup_module():
-#     os.system(
-#         "curl -L https://www.dropbox.com/s/tf7e5m0cikhcb95/amazon-kaggle-product-catalog-sampled-0.05.csv?dl=0 -o amazon-kaggle-product-catalog.csv"
-#     )
+def setup_module():
+    os.system(
+        "curl -L https://www.dropbox.com/s/tf7e5m0cikhcb95/amazon-kaggle-product-catalog-sampled-0.05.csv?dl=0 -o amazon-kaggle-product-catalog.csv"
+    )
 
 
 def get_udt_cold_start_model():
@@ -34,20 +34,21 @@ def get_udt_cold_start_model():
 def test_distributed_cold_start(ray_two_node_cluster_config):
     udt_model = get_udt_cold_start_model()
 
-    # class FinalMetricCallback(bolt.callbacks.Callback):
-    #     def __init__(self):
-    #         super().__init__()
-    #         self.ending_train_metric = 0
+    class FinalMetricCallback(bolt.callbacks.Callback):
+        def __init__(self):
+            super().__init__()
+            self.ending_train_metric = 0
+            self.count = 0
 
-    #     def on_batch_begin(self, model, train_state):
-    #         print("Hello")
+        def on_batch_begin(self, model, train_state):
+            self.count += 1
 
-    #     def on_train_end(self, model, train_state):
-    #         self.ending_train_metric = train_state.get_train_metric_values(
-    #             "categorical_accuracy"
-    #         )[-1]
+        def on_train_end(self, model, train_state):
+            self.ending_train_metric = train_state.get_train_metric_values(
+                "categorical_accuracy"
+            )[-1]
 
-    # final_metric = FinalMetricCallback()
+    final_metric = FinalMetricCallback()
 
     udt_model.cold_start_distributed(
         cluster_config=ray_two_node_cluster_config("linear"),
@@ -55,13 +56,13 @@ def test_distributed_cold_start(ray_two_node_cluster_config):
         strong_column_names=["TITLE"],
         weak_column_names=["DESCRIPTION", "BULLET_POINTS", "BRAND"],
         learning_rate=0.001,
-        epochs=5,
+        epochs=1,
         metrics=["categorical_accuracy"],
-        # callbacks=[final_metric],
+        callbacks=[final_metric],
     )
 
-    # print(final_metric.ending_train_metric)
-    # assert final_metric.ending_train_metric > 0.7
+    print(final_metric.ending_train_metric)
+    assert final_metric.ending_train_metric > 0.7
 
 
 def test_serializability():
