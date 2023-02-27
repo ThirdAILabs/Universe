@@ -69,32 +69,15 @@ void UDTClassifier::train(
   auto validation_to_use =
       _dataset_factory->hasTemporalRelationships() ? validation : std::nullopt;
 
-  size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
-
   utils::DataSourceToDatasetLoader source_to_loader_func =
       [this](const dataset::DataSourcePtr& source) {
         return _dataset_factory->getDatasetLoader(source, /* shuffle= */ true);
       };
 
-  bolt::TrainConfig train_config = utils::getTrainConfig(
-      epochs, learning_rate, validation_to_use, metrics, callbacks, verbose,
-      logging_interval, source_to_loader_func);
-
-  auto train_dataset_loader = source_to_loader_func(data);
-  utils::train(_model, train_dataset_loader, train_config, batch_size,
-               max_in_memory_batches,
-               /* freeze_hash_tables= */ _freeze_hash_tables,
-               licensing::TrainPermissionsToken(data->resourceName()));
-
-  /**
-   * For binary classification we tune the prediction threshold to optimize some
-   * metric. This can improve performance particularly on datasets with a class
-   * imbalance.
-   */
-  _binary_prediction_threshold =
-      utils::getBinaryClassificationPredictionThreshold(
-          data, validation_to_use, batch_size, train_config, _model,
-          source_to_loader_func);
+  utils::trainClassifier(data, learning_rate, epochs, validation_to_use,
+                         batch_size_opt, max_in_memory_batches, metrics,
+                         callbacks, verbose, logging_interval,
+                         source_to_loader_func, _model);
 }
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,

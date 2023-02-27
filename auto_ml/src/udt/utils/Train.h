@@ -20,6 +20,22 @@ void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
            licensing::TrainPermissionsToken token =
                licensing::TrainPermissionsToken());
 
+/*
+ * Trains the passed in model, including handling validation data. If there are
+ * two classes in the output (and some additional conditions of the presence of
+ * metrics/validation are met), returns a tuned binary classification threshold.
+ */
+std::optional<float> trainClassifier(
+    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+    const std::optional<Validation>& validation,
+    std::optional<size_t> batch_size_opt,
+    std::optional<size_t> max_in_memory_batches,
+    const std::vector<std::string>& metrics,
+    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
+    std::optional<uint32_t> logging_interval,
+    const utils::DataSourceToDatasetLoader& source_to_loader_func,
+    bolt::BoltGraphPtr& model);
+
 void trainInMemory(bolt::BoltGraphPtr& model,
                    std::vector<dataset::BoltDatasetPtr> datasets,
                    bolt::TrainConfig train_config, bool freeze_hash_tables,
@@ -61,11 +77,5 @@ py::object evaluate(const std::vector<std::string>& metrics,
                     const bolt::BoltGraphPtr& model,
                     const dataset::DatasetLoaderPtr& dataset_loader,
                     const std::optional<float>& binary_prediction_threshold);
-
-std::optional<float> getBinaryClassificationPredictionThreshold(
-    const dataset::DataSourcePtr& data,
-    const std::optional<Validation>& validation, size_t& batch_size,
-    bolt::TrainConfig& train_config, const bolt::BoltGraphPtr& model,
-    const DataSourceToDatasetLoader& func);
 
 }  // namespace thirdai::automl::udt::utils

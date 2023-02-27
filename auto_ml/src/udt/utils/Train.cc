@@ -311,4 +311,37 @@ py::object evaluate(const std::vector<std::string>& metrics,
 
   return utils::convertInferenceTrackerToNumpy(output);
 }
+
+std::optional<float> trainClassifier(
+    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+    const std::optional<Validation>& validation,
+    std::optional<size_t> batch_size_opt,
+    std::optional<size_t> max_in_memory_batches,
+    const std::vector<std::string>& metrics,
+    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
+    std::optional<uint32_t> logging_interval,
+    const utils::DataSourceToDatasetLoader& source_to_loader_func,
+    bolt::BoltGraphPtr& model) {
+  size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
+
+  bolt::TrainConfig train_config = utils::getTrainConfig(
+      epochs, learning_rate, validation, metrics, callbacks, verbose,
+      logging_interval, source_to_loader_func);
+
+  auto train_dataset_loader = source_to_loader_func(data);
+
+  utils::train(model, train_dataset_loader, train_config, batch_size,
+               max_in_memory_batches,
+               /* freeze_hash_tables= */ false,
+               licensing::TrainPermissionsToken(data->resourceName()));
+
+  /**
+   * For binary classification we tune the prediction threshold to optimize some
+   * metric. This can improve performance particularly on datasets with a class
+   * imbalance.
+   */
+  return utils::getBinaryClassificationPredictionThreshold(
+      data, validation, batch_size, train_config, model, source_to_loader_func);
+}
+
 }  // namespace thirdai::automl::udt::utils
