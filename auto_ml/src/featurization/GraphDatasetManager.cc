@@ -46,7 +46,7 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
 
   dataset::BlockPtr label_block = dataset::NumericalCategoricalBlock::make(
       /* col = */ _target_col,
-      /* n_classes= */ n_target_classes);
+      /* n_classes= */ _n_target_classes);
 
   _featurizer = dataset::TabularFeaturizer::make(
       /* block_lists = */ {dataset::BlockList(std::move(feature_blocks),
@@ -64,7 +64,7 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
 }
 
 dataset::DatasetLoaderPtr GraphDatasetManager::indexAndGetDatasetLoader(
-    const dataset::DataSourcePtr& data_source) {
+    const dataset::DataSourcePtr& data_source, bool shuffle) {
   index(data_source);
 
   data_source->restart();
@@ -72,7 +72,7 @@ dataset::DatasetLoaderPtr GraphDatasetManager::indexAndGetDatasetLoader(
   utils::updateFeaturizerWithHeader(_featurizer, data_source, _delimiter);
 
   return std::make_unique<dataset::DatasetLoader>(data_source, _featurizer,
-                                                  /* shuffle= */ true);
+                                                  shuffle);
 }
 
 void GraphDatasetManager::index(const dataset::DataSourcePtr& data_source) {

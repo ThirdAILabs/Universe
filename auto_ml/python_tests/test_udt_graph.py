@@ -7,6 +7,8 @@ from sklearn.model_selection import train_test_split
 from thirdai import bolt
 
 
+pytestmark = [pytest.mark.unit]
+
 def test_udt_on_yelp_chi(download_yelp_chi_dataset):
     all_data = pd.read_csv("yelp_all.csv")
     numerical_col_names = ["col_" + str(i) for i in range(32)]

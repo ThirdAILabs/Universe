@@ -13,7 +13,7 @@ class GraphDatasetManager {
   // TODO(Josh): Have user call index() then getDatasetLoader()
 
   dataset::DatasetLoaderPtr indexAndGetDatasetLoader(
-      const dataset::DataSourcePtr& data_source);
+      const dataset::DataSourcePtr& data_source, bool shuffle);
 
   void index(const dataset::DataSourcePtr& data_source);
 

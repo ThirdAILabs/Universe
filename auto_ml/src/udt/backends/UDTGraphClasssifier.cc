@@ -81,7 +81,8 @@ void UDTGraphClassifier::train(
     std::optional<uint32_t> logging_interval) {
   utils::DataSourceToDatasetLoader source_to_loader_func =
       [this](const dataset::DataSourcePtr& source) {
-        return _dataset_manager->indexAndGetDatasetLoader(source);
+        return _dataset_manager->indexAndGetDatasetLoader(source,
+                                                          /* shuffle = */ true);
       };
 
   _binary_prediction_threshold = utils::trainClassifier(
@@ -95,7 +96,8 @@ py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
                                         bool sparse_inference,
                                         bool return_predicted_class,
                                         bool verbose, bool return_metrics) {
-  auto dataset_loader = _dataset_manager->indexAndGetDatasetLoader(data);
+  auto dataset_loader =
+      _dataset_manager->indexAndGetDatasetLoader(data, /* shuffle = */ false);
   return utils::evaluate(metrics, sparse_inference, return_predicted_class,
                          verbose, return_metrics, _model, dataset_loader,
                          _binary_prediction_threshold);
