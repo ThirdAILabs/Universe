@@ -49,7 +49,7 @@ class Worker:
         self.train_source.load()
 
         logging.setup(
-            log_to_stderr=True, path=os.path.join(log_dir, f"worker-{id}.log")
+            log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
 
         start = time()
