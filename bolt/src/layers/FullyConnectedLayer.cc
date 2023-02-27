@@ -442,7 +442,16 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
     _hash_table->queryAndInsertForInference(hashes.data(), active_set,
                                             _sparse_dim);
   } else {
+
+//    std::cout << "\n ================================================ \n";
+//    std::cout << "Layer information : dim "<< _dim << " prev_dim "<< _prev_dim <<" sparsity " << _sparsity;
+//    std::cout << "\n hashes calculated \n";
+//    for(auto val : hashes)
+//      std::cout << val<<" ";
     _hash_table->queryBySet(hashes.data(), active_set);
+//    for(auto val : active_set)
+//      std::cout << val <<" ";
+//    std::cout << "\n ************************************************ \n";
   }
 
   if (active_set.size() < _sparse_dim) {
@@ -453,6 +462,11 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
       active_set.insert(_rand_neurons[rand_offset++]);
       rand_offset = rand_offset % _dim;
     }
+//    std::cout << "\n +++++++++++++++++++++++++++++++++++++++++++++++++++++ \n";
+//    std::cout << "\nThe active set elements after filling random : \n";
+//    for(auto val : active_set)
+//      std::cout << val <<" ";
+//    std::cout << "\n +++++++++++++++++++++++++++++++++++++++++++++++++++++ \n";
   }
 
   uint32_t cnt = 0;
