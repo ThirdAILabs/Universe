@@ -1,8 +1,10 @@
 #include "GraphDatasetManager.h"
 #include "FeaturizationUtils.h"
+#include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/blocks/GraphBlocks.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
@@ -22,7 +24,8 @@ dataset::BlockPtr popNeighborTokensBlock(
 GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
                                          std::string target_col,
                                          uint32_t n_target_classes,
-                                         char delimiter, bool use_pairgrams)
+                                         char delimiter,
+                                         const TabularOptions& options)
     : _data_types(std::move(data_types)),
       _target_col(std::move(target_col)),
       _n_target_classes(n_target_classes),
@@ -34,14 +37,13 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
   std::tie(_graph_info, graph_builder_block) =
       createGraphInfoAndBuilder(_data_types);
 
-  std::vector<dataset::BlockPtr> feature_blocks =
-      FeatureComposer::makeNonTemporalFeatureBlocks(
-          _data_types, _target_col,
-          /* temporal_relationships = */ TemporalRelationships(),
-          /* vectors_map = */ PreprocessedVectorsMap(),
-          /* text_pairgrams_word_limit = */ udt::defaults::PAIRGRAM_WORD_LIMIT,
-          /* contextual_columns = */ use_pairgrams,
-          /* graph_info = */ _graph_info);
+  std::vector<dataset::BlockPtr> feature_blocks = makeNonTemporalInputBlocks(
+      /* data_types = */ _data_types,
+      /* label_col_names = */ {_target_col},
+      /* temporal_relationships = */ {},
+      /* vectors_map = */ {},
+      /* options = */ options,
+      /* graph_info = */ _graph_info);
 
   dataset::BlockPtr sparse_neighbor_block =
       popNeighborTokensBlock(feature_blocks);

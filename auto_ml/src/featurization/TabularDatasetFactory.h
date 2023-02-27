@@ -69,7 +69,9 @@ class TabularDatasetFactory {
 
   bool hasTemporalRelationships() const { return !_temporal_context.empty(); }
 
-  uint32_t inputDim() const { return _labeled_featurizer->getDimensions().at(0); }
+  uint32_t inputDim() const {
+    return _labeled_featurizer->getDimensions().at(0);
+  }
 
   char delimiter() const { return _delimiter; }
 

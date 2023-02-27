@@ -1,4 +1,5 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/TabularOptions.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/utils/GraphInfo.h>
 
@@ -8,7 +9,7 @@ class GraphDatasetManager {
  public:
   GraphDatasetManager(data::ColumnDataTypes data_types, std::string target_col,
                       uint32_t n_target_classes, char delimiter,
-                      bool use_pairgrams);
+                      const TabularOptions& options);
 
   // TODO(Josh): Have user call index() then getDatasetLoader()
 

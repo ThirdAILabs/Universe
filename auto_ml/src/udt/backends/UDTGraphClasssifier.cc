@@ -54,8 +54,8 @@ bolt::BoltGraphPtr createGNN(std::vector<uint32_t> input_dims,
 UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
                                        const std::string& target_col,
                                        uint32_t n_target_classes,
-                                       bool use_simpler_model,
-                                       bool integer_target, char delimiter) {
+                                       bool integer_target, char delimiter,
+                                       const data::TabularOptions& options) {
   // TODO(Josh): Add other constructor params and throw exception?
   if (!integer_target) {
     throw exceptions::NotImplemented(
@@ -63,8 +63,7 @@ UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
   }
 
   _dataset_manager = std::make_shared<data::GraphDatasetManager>(
-      data_types, target_col, n_target_classes, delimiter,
-      /* use_pairgrams = */ !use_simpler_model);
+      data_types, target_col, n_target_classes, delimiter, options);
 
   // TODO(Josh): Add customization/autotuning like in UDTClassifier
   _model = createGNN(

@@ -1,6 +1,7 @@
 #include "TabularBlockComposer.h"
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
+#include <dataset/src/blocks/GraphBlocks.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserCountHistory.h>
@@ -59,12 +60,36 @@ std::vector<dataset::BlockPtr> makeTabularInputBlocks(
   return blocks;
 }
 
+std::vector<dataset::BlockPtr> makeGraphFeatureBlocks(
+    const data::ColumnDataTypes& data_types, const GraphInfoPtr& graph_info) {
+  std::vector<dataset::BlockPtr> blocks;
+  for (const auto& [col_name, data_type] : data_types) {
+    if (asNodeID(data_type)) {
+      // TODO(Josh): Do a thorough ablation study (this seems only marginally
+      // useful on yelp). This should include looking at binning vs. non binning
+      // for both these average features and the normal features.
+      blocks.push_back(
+          dataset::NormalizedNeighborVectorsBlock::make(col_name, graph_info));
+      // We could alternatively build the neighbors block with the neighbors
+      // column, but using graph_info instead allows us to potentially not
+      // have to have a neighbors column for inference.
+      blocks.push_back(
+          dataset::NeighborTokensBlock::make(col_name, graph_info));
+    }
+  }
+  return blocks;
+}
+
 std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
     const ColumnDataTypes& data_types,
     const std::set<std::string>& label_col_names,
     const TemporalRelationships& temporal_relationships,
-    const PreprocessedVectorsMap& vectors_map, const TabularOptions& options) {
+    const PreprocessedVectorsMap& vectors_map, const TabularOptions& options,
+    const GraphInfoPtr& graph_info) {
   std::vector<dataset::BlockPtr> blocks;
+  if (graph_info) {
+    blocks = makeGraphFeatureBlocks(data_types, graph_info);
+  }
 
   auto non_temporal_columns =
       getNonTemporalColumnNames(data_types, temporal_relationships);

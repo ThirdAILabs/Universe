@@ -11,8 +11,8 @@ class UDTGraphClassifier final : public UDTBackend {
  public:
   UDTGraphClassifier(const data::ColumnDataTypes& data_types,
                      const std::string& target_col, uint32_t n_target_classes,
-                     bool use_simpler_model, bool integer_target,
-                     char delimiter);
+                     bool integer_target, char delimiter,
+                     const data::TabularOptions& options);
 
   void train(const dataset::DataSourcePtr& data, float learning_rate,
              uint32_t epochs, const std::optional<Validation>& validation,

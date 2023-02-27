@@ -14,6 +14,6 @@ void updateFeaturizerWithHeader(
     const dataset::TabularFeaturizerPtr& featurizer,
     const std::shared_ptr<dataset::DataSource>& data_source, char delimiter);
 
-void verifyExpectedNumberOfGraphTypes(
-    const data::ColumnDataTypes& data_types, uint64_t expected_count);
+void verifyExpectedNumberOfGraphTypes(const data::ColumnDataTypes& data_types,
+                                      uint64_t expected_count);
 }  // namespace thirdai::automl::data::utils
