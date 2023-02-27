@@ -81,7 +81,7 @@ template void NormalizedNeighborVectorsBlock::serialize(
 
 template <class Archive>
 void NormalizedNeighborVectorsBlock::serialize(Archive& archive) {
-  archive(_node_id_col, _graph_ptr);
+  archive(cereal::base_class<Block>(this), _node_id_col, _graph_ptr);
 }
 
 Explanation NeighborTokensBlock::explainIndex(uint32_t index_within_block,
@@ -110,7 +110,7 @@ template void NeighborTokensBlock::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void NeighborTokensBlock::serialize(Archive& archive) {
-  archive(_node_id_col, _graph_ptr);
+  archive(cereal::base_class<Block>(this), _node_id_col, _graph_ptr);
 }
 
 Explanation GraphBuilderBlock::explainIndex(uint32_t index_within_block,
@@ -146,7 +146,8 @@ template void GraphBuilderBlock::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void GraphBuilderBlock::serialize(Archive& archive) {
-  archive(_node_id_col, _neighbor_col, _feature_cols, _graph_ptr);
+  archive(cereal::base_class<Block>(this), _node_id_col, _neighbor_col,
+          _feature_cols, _graph_ptr);
 }
 
 }  // namespace thirdai::dataset

@@ -6,8 +6,8 @@ from sklearn import metrics
 from sklearn.model_selection import train_test_split
 from thirdai import bolt
 
-
 pytestmark = [pytest.mark.unit]
+
 
 def test_udt_on_yelp_chi(download_yelp_chi_dataset):
     all_data = pd.read_csv("yelp_all.csv")
@@ -54,3 +54,9 @@ def test_udt_on_yelp_chi(download_yelp_chi_dataset):
 
     # Gets around 0.91
     assert auc > 0.89
+
+    model.save("udt_graph.serialized")
+    model = bolt.UniversalDeepTransformer.load("udt_graph.serialized")
+    activations = model.evaluate("yelp_test.csv")
+    new_auc = metrics.roc_auc_score(ground_truth, activations[:, 1])
+    assert new_auc == auc
