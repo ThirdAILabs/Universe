@@ -8,6 +8,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <cstdlib>
 #include <exception>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 
@@ -31,6 +32,9 @@ uint64_t parseFloat(const ColumnIdentifier& identifier,
 
 std::vector<uint64_t> parseUint64Array(const std::string& array_string,
                                        char delimiter) {
+  if (array_string.empty()) {
+    return std::vector<uint64_t>();
+  }
   std::vector<std::string_view> parsed_array =
       parsers::CSV::parseLine(array_string, delimiter);
   std::vector<uint64_t> uint64_array;
@@ -55,8 +59,12 @@ std::exception_ptr NormalizedNeighborVectorsBlock::buildSegment(
   std::vector<float> sum_neighbor_features(featureDim(), 0);
 
   for (uint64_t neighbor_id : _graph_ptr->neighbors(node_id)) {
-    const std::vector<float> neighbor_feature =
-        _graph_ptr->featureVector(neighbor_id);
+    std::vector<float> neighbor_feature;
+    try {
+      neighbor_feature = _graph_ptr->featureVector(neighbor_id);
+    } catch (const automl::data::GraphConstructionError& e) {
+      return std::make_exception_ptr(e);
+    }
     for (uint64_t d = 0; d < featureDim(); d++) {
       sum_neighbor_features.at(d) += neighbor_feature.at(d);
     }
@@ -96,7 +104,20 @@ std::exception_ptr NeighborTokensBlock::buildSegment(
     ColumnarInputSample& input, SegmentedFeatureVector& vec) {
   uint64_t node_id = parseUint64(_node_id_col, input);
 
-  std::vector<uint64_t> neighbors = _graph_ptr->neighbors(node_id);
+  std::vector<uint64_t> neighbors;
+  try {
+    neighbors = _graph_ptr->neighbors(node_id);
+  } catch (const automl::data::GraphConstructionError& e) {
+    return std::make_exception_ptr(e);
+  }
+
+  // We need to do this because this block is used as input to the Embedding 
+  // node, which does not support empty vectors. This is equivalent to making
+  // all nodes with no neighbors have a single unique neighbor with id 
+  // std::numeric_limits<uint32_t>::max() - 1.
+  if (neighbors.empty()) {
+    neighbors.push_back(std::numeric_limits<uint32_t>::max() - 1);
+  }
 
   for (uint64_t neighbor : neighbors) {
     vec.addSparseFeatureToSegment(neighbor, /* value = */ 1);
@@ -134,7 +155,7 @@ std::exception_ptr GraphBuilderBlock::buildSegment(
   }
 
   std::vector<uint64_t> neighbors = parseUint64Array(
-      input.column(_neighbor_col).data(), /* delimiter = */ ' ');
+      std::string(input.column(_neighbor_col)), /* delimiter = */ ' ');
 
   _graph_ptr->insertNode(node_id, dense_feature_vector, neighbors);
 

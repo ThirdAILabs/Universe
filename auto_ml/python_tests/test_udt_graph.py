@@ -60,3 +60,66 @@ def test_udt_on_yelp_chi(download_yelp_chi_dataset):
     activations = model.evaluate("yelp_test.csv")
     new_auc = metrics.roc_auc_score(ground_truth, activations[:, 1])
     assert new_auc == auc
+
+
+def test_graph_clearing_and_indexing():
+
+    num_chunks = 10
+    chunk_size = 100
+    num_classes = 2
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "node_id": bolt.types.node_id(),
+            "target": bolt.types.categorical(),
+            "neighbors": bolt.types.neighbors(),
+        },
+        target="target",
+        n_target_classes=num_classes,
+        integer_target=True,
+    )
+
+    # The graph is linear, so each node is connected to its predecessor. Node
+    # id i has class id = (i / chunk_size) % num_classes.
+    for chunk in range(num_chunks):
+        chunk_start = chunk_size * chunk
+        chunk_end = chunk_start + chunk_size
+        df = pd.DataFrame()
+        df["node_id"] = np.arange(chunk_start, chunk_end)
+        df["target"] = np.full(shape=chunk_size, fill_value=chunk % num_classes)
+        df["neighbors"] = [
+            max(0, node_id - 1) for node_id in range(chunk_start, chunk_end)
+        ]
+        df["noisy_target"] = np.full(
+            shape=chunk_size, fill_value=chunk % num_classes
+        ) + np.random.normal(loc=0.0, scale=0.1, size=chunk_size)
+        df.to_csv(f"graph_chunk_{chunk}.csv", index=False)
+        model.train(
+            f"graph_chunk_{chunk}.csv",
+            learning_rate=0.01,
+            epochs=1,
+            batch_size=32,
+        )
+
+    chunk_id_to_test = 7
+    old_accuracy = model.evaluate(
+        f"graph_chunk_{chunk_id_to_test}.csv",
+        metrics=["categorical_accuracy"],
+        return_metrics=True,
+    )
+    model.clear_graph()
+    with pytest.raises(
+        RuntimeError,
+        match=r"The model's stored graph is in an unexpected state: No feature vector currently stored for node.*",
+    ):
+        model.evaluate(
+            f"graph_chunk_{chunk_id_to_test}.csv", metrics=["categorical_accuracy"]
+        )
+    for chunk_id in range(chunk_id_to_test, -1, -1):
+        model.index_nodes(f"graph_chunk_{chunk_id}.csv")
+    new_accuracy = model.evaluate(
+        f"graph_chunk_{chunk_id_to_test}.csv",
+        metrics=["categorical_accuracy"],
+        return_metrics=True,
+    )
+    assert old_accuracy == new_accuracy

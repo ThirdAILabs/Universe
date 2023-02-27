@@ -8,8 +8,14 @@
 #include <utility>
 #include <vector>
 
-// TODO(Josh): Fix file location
 namespace thirdai::automl::data {
+
+class GraphConstructionError : public std::runtime_error {
+ public:
+  explicit GraphConstructionError(const std::string& message)
+      : std::runtime_error(
+            "The model's stored graph is in an unexpected state: " + message){};
+};
 
 class GraphInfo {
  public:
