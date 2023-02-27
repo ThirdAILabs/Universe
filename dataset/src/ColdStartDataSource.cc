@@ -1,7 +1,7 @@
 #include "ColdStartDataSource.h"
 #include <stdexcept>
 
-namespace thirdai::automl::cold_start {
+namespace thirdai::dataset {
 
 ColdStartDataSource::ColdStartDataSource(const data::ColumnMap& column_map,
                                          std::string text_column_name,
@@ -63,4 +63,4 @@ std::optional<std::string> ColdStartDataSource::getNextRowAsString() {
   return row;
 }
 
-}  // namespace thirdai::automl::cold_start
+}  // namespace thirdai::dataset

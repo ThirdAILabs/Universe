@@ -44,7 +44,7 @@ class DistributedTrainingWrapper {
         /* reconstruct_hash_functions_batch = */
         _train_config.getReconstructHashFunctionsBatchInterval(
             _train_context->batchSize(), _train_context->len()));
-    if (_worker_id == 0) {
+    if (_worker_id == 0 || _worker_id == 1) {
       _bolt_graph->logValidateAndSave(_train_config, _metric_aggregator);
     }
   }

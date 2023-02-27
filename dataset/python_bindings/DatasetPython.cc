@@ -4,6 +4,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/DatasetLoaderWrappers.h>
 #include <dataset/src/Datasets.h>
+#include <dataset/src/ColdStartDataSource.h>
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/InMemoryDataset.h>
 #include <dataset/src/NumpyDataset.h>
@@ -300,6 +301,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def("resource_name", &DataSource::resourceName)
       .def("restart", &DataSource::restart);
 
+  py::class_<ColdStartDataSource, dataset::DataSource, ColdStartDataSourcePtr>(
+      dataset_submodule, "ColdStartDataSource");
   py::class_<FileDataSource, DataSource, std::shared_ptr<FileDataSource>>(
       dataset_submodule, "FileDataSource")
       .def(py::init<const std::string&>(), py::arg("filename"));

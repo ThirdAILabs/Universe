@@ -146,6 +146,9 @@ def add_distributed_to_udt():
 
         data_processor = self.get_data_processor()
 
+        # checks and raises an error if the given UDT is not supported in distributed context
+        data_processor.verify_can_distribute()
+
         train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
         if callbacks:
             train_config.with_callbacks(callbacks)

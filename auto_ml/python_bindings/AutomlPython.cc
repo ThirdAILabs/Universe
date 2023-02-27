@@ -1,11 +1,10 @@
 #include "AutomlPython.h"
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
-#include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/DatasetFactory.h>
-#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/dataset_factories/udt/UDTDatasetFactory.h>
 #include <auto_ml/src/models/OutputProcessor.h>
 #include <auto_ml/src/models/UniversalDeepTransformer.h>
@@ -274,11 +273,11 @@ void createModelsSubmodule(py::module_& module) {
       .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"),
            docs::TEXT_CLASSIFIER_SAVE);
 
-  py::class_<cold_start::ColdStartDataSource, dataset::DataSource, cold_start::ColdStartDataSourcePtr>(models_submodule, "ColdStartDataSource");
-
-  models_submodule.def("preprocess_cold_start_train_source", 
-  &cold_start::preprocessColdStartTrainSource, py::arg("original_source"), 
-  py::arg("strong_column_names"), py::arg("weak_column_names"), py::arg("dataset_config"));
+  models_submodule.def("preprocess_cold_start_train_source",
+                       &cold_start::preprocessColdStartTrainSource,
+                       py::arg("original_source"),
+                       py::arg("strong_column_names"),
+                       py::arg("weak_column_names"), py::arg("dataset_config"));
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

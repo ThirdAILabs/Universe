@@ -9,10 +9,10 @@ import pandas as pd
 catalog_file = "amazon-kaggle-product-catalog.csv"
 
 
-# def setup_module():
-#     os.system(
-#         "curl -L https://www.dropbox.com/s/tf7e5m0cikhcb95/amazon-kaggle-product-catalog-sampled-0.05.csv?dl=0 -o amazon-kaggle-product-catalog.csv"
-#     )
+def setup_module():
+    os.system(
+        "curl -L https://www.dropbox.com/s/tf7e5m0cikhcb95/amazon-kaggle-product-catalog-sampled-0.05.csv?dl=0 -o amazon-kaggle-product-catalog.csv"
+    )
 
 
 def get_udt_cold_start_model():

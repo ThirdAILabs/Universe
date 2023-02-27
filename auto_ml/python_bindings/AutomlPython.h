@@ -26,7 +26,6 @@ void createUDTTemporalSubmodule(py::module_& module);
 
 void createDeploymentSubmodule(py::module_& module);
 
-
 // Python wrappers for ModelPipline methods
 
 config::ArgumentMap createArgumentMap(const py::dict& input_args);

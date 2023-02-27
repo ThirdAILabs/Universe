@@ -364,6 +364,7 @@ set(THIRDAI_SOURCES
     hashing/src/UniversalHash.cc
     hashtable/src/SampledHashTable.cc
     hashtable/src/VectorHashTable.cc
+    dataset/src/ColdStartDataSource.cc
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
@@ -388,7 +389,6 @@ set(THIRDAI_SOURCES
     auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/Parameter.cc
-    auto_ml/src/cold_start/ColdStartDataSource.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc
     utils/StringManipulation.cc)

@@ -41,7 +41,7 @@ def train_udt_binary_classification(download_internet_ads_dataset):
     )
 
     model.train(
-        train_filename, learning_rate=0.001, epochs=1, metrics=["categorical_accuracy"]
+        train_filename, learning_rate=0.001, epochs=3, metrics=["categorical_accuracy"]
     )
 
     return model
