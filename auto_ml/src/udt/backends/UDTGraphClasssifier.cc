@@ -84,10 +84,10 @@ void UDTGraphClassifier::train(
         return _dataset_manager->indexAndGetDatasetLoader(source);
       };
 
-  utils::trainClassifier(data, learning_rate, epochs, validation,
-                         batch_size_opt, max_in_memory_batches, metrics,
-                         callbacks, verbose, logging_interval,
-                         source_to_loader_func, _model);
+  _binary_prediction_threshold = utils::trainClassifier(
+      data, learning_rate, epochs, validation, batch_size_opt,
+      max_in_memory_batches, metrics, callbacks, verbose, logging_interval,
+      source_to_loader_func, _model);
 }
 
 py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,

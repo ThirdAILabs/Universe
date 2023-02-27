@@ -7,7 +7,6 @@ from sklearn.model_selection import train_test_split
 from thirdai import bolt
 
 
-@pytest.mark.integration
 def test_udt_on_yelp_chi(download_yelp_chi_dataset):
     all_data = pd.read_csv("yelp_all.csv")
     numerical_col_names = ["col_" + str(i) for i in range(32)]
@@ -40,7 +39,7 @@ def test_udt_on_yelp_chi(download_yelp_chi_dataset):
         n_target_classes=2,
         integer_target=True,
         # Turn off pairgrams to make the test fast (~1 min on my m1)
-        options={"contextual_columns": True}
+        options={"contextual_columns": False},
     )
 
     model.index_nodes("yelp_test.csv")

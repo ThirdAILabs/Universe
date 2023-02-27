@@ -116,9 +116,7 @@ class UDT {
     return _backend->indexNodes(source);
   }
 
-void clearGraph() {
-    return _backend->clearGraph();
-  }
+  void clearGraph() { return _backend->clearGraph(); }
 
   bolt::BoltGraphPtr model() const { return _backend->model(); }
 

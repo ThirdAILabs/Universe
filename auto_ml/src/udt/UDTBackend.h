@@ -194,9 +194,7 @@ class UDTBackend {
     throw notSupported("index_nodes");
   }
 
-  virtual void clearGraph() {
-    throw notSupported("clear_graph");
-  }
+  virtual void clearGraph() { throw notSupported("clear_graph"); }
 
   virtual ~UDTBackend() = default;
 

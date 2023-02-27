@@ -1,6 +1,7 @@
 #include "Train.h"
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/Datasets.h>
+#include <pybind11/stl.h>
 
 namespace thirdai::automl::udt::utils {
 

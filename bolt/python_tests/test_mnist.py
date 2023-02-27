@@ -2,7 +2,6 @@ import pytest
 from download_dataset_fixtures import download_mnist_dataset
 from thirdai import bolt, dataset
 
-# Add an integration test marker for all tests in this file
 pytestmark = [pytest.mark.unit]
 
 

@@ -137,6 +137,7 @@ def modify_udt():
     bolt.UDT.evaluate = wrapped_evaluate
     bolt.UDT.cold_start = wrapped_cold_start
 
+
 def modify_graph_udt():
     original_index_nodes_method = bolt.UDT.index_nodes
 

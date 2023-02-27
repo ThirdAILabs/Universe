@@ -558,7 +558,8 @@ def download_mnist_dataset():
         os.system("bzip2 -d mnist.t.bz2")
 
     return TRAIN_FILE, TEST_FILE
-    
+
+
 def download_yelp_chi_dataset():
     PATH = "yelp_all.csv"
     URL = "https://www.dropbox.com/s/ge2sr9iab16hc1x/yelp_all.csv"

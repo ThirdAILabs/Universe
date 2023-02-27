@@ -120,9 +120,6 @@ TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
 
   auto data_source = dataset::FileDataSource::make(metadata->metadata_file);
 
-  utils::updateFeaturizerWithHeader(_metadata_processors[col_name], data_source,
-                                    metadata->delimiter);
-
   auto input_blocks = makeNonTemporalInputBlocks(
       metadata->column_data_types, {metadata->key}, {}, {}, options);
 
@@ -138,6 +135,9 @@ TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
                            dataset::BlockList({label_block})},
       /* has_header= */ true,
       /* delimiter= */ metadata->delimiter, /* parallel= */ true);
+
+  utils::updateFeaturizerWithHeader(_metadata_processors[col_name], data_source,
+                                    metadata->delimiter);
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
