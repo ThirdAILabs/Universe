@@ -4,6 +4,7 @@
 #include <dataset/src/utils/TokenEncoding.h>
 #include <cmath>
 #include <cstdlib>
+#include <exception>
 #include <random>
 #include <stdexcept>
 #include <string_view>
@@ -136,6 +137,10 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
         unigram =
             token_encoding::seededMurmurHash(str_val.data(), str_val.size());
         break;
+      }
+      default: {
+        return std::make_exception_ptr(std::invalid_argument(
+            "Column type was expected to be numeric or categorical."));
       }
     }
     // Hash with different salt per column so the same bin in a different
