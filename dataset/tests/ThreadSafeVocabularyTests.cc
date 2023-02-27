@@ -1,5 +1,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -113,8 +114,8 @@ TEST(ThreadSafeVocabularyTests, InBlock) {
   auto lookup_block = StringLookupCategoricalBlock::make(
       /* col = */ 0, vocab);
 
-  TabularFeaturizer processor(/* input_blocks = */ {lookup_block},
-                              /* label_blocks = */ {});
+  TabularFeaturizer processor(
+      /* block_lists = */ {dataset::BlockList({lookup_block})});
   auto batch = processor.featurize(strings).at(0);
 
   auto uids = getUidsFromBatch(batch);
@@ -135,8 +136,8 @@ TEST(ThreadSafeVocabularyTests, InMultipleBlocks) {
       /* col = */ 0, vocab);
 
   TabularFeaturizer processor(
-      /* input_blocks = */ {lookup_block_1, lookup_block_2, lookup_block_3},
-      /* label_blocks = */ {});
+      /* block_lists = */ {dataset::BlockList(
+          {lookup_block_1, lookup_block_2, lookup_block_3})});
   auto batch = processor.featurize(strings).at(0);
 
   uint32_t lookup_block_dim = lookup_block_1->featureDim();

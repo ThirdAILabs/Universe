@@ -338,13 +338,21 @@ class Block {
  * "for block in blocks, do something".
  */
 struct BlockList {
-  explicit BlockList(std::vector<BlockPtr>&& blocks)
+  explicit BlockList(std::vector<BlockPtr>&& blocks,
+                     /*
+                     If hash_range has a value, then features from different
+                     blocks will be aggregated by hashing them to the same range
+                     but with different hash salts. Otherwise, the features will
+                     be treated as sparse vectors, which are then concatenated.
+                   */
+                     std::optional<uint32_t> hash_range = std::nullopt)
       : _blocks(std::move(blocks)),
         _are_dense(computeAreDense(_blocks)),
-        _feature_dim(computeFeatureDim(_blocks)),
+        _feature_dim(hash_range.value_or(computeFeatureDim(_blocks))),
         _expected_num_columns(allBlocksHaveColumnNumbers(_blocks)
                                   ? computeExpectedNumColumns(_blocks)
-                                  : 0) {}
+                                  : 0),
+        _hash_range(hash_range) {}
 
   BlockList() {}
 
@@ -390,6 +398,8 @@ struct BlockList {
   uint32_t featureDim() const { return _feature_dim; }
 
   uint32_t expectedNumColumns() const { return _expected_num_columns; }
+
+  std::optional<uint32_t> hashRange() const { return _hash_range; }
 
  private:
   static bool computeAreDense(const std::vector<BlockPtr>& blocks) {
@@ -438,13 +448,17 @@ struct BlockList {
   bool _are_dense;
   uint32_t _feature_dim;
   uint32_t _expected_num_columns;
+  std::optional<uint32_t> _hash_range;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_blocks, _are_dense, _expected_num_columns, _feature_dim);
+    archive(_blocks, _are_dense, _expected_num_columns, _feature_dim,
+            _hash_range);
   }
 };
+
+using BlockListPtr = std::shared_ptr<BlockList>;
 
 }  // namespace thirdai::dataset
