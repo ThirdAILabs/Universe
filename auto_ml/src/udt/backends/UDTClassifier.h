@@ -106,15 +106,6 @@ class UDTClassifier final : public UDTBackend {
 
   bool integerTarget() const { return !_class_name_to_neuron; }
 
-  /**
-   * Computes the optimal binary prediction threshold to maximize the given
-   * metric on max_num_batches batches of the given dataset. Note: does not
-   * shuffle the data to obtain the batches.
-   */
-  std::optional<float> tuneBinaryClassificationPredictionThreshold(
-      const dataset::DataSourcePtr& data_source, const std::string& metric_name,
-      size_t batch_size);
-
   UDTClassifier() {}
 
   friend cereal::access;

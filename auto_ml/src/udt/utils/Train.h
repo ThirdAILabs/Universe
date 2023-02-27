@@ -1,10 +1,12 @@
 #pragma once
 
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/Graph.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <optional>
+
 namespace thirdai::automl::udt::utils {
 
 void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
@@ -48,5 +50,10 @@ py::object predictedClasses(
 bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
                                bool sparse_inference, bool verbose,
                                bool validation = false);
+
+std::optional<float> getBinaryClassificationPredictionThreshold(
+    const dataset::DataSourcePtr& data,
+    const std::optional<Validation>& validation, size_t& batch_size,
+    bolt::TrainConfig& train_config, const bolt::BoltGraphPtr& model);
 
 }  // namespace thirdai::automl::udt::utils

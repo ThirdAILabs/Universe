@@ -3,6 +3,7 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
+#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
@@ -81,22 +82,9 @@ void UDTClassifier::train(
    * metric. This can improve performance particularly on datasets with a class
    * imbalance.
    */
-  if (_model->outputDim() == 2) {
-    if (validation && !validation->metrics().empty()) {
-      validation->data()->restart();
-      _binary_prediction_threshold =
-          tuneBinaryClassificationPredictionThreshold(
-              /* data_source= */ validation->data(),
-              /* metric_name= */ validation->metrics().at(0), batch_size);
-
-    } else if (!train_config.metrics().empty()) {
-      data->restart();
-      _binary_prediction_threshold =
-          tuneBinaryClassificationPredictionThreshold(
-              /* data_source= */ data,
-              /* metric_name= */ train_config.metrics().at(0), batch_size);
-    }
-  }
+  _binary_prediction_threshold =
+      utils::getBinaryClassificationPredictionThreshold(
+          data, validation, batch_size, train_config, _model);
 }
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -298,85 +286,6 @@ uint32_t UDTClassifier::labelToNeuronId(
         "an integer.");
   }
   throw std::invalid_argument("Invalid entity type.");
-}
-
-std::optional<float> UDTClassifier::tuneBinaryClassificationPredictionThreshold(
-    const dataset::DataSourcePtr& data_source, const std::string& metric_name,
-    size_t batch_size) {
-  // The number of samples used is capped to ensure tuning is fast even for
-  // larger datasets.
-  uint32_t num_batches =
-      defaults::MAX_SAMPLES_FOR_THRESHOLD_TUNING / batch_size;
-
-  auto dataset =
-      _dataset_factory->getDatasetLoader(data_source, /* shuffle= */ true);
-
-  auto loaded_data_opt =
-      dataset->loadSome(/* batch_size = */ defaults::BATCH_SIZE, num_batches,
-                        /* verbose = */ false);
-  if (!loaded_data_opt.has_value()) {
-    throw std::invalid_argument("No data found for training.");
-  }
-  auto loaded_data = *loaded_data_opt;
-
-  auto data = std::move(loaded_data.first);
-  auto labels = std::move(loaded_data.second);
-
-  auto eval_config =
-      bolt::EvalConfig::makeConfig().returnActivations().silence();
-  auto output = _model->evaluate({data}, labels, eval_config);
-  auto& activations = output.second;
-
-  double best_metric_value = bolt::makeMetric(metric_name)->worst();
-  std::optional<float> best_threshold = std::nullopt;
-
-#pragma omp parallel for default(none) shared( \
-    labels, best_metric_value, best_threshold, metric_name, activations)
-  for (uint32_t t_idx = 1; t_idx < defaults::NUM_THRESHOLDS_TO_CHECK; t_idx++) {
-    auto metric = bolt::makeMetric(metric_name);
-
-    float threshold =
-        static_cast<float>(t_idx) / defaults::NUM_THRESHOLDS_TO_CHECK;
-
-    uint32_t sample_idx = 0;
-    for (const auto& label_batch : *labels) {
-      for (const auto& label_vec : label_batch) {
-        /**
-         * The output bolt vector from activations cannot be passed in
-         * directly because it doesn't incorporate the threshold, and
-         * metrics like categorical_accuracy cannot use a threshold. To
-         * solve this we create a new output vector where the neuron with
-         * the largest activation is the same as the neuron that would be
-         * choosen as the prediction if we applied the given prediction
-         * threshold.
-         *
-         * For metrics like F1 or categorical accuracy the value of the
-         * activation does not matter, only the predicted class so this
-         * modification does not affect the metric. Metrics like mean
-         * squared error do not really make sense to compute at different
-         * thresholds anyway and so we can ignore the effect of this
-         * modification on them.
-         */
-        if (activations.activationsForSample(sample_idx++)[1] >= threshold) {
-          metric->record(
-              /* output= */ BoltVector::makeDenseVector({0, 1.0}),
-              /* labels= */ label_vec);
-        } else {
-          metric->record(
-              /* output= */ BoltVector::makeDenseVector({1.0, 0.0}),
-              /* labels= */ label_vec);
-        }
-      }
-    }
-
-#pragma omp critical
-    if (metric->betterThan(metric->value(), best_metric_value)) {
-      best_metric_value = metric->value();
-      best_threshold = threshold;
-    }
-  }
-
-  return best_threshold;
 }
 
 template void UDTClassifier::serialize(cereal::BinaryInputArchive&);
