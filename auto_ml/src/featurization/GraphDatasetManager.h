@@ -31,6 +31,13 @@ class GraphDatasetManager {
   char _delimiter;
   dataset::TabularFeaturizerPtr _graph_builder, _featurizer;
   GraphInfoPtr _graph_info;
+
+  GraphDatasetManager() {}
+
+  friend cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using GraphDatasetManagerPtr = std::shared_ptr<GraphDatasetManager>;

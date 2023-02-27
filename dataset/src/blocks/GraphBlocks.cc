@@ -1,4 +1,10 @@
 #include "GraphBlocks.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/vector.hpp>
+#include <dataset/src/utils/CsvParser.h>
 #include <exceptions/src/Exceptions.h>
 #include <cstdlib>
 #include <exception>
@@ -26,7 +32,7 @@ uint64_t parseFloat(const ColumnIdentifier& identifier,
 std::vector<uint64_t> parseUint64Array(const std::string& array_string,
                                        char delimiter) {
   std::vector<std::string_view> parsed_array =
-      ProcessorUtils::parseCsvRow(array_string, delimiter);
+      parsers::CSV::parseLine(array_string, delimiter);
   std::vector<uint64_t> uint64_array;
   uint64_array.reserve(parsed_array.size());
   for (const auto& uint64_str : parsed_array) {
@@ -68,6 +74,16 @@ std::exception_ptr NormalizedNeighborVectorsBlock::buildSegment(
   return nullptr;
 }
 
+template void NormalizedNeighborVectorsBlock::serialize(
+    cereal::BinaryInputArchive&);
+template void NormalizedNeighborVectorsBlock::serialize(
+    cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void NormalizedNeighborVectorsBlock::serialize(Archive& archive) {
+  archive(_node_id_col, _graph_ptr);
+}
+
 Explanation NeighborTokensBlock::explainIndex(uint32_t index_within_block,
                                               ColumnarInputSample& input) {
   (void)input;
@@ -87,6 +103,14 @@ std::exception_ptr NeighborTokensBlock::buildSegment(
   }
 
   return nullptr;
+}
+
+template void NeighborTokensBlock::serialize(cereal::BinaryInputArchive&);
+template void NeighborTokensBlock::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void NeighborTokensBlock::serialize(Archive& archive) {
+  archive(_node_id_col, _graph_ptr);
 }
 
 Explanation GraphBuilderBlock::explainIndex(uint32_t index_within_block,
@@ -117,4 +141,16 @@ std::exception_ptr GraphBuilderBlock::buildSegment(
   return nullptr;
 }
 
+template void GraphBuilderBlock::serialize(cereal::BinaryInputArchive&);
+template void GraphBuilderBlock::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void GraphBuilderBlock::serialize(Archive& archive) {
+  archive(_node_id_col, _neighbor_col, _feature_cols, _graph_ptr);
+}
+
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::NormalizedNeighborVectorsBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::NeighborTokensBlock)
+CEREAL_REGISTER_TYPE(thirdai::dataset::GraphBuilderBlock)

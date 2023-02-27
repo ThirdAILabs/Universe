@@ -1,4 +1,7 @@
 #include "GraphInfo.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/vector.hpp>
 #include <utility>
 
 namespace thirdai::automl::data {
@@ -33,6 +36,14 @@ void GraphInfo::insertNode(uint64_t node_id, std::vector<float> features,
 void GraphInfo::clear() {
   _node_id_to_feature_vector.clear();
   _node_id_to_neighbors.clear();
+}
+
+template void GraphInfo::serialize(cereal::BinaryInputArchive&);
+template void GraphInfo::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void GraphInfo::serialize(Archive& archive) {
+  archive(_feature_dim, _node_id_to_feature_vector, _node_id_to_neighbors);
 }
 
 }  // namespace thirdai::automl::data

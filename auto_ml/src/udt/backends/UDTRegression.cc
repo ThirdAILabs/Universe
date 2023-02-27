@@ -61,9 +61,18 @@ void UDTRegression::train(
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
+  utils::DataSourceToDatasetLoader source_to_loader_func =
+      [this](const dataset::DataSourcePtr& source) {
+        return _dataset_factory->getDatasetLoader(source, /* shuffle= */ true);
+      };
+
+  // Don't use validation if there are temporal relations
+  auto validation_to_use =
+      _dataset_factory->hasTemporalRelationships() ? validation : std::nullopt;
+
   bolt::TrainConfig train_config = utils::getTrainConfig(
       epochs, learning_rate, validation, metrics, callbacks, verbose,
-      logging_interval, _dataset_factory);
+      logging_interval, source_to_loader_func);
 
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
@@ -83,9 +92,11 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
   bolt::EvalConfig eval_config =
       utils::getEvalConfig(metrics, sparse_inference, verbose);
 
-  auto [test_data, test_labels] =
+  auto test_data =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
           ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
+  auto test_labels = test_data.back();
+  test_data.pop_back();
 
   auto [output_metrics, output] =
       _model->evaluate(test_data, test_labels, eval_config);

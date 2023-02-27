@@ -136,4 +136,13 @@ dataset::BlockPtr popNeighborTokensBlock(
   return neighbor_tokens_block;
 }
 
+template void GraphDatasetManager::serialize(cereal::BinaryInputArchive&);
+template void GraphDatasetManager::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void GraphDatasetManager::serialize(Archive& archive) {
+  archive(_data_types, _target_col, _n_target_classes, _delimiter,
+          _graph_builder, _featurizer, _graph_info);
+}
+
 }  // namespace thirdai::automl::data

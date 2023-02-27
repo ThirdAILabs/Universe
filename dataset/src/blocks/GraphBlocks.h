@@ -44,6 +44,13 @@ class NormalizedNeighborVectorsBlock final : public Block {
  private:
   ColumnIdentifier _node_id_col;
   automl::data::GraphInfoPtr _graph_ptr;
+
+  NormalizedNeighborVectorsBlock() {}
+
+  friend cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 /** Returns a sparse vector corresponding to a node's neighbors. */
@@ -83,6 +90,13 @@ class NeighborTokensBlock final : public Block {
  private:
   ColumnIdentifier _node_id_col;
   automl::data::GraphInfoPtr _graph_ptr;
+
+  NeighborTokensBlock() {}
+
+  friend cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 /** Populates the passed in GraphInfoPtr with adjacency and node feature data */
@@ -136,6 +150,13 @@ class GraphBuilderBlock final : public Block {
   ColumnIdentifier _node_id_col, _neighbor_col;
   std::vector<ColumnIdentifier> _feature_cols;
   automl::data::GraphInfoPtr _graph_ptr;
+
+  GraphBuilderBlock() {}
+
+  friend cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::dataset
