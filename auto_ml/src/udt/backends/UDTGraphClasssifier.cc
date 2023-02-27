@@ -72,7 +72,6 @@ UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
       /* output_dim = */ _dataset_manager->getLabelDim());
 }
 
-
 void UDTGraphClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
     const std::optional<Validation>& validation,
@@ -83,14 +82,18 @@ void UDTGraphClassifier::train(
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
+  utils::DataSourceToDatasetLoader source_to_loader_func =
+      [this](const dataset::DataSourcePtr& source) {
+        return _dataset_manager->indexAndGetDatasetLoader(source);
+      };
+
   bolt::TrainConfig train_config = utils::getTrainConfig(
       epochs, learning_rate, validation, metrics, callbacks, verbose,
-      logging_interval, _dataset_factory);
+      logging_interval, source_to_loader_func);
 
-  auto train_dataset =
-      _dataset_manager->indexAndGetDatasetLoader(data);
+  auto dataset_loader = _dataset_manager->indexAndGetDatasetLoader(data);
 
-  utils::train(_model, train_dataset, train_config, batch_size,
+  utils::train(_model, dataset_loader, train_config, batch_size,
                max_in_memory_batches,
                /* freeze_hash_tables= */ false,
                licensing::TrainPermissionsToken(data->resourceName()));
@@ -102,7 +105,19 @@ void UDTGraphClassifier::train(
    */
   _binary_prediction_threshold =
       utils::getBinaryClassificationPredictionThreshold(
-          data, validation, batch_size, train_config, _model);
+          data, validation, batch_size, train_config, _model,
+          source_to_loader_func);
+}
+
+py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
+                                        const std::vector<std::string>& metrics,
+                                        bool sparse_inference,
+                                        bool return_predicted_class,
+                                        bool verbose, bool return_metrics) {
+  auto dataset_loader = _dataset_manager->indexAndGetDatasetLoader(data);
+  return utils::evaluate(metrics, sparse_inference, return_predicted_class,
+                         verbose, return_metrics, _model, dataset_loader,
+                         _binary_prediction_threshold);
 }
 
 template void UDTGraphClassifier::serialize(cereal::BinaryInputArchive&);

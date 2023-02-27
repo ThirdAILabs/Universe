@@ -11,8 +11,10 @@
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <pybind11/stl.h>
 #include <optional>
@@ -63,16 +65,23 @@ void UDTClassifier::train(
     const std::vector<std::string>& metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
+  // Don't use validation if there are temporal relations
+  auto validation_to_use =
+      _dataset_factory->hasTemporalRelationships() ? validation : std::nullopt;
+
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
+  utils::DataSourceToDatasetLoader source_to_loader_func =
+      [this](const dataset::DataSourcePtr& source) {
+        return _dataset_factory->getDatasetLoader(source, /* shuffle= */ true);
+      };
+
   bolt::TrainConfig train_config = utils::getTrainConfig(
-      epochs, learning_rate, validation, metrics, callbacks, verbose,
-      logging_interval, _dataset_factory);
+      epochs, learning_rate, validation_to_use, metrics, callbacks, verbose,
+      logging_interval, source_to_loader_func);
 
-  auto train_dataset =
-      _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
-
-  utils::train(_model, train_dataset, train_config, batch_size,
+  auto train_dataset_loader = source_to_loader_func(data);
+  utils::train(_model, train_dataset_loader, train_config, batch_size,
                max_in_memory_batches,
                /* freeze_hash_tables= */ _freeze_hash_tables,
                licensing::TrainPermissionsToken(data->resourceName()));
@@ -84,7 +93,8 @@ void UDTClassifier::train(
    */
   _binary_prediction_threshold =
       utils::getBinaryClassificationPredictionThreshold(
-          data, validation, batch_size, train_config, _model);
+          data, validation_to_use, batch_size, train_config, _model,
+          source_to_loader_func);
 }
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -92,24 +102,11 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    bool sparse_inference,
                                    bool return_predicted_class, bool verbose,
                                    bool return_metrics) {
-  bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose);
-
-  auto [test_data, test_labels] =
-      _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
-          ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
-
-  auto [output_metrics, output] =
-      _model->evaluate(test_data, test_labels, eval_config);
-  if (return_metrics) {
-    return py::cast(output_metrics);
-  }
-
-  if (return_predicted_class) {
-    return utils::predictedClasses(output, _binary_prediction_threshold);
-  }
-
-  return utils::convertInferenceTrackerToNumpy(output);
+  auto dataset_loader =
+      _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
+  return utils::evaluate(metrics, sparse_inference, return_predicted_class,
+                         verbose, return_metrics, _model, dataset_loader,
+                         _binary_prediction_threshold);
 }
 
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,

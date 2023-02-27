@@ -1,5 +1,6 @@
 #include "Train.h"
 #include <auto_ml/src/udt/Defaults.h>
+#include <dataset/src/Datasets.h>
 
 namespace thirdai::automl::udt::utils {
 
@@ -13,9 +14,10 @@ void trainSingleEpochOnStream(bolt::BoltGraphPtr& model,
   while (auto datasets = dataset_loader->loadSome(
              batch_size, /* num_batches = */ max_in_memory_batches,
              /* verbose = */ train_config.verbose())) {
-    auto& [data, labels] = datasets.value();
+    auto labels = datasets->back();
+    datasets->pop_back();
 
-    model->train({data}, labels, train_config, token);
+    model->train(datasets.value(), labels, train_config, token);
   }
 
   dataset_loader->restart();
@@ -47,26 +49,26 @@ void trainOnStream(bolt::BoltGraphPtr& model,
 
 }  // namespace
 
-void trainInMemory(
-    bolt::BoltGraphPtr& model,
-    std::pair<dataset::InputDatasets, dataset::LabelDataset> datasets,
-    bolt::TrainConfig train_config, bool freeze_hash_tables,
-    licensing::TrainPermissionsToken token) {
-  auto [train_data, train_labels] = std::move(datasets);
+void trainInMemory(bolt::BoltGraphPtr& model,
+                   std::vector<dataset::BoltDatasetPtr> datasets,
+                   bolt::TrainConfig train_config, bool freeze_hash_tables,
+                   licensing::TrainPermissionsToken token) {
+  auto labels = datasets.back();
+  datasets.pop_back();
 
   uint32_t epochs = train_config.epochs();
 
   if (freeze_hash_tables && epochs > 1) {
     train_config.setEpochs(/* new_epochs=*/1);
 
-    model->train(train_data, train_labels, train_config);
+    model->train(datasets, labels, train_config);
 
     model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
     train_config.setEpochs(/* new_epochs= */ epochs - 1);
   }
 
-  model->train(train_data, train_labels, train_config, token);
+  model->train(datasets, labels, train_config, token);
 }
 
 void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
@@ -107,21 +109,21 @@ bolt::TrainConfig getTrainConfig(
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval,
-    data::TabularDatasetFactoryPtr& dataset_factory) {
+    const DataSourceToDatasetLoader& func) {
   bolt::TrainConfig train_config =
       getTrainConfig(epochs, learning_rate, train_metrics, callbacks, verbose,
                      logging_interval);
-  if (validation && !dataset_factory->hasTemporalRelationships()) {
+  if (validation) {
     auto val_data =
-        dataset_factory
-            ->getDatasetLoader(validation->data(),
-                               /* training= */ false)
+        func(validation->data())
             ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
+    auto val_labels = val_data.back();
+    val_data.pop_back();
 
     bolt::EvalConfig val_config = getEvalConfig(
         validation->metrics(), validation->sparseInference(), verbose);
 
-    train_config.withValidation(val_data.first, val_data.second, val_config,
+    train_config.withValidation(val_data, val_labels, val_config,
                                 /* validation_frequency = */
                                 validation->stepsPerValidation().value_or(0));
   }
@@ -182,14 +184,14 @@ py::object predictedClasses(const BoltBatch& outputs,
  */
 std::optional<float> tuneBinaryClassificationPredictionThreshold(
     const dataset::DataSourcePtr& data_source, const std::string& metric_name,
-    size_t batch_size, const bolt::BoltGraphPtr& model) {
+    size_t batch_size, const bolt::BoltGraphPtr& model,
+    const DataSourceToDatasetLoader& func) {
   // The number of samples used is capped to ensure tuning is fast even for
   // larger datasets.
   uint32_t num_batches =
       defaults::MAX_SAMPLES_FOR_THRESHOLD_TUNING / batch_size;
 
-  auto dataset =
-      _dataset_factory->getDatasetLoader(data_source, /* shuffle= */ true);
+  auto dataset = func(data_source);
 
   auto loaded_data_opt =
       dataset->loadSome(/* batch_size = */ defaults::BATCH_SIZE, num_batches,
@@ -199,12 +201,12 @@ std::optional<float> tuneBinaryClassificationPredictionThreshold(
   }
   auto loaded_data = *loaded_data_opt;
 
-  auto data = std::move(loaded_data.first);
-  auto labels = std::move(loaded_data.second);
+  auto labels = loaded_data.back();
+  loaded_data.pop_back();
 
   auto eval_config =
       bolt::EvalConfig::makeConfig().returnActivations().silence();
-  auto output = model->evaluate({data}, labels, eval_config);
+  auto output = model->evaluate(loaded_data, labels, eval_config);
   auto& activations = output.second;
 
   double best_metric_value = bolt::makeMetric(metric_name)->worst();
@@ -262,21 +264,51 @@ std::optional<float> tuneBinaryClassificationPredictionThreshold(
 std::optional<float> getBinaryClassificationPredictionThreshold(
     const dataset::DataSourcePtr& data,
     const std::optional<Validation>& validation, size_t& batch_size,
-    bolt::TrainConfig& train_config, const bolt::BoltGraphPtr& model) {
+    bolt::TrainConfig& train_config, const bolt::BoltGraphPtr& model,
+    const DataSourceToDatasetLoader& func) {
   if (model->outputDim() == 2) {
     if (validation && !validation->metrics().empty()) {
       validation->data()->restart();
       return tuneBinaryClassificationPredictionThreshold(
           /* data_source= */ validation->data(),
-          /* metric_name= */ validation->metrics().at(0), batch_size, model);
+          /* metric_name= */ validation->metrics().at(0), batch_size, model,
+          func);
     }
     if (!train_config.metrics().empty()) {
       data->restart();
       return tuneBinaryClassificationPredictionThreshold(
           /* data_source= */ data,
-          /* metric_name= */ train_config.metrics().at(0), batch_size, model);
+          /* metric_name= */ train_config.metrics().at(0), batch_size, model,
+          func);
     }
   }
   return std::nullopt;
+}
+
+py::object evaluate(const std::vector<std::string>& metrics,
+                    bool sparse_inference, bool return_predicted_class,
+                    bool verbose, bool return_metrics,
+                    const bolt::BoltGraphPtr& model,
+                    const dataset::DatasetLoaderPtr& dataset_loader,
+                    const std::optional<float>& binary_prediction_threshold) {
+  bolt::EvalConfig eval_config =
+      utils::getEvalConfig(metrics, sparse_inference, verbose);
+
+  auto datasets =
+      dataset_loader->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
+  auto labels = datasets.back();
+  datasets.pop_back();
+
+  auto [output_metrics, output] =
+      model->evaluate(datasets, labels, eval_config);
+  if (return_metrics) {
+    return py::cast(output_metrics);
+  }
+
+  if (return_predicted_class) {
+    return utils::predictedClasses(output, binary_prediction_threshold);
+  }
+
+  return utils::convertInferenceTrackerToNumpy(output);
 }
 }  // namespace thirdai::automl::udt::utils
