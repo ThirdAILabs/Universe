@@ -8,8 +8,7 @@ namespace thirdai::automl::data {
 class GraphDatasetManager {
  public:
   GraphDatasetManager(data::ColumnDataTypes data_types, std::string target_col,
-                      uint32_t n_target_classes, char delimiter,
-                      const TabularOptions& options);
+                      uint32_t n_target_classes, const TabularOptions& options);
 
   // TODO(Josh): Have user call index() then getDatasetLoader()
 
@@ -17,6 +16,8 @@ class GraphDatasetManager {
       const dataset::DataSourcePtr& data_source);
 
   void index(const dataset::DataSourcePtr& data_source);
+
+  void clearGraph() { _graph_info->clear(); }
 
   std::vector<uint32_t> getInputDims() const {
     return _featurizer->getDimensions();

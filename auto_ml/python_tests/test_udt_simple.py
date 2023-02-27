@@ -394,3 +394,5 @@ def test_udt_override_input_dim():
     """
 
     assert textwrap.dedent(summary).strip() == textwrap.dedent(expected_summary).strip()
+
+test_multiple_predict_returns_same_results()

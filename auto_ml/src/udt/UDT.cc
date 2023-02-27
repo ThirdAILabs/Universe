@@ -5,12 +5,40 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
+#include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
+#include <exceptions/src/Exceptions.h>
 #include <telemetry/src/PrometheusClient.h>
+#include <cstddef>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
+
+bool isGraphProblem(const data::ColumnDataTypes& data_types) {
+  uint64_t neighbor_col_count = 0;
+  uint64_t node_id_col_count = 0;
+  for (const auto& [col_name, data_type] : data_types) {
+    if (asNeighbors(data_type)) {
+      neighbor_col_count++;
+    }
+    if (asNodeID(data_type)) {
+      node_id_col_count++;
+    }
+  }
+  if (neighbor_col_count == 0 && node_id_col_count == 0) {
+    return false;
+  }
+  if (neighbor_col_count == 1 && node_id_col_count == 1) {
+    return true;
+  }
+  throw std::invalid_argument(
+      "Expected either 1 of both neighbor and node id data types (for a graph "
+      "learning problem) or 0 of both (for a non-graph learning problem). "
+      "Instead, found " +
+      std::to_string(neighbor_col_count) + " neighbor data types and " +
+      std::to_string(node_id_col_count) + " node id data types.");
+}
 
 UDT::UDT(data::ColumnDataTypes data_types,
          const data::UserProvidedTemporalRelationships&
@@ -36,17 +64,36 @@ UDT::UDT(data::ColumnDataTypes data_types,
 
   auto target = data_types.at(target_col);
 
+  bool is_graph_problem = isGraphProblem(data_types);
+
   if (auto categorical = data::asCategorical(target)) {
     if (!n_target_classes.has_value()) {
       throw std::invalid_argument(
           "The number of target classes must be specified for categorical "
           "data.");
     }
-    _backend = std::make_unique<UDTClassifier>(
-        data_types, temporal_tracking_relationships, target_col, categorical,
-        n_target_classes.value(), integer_target, tabular_options, model_config,
-        user_args);
+    if (is_graph_problem) {
+      if (!temporal_tracking_relationships.empty()) {
+        throw exceptions::NotImplemented(
+            "Graph learning problems currently do not work with temporal "
+            "relations.");
+      }
+      // TODO(Josh): Add support for model config and user args
+      _backend = std::make_unique<UDTGraphClassifier>(
+          data_types, target_col, n_target_classes.value(), integer_target,
+          tabular_options);
+    } else {
+      _backend = std::make_unique<UDTClassifier>(
+          data_types, temporal_tracking_relationships, target_col, categorical,
+          n_target_classes.value(), integer_target, tabular_options,
+          model_config, user_args);
+    }
+
   } else if (auto numerical = data::asNumerical(target)) {
+    if (is_graph_problem) {
+      throw exceptions::NotImplemented(
+          "Graph learning problems currently do not work with regression.");
+    }
     _backend = std::make_unique<UDTRegression>(
         data_types, temporal_tracking_relationships, target_col, numerical,
         n_target_classes, tabular_options, model_config, user_args);

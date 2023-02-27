@@ -22,9 +22,6 @@ TabularDatasetFactory::TabularDatasetFactory(
     : _data_types(std::move(data_types)),
       _label_col_names(std::move(label_col_names)),
       _delimiter(options.delimiter) {
-  utils::verifyExpectedNumberOfGraphTypes(data_types,
-                                          /* expected_count = */ 0);
-
   _vectors_map = processAllMetadata(_data_types, options);
 
   TemporalRelationships temporal_relationships =

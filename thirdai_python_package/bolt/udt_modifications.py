@@ -136,3 +136,18 @@ def modify_udt():
     bolt.UDT.train = wrapped_train
     bolt.UDT.evaluate = wrapped_evaluate
     bolt.UDT.cold_start = wrapped_cold_start
+
+def modify_graph_udt():
+    original_index_nodes_method = bolt.UDT.index_nodes
+
+    def wrapped_index_nodes(self, filename: str):
+        data_source = _create_data_source(filename)
+
+        original_index_nodes_method(self, data_source)
+
+    # TODO(Josh)
+    # wrapped_index.__doc__ = udt_graph_index_doc
+
+    delattr(bolt.UDT, "index_nodes")
+
+    bolt.UDT.index_nodes = wrapped_index_nodes

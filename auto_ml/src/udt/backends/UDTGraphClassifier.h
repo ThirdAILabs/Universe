@@ -11,8 +11,7 @@ class UDTGraphClassifier final : public UDTBackend {
  public:
   UDTGraphClassifier(const data::ColumnDataTypes& data_types,
                      const std::string& target_col, uint32_t n_target_classes,
-                     bool integer_target, char delimiter,
-                     const data::TabularOptions& options);
+                     bool integer_target, const data::TabularOptions& options);
 
   void train(const dataset::DataSourcePtr& data, float learning_rate,
              uint32_t epochs, const std::optional<Validation>& validation,
@@ -28,10 +27,22 @@ class UDTGraphClassifier final : public UDTBackend {
                       bool verbose, bool return_metrics) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class) final;
+                     bool return_predicted_class) final {
+    (void)sample;
+    (void)sparse_inference;
+    (void)return_predicted_class;
+    throw exceptions::NotImplemented(
+        "Predict is not yet implemented for graph neural networks");
+  }
 
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
-                          bool return_predicted_class) final;
+                          bool return_predicted_class) final {
+    (void)sample;
+    (void)sparse_inference;
+    (void)return_predicted_class;
+    throw exceptions::NotImplemented(
+        "Predict is not yet implemented for graph neural networks");
+  }
 
   bolt::BoltGraphPtr model() const final { return _model; }
 
@@ -42,9 +53,11 @@ class UDTGraphClassifier final : public UDTBackend {
     _model = std::move(model);
   }
 
-  void index(const dataset::DataSourcePtr& source);
+  void indexNodes(const dataset::DataSourcePtr& source) final {
+    _dataset_manager->index(source);
+  }
 
-  void clearGraph();
+  void clearGraph() final { _dataset_manager->clearGraph(); }
 
  private:
   UDTGraphClassifier() {}

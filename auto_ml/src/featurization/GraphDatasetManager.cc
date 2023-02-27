@@ -24,15 +24,11 @@ dataset::BlockPtr popNeighborTokensBlock(
 GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
                                          std::string target_col,
                                          uint32_t n_target_classes,
-                                         char delimiter,
                                          const TabularOptions& options)
     : _data_types(std::move(data_types)),
       _target_col(std::move(target_col)),
       _n_target_classes(n_target_classes),
-      _delimiter(delimiter) {
-  utils::verifyExpectedNumberOfGraphTypes(_data_types,
-                                          /* expected_count = */ 1);
-
+      _delimiter(options.delimiter) {
   dataset::BlockPtr graph_builder_block;
   std::tie(_graph_info, graph_builder_block) =
       createGraphInfoAndBuilder(_data_types);
@@ -59,12 +55,12 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
                            dataset::BlockList({sparse_neighbor_block}),
                            dataset::BlockList({label_block})},
       /* has_header= */ true,
-      /* delimiter= */ delimiter, /* parallel= */ true);
+      /* delimiter= */ _delimiter, /* parallel= */ true);
 
   _graph_builder = dataset::TabularFeaturizer::make(
       /* blocks = */ {dataset::BlockList({graph_builder_block})},
       /* has_header= */ true,
-      /* delimiter= */ delimiter, /* parallel= */ true);
+      /* delimiter= */ _delimiter, /* parallel= */ true);
 }
 
 dataset::DatasetLoaderPtr GraphDatasetManager::indexAndGetDatasetLoader(

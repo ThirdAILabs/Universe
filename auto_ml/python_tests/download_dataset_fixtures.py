@@ -39,6 +39,7 @@ def download_brazilian_houses_dataset():
 def download_mnist_dataset():
     return download_mnist_dataset_wrapped()
 
-    
+
+@pytest.fixture(scope="session") 
 def download_yelp_chi_dataset():
     return download_yelp_chi_dataset_wrapped()

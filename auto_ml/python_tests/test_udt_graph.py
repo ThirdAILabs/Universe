@@ -24,7 +24,7 @@ def test_udt_on_yelp_chi(download_yelp_chi_dataset):
     test_data["target"] = np.zeros(len(ground_truth))
     test_data.to_csv("yelp_test.csv", index=False)
 
-    model = bolt.models.UDTGraphNetwork(
+    model = bolt.UniversalDeepTransformer(
         data_types={
             "node_id": bolt.types.node_id(),
             **{
@@ -40,10 +40,10 @@ def test_udt_on_yelp_chi(download_yelp_chi_dataset):
         n_target_classes=2,
         integer_target=True,
         # Turn off pairgrams to make the test fast (~1 min on my m1)
-        use_simpler_model=True,
+        options={"contextual_columns": True}
     )
 
-    model.index("yelp_test.csv")
+    model.index_nodes("yelp_test.csv")
 
     for epoch in range(15):
         model.train("yelp_train.csv", learning_rate=0.001, epochs=1)

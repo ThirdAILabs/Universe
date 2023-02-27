@@ -3,6 +3,7 @@
 #include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <dataset/src/DataSource.h>
 #include <string>
 
 namespace thirdai::automl::udt {
@@ -109,6 +110,14 @@ class UDT {
     if (auto tabular_factory = _backend->tabularDatasetFactory()) {
       tabular_factory->updateMetadataBatch(column, samples);
     }
+  }
+
+  void indexNodes(const dataset::DataSourcePtr& source) {
+    return _backend->indexNodes(source);
+  }
+
+void clearGraph() {
+    return _backend->clearGraph();
   }
 
   bolt::BoltGraphPtr model() const { return _backend->model(); }

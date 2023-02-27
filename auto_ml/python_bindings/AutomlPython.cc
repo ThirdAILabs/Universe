@@ -136,6 +136,8 @@ void defineAutomlInModule(py::module_& module) {
       .def("index", &udt::UDT::updateTemporalTrackers, py::arg("input_sample"))
       .def("index_batch", &udt::UDT::updateTemporalTrackersBatch,
            py::arg("input_samples"))
+      .def("index_nodes", &udt::UDT::indexNodes, py::arg("data_source"))
+      .def("clear_graph", &udt::UDT::clearGraph)
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))
@@ -227,6 +229,16 @@ void createUDTTypesSubmodule(py::module_& module) {
       udt_types_submodule, "ColumnType", "Base class for bolt types.")
       .def("__str__", &automl::data::DataType::toString)
       .def("__repr__", &automl::data::DataType::toString);
+
+  // TODO(Josh): Add docs here and elsewhere
+  py::class_<automl::data::NeighborsDataType, automl::data::DataType,
+             automl::data::NeighborsDataTypePtr>(udt_types_submodule,
+                                                 "neighbors")
+      .def(py::init<>());
+
+  py::class_<automl::data::NodeIDDataType, automl::data::DataType,
+             automl::data::NodeIDDataTypePtr>(udt_types_submodule, "node_id")
+      .def(py::init<>());
 
   py::class_<automl::data::CategoricalMetadataConfig,
              automl::data::CategoricalMetadataConfigPtr>(udt_types_submodule,
