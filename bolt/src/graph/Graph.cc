@@ -165,10 +165,10 @@ MetricData BoltGraph::train(
   // over the dataset.
   uint32_t num_epochs = _epoch + train_config.epochs();
 
-  for (/*_epoch = _epoch*/; _epoch < num_epochs; _epoch++) {
+  for (/*_epoch = _epoch*/; _epoch < num_epochs;) {
     train_state.epoch = _epoch;
     callbacks.onEpochBegin(*this, train_state);
-
+    _epoch++;
     /*
       Because of how the datasets are read we know that all batches will not
       have a batch size larger than the first batch_size. We will be using the
@@ -606,7 +606,8 @@ void BoltGraph::processEvaluationBatch(uint64_t batch_size,
   prepareToProcessBatch(batch_size, /* use_sparsity= */ use_sparsity,
                         /* force_reinitialization= */ false);
 
-#pragma omp parallel for default(none) shared(batch_size, batch_labels, metrics)
+  // #pragma omp parallel for default(none) shared(batch_size, batch_labels,
+  // metrics)
   for (uint64_t vec_id = 0; vec_id < batch_size; vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.

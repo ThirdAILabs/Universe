@@ -426,10 +426,11 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  int print_hashes = 0;
-  int print_neurons = 0;
+  uint32_t print_hashes = 1;
+  uint32_t print_neurons = 1;
 
-  if (print_hashes == 1) {
+  if (print_hashes == 1 && !hashes.empty()) {
+    std::cout << "AbraKaDabra" << std::endl;
     std::cout << "The hashes are:" << std::endl;
     for (auto x : hashes) {
       std::cout << x << "\t";
@@ -454,7 +455,7 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
       _hash_table->queryBySet(hashes.data(), active_set);
   }
 
-  if (print_neurons == 1) {
+  if (print_neurons == 1 && !active_set.empty()) {
     std::cout
         << "We have sampled the active neurons and printing the active set from"
            "enquiring the hash tables. The number of active neurons is: "
@@ -475,7 +476,7 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
     }
   }
 
-  if (print_neurons == 1) {
+  if (print_neurons == 1 && !active_set.empty()) {
     std::cout << "We have added more neurons to the active neurons set. The "
                  "number of active neurons is: "
               << active_set.size() << std::endl;
@@ -483,6 +484,7 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
       std::cout << x << "\t";
     }
     std::cout << std::endl << "Finished printing the active set" << std::endl;
+    std::cout << "Oops" << std::endl;
   }
 
   uint32_t cnt = 0;
