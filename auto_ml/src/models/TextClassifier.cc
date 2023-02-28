@@ -219,6 +219,8 @@ BoltVector TextClassifier::concatTokensAndMetadata(
   BoltVector vector(/* l= */ n_tokens + metadata_nonzeros.size(),
                     /* is_dense= */ false, /* has_gradient= */ false);
 
+  // If the last doc is empty then start = len(tokens) and so accessing
+  // tokens.data(start) is an error.
   if (n_tokens > 0) {
     std::copy(tokens.data(start), tokens.data(start) + n_tokens,
               vector.active_neurons);
