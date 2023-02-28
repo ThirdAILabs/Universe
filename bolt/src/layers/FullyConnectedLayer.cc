@@ -206,7 +206,7 @@ void FullyConnectedLayer::eigenDenseDenseForward(const BoltVector& input,
       break;
     case ActivationFunction::Sigmoid:
       eigen_output = 1 + (-eigen_output.array()).exp();
-      eigen_output = eigen_output.array().rsqrt();
+      eigen_output = 1 / eigen_output.array();
       break;
     case ActivationFunction::Tanh:
       eigen_output = eigen_output.array().tanh();
