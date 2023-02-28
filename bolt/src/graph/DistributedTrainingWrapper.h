@@ -47,6 +47,7 @@ class DistributedTrainingWrapper {
     if (_worker_id == 0) {
       _bolt_graph->logValidateAndSave(_train_config, _metric_aggregator);
     }
+    _metric_aggregator.logAndReset();
   }
 
   BoltGraphPtr getModel() { return _bolt_graph; }
