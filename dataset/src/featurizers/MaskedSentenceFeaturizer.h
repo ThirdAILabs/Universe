@@ -4,6 +4,7 @@
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/Vocabulary.h>
 #include <random>
+#include <vector>
 
 namespace thirdai::dataset {
 
@@ -33,8 +34,7 @@ class MaskedSentenceFeaturizer final : public Featurizer {
   size_t getNumDatasets() final { return 3; }
 
  private:
-  std::tuple<BoltVector, BoltVector, BoltVector> processRow(
-      const std::string& row);
+  std::vector<BoltVector> processRow(const std::string& row);
 
   std::shared_ptr<Vocabulary> _vocab;
 

@@ -12,23 +12,18 @@ namespace thirdai::dataset {
 
 std::vector<std::vector<BoltVector>> ClickThroughFeaturizer::featurize(
     const std::vector<std::string>& rows) {
-  std::vector<BoltVector> dense_inputs(rows.size());
-  std::vector<BoltVector> token_inputs(rows.size());
-  std::vector<BoltVector> labels(rows.size());
+  std::vector<std::vector<BoltVector>> vectors;
+  vectors.reserve(rows.size());
 
-  for (uint32_t i = 0; i < rows.size(); i++) {
-    auto [data_vec, tokens, label] = processRow(rows[i]);
-
-    dense_inputs[i] = std::move(data_vec);
-    token_inputs[i] = std::move(tokens);
-    labels[i] = std::move(label);
+  for (const auto& row : rows) {
+    vectors.push_back(processRow(row));
   }
 
-  return {std::move(dense_inputs), std::move(token_inputs), std::move(labels)};
+  return vectors;
 }
 
-std::tuple<BoltVector, BoltVector, BoltVector>
-ClickThroughFeaturizer::processRow(const std::string& row) const {
+std::vector<BoltVector> ClickThroughFeaturizer::processRow(
+    const std::string& row) const {
   auto cols = parsers::CSV::parseLine(row, _delimiter);
 
   if (cols.size() <= _num_dense_features + 1) {

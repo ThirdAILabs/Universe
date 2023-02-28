@@ -2,6 +2,7 @@
 
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
+#include <vector>
 
 namespace thirdai::dataset {
 
@@ -20,7 +21,7 @@ class SvmFeaturizer final : public Featurizer {
   size_t getNumDatasets() final { return 2; }
 
  private:
-  std::pair<BoltVector, BoltVector> processRow(const std::string& line) const;
+  std::vector<BoltVector> processRow(const std::string& line) const;
 
   bool _softmax_for_multiclass;
 };
