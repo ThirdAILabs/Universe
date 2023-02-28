@@ -1,3 +1,5 @@
+#pragma once
+
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
