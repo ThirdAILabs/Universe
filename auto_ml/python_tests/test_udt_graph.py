@@ -63,7 +63,6 @@ def test_udt_on_yelp_chi(download_yelp_chi_dataset):
 
 
 def test_graph_clearing_and_indexing():
-
     num_chunks = 10
     chunk_size = 100
     num_classes = 2
