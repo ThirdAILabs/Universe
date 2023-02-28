@@ -6,6 +6,7 @@
 #include <licensing/src/heartbeat/Heartbeat.h>
 #include <licensing/src/keygen/KeygenCommunication.h>
 #include <licensing/src/utils.h>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <unordered_set>
@@ -30,21 +31,24 @@ void assertUserHasFullAccess() {
 }
 
 TrainPermissionsToken::TrainPermissionsToken(
-    const std::string& train_file_path) {
+    const dataset::DataSourcePtr& training_source) {
   if (_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
     return;
   }
 
-  // This handles the rare case where someone is "illegally" trying to train on
-  // a data source like S3 with a demo license (otherwise without this check,
-  // we might get a segfault or weird error from cryptopp).
-  if (!std::filesystem::exists(train_file_path)) {
+  // If the user just has a demo license and we are going to read in the dataset
+  // from the resourceName, we require FileDataSources. This prevents a user
+  // from extending the DataSource class in python and making resourceName()
+  // point to a valid file, while the actual nextLine call returns lines from
+  // some other file they want to train on.
+  if (!dynamic_cast<dataset::FileDataSource*>(training_source.get())) {
     throw exceptions::LicenseCheckException(
-        "Could not find a local file corresponding to the passed in data "
-        "source, so cannot validate the dataset with the demo license.");
+        "Can only train on file data sources with a demo license");
   }
 
-  if (!_entitlements.count(sha256File(train_file_path))) {
+  std::string file_path = training_source->resourceName();
+
+  if (!_entitlements.count(sha256File(file_path))) {
     throw exceptions::LicenseCheckException(
         "This dataset is not authorized under this license.");
   }
