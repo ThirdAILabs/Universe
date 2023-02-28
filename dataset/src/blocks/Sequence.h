@@ -64,6 +64,8 @@ class SequenceTargetBlock : public Block {
   SequenceTargetBlock(ColumnIdentifier target_col, ColumnIdentifier step_col,
                       uint32_t max_steps, uint32_t vocabulary_size);
 
+  void prepareForBatch(ColumnarInputBatch& incoming_batch) final;
+
   uint32_t featureDim() const final;
 
   bool isDense() const final;
@@ -95,6 +97,7 @@ class SequenceTargetBlock : public Block {
   ColumnIdentifier _step_col;
   uint32_t _max_steps;
   ThreadSafeVocabulary _vocabulary;
+  uint32_t _vocabulary_size;
 
   friend class cereal::access;
   template <typename Archive>
