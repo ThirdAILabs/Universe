@@ -115,8 +115,6 @@ class UDTClassifier final : public UDTBackend {
       const dataset::DataSourcePtr& data_source, const std::string& metric_name,
       size_t batch_size);
 
-  uint32_t predictedClass(const BoltVector& vector);
-
   UDTClassifier() {}
 
   friend cereal::access;
