@@ -1,5 +1,15 @@
 
 #include "PrometheusClient.h"
+
+// For some strange C++ reason, we need to define CPPHTTPLIB_OPENSSL_SUPPORT
+// before importing <cpp-httplib/httplib.h> if *other* translation units need
+// it. Other translation units need it when THIRDAI_BUILD_LICENSE is defined.
+// I have absolutely no idea why this is the case, according to my best
+// understanding of C++ linking it should not be.
+#ifdef THIRDAI_BUILD_LICENSE
+#define CPPHTTPLIB_OPENSSL_SUPPORT
+#endif
+
 #include <cpp-httplib/httplib.h>
 #include <deps/prometheus-cpp/3rdparty/civetweb/include/CivetServer.h>
 #include <exceptions/src/Exceptions.h>

@@ -2,8 +2,6 @@ import pytest
 import requests
 from prometheus_client.parser import text_string_to_metric_families
 
-pytestmark = [pytest.mark.release]
-
 # This line uses a hack where we can import functions from different test files
 # as long as this file is run from bin/python-format.sh. To run just this file,
 # run bin/python-test.sh -k "test_basic_telemetry"
