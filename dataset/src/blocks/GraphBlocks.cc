@@ -111,9 +111,9 @@ std::exception_ptr NeighborTokensBlock::buildSegment(
     return std::make_exception_ptr(e);
   }
 
-  // We need to do this because this block is used as input to the Embedding 
+  // We need to do this because this block is used as input to the Embedding
   // node, which does not support empty vectors. This is equivalent to making
-  // all nodes with no neighbors have a single unique neighbor with id 
+  // all nodes with no neighbors have a single unique neighbor with id
   // std::numeric_limits<uint32_t>::max() - 1.
   if (neighbors.empty()) {
     neighbors.push_back(std::numeric_limits<uint32_t>::max() - 1);
