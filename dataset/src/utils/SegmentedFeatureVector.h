@@ -2,6 +2,7 @@
 
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
@@ -10,7 +11,7 @@ namespace thirdai::dataset {
 /**
  * A concrete implementation of SegmentedSparseFeatureVector for sparse vectors.
  */
-class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
+class SegmentedSparseFeatureVector final : public SegmentedFeatureVector {
  public:
   explicit SegmentedSparseFeatureVector(bool store_segment_feature_map = false)
       : SegmentedFeatureVector(store_segment_feature_map) {}
@@ -96,6 +97,14 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
     _n_dense_added = 0;
   }
 
+  std::shared_ptr<SegmentedFeatureVector> clone() const final {
+    return std::shared_ptr<SegmentedSparseFeatureVector>(
+        new SegmentedSparseFeatureVector(
+            _store_index_to_segment_feature_map, _added_sparse,
+            _n_segments_added, _n_dense_added, _current_ending_dim,
+            _current_starting_dim, _indices, _values));
+  }
+
  protected:
   std::unordered_map<uint32_t, float> entries() final {
     std::unordered_map<uint32_t, float> ents;
@@ -106,6 +115,22 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
   }
 
  private:
+  SegmentedSparseFeatureVector(bool store_segment_feature_map,
+                               bool added_sparse, uint32_t n_segments_added,
+                               uint32_t n_dense_added,
+                               uint32_t current_ending_dim,
+                               uint32_t current_starting_dim,
+                               std::vector<uint32_t> indices,
+                               std::vector<float> values)
+      : SegmentedFeatureVector(store_segment_feature_map),
+        _added_sparse(added_sparse),
+        _n_segments_added(n_segments_added),
+        _n_dense_added(n_dense_added),
+        _current_ending_dim(current_ending_dim),
+        _current_starting_dim(current_starting_dim),
+        _indices(std::move(indices)),
+        _values(std::move(values)) {}
+
   bool _added_sparse = false;
   uint32_t _n_segments_added = 0;
   uint32_t _n_dense_added = 0;
@@ -120,7 +145,7 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
  * are not concatenated but instead hashed to the same range with a
  * different salt for each segment.
  */
-class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
+class HashedSegmentedFeatureVector final : public SegmentedFeatureVector {
  public:
   explicit HashedSegmentedFeatureVector(uint32_t hash_range,
                                         bool store_segment_feature_map = false)
@@ -189,6 +214,13 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
     _n_segments_added++;
   }
 
+  std::shared_ptr<SegmentedFeatureVector> clone() const final {
+    return std::shared_ptr<HashedSegmentedFeatureVector>(
+        new HashedSegmentedFeatureVector(
+            _store_index_to_segment_feature_map, _hash_range, _added_sparse,
+            _n_dense_added, _n_segments_added, _indices, _values));
+  }
+
  protected:
   std::unordered_map<uint32_t, float> entries() final {
     std::unordered_map<uint32_t, float> ents;
@@ -203,6 +235,20 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
     return hashing::combineHashes(index, _n_segments_added) % _hash_range;
   }
 
+  HashedSegmentedFeatureVector(bool store_segment_feature_map,
+                               uint32_t hash_range, bool added_sparse,
+                               uint32_t n_dense_added,
+                               uint32_t n_segments_added,
+                               std::vector<uint32_t> indices,
+                               std::vector<float> values)
+      : SegmentedFeatureVector(store_segment_feature_map),
+        _hash_range(hash_range),
+        _added_sparse(added_sparse),
+        _n_dense_added(n_dense_added),
+        _n_segments_added(n_segments_added),
+        _indices(std::move(indices)),
+        _values(std::move(values)) {}
+
   uint32_t _hash_range;
 
   bool _added_sparse = false;
@@ -216,7 +262,7 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
 /**
  * A concrete implementation of SegmentedFeatureVector for dense vectors.
  */
-class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
+class SegmentedDenseFeatureVector final : public SegmentedFeatureVector {
  public:
   explicit SegmentedDenseFeatureVector(bool store_segment_feature_map = false)
       : SegmentedFeatureVector(store_segment_feature_map) {}
@@ -279,6 +325,13 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
     _n_segments_added++;
   }
 
+  std::shared_ptr<SegmentedFeatureVector> clone() const final {
+    return std::shared_ptr<SegmentedDenseFeatureVector>(
+        new SegmentedDenseFeatureVector(_store_index_to_segment_feature_map,
+                                        _n_segments_added, _latest_segment_dim,
+                                        _n_dense_added, _values));
+  }
+
  protected:
   std::unordered_map<uint32_t, float> entries() final {
     std::unordered_map<uint32_t, float> ents;
@@ -289,6 +342,16 @@ class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
   }
 
  private:
+  SegmentedDenseFeatureVector(bool store_segment_feature_map,
+                              uint32_t n_segments_added,
+                              uint32_t latest_segment_dim,
+                              uint32_t n_dense_added, std::vector<float> values)
+      : SegmentedFeatureVector(store_segment_feature_map),
+        _n_segments_added(n_segments_added),
+        _latest_segment_dim(latest_segment_dim),
+        _n_dense_added(n_dense_added),
+        _values(std::move(values)) {}
+
   uint32_t _n_segments_added = 0;
   uint32_t _latest_segment_dim = 0;
   uint32_t _n_dense_added = 0;

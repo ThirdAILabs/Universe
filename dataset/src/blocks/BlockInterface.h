@@ -106,7 +106,6 @@ class SegmentedFeatureVector {
   friend TextBlockTest;
   friend SegmentedFeatureVectorTest;
 
- protected:
   /**
    * Adds a segment with the given dimension to the
    * current vector.
@@ -123,6 +122,7 @@ class SegmentedFeatureVector {
    */
   virtual void addFeatureSegment(uint32_t dim) = 0;
 
+ protected:
   /**
    * Returns a mapping of all of the vector's idx-value pairs.
    * Only used for testing as this can be very expensive
@@ -157,6 +157,8 @@ class SegmentedFeatureVector {
    * Converts this vector to a BoltVector.
    */
   virtual BoltVector toBoltVector() = 0;
+
+  virtual std::shared_ptr<SegmentedFeatureVector> clone() const = 0;
 
   IndexToSegmentFeatureMap getIndexToSegmentFeatureMap() {
     if (!_store_index_to_segment_feature_map) {
