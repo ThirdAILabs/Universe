@@ -36,12 +36,11 @@ def test_distributed_cold_start(ray_two_node_cluster_config):
 
     metrics = udt_model.cold_start_distributed(
         cluster_config=ray_two_node_cluster_config("linear"),
-        filenames=[f"{os.getcwd()}/{catalog_file}", f"{os.getcwd()}/{catalog_file}"],
+        filenames=[f"{os.getcwd()}/xaa", f"{os.getcwd()}/xab"],
         strong_column_names=["TITLE"],
         weak_column_names=["DESCRIPTION", "BULLET_POINTS", "BRAND"],
         learning_rate=0.001,
         epochs=5,
-        batch_size=4096,
         metrics=["categorical_accuracy"],
     )
 
