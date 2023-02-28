@@ -70,8 +70,8 @@ void UDTClassifier::train(
       _dataset_factory->hasTemporalRelationships() ? validation : std::nullopt;
 
   utils::DataSourceToDatasetLoader source_to_loader_func =
-      [this](const dataset::DataSourcePtr& source) {
-        return _dataset_factory->getDatasetLoader(source, /* shuffle= */ true);
+      [this](const dataset::DataSourcePtr& source, bool shuffle) {
+        return _dataset_factory->getDatasetLoader(source, shuffle);
       };
 
   _binary_prediction_threshold = utils::trainClassifier(

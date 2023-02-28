@@ -11,8 +11,9 @@
 
 namespace thirdai::automl::udt::utils {
 
-using DataSourceToDatasetLoader =
-    std::function<dataset::DatasetLoaderPtr(const dataset::DataSourcePtr&)>;
+// Maps a source (and whether the source should be shuffled) to a data source
+using DataSourceToDatasetLoader = std::function<dataset::DatasetLoaderPtr(
+    const dataset::DataSourcePtr&, bool)>;
 
 void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
            const bolt::TrainConfig& train_config, size_t batch_size,

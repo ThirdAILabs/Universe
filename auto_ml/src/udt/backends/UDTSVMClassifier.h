@@ -45,6 +45,7 @@ class UDTSVMClassifier final : public UDTBackend {
 
   bolt::BoltGraphPtr _model;
   bool _freeze_hash_tables;
+  std::optional<float> _binary_prediction_threshold;
 };
 
 }  // namespace thirdai::automl::udt

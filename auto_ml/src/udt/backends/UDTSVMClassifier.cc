@@ -6,6 +6,7 @@
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
 #include <dataset/src/DatasetLoaderWrappers.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/stl.h>
 #include <stdexcept>
 
@@ -27,6 +28,15 @@ UDTSVMClassifier::UDTSVMClassifier(
                                             defaults::FREEZE_HASH_TABLES);
 }
 
+dataset::DatasetLoaderPtr getSVMDatasetLoader(
+    const dataset::DataSourcePtr& source, bool shuffle) {
+  return std::make_unique<dataset::DatasetLoader>(
+      source,
+      std::make_shared<dataset::SvmFeaturizer>(
+          /* softmax_for_multiclass = */ true),
+      shuffle);
+}
+
 void UDTSVMClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
     const std::optional<Validation>& validation,
@@ -35,27 +45,10 @@ void UDTSVMClassifier::train(
     const std::vector<std::string>& metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
-  if (max_in_memory_batches.has_value()) {
-    throw exceptions::NotImplemented(
-        "Cannot yet train on an SVM dataset in a streaming fashion");
-  }
-
-  if (validation.has_value()) {
-    throw exceptions::NotImplemented(
-        "Cannot yet train on an SVM dataset with validation data");
-  }
-
-  size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
-
-  auto [train_dataset, labels] =
-      dataset::SvmDatasetLoader::loadDataset(data, batch_size);
-
-  bolt::TrainConfig train_config = utils::getTrainConfig(
-      epochs, learning_rate, metrics, callbacks, verbose, logging_interval);
-
-  utils::trainInMemory(_model, {{train_dataset}, labels}, train_config,
-                       _freeze_hash_tables,
-                       licensing::TrainPermissionsToken(data->resourceName()));
+  _binary_prediction_threshold = utils::trainClassifier(
+      data, learning_rate, epochs, validation, batch_size_opt,
+      max_in_memory_batches, metrics, callbacks, verbose, logging_interval,
+      &getSVMDatasetLoader, _model);
 }
 
 py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -63,23 +56,10 @@ py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
                                       bool sparse_inference,
                                       bool return_predicted_class, bool verbose,
                                       bool return_metrics) {
-  bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose);
-
-  auto [test_data, test_labels] =
-      dataset::SvmDatasetLoader::loadDataset(data, defaults::BATCH_SIZE);
-
-  auto [output_metrics, output] =
-      _model->evaluate({test_data}, test_labels, eval_config);
-  if (return_metrics) {
-    return py::cast(output_metrics);
-  }
-
-  if (return_predicted_class) {
-    return utils::predictedClasses(output);
-  }
-
-  return utils::convertInferenceTrackerToNumpy(output);
+  auto dataset_loader = getSVMDatasetLoader(data, /* shuffle = */ false);
+  return utils::evaluate(metrics, sparse_inference, return_predicted_class,
+                         verbose, return_metrics, _model, dataset_loader,
+                         _binary_prediction_threshold);
 }
 
 py::object UDTSVMClassifier::predict(const MapInput& sample,
@@ -113,7 +93,8 @@ template void UDTSVMClassifier::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void UDTSVMClassifier::serialize(Archive& archive) {
-  archive(cereal::base_class<UDTBackend>(this), _model, _freeze_hash_tables);
+  archive(cereal::base_class<UDTBackend>(this), _model, _freeze_hash_tables,
+          _binary_prediction_threshold);
 }
 
 }  // namespace thirdai::automl::udt

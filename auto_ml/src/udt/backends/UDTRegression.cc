@@ -62,8 +62,8 @@ void UDTRegression::train(
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
   utils::DataSourceToDatasetLoader source_to_loader_func =
-      [this](const dataset::DataSourcePtr& source) {
-        return _dataset_factory->getDatasetLoader(source, /* shuffle= */ true);
+      [this](const dataset::DataSourcePtr& source, bool shuffle) {
+        return _dataset_factory->getDatasetLoader(source, shuffle);
       };
 
   // Don't use validation if there are temporal relations

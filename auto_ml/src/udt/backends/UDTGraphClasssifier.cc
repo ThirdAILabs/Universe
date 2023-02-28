@@ -79,9 +79,8 @@ void UDTGraphClassifier::train(
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
   utils::DataSourceToDatasetLoader source_to_loader_func =
-      [this](const dataset::DataSourcePtr& source) {
-        return _dataset_manager->indexAndGetDatasetLoader(source,
-                                                          /* shuffle = */ true);
+      [this](const dataset::DataSourcePtr& source, bool shuffle) {
+        return _dataset_manager->indexAndGetDatasetLoader(source, shuffle);
       };
 
   _binary_prediction_threshold = utils::trainClassifier(

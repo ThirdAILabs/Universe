@@ -116,7 +116,7 @@ bolt::TrainConfig getTrainConfig(
                      logging_interval);
   if (validation) {
     auto val_data =
-        func(validation->data())
+        func(validation->data(), /* shuffle = */ false)
             ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
     auto val_labels = val_data.back();
     val_data.pop_back();
@@ -192,7 +192,7 @@ std::optional<float> tuneBinaryClassificationPredictionThreshold(
   uint32_t num_batches =
       defaults::MAX_SAMPLES_FOR_THRESHOLD_TUNING / batch_size;
 
-  auto dataset = func(data_source);
+  auto dataset = func(data_source, /* shuffle = */ false);
 
   auto loaded_data_opt =
       dataset->loadSome(/* batch_size = */ defaults::BATCH_SIZE, num_batches,
@@ -329,7 +329,7 @@ std::optional<float> trainClassifier(
       epochs, learning_rate, validation, metrics, callbacks, verbose,
       logging_interval, source_to_loader_func);
 
-  auto train_dataset_loader = source_to_loader_func(data);
+  auto train_dataset_loader = source_to_loader_func(data, /* shuffle = */ true);
 
   utils::train(model, train_dataset_loader, train_config, batch_size,
                max_in_memory_batches,
