@@ -2,74 +2,6 @@
 
 namespace thirdai::bolt::python {
 
-void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
-  std::cout << "Memory Error: Cannot allocate (" << num_samples << " x "
-            << inference_dim
-            << ") array for activations. Predict will return None for "
-               "activations. Please breakup your test set into smaller pieces "
-               "if you would like to have activations returned."
-            << std::endl;
-}
-
-void printCopyWarning(const std::string& array_name, const py::str& dtype_recv,
-                      const std::string& dtype_expected) {
-  std::cout << "Warning: " << array_name << " array has dtype=" << dtype_recv
-            << " but " << dtype_expected
-            << " was expected. This will result in a copy of "
-               "the array in order to ensure type safety. Try specifying "
-               "the dtype of the array or use .astype(...)."
-            << std::endl;
-}
-
-void biasDimensionCheck(
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& biases,
-    uint64_t dim, const std::string& matrix_type) {
-  if (biases.ndim() != 1) {
-    std::stringstream err;
-    err << "Expected " << matrix_type
-        << " to have 1 dimension, received matrix "
-           "with "
-        << biases.ndim() << " dimensions.";
-    throw std::invalid_argument(err.str());
-  }
-  if (biases.shape(0) != static_cast<uint32_t>(dim)) {
-    std::stringstream err;
-    err << "Expected " << matrix_type << " to have dim " << dim
-        << " received matrix with dim " << biases.shape(0) << ".";
-    throw std::invalid_argument(err.str());
-  }
-}
-
-void weightDimensionCheck(
-    const py::array_t<float, py::array::c_style | py::array::forcecast>&
-        new_weights,
-    uint64_t dim, uint64_t prev_dim, const std::string& matrix_type /* = ""*/) {
-  if (new_weights.ndim() != 2) {
-    std::stringstream err;
-    err << "Expected " << matrix_type
-        << " to have 2 dimensions, received matrix "
-           "with "
-        << new_weights.ndim() << " dimensions.";
-    throw std::invalid_argument(err.str());
-  }
-  if (new_weights.shape(0) != static_cast<uint32_t>(dim) ||
-      new_weights.shape(1) != static_cast<uint32_t>(prev_dim)) {
-    std::stringstream err;
-    err << "Expected " << matrix_type << " to have dim (" << dim << ", "
-        << prev_dim << ") received matrix with dim (" << new_weights.shape(0)
-        << ", " << new_weights.shape(1) << ").";
-    throw std::invalid_argument(err.str());
-  }
-}
-
-void layerIndexCheck(uint32_t layer_index, uint32_t num_layers) {
-  if (layer_index >= num_layers) {
-    std::stringstream err;
-    err << "Expect layer_index " << num_layers << ", got " << layer_index;
-    throw std::invalid_argument(err.str());
-  }
-}
-
 void checkNumpyArrayDimensions(
     const std::vector<uint32_t>& expected_dimensions,
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
@@ -90,27 +22,6 @@ void checkNumpyArrayDimensions(
           " but received dimension " +
           std::to_string(numpy_array.shape(dim_index)));
     }
-  }
-}
-
-void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
-                         uint32_t** active_neurons, float** activations,
-                         bool output_sparse) {
-  // We use a uint64_t here in case there is overflow when we multiply the two
-  // quantities. If it's larger than a uint32_t then we skip allocating since
-  // this would be a 16Gb array, and could potentially mess up indexing in other
-  // parts of the code.
-  uint64_t total_size = num_samples * inference_dim;
-  if (total_size > std::numeric_limits<uint32_t>::max()) {
-    printMemoryWarning(num_samples, inference_dim);
-  }
-  try {
-    if (output_sparse) {
-      *active_neurons = new uint32_t[total_size];
-    }
-    *activations = new float[total_size];
-  } catch (std::bad_alloc& e) {
-    printMemoryWarning(num_samples, inference_dim);
   }
 }
 
@@ -176,24 +87,4 @@ py::tuple constructPythonInferenceTuple(py::dict&& py_metric_data,
       /* active_neuron_handle = */ active_neuron_handle);
 }
 
-py::array_t<float, py::array::c_style | py::array::forcecast>
-denseBoltVectorToNumpy(const BoltVector& output) {
-  assert(output.isDense());
-
-  float* activations;
-  allocateActivations(/* num_samples= */ 1, output.len,
-                      /* active_neurons= */ nullptr, &activations,
-                      /* output_sparse= */ false);
-
-  const float* start = output.activations;
-  std::copy(start, start + output.len, activations);
-
-  py::object activation_handle = py::capsule(
-      activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-  py::array_t<float, py::array::c_style | py::array::forcecast>
-      activations_array({output.len}, {sizeof(float)}, activations,
-                        activation_handle);
-  return activations_array;
-}
 }  // namespace thirdai::bolt::python
