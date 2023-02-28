@@ -24,7 +24,7 @@ class TabularDatasetFactory {
       bool force_parallel);
 
   dataset::DatasetLoaderPtr getDatasetLoader(
-      const dataset::DataSourcePtr& data_source, bool training);
+      const dataset::DataSourcePtr& data_source, bool shuffle);
 
   std::vector<BoltVector> featurizeInput(const MapInput& input) {
     dataset::MapSampleRef input_ref(input);
@@ -112,6 +112,13 @@ class TabularDatasetFactory {
   auto getColumnMetadataConfig(const std::string& col_name) {
     return asCategorical(_data_types.at(col_name))->metadata_config;
   }
+
+  static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
+      dataset::DatasetLoader& dataset_loader,
+      dataset::ThreadSafeVocabulary& key_vocab);
+
+  static dataset::ColumnNumberMap makeColumnNumberMapFromHeader(
+      dataset::DataSource& data_source, char delimiter);
 
   void verifyColumnMetadataExists(const std::string& col_name) {
     if (!_data_types.count(col_name) ||

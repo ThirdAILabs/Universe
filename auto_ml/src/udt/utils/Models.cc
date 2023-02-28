@@ -11,15 +11,15 @@ namespace {
 
 float autotuneSparsity(uint32_t dim) {
   std::vector<std::pair<uint32_t, float>> sparsity_values = {
-      {450, 1.0},   {900, 0.2},    {1800, 0.1},
-      {4000, 0.05}, {10000, 0.02}, {20000, 0.01}};
+      {450, 1.0},    {900, 0.2},    {1800, 0.1},     {4000, 0.05},
+      {10000, 0.02}, {20000, 0.01}, {1000000, 0.005}};
 
   for (const auto& [dim_threshold, sparsity] : sparsity_values) {
     if (dim < dim_threshold) {
       return sparsity;
     }
   }
-  return 0.05;
+  return sparsity_values.back().second;
 }
 
 }  // namespace
