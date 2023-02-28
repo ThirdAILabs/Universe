@@ -86,7 +86,7 @@ void UDTGraphClassifier::train(
   _binary_prediction_threshold = utils::trainClassifier(
       data, learning_rate, epochs, validation, batch_size_opt,
       max_in_memory_batches, metrics, callbacks, verbose, logging_interval,
-      source_to_loader_func, _model);
+      /* freeze_hash_tables = */ false, source_to_loader_func, _model);
 }
 
 py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,

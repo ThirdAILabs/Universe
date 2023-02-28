@@ -77,7 +77,7 @@ void UDTClassifier::train(
   _binary_prediction_threshold = utils::trainClassifier(
       data, learning_rate, epochs, validation_to_use, batch_size_opt,
       max_in_memory_batches, metrics, callbacks, verbose, logging_interval,
-      source_to_loader_func, _model);
+      _freeze_hash_tables, source_to_loader_func, _model);
 }
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,

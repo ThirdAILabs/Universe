@@ -48,7 +48,7 @@ void UDTSVMClassifier::train(
   _binary_prediction_threshold = utils::trainClassifier(
       data, learning_rate, epochs, validation, batch_size_opt,
       max_in_memory_batches, metrics, callbacks, verbose, logging_interval,
-      &getSVMDatasetLoader, _model);
+      _freeze_hash_tables, &getSVMDatasetLoader, _model);
 }
 
 py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,

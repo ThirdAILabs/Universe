@@ -48,12 +48,13 @@ void trainOnStream(bolt::BoltGraphPtr& model,
   }
 }
 
-}  // namespace
-
 void trainInMemory(bolt::BoltGraphPtr& model,
-                   std::vector<dataset::BoltDatasetPtr> datasets,
-                   bolt::TrainConfig train_config, bool freeze_hash_tables,
+                   dataset::DatasetLoaderPtr& dataset_loader,
+                   bolt::TrainConfig train_config, size_t batch_size,
+                   bool freeze_hash_tables,
                    licensing::TrainPermissionsToken token) {
+  auto datasets = dataset_loader->loadAll(
+      /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
   auto labels = datasets.back();
   datasets.pop_back();
 
@@ -72,6 +73,8 @@ void trainInMemory(bolt::BoltGraphPtr& model,
   model->train(datasets, labels, train_config, token);
 }
 
+}  // namespace
+
 void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
            const bolt::TrainConfig& train_config, size_t batch_size,
            std::optional<size_t> max_in_memory_batches, bool freeze_hash_tables,
@@ -80,9 +83,8 @@ void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
     trainOnStream(model, dataset_loader, train_config, batch_size,
                   max_in_memory_batches.value(), freeze_hash_tables, token);
   } else {
-    auto loaded_data = dataset_loader->loadAll(
-        /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
-    trainInMemory(model, loaded_data, train_config, freeze_hash_tables, token);
+    trainInMemory(model, dataset_loader, train_config, batch_size,
+                  freeze_hash_tables, token);
   }
 }
 
@@ -311,7 +313,7 @@ std::optional<float> trainClassifier(
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval,
+    std::optional<uint32_t> logging_interval, bool freeze_hash_tables,
     const utils::DataSourceToDatasetLoader& source_to_loader_func,
     bolt::BoltGraphPtr& model) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
@@ -323,8 +325,7 @@ std::optional<float> trainClassifier(
   auto train_dataset_loader = source_to_loader_func(data, /* shuffle = */ true);
 
   utils::train(model, train_dataset_loader, train_config, batch_size,
-               max_in_memory_batches,
-               /* freeze_hash_tables= */ false,
+               max_in_memory_batches, freeze_hash_tables,
                licensing::TrainPermissionsToken(data->resourceName()));
 
   /**

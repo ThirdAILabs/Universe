@@ -33,15 +33,9 @@ std::optional<float> trainClassifier(
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval,
+    std::optional<uint32_t> logging_interval, bool freeze_hash_tables,
     const utils::DataSourceToDatasetLoader& source_to_loader_func,
     bolt::BoltGraphPtr& model);
-
-void trainInMemory(bolt::BoltGraphPtr& model,
-                   std::vector<dataset::BoltDatasetPtr> datasets,
-                   bolt::TrainConfig train_config, bool freeze_hash_tables,
-                   licensing::TrainPermissionsToken token =
-                       licensing::TrainPermissionsToken());
 
 bolt::TrainConfig getTrainConfig(
     uint32_t epochs, float learning_rate,
