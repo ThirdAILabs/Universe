@@ -45,4 +45,7 @@ constexpr uint32_t REGRESSION_BINS = 100;
 // regression as classification.
 constexpr uint32_t REGRESSION_CORRECT_LABEL_RADIUS = 2;
 
+// Batch size to use for processing in query reformulation.
+constexpr uint32_t QUERY_REFORMULATION_BATCH_SIZE = 10000;
+
 }  // namespace thirdai::automl::udt::defaults

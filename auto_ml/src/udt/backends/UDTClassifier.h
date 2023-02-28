@@ -72,11 +72,11 @@ class UDTClassifier final : public UDTBackend {
 
   bolt::BoltGraphPtr model() const final { return _model; }
 
-  void setModel(bolt::BoltGraphPtr model) final {
+  void setModel(const bolt::BoltGraphPtr& model) final {
     if (_model->outputDim() != model->outputDim()) {
       throw std::invalid_argument("Output dim mismatch in set_model.");
     }
-    _model = std::move(model);
+    _model = model;
   }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {

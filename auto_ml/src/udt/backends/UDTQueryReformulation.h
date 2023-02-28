@@ -1,0 +1,85 @@
+#pragma once
+
+#include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/udt/UDTBackend.h>
+#include <dataset/src/DataSource.h>
+#include <dataset/src/Datasets.h>
+#include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <dataset/src/featurizers/TabularFeaturizer.h>
+#include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <search/src/Flash.h>
+#include <optional>
+#include <unordered_map>
+
+namespace thirdai::automl::udt {
+
+class UDTQueryReformulation final : public UDTBackend {
+ public:
+  UDTQueryReformulation(std::optional<std::string> correct_column_name,
+                        std::string incorrect_column_name,
+                        const std::string& dataset_size, char delimiter,
+                        const std::optional<std::string>& model_config,
+                        const config::ArgumentMap& user_args);
+
+  void train(const dataset::DataSourcePtr& data, float learning_rate,
+             uint32_t epochs, const std::optional<Validation>& validation,
+             std::optional<size_t> batch_size,
+             std::optional<size_t> max_in_memory_batches,
+             const std::vector<std::string>& metrics,
+             const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
+             bool verbose, std::optional<uint32_t> logging_interval) final;
+
+  py::object evaluate(const dataset::DataSourcePtr& data,
+                      const std::vector<std::string>& metrics,
+                      bool sparse_inference, bool return_predicted_class,
+                      bool verbose, bool return_metrics) final;
+
+  py::object predict(const MapInput& sample, bool sparse_inference,
+                     bool return_predicted_class) final;
+
+  py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
+                          bool return_predicted_class) final;
+
+ private:
+  bool containsColumn(const dataset::DataSourcePtr& data,
+                      const std::string& column_name) const;
+
+  std::pair<dataset::BoltDatasetPtr, dataset::BoltDatasetPtr> loadData(
+      const dataset::DataSourcePtr& data, const std::string& col_to_hash,
+      bool include_labels, uint32_t batch_size, bool verbose);
+
+  void addDataToIndex(const dataset::BoltDatasetPtr& data,
+                      const dataset::BoltDatasetPtr& labels,
+                      std::optional<ProgressBar>& bar);
+
+  std::vector<std::string> idsToPhrase(const std::vector<uint32_t>& ids);
+
+  std::unordered_map<std::string, double> computeMetrics(
+      const std::vector<std::vector<std::string>>& candidates,
+      const dataset::BoltDatasetPtr& labels,
+      const std::vector<std::string>& metrics);
+
+  static std::unique_ptr<search::Flash<uint32_t>> defaultFlashIndex(
+      const std::string& dataset_size);
+
+  static std::vector<dataset::BlockPtr> ngramBlocks(
+      const std::string& column_name);
+
+  static uint32_t recall(
+      const std::vector<std::vector<uint32_t>>& retreived_ids,
+      const BoltBatch& labels);
+
+  std::unique_ptr<search::Flash<uint32_t>> _flash_index;
+
+  dataset::TabularFeaturizerPtr _inference_featurizer;
+
+  dataset::ThreadSafeVocabularyPtr _phrase_id_map;
+
+  std::optional<std::string> _incorrect_column_name;
+  std::string _correct_column_name;
+
+  char _delimiter;
+};
+
+}  // namespace thirdai::automl::udt

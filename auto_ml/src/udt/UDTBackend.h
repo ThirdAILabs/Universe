@@ -100,13 +100,18 @@ class UDTBackend {
   /**
    * Returns the model used.
    */
-  virtual bolt::BoltGraphPtr model() const = 0;
+  virtual bolt::BoltGraphPtr model() const {
+    throw notSupported("accessing underlying model");
+  }
 
   /**
    * Sets a new model. This is used during distributed training to update the
    * backend with the trained model.
    */
-  virtual void setModel(bolt::BoltGraphPtr model) = 0;
+  virtual void setModel(const bolt::BoltGraphPtr& model) {
+    (void)model;
+    throw notSupported("modifying underlying model");
+  }
 
   /**
    * Determines if the model can support distributed training. By default
