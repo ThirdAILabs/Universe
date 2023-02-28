@@ -7,7 +7,10 @@
 #include <cereal/types/vector.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
+#include <dataset/src/blocks/Augmentations.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <memory>
+#include <vector>
 
 namespace thirdai::dataset {
 
@@ -40,6 +43,38 @@ class TabularFeaturizer : public Featurizer {
          */
         _input_blocks(std::move(input_blocks)),
         _label_blocks(std::move(label_blocks)),
+        _expected_num_cols(std::max(_input_blocks.expectedNumColumns(),
+                                    _label_blocks.expectedNumColumns())) {}
+
+  TabularFeaturizer(
+      std::vector<std::shared_ptr<Block>> input_blocks,
+      std::vector<std::shared_ptr<Block>> label_blocks,
+      std::vector<std::shared_ptr<Augmentation>> augmentations,
+      bool has_header = false, char delimiter = ',', bool parallel = true,
+      /*
+        If hash_range has a value, then features from different blocks
+        will be aggregated by hashing them to the same range but with
+        different hash salts. Otherwise, the features will be treated
+        as sparse vectors, which are then concatenated.
+      */
+      std::optional<uint32_t> hash_range = std::nullopt)
+      : _expects_header(has_header),
+        _delimiter(delimiter),
+        _parallel(parallel),
+        _hash_range(hash_range),
+        _num_cols_in_header(std::nullopt),
+        /**
+         * Here we copy input_blocks and label_blocks because when we
+         * accept a vector representation of a Python List created by
+         * PyBind11, the vector does not persist beyond this function
+         * call, which results in segfaults later down the line.
+         * It is therefore safest to just copy these vectors.
+         * Furthermore, these vectors are cheap to copy since they contain a
+         * small number of elements and each element is a pointer.
+         */
+        _input_blocks(std::move(input_blocks)),
+        _label_blocks(std::move(label_blocks)),
+        _augmentations(std::move(augmentations)),
         _expected_num_cols(std::max(_input_blocks.expectedNumColumns(),
                                     _label_blocks.expectedNumColumns())) {}
 
@@ -94,19 +129,35 @@ class TabularFeaturizer : public Featurizer {
         parallel, hash_range);
   }
 
+  static std::shared_ptr<TabularFeaturizer> make(
+      std::vector<std::shared_ptr<Block>> input_blocks,
+      std::vector<std::shared_ptr<Block>> label_blocks,
+      std::vector<std::shared_ptr<Augmentation>> augmentations,
+      bool has_header = false, char delimiter = ',', bool parallel = true,
+      std::optional<uint32_t> hash_range = std::nullopt) {
+    return std::make_shared<TabularFeaturizer>(
+        std::move(input_blocks), std::move(label_blocks),
+        std::move(augmentations), has_header, delimiter, parallel, hash_range);
+  }
+
  private:
   std::exception_ptr featurizeSampleInBatch(
       uint32_t index_in_batch, ColumnarInputBatch& input_batch,
       std::vector<BoltVector>& batch_inputs,
       std::vector<BoltVector>& batch_labels);
 
-  static std::exception_ptr buildVector(BoltVector& vector, BlockList& blocks,
-                                        ColumnarInputSample& sample,
-                                        std::optional<uint32_t> hash_range);
+  static std::shared_ptr<SegmentedFeatureVector> buildSFV(
+      BlockList& blocks, ColumnarInputSample& sample,
+      std::optional<uint32_t> hash_range);
 
   static std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
       bool blocks_dense, std::optional<uint32_t> hash_range,
       bool store_segment_feature_map);
+
+  static std::vector<std::vector<BoltVector>> consolidate(
+      std::vector<
+          std::vector<std::vector<std::shared_ptr<SegmentedFeatureVector>>>>&&
+          vectors);
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
@@ -138,6 +189,7 @@ class TabularFeaturizer : public Featurizer {
    */
   BlockList _input_blocks;
   BlockList _label_blocks;
+  std::vector<std::shared_ptr<Augmentation>> _augmentations;
   uint32_t _expected_num_cols;
 };
 

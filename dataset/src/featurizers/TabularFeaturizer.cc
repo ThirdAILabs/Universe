@@ -18,12 +18,12 @@ namespace thirdai::dataset {
 
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     ColumnarInputBatch& input_batch) {
-  std::vector<BoltVector> batch_inputs(input_batch.size());
-  std::vector<BoltVector> batch_labels(input_batch.size());
-
+  std::vector<std::vector<std::vector<std::shared_ptr<SegmentedFeatureVector>>>>
+      vectors(input_batch.size());
+  
   _input_blocks.prepareForBatch(input_batch);
   _label_blocks.prepareForBatch(input_batch);
-
+  
   /*
     These variables keep track of the presence of an erroneous input line.
     We do this instead of throwing an error directly because throwing
@@ -34,17 +34,48 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     input_batch, batch_inputs, batch_labels, featurization_err) if (_parallel)
   for (size_t index_in_batch = 0; index_in_batch < input_batch.size();
        ++index_in_batch) {
-    if (auto error = featurizeSampleInBatch(index_in_batch, input_batch,
-                                            batch_inputs, batch_labels)) {
+    try {
+      auto a =
+          buildSFV(_input_blocks, input_batch.at(index_in_batch), _hash_range);
+      auto b = buildSFV(_label_blocks, input_batch.at(index_in_batch),
+                        // Never hash labels
+                        /* hash_range= */ std::nullopt);
+      vectors[index_in_batch] = {{std::move(a), std::move(b)}};
+    
+      for (auto& augmentation : _augmentations) {
+        vectors[index_in_batch] = augmentation->augment(
+            std::move(vectors[index_in_batch]), input_batch.at(index_in_batch));
+      }
+    
+    } catch (const std::exception& e) {
 #pragma omp critical
-      featurization_err = error;
+      std::cout << e.what() << std::endl;
+      featurization_err = std::make_exception_ptr(e);
       continue;
     }
   }
   if (featurization_err) {
     std::rethrow_exception(featurization_err);
   }
-  return {std::move(batch_inputs), std::move(batch_labels)};
+  return consolidate(std::move(vectors));
+}
+
+std::vector<std::vector<BoltVector>> TabularFeaturizer::consolidate(
+    std::vector<
+        std::vector<std::vector<std::shared_ptr<SegmentedFeatureVector>>>>&&
+        vectors) {
+  std::vector<std::vector<BoltVector>> bolt_vectors;
+  for (auto& input_sample_vectors : vectors) {
+    for (auto& output_sample_vectors : input_sample_vectors) {
+      std::vector<BoltVector> output_sample_bolt_vectors;
+      output_sample_bolt_vectors.reserve(output_sample_vectors.size());
+      for (auto& column : output_sample_vectors) {
+        output_sample_bolt_vectors.push_back(column->toBoltVector());
+      }
+      bolt_vectors.push_back(std::move(output_sample_bolt_vectors));
+    }
+  }
+  return bolt_vectors;
 }
 
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
@@ -71,11 +102,7 @@ void TabularFeaturizer::processHeader(const std::string& header) {
 }
 
 BoltVector TabularFeaturizer::makeInputVector(ColumnarInputSample& sample) {
-  BoltVector vector;
-  if (auto err = buildVector(vector, _input_blocks, sample, _hash_range)) {
-    std::rethrow_exception(err);
-  }
-  return vector;
+  return buildSFV(_input_blocks, sample, _hash_range)->toBoltVector();
 }
 
 /**
@@ -88,6 +115,11 @@ BoltVector TabularFeaturizer::makeInputVector(ColumnarInputSample& sample) {
  */
 IndexToSegmentFeatureMap TabularFeaturizer::getIndexToSegmentFeatureMap(
     ColumnarInputSample& input) {
+  if (!_augmentations.empty()) {
+    throw std::runtime_error(
+        "TabularFeaturizer does not support RCA when there are augmentation "
+        "steps.");
+  }
   BoltVector vector;
   auto segmented_vector =
       makeSegmentedFeatureVector(_input_blocks.areDense(), _hash_range,
@@ -101,47 +133,27 @@ IndexToSegmentFeatureMap TabularFeaturizer::getIndexToSegmentFeatureMap(
 
 Explanation TabularFeaturizer::explainFeature(
     ColumnarInputSample& input, const SegmentFeature& segment_feature) {
+  if (!_augmentations.empty()) {
+    throw std::runtime_error(
+        "TabularFeaturizer does not support RCA when there are augmentation "
+        "steps.");
+  }
   std::shared_ptr<Block> relevant_block =
       _input_blocks[segment_feature.segment_idx];
 
   return relevant_block->explainIndex(segment_feature.feature_idx, input);
 }
 
-std::exception_ptr TabularFeaturizer::featurizeSampleInBatch(
-    uint32_t index_in_batch, ColumnarInputBatch& input_batch,
-    std::vector<BoltVector>& batch_inputs,
-    std::vector<BoltVector>& batch_labels) {
-  /*
-    Try-catch block is for capturing invalid argument exceptions from
-    input_batch.at(). Since we don't know the concrete type of the object
-    returned by input_batch.at(), we can't take it out of the scope of the
-    block. Thus, buildVector() also needs to be in this try-catch block.
-  */
-  try {
-    auto& sample = input_batch.at(index_in_batch);
-    if (auto err = buildVector(batch_inputs[index_in_batch], _input_blocks,
-                               sample, _hash_range)) {
-      return err;
-    }
-    return buildVector(batch_labels[index_in_batch], _label_blocks, sample,
-                       // Label is never hashed.
-                       /* hash_range= */ std::nullopt);
-  } catch (std::invalid_argument& error) {
-    return std::make_exception_ptr(error);
-  }
-}
-
-std::exception_ptr TabularFeaturizer::buildVector(
-    BoltVector& vector, BlockList& blocks, ColumnarInputSample& sample,
+std::shared_ptr<SegmentedFeatureVector> TabularFeaturizer::buildSFV(
+    BlockList& blocks, ColumnarInputSample& sample,
     std::optional<uint32_t> hash_range) {
   auto segmented_vector =
       makeSegmentedFeatureVector(blocks.areDense(), hash_range,
                                  /* store_segment_feature_map= */ false);
   if (auto err = blocks.addVectorSegments(sample, *segmented_vector)) {
-    return err;
+    std::rethrow_exception(err);
   }
-  vector = segmented_vector->toBoltVector();
-  return nullptr;
+  return segmented_vector;
 }
 
 std::shared_ptr<SegmentedFeatureVector>
@@ -154,10 +166,11 @@ TabularFeaturizer::makeSegmentedFeatureVector(
   }
   // Dense vector if all blocks produce dense features, sparse vector
   // otherwise.
-  if (blocks_dense) {
-    return std::make_shared<SegmentedDenseFeatureVector>(
-        store_segment_feature_map);
-  }
+  // if (blocks_dense) {
+  //   return std::make_shared<SegmentedDenseFeatureVector>(
+  //       store_segment_feature_map);
+  // }
+  (void)blocks_dense;
   return std::make_shared<SegmentedSparseFeatureVector>(
       store_segment_feature_map);
 }
