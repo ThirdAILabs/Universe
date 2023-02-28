@@ -219,8 +219,10 @@ BoltVector TextClassifier::concatTokensAndMetadata(
   BoltVector vector(/* l= */ n_tokens + metadata_nonzeros.size(),
                     /* is_dense= */ false, /* has_gradient= */ false);
 
-  std::copy(tokens.data(start), tokens.data(start) + n_tokens,
-            vector.active_neurons);
+  if (n_tokens > 0) {
+    std::copy(tokens.data(start), tokens.data(start) + n_tokens,
+              vector.active_neurons);
+  }
 
   std::copy(metadata_nonzeros.begin(), metadata_nonzeros.end(),
             vector.active_neurons + n_tokens);
