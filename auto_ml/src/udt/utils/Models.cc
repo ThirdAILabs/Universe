@@ -65,4 +65,11 @@ bool hasSoftmaxOutput(const bolt::BoltGraphPtr& model) {
                        bolt::ActivationFunction::Softmax);
 }
 
+void trySetModel(bolt::BoltGraphPtr& current_model,
+                 bolt::BoltGraphPtr& new_model) {
+  if (current_model->outputDim() != new_model->outputDim()) {
+    throw std::invalid_argument("Output dim mismatch in set_model.");
+  }
+  current_model = std::move(new_model);
+}
 }  // namespace thirdai::automl::udt::utils

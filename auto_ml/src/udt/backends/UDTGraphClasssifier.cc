@@ -96,9 +96,9 @@ py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
                                         bool verbose, bool return_metrics) {
   auto dataset_loader =
       _dataset_manager->indexAndGetDatasetLoader(data, /* shuffle = */ false);
-  return utils::evaluate(metrics, sparse_inference, return_predicted_class,
-                         verbose, return_metrics, _model, dataset_loader,
-                         _binary_prediction_threshold);
+  return utils::evaluateClassifier(
+      metrics, sparse_inference, return_predicted_class, verbose,
+      return_metrics, _model, dataset_loader, _binary_prediction_threshold);
 }
 
 template void UDTGraphClassifier::serialize(cereal::BinaryInputArchive&);

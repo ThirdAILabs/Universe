@@ -57,9 +57,9 @@ py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
                                       bool return_predicted_class, bool verbose,
                                       bool return_metrics) {
   auto dataset_loader = getSVMDatasetLoader(data, /* shuffle = */ false);
-  return utils::evaluate(metrics, sparse_inference, return_predicted_class,
-                         verbose, return_metrics, _model, dataset_loader,
-                         _binary_prediction_threshold);
+  return utils::evaluateClassifier(
+      metrics, sparse_inference, return_predicted_class, verbose,
+      return_metrics, _model, dataset_loader, _binary_prediction_threshold);
 }
 
 py::object UDTSVMClassifier::predict(const MapInput& sample,

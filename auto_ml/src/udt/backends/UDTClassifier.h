@@ -6,6 +6,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/utils/Models.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -73,10 +74,7 @@ class UDTClassifier final : public UDTBackend {
   bolt::BoltGraphPtr model() const final { return _model; }
 
   void setModel(bolt::BoltGraphPtr model) final {
-    if (_model->outputDim() != model->outputDim()) {
-      throw std::invalid_argument("Output dim mismatch in set_model.");
-    }
-    _model = std::move(model);
+    utils::trySetModel(_model, model);
   }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {

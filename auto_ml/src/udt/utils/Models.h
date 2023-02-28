@@ -14,4 +14,7 @@ bolt::BoltGraphPtr loadModel(const std::vector<uint32_t>& input_dims,
 
 bool hasSoftmaxOutput(const bolt::BoltGraphPtr& model);
 
+void trySetModel(bolt::BoltGraphPtr& current_model,
+                 bolt::BoltGraphPtr& new_model);
+
 }  // namespace thirdai::automl::udt::utils

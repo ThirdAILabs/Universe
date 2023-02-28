@@ -277,12 +277,12 @@ std::optional<float> getBinaryClassificationPredictionThreshold(
   return std::nullopt;
 }
 
-py::object evaluate(const std::vector<std::string>& metrics,
-                    bool sparse_inference, bool return_predicted_class,
-                    bool verbose, bool return_metrics,
-                    const bolt::BoltGraphPtr& model,
-                    const dataset::DatasetLoaderPtr& dataset_loader,
-                    const std::optional<float>& binary_prediction_threshold) {
+py::object evaluateClassifier(
+    const std::vector<std::string>& metrics, bool sparse_inference,
+    bool return_predicted_class, bool verbose, bool return_metrics,
+    const bolt::BoltGraphPtr& model,
+    const dataset::DatasetLoaderPtr& dataset_loader,
+    const std::optional<float>& binary_prediction_threshold) {
   bolt::EvalConfig eval_config =
       utils::getEvalConfig(metrics, sparse_inference, verbose);
 

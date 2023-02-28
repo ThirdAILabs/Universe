@@ -3,6 +3,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <auto_ml/src/featurization/GraphDatasetManager.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/utils/Models.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -47,10 +48,7 @@ class UDTGraphClassifier final : public UDTBackend {
   bolt::BoltGraphPtr model() const final { return _model; }
 
   void setModel(bolt::BoltGraphPtr model) final {
-    if (_model->outputDim() != model->outputDim()) {
-      throw std::invalid_argument("Output dim mismatch in set_model.");
-    }
-    _model = std::move(model);
+    utils::trySetModel(_model, model);
   }
 
   void indexNodes(const dataset::DataSourcePtr& source) final {
