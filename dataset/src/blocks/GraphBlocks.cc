@@ -6,6 +6,7 @@
 #include <cereal/types/vector.hpp>
 #include <dataset/src/utils/CsvParser.h>
 #include <exceptions/src/Exceptions.h>
+#include <utils/StringManipulation.h>
 #include <cstdlib>
 #include <exception>
 #include <limits>
@@ -32,11 +33,8 @@ uint64_t parseFloat(const ColumnIdentifier& identifier,
 
 std::vector<uint64_t> parseUint64Array(const std::string& array_string,
                                        char delimiter) {
-  if (array_string.empty()) {
-    return std::vector<uint64_t>();
-  }
   std::vector<std::string_view> parsed_array =
-      parsers::CSV::parseLine(array_string, delimiter);
+      text::split(array_string, delimiter);
   std::vector<uint64_t> uint64_array;
   uint64_array.reserve(parsed_array.size());
   for (const auto& uint64_str : parsed_array) {

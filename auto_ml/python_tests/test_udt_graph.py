@@ -9,6 +9,19 @@ from thirdai import bolt
 pytestmark = [pytest.mark.unit]
 
 
+def get_no_features_gnn(num_classes):
+    return bolt.UniversalDeepTransformer(
+        data_types={
+            "node_id": bolt.types.node_id(),
+            "target": bolt.types.categorical(),
+            "neighbors": bolt.types.neighbors(),
+        },
+        target="target",
+        n_target_classes=num_classes,
+        integer_target=True,
+    )
+
+
 def test_udt_on_yelp_chi(download_yelp_chi_dataset):
     all_data = pd.read_csv("yelp_all.csv")
     numerical_col_names = ["col_" + str(i) for i in range(32)]
@@ -67,16 +80,7 @@ def test_graph_clearing_and_indexing():
     chunk_size = 100
     num_classes = 2
 
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "node_id": bolt.types.node_id(),
-            "target": bolt.types.categorical(),
-            "neighbors": bolt.types.neighbors(),
-        },
-        target="target",
-        n_target_classes=num_classes,
-        integer_target=True,
-    )
+    model = get_no_features_gnn(num_classes)
 
     # The graph is linear, so each node is connected to its predecessor. Node
     # id i has class id = (i / chunk_size) % num_classes.
@@ -89,16 +93,8 @@ def test_graph_clearing_and_indexing():
         df["neighbors"] = [
             max(0, node_id - 1) for node_id in range(chunk_start, chunk_end)
         ]
-        df["noisy_target"] = np.full(
-            shape=chunk_size, fill_value=chunk % num_classes
-        ) + np.random.normal(loc=0.0, scale=0.1, size=chunk_size)
         df.to_csv(f"graph_chunk_{chunk}.csv", index=False)
-        model.train(
-            f"graph_chunk_{chunk}.csv",
-            learning_rate=0.01,
-            epochs=1,
-            batch_size=32,
-        )
+        model.train(f"graph_chunk_{chunk}.csv", epochs=1)
 
     chunk_id_to_test = 7
     old_accuracy = model.evaluate(
@@ -121,4 +117,24 @@ def test_graph_clearing_and_indexing():
         metrics=["categorical_accuracy"],
         return_metrics=True,
     )
-    assert old_accuracy == new_accuracy
+    assert old_accuracy["categorical_accuracy"] == new_accuracy["categorical_accuracy"]
+
+
+def test_no_neighbors():
+    num_classes = 2
+    model = get_no_features_gnn(num_classes)
+
+    df = pd.DataFrame()
+    df["node_id"] = np.arange(0, 100)
+    df["target"] = np.full(shape=100, fill_value=1)
+    df["neighbors"] = ["" for node_id in range(100)]
+
+    df.to_csv(f"boring_graph.csv", index=False)
+    model.train("boring_graph.csv")
+
+    assert (
+        model.evaluate(
+            "boring_graph.csv", metrics=["categorical_accuracy"], return_metrics=True
+        )["categorical_accuracy"]
+        == 1.0
+    )
