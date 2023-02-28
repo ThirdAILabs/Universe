@@ -12,8 +12,6 @@ class GraphDatasetManager {
   GraphDatasetManager(data::ColumnDataTypes data_types, std::string target_col,
                       uint32_t n_target_classes, const TabularOptions& options);
 
-  // TODO(Josh): Have user call index() then getDatasetLoader()
-
   dataset::DatasetLoaderPtr indexAndGetDatasetLoader(
       const dataset::DataSourcePtr& data_source, bool shuffle);
 
