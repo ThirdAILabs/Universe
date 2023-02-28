@@ -5,6 +5,7 @@
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TimeUtils.h>
+#include <dataset/tests/FeaturizerTestUtils.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <cstddef>
@@ -248,7 +249,8 @@ TEST(UserItemHistoryBlockTests, CorrectMultiItem) {
       /* delimiter= */ ',',
       /* parallel= */ false);
 
-  auto batch = processor.featurize(samples).at(0);
+  auto batch = FeaturizerTestUtils::columnInOutputBatch(
+      /* batch= */ processor.featurize(samples), /* column_id= */ 0);
 
   ASSERT_EQ(batch[0].len, 0);
 
@@ -284,7 +286,8 @@ TEST(UserItemHistoryBlockTests, HandlesTimeLagProperly) {
       /* delimiter= */ ',',
       /* parallel= */ false);
 
-  auto batch = processor.featurize(samples).at(0);
+  auto batch = FeaturizerTestUtils::columnInOutputBatch(
+      /* batch= */ processor.featurize(samples), /* column_id= */ 0);
 
   // This means the block tracks the last 3 beyond lag.
   ASSERT_EQ(batch[4].len, 3);

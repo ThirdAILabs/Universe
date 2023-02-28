@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/tests/MockBlock.h>
 #include <iomanip>
@@ -57,6 +58,16 @@ class FeaturizerTestUtils {
       string_vec.push_back(val_ss.str());
     }
     return string_vec;
+  }
+
+  static std::vector<BoltVector> columnInOutputBatch(
+      const std::vector<std::vector<BoltVector>>& batch, uint32_t column_id) {
+    std::vector<BoltVector> column;
+    column.reserve(batch.size());
+    for (const auto& row : batch) {
+      column.push_back(row[column_id]);
+    }
+    return column;
   }
 };
 

@@ -6,6 +6,7 @@
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/QuantityHistoryTracker.h>
 #include <dataset/src/utils/TimeUtils.h>
+#include <dataset/tests/FeaturizerTestUtils.h>
 #include <cmath>
 #include <string_view>
 
@@ -16,8 +17,8 @@ static std::vector<BoltVector> processBatch(
   TabularFeaturizer processor(
       /* block_lists = */ {dataset::BlockList({std::move(block)})},
       /* has_header= */ false, /* delimiter= */ ',', /* parallel= */ false);
-  auto batch = processor.featurize(input_rows).at(0);
-  return std::move(batch);
+  return FeaturizerTestUtils::columnInOutputBatch(
+      /* batch= */ processor.featurize(input_rows), /* column_id= */ 0);
 }
 
 TEST(UserCountHistoryBlockTest, ExplanationWorks) {

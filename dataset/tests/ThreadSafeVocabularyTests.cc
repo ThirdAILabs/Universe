@@ -4,6 +4,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <dataset/tests/FeaturizerTestUtils.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <chrono>
@@ -116,7 +117,8 @@ TEST(ThreadSafeVocabularyTests, InBlock) {
 
   TabularFeaturizer processor(
       /* block_lists = */ {dataset::BlockList({lookup_block})});
-  auto batch = processor.featurize(strings).at(0);
+  auto batch = FeaturizerTestUtils::columnInOutputBatch(
+      /* batch= */ processor.featurize(strings), /* column_id= */ 0);
 
   auto uids = getUidsFromBatch(batch);
   auto reverted_strings = backToStrings(*vocab, uids);
@@ -138,7 +140,9 @@ TEST(ThreadSafeVocabularyTests, InMultipleBlocks) {
   TabularFeaturizer processor(
       /* block_lists = */ {dataset::BlockList(
           {lookup_block_1, lookup_block_2, lookup_block_3})});
-  auto batch = processor.featurize(strings).at(0);
+
+  auto batch = FeaturizerTestUtils::columnInOutputBatch(
+      /* batch= */ processor.featurize(strings), /* column_id= */ 0);
 
   uint32_t lookup_block_dim = lookup_block_1->featureDim();
   auto block_1_uids =
