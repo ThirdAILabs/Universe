@@ -73,11 +73,7 @@ void SequenceTargetBlock::prepareForBatch(ColumnarInputBatch& incoming_batch) {
   _vocabulary.getUid(RecursionWrapper::EOS);
   (void)incoming_batch;
   if (_vocabulary.isFull()) {
-    std::cout << "fixing!" << std::endl;
     _vocabulary.fixVocab();
-  } else {
-    std::cout << "not full! Waiting til size = " << _vocabulary.vocabSize()
-              << std::endl;
   }
 }
 
