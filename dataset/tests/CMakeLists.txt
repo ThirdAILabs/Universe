@@ -2,6 +2,7 @@ enable_testing()
 
 set(DATASET_TESTS
     AugmentationListTests
+    RecurrenceAugmentationTests
     CsvParserTests
     SvmDatasetTests
     ClickThroughDatasetTests

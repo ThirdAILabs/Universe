@@ -3,11 +3,13 @@
 namespace thirdai::dataset {
 
 RecurrenceAugmentation::RecurrenceAugmentation(ColumnIdentifier sequence_column,
+                                               char delimiter,
                                                uint32_t max_recurrence,
                                                uint32_t vocab_size,
                                                uint32_t input_vector_index,
                                                uint32_t label_vector_index)
     : _sequence_column(std::move(sequence_column)),
+      _delimiter(delimiter),
       _max_recurrence(max_recurrence),
       _vocab_size_with_eos(vocab_size + 1),
       _in_progress_vector_index(input_vector_index),
@@ -20,7 +22,7 @@ Vectors RecurrenceAugmentation::augment(Vectors&& vectors,
 
   Vectors augmented_vectors;
   augmented_vectors.reserve(vectors.size() * target_sequence.size());
-  
+
   auto element_ids = elementIds(target_sequence);
   for (auto& sample_vectors : vectors) {
     auto augmentations = augmentEach(std::move(sample_vectors), element_ids);
@@ -33,7 +35,8 @@ Vectors RecurrenceAugmentation::augment(Vectors&& vectors,
 
 std::vector<std::string_view> RecurrenceAugmentation::sequence(
     ColumnarInputSample& input_sample) const {
-  auto sequence = text::split(input_sample.column(_sequence_column));
+  auto sequence =
+      text::split(input_sample.column(_sequence_column), _delimiter);
   if (sequence.size() < _max_recurrence) {
     sequence.push_back(std::string_view(EOS, EOS_SIZE));
   }
@@ -54,7 +57,7 @@ Vectors RecurrenceAugmentation::augmentEach(
     SampleVector&& vectors, const std::vector<uint32_t>& element_ids) const {
   auto augmented_vectors =
       multiply(std::move(vectors), /* times= */ element_ids.size());
-  
+
   for (uint32_t step = 0; step < augmented_vectors.size(); step++) {
     addInProgressFeatures(augmented_vectors[step], element_ids, step);
     addLabelFeatures(augmented_vectors[step], element_ids, step);
@@ -101,7 +104,6 @@ void RecurrenceAugmentation::addLabelFeatures(
   ref->addFeatureSegment(_vocab_size_with_eos * _max_recurrence);
   ref->addSparseFeatureToSegment(/* index= */ element_ids[step],
                                  /* value= */ 1.0);
-
 }
 
 }  // namespace thirdai::dataset
