@@ -158,6 +158,8 @@ class SegmentedFeatureVector {
    */
   virtual BoltVector toBoltVector() = 0;
 
+  virtual std::shared_ptr<SegmentedFeatureVector> clone() const = 0;
+
   IndexToSegmentFeatureMap getIndexToSegmentFeatureMap() {
     if (!_store_index_to_segment_feature_map) {
       throw std::invalid_argument(
