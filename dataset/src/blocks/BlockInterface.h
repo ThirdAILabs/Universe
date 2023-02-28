@@ -106,7 +106,6 @@ class SegmentedFeatureVector {
   friend TextBlockTest;
   friend SegmentedFeatureVectorTest;
 
- protected:
   /**
    * Adds a segment with the given dimension to the
    * current vector.
@@ -123,6 +122,7 @@ class SegmentedFeatureVector {
    */
   virtual void addFeatureSegment(uint32_t dim) = 0;
 
+ protected:
   /**
    * Returns a mapping of all of the vector's idx-value pairs.
    * Only used for testing as this can be very expensive

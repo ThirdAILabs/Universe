@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace thirdai::dataset::tests {
 
@@ -28,15 +29,15 @@ class MockColumnarInputSample final : public ColumnarInputSample {
 class MockAugmentation final : public Augmentation {
  public:
   MockAugmentation(ColumnIdentifier column, uint32_t expected_num_cols,
-                   bool is_dense)
+                   std::vector<bool> is_denses)
       : _column(std::move(column)),
         _expected_num_cols(expected_num_cols),
-        _is_dense(is_dense) {}
+        _is_denses(std::move(is_denses)) {}
 
   static auto make(ColumnIdentifier column, uint32_t expected_num_cols = 0,
-                   bool is_dense = true) {
-    return std::make_shared<MockAugmentation>(std::move(column),
-                                              expected_num_cols, is_dense);
+                   std::vector<bool> is_denses = {}) {
+    return std::make_shared<MockAugmentation>(
+        std::move(column), expected_num_cols, std::move(is_denses));
   }
 
   Vectors augment(Vectors&& vectors, ColumnarInputSample& input_sample) final {
@@ -53,21 +54,44 @@ class MockAugmentation final : public Augmentation {
   uint32_t expectedNumColumns() const final { return _expected_num_cols; }
 
   bool isDense(uint32_t vector_index) const final {
-    (void)vector_index;
-    return _is_dense;
+    return _is_denses.at(vector_index);
   }
 
   ColumnIdentifier _column;
   uint32_t _expected_num_cols;
-  bool _is_dense;
+  std::vector<bool> _is_denses;
   Vectors _vectors;
   std::string_view _column_view;
   ColumnNumberMap _column_number_map;
 };
 
 Vectors makeVectors() {
-  return {{std::make_shared<SegmentedSparseFeatureVector>(),
-           std::make_shared<SegmentedSparseFeatureVector>()}};
+  auto vector_one = std::make_shared<SegmentedSparseFeatureVector>();
+  vector_one->addFeatureSegment(10);
+  vector_one->addSparseFeatureToSegment(/* index= */ 1, /* value= */ 1.0);
+
+  auto vector_two = std::make_shared<SegmentedSparseFeatureVector>();
+  vector_two->addFeatureSegment(10);
+  vector_two->addSparseFeatureToSegment(/* index= */ 5, /* value= */ 1.0);
+
+  return {{std::move(vector_one), std::move(vector_two)}};
+}
+
+void assertVectorsEqual(Vectors& lhs, Vectors& rhs) {
+  ASSERT_EQ(lhs.size(), rhs.size());
+  for (uint32_t i = 0; i < lhs.size(); i++) {
+    ASSERT_EQ(lhs[i].size(), rhs[i].size());
+    for (uint32_t j = 0; j < lhs[i].size(); j++) {
+      auto lhs_bolt_vec = lhs[i][j]->toBoltVector();
+      auto rhs_bolt_vec = rhs[i][j]->toBoltVector();
+      ASSERT_EQ(lhs_bolt_vec.len, rhs_bolt_vec.len);
+      for (uint32_t k = 0; k < lhs_bolt_vec.len; k++) {
+        ASSERT_EQ(lhs_bolt_vec.active_neurons[k],
+                  rhs_bolt_vec.active_neurons[k]);
+        ASSERT_EQ(lhs_bolt_vec.activations[k], rhs_bolt_vec.activations[k]);
+      }
+    }
+  }
 }
 
 TEST(AugmentationListTests, CorrectlyDispatchesAugment) {
@@ -80,11 +104,12 @@ TEST(AugmentationListTests, CorrectlyDispatchesAugment) {
   AugmentationList augmentations({augmentation_one, augmentation_two});
 
   auto vectors = makeVectors();
+  auto moved_vectors = makeVectors();
 
-  augmentations.augment(std::move(vectors), input_sample);
+  augmentations.augment(std::move(moved_vectors), input_sample);
 
-  ASSERT_EQ(augmentation_one->_vectors, vectors);
-  ASSERT_EQ(augmentation_two->_vectors, vectors);
+  assertVectorsEqual(augmentation_one->_vectors, vectors);
+  assertVectorsEqual(augmentation_two->_vectors, vectors);
   ASSERT_EQ(std::string(augmentation_one->_column_view), "column_one_value");
   ASSERT_EQ(std::string(augmentation_two->_column_view), "column_two_value");
 }
@@ -101,8 +126,8 @@ TEST(AugmentationListTests, CorrectlyDispatchesUpdateColumnNumbers) {
 
   augmentations.updateColumnNumbers(map);
 
-  ASSERT_EQ(augmentation_one->_column_number_map, map);
-  ASSERT_EQ(augmentation_two->_column_number_map, map);
+  ASSERT_TRUE(augmentation_one->_column_number_map.equals(map));
+  ASSERT_TRUE(augmentation_two->_column_number_map.equals(map));
 }
 
 TEST(AugmentationListTests, CorrectlyDispatchesExpectedNumCols) {
@@ -129,34 +154,38 @@ TEST(AugmentationListTests, CorrectlyDispatchesExpectedNumCols) {
   }
 }
 
-TEST(AugmentationListTests, CorrectlyDispatchesExpectedNumCols) {
-  auto augmentation_one =
-      MockAugmentation::make(/* column= */ {"column_one"},
-                             /* expected_num_cols= */ 0, /* is_dense= */ false);
-  auto augmentation_two =
-      MockAugmentation::make(/* column= */ {"column_two"},
-                             /* expected_num_cols= */ 0, /* is_dense= */ true);
+TEST(AugmentationListTests, CorrectlyDispatchesIsDense) {
+  auto augmentation_one = MockAugmentation::make(
+      /* column= */ {"column_one"},
+      /* expected_num_cols= */ 0, /* is_denses= */ {false, true});
+  auto augmentation_two = MockAugmentation::make(
+      /* column= */ {"column_two"},
+      /* expected_num_cols= */ 0, /* is_denses= */ {true, true});
 
   {
     // No augmentation -> isDense defaults to true.
     AugmentationList augmentations({});
-    ASSERT_EQ(augmentations.isDense(), true);
+    ASSERT_EQ(augmentations.isDense(0), true);
+    ASSERT_EQ(augmentations.isDense(1), true);
   }
 
   {
     AugmentationList augmentations({augmentation_one});
-    ASSERT_EQ(augmentations.isDense(), false);
+    ASSERT_EQ(augmentations.isDense(0), false);
+    ASSERT_EQ(augmentations.isDense(1), true);
   }
 
   {
     AugmentationList augmentations({augmentation_two});
-    ASSERT_EQ(augmentations.isDense(), true);
+    ASSERT_EQ(augmentations.isDense(0), true);
+    ASSERT_EQ(augmentations.isDense(1), true);
   }
 
   {
-    // If any augmentation is not dense, then the list is not dense.
     AugmentationList augmentations({augmentation_one, augmentation_two});
-    ASSERT_EQ(augmentations.isDense(), false);
+    // If any augmentation is not dense, then the list is not dense.
+    ASSERT_EQ(augmentations.isDense(0), false);
+    ASSERT_EQ(augmentations.isDense(1), true);
   }
 }
 
