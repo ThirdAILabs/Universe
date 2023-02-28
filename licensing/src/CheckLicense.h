@@ -25,13 +25,13 @@ class TrainPermissionsToken {
 
   /**
    * Creates a TrainPermissionsToken corresponding to a passed in training
-   * file path. If the user does not have an entitlement allowing them to
-   * train on the file, this will throw an error. If licensing is
+   * data source. If the user does not have an entitlement allowing them to
+   * train on the data source, this will throw an error. If licensing is
    * disabled, this will always succeed. To prevent unauthorized API use, you
    * should only use this access token to train models with the passed in
    * training file.
    */
-  explicit TrainPermissionsToken(const std::string& train_file_path);
+  explicit TrainPermissionsToken(const dataset::DataSourcePtr& source);
 };
 
 // If license checking is enabled, verifies the license is valid and throws an

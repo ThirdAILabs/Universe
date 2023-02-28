@@ -55,7 +55,7 @@ void UDTSVMClassifier::train(
 
   utils::trainInMemory(_model, {{train_dataset}, labels}, train_config,
                        _freeze_hash_tables,
-                       licensing::TrainPermissionsToken(data->resourceName()));
+                       licensing::TrainPermissionsToken(data));
 }
 
 py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,

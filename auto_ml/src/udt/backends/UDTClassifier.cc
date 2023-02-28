@@ -74,7 +74,7 @@ void UDTClassifier::train(
   utils::train(_model, train_dataset, train_config, batch_size,
                max_in_memory_batches,
                /* freeze_hash_tables= */ _freeze_hash_tables,
-               licensing::TrainPermissionsToken(data->resourceName()));
+               licensing::TrainPermissionsToken(data));
 
   /**
    * For binary classification we tune the prediction threshold to optimize some
