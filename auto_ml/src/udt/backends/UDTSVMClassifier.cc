@@ -69,7 +69,8 @@ py::object UDTSVMClassifier::predict(const MapInput& sample,
       {dataset::SvmDatasetLoader::toSparseVector(sample)}, sparse_inference);
 
   if (return_predicted_class) {
-    return py::cast(utils::predictedClass(output));
+    return py::cast(
+        utils::predictedClass(output, _binary_prediction_threshold));
   }
 
   return utils::convertBoltVectorToNumpy(output);
@@ -82,7 +83,7 @@ py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
       {dataset::SvmDatasetLoader::toSparseVectors(samples)}, sparse_inference);
 
   if (return_predicted_class) {
-    return utils::predictedClasses(outputs);
+    return utils::predictedClasses(outputs, _binary_prediction_threshold);
   }
 
   return utils::convertBoltBatchToNumpy(outputs);

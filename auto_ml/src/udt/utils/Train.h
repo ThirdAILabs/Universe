@@ -45,12 +45,6 @@ void trainInMemory(bolt::BoltGraphPtr& model,
 
 bolt::TrainConfig getTrainConfig(
     uint32_t epochs, float learning_rate,
-    const std::vector<std::string>& train_metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval);
-
-bolt::TrainConfig getTrainConfig(
-    uint32_t epochs, float learning_rate,
     const std::optional<Validation>& validation,
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
@@ -58,15 +52,13 @@ bolt::TrainConfig getTrainConfig(
     const DataSourceToDatasetLoader& func);
 
 uint32_t predictedClass(const BoltVector& activation_vec,
-                        std::optional<float> binary_threshold = std::nullopt);
+                        std::optional<float> binary_threshold);
 
-py::object predictedClasses(
-    bolt::InferenceOutputTracker& output,
-    std::optional<float> binary_threshold = std::nullopt);
+py::object predictedClasses(bolt::InferenceOutputTracker& output,
+                            std::optional<float> binary_threshold);
 
-py::object predictedClasses(
-    const BoltBatch& output,
-    std::optional<float> binary_threshold = std::nullopt);
+py::object predictedClasses(const BoltBatch& output,
+                            std::optional<float> binary_threshold);
 
 bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
                                bool sparse_inference, bool verbose,

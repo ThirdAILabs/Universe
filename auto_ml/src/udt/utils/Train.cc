@@ -88,9 +88,11 @@ void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
 
 bolt::TrainConfig getTrainConfig(
     uint32_t epochs, float learning_rate,
+    const std::optional<Validation>& validation,
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval) {
+    std::optional<uint32_t> logging_interval,
+    const DataSourceToDatasetLoader& func) {
   bolt::TrainConfig train_config =
       bolt::TrainConfig::makeConfig(learning_rate, epochs)
           .withMetrics(train_metrics)
@@ -102,18 +104,7 @@ bolt::TrainConfig getTrainConfig(
     train_config.silence();
   }
   return train_config;
-}
 
-bolt::TrainConfig getTrainConfig(
-    uint32_t epochs, float learning_rate,
-    const std::optional<Validation>& validation,
-    const std::vector<std::string>& train_metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval,
-    const DataSourceToDatasetLoader& func) {
-  bolt::TrainConfig train_config =
-      getTrainConfig(epochs, learning_rate, train_metrics, callbacks, verbose,
-                     logging_interval);
   if (validation) {
     auto val_data =
         func(validation->data(), /* shuffle = */ false)
