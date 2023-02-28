@@ -97,7 +97,6 @@ class SequenceTargetBlock : public Block {
   ColumnIdentifier _step_col;
   uint32_t _max_steps;
   ThreadSafeVocabulary _vocabulary;
-  uint32_t _vocabulary_size;
 
   friend class cereal::access;
   template <typename Archive>

@@ -66,12 +66,11 @@ SequenceTargetBlock::SequenceTargetBlock(ColumnIdentifier target_col,
     : _target_col(std::move(target_col)),
       _step_col(std::move(step_col)),
       _max_steps(max_steps),
-      _vocabulary(vocabulary_size, /* limit_vocab_size= */ true),
-      _vocabulary_size(vocabulary_size) {}
+      _vocabulary(vocabulary_size, /* limit_vocab_size= */ true) {}
 
 void SequenceTargetBlock::prepareForBatch(ColumnarInputBatch& incoming_batch) {
   (void)incoming_batch;
-  if (_vocabulary.vocabSize() == _vocabulary_size) {
+  if (_vocabulary.isFull()) {
     _vocabulary.fixVocab();
   }
 }
