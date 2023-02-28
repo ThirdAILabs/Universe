@@ -1,6 +1,7 @@
 #include "Sequence.h"
 #include <cereal/archives/binary.hpp>
 #include <hashing/src/HashUtils.h>
+#include <dataset/src/RecursionWrapper.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/TokenEncoding.h>
@@ -69,6 +70,7 @@ SequenceTargetBlock::SequenceTargetBlock(ColumnIdentifier target_col,
       _vocabulary(vocabulary_size, /* limit_vocab_size= */ true) {}
 
 void SequenceTargetBlock::prepareForBatch(ColumnarInputBatch& incoming_batch) {
+  _vocabulary.getUid(RecursionWrapper::EOS);
   (void)incoming_batch;
   if (_vocabulary.isFull()) {
     std::cout << "fixing!" << std::endl;

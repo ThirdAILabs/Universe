@@ -113,7 +113,10 @@ class ThreadSafeVocabulary {
     return _uid_to_string.at(uid);
   }
 
-  bool isFull() const { return _string_to_uid.size() == _vocab_size; }
+  bool isFull() const {
+    std::cout << "current size " << _string_to_uid.size() << std::endl;
+    return _string_to_uid.size() == _vocab_size;
+  }
 
   uint32_t vocabSize() const { return _vocab_size; }
 
