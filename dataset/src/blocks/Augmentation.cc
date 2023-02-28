@@ -5,14 +5,16 @@ namespace thirdai::dataset {
 AugmentationList::AugmentationList(std::vector<AugmentationPtr> augmentations)
     : _augmentations(std::move(augmentations)) {}
 
-Vectors AugmentationList::augment(Vectors&& vectors, ColumnarInputSample& input_sample) {
+Vectors AugmentationList::augment(Vectors&& vectors,
+                                  ColumnarInputSample& input_sample) {
   for (auto& augmentation : _augmentations) {
     vectors = augmentation->augment(std::move(vectors), input_sample);
   }
   return vectors;
 }
 
-void AugmentationList::updateColumnNumbers(const ColumnNumberMap& column_number_map) {
+void AugmentationList::updateColumnNumbers(
+    const ColumnNumberMap& column_number_map) {
   for (auto& augmentation : _augmentations) {
     augmentation->updateColumnNumbers(column_number_map);
   }
