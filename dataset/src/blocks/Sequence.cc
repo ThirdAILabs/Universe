@@ -71,7 +71,11 @@ SequenceTargetBlock::SequenceTargetBlock(ColumnIdentifier target_col,
 void SequenceTargetBlock::prepareForBatch(ColumnarInputBatch& incoming_batch) {
   (void)incoming_batch;
   if (_vocabulary.isFull()) {
+    std::cout << "fixing!" << std::endl;
     _vocabulary.fixVocab();
+  } else {
+    std::cout << "not full! Waiting til size = " << _vocabulary.vocabSize()
+              << std::endl;
   }
 }
 
