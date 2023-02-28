@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <dataset/src/blocks/InputTypes.h>
@@ -26,13 +27,20 @@ class Augmentation {
   virtual bool isDense(uint32_t vector_index) const = 0;
 
   virtual ~Augmentation() = default;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using AugmentationPtr = std::shared_ptr<Augmentation>;
 
 class AugmentationList final : public Augmentation {
  public:
-  explicit AugmentationList(std::vector<AugmentationPtr> augmentations);
+  explicit AugmentationList(std::vector<AugmentationPtr> augmentations = {});
 
   Vectors augment(Vectors&& vectors, ColumnarInputSample& input_sample) final;
 
@@ -44,6 +52,11 @@ class AugmentationList final : public Augmentation {
 
  private:
   std::vector<AugmentationPtr> _augmentations;
+
+  friend cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::dataset

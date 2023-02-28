@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <dataset/src/blocks/Augmentation.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <utils/StringManipulation.h>
@@ -64,6 +65,11 @@ class RecurrenceAugmentation final : public Augmentation {
   uint32_t _in_progress_vector_index;
   uint32_t _label_vector_index;
   ThreadSafeVocabulary _vocab;
+
+  friend cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::dataset

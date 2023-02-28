@@ -1,4 +1,7 @@
 #include "RecurrenceAugmentation.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 namespace thirdai::dataset {
 
@@ -106,4 +109,15 @@ void RecurrenceAugmentation::addLabelFeatures(
                                  /* value= */ 1.0);
 }
 
+template void RecurrenceAugmentation::serialize(cereal::BinaryInputArchive&);
+template void RecurrenceAugmentation::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void RecurrenceAugmentation::serialize(Archive& archive) {
+  archive(cereal::base_class<Augmentation>(this), _sequence_column, _delimiter,
+          _max_recurrence, _vocab_size_with_eos, _in_progress_vector_index,
+          _label_vector_index, _vocab);
+}
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::RecurrenceAugmentation)

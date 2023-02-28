@@ -1,4 +1,8 @@
 #include "Augmentation.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 
 namespace thirdai::dataset {
 
@@ -36,4 +40,14 @@ bool AugmentationList::isDense(uint32_t vector_index) const {
   }
   return is_dense;
 }
+
+template void AugmentationList::serialize(cereal::BinaryInputArchive&);
+template void AugmentationList::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void AugmentationList::serialize(Archive& archive) {
+  archive(cereal::base_class<Augmentation>(this), _augmentations);
+}
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::AugmentationList)
