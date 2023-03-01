@@ -349,9 +349,10 @@ struct BlockList {
                      but with different hash salts. Otherwise, the features will
                      be treated as sparse vectors, which are then concatenated.
                    */
-                     std::optional<uint32_t> hash_range = std::nullopt)
+                     std::optional<uint32_t> hash_range = std::nullopt,
+                     std::optional<bool> are_dense = std::nullopt)
       : _blocks(std::move(blocks)),
-        _are_dense(computeAreDense(_blocks)),
+        _are_dense(are_dense.value_or(computeAreDense(_blocks))),
         _feature_dim(hash_range.value_or(computeFeatureDim(_blocks))),
         _expected_num_columns(allBlocksHaveColumnNumbers(_blocks)
                                   ? computeExpectedNumColumns(_blocks)
