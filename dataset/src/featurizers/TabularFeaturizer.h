@@ -67,11 +67,18 @@ class TabularFeaturizer : public Featurizer {
   void processHeader(const std::string& header) final;
 
   std::vector<uint32_t> getDimensions() final {
-    std::vector<uint32_t> dims;
-    dims.reserve(_block_lists.size());
-    for (const auto& block_list : _block_lists) {
-      dims.push_back(block_list.featureDim());
+    std::vector<uint32_t> dims(_block_lists.size());
+
+    for (uint32_t block_list_id = 0; block_list_id < _block_lists.size();
+         block_list_id++) {
+      auto block_list = _block_lists[block_list_id];
+      uint32_t dim = block_list.featureDim();
+      if (!block_list.hashRange()) {
+        dim += _augmentations.featureDim(block_list_id);
+      }
+      dims[block_list_id] = dim;
     }
+
     return dims;
   }
 
