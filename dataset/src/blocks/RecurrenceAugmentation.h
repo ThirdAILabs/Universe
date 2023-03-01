@@ -66,6 +66,9 @@ class RecurrenceAugmentation final : public Augmentation {
   uint32_t _label_vector_index;
   ThreadSafeVocabulary _vocab;
 
+  // Private default constructor for cereal.
+  RecurrenceAugmentation() : _vocab(/* vocab_size= */ 0) {}
+
   friend cereal::access;
 
   template <class Archive>
