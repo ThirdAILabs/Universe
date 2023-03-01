@@ -101,7 +101,9 @@ void NeighborTokensBlock::buildSegment(ColumnarInputSample& input,
   // We need to do this because this block is used as input to the Embedding
   // node, which does not support empty vectors. This is equivalent to making
   // all nodes with no neighbors have a single unique neighbor with id
-  // std::numeric_limits<uint32_t>::max() - 1.
+  // std::numeric_limits<uint32_t>::max() - 1. We need the "-1" because the
+  // range of the block is std::numeric_limits<uint32_t>::max(), so having a
+  // nonzero at std::numeric_limits<uint32_t>::max() would be out of range.
   if (neighbors.empty()) {
     neighbors.push_back(std::numeric_limits<uint32_t>::max() - 1);
   }

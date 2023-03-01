@@ -35,12 +35,8 @@ void TabularFeaturizer::updateColumnNumbers(
 
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     ColumnarInputBatch& input_batch) {
-  std::vector<std::vector<BoltVector>> featurized_batch;
-
-  for (BlockList& block_list : _block_lists) {
-    block_list.prepareForBatch(input_batch);
-    featurized_batch.push_back(std::vector<BoltVector>(input_batch.size()));
-  }
+  std::vector<std::vector<BoltVector>> featurized_batch(
+      _block_lists.size(), std::vector<BoltVector>(input_batch.size()));
 
   /*
     These variables keep track of the presence of an erroneous input line.
@@ -95,6 +91,11 @@ BoltVector TabularFeaturizer::makeInputVector(ColumnarInputSample& sample) {
  */
 IndexToSegmentFeatureMap TabularFeaturizer::getIndexToSegmentFeatureMap(
     ColumnarInputSample& input) {
+  if (_block_lists.empty() || _block_lists.size() > 2) {
+    throw std::runtime_error(
+        "Explanations are not supported by this type of featurization.");
+  }
+
   BoltVector vector;
   auto segmented_vector = makeSegmentedFeatureVector(
       _block_lists.at(0).areDense(), _block_lists.at(0).hashRange(),
@@ -109,6 +110,11 @@ IndexToSegmentFeatureMap TabularFeaturizer::getIndexToSegmentFeatureMap(
 
 Explanation TabularFeaturizer::explainFeature(
     ColumnarInputSample& input, const SegmentFeature& segment_feature) {
+  if (_block_lists.empty() || _block_lists.size() > 2) {
+    throw std::runtime_error(
+        "Explanations are not supported by this type of featurization.");
+  }
+
   std::shared_ptr<Block> relevant_block =
       _block_lists.at(0)[segment_feature.segment_idx];
 

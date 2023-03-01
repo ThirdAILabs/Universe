@@ -20,9 +20,9 @@ class NormalizedNeighborVectorsBlock final : public Block {
       : _node_id_col(std::move(node_id_col)),
         _graph_ptr(std::move(graph_ptr)) {}
 
-  uint32_t featureDim() const final { return _graph_ptr->featureDim(); };
+  uint32_t featureDim() const final { return _graph_ptr->featureDim(); }
 
-  bool isDense() const final { return true; };
+  bool isDense() const final { return true; }
 
   Explanation explainIndex(uint32_t index_within_block,
                            ColumnarInputSample& input) final;
@@ -67,9 +67,9 @@ class NeighborTokensBlock final : public Block {
   // TabularHashFeatures block)
   uint32_t featureDim() const final {
     return std::numeric_limits<uint32_t>::max();
-  };
+  }
 
-  bool isDense() const final { return false; };
+  bool isDense() const final { return false; }
 
   Explanation explainIndex(uint32_t index_within_block,
                            ColumnarInputSample& input) final;
@@ -113,12 +113,12 @@ class GraphBuilderBlock final : public Block {
 
   // This is 0 because we are not adding anything to the vector, only adding to
   // the passed in graph info pointer
-  uint32_t featureDim() const final { return 0; };
+  uint32_t featureDim() const final { return 0; }
 
   bool isDense() const final {
     // featureDim of 0 is "dense"
     return true;
-  };
+  }
 
   Explanation explainIndex(uint32_t index_within_block,
                            ColumnarInputSample& input) final;
