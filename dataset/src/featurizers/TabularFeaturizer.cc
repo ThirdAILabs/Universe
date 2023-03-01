@@ -85,7 +85,7 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::consolidate(
   }
 
 #pragma omp parallel for default(none) \
-    shared(vector_builders, output_batch, pffsets, _block_lists)
+    shared(vector_builders, output_batch, offsets, _block_lists)
   for (uint32_t input_sample_id = 0; input_sample_id < vector_builders.size();
        input_sample_id++) {
     auto& sample_augmentations = vector_builders.at(input_sample_id);
