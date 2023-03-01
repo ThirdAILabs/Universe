@@ -49,7 +49,7 @@ def get_config(have_user_specified_parameters: bool = False):
                 "type": "fully_connected",
                 "dim": {"param_name": "output_dim"},
                 "sparsity": 0.1,
-                "activation": "softmax",
+                "activation": "linear",
                 "sampling_config": {
                     "num_tables": 4,
                     "hashes_per_table": 2,
@@ -57,8 +57,22 @@ def get_config(have_user_specified_parameters: bool = False):
                 },
                 "predecessor": "fc_3",
             },
+            {
+                "name": "fc_5",
+                "type": "fully_connected",
+                "dim": {"param_name": "output_dim"},
+                "sparsity": 0.1,
+                "activation": "softmax",
+                "sampling_config": {
+                    "num_tables": 2,
+                    "hashes_per_table": 8,
+                    "reservoir_size": 16,
+                    "permutations": 4
+                },
+                "predecessor": "fc_4",
+            },
         ],
-        "output": "fc_4",
+        "output": "fc_5",
         "loss": "CategoricalCrossEntropyLoss",
     }
 
@@ -89,7 +103,8 @@ def test_load_model_from_config():
     input_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=Tanh
     fc_1 -> fc_2 (FullyConnected): dim=20, sparsity=0.25, act_func=ReLU, sampling=(random)
     fc_2 -> fc_3 (FullyConnected): dim=30, sparsity=0.3, act_func=Tanh, sampling=(hash_function=DWTA, num_tables=154, range=512, reservoir_size=4)
-    fc_3 -> fc_4 (FullyConnected): dim=50, sparsity=0.1, act_func=Softmax, sampling=(hash_function=DWTA, num_tables=4, range=64, reservoir_size=10)
+    fc_3 -> fc_4 (FullyConnected): dim=50, sparsity=0.1, act_func=Linear, sampling=(hash_function=DWTA, num_tables=4, range=64, reservoir_size=10)
+    fc_4 -> fc_5 (FullyConnected): dim=50, sparsity=0.1, act_func=Softmax, sampling=(hash_function=DWTA, num_tables=2, range=16777216, reservoir_size=16)
     ============================================================
     """
 
@@ -121,7 +136,8 @@ def test_udt_model_config_override():
     input_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=Tanh
     fc_1 -> fc_2 (FullyConnected): dim=20, sparsity=0.5, act_func=ReLU, sampling=(random)
     fc_2 -> fc_3 (FullyConnected): dim=30, sparsity=0.3, act_func=ReLU, sampling=(hash_function=DWTA, num_tables=154, range=512, reservoir_size=4)
-    fc_3 -> fc_4 (FullyConnected): dim=40, sparsity=0.1, act_func=Softmax, sampling=(hash_function=DWTA, num_tables=4, range=64, reservoir_size=10)
+    fc_3 -> fc_4 (FullyConnected): dim=40, sparsity=0.1, act_func=Linear, sampling=(hash_function=DWTA, num_tables=4, range=64, reservoir_size=10)
+    fc_4 -> fc_5 (FullyConnected): dim=40, sparsity=0.1, act_func=Softmax, sampling=(hash_function=DWTA, num_tables=2, range=16777216, reservoir_size=16)
     ============================================================
     """
 
