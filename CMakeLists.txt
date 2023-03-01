@@ -367,6 +367,9 @@ set(THIRDAI_SOURCES
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
+    dataset/src/blocks/TabularHashFeatures.cc
+    dataset/src/blocks/Sequence.cc
+    dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
     dataset/src/utils/TokenEncoding.cc
     dataset/src/utils/CsvParser.cc
@@ -391,7 +394,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/dataset_factories/udt/DataTypes.cc
     auto_ml/src/featurization/TabularBlockComposer.cc
     auto_ml/src/featurization/TabularDatasetFactory.cc
-    auto_ml/src/featurization/FeaturizationUtils.cc
+    auto_ml/src/featurization/RecurrentDatasetFactory.cc
     auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/Parameter.cc
@@ -435,7 +438,6 @@ pybind11_add_module(
   bolt/python_bindings/BoltV2NNPython.cc
   bolt/python_bindings/BoltV2TrainPython.cc
   dataset/python_bindings/DatasetPython.cc
-  dataset/src/blocks/TabularHashFeatures.cc
   new_dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
@@ -448,6 +450,7 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Train.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
+  auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
   auto_ml/src/udt/backends/UDTGraphClasssifier.cc
   auto_ml/src/models/TextClassifier.cc
