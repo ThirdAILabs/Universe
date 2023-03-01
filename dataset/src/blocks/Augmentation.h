@@ -26,6 +26,8 @@ class Augmentation {
 
   virtual bool isDense(uint32_t vector_index) const = 0;
 
+  virtual uint32_t featureDim(uint32_t vector_index) const = 0;
+
   virtual ~Augmentation() = default;
 
  private:
@@ -49,6 +51,8 @@ class AugmentationList final : public Augmentation {
   uint32_t expectedNumColumns() const final;
 
   bool isDense(uint32_t vector_index) const final;
+
+  uint32_t featureDim(uint32_t vector_index) const final;
 
   bool empty() const { return _augmentations.empty(); }
 

@@ -41,6 +41,14 @@ bool AugmentationList::isDense(uint32_t vector_index) const {
   return is_dense;
 }
 
+uint32_t AugmentationList::featureDim(uint32_t vector_index) const {
+  uint32_t dim = 0;
+  for (const auto& augmentation : _augmentations) {
+    dim += augmentation->featureDim(vector_index);
+  }
+  return dim;
+}
+
 template void AugmentationList::serialize(cereal::BinaryInputArchive&);
 template void AugmentationList::serialize(cereal::BinaryOutputArchive&);
 

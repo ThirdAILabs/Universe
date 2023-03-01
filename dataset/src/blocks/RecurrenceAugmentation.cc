@@ -14,10 +14,9 @@ RecurrenceAugmentation::RecurrenceAugmentation(ColumnIdentifier sequence_column,
     : _sequence_column(std::move(sequence_column)),
       _delimiter(delimiter),
       _max_recurrence(max_recurrence),
-      _vocab_size_with_eos(vocab_size + 1),
       _in_progress_vector_index(input_vector_index),
       _label_vector_index(label_vector_index),
-      _vocab(_vocab_size_with_eos, true) {}
+      _vocab(vocab_size + 1, true) {}
 
 Vectors RecurrenceAugmentation::augment(Vectors&& vectors,
                                         ColumnarInputSample& input_sample) {
@@ -36,12 +35,53 @@ Vectors RecurrenceAugmentation::augment(Vectors&& vectors,
   return augmented_vectors;
 }
 
+uint32_t RecurrenceAugmentation::expectedNumColumns() const {
+  if (!_sequence_column.hasNumber()) {
+    return 0;
+  }
+  return _sequence_column.number() + 1;
+}
+
+uint32_t RecurrenceAugmentation::elementIdAtStep(const BoltVector& output,
+                                                 uint32_t step) {
+  if (!output.isDense()) {
+    throw std::invalid_argument(
+        "Cannot get sequence element name from dense output");
+  }
+  auto begin = step * _vocab.vocabSize();
+  auto end = begin + _vocab.vocabSize();
+
+  uint32_t arg_max = 0;
+  float max_act = -std::numeric_limits<float>::max();
+  for (uint32_t neuron = begin; neuron < end; neuron++) {
+    if (output.activations[neuron] > max_act) {
+      arg_max = neuron;
+      max_act = output.activations[neuron];
+    }
+  }
+
+  return arg_max;
+}
+
+std::string RecurrenceAugmentation::elementString(uint32_t element_id) {
+  uint32_t element_id_without_position = element_id % _vocab.vocabSize();
+  return _vocab.getString(element_id_without_position);
+}
+
+bool RecurrenceAugmentation::isEOS(uint32_t element_id) {
+  return elementString(element_id) == EOS;
+}
+
 std::vector<std::string_view> RecurrenceAugmentation::sequence(
     ColumnarInputSample& input_sample) const {
   auto sequence =
       text::split(input_sample.column(_sequence_column), _delimiter);
   if (sequence.size() < _max_recurrence) {
     sequence.push_back(std::string_view(EOS, EOS_SIZE));
+  }
+
+  if (sequence.size() > _max_recurrence) {
+    sequence.resize(_max_recurrence);
   }
   return sequence;
 }
@@ -50,7 +90,7 @@ std::vector<uint32_t> RecurrenceAugmentation::elementIds(
     const std::vector<std::string_view>& sequence) {
   std::vector<uint32_t> element_ids(sequence.size());
   for (uint32_t i = 0; i < element_ids.size(); i++) {
-    uint32_t offset = i * _vocab_size_with_eos;
+    uint32_t offset = i * _vocab.vocabSize();
     element_ids[i] = offset + _vocab.getUid(std::string(sequence[i]));
   }
   return element_ids;
@@ -91,7 +131,7 @@ void RecurrenceAugmentation::addInProgressFeatures(
     uint32_t step) const {
   assert(step < element_ids.size());
   vectors.at(_in_progress_vector_index)
-      ->addFeatureSegment(_vocab_size_with_eos * _max_recurrence);
+      ->addFeatureSegment(_vocab.vocabSize() * _max_recurrence);
   for (uint32_t i = 0; i < step; i++) {
     vectors.at(_in_progress_vector_index)
         ->addSparseFeatureToSegment(/* index= */ element_ids[i],
@@ -104,7 +144,7 @@ void RecurrenceAugmentation::addLabelFeatures(
     uint32_t step) const {
   assert(step < element_ids.size());
   auto& ref = vectors.at(_label_vector_index);
-  ref->addFeatureSegment(_vocab_size_with_eos * _max_recurrence);
+  ref->addFeatureSegment(_vocab.vocabSize() * _max_recurrence);
   ref->addSparseFeatureToSegment(/* index= */ element_ids[step],
                                  /* value= */ 1.0);
 }
@@ -115,8 +155,8 @@ template void RecurrenceAugmentation::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void RecurrenceAugmentation::serialize(Archive& archive) {
   archive(cereal::base_class<Augmentation>(this), _sequence_column, _delimiter,
-          _max_recurrence, _vocab_size_with_eos, _in_progress_vector_index,
-          _label_vector_index, _vocab);
+          _max_recurrence, _in_progress_vector_index, _label_vector_index,
+          _vocab);
 }
 }  // namespace thirdai::dataset
 
