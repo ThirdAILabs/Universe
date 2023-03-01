@@ -151,6 +151,17 @@ struct DateDataType : DataType {
 
 using DateDataTypePtr = std::shared_ptr<DateDataType>;
 
+/**
+ * Should only be used for graph data. Represents the neighbors of a node
+ * as a space separated list of positive integers (each integer is the node id
+ * of a neighbor; see NodeIDDataType). Thus, the first few lines of valid data
+ * for a graph dataset might look like:
+ *
+ *        neighbors, node_id, target
+ *        1 4 5,0,1
+ *        ,1,0
+ *        9 2,2,0
+ */
 struct NeighborsDataType : DataType {
   std::string toString() const final { return R"({"type": "neighbors"})"; }
 
@@ -164,6 +175,17 @@ struct NeighborsDataType : DataType {
 
 using NeighborsDataTypePtr = std::shared_ptr<NeighborsDataType>;
 
+/**
+ * Should only be used for graph data. Represents the id of a node
+ * as a single integer. Each node (a row of input data) should have a unique
+ * node id. Thus, the first few lines of valid data for a graph dataset might
+ * look like:
+ *
+ *        neighbors, node_id, target
+ *        1 4 5,0,1
+ *        ,1,0
+ *        9 2,2,0
+ */
 struct NodeIDDataType : DataType {
   std::string toString() const final { return R"({"type": "node id"})"; }
 
