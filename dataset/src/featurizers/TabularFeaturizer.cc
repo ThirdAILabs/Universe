@@ -16,14 +16,6 @@
 
 namespace thirdai::dataset {
 
-void TabularFeaturizer::updateColumnNumbers(
-    const ColumnNumberMap& column_number_map) {
-  _input_blocks.updateColumnNumbers(column_number_map);
-  _label_blocks.updateColumnNumbers(column_number_map);
-  _expected_num_cols = std::max(_input_blocks.expectedNumColumns(),
-                                _label_blocks.expectedNumColumns());
-}
-
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     ColumnarInputBatch& input_batch) {
   std::vector<BoltVector> batch_inputs(input_batch.size());
@@ -157,6 +149,21 @@ TabularFeaturizer::makeSegmentedFeatureVector(
   }
   return std::make_shared<SegmentedSparseFeatureVector>(
       store_segment_feature_map);
+}
+
+void TabularFeaturizer::processHeader(const std::string& header) {
+  _num_cols_in_header = CsvSampleRef(header, _delimiter,
+                                     /* expected_num_cols= */ std::nullopt)
+                            .size();
+  dataset::ColumnNumberMap column_number_map(header, _delimiter);
+
+  _expected_num_cols = 0;
+  _input_blocks.updateColumnNumbers(column_number_map);
+  _expected_num_cols =
+      std::max(_expected_num_cols, _input_blocks.expectedNumColumns());
+  _label_blocks.updateColumnNumbers(column_number_map);
+  _expected_num_cols =
+      std::max(_expected_num_cols, _label_blocks.expectedNumColumns());
 }
 
 }  // namespace thirdai::dataset
