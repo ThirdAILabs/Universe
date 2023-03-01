@@ -67,7 +67,7 @@ def get_config(have_user_specified_parameters: bool = False):
                     "num_tables": 2,
                     "hashes_per_table": 8,
                     "reservoir_size": 16,
-                    "permutations": 4
+                    "permutations": 4,
                 },
                 "predecessor": "fc_4",
             },
