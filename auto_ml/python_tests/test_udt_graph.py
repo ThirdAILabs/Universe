@@ -57,6 +57,9 @@ def test_udt_on_yelp_chi(download_yelp_chi_dataset):
         options={"contextual_columns": False},
     )
 
+    # We need to index these nodes because the model needs to know about them
+    # for training: nodes in the train set have neighbors in the test set, and
+    # the model uses neighbor features.
     model.index_nodes("yelp_test.csv")
 
     for epoch in range(15):
@@ -110,7 +113,7 @@ def test_graph_clearing_and_indexing():
         model.evaluate(
             f"graph_chunk_{chunk_id_to_test}.csv", metrics=["categorical_accuracy"]
         )
-    for chunk_id in range(chunk_id_to_test, -1, -1):
+    for chunk_id in range(chunk_id_to_test):
         model.index_nodes(f"graph_chunk_{chunk_id}.csv")
     new_accuracy = model.evaluate(
         f"graph_chunk_{chunk_id_to_test}.csv",

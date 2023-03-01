@@ -11,15 +11,15 @@
 
 namespace thirdai::automl::data {
 
-std::pair<GraphInfoPtr, dataset::BlockPtr> createGraphInfoAndBuilder(
-    const data::ColumnDataTypes& data_types);
+struct GraphBlocks {
+  std::shared_ptr<dataset::GraphBuilderBlock> builder_block;
+  std::shared_ptr<dataset::NeighborTokensBlock> sparse_neighbor_block;
+  std::shared_ptr<dataset::NormalizedNeighborVectorsBlock>
+      normalized_neighbors_block;
+};
 
-/*
- * Pops and returns the NeighborTokensBlock from the passed in block list.
- * The block list must have a single NeighborTokensBlock.
- */
-dataset::BlockPtr popNeighborTokensBlock(
-    std::vector<dataset::BlockPtr>& blocks);
+std::pair<GraphInfoPtr, GraphBlocks> createGraphInfoAndGraphBlocks(
+    const data::ColumnDataTypes& data_types);
 
 GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
                                          std::string target_col,
@@ -29,20 +29,18 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
       _target_col(std::move(target_col)),
       _n_target_classes(n_target_classes),
       _delimiter(options.delimiter) {
-  dataset::BlockPtr graph_builder_block;
-  std::tie(_graph_info, graph_builder_block) =
-      createGraphInfoAndBuilder(_data_types);
+  GraphBlocks graph_blocks;
+  std::tie(_graph_info, graph_blocks) =
+      createGraphInfoAndGraphBlocks(_data_types);
 
   std::vector<dataset::BlockPtr> feature_blocks = makeNonTemporalInputBlocks(
       /* data_types = */ _data_types,
       /* label_col_names = */ {_target_col},
       /* temporal_relationships = */ {},
       /* vectors_map = */ {},
-      /* options = */ options,
-      /* graph_info = */ _graph_info);
+      /* options = */ options);
 
-  dataset::BlockPtr sparse_neighbor_block =
-      popNeighborTokensBlock(feature_blocks);
+  feature_blocks.push_back(graph_blocks.normalized_neighbors_block);
 
   dataset::BlockPtr label_block = dataset::NumericalCategoricalBlock::make(
       /* col = */ _target_col,
@@ -52,13 +50,14 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
       /* block_lists = */ {dataset::BlockList(std::move(feature_blocks),
                                               /* hash_range = */ udt::defaults::
                                                   FEATURE_HASH_RANGE),
-                           dataset::BlockList({sparse_neighbor_block}),
+                           dataset::BlockList(
+                               {graph_blocks.sparse_neighbor_block}),
                            dataset::BlockList({label_block})},
       /* has_header= */ true,
       /* delimiter= */ _delimiter, /* parallel= */ true);
 
   _graph_builder = dataset::TabularFeaturizer::make(
-      /* blocks = */ {dataset::BlockList({graph_builder_block})},
+      /* blocks = */ {dataset::BlockList({graph_blocks.builder_block})},
       /* has_header= */ true,
       /* delimiter= */ _delimiter, /* parallel= */ true);
 }
@@ -85,10 +84,13 @@ void GraphDatasetManager::index(const dataset::DataSourcePtr& data_source) {
       /* batch_size = */ dataset::DEFAULT_FEATURIZATION_BATCH_SIZE);
 }
 
-std::pair<GraphInfoPtr, dataset::BlockPtr> createGraphInfoAndBuilder(
+std::pair<GraphInfoPtr, GraphBlocks> createGraphInfoAndGraphBlocks(
     const data::ColumnDataTypes& data_types) {
   std::vector<dataset::ColumnIdentifier> feature_col_names;
   std::string neighbor_col_name, node_id_col_name;
+  GraphBlocks graph_blocks;
+  GraphInfoPtr graph_info =
+      std::make_shared<GraphInfo>(/* feature_dim = */ feature_col_names.size());
 
   for (const auto& [col_name, data_type] : data_types) {
     if (asNeighbors(data_type)) {
@@ -100,36 +102,22 @@ std::pair<GraphInfoPtr, dataset::BlockPtr> createGraphInfoAndBuilder(
     }
   }
 
-  GraphInfoPtr graph_info =
-      std::make_shared<GraphInfo>(/* feature_dim = */ feature_col_names.size());
+  // TODO(Josh): Do a thorough ablation study (this block seems only marginally
+  // useful on yelp). This should include looking at binning vs. non binning
+  // for both these average features and the normal features.
+  graph_blocks.normalized_neighbors_block =
+      dataset::NormalizedNeighborVectorsBlock::make(node_id_col_name,
+                                                    graph_info);
+  // We could alternatively build this block with the neighbors
+  // column, but using the node id column and graph_info instead allows us to
+  // potentially not have to have a neighbors column for inference.
+  graph_blocks.sparse_neighbor_block =
+      dataset::NeighborTokensBlock::make(node_id_col_name, graph_info);
 
-  dataset::BlockPtr builder_block = dataset::GraphBuilderBlock::make(
+  graph_blocks.builder_block = dataset::GraphBuilderBlock::make(
       neighbor_col_name, node_id_col_name, feature_col_names, graph_info);
 
-  return {graph_info, builder_block};
-}
-
-dataset::BlockPtr popNeighborTokensBlock(
-    std::vector<dataset::BlockPtr>& blocks) {
-  std::optional<uint64_t> neighbor_tokens_block_index = -1;
-  for (size_t block_id = 0; block_id < blocks.size(); block_id++) {
-    if (dynamic_cast<dataset::NeighborTokensBlock*>(
-            blocks.at(block_id).get())) {
-      neighbor_tokens_block_index = block_id;
-      break;
-    }
-  }
-
-  if (!neighbor_tokens_block_index.has_value()) {
-    throw std::logic_error(
-        "The passed in block list should have a NeighborTokensBlock");
-  }
-
-  dataset::BlockPtr neighbor_tokens_block =
-      blocks.at(*neighbor_tokens_block_index);
-  blocks.erase(blocks.begin() + *neighbor_tokens_block_index);
-
-  return neighbor_tokens_block;
+  return {graph_info, graph_blocks};
 }
 
 template void GraphDatasetManager::serialize(cereal::BinaryInputArchive&);

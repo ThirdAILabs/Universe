@@ -5,7 +5,6 @@
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/utils/GraphInfo.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 
 namespace thirdai::automl::data {
@@ -25,8 +24,7 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
     const ColumnDataTypes& input_data_types,
     const std::set<std::string>& label_col_names,
     const TemporalRelationships& temporal_relationships,
-    const PreprocessedVectorsMap& vectors_map, const TabularOptions& options,
-    const GraphInfoPtr& graph_info = nullptr);
+    const PreprocessedVectorsMap& vectors_map, const TabularOptions& options);
 
 std::vector<dataset::BlockPtr> makeTemporalInputBlocks(
     const ColumnDataTypes& input_data_types,
