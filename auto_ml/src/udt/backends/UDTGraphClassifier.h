@@ -48,7 +48,7 @@ class UDTGraphClassifier final : public UDTBackend {
   bolt::BoltGraphPtr model() const final { return _model; }
 
   void setModel(bolt::BoltGraphPtr model) final {
-    utils::trySetModel(_model, model);
+    utils::setModel(_model, model);
   }
 
   void indexNodes(const dataset::DataSourcePtr& source) final {

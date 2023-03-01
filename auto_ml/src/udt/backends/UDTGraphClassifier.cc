@@ -18,12 +18,12 @@ bolt::BoltGraphPtr createGNN(std::vector<uint32_t> input_dims,
       /* num_embedding_lookups = */ 4, /* lookup_size = */ 128,
       /* log_embedding_block_size = */ 20, /* reduction = */ "average");
 
+  embedding_1->addInput(neighbor_token_input);
+
   auto hidden_1 = bolt::FullyConnectedNode::makeAutotuned(
       /* dim = */ 256, /* sparsity = */ 1, /* activation = */ "relu");
 
   hidden_1->addPredecessor(node_features_input);
-
-  embedding_1->addInput(neighbor_token_input);
 
   auto concat_node = bolt::ConcatenateNode::make();
 

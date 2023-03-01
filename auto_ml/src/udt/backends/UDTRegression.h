@@ -44,7 +44,7 @@ class UDTRegression final : public UDTBackend {
   bolt::BoltGraphPtr model() const final { return _model; }
 
   void setModel(bolt::BoltGraphPtr model) final {
-    utils::trySetModel(_model, model);
+    utils::setModel(_model, model);
   }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {

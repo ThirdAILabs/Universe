@@ -2,8 +2,10 @@
 
 #include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <dataset/src/DataSource.h>
+#include <stdexcept>
 #include <string>
 
 namespace thirdai::automl::udt {
@@ -140,6 +142,13 @@ class UDT {
 
  private:
   UDT() {}
+
+  static bool hasGraphInputs(const data::ColumnDataTypes& data_types);
+
+  static void throwUnsupportedUDTConfigurationError(
+      const data::CategoricalDataTypePtr& target_as_categorical,
+      const data::NumericalDataTypePtr& target_as_numerical,
+      bool has_graph_inputs);
 
   friend class cereal::access;
 
