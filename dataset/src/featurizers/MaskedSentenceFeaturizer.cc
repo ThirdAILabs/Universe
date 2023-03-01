@@ -16,16 +16,20 @@ namespace thirdai::dataset {
 
 std::vector<std::vector<BoltVector>> MaskedSentenceFeaturizer::featurize(
     const std::vector<std::string>& rows) {
-  std::vector<std::vector<BoltVector>> vectors;
-  vectors.reserve(rows.size());
+  std::vector<BoltVector> vectors(rows.size());
+  std::vector<BoltVector> masked_indices(rows.size());
+  std::vector<BoltVector> labels(rows.size());
 
   std::optional<std::exception_ptr> thrown_exception_opt = std::nullopt;
 
 #pragma omp parallel for default(none) \
     shared(rows, vectors, masked_indices, labels, thrown_exception_opt)
-  for (const auto& row : rows) {
+  for (uint32_t i = 0; i < rows.size(); i++) {
     try {
-      vectors.push_back(processRow(row));
+      auto [row_pairgrams, indices, label] = processRow(rows[i]);
+      vectors[i] = std::move(row_pairgrams);
+      masked_indices[i] = std::move(indices);
+      labels[i] = std::move(label);
     } catch (const std::exception& e) {
 // It's usually not great practice to catch all exceptions, but we are
 // just doing this to bubble any exceptions out of the omp for loop
@@ -38,11 +42,11 @@ std::vector<std::vector<BoltVector>> MaskedSentenceFeaturizer::featurize(
     std::rethrow_exception(thrown_exception_opt.value());
   }
 
-  return vectors;
+  return {std::move(vectors), std::move(masked_indices), std::move(labels)};
 }
 
-std::vector<BoltVector> MaskedSentenceFeaturizer::processRow(
-    const std::string& row) {
+std::tuple<BoltVector, BoltVector, BoltVector>
+MaskedSentenceFeaturizer::processRow(const std::string& row) {
   std::vector<uint32_t> unigrams = _vocab->encode(row);
 
   uint32_t size = unigrams.size();

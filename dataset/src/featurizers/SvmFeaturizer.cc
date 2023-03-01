@@ -1,24 +1,26 @@
 #include "SvmFeaturizer.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
-#include <vector>
 
 namespace thirdai::dataset {
 
 std::vector<std::vector<BoltVector>> SvmFeaturizer::featurize(
     const std::vector<std::string>& rows) {
-  std::vector<std::vector<BoltVector>> vectors;
-  vectors.reserve(rows.size());
+  std::vector<BoltVector> _data_vecs = std::vector<BoltVector>(rows.size());
+  std::vector<BoltVector> _label_vecs = std::vector<BoltVector>(rows.size());
 
 #pragma omp parallel for default(none) shared(rows, _data_vecs, _label_vecs)
-  for (const auto& row : rows) {
-    vectors.push_back(processRow(row));
+  for (uint32_t row_id = 0; row_id < rows.size(); row_id++) {
+    auto p = processRow(rows[row_id]);
+
+    _data_vecs[row_id] = std::move(p.first);
+    _label_vecs[row_id] = std::move(p.second);
   }
 
-  return vectors;
+  return {std::move(_data_vecs), std::move(_label_vecs)};
 }
 
-std::vector<BoltVector> SvmFeaturizer::processRow(
+std::pair<BoltVector, BoltVector> SvmFeaturizer::processRow(
     const std::string& line) const {
   const char* start = line.c_str();
   const char* const line_end = line.c_str() + line.size();
@@ -57,7 +59,7 @@ std::vector<BoltVector> SvmFeaturizer::processRow(
 
   BoltVector data_vec = BoltVector::makeSparseVector(indices, values);
 
-  return {std::move(data_vec), std::move(labels_vec)};
+  return std::make_pair(std::move(data_vec), std::move(labels_vec));
 }
 
 }  // namespace thirdai::dataset

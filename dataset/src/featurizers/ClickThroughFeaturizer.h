@@ -2,7 +2,6 @@
 
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
-#include <vector>
 
 namespace thirdai::dataset {
 
@@ -26,7 +25,8 @@ class ClickThroughFeaturizer final : public Featurizer {
   size_t getNumDatasets() final { return 3; }
 
  private:
-  std::vector<BoltVector> processRow(const std::string& row) const;
+  std::tuple<BoltVector, BoltVector, BoltVector> processRow(
+      const std::string& row) const;
 
   static BoltVector getLabelVector(const std::string_view& label_str);
 

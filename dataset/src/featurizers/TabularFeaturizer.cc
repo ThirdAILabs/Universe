@@ -35,10 +35,11 @@ void TabularFeaturizer::updateColumnNumbers(
 
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     ColumnarInputBatch& input_batch) {
-  std::vector<std::vector<BoltVector>> featurized_batch(input_batch.size());
+  std::vector<std::vector<BoltVector>> featurized_batch;
 
   for (BlockList& block_list : _block_lists) {
     block_list.prepareForBatch(input_batch);
+    featurized_batch.push_back(std::vector<BoltVector>(input_batch.size()));
   }
 
   /*
@@ -124,12 +125,11 @@ std::exception_ptr TabularFeaturizer::featurizeSampleInBatch(
     block. Thus, buildVector() also needs to be in this try-catch block.
   */
   try {
-    featurized_batch.at(index_in_batch).resize(_block_lists.size());
     auto& sample = input_batch.at(index_in_batch);
     for (size_t block_list_id = 0; block_list_id < _block_lists.size();
          block_list_id++) {
       if (auto err =
-              buildVector(featurized_batch.at(index_in_batch).at(block_list_id),
+              buildVector(featurized_batch.at(block_list_id).at(index_in_batch),
                           _block_lists.at(block_list_id), sample)) {
         return err;
       }
