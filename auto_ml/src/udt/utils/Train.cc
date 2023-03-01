@@ -1,4 +1,5 @@
 #include "Train.h"
+#include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/stl.h>
@@ -12,13 +13,11 @@ void trainSingleEpochOnStream(bolt::BoltGraphPtr& model,
                               const bolt::TrainConfig& train_config,
                               uint32_t max_in_memory_batches, size_t batch_size,
                               licensing::TrainPermissionsToken token) {
-  while (auto datasets = dataset_loader->loadSome(
+  while (auto datasets_opt = dataset_loader->loadSome(
              batch_size, /* num_batches = */ max_in_memory_batches,
              /* verbose = */ train_config.verbose())) {
-    auto labels = datasets->back();
-    datasets->pop_back();
-
-    model->train(datasets.value(), labels, train_config, token);
+    auto [datasets, labels] = split(std::move(*datasets_opt));
+    model->train(datasets, labels, train_config, token);
   }
 
   dataset_loader->restart();
@@ -53,10 +52,9 @@ void trainInMemory(bolt::BoltGraphPtr& model,
                    bolt::TrainConfig train_config, size_t batch_size,
                    bool freeze_hash_tables,
                    licensing::TrainPermissionsToken token) {
-  auto datasets = dataset_loader->loadAll(
+  auto datasets_and_labels = dataset_loader->loadAll(
       /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
-  auto labels = datasets.back();
-  datasets.pop_back();
+  auto [datasets, labels] = split(std::move(datasets_and_labels));
 
   uint32_t epochs = train_config.epochs();
 
@@ -108,11 +106,10 @@ bolt::TrainConfig getTrainConfig(
   return train_config;
 
   if (validation) {
-    auto val_data =
+    auto val_datasets_and_labels =
         func(validation->data(), /* shuffle = */ false)
             ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
-    auto val_labels = val_data.back();
-    val_data.pop_back();
+    auto [val_data, val_labels] = split(std::move(val_datasets_and_labels));
 
     bolt::EvalConfig val_config = getEvalConfig(
         validation->metrics(), validation->sparseInference(), verbose);
@@ -185,22 +182,24 @@ std::optional<float> tuneBinaryClassificationPredictionThreshold(
   uint32_t num_batches =
       defaults::MAX_SAMPLES_FOR_THRESHOLD_TUNING / batch_size;
 
-  auto dataset = func(data_source, /* shuffle = */ false);
+  auto dataset_loader = func(data_source, /* shuffle = */ false);
 
-  auto loaded_data_opt =
-      dataset->loadSome(/* batch_size = */ defaults::BATCH_SIZE, num_batches,
-                        /* verbose = */ false);
-  if (!loaded_data_opt.has_value()) {
+  auto loaded_data_and_labels_opt = dataset_loader->loadSome(
+      /* batch_size = */ defaults::BATCH_SIZE, num_batches,
+      /* verbose = */ false);
+  if (!loaded_data_and_labels_opt.has_value()) {
     throw std::invalid_argument("No data found for training.");
   }
-  auto loaded_data = *loaded_data_opt;
-
-  auto labels = loaded_data.back();
-  loaded_data.pop_back();
+  // We need to declare these first and use std::tie instead of auto[a, b]
+  // so that labels can be passed to the pragma omp parallel block,
+  // this a known clang/c++ bug: https://stackoverflow.com/q/46114214
+  dataset::BoltDatasetList datasets;
+  dataset::BoltDatasetPtr labels;
+  std::tie(datasets, labels) = split(std::move(*loaded_data_and_labels_opt));
 
   auto eval_config =
       bolt::EvalConfig::makeConfig().returnActivations().silence();
-  auto output = model->evaluate(loaded_data, labels, eval_config);
+  auto output = model->evaluate(datasets, labels, eval_config);
   auto& activations = output.second;
 
   double best_metric_value = bolt::makeMetric(metric_name)->worst();
@@ -288,10 +287,9 @@ py::object evaluateClassifier(
   bolt::EvalConfig eval_config =
       utils::getEvalConfig(metrics, sparse_inference, verbose);
 
-  auto datasets =
+  auto datasets_and_labels =
       dataset_loader->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
-  auto labels = datasets.back();
-  datasets.pop_back();
+  auto [datasets, labels] = split(std::move(datasets_and_labels));
 
   auto [output_metrics, output] =
       model->evaluate(datasets, labels, eval_config);
@@ -335,6 +333,15 @@ std::optional<float> trainClassifier(
    */
   return utils::getBinaryClassificationPredictionThreshold(
       data, validation, batch_size, train_config, model, source_to_loader_func);
+}
+
+// Splits a vector of datasets as returned by a dataset loader (where the labels
+// are the last dataset in the list)
+std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split(
+    dataset::BoltDatasetList&& datasets) {
+  auto labels = datasets.back();
+  datasets.pop_back();
+  return {datasets, labels};
 }
 
 }  // namespace thirdai::automl::udt::utils

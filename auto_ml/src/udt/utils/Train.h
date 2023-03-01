@@ -65,4 +65,7 @@ py::object evaluateClassifier(
     const dataset::DatasetLoaderPtr& dataset_loader,
     const std::optional<float>& binary_prediction_threshold);
 
+std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split(
+    dataset::BoltDatasetList&& datasets);
+
 }  // namespace thirdai::automl::udt::utils

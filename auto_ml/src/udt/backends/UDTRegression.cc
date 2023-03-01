@@ -92,11 +92,10 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
   bolt::EvalConfig eval_config =
       utils::getEvalConfig(metrics, sparse_inference, verbose);
 
-  auto test_data =
+  auto test_data_and_labels =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
           ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
-  auto test_labels = test_data.back();
-  test_data.pop_back();
+  auto [test_data, test_labels] = utils::split(std::move(test_data_and_labels));
 
   auto [output_metrics, output] =
       _model->evaluate(test_data, test_labels, eval_config);
