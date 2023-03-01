@@ -22,6 +22,8 @@ class RecurrenceAugmentation final : public Augmentation {
                                   uint32_t input_vector_index,
                                   uint32_t label_vector_index);
 
+  void prepareForBatch(ColumnarInputBatch& incoming_batch) final;
+
   Vectors augment(Vectors&& vectors, ColumnarInputSample& input_sample) final;
 
   void updateColumnNumbers(const ColumnNumberMap& column_number_map) final {

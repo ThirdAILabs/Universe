@@ -9,6 +9,12 @@ namespace thirdai::dataset {
 AugmentationList::AugmentationList(std::vector<AugmentationPtr> augmentations)
     : _augmentations(std::move(augmentations)) {}
 
+void AugmentationList::prepareForBatch(ColumnarInputBatch& incoming_batch) {
+  for (auto& augmentation : _augmentations) {
+    augmentation->prepareForBatch(incoming_batch);
+  }
+}
+
 Vectors AugmentationList::augment(Vectors&& vectors,
                                   ColumnarInputSample& input_sample) {
   for (auto& augmentation : _augmentations) {

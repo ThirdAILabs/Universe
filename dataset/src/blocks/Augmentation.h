@@ -16,6 +16,8 @@ using Vectors = std::vector<SampleVector>;
 
 class Augmentation {
  public:
+  virtual void prepareForBatch(ColumnarInputBatch& incoming_batch) = 0;
+
   virtual Vectors augment(Vectors&& vectors,
                           ColumnarInputSample& input_sample) = 0;
 
@@ -43,6 +45,8 @@ using AugmentationPtr = std::shared_ptr<Augmentation>;
 class AugmentationList final : public Augmentation {
  public:
   explicit AugmentationList(std::vector<AugmentationPtr> augmentations = {});
+
+  void prepareForBatch(ColumnarInputBatch &incoming_batch) final;
 
   Vectors augment(Vectors&& vectors, ColumnarInputSample& input_sample) final;
 

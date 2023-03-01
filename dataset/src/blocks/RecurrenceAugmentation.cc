@@ -16,7 +16,17 @@ RecurrenceAugmentation::RecurrenceAugmentation(ColumnIdentifier sequence_column,
       _max_recurrence(max_recurrence),
       _in_progress_vector_index(input_vector_index),
       _label_vector_index(label_vector_index),
-      _vocab(vocab_size + 1, true) {}
+      _vocab(vocab_size + 1, true) {
+  _vocab.getUid(EOS);
+}
+
+void RecurrenceAugmentation::prepareForBatch(
+    ColumnarInputBatch& incoming_batch) {
+  (void)incoming_batch;
+  if (_vocab.isFull()) {
+    _vocab.fixVocab();
+  }
+}
 
 Vectors RecurrenceAugmentation::augment(Vectors&& vectors,
                                         ColumnarInputSample& input_sample) {
