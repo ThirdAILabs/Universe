@@ -25,6 +25,7 @@ RecurrenceAugmentation::RecurrenceAugmentation(ColumnIdentifier sequence_column,
   for (auto& v : vocab) {
     _vocab.getUid(v);
   }
+  _vocab.fixVocab();
 }
 
 void RecurrenceAugmentation::prepareForBatch(

@@ -31,6 +31,7 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
   for (BlockList& block_list : _block_lists) {
     block_list.prepareForBatch(input_batch);
   }
+  _augmentations.prepareForBatch(input_batch);
   /*
     These variables keep track of the presence of an erroneous input line.
     We do this instead of throwing an error directly because throwing
