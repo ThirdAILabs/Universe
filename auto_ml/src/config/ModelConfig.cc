@@ -10,6 +10,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -39,8 +40,13 @@ bolt::SamplingConfigPtr getSamplingConfig(const json& config,
       uint32_t reservoir_size =
           integerParameter(sampling_json, "reservoir_size", args);
 
+      std::optional<uint32_t> permutations = std::nullopt;
+      if (sampling_json.contains("permutations")) {
+        permutations = integerParameter(sampling_json, "permutations", args);
+      }
+
       return std::make_shared<bolt::DWTASamplingConfig>(
-          num_tables, hashes_per_table, reservoir_size);
+          num_tables, hashes_per_table, reservoir_size, permutations);
     }
     throw std::invalid_argument(
         "Parameter 'sampling_config' must be a string 'random' indicating "

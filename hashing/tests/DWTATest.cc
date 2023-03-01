@@ -13,6 +13,7 @@ TEST(DWTATest, TestNoOutOfRangeHashWithNan) {
   DWTAHashFunction hash(
       /* input_dim= */ 4, /* _hashes_per_table= */ hashes_per_table,
       /* _num_tables= */ num_tables, /* range_pow= */ 3 * hashes_per_table,
+      /* permutations = */ std::nullopt,
       /* seed= */ 59302);
 
   std::vector<uint32_t> output_hashes(num_tables);

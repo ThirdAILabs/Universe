@@ -2,18 +2,19 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <algorithm>
+#include <optional>
 
 namespace thirdai::bolt {
 
 std::unique_ptr<hashing::HashFunction> DWTASamplingConfig::getHashFunction(
     uint32_t input_dim) const {
   return std::make_unique<hashing::DWTAHashFunction>(
-      /* input_dim= */ input_dim,
-      /* hashes_per_table= */ _hashes_per_table,
-      /* num_tables= */ _num_tables,
-      /* range_pow= */ 3 * _num_tables);
+      /* input_dim= */ input_dim, /* hashes_per_table= */ _hashes_per_table,
+      /* num_tables= */ _num_tables, /* range_pow= */ 3 * _num_tables,
+      /* permutations= */ _permutatations);
 }
 
 std::unique_ptr<hashtable::SampledHashTable<uint32_t>>
@@ -107,7 +108,7 @@ void SamplingConfig::serialize(Archive& archive) {
 template <class Archive>
 void DWTASamplingConfig::serialize(Archive& archive) {
   archive(cereal::base_class<SamplingConfig>(this), _num_tables,
-          _hashes_per_table, _reservoir_size);
+          _hashes_per_table, _reservoir_size, _permutatations);
 }
 
 template <class Archive>

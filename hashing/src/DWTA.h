@@ -16,6 +16,9 @@ class DWTAHashFunction final : public HashFunction {
 
   void compactHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
 
+  static uint32_t computeNumPermutations(uint32_t num_hashes, uint32_t binsize,
+                                         uint32_t dim);
+
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
@@ -26,6 +29,7 @@ class DWTAHashFunction final : public HashFunction {
  public:
   DWTAHashFunction(uint32_t input_dim, uint32_t _hashes_per_table,
                    uint32_t _num_tables, uint32_t range_pow,
+                   std::optional<uint32_t> permutations,
                    uint32_t seed = time(nullptr));
 
   void hashSingleSparse(const uint32_t* indices, const float* values,
@@ -38,7 +42,8 @@ class DWTAHashFunction final : public HashFunction {
     return std::make_unique<DWTAHashFunction>(
         /* input_dim= */ _dim, /* hashes_per_table= */ _hashes_per_table,
         /* num_tables= */ _num_tables,
-        /* range_pow= */ _log_binsize * _hashes_per_table);
+        /* range_pow= */ _log_binsize * _hashes_per_table,
+        /* permutations= */ _permute);
   }
 
   std::string getName() const final { return "DWTA"; }

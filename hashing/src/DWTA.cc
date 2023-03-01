@@ -13,6 +13,7 @@ constexpr uint32_t DEFAULT_BINSIZE = 8;
 DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
                                    uint32_t hashes_per_table,
                                    uint32_t num_tables, uint32_t range_pow,
+                                   std::optional<uint32_t> permutations,
                                    uint32_t seed)
     : HashFunction(num_tables, 1 << range_pow),
       _hashes_per_table(hashes_per_table),
@@ -20,7 +21,9 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
       _dim(input_dim),
       _binsize(DEFAULT_BINSIZE),
       _log_binsize(floor(log2(_binsize))),
-      _permute(ceil((static_cast<double>(_num_hashes) * _binsize) / _dim)) {
+      _permute(permutations.value_or(computeNumPermutations(
+          /* num_hashes= */ _num_hashes, /* binsize= */ _binsize,
+          /* dim= */ _dim))) {
   std::mt19937 gen(seed);
   uint32_t* n_array = new uint32_t[_dim];
   _bin_map = std::vector<uint32_t>(_dim * _permute);
@@ -124,6 +127,12 @@ void DWTAHashFunction::compactHashes(const uint32_t* hashes,
     }
     final_hashes[i] = index;
   }
+}
+
+uint32_t DWTAHashFunction::computeNumPermutations(uint32_t num_hashes,
+                                                  uint32_t binsize,
+                                                  uint32_t dim) {
+  return ceil((static_cast<double>(num_hashes) * binsize) / dim);
 }
 
 template <class Archive>
