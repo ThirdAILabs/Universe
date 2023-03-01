@@ -38,7 +38,7 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
   */
   std::exception_ptr featurization_err;
 #pragma omp parallel for default(none) \
-    shared(input_batch, featurized_batch, featurization_err) if (_parallel)
+    shared(input_batch, vector_builders, featurization_err) if (_parallel)
   for (size_t index_in_batch = 0; index_in_batch < input_batch.size();
        ++index_in_batch) {
     if (auto error = featurizeSampleInBatch(index_in_batch, input_batch,
