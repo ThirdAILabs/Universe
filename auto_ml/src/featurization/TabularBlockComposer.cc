@@ -2,6 +2,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/GraphBlocks.h>
+#include <dataset/src/blocks/Sequence.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/UserCountHistory.h>
@@ -151,6 +152,12 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
 
     if (asDate(data_type)) {
       blocks.push_back(dataset::DateBlock::make(col_name));
+    }
+
+    if (auto sequence = asSequence(data_type)) {
+      blocks.push_back(dataset::SequenceBlock::make(
+          col_name, /* delimiter= */ sequence->delimiter,
+          /* dim= */ std::numeric_limits<uint32_t>::max()));
     }
   }
 
