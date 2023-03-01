@@ -50,6 +50,8 @@ class AugmentationList final : public Augmentation {
 
   bool isDense(uint32_t vector_index) const final;
 
+  bool empty() const { return _augmentations.empty(); }
+
  private:
   std::vector<AugmentationPtr> _augmentations;
 
