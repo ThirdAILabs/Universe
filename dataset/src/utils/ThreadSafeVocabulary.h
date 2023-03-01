@@ -138,6 +138,7 @@ class ThreadSafeVocabulary {
 
  private:
   uint32_t getExistingUid(const std::string& string) {
+    std::cout << "yep" << std::endl;
     assert(_fixed);
     if (!_string_to_uid.count(string)) {
       std::stringstream error_ss;
