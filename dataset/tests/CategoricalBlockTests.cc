@@ -4,7 +4,6 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
-#include <dataset/tests/FeaturizerTestUtils.h>
 #include <sys/types.h>
 #include <cstdlib>
 #include <map>
@@ -171,8 +170,9 @@ TEST_F(CategoricalBlockTest, TestMultiLabelParsing) {
   std::vector<std::string> rows = {"4,90,77 21,43,18,0", "55,67,82 49,2",
                                    "36 84,59,6"};
 
-  auto labels = FeaturizerTestUtils::columnInOutputBatch(
-      /* batch= */ featurizer.featurize(rows), /* column_id= */ 0);
+  auto batch = featurizer.featurize(rows);
+
+  auto labels = std::move(batch).at(0);
 
   std::vector<std::vector<uint32_t>> expected_labels = {
       {4, 90, 77, 121, 143, 118, 100},
@@ -196,8 +196,7 @@ TEST_F(CategoricalBlockTest, RegressionCategoricalBlock) {
   std::vector<std::string> rows = {"3.7", "2.8",  "9.2",  "5.9",
                                    "1.3", "10.8", "12.1", "-3.2"};
 
-  auto labels = FeaturizerTestUtils::columnInOutputBatch(
-      /* batch= */ featurizer.featurize(rows), /* column_id= */ 0);
+  auto labels = featurizer.featurize(rows).at(0);
 
   std::vector<std::vector<uint32_t>> expected_labels = {
       {4, 5, 6}, {2, 3, 4}, {15, 16, 17}, {8, 9, 10},

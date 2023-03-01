@@ -4,7 +4,6 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/MaskedSentenceFeaturizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
-#include <dataset/tests/FeaturizerTestUtils.h>
 #include <unordered_map>
 
 namespace thirdai::dataset::tests {
@@ -50,13 +49,10 @@ TEST(MaskedSentenceFeaturizer, TestCreateBatch) {
 
   dataset::MaskedSentenceFeaturizer processor(vocab, RANGE);
 
-  auto batch = processor.featurize(rows);
-  auto data =
-      FeaturizerTestUtils::columnInOutputBatch(batch, /* column_id= */ 0);
-  auto masked_indices =
-      FeaturizerTestUtils::columnInOutputBatch(batch, /* column_id= */ 1);
-  auto labels =
-      FeaturizerTestUtils::columnInOutputBatch(batch, /* column_id= */ 2);
+  auto datasets = processor.featurize(rows);
+  auto data = datasets.at(0);
+  auto masked_indices = datasets.at(1);
+  auto labels = datasets.at(2);
 
   std::unordered_set<uint32_t> masked_word_hashes;
 
@@ -95,13 +91,10 @@ TEST(MaskedSentenceFeaturizer, TestCreateBatchMultipleMaskedTokens) {
   dataset::MaskedSentenceFeaturizer processor(
       vocab, RANGE, /* masked_tokens_percentage= */ 0.3);
 
-  auto batch = processor.featurize(rows);
-  auto data =
-      FeaturizerTestUtils::columnInOutputBatch(batch, /* column_id= */ 0);
-  auto masked_indices =
-      FeaturizerTestUtils::columnInOutputBatch(batch, /* column_id= */ 1);
-  auto labels =
-      FeaturizerTestUtils::columnInOutputBatch(batch, /* column_id= */ 2);
+  auto datasets = processor.featurize(rows);
+  auto data = datasets.at(0);
+  auto masked_indices = datasets.at(1);
+  auto labels = datasets.at(2);
 
   EXPECT_EQ(data.size(), 4);
   EXPECT_EQ(masked_indices.size(), 4);

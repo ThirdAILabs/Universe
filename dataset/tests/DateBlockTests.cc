@@ -3,7 +3,6 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
-#include <dataset/tests/FeaturizerTestUtils.h>
 #include <sstream>
 
 namespace thirdai::dataset {
@@ -15,9 +14,7 @@ class DateBlockTests : public testing::Test {
     TabularFeaturizer processor(
         /* block_lists = */ {
             dataset::BlockList({std::make_shared<DateBlock>(/* col = */ 0)})});
-
-    return FeaturizerTestUtils::columnInOutputBatch(
-        /* batch= */ processor.featurize(input_rows), /* column_id= */ 0);
+    return processor.featurize(input_rows).at(0);
   }
 
   static std::optional<uint32_t> dayOfWeek(const BoltVector& vector) {

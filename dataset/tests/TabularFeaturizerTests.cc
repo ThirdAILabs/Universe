@@ -28,11 +28,8 @@ void checkMatrixAndProcessedBatchEquality(
     std::vector<std::vector<float>>& matrix,
     std::vector<std::vector<BoltVector>>& processed, bool expect_input_dense,
     bool expect_label_dense) {
-  auto input =
-      FeaturizerTestUtils::columnInOutputBatch(processed, /* column_id= */ 0);
-  auto labels =
-      FeaturizerTestUtils::columnInOutputBatch(processed, /* column_id= */ 1);
-
+  const std::vector<BoltVector>& input = processed.at(0);
+  const std::vector<BoltVector>& labels = processed.at(1);
   for (uint32_t i = 0; i < matrix.size(); i++) {
     for (uint32_t j = 0; j < matrix[i].size(); j++) {
       ASSERT_EQ(expect_input_dense, input[0].isDense());
