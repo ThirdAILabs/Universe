@@ -56,8 +56,6 @@ class TabularFeaturizer : public Featurizer {
         std::max(_expected_num_cols, _augmentations.expectedNumColumns());
   }
 
-  void updateColumnNumbers(const ColumnNumberMap& column_number_map);
-
   std::vector<std::vector<BoltVector>> featurize(
       ColumnarInputBatch& input_batch);
 
@@ -66,11 +64,7 @@ class TabularFeaturizer : public Featurizer {
 
   bool expectsHeader() const final { return _expects_header; }
 
-  void processHeader(const std::string& header) final {
-    _num_cols_in_header = CsvSampleRef(header, _delimiter,
-                                       /* expected_num_cols= */ std::nullopt)
-                              .size();
-  }
+  void processHeader(const std::string& header) final;
 
   std::vector<uint32_t> getDimensions() final {
     std::vector<uint32_t> dims;

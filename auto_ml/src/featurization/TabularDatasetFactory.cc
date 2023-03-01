@@ -4,7 +4,6 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/set.hpp>
 #include <cereal/types/unordered_map.hpp>
-#include "FeaturizationUtils.h"
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
@@ -40,9 +39,6 @@ TabularDatasetFactory::TabularDatasetFactory(
 
 dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
     const dataset::DataSourcePtr& data_source, bool shuffle) {
-  utils::updateFeaturizerWithHeader(_labeled_featurizer, data_source,
-                                    _delimiter);
-
   return std::make_unique<dataset::DatasetLoader>(data_source,
                                                   _labeled_featurizer,
                                                   /* shuffle= */ shuffle);
@@ -135,9 +131,6 @@ TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
                            dataset::BlockList({label_block})},
       /* has_header= */ true,
       /* delimiter= */ metadata->delimiter, /* parallel= */ true);
-
-  utils::updateFeaturizerWithHeader(_metadata_processors[col_name], data_source,
-                                    metadata->delimiter);
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
