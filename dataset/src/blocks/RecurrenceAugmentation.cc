@@ -18,6 +18,13 @@ RecurrenceAugmentation::RecurrenceAugmentation(ColumnIdentifier sequence_column,
       _label_vector_index(label_vector_index),
       _vocab(vocab_size + 1, true) {
   _vocab.getUid(EOS);
+  std::vector<std::string> vocab = {"x", "y", "4", "m", "r", "v", "z", "f",
+                                    "j", "q", "c", "p", "n", "k", "6", "8",
+                                    "g", "e", "5", "2", "3", "1", "9", "s",
+                                    "0", "w", "b", "h", "7", "d", "t", "u"};
+  for (auto& v : vocab) {
+    _vocab.getUid(v);
+  }
 }
 
 void RecurrenceAugmentation::prepareForBatch(
