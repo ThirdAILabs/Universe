@@ -188,14 +188,19 @@ class Block {
    *
    * Returns:
    * exception_ptr: Since blocks can run in parallel in pragma
-   * threads, they can't throw their own exceptions. To fail in a block,
-   * return any exception_ptr and proceed with program execution without
-   * failing. The error should then be caught.
+   * threads, they can't throw their own exceptions, so this function returns
+   * an exception_ptr corresponding to any error that the block would have
+   * otherwise thrown.
    */
   std::exception_ptr addVectorSegment(ColumnarInputSample& input,
                                       SegmentedFeatureVector& vec) {
     vec.addFeatureSegment(featureDim());
-    return buildSegment(input, vec);
+    try {
+      buildSegment(input, vec);
+    } catch (const std::exception& e) {
+      return std::current_exception();
+    }
+    return nullptr;
   }
 
   /**
@@ -291,10 +296,13 @@ class Block {
    * encoded (and what ends up in the vector segment).
    *
    * WARNING: This function may be called in many threads simultaneously,
-   * so it should be thread-safe or robust to data races.
+   * so it should be thread-safe or robust to data races. However, since this
+   * function is always wrapped by a function that will catch exceptions
+   * before they break the pragma omp loop, implementations should feel free to
+   * throw exceptions.
    */
-  virtual std::exception_ptr buildSegment(ColumnarInputSample& input_row,
-                                          SegmentedFeatureVector& vec) = 0;
+  virtual void buildSegment(ColumnarInputSample& input_row,
+                            SegmentedFeatureVector& vec) = 0;
 
   /**
    * Gets all column identifiers used by the current block.

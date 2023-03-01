@@ -23,9 +23,9 @@ class GraphInfo {
 
   void clear();
 
-  const std::vector<float>& featureVector(uint64_t node_id);
+  const std::vector<float>& featureVector(uint64_t node_id) const;
 
-  std::vector<uint64_t>& neighbors(uint64_t node_id);
+  const std::vector<uint64_t>& neighbors(uint64_t node_id) const;
 
   void insertNode(uint64_t node_id, std::vector<float> features,
                   std::vector<uint64_t> neighbors);

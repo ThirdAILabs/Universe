@@ -6,7 +6,7 @@
 
 namespace thirdai::automl::data {
 
-const std::vector<float>& GraphInfo::featureVector(uint64_t node_id) {
+const std::vector<float>& GraphInfo::featureVector(uint64_t node_id) const {
   if (!_node_id_to_feature_vector.count(node_id)) {
     throw GraphConstructionError(
         "No feature vector currently stored for node " +
@@ -16,7 +16,7 @@ const std::vector<float>& GraphInfo::featureVector(uint64_t node_id) {
   return _node_id_to_feature_vector.at(node_id);
 }
 
-std::vector<uint64_t>& GraphInfo::neighbors(uint64_t node_id) {
+const std::vector<uint64_t>& GraphInfo::neighbors(uint64_t node_id) const {
   if (!_node_id_to_neighbors.count(node_id)) {
     throw GraphConstructionError(
         "No neighbors vector currently stored for node " +

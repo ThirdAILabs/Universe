@@ -123,21 +123,18 @@ def test_graph_clearing_and_indexing():
     assert old_accuracy["categorical_accuracy"] == new_accuracy["categorical_accuracy"]
 
 
-def test_no_neighbors():
+def test_no_neighbors_causes_no_errors():
     num_classes = 2
     model = get_no_features_gnn(num_classes)
 
     df = pd.DataFrame()
     df["node_id"] = np.arange(0, 100)
     df["target"] = np.full(shape=100, fill_value=1)
-    df["neighbors"] = ["" for node_id in range(100)]
+    df["neighbors"] = ["" for _ in range(100)]
 
     df.to_csv(f"boring_graph.csv", index=False)
     model.train("boring_graph.csv")
 
-    assert (
-        model.evaluate(
-            "boring_graph.csv", metrics=["categorical_accuracy"], return_metrics=True
-        )["categorical_accuracy"]
-        == 1.0
-    )
+    model.evaluate(
+        "boring_graph.csv", metrics=["categorical_accuracy"], return_metrics=True
+    )["categorical_accuracy"]

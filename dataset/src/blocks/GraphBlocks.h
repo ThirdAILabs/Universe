@@ -34,8 +34,8 @@ class NormalizedNeighborVectorsBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(ColumnarInputSample& input,
-                                  SegmentedFeatureVector& vec) final;
+  void buildSegment(ColumnarInputSample& input,
+                    SegmentedFeatureVector& vec) final;
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
     return {&_node_id_col};
@@ -80,8 +80,8 @@ class NeighborTokensBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(ColumnarInputSample& input,
-                                  SegmentedFeatureVector& vec) final;
+  void buildSegment(ColumnarInputSample& input,
+                    SegmentedFeatureVector& vec) final;
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
     return {&_node_id_col};
@@ -132,8 +132,8 @@ class GraphBuilderBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(ColumnarInputSample& input,
-                                  SegmentedFeatureVector& vec) final;
+  void buildSegment(ColumnarInputSample& input,
+                    SegmentedFeatureVector& vec) final;
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
     std::vector<ColumnIdentifier*> column_identifiers;
