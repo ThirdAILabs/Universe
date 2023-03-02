@@ -8,6 +8,7 @@
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pytypes.h>
+#include <pybind11/stl.h>
 #include <limits>
 
 namespace thirdai::automl::python {
@@ -79,6 +80,10 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
            py::arg("options") = py::dict(), docs::UDT_INIT,
            bolt::python::OutputRedirect())
+      .def("__new__", &UDTFactory::createUDTSpecifiedFileFormat,
+           py::arg("file_format"), py::arg("n_target_classes"),
+           py::arg("input_dim"), py::arg("model_config") = std::nullopt,
+           py::arg("options") = py::dict())
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
            py::arg("source_column"), py::arg("target_column"),
            py::arg("dataset_size"), py::arg("delimiter") = ',',
@@ -393,6 +398,15 @@ std::shared_ptr<udt::UDT> UDTFactory::buildUDT(
       /* lookahead = */ lookahead, /* delimiter = */ delimiter,
       /* model_config= */ model_config,
       /* options = */ createArgumentMap(options));
+}
+
+std::shared_ptr<udt::UDT> UDTFactory::createUDTSpecifiedFileFormat(
+    py::object& obj, const std::string& file_format, uint32_t n_target_classes,
+    uint32_t input_dim, const std::optional<std::string>& model_config,
+    const py::dict& user_args) {
+  (void)obj;
+  return std::make_shared<udt::UDT>(file_format, n_target_classes, input_dim,
+                                    model_config, createArgumentMap(user_args));
 }
 
 void UDTFactory::save_udt(const udt::UDT& classifier,

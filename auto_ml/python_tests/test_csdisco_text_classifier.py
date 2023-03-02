@@ -103,7 +103,7 @@ def train_model(tokenized_data):
         model_size="small",
     )
 
-    for _ in range(5):
+    for _ in range(8):
         train_epoch(model, train_x, train_y)
 
     return model
@@ -128,10 +128,12 @@ def test_text_classifier_load_save(train_model, tokenized_data):
 
     model = bolt.UniversalDeepTransformer.load(path)
 
+    print(accuracy(model, test_x, test_y))
     assert accuracy(model, test_x, test_y) >= 0.8
 
     train_epoch(model, train_x, train_y, learning_rate=0.01)
 
+    print(accuracy(model, test_x, test_y))
     assert accuracy(model, test_x, test_y) >= 0.8
 
     os.remove(path)

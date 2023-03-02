@@ -7,7 +7,9 @@
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
+#include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <telemetry/src/PrometheusClient.h>
+#include <stdexcept>
 
 namespace thirdai::automl::udt {
 
@@ -36,6 +38,11 @@ UDT::UDT(data::ColumnDataTypes data_types,
   auto target = data_types.at(target_col);
 
   if (auto categorical = data::asCategorical(target)) {
+    if (!n_target_classes.has_value()) {
+      throw std::invalid_argument(
+          "The number of target classes must be specified for categorical "
+          "data.");
+    }
     _backend = std::make_unique<UDTClassifier>(
         data_types, temporal_tracking_relationships, target_col, categorical,
         n_target_classes.value(), integer_target, tabular_options, model_config,
@@ -54,6 +61,18 @@ UDT::UDT(std::optional<std::string> incorrect_column_name,
   _backend = std::make_unique<UDTQueryReformulation>(
       std::move(incorrect_column_name), std::move(correct_column_name),
       dataset_size, delimiter, model_config, user_args);
+}
+
+UDT::UDT(const std::string& file_format, uint32_t n_target_classes,
+         uint32_t input_dim, const std::optional<std::string>& model_config,
+         const config::ArgumentMap& user_args) {
+  if (text::lower(file_format) == "svm") {
+    _backend = std::make_unique<UDTSVMClassifier>(n_target_classes, input_dim,
+                                                  model_config, user_args);
+  } else {
+    throw std::invalid_argument("File format " + file_format +
+                                " is not supported.");
+  }
 }
 
 void UDT::train(const dataset::DataSourcePtr& data, float learning_rate,

@@ -33,6 +33,10 @@ class UDT {
       char delimiter, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
+  UDT(const std::string& file_format, uint32_t n_target_classes,
+      uint32_t input_dim, const std::optional<std::string>& model_config,
+      const config::ArgumentMap& user_args);
+
   void train(const dataset::DataSourcePtr& data, float learning_rate,
              uint32_t epochs, const std::optional<Validation>& validation,
              std::optional<size_t> batch_size,

@@ -9,8 +9,8 @@
 namespace thirdai::licensing {
 
 TrainPermissionsToken::TrainPermissionsToken(
-    const std::string& train_file_path) {
-  (void)train_file_path;
+    const dataset::DataSourcePtr& training_source) {
+  (void)training_source;
 }
 
 TrainPermissionsToken::TrainPermissionsToken() {}
