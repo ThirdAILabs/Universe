@@ -39,15 +39,6 @@ TabularDatasetFactory::TabularDatasetFactory(
 
 dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
     const dataset::DataSourcePtr& data_source, bool shuffle) {
-  auto column_number_map =
-      makeColumnNumberMapFromHeader(*data_source, _delimiter);
-
-  // The featurizer will treat the next line as a header
-  // Restart so featurizer does not skip a sample.
-  data_source->restart();
-
-  _labeled_featurizer->updateColumnNumbers(column_number_map);
-
   return std::make_unique<dataset::DatasetLoader>(data_source,
                                                   _labeled_featurizer,
                                                   /* shuffle= */ shuffle);
@@ -139,8 +130,6 @@ TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
       /* label_blocks= */ {std::move(label_block)},
       /* has_header= */ true, /* delimiter= */ metadata->delimiter,
       /* parallel= */ true, /* hash_range= */ options.feature_hash_range);
-
-  _metadata_processors[col_name]->updateColumnNumbers(column_numbers);
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
