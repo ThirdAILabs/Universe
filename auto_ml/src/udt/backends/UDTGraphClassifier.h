@@ -60,6 +60,9 @@ class UDTGraphClassifier final : public UDTBackend {
  private:
   UDTGraphClassifier() {}
 
+  static bolt::BoltGraphPtr createGNN(std::vector<uint32_t> input_dims,
+                                      uint32_t output_dim);
+
   friend cereal::access;
 
   template <class Archive>

@@ -6,6 +6,7 @@
 
 namespace thirdai::dataset {
 
+/* Represents a list of blocks that can featurize input samples into a vector */
 struct BlockList {
   explicit BlockList(std::vector<BlockPtr>&& blocks,
                      /*
@@ -32,24 +33,14 @@ struct BlockList {
    */
   void prepareForBatch(ColumnarInputBatch& incoming_batch);
 
-  bool areDense() const { return _are_dense; }
-
   uint32_t featureDim() const { return _feature_dim; }
 
   uint32_t expectedNumColumns() const { return _expected_num_columns; }
-
-  std::optional<uint32_t> hashRange() const { return _hash_range; }
 
   std::shared_ptr<SegmentedFeatureVector> buildVector(
       ColumnarInputSample& sample, bool store_segment_feature_map = false);
 
  private:
-  std::vector<BlockPtr> _blocks;
-  bool _are_dense;
-  uint32_t _feature_dim;
-  uint32_t _expected_num_columns;
-  std::optional<uint32_t> _hash_range;
-
   std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
       bool store_segment_feature_map);
 
@@ -72,6 +63,12 @@ struct BlockList {
     archive(_blocks, _are_dense, _expected_num_columns, _feature_dim,
             _hash_range);
   }
+
+  std::vector<BlockPtr> _blocks;
+  bool _are_dense;
+  uint32_t _feature_dim;
+  uint32_t _expected_num_columns;
+  std::optional<uint32_t> _hash_range;
 };
 
 using BlockListPtr = std::shared_ptr<BlockList>;

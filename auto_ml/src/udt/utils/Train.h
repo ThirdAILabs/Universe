@@ -11,7 +11,7 @@
 
 namespace thirdai::automl::udt::utils {
 
-// Maps a source (and whether the source should be shuffled) to a data source
+// Maps a source (and whether the source should be shuffled) to a dataset loader
 using DataSourceToDatasetLoader = std::function<dataset::DatasetLoaderPtr(
     const dataset::DataSourcePtr&, bool)>;
 

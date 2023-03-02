@@ -6,51 +6,6 @@
 
 namespace thirdai::automl::udt {
 
-bolt::BoltGraphPtr createGNN(std::vector<uint32_t> input_dims,
-                             uint32_t output_dim) {
-  auto node_features_input = bolt::Input::make(input_dims.at(0));
-
-  auto neighbor_token_input = bolt::Input::makeTokenInput(
-      /* expected_dim = */ input_dims.at(1),
-      /* num_tokens_range = */ {0, std::numeric_limits<uint32_t>::max()});
-
-  auto embedding_1 = bolt::EmbeddingNode::make(
-      /* num_embedding_lookups = */ 4, /* lookup_size = */ 128,
-      /* log_embedding_block_size = */ 20, /* reduction = */ "average");
-
-  embedding_1->addInput(neighbor_token_input);
-
-  auto hidden_1 = bolt::FullyConnectedNode::makeAutotuned(
-      /* dim = */ 256, /* sparsity = */ 1, /* activation = */ "relu");
-
-  hidden_1->addPredecessor(node_features_input);
-
-  auto concat_node = bolt::ConcatenateNode::make();
-
-  concat_node->setConcatenatedNodes(/* nodes = */ {hidden_1, embedding_1});
-
-  auto hidden_3 = bolt::FullyConnectedNode::make(
-      /* dim = */ 256, /* sparsity = */ 0.5, /* activation = */ "relu",
-      /* sampling_config = */ std::make_shared<bolt::RandomSamplingConfig>());
-
-  hidden_3->addPredecessor(concat_node);
-
-  auto output = bolt::FullyConnectedNode::makeAutotuned(
-      /* dim = */ output_dim, /* sparsity = */ 1, /* activation =*/"softmax");
-
-  output->addPredecessor(hidden_3);
-
-  std::vector<bolt::InputPtr> inputs = {node_features_input,
-                                        neighbor_token_input};
-
-  auto graph = std::make_shared<bolt::BoltGraph>(inputs, output);
-
-  graph->compile(
-      bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
-
-  return graph;
-}
-
 UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
                                        const std::string& target_col,
                                        uint32_t n_target_classes,
@@ -108,6 +63,53 @@ template <class Archive>
 void UDTGraphClassifier::serialize(Archive& archive) {
   archive(cereal::base_class<UDTBackend>(this), _model, _dataset_manager,
           _binary_prediction_threshold);
+}
+
+bolt::BoltGraphPtr UDTGraphClassifier::createGNN(
+    std::vector<uint32_t> input_dims, uint32_t output_dim) {
+  assert(input_dims.size() == 2);
+
+  auto node_features_input = bolt::Input::make(input_dims.at(0));
+
+  auto neighbor_token_input = bolt::Input::makeTokenInput(
+      /* expected_dim = */ input_dims.at(1),
+      /* num_tokens_range = */ {0, std::numeric_limits<uint32_t>::max()});
+
+  auto embedding_1 = bolt::EmbeddingNode::make(
+      /* num_embedding_lookups = */ 4, /* lookup_size = */ 128,
+      /* log_embedding_block_size = */ 20, /* reduction = */ "average");
+
+  embedding_1->addInput(neighbor_token_input);
+
+  auto hidden_1 = bolt::FullyConnectedNode::makeAutotuned(
+      /* dim = */ 256, /* sparsity = */ 1, /* activation = */ "relu");
+
+  hidden_1->addPredecessor(node_features_input);
+
+  auto concat_node = bolt::ConcatenateNode::make();
+
+  concat_node->setConcatenatedNodes(/* nodes = */ {hidden_1, embedding_1});
+
+  auto hidden_3 = bolt::FullyConnectedNode::make(
+      /* dim = */ 256, /* sparsity = */ 0.5, /* activation = */ "relu",
+      /* sampling_config = */ std::make_shared<bolt::RandomSamplingConfig>());
+
+  hidden_3->addPredecessor(concat_node);
+
+  auto output = bolt::FullyConnectedNode::makeAutotuned(
+      /* dim = */ output_dim, /* sparsity = */ 1, /* activation =*/"softmax");
+
+  output->addPredecessor(hidden_3);
+
+  std::vector<bolt::InputPtr> inputs = {node_features_input,
+                                        neighbor_token_input};
+
+  auto graph = std::make_shared<bolt::BoltGraph>(inputs, output);
+
+  graph->compile(
+      bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
+
+  return graph;
 }
 
 }  // namespace thirdai::automl::udt
