@@ -3,6 +3,7 @@
 #include <iostream>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <string_view>
 #include <vector>
 
@@ -50,7 +51,11 @@ class LocalView {
  public:
   LocalView(std::string_view string, uint32_t pos)
       : _current_is_space(std::isspace(string[pos])),
-        _current_is_punct(std::ispunct(string[pos])) {
+        _current_is_punct(std::ispunct(string[pos])),
+        _prev_not_space(false),
+        _prev_not_punct(false),
+        _next_not_space(false),
+        _next_not_punct(false) {
     if (pos > 0) {
       _prev_not_space = !std::isspace(string[pos - 1]);
       _prev_not_punct = !std::ispunct(string[pos - 1]);
@@ -71,10 +76,10 @@ class LocalView {
  private:
   char _current_is_space;
   char _current_is_punct;
-  bool _prev_not_space = false;
-  bool _prev_not_punct = false;
-  bool _next_not_space = false;
-  bool _next_not_punct = false;
+  bool _prev_not_space;
+  bool _prev_not_punct;
+  bool _next_not_space;
+  bool _next_not_punct;
 };
 
 uint32_t startPosition(std::string_view string) {
@@ -123,6 +128,9 @@ class Tokens {
   explicit Tokens(uint32_t size) : _tokens(size), _index(0) {}
 
   void addToken(std::string_view token) {
+    if (_index >= _tokens.size()) {
+      throw std::runtime_error("More tokens in sentence than expected!");
+    }
     _tokens[_index] = token;
     _index++;
   }
