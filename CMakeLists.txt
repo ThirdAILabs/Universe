@@ -375,6 +375,7 @@ set(THIRDAI_SOURCES
     dataset/src/featurizers/ProcessorUtils.cc
     dataset/src/featurizers/SvmFeaturizer.cc
     dataset/src/featurizers/TabularFeaturizer.cc
+    dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/blocks/BlockList.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
@@ -431,7 +432,6 @@ pybind11_add_module(
   bolt/python_bindings/BoltV2TrainPython.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
-  dataset/src/blocks/ColumnIdentifier.cc
   new_dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
