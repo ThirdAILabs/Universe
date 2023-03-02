@@ -376,6 +376,7 @@ set(THIRDAI_SOURCES
     dataset/src/featurizers/SvmFeaturizer.cc
     dataset/src/featurizers/TabularFeaturizer.cc
     dataset/src/blocks/GraphBlocks.cc
+    dataset/src/blocks/BlockList.cc
     dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc

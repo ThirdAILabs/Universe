@@ -186,21 +186,11 @@ class Block {
    * vec: the vector to be concatenated with the vector
    *   encoding of input_row.
    *
-   * Returns:
-   * exception_ptr: Since blocks can run in parallel in pragma
-   * threads, they can't throw their own exceptions, so this function returns
-   * an exception_ptr corresponding to any error that the block would have
-   * otherwise thrown.
    */
-  std::exception_ptr addVectorSegment(ColumnarInputSample& input,
-                                      SegmentedFeatureVector& vec) {
+  void addVectorSegment(ColumnarInputSample& input,
+                        SegmentedFeatureVector& vec) {
     vec.addFeatureSegment(featureDim());
-    try {
-      buildSegment(input, vec);
-    } catch (const std::exception& e) {
-      return std::current_exception();
-    }
-    return nullptr;
+    buildSegment(input, vec);
   }
 
   /**
@@ -338,135 +328,5 @@ class Block {
     (void)archive;
   }
 };
-
-/**
- * A container for featurization blocks that dispatches methods to
- * its constituent blocks. Use this instead of std::vector<BlockPtr>
- * whenever possible. This avoids having to repeat logic like
- * "for block in blocks, do something".
- */
-struct BlockList {
-  explicit BlockList(std::vector<BlockPtr>&& blocks,
-                     /*
-                     If hash_range has a value, then features from different
-                     blocks will be aggregated by hashing them to the same range
-                     but with different hash salts. Otherwise, the features will
-                     be treated as sparse vectors, which are then concatenated.
-                   */
-                     std::optional<uint32_t> hash_range = std::nullopt)
-      : _blocks(std::move(blocks)),
-        _are_dense(computeAreDense(_blocks)),
-        _feature_dim(hash_range.value_or(computeFeatureDim(_blocks))),
-        _expected_num_columns(allBlocksHaveColumnNumbers(_blocks)
-                                  ? computeExpectedNumColumns(_blocks)
-                                  : 0),
-        _hash_range(hash_range) {}
-
-  BlockList() {}
-
-  auto operator[](uint32_t index) { return _blocks[index]; }
-
-  /**
-   * Dispatches the method each Block. See method definition in the
-   * Block class for details.
-   */
-  void updateColumnNumbers(const ColumnNumberMap& column_number_map) {
-    for (const auto& block : _blocks) {
-      block->updateColumnNumbers(column_number_map);
-    }
-    _expected_num_columns = computeExpectedNumColumns(_blocks);
-  }
-
-  /**
-   * Dispatches the method each Block. See method definition in the
-   * Block class for details.
-   */
-  void prepareForBatch(ColumnarInputBatch& incoming_batch) {
-    for (const auto& block : _blocks) {
-      block->prepareForBatch(incoming_batch);
-    }
-  }
-
-  /**
-   * Dispatches the method each Block. See method definition in the
-   * Block class for details.
-   */
-  std::exception_ptr addVectorSegments(
-      ColumnarInputSample& sample, SegmentedFeatureVector& segmented_vector) {
-    for (auto& block : _blocks) {
-      if (auto err = block->addVectorSegment(sample, segmented_vector)) {
-        return err;
-      }
-    }
-    return nullptr;
-  }
-
-  bool areDense() const { return _are_dense; }
-
-  uint32_t featureDim() const { return _feature_dim; }
-
-  uint32_t expectedNumColumns() const { return _expected_num_columns; }
-
-  std::optional<uint32_t> hashRange() const { return _hash_range; }
-
- private:
-  static bool computeAreDense(const std::vector<BlockPtr>& blocks) {
-    auto are_dense = std::all_of(
-        blocks.begin(), blocks.end(),
-        [](const std::shared_ptr<Block>& block) { return block->isDense(); });
-    return are_dense;
-  }
-
-  static bool allBlocksHaveColumnNumbers(const std::vector<BlockPtr>& blocks) {
-    if (blocks.empty()) {
-      return false;
-    }
-
-    auto first_block_has_column_numbers = blocks.front()->hasColumnNumbers();
-    for (const auto& block : blocks) {
-      if (block->hasColumnNumbers() != first_block_has_column_numbers) {
-        throw std::invalid_argument(
-            "Blocks must be either all initialized with a column name or all "
-            "initialized with a column number.");
-      }
-    }
-
-    return first_block_has_column_numbers;
-  }
-
-  static uint32_t computeExpectedNumColumns(
-      const std::vector<BlockPtr>& blocks) {
-    uint32_t max_expected_columns = 0;
-    for (const auto& block : blocks) {
-      max_expected_columns =
-          std::max(max_expected_columns, block->computeExpectedNumColumns());
-    }
-    return max_expected_columns;
-  }
-
-  static uint32_t computeFeatureDim(const std::vector<BlockPtr>& blocks) {
-    uint32_t dim = 0;
-    for (const auto& block : blocks) {
-      dim += block->featureDim();
-    }
-    return dim;
-  }
-
-  std::vector<BlockPtr> _blocks;
-  bool _are_dense;
-  uint32_t _feature_dim;
-  uint32_t _expected_num_columns;
-  std::optional<uint32_t> _hash_range;
-
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_blocks, _are_dense, _expected_num_columns, _feature_dim,
-            _hash_range);
-  }
-};
-
-using BlockListPtr = std::shared_ptr<BlockList>;
 
 }  // namespace thirdai::dataset

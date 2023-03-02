@@ -16,13 +16,6 @@
 
 namespace thirdai::dataset {
 
-std::exception_ptr buildVector(BoltVector& vector, BlockList& blocks,
-                               ColumnarInputSample& sample);
-
-std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
-    bool blocks_dense, std::optional<uint32_t> hash_range,
-    bool store_segment_feature_map);
-
 void TabularFeaturizer::updateColumnNumbers(
     const ColumnNumberMap& column_number_map) {
   _expected_num_cols = 0;
@@ -39,20 +32,20 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
       _block_lists.size(), std::vector<BoltVector>(input_batch.size()));
 
   /*
-    These variables keep track of the presence of an erroneous input line.
-    We do this instead of throwing an error directly because throwing
-    an error inside an OpenMP structured block has undefined behavior.
+    Because throwing an error inside an OpenMP structured block has undefined
+    behavior, we catch all errors inside the pragma omp parallel and then set
+    this exception_ptr and rethrow after.
   */
   std::exception_ptr featurization_err;
 #pragma omp parallel for default(none) \
     shared(input_batch, featurized_batch, featurization_err) if (_parallel)
   for (size_t index_in_batch = 0; index_in_batch < input_batch.size();
        ++index_in_batch) {
-    if (auto error = featurizeSampleInBatch(index_in_batch, input_batch,
-                                            featurized_batch)) {
+    try {
+      featurizeSampleInBatch(index_in_batch, input_batch, featurized_batch);
+    } catch (const std::exception& e) {
 #pragma omp critical
-      featurization_err = error;
-      continue;
+      featurization_err = std::current_exception();
     }
   }
   if (featurization_err) {
@@ -74,11 +67,7 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
 }
 
 BoltVector TabularFeaturizer::makeInputVector(ColumnarInputSample& sample) {
-  BoltVector vector;
-  if (auto err = buildVector(vector, _block_lists.at(0), sample)) {
-    std::rethrow_exception(err);
-  }
-  return vector;
+  return _block_lists.at(0).buildVector(sample)->toBoltVector();
 }
 
 /**
@@ -96,15 +85,10 @@ IndexToSegmentFeatureMap TabularFeaturizer::getIndexToSegmentFeatureMap(
         "Explanations are not supported by this type of featurization.");
   }
 
-  BoltVector vector;
-  auto segmented_vector = makeSegmentedFeatureVector(
-      _block_lists.at(0).areDense(), _block_lists.at(0).hashRange(),
-      /* store_segment_feature_map= */ true);
+  auto segmented_vector =
+      _block_lists.at(0).buildVector(input,
+                                     /* store_segment_feature_map= */ true);
 
-  if (auto err =
-          _block_lists.at(0).addVectorSegments(input, *segmented_vector)) {
-    std::rethrow_exception(err);
-  }
   return segmented_vector->getIndexToSegmentFeatureMap();
 }
 
@@ -121,60 +105,15 @@ Explanation TabularFeaturizer::explainFeature(
   return relevant_block->explainIndex(segment_feature.feature_idx, input);
 }
 
-std::exception_ptr TabularFeaturizer::featurizeSampleInBatch(
+void TabularFeaturizer::featurizeSampleInBatch(
     uint32_t index_in_batch, ColumnarInputBatch& input_batch,
     std::vector<std::vector<BoltVector>>& featurized_batch) {
-  /*
-    Try-catch block is for capturing invalid argument exceptions from
-    input_batch.at(). Since we don't know the concrete type of the object
-    returned by input_batch.at(), we can't take it out of the scope of the
-    block. Thus, buildVector() also needs to be in this try-catch block.
-  */
-  try {
-    auto& sample = input_batch.at(index_in_batch);
-    for (size_t block_list_id = 0; block_list_id < _block_lists.size();
-         block_list_id++) {
-      if (auto err =
-              buildVector(featurized_batch.at(block_list_id).at(index_in_batch),
-                          _block_lists.at(block_list_id), sample)) {
-        return err;
-      }
-    }
-  } catch (std::invalid_argument& error) {
-    return std::make_exception_ptr(error);
+  auto& sample = input_batch.at(index_in_batch);
+  for (size_t block_list_id = 0; block_list_id < _block_lists.size();
+       block_list_id++) {
+    featurized_batch.at(block_list_id).at(index_in_batch) =
+        _block_lists.at(block_list_id).buildVector(sample)->toBoltVector();
   }
-
-  return nullptr;
-}
-
-std::exception_ptr buildVector(BoltVector& vector, BlockList& blocks,
-                               ColumnarInputSample& sample) {
-  auto segmented_vector =
-      makeSegmentedFeatureVector(/* blocks_dense = */ blocks.areDense(),
-                                 /* hash_range = */ blocks.hashRange(),
-                                 /* store_segment_feature_map= */ false);
-  if (auto err = blocks.addVectorSegments(sample, *segmented_vector)) {
-    return err;
-  }
-  vector = segmented_vector->toBoltVector();
-  return nullptr;
-}
-
-std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
-    bool blocks_dense, std::optional<uint32_t> hash_range,
-    bool store_segment_feature_map) {
-  if (hash_range) {
-    return std::make_shared<HashedSegmentedFeatureVector>(
-        *hash_range, store_segment_feature_map);
-  }
-  // Dense vector if all blocks produce dense features, sparse vector
-  // otherwise.
-  if (blocks_dense) {
-    return std::make_shared<SegmentedDenseFeatureVector>(
-        store_segment_feature_map);
-  }
-  return std::make_shared<SegmentedSparseFeatureVector>(
-      store_segment_feature_map);
 }
 
 }  // namespace thirdai::dataset

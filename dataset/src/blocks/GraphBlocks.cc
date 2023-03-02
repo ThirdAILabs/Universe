@@ -65,6 +65,8 @@ void NormalizedNeighborVectorsBlock::buildSegment(ColumnarInputSample& input,
   }
 
   // This normalizes the feature vector by the L1 sum
+  // TODO(Josh): Try out different ways of normalizing in future experiments/
+  // an ablation study
   float vector_sum =
       std::reduce(sum_neighbor_features.begin(), sum_neighbor_features.end());
   if (vector_sum != 0) {

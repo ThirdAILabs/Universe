@@ -67,9 +67,7 @@ class CategoricalBlockTest : public testing::Test {
     }
 
     RowSampleRef input_row_view_ref(input_row_view);
-    if (auto err = block.addVectorSegment(input_row_view_ref, vec)) {
-      std::rethrow_exception(err);
-    }
+    block.addVectorSegment(input_row_view_ref, vec);
   }
 
   /**

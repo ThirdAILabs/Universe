@@ -8,6 +8,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/BlockList.h>
 
 namespace thirdai::dataset {
 
@@ -89,7 +90,7 @@ class TabularFeaturizer : public Featurizer {
   }
 
  private:
-  std::exception_ptr featurizeSampleInBatch(
+  void featurizeSampleInBatch(
       uint32_t index_in_batch, ColumnarInputBatch& input_batch,
       std::vector<std::vector<BoltVector>>& featurized_batch);
 
