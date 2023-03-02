@@ -72,15 +72,9 @@ class DateBlock final : public Block {
   static constexpr uint32_t week_of_month_dim = 5;
   static constexpr uint32_t week_of_year_dim = 53;
 
-  std::exception_ptr buildSegment(ColumnarInputSample& input,
-                                  SegmentedFeatureVector& vec) final {
-    TimeObject time;
-
-    try {
-      time = TimeObject(input.column(_col));
-    } catch (const std::invalid_argument& e) {
-      return std::make_exception_ptr(e);
-    }
+  void buildSegment(ColumnarInputSample& input,
+                    SegmentedFeatureVector& vec) final {
+    TimeObject time = TimeObject(input.column(_col));
 
     uint32_t epoch_time = time.secondsSinceEpoch();
     uint32_t offset = 0;
@@ -98,8 +92,6 @@ class DateBlock final : public Block {
 
     uint32_t week_of_year = time.dayOfYear() / 7;
     vec.addSparseFeatureToSegment(offset + week_of_year, 1.0);
-
-    return nullptr;
   }
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
