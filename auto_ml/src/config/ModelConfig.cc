@@ -94,6 +94,13 @@ bolt::NodePtr buildFullyConnectedNode(
   return layer;
 }
 
+/**
+ * Helper function to create an embedding node. Expects the fields
+ * 'num_embedding_lookups', 'lookup_size', 'log_embedding_block_size', and
+ * 'reduction' to be present in the config. Optionally a field
+ * 'num_tokens_per_input' can be specified to indicate the number of tokens in
+ * each sample. This field is only required for concatenation reductions.
+ */
 bolt::EmbeddingNodePtr buildEmbeddingNode(
     const json& config, const ArgumentMap& args,
     const std::unordered_map<std::string, bolt::NodePtr>& created_nodes) {
