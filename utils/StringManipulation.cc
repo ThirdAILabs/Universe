@@ -74,8 +74,8 @@ class LocalView {
   bool nextNotPunct() const { return _next_not_punct; }
 
  private:
-  char _current_is_space;
-  char _current_is_punct;
+  bool _current_is_space;
+  bool _current_is_punct;
   bool _prev_not_space;
   bool _prev_not_punct;
   bool _next_not_space;
