@@ -7,10 +7,14 @@
 namespace thirdai::text {
 
 /**
- * Splits a sentence by delimiter.
+ * Splits a string by delimiter.
  */
-std::vector<std::string_view> split(std::string_view sentence,
-                                    char delimiter = ' ');
+std::vector<std::string_view> split(std::string_view string, char delimiter);
+
+/**
+ * Parses a sentence into tokens.
+ */
+std::vector<std::string_view> tokenizeSentence(std::string_view string);
 
 /**
  * Creates a copy of the original stringview where all characters are lowercase.
