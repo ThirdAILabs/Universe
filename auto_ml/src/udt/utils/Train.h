@@ -13,26 +13,12 @@ void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
            licensing::TrainPermissionsToken token =
                licensing::TrainPermissionsToken());
 
-void trainInMemory(
-    bolt::BoltGraphPtr& model,
-    std::pair<dataset::InputDatasets, dataset::LabelDataset> datasets,
-    bolt::TrainConfig train_config, bool freeze_hash_tables,
-    licensing::TrainPermissionsToken token =
-        licensing::TrainPermissionsToken());
-
 bolt::TrainConfig getTrainConfig(
     uint32_t epochs, float learning_rate,
+    const std::optional<DatasetLoaderValidation>& validation,
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval);
-
-bolt::TrainConfig getTrainConfig(
-    uint32_t epochs, float learning_rate,
-    const std::optional<Validation>& validation,
-    const std::vector<std::string>& train_metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval,
-    data::TabularDatasetFactoryPtr& dataset_factory);
 
 uint32_t predictedClass(const BoltVector& activation_vec,
                         std::optional<float> binary_threshold = std::nullopt);

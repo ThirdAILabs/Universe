@@ -4,6 +4,7 @@
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/udt/UDT.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
@@ -98,12 +99,14 @@ void defineAutomlInModule(py::module_& module) {
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 
-  py::class_<udt::Validation>(module, "UDTValidation")
-      .def(py::init<dataset::DataSourcePtr, std::vector<std::string>,
-                    std::optional<uint32_t>, bool>(),
-           py::arg("data"), py::arg("metrics"),
-           py::arg("steps_per_validation") = std::nullopt,
+  py::class_<udt::ValidationArgs>(module, "ValidationArgs")
+      .def(py::init<std::vector<std::string>, std::optional<uint32_t>, bool>(),
+           py::arg("metrics"), py::arg("steps_per_validation") = std::nullopt,
            py::arg("sparse_inference") = false);
+
+  py::class_<udt::DataSourceValidation>(module, "UDTValidation")
+      .def(py::init<dataset::DataSourcePtr, udt::ValidationArgs>(),
+           py::arg("data"), py::arg("args"));
 
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module, "UDT")
       .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),

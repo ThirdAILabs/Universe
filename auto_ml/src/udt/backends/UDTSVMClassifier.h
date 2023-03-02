@@ -3,6 +3,8 @@
 #include <bolt/src/graph/Graph.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/utils/Classifier.h>
+#include <dataset/src/DataSource.h>
 
 namespace thirdai::automl::udt {
 
@@ -13,7 +15,8 @@ class UDTSVMClassifier final : public UDTBackend {
                    const config::ArgumentMap& user_args);
 
   void train(const dataset::DataSourcePtr& data, float learning_rate,
-             uint32_t epochs, const std::optional<Validation>& validation,
+             uint32_t epochs,
+             const std::optional<DataSourceValidation>& validation,
              std::optional<size_t> batch_size,
              std::optional<size_t> max_in_memory_batches,
              const std::vector<std::string>& metrics,
@@ -31,20 +34,18 @@ class UDTSVMClassifier final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
                           bool return_predicted_class) final;
 
-  bolt::BoltGraphPtr model() const final { return _model; }
-
-  void setModel(bolt::BoltGraphPtr model) final { _model = model; }
-
  private:
-  UDTSVMClassifier() {}
+  static dataset::DatasetLoaderPtr svmDatasetLoader(
+      dataset::DataSourcePtr data_source, bool shuffle);
+
+  UDTSVMClassifier() : _classifier(nullptr, false) {}
 
   friend cereal::access;
 
   template <class Archive>
   void serialize(Archive& archive);
 
-  bolt::BoltGraphPtr _model;
-  bool _freeze_hash_tables;
+  utils::Classifier _classifier;
 };
 
 }  // namespace thirdai::automl::udt

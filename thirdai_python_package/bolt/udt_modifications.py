@@ -42,9 +42,11 @@ def modify_udt():
         if validation is not None:
             return bolt.UDTValidation(
                 data=_create_data_source(validation.filename()),
-                metrics=validation.metrics(),
-                steps_per_validation=validation.interval(),
-                sparse_inference=validation.sparse_inference(),
+                args=bolt.ValidationArgs(
+                    metrics=validation.metrics(),
+                    steps_per_validation=validation.interval(),
+                    sparse_inference=validation.sparse_inference(),
+                ),
             )
         return None
 
