@@ -399,6 +399,7 @@ pybind11_add_module(
   bolt/python_bindings/CallbacksPython.cc
   dataset/python_bindings/DatasetPython.cc
   dataset/src/blocks/TabularHashFeatures.cc
+  dataset/src/blocks/ColumnIdentifier.cc
   new_dataset/python_bindings/DatasetPython.cc
   new_dataset/python_bindings/FeaturizationPython.cc
   search/python_bindings/SearchPython.cc
