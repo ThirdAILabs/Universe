@@ -259,7 +259,9 @@ class QueryCandidateGenerator {
    * and there is a source column in the passed in filename.
    */
   void train(const std::string& filename, bool use_supervised = true) {
-    licensing::TrainPermissionsToken token(filename);
+    // TODO(Nick): Pass in data source directly when this is moved to UDT V2
+    auto source = std::make_shared<dataset::FileDataSource>(filename);
+    licensing::TrainPermissionsToken token(source);
 
     auto [source_column_index, target_column_index] = mapColumnNamesToIndices(
         /* file_name = */ filename);

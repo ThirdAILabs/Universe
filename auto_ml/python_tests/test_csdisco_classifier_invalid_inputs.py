@@ -218,6 +218,27 @@ def test_error_on_decreasing_offsets():
     )
 
 
+def test_allow_empty_docs_at_end():
+    batch_size = 5
+    input_data = get_input_data(batch_size)
+
+    # Offsets will be an array like [..., 4, 7, 10, 10] indicating that the last doc is empty.
+    input_data["offsets"][-2] = input_data["offsets"][-1]
+
+    labels = get_labels(batch_size)
+
+    model = bolt.UniversalDeepTransformer(
+        input_vocab_size=SIMPLE_VOCAB_SIZE,
+        metadata_dim=SIMPLE_METADATA_DIM,
+        n_classes=SIMPLE_N_CLASSES,
+        model_size="small",
+    )
+
+    model.train(input_data, labels, 0.1)
+    model.validate(input_data, labels)
+    model.predict(input_data)
+
+
 def test_incorrect_label_batch_size():
     batch_size = 5
     check_model_operations(
