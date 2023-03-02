@@ -80,8 +80,8 @@ class TabularHashFeatures final : public Block {
                            ColumnarInputSample& input) final;
 
  protected:
-  std::exception_ptr buildSegment(ColumnarInputSample& input,
-                                  SegmentedFeatureVector& vec) final;
+  void buildSegment(ColumnarInputSample& input,
+                    SegmentedFeatureVector& vec) final;
 
   /**
    * Iterates through every token and the corresponding source column numbers
@@ -89,8 +89,8 @@ class TabularHashFeatures final : public Block {
    * buildSegment() and explainIndex()
    */
   template <typename TOKEN_PROCESSOR_T>
-  std::exception_ptr forEachOutputToken(ColumnarInputSample& input,
-                                        TOKEN_PROCESSOR_T token_processor);
+  void forEachOutputToken(ColumnarInputSample& input,
+                          TOKEN_PROCESSOR_T token_processor);
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final;
 
