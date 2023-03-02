@@ -28,6 +28,11 @@ class UDT {
       char delimiter, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
+  UDT(std::optional<std::string> incorrect_column_name,
+      std::string correct_column_name, const std::string& dataset_size,
+      char delimiter, const std::optional<std::string>& model_config,
+      const config::ArgumentMap& user_args);
+
   void train(const dataset::DataSourcePtr& data, float learning_rate,
              uint32_t epochs, const std::optional<Validation>& validation,
              std::optional<size_t> batch_size,
@@ -109,9 +114,7 @@ class UDT {
 
   bolt::BoltGraphPtr model() const { return _backend->model(); }
 
-  void setModel(bolt::BoltGraphPtr model) {
-    _backend->setModel(std::move(model));
-  }
+  void setModel(const bolt::BoltGraphPtr& model) { _backend->setModel(model); }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();

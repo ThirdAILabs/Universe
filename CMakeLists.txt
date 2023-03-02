@@ -388,6 +388,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/TabularBlockComposer.cc
     auto_ml/src/featurization/TabularDatasetFactory.cc
     auto_ml/src/config/ModelConfig.cc
+    auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartDataSource.cc
     utils/Logging.cc
@@ -442,6 +443,7 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Train.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
+  auto_ml/src/udt/backends/UDTQueryReformulation.cc
   auto_ml/src/models/TextClassifier.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)

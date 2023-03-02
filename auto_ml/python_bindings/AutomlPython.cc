@@ -82,10 +82,12 @@ void defineAutomlInModule(py::module_& module) {
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapper,
            py::arg("source_column"), py::arg("target_column"),
            py::arg("dataset_size"), py::arg("delimiter") = ',',
-           docs::UDT_GENERATOR_INIT)
+           py::arg("model_config") = std::nullopt,
+           py::arg("options") = py::dict(), docs::UDT_GENERATOR_INIT)
       .def("__new__", &UDTFactory::buildUDTGeneratorWrapperTargetOnly,
            py::arg("target_column"), py::arg("dataset_size"),
-           py::arg("delimiter") = ',', docs::UDT_GENERATOR_INIT)
+           py::arg("delimiter") = ',', py::arg("model_config") = std::nullopt,
+           py::arg("options") = py::dict(), docs::UDT_GENERATOR_INIT)
       .def("__new__", &UDTFactory::buildTextClassifier,
            py::arg("input_vocab_size"), py::arg("metadata_dim"),
            py::arg("n_classes"), py::arg("model_size"),
@@ -335,28 +337,31 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
   return args;
 }
 
-// UDT Factory Methods
-
-QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapper(
+std::shared_ptr<udt::UDT> UDTFactory::buildUDTGeneratorWrapper(
     py::object& obj, const std::string& source_column,
     const std::string& target_column, const std::string& dataset_size,
-    char delimiter) {
+    char delimiter, const std::optional<std::string>& model_config,
+    const py::dict& options) {
   (void)obj;
-  return QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
-      /* source_column_name = */ source_column,
-      /* target_column_name = */ target_column,
+  return std::make_shared<udt::UDT>(
+      /* incorrect_column_name = */ source_column,
+      /* correct_column_name = */ target_column,
       /* dataset_size = */ dataset_size,
-      /* delimiter = */ delimiter);
+      /* delimiter = */ delimiter, /* model_config = */ model_config,
+      /* user_args= */ createArgumentMap(options));
 }
 
-QueryCandidateGenerator UDTFactory::buildUDTGeneratorWrapperTargetOnly(
+std::shared_ptr<udt::UDT> UDTFactory::buildUDTGeneratorWrapperTargetOnly(
     py::object& obj, const std::string& target_column,
-    const std::string& dataset_size, char delimiter) {
+    const std::string& dataset_size, char delimiter,
+    const std::optional<std::string>& model_config, const py::dict& options) {
   (void)obj;
-  return QueryCandidateGenerator::buildGeneratorFromDefaultConfig(
-      /* source_column_name = */ target_column,
-      /* target_column_name = */ target_column,
-      /* dataset_size = */ dataset_size, /* delimiter = */ delimiter);
+  return std::make_shared<udt::UDT>(
+      /* incorrect_column_name = */ std::nullopt,
+      /* correct_column_name = */ target_column,
+      /* dataset_size = */ dataset_size, /* delimiter = */ delimiter,
+      /* model_config = */ model_config,
+      /* user_args= */ createArgumentMap(options));
 }
 
 TextClassifier UDTFactory::buildTextClassifier(py::object& obj,

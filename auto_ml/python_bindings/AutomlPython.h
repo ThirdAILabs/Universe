@@ -25,21 +25,20 @@ void createUDTTemporalSubmodule(py::module_& module);
 
 void createDeploymentSubmodule(py::module_& module);
 
-// Python wrappers for ModelPipline methods
-
 config::ArgumentMap createArgumentMap(const py::dict& input_args);
 
-// UDT Factory
 class UDTFactory {
  public:
-  static QueryCandidateGenerator buildUDTGeneratorWrapper(
+  static std::shared_ptr<udt::UDT> buildUDTGeneratorWrapper(
       py::object& obj, const std::string& source_column,
       const std::string& target_column, const std::string& dataset_size,
-      char delimiter);
+      char delimiter, const std::optional<std::string>& model_config,
+      const py::dict& options);
 
-  static QueryCandidateGenerator buildUDTGeneratorWrapperTargetOnly(
+  static std::shared_ptr<udt::UDT> buildUDTGeneratorWrapperTargetOnly(
       py::object& obj, const std::string& target_column,
-      const std::string& dataset_size, char delimiter);
+      const std::string& dataset_size, char delimiter,
+      const std::optional<std::string>& model_config, const py::dict& options);
 
   static TextClassifier buildTextClassifier(py::object& obj,
                                             uint32_t input_vocab_size,

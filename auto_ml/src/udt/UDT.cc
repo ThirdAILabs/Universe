@@ -5,6 +5,7 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
+#include <auto_ml/src/udt/backends/UDTQueryReformulation.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <telemetry/src/PrometheusClient.h>
 
@@ -44,6 +45,15 @@ UDT::UDT(data::ColumnDataTypes data_types,
         data_types, temporal_tracking_relationships, target_col, numerical,
         n_target_classes, tabular_options, model_config, user_args);
   }
+}
+
+UDT::UDT(std::optional<std::string> incorrect_column_name,
+         std::string correct_column_name, const std::string& dataset_size,
+         char delimiter, const std::optional<std::string>& model_config,
+         const config::ArgumentMap& user_args) {
+  _backend = std::make_unique<UDTQueryReformulation>(
+      std::move(incorrect_column_name), std::move(correct_column_name),
+      dataset_size, delimiter, model_config, user_args);
 }
 
 void UDT::train(const dataset::DataSourcePtr& data, float learning_rate,

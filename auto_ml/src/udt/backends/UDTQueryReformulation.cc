@@ -14,6 +14,7 @@
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
+#include <exceptions/src/Exceptions.h>
 #include <pybind11/cast.h>
 #include <pybind11/stl.h>
 #include <limits>
@@ -60,6 +61,8 @@ void UDTQueryReformulation::train(
   (void)callbacks;
   (void)logging_interval;
 
+  // If the incorrect query column was specified by the user and is present in
+  // the dataset, then we use both supervised and unsupervised training.
   bool is_supervised =
       _incorrect_column_name && containsColumn(data, *_incorrect_column_name);
 
@@ -108,6 +111,16 @@ py::object UDTQueryReformulation::evaluate(
   (void)return_predicted_class;
   (void)return_metrics;
 
+  /**
+   * There are 3 possible combinations of columns we could have:
+   *    1. Both correct and incorrect queries are present. In this case we hash
+   *       the incorredt queries, return the results and compute the recall
+   *       against the correct queries.
+   *    2. Only the incorrect queries are present. In this case we hash the
+   *       incorrect queries and return the results.
+   *    3. Only the correct queries are present. In this case we hash the given
+   *       queries and return the results.
+   */
   bool hash_incorrect =
       _incorrect_column_name && containsColumn(data, *_incorrect_column_name);
   bool labeled = hash_incorrect && containsColumn(data, _correct_column_name);
@@ -166,12 +179,15 @@ py::object UDTQueryReformulation::evaluate(
   return py::make_tuple(py::cast(output_phrases), py::cast(output_scores));
 }
 
-// py::object UDTQueryReformulation::predict(const MapInput& sample,
-//                                           bool sparse_inference,
-//                                           bool return_predicted_class) {
-//   dataset::MapSampleRef sample_ref(sample);
-//   BoltVector input = _inference_featurizer->makeInputVector(sample_ref);
-// }
+py::object UDTQueryReformulation::predict(const MapInput& sample,
+                                          bool sparse_inference,
+                                          bool return_predicted_class) {
+  (void)sample;
+  (void)sparse_inference;
+  (void)return_predicted_class;
+  throw exceptions::NotImplemented(
+      "predict is not yet supported for query reformulation.");
+}
 
 py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
                                                bool sparse_inference,
@@ -209,7 +225,6 @@ bool UDTQueryReformulation::containsColumn(
                                 "' is empty.");
   }
 
-  // TODO(Nicholas) add delimiter here.
   auto contents = dataset::parsers::CSV::parseLine(*header, _delimiter);
 
   return std::find(contents.begin(), contents.end(), column_name) !=
