@@ -21,9 +21,9 @@ class GraphDatasetManager {
 
   std::vector<uint32_t> getInputDims() const {
     return _featurizer->getDimensions();
-  };
+  }
 
-  uint32_t getLabelDim() const { return _n_target_classes; };
+  uint32_t getLabelDim() const { return _n_target_classes; }
 
  private:
   data::ColumnDataTypes _data_types;
