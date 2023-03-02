@@ -29,9 +29,7 @@ uint32_t ColumnIdentifier::number() const {
 void ColumnIdentifier::updateColumnNumber(
     const ColumnNumberMap& column_number_map) {
   if (!hasName()) {
-    throw std::logic_error(
-        "Cannot update the column number of a ColumnIdentifier that does not "
-        "have a column name.");
+    return;
   }
   _column_number = column_number_map.at(name());
 }
