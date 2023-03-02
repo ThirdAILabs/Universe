@@ -34,8 +34,8 @@ void UDTSVMClassifier::train(
   std::optional<DatasetLoaderValidation> validation_dataset = std::nullopt;
   if (validation) {
     validation_dataset = DatasetLoaderValidation(
-        svmDatasetLoader(validation->data(), /* shuffle= */ false),
-        validation->args());
+        svmDatasetLoader(validation->first, /* shuffle= */ false),
+        validation->second);
   }
 
   _classifier.train(dataset, learning_rate, epochs, validation_dataset,

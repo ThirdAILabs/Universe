@@ -32,22 +32,8 @@ class ValidationArgs {
   bool _sparse_inference;
 };
 
-template <typename T>
-class Validation {
- public:
-  explicit Validation(T data, ValidationArgs args)
-      : _data(std::move(data)), _args(std::move(args)) {}
-
-  const T& data() const { return _data; }
-
-  const ValidationArgs& args() const { return _args; }
-
- private:
-  T _data;
-  ValidationArgs _args;
-};
-
-using DataSourceValidation = Validation<dataset::DataSourcePtr>;
-using DatasetLoaderValidation = Validation<dataset::DatasetLoaderPtr>;
+using DataSourceValidation = std::pair<dataset::DataSourcePtr, ValidationArgs>;
+using DatasetLoaderValidation =
+    std::pair<dataset::DatasetLoaderPtr, ValidationArgs>;
 
 }  // namespace thirdai::automl::udt

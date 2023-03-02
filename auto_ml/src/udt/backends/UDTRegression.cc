@@ -58,8 +58,8 @@ void UDTRegression::train(
   if (validation) {
     validation_dataset =
         DatasetLoaderValidation(_dataset_factory->getDatasetLoader(
-                                    validation->data(), /* shuffle= */ false),
-                                validation->args());
+                                    validation->first, /* shuffle= */ false),
+                                validation->second);
   }
   bolt::TrainConfig train_config =
       utils::getTrainConfig(epochs, learning_rate, validation_dataset, metrics,

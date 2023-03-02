@@ -2,6 +2,7 @@
 #include <cereal/archives/binary.hpp>
 #include "Train.h"
 #include <auto_ml/src/udt/Defaults.h>
+#include <pybind11/stl.h>
 
 namespace thirdai::automl::udt::utils {
 
@@ -29,12 +30,12 @@ void thirdai::automl::udt::utils::Classifier::train(
    * class imbalance.
    */
   if (_model->outputDim() == 2) {
-    if (validation && !validation->args().metrics().empty()) {
-      validation->data()->restart();
+    if (validation && !validation->second.metrics().empty()) {
+      validation->first->restart();
       _binary_prediction_threshold =
           tuneBinaryClassificationPredictionThreshold(
-              /* dataset= */ validation->data(),
-              /* metric_name= */ validation->args().metrics().at(0));
+              /* dataset= */ validation->first,
+              /* metric_name= */ validation->second.metrics().at(0));
 
     } else if (!train_config.metrics().empty()) {
       dataset->restart();
@@ -64,7 +65,7 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
   }
 
   if (return_predicted_class) {
-    return utils::predictedClasses(output, _binary_prediction_threshold);
+    return predictedClasses(output);
   }
 
   return utils::convertInferenceTrackerToNumpy(output);
@@ -77,8 +78,7 @@ py::object Classifier::predict(std::vector<BoltVector>&& inputs,
       _model->predictSingle(std::move(inputs), sparse_inference);
 
   if (return_predicted_class) {
-    return py::cast(
-        utils::predictedClass(output, _binary_prediction_threshold));
+    return py::cast(predictedClass(output));
   }
 
   return utils::convertBoltVectorToNumpy(output);
@@ -91,10 +91,34 @@ py::object Classifier::predictBatch(std::vector<BoltBatch>&& batches,
       _model->predictSingleBatch(std::move(batches), sparse_inference);
 
   if (return_predicted_class) {
-    return utils::predictedClasses(outputs, _binary_prediction_threshold);
+    return predictedClasses(outputs);
   }
 
   return utils::convertBoltBatchToNumpy(outputs);
+}
+
+uint32_t Classifier::predictedClass(const BoltVector& activation_vec) {
+  if (_binary_prediction_threshold) {
+    return activation_vec.activations[1] >= *_binary_prediction_threshold;
+  }
+  return activation_vec.getHighestActivationId();
+}
+
+py::object Classifier::predictedClasses(bolt::InferenceOutputTracker& output) {
+  utils::NumpyArray<uint32_t> predictions(output.numSamples());
+  for (uint32_t i = 0; i < output.numSamples(); i++) {
+    BoltVector activation_vec = output.getSampleAsNonOwningBoltVector(i);
+    predictions.mutable_at(i) = predictedClass(activation_vec);
+  }
+  return py::object(std::move(predictions));
+}
+
+py::object Classifier::predictedClasses(const BoltBatch& outputs) {
+  utils::NumpyArray<uint32_t> predictions(outputs.getBatchSize());
+  for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
+    predictions.mutable_at(i) = predictedClass(outputs[i]);
+  }
+  return py::object(std::move(predictions));
 }
 
 std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(

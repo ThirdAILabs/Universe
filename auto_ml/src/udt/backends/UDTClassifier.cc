@@ -58,8 +58,8 @@ void UDTClassifier::train(
   if (validation) {
     validation_dataset =
         DatasetLoaderValidation(_dataset_factory->getDatasetLoader(
-                                    validation->data(), /* shuffle= */ false),
-                                validation->args());
+                                    validation->first, /* shuffle= */ false),
+                                validation->second);
   }
 
   auto train_dataset =

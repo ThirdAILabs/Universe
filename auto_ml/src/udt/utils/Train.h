@@ -20,17 +20,6 @@ bolt::TrainConfig getTrainConfig(
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval);
 
-uint32_t predictedClass(const BoltVector& activation_vec,
-                        std::optional<float> binary_threshold = std::nullopt);
-
-py::object predictedClasses(
-    bolt::InferenceOutputTracker& output,
-    std::optional<float> binary_threshold = std::nullopt);
-
-py::object predictedClasses(
-    const BoltBatch& output,
-    std::optional<float> binary_threshold = std::nullopt);
-
 bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
                                bool sparse_inference, bool verbose,
                                bool validation = false);

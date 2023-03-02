@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/callbacks/Callback.h>
+#include <bolt/src/graph/InferenceOutputTracker.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
@@ -42,6 +43,12 @@ class Classifier {
   const bolt::BoltGraphPtr& model() const { return _model; }
 
  private:
+  uint32_t predictedClass(const BoltVector& activation_vec);
+
+  py::object predictedClasses(bolt::InferenceOutputTracker& output);
+
+  py::object predictedClasses(const BoltBatch& outputs);
+
   std::optional<float> tuneBinaryClassificationPredictionThreshold(
       const dataset::DatasetLoaderPtr& dataset, const std::string& metric_name);
 

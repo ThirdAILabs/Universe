@@ -19,34 +19,15 @@ class ValidationOptions {
   ValidationOptions(std::string filename, std::vector<std::string> metrics,
                     std::optional<uint32_t> interval, bool use_sparse_inference)
       : _filename(std::move(filename)),
-        _metrics(std::move(metrics)),
-        _interval(interval),
-        _use_sparse_inference(use_sparse_inference) {}
+        _args(std::move(metrics), interval, use_sparse_inference) {}
 
   const std::string& filename() const { return _filename; }
 
-  uint32_t interval() const { return _interval.value_or(0); }
-
-  bolt::EvalConfig validationConfig() const {
-    bolt::EvalConfig val_config =
-        bolt::EvalConfig::makeConfig().withMetrics(_metrics);
-
-    if (_use_sparse_inference) {
-      val_config.enableSparseInference();
-    }
-
-    return val_config;
-  }
-
-  const std::vector<std::string>& metrics() const { return _metrics; }
-
-  bool sparseInference() const { return _use_sparse_inference; }
+  const udt::ValidationArgs& args() const { return _args; }
 
  private:
   std::string _filename;
-  std::vector<std::string> _metrics;
-  std::optional<uint32_t> _interval;
-  bool _use_sparse_inference;
+  udt::ValidationArgs _args;
 };
 
 void defineAutomlInModule(py::module_& module) {
@@ -57,9 +38,9 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("interval") = std::nullopt,
            py::arg("use_sparse_inference") = false, docs::VALIDATION)
       .def("filename", &ValidationOptions::filename)
-      .def("metrics", &ValidationOptions::metrics)
-      .def("interval", &ValidationOptions::interval)
-      .def("sparse_inference", &ValidationOptions::sparseInference);
+      .def("args", &ValidationOptions::args);
+
+  py::class_<udt::ValidationArgs>(module, "ValidationArgs");  // NOLINT
 
   /**
    * This class definition overrides the __new__ method because we want to
@@ -98,15 +79,6 @@ void defineAutomlInModule(py::module_& module) {
            docs::TEXT_CLASSIFIER_INIT)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
-
-  py::class_<udt::ValidationArgs>(module, "ValidationArgs")
-      .def(py::init<std::vector<std::string>, std::optional<uint32_t>, bool>(),
-           py::arg("metrics"), py::arg("steps_per_validation") = std::nullopt,
-           py::arg("sparse_inference") = false);
-
-  py::class_<udt::DataSourceValidation>(module, "UDTValidation")
-      .def(py::init<dataset::DataSourcePtr, udt::ValidationArgs>(),
-           py::arg("data"), py::arg("args"));
 
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module, "UDT")
       .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),

@@ -101,17 +101,17 @@ bolt::TrainConfig getTrainConfig(
     train_config.silence();
   }
   if (validation) {
-    auto val_data = validation->data()->loadAll(
+    auto val_data = validation->first->loadAll(
         /* batch_size= */ defaults::BATCH_SIZE, verbose);
 
     bolt::EvalConfig val_config =
-        getEvalConfig(validation->args().metrics(),
-                      validation->args().sparseInference(), verbose);
+        getEvalConfig(validation->second.metrics(),
+                      validation->second.sparseInference(), verbose);
 
     train_config.withValidation(
         val_data.first, val_data.second, val_config,
         /* validation_frequency = */
-        validation->args().stepsPerValidation().value_or(0));
+        validation->second.stepsPerValidation().value_or(0));
   }
 
   return train_config;
@@ -133,34 +133,6 @@ bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
   }
 
   return eval_config;
-}
-
-uint32_t predictedClass(const BoltVector& activation_vec,
-                        std::optional<float> binary_threshold) {
-  if (!binary_threshold.has_value()) {
-    return activation_vec.getHighestActivationId();
-  }
-  return activation_vec.activations[1] >= *binary_threshold;
-}
-
-py::object predictedClasses(bolt::InferenceOutputTracker& output,
-                            std::optional<float> binary_threshold) {
-  utils::NumpyArray<uint32_t> predictions(output.numSamples());
-  for (uint32_t i = 0; i < output.numSamples(); i++) {
-    BoltVector activation_vec = output.getSampleAsNonOwningBoltVector(i);
-    predictions.mutable_at(i) =
-        predictedClass(activation_vec, binary_threshold);
-  }
-  return py::object(std::move(predictions));
-}
-
-py::object predictedClasses(const BoltBatch& outputs,
-                            std::optional<float> binary_threshold) {
-  utils::NumpyArray<uint32_t> predictions(outputs.getBatchSize());
-  for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
-    predictions.mutable_at(i) = predictedClass(outputs[i], binary_threshold);
-  }
-  return py::object(std::move(predictions));
 }
 
 }  // namespace thirdai::automl::udt::utils
