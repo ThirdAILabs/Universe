@@ -96,6 +96,13 @@ class TabularDatasetFactory {
   static std::shared_ptr<TabularDatasetFactory> load_stream(
       std::istream& input_stream);
 
+  std::optional<char> labelDelimiter(){
+    return _label_delimiter_name;
+  }
+  std::string labelColumn(){
+    return _label_column_name;
+  }
+
  private:
   dataset::TabularFeaturizerPtr makeFeaturizer(
       const TemporalRelationships& temporal_relationships,
@@ -150,6 +157,8 @@ class TabularDatasetFactory {
   ColumnDataTypes _data_types;
   std::set<std::string> _label_col_names;
   char _delimiter;
+  std::optional<char> _label_delimiter_name;
+  std::string _label_column_name;
 };
 
 using TabularDatasetFactoryPtr = std::shared_ptr<TabularDatasetFactory>;

@@ -20,7 +20,9 @@ TabularDatasetFactory::TabularDatasetFactory(
     bool force_parallel)
     : _data_types(std::move(data_types)),
       _label_col_names(std::move(label_col_names)),
-      _delimiter(options.delimiter) {
+      _delimiter(options.delimiter),
+      _label_delimiter_name(label_blocks[0]->delimiter()),
+      _label_column_name(label_blocks[0]->columnName()), {
   _vectors_map = processAllMetadata(_data_types, options);
 
   TemporalRelationships temporal_relationships =
@@ -216,7 +218,7 @@ template <class Archive>
 void TabularDatasetFactory::serialize(Archive& archive) {
   archive(_labeled_featurizer, _inference_featurizer, _metadata_processors,
           _vectors_map, _temporal_context, _data_types, _label_col_names,
-          _delimiter);
+          _delimiter, _label_delimiter_name, _label_column_name);
 }
 
 }  // namespace thirdai::automl::data
