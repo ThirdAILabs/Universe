@@ -16,16 +16,6 @@
 
 namespace thirdai::dataset {
 
-void TabularFeaturizer::updateColumnNumbers(
-    const ColumnNumberMap& column_number_map) {
-  _expected_num_cols = 0;
-  for (BlockList& block_list : _block_lists) {
-    block_list.updateColumnNumbers(column_number_map);
-    _expected_num_cols =
-        std::max(_expected_num_cols, block_list.expectedNumColumns());
-  }
-}
-
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     ColumnarInputBatch& input_batch) {
   std::vector<std::vector<BoltVector>> featurized_batch(
@@ -113,6 +103,20 @@ void TabularFeaturizer::featurizeSampleInBatch(
        block_list_id++) {
     featurized_batch.at(block_list_id).at(index_in_batch) =
         _block_lists.at(block_list_id).buildVector(sample)->toBoltVector();
+  }
+}
+
+void TabularFeaturizer::processHeader(const std::string& header) {
+  _num_cols_in_header = CsvSampleRef(header, _delimiter,
+                                     /* expected_num_cols= */ std::nullopt)
+                            .size();
+  dataset::ColumnNumberMap column_number_map(header, _delimiter);
+
+  _expected_num_cols = 0;
+  for (BlockList& block_list : _block_lists) {
+    block_list.updateColumnNumbers(column_number_map);
+    _expected_num_cols =
+        std::max(_expected_num_cols, block_list.expectedNumColumns());
   }
 }
 
