@@ -80,20 +80,20 @@ TEST(RecurrenceAugmentationTests, AugmentingEmptyVectors) {
 
     We append EOS because the sequence is shorter than the maximum recurrence.
 
-    Since this test processes the items in the sequence without parallelism, we
-    can expect a, b, c, d, and EOS to get the IDs 0, 1, 2, 3, and 4
-    respectively.
+    EOS will get ID 0. Since this test processes the items in the sequence 
+    without parallelism, we can expect a, b, c, and d to get the IDs 1, 2, 3, 
+    and 4 respectively.
 
     Since we also encode the position, i.e. we encode a_0 instead of just a, we
     offset each ID by position * (vocab_size + 1); +1 is for EOS. For example,
-    d_3 corresponds to a feature with index 3 * (4 + 1) + 3 = 18 and value 1.0.
+    d_3 corresponds to a feature with index 3 * (4 + 1) + 4 = 19 and value 1.0.
   */
   std::vector<uint32_t> expected_indices = {
-      0,   // a_0 = 0 * (4 + 1) + 0 = 0
-      6,   // b_1 = 1 * (4 + 1) + 1 = 6
-      12,  // c_2 = 2 * (4 + 1) + 2 = 12
-      18,  // d_3 = 3 * (4 + 1) + 3 = 18
-      24   // EOS_4 = 4 * (4 + 1) + 4 = 24
+      1,   // a_0 = 0 * (4 + 1) + 0 = 0
+      7,   // b_1 = 1 * (4 + 1) + 1 = 6
+      13,  // c_2 = 2 * (4 + 1) + 2 = 12
+      19,  // d_3 = 3 * (4 + 1) + 3 = 18
+      20   // EOS_4 = 4 * (4 + 1) + 4 = 24
   };
 
   ASSERT_EQ(augmented.size(), 2);
@@ -125,13 +125,13 @@ TEST(RecurrenceAugmentationTests, AugmentingNonemptyVectors) {
           /* augmented_dim= */ augmentation.inputBlock()->featureDim(),
           /* indices= */ initial_input_feats.at(0)),
       segmentedSparseFeatureVector(
-          /* existing_dim= */ initial_dim,
-          /* augmented_dim= */ 0,
-          /* indices= */ initial_input_feats.at(1)),
-      segmentedSparseFeatureVector(
           /* existing_dim= */ 0,
           /* augmented_dim= */ augmentation.labelBlock()->featureDim(),
-          /* indices= */ {})
+          /* indices= */ {}),
+      segmentedSparseFeatureVector(
+          /* existing_dim= */ initial_dim,
+          /* augmented_dim= */ 0,
+          /* indices= */ initial_input_feats.at(1))
 
   };
   uint32_t initial_n_feats = initial_input_feats.front().size();
@@ -143,7 +143,7 @@ TEST(RecurrenceAugmentationTests, AugmentingNonemptyVectors) {
   auto augmented = augmentation.augment(std::move(builders), sample);
 
   // See comment in previous test to see why we expect these indices
-  std::vector<uint32_t> expected_element_ids = {0, 6, 12, 18, 24};
+  std::vector<uint32_t> expected_element_ids = {1, 7, 13, 19, 20};
   uint32_t n_augmentations = expected_element_ids.size();
 
   ASSERT_EQ(augmented.size(), n_builders);
@@ -151,8 +151,8 @@ TEST(RecurrenceAugmentationTests, AugmentingNonemptyVectors) {
 
   for (uint32_t row = 0; row < augmented.front().size(); row++) {
     auto input_vec = augmented[0][row];
-    auto other_input_vec = augmented[1][row];
-    auto label_vec = augmented[2][row];
+    auto other_input_vec = augmented[2][row];
+    auto label_vec = augmented[1][row];
     ASSERT_EQ(input_vec.len, initial_n_feats + row);
     ASSERT_EQ(label_vec.len, 1);
 
@@ -167,7 +167,7 @@ TEST(RecurrenceAugmentationTests, AugmentingNonemptyVectors) {
 
     for (uint32_t pos = 0; pos < row; pos++) {
       ASSERT_EQ(input_vec.active_neurons[initial_n_feats + pos],
-                expected_element_ids[pos]);
+                initial_dim + expected_element_ids[pos]);
       ASSERT_EQ(input_vec.activations[initial_n_feats + pos], 1.0);
     }
     ASSERT_EQ(label_vec.active_neurons[0], expected_element_ids[row]);
@@ -190,7 +190,7 @@ TEST(RecurrenceAugmentationTests, CitiBike) {
       /* has_header= */ true);
 
   auto data_source = FileDataSource::make(
-      "/Users/benitogeordie/Datasets/geocode/201306-citibike-with-geohash.csv");
+      "/share/benito/geocode/201306-citibike-with-geohash-shuf-train.csv");
 
   auto dataset_loader =
       DatasetLoader(data_source, featurizer, /* shuffle= */ true);
