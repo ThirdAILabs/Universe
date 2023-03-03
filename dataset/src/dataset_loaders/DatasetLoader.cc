@@ -72,8 +72,10 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
                                    : num_batches * batch_size + _buffer_size;
   fillVectorBuffer(fill_size);
 
+  std::cout << "Going to get datasets" << std::endl;
   auto data = _shuffler.datasets(/* batch_size= */ batch_size,
                                  /* max_batches= */ num_batches);
+  std::cout << "Got datasets" << std::endl;
 
   auto end = std::chrono::high_resolution_clock::now();
   auto duration =
@@ -119,16 +121,20 @@ void DatasetLoader::fillVectorBuffer(size_t num_rows) {
   while (_shuffler.size() <= num_rows) {
     auto rows = _data_source->nextBatch(
         /* target_batch_size = */ _featurization_batch_size);
+    std::cout << "Next rows from data source" << std::endl;
     if (!rows) {
       return;
     }
 
     auto vectors = _featurizer->featurize(*rows);
+    std::cout << "Next features from featurizer" << std::endl;
     std::vector<BoltBatch> batch(vectors.size());
     for (uint32_t column_id = 0; column_id < batch.size(); column_id++) {
       batch.emplace(batch.begin() + column_id, std::move(vectors[column_id]));
     }
+    std::cout << "Gonna add" << std::endl;
     _shuffler.add(std::move(batch));
+    std::cout << "Added" << std::endl;
   }
 }
 
