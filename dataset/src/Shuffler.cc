@@ -1,5 +1,6 @@
 #include "Shuffler.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <chrono>
 #include <vector>
 
 namespace thirdai::dataset {
