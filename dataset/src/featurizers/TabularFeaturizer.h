@@ -104,7 +104,6 @@ class TabularFeaturizer : public Featurizer {
   bool _parallel;
   std::optional<uint32_t> _num_cols_in_header;
 
-
   std::vector<BlockList> _block_lists;
   uint32_t _expected_num_cols;
 };
