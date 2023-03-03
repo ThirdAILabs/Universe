@@ -14,13 +14,11 @@
 #include <stdexcept>
 #include <string_view>
 #include <vector>
-#include <algorithm>
 
 namespace thirdai::dataset {
 
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     ColumnarInputBatch& input_batch) {
-  
   std::vector<std::vector<std::vector<BoltVector>>> featurized_batch(
       input_batch.size());
 
@@ -30,8 +28,9 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     this exception_ptr and rethrow after.
   */
   std::exception_ptr featurization_err;
-#pragma omp parallel for default(none) \
-    shared(input_batch, featurized_batch, featurization_err, std::cout) if (_parallel)
+#pragma omp parallel for default(none)                       \
+    shared(input_batch, featurized_batch, featurization_err, \
+           std::cout) if (_parallel)
   for (size_t sample_id = 0; sample_id < input_batch.size(); ++sample_id) {
     try {
       featurized_batch[sample_id] =
@@ -138,17 +137,16 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::consolidate(
   std::vector<std::vector<BoltVector>> outputs(
       _block_lists.size(), std::vector<BoltVector>(n_output_samples));
 
-#pragma omp parallel for default(none) \
-    shared(vectors, outputs, offsets)
+#pragma omp parallel for default(none) shared(vectors, outputs, offsets)
   for (uint32_t input_sample_id = 0; input_sample_id < vectors.size();
        input_sample_id++) {
     auto& augmented_vectors = vectors.at(input_sample_id);
     for (uint32_t column_id = 0; column_id < augmented_vectors.size();
          column_id++) {
-      std::copy(
-          std::make_move_iterator(augmented_vectors.at(column_id).begin()),
-          std::make_move_iterator(augmented_vectors.at(column_id).end()),
-          outputs.at(column_id).begin() + offsets.at(input_sample_id));
+      for (uint32_t i = 0; i < augmented_vectors.size(); i++) {
+        outputs[column_id][offsets[input_sample_id] + i] =
+            std::move(augmented_vectors[column_id][i]);
+      }
     }
   }
 
