@@ -3,6 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <algorithm>
+#include <memory>
 #include <numeric>
 #include <random>
 #include <vector>
@@ -42,9 +43,8 @@ class Shuffler {
     std::vector<BoltDatasetPtr> output(shuffled_batches.size());
 
     for (uint32_t dataset_id = 0; dataset_id < output.size(); dataset_id++) {
-      std::move(shuffled_batches[dataset_id].begin(),
-                shuffled_batches[dataset_id].begin() + num_returned,
-                output[dataset_id]->begin());
+      output[dataset_id] = std::make_shared<BoltDataset>(
+          std::move(shuffled_batches[dataset_id]));
     }
 
     _buffer.clear();
@@ -60,7 +60,6 @@ class Shuffler {
       _buffer_size += _buffer.front().back().getBatchSize();
       _offsets.push_back(_buffer_size);
     }
-
     return output;
   }
 
