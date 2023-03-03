@@ -22,7 +22,7 @@ Explanation SequenceBlock::explainIndex(uint32_t index_within_block,
                                         ColumnarInputSample& input) {
   std::string keyword;
 
-  auto sequence = std::string(input.column(_col));
+  std::string sequence(input.column(_col));
   auto elements = parsers::CSV::parseLine(sequence, _delimiter);
   for (uint32_t i = 0; i < elements.size(); i++) {
     if (sequenceHash(elements[i], /* pos= */ i) == index_within_block) {
