@@ -19,12 +19,20 @@ RecurrenceAugmentation::RecurrenceAugmentation(ColumnIdentifier sequence_column,
       _input_vector_index(input_vector_index),
       _label_vector_index(label_vector_index),
       _vocab(vocab_size + 1, true) {
+  /*
+    We will fix the vocabulary for better parallelism when the vocabulary is
+    full. The EOS token is registered at construction time to avoid the case
+    where we cannot fix the vocabulary because EOS is not found in the dataset,
+    e.g. if all target sequences are max_recurrence elements long.
+  */
   _vocab.getUid(EOS);
 }
 
 void RecurrenceAugmentation::prepareForBatch(
     ColumnarInputBatch& incoming_batch) {
   (void)incoming_batch;
+  // Fix vocabulary when we no longer expect new elements. If the vocabulary is
+  // fixed, we can convert strings to IDs without entering a critical section.
   if (_vocab.isFull()) {
     _vocab.fixVocab();
   }

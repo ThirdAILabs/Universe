@@ -6,7 +6,7 @@ bool ColumnIdentifier::consistentWith(const ColumnIdentifier& other) const {
   return hasName() == other.hasName() && hasNumber() == other.hasNumber();
 }
 
-bool ColumnIdentifier::hasName() const { return !!_column_name; }
+bool ColumnIdentifier::hasName() const { return _column_name.has_value(); }
 
 const std::string& ColumnIdentifier::name() const {
   if (!_column_name) {

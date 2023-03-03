@@ -15,7 +15,12 @@
 namespace thirdai::dataset {
 
 /**
- * A block that encodes text (e.g. sentences / paragraphs).
+ * A block that encodes an ordered sequence of elements delimited by a
+ * character. The encoded vector has disjoint ranges for each position in the
+ * sequence.
+ *
+ * Given a sequence "a b c d", this block will create a vector that represents
+ * {a_1, b_2, c_3, d_4}.
  */
 class SequenceBlock : public Block {
  public:
