@@ -22,6 +22,11 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
   std::vector<std::vector<std::vector<BoltVector>>> featurized_batch(
       input_batch.size());
 
+  for (BlockList& block_list : _block_lists) {
+    block_list.prepareForBatch(input_batch);
+  }
+  _augmentation->prepareForBatch(input_batch);
+
   /*
     Because throwing an error inside an OpenMP structured block has undefined
     behavior, we catch all errors inside the pragma omp parallel and then set
