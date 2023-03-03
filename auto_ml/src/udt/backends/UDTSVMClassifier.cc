@@ -62,7 +62,9 @@ py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
                                       const std::vector<std::string>& metrics,
                                       bool sparse_inference,
                                       bool return_predicted_class, bool verbose,
-                                      bool return_metrics) {
+                                      bool return_metrics,
+                                      std::optional<uint32_t> top_k) {
+  (void)top_k;
   bolt::EvalConfig eval_config =
       utils::getEvalConfig(metrics, sparse_inference, verbose);
 
@@ -84,7 +86,9 @@ py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
 
 py::object UDTSVMClassifier::predict(const MapInput& sample,
                                      bool sparse_inference,
-                                     bool return_predicted_class) {
+                                     bool return_predicted_class,
+                                     std::optional<uint32_t> top_k) {
+  (void)top_k;
   BoltVector output = _model->predictSingle(
       {dataset::SvmDatasetLoader::toSparseVector(sample)}, sparse_inference);
 
@@ -97,7 +101,9 @@ py::object UDTSVMClassifier::predict(const MapInput& sample,
 
 py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
                                           bool sparse_inference,
-                                          bool return_predicted_class) {
+                                          bool return_predicted_class,
+                                          std::optional<uint32_t> top_k) {
+  (void)top_k;
   BoltBatch outputs = _model->predictSingleBatch(
       {dataset::SvmDatasetLoader::toSparseVectors(samples)}, sparse_inference);
 

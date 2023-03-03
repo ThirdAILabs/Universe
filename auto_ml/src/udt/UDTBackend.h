@@ -77,7 +77,8 @@ class UDTBackend {
                               const std::vector<std::string>& metrics,
                               bool sparse_inference,
                               bool return_predicted_class, bool verbose,
-                              bool return_metrics) = 0;
+                              bool return_metrics,
+                              std::optional<uint32_t> top_k) = 0;
 
   /**
    * Performs inference on a single sample and returns the resulting
@@ -85,7 +86,8 @@ class UDTBackend {
    * predicted classes if its a classification task instead of the activations.
    */
   virtual py::object predict(const MapInput& sample, bool sparse_inference,
-                             bool return_predicted_class) = 0;
+                             bool return_predicted_class,
+                             std::optional<uint32_t> top_k) = 0;
 
   /**
    * Performs inference on a batch of samples in parallel and returns the
@@ -95,7 +97,8 @@ class UDTBackend {
    */
   virtual py::object predictBatch(const MapInputBatch& sample,
                                   bool sparse_inference,
-                                  bool return_predicted_class) = 0;
+                                  bool return_predicted_class,
+                                  std::optional<uint32_t> top_k) = 0;
 
   /**
    * Returns the model used.

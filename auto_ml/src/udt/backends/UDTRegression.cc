@@ -77,8 +77,10 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
                                    const std::vector<std::string>& metrics,
                                    bool sparse_inference,
                                    bool return_predicted_class, bool verbose,
-                                   bool return_metrics) {
+                                   bool return_metrics,
+                                   std::optional<uint32_t> top_k) {
   (void)return_predicted_class;  // No classes to return in regression;
+  (void)top_k;
 
   bolt::EvalConfig eval_config =
       utils::getEvalConfig(metrics, sparse_inference, verbose);
@@ -104,8 +106,10 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
 }
 
 py::object UDTRegression::predict(const MapInput& sample, bool sparse_inference,
-                                  bool return_predicted_class) {
+                                  bool return_predicted_class,
+                                  std::optional<uint32_t> top_k) {
   (void)return_predicted_class;  // No classes to return in regression;
+  (void)top_k;
 
   BoltVector output = _model->predictSingle(
       _dataset_factory->featurizeInput(sample), sparse_inference);
@@ -115,8 +119,10 @@ py::object UDTRegression::predict(const MapInput& sample, bool sparse_inference,
 
 py::object UDTRegression::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
-                                       bool return_predicted_class) {
+                                       bool return_predicted_class,
+                                       std::optional<uint32_t> top_k) {
   (void)return_predicted_class;  // No classes to return in regression;
+  (void)top_k;
 
   BoltBatch outputs = _model->predictSingleBatch(
       _dataset_factory->featurizeInputBatch(samples), sparse_inference);

@@ -36,13 +36,16 @@ class UDTClassifier final : public UDTBackend {
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool return_predicted_class,
-                      bool verbose, bool return_metrics) final;
+                      bool verbose, bool return_metrics,
+                              std::optional<uint32_t> top_k) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class) final;
+                     bool return_predicted_class,
+                              std::optional<uint32_t> top_k) final;
 
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
-                          bool return_predicted_class) final;
+                          bool return_predicted_class,
+                              std::optional<uint32_t> top_k) final;
 
   std::vector<dataset::Explanation> explain(
       const MapInput& sample,

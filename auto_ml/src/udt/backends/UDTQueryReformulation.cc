@@ -106,11 +106,13 @@ void UDTQueryReformulation::train(
 py::object UDTQueryReformulation::evaluate(
     const dataset::DataSourcePtr& data, const std::vector<std::string>& metrics,
     bool sparse_inference, bool return_predicted_class, bool verbose,
-    bool return_metrics) {
+    bool return_metrics, std::optional<uint32_t> top_k) {
   (void)metrics;
   (void)sparse_inference;
   (void)return_predicted_class;
   (void)return_metrics;
+
+  requireTopK(top_k);
 
   /**
    * There are 3 possible combinations of columns we could have:
@@ -146,8 +148,8 @@ py::object UDTQueryReformulation::evaluate(
   std::vector<std::vector<float>> output_scores;
 
   for (uint32_t batch_id = 0; batch_id < inputs->numBatches(); batch_id++) {
-    auto [phrase_ids, phrase_scores] =
-        _flash_index->queryBatch(inputs->at(batch_id), 10);
+    auto [phrase_ids, phrase_scores] = _flash_index->queryBatch(
+        inputs->at(batch_id), /* top_k= */ top_k.value());
 
     bar->increment();
 
@@ -182,19 +184,24 @@ py::object UDTQueryReformulation::evaluate(
 
 py::object UDTQueryReformulation::predict(const MapInput& sample,
                                           bool sparse_inference,
-                                          bool return_predicted_class) {
+                                          bool return_predicted_class,
+                                          std::optional<uint32_t> top_k) {
   (void)sample;
   (void)sparse_inference;
   (void)return_predicted_class;
+  (void)top_k;
   throw exceptions::NotImplemented(
       "predict is not yet supported for query reformulation.");
 }
 
 py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
                                                bool sparse_inference,
-                                               bool return_predicted_class) {
+                                               bool return_predicted_class,
+                                               std::optional<uint32_t> top_k) {
   (void)sparse_inference;
   (void)return_predicted_class;
+
+  requireTopK(top_k);
 
   dataset::MapBatchRef sample_ref(sample);
 
@@ -202,7 +209,7 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
 
   auto [phrase_ids, phrase_scores] = _flash_index->queryBatch(
       /* batch = */ BoltBatch(std::move(featurized_samples)),
-      /* top_k = */ 10,
+      /* top_k = */ top_k.value(),
       /* pad_zeros = */ false);
 
   std::vector<std::vector<std::string>> phrases;

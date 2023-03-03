@@ -33,13 +33,16 @@ class UDTQueryReformulation final : public UDTBackend {
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool return_predicted_class,
-                      bool verbose, bool return_metrics) final;
+                      bool verbose, bool return_metrics,
+                      std::optional<uint32_t> top_k) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class) final;
+                     bool return_predicted_class,
+                     std::optional<uint32_t> top_k) final;
 
   py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
-                          bool return_predicted_class) final;
+                          bool return_predicted_class,
+                          std::optional<uint32_t> top_k) final;
 
  private:
   bool containsColumn(const dataset::DataSourcePtr& data,
@@ -69,6 +72,13 @@ class UDTQueryReformulation final : public UDTBackend {
   static uint32_t recall(
       const std::vector<std::vector<uint32_t>>& retreived_ids,
       const BoltBatch& labels);
+
+  static void requireTopK(const std::optional<uint32_t>& top_k) {
+    if (!top_k) {
+      throw std::invalid_argument(
+          "top_k is a required argument for query reformulation.");
+    }
+  }
 
   std::unique_ptr<search::Flash<uint32_t>> _flash_index;
 
