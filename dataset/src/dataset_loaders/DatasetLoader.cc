@@ -71,10 +71,8 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
   size_t fill_size = will_overflow ? std::numeric_limits<size_t>::max()
                                    : num_batches * batch_size + _buffer_size;
   fillVectorBuffer(fill_size);
-  std::cout << "After fill buffer" << std::endl;
   auto data = _shuffler.datasets(/* batch_size= */ batch_size,
                                  /* max_batches= */ num_batches);
-  std::cout << "After get datasets buffer" << std::endl;
 
   auto end = std::chrono::high_resolution_clock::now();
   auto duration =
