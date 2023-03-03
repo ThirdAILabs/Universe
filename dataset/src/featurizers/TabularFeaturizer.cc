@@ -4,6 +4,7 @@
 #include <dataset/src/Featurizer.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/InputTypes.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
 #include <exception>
@@ -118,6 +119,19 @@ void TabularFeaturizer::processHeader(const std::string& header) {
     _expected_num_cols =
         std::max(_expected_num_cols, block_list.expectedNumColumns());
   }
+}
+
+void TabularFeaturizer::processHeader(const std::string& header) {
+  dataset::ColumnNumberMap column_number_map(header, _delimiter);
+  _num_cols_in_header = column_number_map.size();
+
+  _expected_num_cols = 0;
+  _input_blocks.updateColumnNumbers(column_number_map);
+  _expected_num_cols =
+      std::max(_expected_num_cols, _input_blocks.expectedNumColumns());
+  _label_blocks.updateColumnNumbers(column_number_map);
+  _expected_num_cols =
+      std::max(_expected_num_cols, _label_blocks.expectedNumColumns());
 }
 
 }  // namespace thirdai::dataset
