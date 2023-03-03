@@ -170,6 +170,8 @@ class SegmentedFeatureVector {
   virtual ~SegmentedFeatureVector() = default;
 };
 
+using SegmentedFeatureVectorPtr = std::shared_ptr<SegmentedFeatureVector>;
+
 /**
  * Block abstract class.
  * A block accepts an input sample in the form of a sequence of strings

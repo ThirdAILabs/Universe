@@ -19,8 +19,8 @@ namespace thirdai::dataset {
 
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     ColumnarInputBatch& input_batch) {
-  std::vector<std::vector<BoltVector>> featurized_batch(
-      _block_lists.size(), std::vector<BoltVector>(input_batch.size()));
+  std::vector<std::vector<std::vector<BoltVector>>> featurized_batch(
+      input_batch.size());
 
   /*
     Because throwing an error inside an OpenMP structured block has undefined
@@ -30,10 +30,10 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
   std::exception_ptr featurization_err;
 #pragma omp parallel for default(none) \
     shared(input_batch, featurized_batch, featurization_err) if (_parallel)
-  for (size_t index_in_batch = 0; index_in_batch < input_batch.size();
-       ++index_in_batch) {
+  for (size_t sample_id = 0; sample_id < input_batch.size(); ++sample_id) {
     try {
-      featurizeSampleInBatch(index_in_batch, input_batch, featurized_batch);
+      featurized_batch[sample_id] =
+          featurizeSampleInBatch(input_batch.at(sample_id));
     } catch (const std::exception& e) {
 #pragma omp critical
       featurization_err = std::current_exception();
@@ -42,7 +42,7 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
   if (featurization_err) {
     std::rethrow_exception(featurization_err);
   }
-  return featurized_batch;
+  return consolidate(std::move(featurized_batch));
 }
 
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
@@ -96,15 +96,16 @@ Explanation TabularFeaturizer::explainFeature(
   return relevant_block->explainIndex(segment_feature.feature_idx, input);
 }
 
-void TabularFeaturizer::featurizeSampleInBatch(
-    uint32_t index_in_batch, ColumnarInputBatch& input_batch,
-    std::vector<std::vector<BoltVector>>& featurized_batch) {
-  auto& sample = input_batch.at(index_in_batch);
+std::vector<std::vector<BoltVector>> TabularFeaturizer::featurizeSampleInBatch(
+    ColumnarInputSample& input_sample) {
+  std::vector<SegmentedFeatureVectorPtr> builders(_block_lists.size());
   for (size_t block_list_id = 0; block_list_id < _block_lists.size();
        block_list_id++) {
-    featurized_batch.at(block_list_id).at(index_in_batch) =
-        _block_lists.at(block_list_id).buildVector(sample)->toBoltVector();
+    builders[block_list_id] =
+        _block_lists.at(block_list_id).buildVector(input_sample);
   }
+
+  return _augmentation->augment(std::move(builders), input_sample);
 }
 
 void TabularFeaturizer::processHeader(const std::string& header) {
@@ -117,6 +118,38 @@ void TabularFeaturizer::processHeader(const std::string& header) {
     _expected_num_cols =
         std::max(_expected_num_cols, block.expectedNumColumns());
   }
+
+  _augmentation->updateColumnNumbers(column_number_map);
 }
 
+std::vector<std::vector<BoltVector>> TabularFeaturizer::consolidate(
+    std::vector<std::vector<std::vector<BoltVector>>>&& vectors) {
+  uint32_t n_output_samples = 0;
+  std::vector<uint32_t> offsets(vectors.size() + 1);
+  offsets[0] = 0;
+  for (uint32_t input_sample_id = 0; input_sample_id < vectors.size();
+       input_sample_id++) {
+    n_output_samples += vectors.at(input_sample_id).size();
+    offsets[input_sample_id + 1] = n_output_samples;
+  }
+
+  std::vector<std::vector<BoltVector>> outputs(
+      _block_lists.size(), std::vector<BoltVector>(n_output_samples));
+
+#pragma omp parallel for
+  for (uint32_t input_sample_id = 0; input_sample_id < vectors.size();
+       input_sample_id++) {
+    auto& augmented_vectors = vectors.at(input_sample_id);
+    for (uint32_t column_id = 0; column_id < augmented_vectors.size();
+         column_id++) {
+      outputs.at(column_id).insert(
+          /* position= */ outputs.at(column_id).begin() +
+              offsets.at(input_sample_id),
+          std::make_move_iterator(augmented_vectors.at(column_id).begin()),
+          std::make_move_iterator(augmented_vectors.at(column_id).end()));
+    }
+  }
+
+  return outputs;
+}
 }  // namespace thirdai::dataset

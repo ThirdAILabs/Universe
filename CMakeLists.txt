@@ -378,6 +378,7 @@ set(THIRDAI_SOURCES
     dataset/src/featurizers/TabularFeaturizer.cc
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/blocks/BlockList.cc
+    dataset/src/blocks/RecurrenceAugmentation.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
