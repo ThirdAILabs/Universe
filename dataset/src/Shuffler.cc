@@ -24,6 +24,7 @@ std::vector<BoltDatasetPtr> Shuffler::datasets(uint32_t batch_size,
   std::vector<BoltDatasetPtr> output(shuffled_batches.size());
   std::cout << "allocating output" << std::endl;
 
+  auto start = std::chrono::high_resolution_clock::now();
   for (uint32_t dataset_id = 0; dataset_id < output.size(); dataset_id++) {
     std::vector<BoltBatch> batches(num_returned);
     // batches.reserve(num_returned);
@@ -33,6 +34,10 @@ std::vector<BoltDatasetPtr> Shuffler::datasets(uint32_t batch_size,
     output[dataset_id] = std::make_shared<BoltDataset>(std::move(batches));
   }
   std::cout << "Moved batch list to datasets" << std::endl;
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration =
+      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+  std::cout << "Took " << duration << " seconds." << std::endl;
 
   _buffer.clear();
   _buffer_size = 0;
@@ -55,14 +60,30 @@ std::vector<BoltDatasetPtr> Shuffler::datasets(uint32_t batch_size,
 std::vector<std::vector<BoltBatch>> Shuffler::shuffle(
     std::vector<std::vector<BoltBatch>>&& buffer, uint32_t batch_size) {
   std::cout << "Start shuffle" << std::endl;
+  auto start = std::chrono::high_resolution_clock::now();
   std::vector<uint32_t> permutation(_buffer_size);
   std::cout << "Allocated permutation vector" << std::endl;
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration =
+      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+  std::cout << "Took " << duration << " seconds." << std::endl;
+  start = end;
   std::iota(permutation.begin(), permutation.end(), 0);
   std::cout << "permutation indices filled" << std::endl;
+  end = std::chrono::high_resolution_clock::now();
+  duration =
+      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+  std::cout << "Took " << duration << " seconds." << std::endl;
+  start = end;
   if (_shuffle) {
     std::shuffle(permutation.begin(), permutation.end(), _gen);
   }
   std::cout << "shuffled permutations" << std::endl;
+  end = std::chrono::high_resolution_clock::now();
+  duration =
+      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+  std::cout << "Took " << duration << " seconds." << std::endl;
+  start = end;
 
   uint32_t n_columns = buffer.front().size();
   uint32_t n_shuffled_batches = (_buffer_size + batch_size - 1) / batch_size;
@@ -72,11 +93,21 @@ std::vector<std::vector<BoltBatch>> Shuffler::shuffle(
       n_columns,
       std::vector<BoltBatch>(n_shuffled_batches, BoltBatch(batch_size)));
   std::cout << "Allocated shuffled batches" << std::endl;
+  end = std::chrono::high_resolution_clock::now();
+  duration =
+      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+  std::cout << "Took " << duration << " seconds." << std::endl;
+  start = end;
 
   for (auto& batch_list : shuffled_batches) {
     batch_list.back() = BoltBatch(last_batch_size);
   }
   std::cout << "Allocated BoltBatches" << std::endl;
+  end = std::chrono::high_resolution_clock::now();
+  duration =
+      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+  std::cout << "Took " << duration << " seconds." << std::endl;
+  start = end;
 
 #pragma omp parallel for default(none) \
     shared(buffer, shuffled_batches, permutation, batch_size, std::cout)
@@ -96,6 +127,11 @@ std::vector<std::vector<BoltBatch>> Shuffler::shuffle(
     }
   }
   std::cout << "Did actual shuffling" << std::endl;
+  end = std::chrono::high_resolution_clock::now();
+  duration =
+      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+  std::cout << "Took " << duration << " seconds." << std::endl;
+  start = end;
 
   return shuffled_batches;
 }
