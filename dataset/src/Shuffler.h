@@ -24,9 +24,9 @@ class Shuffler {
       : _gen(seed), _shuffle(shuffle), _buffer_size(0), _offsets({0}) {}
 
   void add(std::vector<BoltBatch>&& batch) {
-    _buffer.push_back(std::move(batch));
     _buffer_size += batch.front().getBatchSize();
     _offsets.push_back(_buffer_size);
+    _buffer.push_back(std::move(batch));
   }
 
   uint32_t size() const { return _buffer_size; }
