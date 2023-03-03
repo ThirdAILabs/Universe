@@ -83,7 +83,8 @@ class Shuffler {
       batch_list.back() = BoltBatch(last_batch_size);
     }
 
-#pragma omp parallel for default(none) shared(_buffer, shuffled_batches)
+#pragma omp parallel for default(none) \
+    shared(_buffer, shuffled_batches, permutation)
     for (uint32_t batch_id = 0; batch_id < _buffer.size(); batch_id++) {
       for (uint32_t column_id = 0; column_id < _buffer[batch_id].size();
            column_id++) {
