@@ -128,10 +128,11 @@ void DatasetLoader::fillVectorBuffer(size_t num_rows) {
 
     auto vectors = _featurizer->featurize(*rows);
     std::cout << "Next features from featurizer" << std::endl;
-    std::vector<BoltBatch> batch(vectors.size());
+    std::vector<BoltBatch> batch;
+    batch.reserve(vectors.size());
     std::cout << "batch size " << batch.size() << std::endl;
-    for (uint32_t column_id = 0; column_id < batch.size(); column_id++) {
-      batch.emplace(batch.begin() + column_id, std::move(vectors[column_id]));
+    for (auto& vector_list : vectors) {
+      batch.emplace_back(std::move(vector_list));
     }
     std::cout << "Gonna add" << std::endl;
     _shuffler.add(std::move(batch));
