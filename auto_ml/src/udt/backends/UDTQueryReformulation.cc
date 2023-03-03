@@ -86,6 +86,7 @@ void UDTQueryReformulation::train(
   addDataToIndex(unsupervised_data, labels, bar);
 
   if (is_supervised) {
+    data->restart();
     auto [supervised_data, _] =
         loadData(data, /* col_to_hash= */ *_incorrect_column_name,
                  /* include_labels= */ true, batch_size, verbose);
@@ -242,8 +243,9 @@ UDTQueryReformulation::loadData(const dataset::DataSourcePtr& data,
         _correct_column_name, _phrase_id_map));
   }
 
-  auto featurizer =
-      dataset::TabularFeaturizer::make(ngramBlocks(col_to_hash), label_blocks);
+  auto featurizer = dataset::TabularFeaturizer::make(
+      ngramBlocks(col_to_hash), label_blocks, /* has_header= */ true,
+      /* delimiter= */ _delimiter);
 
   dataset::DatasetLoader dataset_loader(data, featurizer,
                                         /* shuffle= */ false);
