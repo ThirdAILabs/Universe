@@ -5,9 +5,13 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
+#include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
+#include <exceptions/src/Exceptions.h>
 #include <telemetry/src/PrometheusClient.h>
+#include <cstddef>
+#include <memory>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -50,6 +54,14 @@ UDT::UDT(data::ColumnDataTypes data_types,
     _backend = std::make_unique<UDTRegression>(
         data_types, temporal_tracking_relationships, target_col, numerical,
         n_target_classes, tabular_options, model_config, user_args);
+  } else if (auto sequence = data::asSequence(target)) {
+    _backend = std::make_unique<UDTRecurrentClassifier>(
+        data_types, temporal_tracking_relationships, target_col, sequence,
+        n_target_classes.value(), tabular_options, model_config, user_args);
+  } else {
+    throw std::invalid_argument(
+        "Invalid target type. Target must be categorical, numerical, or "
+        "sequence.");
   }
 }
 

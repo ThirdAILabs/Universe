@@ -3,6 +3,7 @@
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ModelConfig.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
@@ -260,6 +261,11 @@ void createUDTTypesSubmodule(py::module_& module) {
   py::class_<automl::data::DateDataType, automl::data::DataType,
              automl::data::DateDataTypePtr>(udt_types_submodule, "date")
       .def(py::init<>(), docs::UDT_DATE_TYPE);
+
+  py::class_<automl::data::SequenceDataType, automl::data::DataType,
+             automl::data::SequenceDataTypePtr>(udt_types_submodule, "sequence")
+      .def(py::init<char, std::optional<uint32_t>>(),
+           py::arg("delimiter") = ' ', py::arg("max_length") = std::nullopt);
 }
 
 void createUDTTemporalSubmodule(py::module_& module) {
