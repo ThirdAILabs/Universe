@@ -1,10 +1,11 @@
-from thirdai import bolt
-from datasets import load_dataset
-import pytest
+import os
+import random
+
 import numpy as np
 import pandas as pd
-import random
-import os
+import pytest
+from datasets import load_dataset
+from thirdai import bolt
 
 
 def recall(predictions, labels):

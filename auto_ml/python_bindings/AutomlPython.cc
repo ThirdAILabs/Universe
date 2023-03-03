@@ -165,51 +165,6 @@ void createModelsSubmodule(py::module_& module) {
            py::arg("data_source"), py::arg("training"))
       .def(bolt::python::getPickleFunction<data::TabularDatasetFactory>());
 
-  py::class_<QueryCandidateGenerator, std::shared_ptr<QueryCandidateGenerator>>(
-      models_submodule, "UDTGenerator")
-      .def(py::init(&QueryCandidateGenerator::buildGeneratorFromDefaultConfig),
-           py::arg("source_column"), py::arg("target_column"),
-           py::arg("dataset_size"), py::arg("delimiter") = ',',
-           docs::UDT_GENERATOR_INIT)
-      .def("train", &QueryCandidateGenerator::train, py::arg("filename"),
-           py::arg("use_supervised") = true, docs::UDT_GENERATOR_TRAIN)
-      .def(
-          "evaluate",
-          [](QueryCandidateGenerator& udt_generator_model,
-             const std::string& filename, uint32_t top_k, bool return_scores) {
-            auto [reformulated_queries, scores] =
-                udt_generator_model.evaluateOnFile(filename, top_k);
-            return UDTFactory::makeGeneratorInferenceTuple(
-                reformulated_queries, scores, return_scores);
-          },
-          py::arg("filename"), py::arg("top_k"),
-          py::arg("return_scores") = false, docs::UDT_GENERATOR_EVALUATE)
-      .def(
-          "predict",
-          [](QueryCandidateGenerator& udt_generator_model,
-             const std::string& sample, uint32_t top_k, bool return_scores) {
-            auto [reformulated_queries, scores] =
-                udt_generator_model.queryFromList({sample}, top_k);
-            return UDTFactory::makeGeneratorInferenceTuple(
-                reformulated_queries, scores, return_scores);
-          },
-          py::arg("query"), py::arg("top_k"), py::arg("return_scores") = false,
-          docs::UDT_GENERATOR_PREDICT)
-      .def(
-          "predict_batch",
-          [](QueryCandidateGenerator& udt_generator_model,
-             const std::vector<std::string>& queries, uint32_t top_k,
-             bool return_scores) {
-            auto [reformulated_queries, scores] =
-                udt_generator_model.queryFromList(queries, top_k);
-            return UDTFactory::makeGeneratorInferenceTuple(
-                reformulated_queries, scores, return_scores);
-          },
-          py::arg("queries"), py::arg("top_k"),
-          py::arg("return_scores") = false, docs::UDT_GENERATOR_PREDICT_BATCH)
-      .def("save", &UDTFactory::save_generator, py::arg("filename"),
-           docs::UDT_GENERATOR_SAVE);
-
   py::class_<TextClassifier, std::shared_ptr<TextClassifier>>(
       models_submodule, "UDTTextClassifier")
       .def("train", &TextClassifier::trainOnBatch, py::arg("data"),
@@ -419,14 +374,6 @@ void UDTFactory::save_udt(const udt::UDT& classifier,
   classifier.save_stream(filestream);
 }
 
-void UDTFactory::save_generator(const QueryCandidateGenerator& generator,
-                                const std::string& filename) {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  filestream.write(reinterpret_cast<const char*>(&UDT_GENERATOR_IDENTIFIER), 1);
-  generator.save_stream(filestream);
-}
-
 void UDTFactory::saveTextClassifier(const TextClassifier& text_classifier,
                                     const std::string& filename) {
   std::ofstream filestream =
@@ -441,10 +388,6 @@ py::object UDTFactory::load(const std::string& filename) {
       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
   uint8_t first_byte;
   filestream.read(reinterpret_cast<char*>(&first_byte), 1);
-
-  if (first_byte == UDT_GENERATOR_IDENTIFIER) {
-    return py::cast(QueryCandidateGenerator::load_stream(filestream));
-  }
 
   if (first_byte == UDT_IDENTIFIER) {
     return py::cast(udt::UDT::load_stream(filestream));

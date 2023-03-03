@@ -20,6 +20,7 @@
 #include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <exceptions/src/Exceptions.h>
+#include <licensing/src/CheckLicense.h>
 #include <pybind11/cast.h>
 #include <pybind11/stl.h>
 #include <limits>
@@ -66,6 +67,8 @@ void UDTQueryReformulation::train(
   (void)callbacks;
   (void)logging_interval;
 
+  licensing::TrainPermissionsToken token(data);
+
   // If the incorrect query column was specified by the user and is present in
   // the dataset, then we use both supervised and unsupervised training.
   bool is_supervised =
@@ -88,7 +91,7 @@ void UDTQueryReformulation::train(
 
   bolt::utils::Timer timer;
 
-  addDataToIndex(unsupervised_data, labels, bar);
+  addDataToIndex(unsupervised_data, labels, bar, token);
 
   if (is_supervised) {
     data->restart();
@@ -98,7 +101,7 @@ void UDTQueryReformulation::train(
         loadData(data, /* col_to_hash= */ *_incorrect_column_name,
                  /* include_labels= */ true, batch_size, /* verbose= */ false);
 
-    addDataToIndex(supervised_data, labels, bar);
+    addDataToIndex(supervised_data, labels, bar, token);
   }
 
   timer.stop();
@@ -271,7 +274,7 @@ UDTQueryReformulation::loadData(const dataset::DataSourcePtr& data,
 
 void UDTQueryReformulation::addDataToIndex(
     const dataset::BoltDatasetPtr& data, const dataset::BoltDatasetPtr& labels,
-    std::optional<ProgressBar>& bar) {
+    std::optional<ProgressBar>& bar, licensing::TrainPermissionsToken token) {
   for (uint32_t batch_id = 0; batch_id < data->numBatches(); batch_id++) {
     const BoltBatch& input_batch = data->at(batch_id);
 
@@ -283,7 +286,8 @@ void UDTQueryReformulation::addDataToIndex(
       label_batch[i] = labels->at(batch_id)[i].active_neurons[0];
     }
 
-    _flash_index->addBatch(/* batch= */ input_batch, /* labels= */ label_batch);
+    _flash_index->addBatch(/* batch= */ input_batch, /* labels= */ label_batch,
+                           token);
 
     if (bar) {
       bar->increment();

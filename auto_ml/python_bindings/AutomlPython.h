@@ -2,7 +2,6 @@
 
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
-#include <auto_ml/src/models/Generator.h>
 #include <auto_ml/src/models/TextClassifier.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <pybind11/pybind11.h>
@@ -12,7 +11,6 @@ namespace py = pybind11;
 
 namespace thirdai::automl::python {
 
-using models::QueryCandidateGenerator;
 using models::TextClassifier;
 
 void defineAutomlInModule(py::module_& module);
@@ -63,14 +61,10 @@ class UDTFactory {
 
   // These need to be here instead of inside UDTFactory because otherwise I was
   // getting weird linking errors
-  static constexpr uint8_t UDT_GENERATOR_IDENTIFIER = 0;
   static constexpr uint8_t UDT_IDENTIFIER = 1;
   static constexpr uint8_t UDT_TEXT_CLASSIFIER_IDENTIFIER = 2;
 
   static void save_udt(const udt::UDT& classifier, const std::string& filename);
-
-  static void save_generator(const QueryCandidateGenerator& generator,
-                             const std::string& filename);
 
   static void saveTextClassifier(const TextClassifier& text_classifier,
                                  const std::string& filename);

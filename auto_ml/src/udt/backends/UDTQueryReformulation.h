@@ -54,7 +54,8 @@ class UDTQueryReformulation final : public UDTBackend {
 
   void addDataToIndex(const dataset::BoltDatasetPtr& data,
                       const dataset::BoltDatasetPtr& labels,
-                      std::optional<ProgressBar>& bar);
+                      std::optional<ProgressBar>& bar,
+                      licensing::TrainPermissionsToken token);
 
   std::vector<std::string> idsToPhrase(const std::vector<uint32_t>& ids);
 
