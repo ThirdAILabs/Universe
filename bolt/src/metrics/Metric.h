@@ -205,6 +205,7 @@ class RecallAtK : public Metric {
   bool betterThan(double x, double y) const final { return x >= y; }
 
   static bool isRecallAtK(const std::string& name);
+  
   static std::shared_ptr<Metric> make(const std::string& name);
 
  private:
@@ -214,6 +215,35 @@ class RecallAtK : public Metric {
   std::atomic_uint64_t _matches;
   std::atomic_uint64_t _label_count;
 };
+
+class PrecisionAtK : public Metric {
+ public:
+  explicit PrecisionAtK(uint32_t k) : _k(k), _correct_guesses(0), _samples(0) {}
+
+  void record(const BoltVector& output, const BoltVector& labels) final;
+
+  double value() final;
+
+  void reset() final;
+
+  std::string name() final { return "precision@" + std::to_string(_k); }
+
+  std::string summary() final;
+
+  double worst() const final { return 0.0F; }
+
+  bool betterThan(double x, double y) const final { return x >= y; }
+
+  static bool isPrecisionAtK(const std::string& name);
+
+  static std::shared_ptr<Metric> make(const std::string& name);
+
+ private:
+  uint32_t _k;
+  std::atomic_uint64_t _correct_guesses;
+  std::atomic_uint64_t _samples;
+};
+
 
 /**
  * The F-Measure is a metric that takes into account both precision and recall.
