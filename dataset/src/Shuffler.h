@@ -84,11 +84,11 @@ class Shuffler {
     }
 
 #pragma omp parallel for default(none) \
-    shared(_buffer, shuffled_batches, permutation, batch_size)
-    for (uint32_t batch_id = 0; batch_id < _buffer.size(); batch_id++) {
-      for (uint32_t column_id = 0; column_id < _buffer[batch_id].size();
+    shared(buffer, shuffled_batches, permutation, batch_size)
+    for (uint32_t batch_id = 0; batch_id < buffer.size(); batch_id++) {
+      for (uint32_t column_id = 0; column_id < buffer[batch_id].size();
            column_id++) {
-        auto& unshuffled_batch = _buffer[batch_id][column_id];
+        auto& unshuffled_batch = buffer[batch_id][column_id];
         for (uint32_t vec_id = 0; vec_id < unshuffled_batch.getBatchSize();
              vec_id++) {
           uint32_t sample_id = _offsets[batch_id] + vec_id;
