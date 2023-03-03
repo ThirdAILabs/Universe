@@ -128,8 +128,8 @@ def run_generator_test(
 
     query_pairs = read_csv_file(file_name=TRAIN_SOURCE_TARGET_FILE)
 
-    queries = [query_pair[source_col_index] for query_pair in query_pairs]
-    (generated_candidates,) = model.predict_batch(queries=queries, top_k=5)
+    queries = [{"phrase": query_pair[source_col_index]} for query_pair in query_pairs]
+    generated_candidates, _ = model.predict_batch(samples=queries, top_k=5)
 
     correct_results = 0
     for query_index in range(len(query_pairs)):
@@ -173,10 +173,10 @@ def test_udt_generator_source_not_specified(prepared_datasets):
 
 def test_udt_generator_eval_no_source(prepared_datasets):
     model = train_udt_query_reformulation_model(TRAIN_TARGET_ONLY_FILE)
-    result = model.evaluate(filename=TRAIN_TARGET_ONLY_FILE, top_k=5)
+    candidates, _ = model.evaluate(filename=TRAIN_TARGET_ONLY_FILE, top_k=5)
 
     # This assertion ensures that the result is in the format we expect
-    assert len(result) == 1 and len(result[0]) > 0
+    assert len(candidates) > 0
 
 
 # This test is for a query reformulation model that was created with only the
@@ -198,10 +198,10 @@ def test_udt_generator_load_and_save(prepared_datasets):
     trained_model.save(filename=MODEL_PATH)
 
     deserialized_model = bolt.UniversalDeepTransformer.load(filename=MODEL_PATH)
-    (model_eval_outputs,) = trained_model.evaluate(
+    model_eval_outputs, _ = trained_model.evaluate(
         filename=TRAIN_SOURCE_TARGET_FILE, top_k=5
     )
-    (deserialized_model_outputs,) = deserialized_model.evaluate(
+    deserialized_model_outputs, _ = deserialized_model.evaluate(
         filename=TRAIN_SOURCE_TARGET_FILE, top_k=5
     )
 
@@ -215,11 +215,11 @@ def test_udt_generator_return_scores(prepared_datasets):
 
     source_col_index = 1
     query_pairs = read_csv_file(file_name=TRAIN_SOURCE_TARGET_FILE)
-    queries = [query_pair[source_col_index] for query_pair in query_pairs]
+    queries = [{"phrase": query_pair[source_col_index]} for query_pair in query_pairs]
 
     top_k = 5
     generated_candidates, scores = trained_model.predict_batch(
-        queries=queries, top_k=top_k, return_scores=True
+        samples=queries, top_k=top_k
     )
 
     assert len(generated_candidates) == len(scores)

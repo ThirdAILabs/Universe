@@ -1,4 +1,9 @@
 #include "UDTQueryReformulation.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/utils/Timer.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashFunction.h>
@@ -87,9 +92,11 @@ void UDTQueryReformulation::train(
 
   if (is_supervised) {
     data->restart();
+    // verbose is false here so that loading the second set of data doesn't mess
+    // up the progress bar, and it doesn't print loading data twice.
     auto [supervised_data, _] =
         loadData(data, /* col_to_hash= */ *_incorrect_column_name,
-                 /* include_labels= */ true, batch_size, verbose);
+                 /* include_labels= */ true, batch_size, /* verbose= */ false);
 
     addDataToIndex(supervised_data, labels, bar);
   }
@@ -358,4 +365,16 @@ uint32_t UDTQueryReformulation::recall(
   return correct;
 }
 
+template void UDTQueryReformulation::serialize(cereal::BinaryInputArchive&);
+template void UDTQueryReformulation::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void UDTQueryReformulation::serialize(Archive& archive) {
+  archive(cereal::base_class<UDTBackend>(this), _flash_index,
+          _inference_featurizer, _phrase_id_map, _incorrect_column_name,
+          _correct_column_name, _delimiter);
+}
+
 }  // namespace thirdai::automl::udt
+
+CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTQueryReformulation)

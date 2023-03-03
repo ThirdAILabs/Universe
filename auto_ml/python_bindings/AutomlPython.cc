@@ -120,13 +120,15 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false, py::arg("verbose") = true,
-           py::arg("return_metrics") = false)
+           py::arg("return_metrics") = false, py::arg("top_k") = std::nullopt)
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
-           py::arg("return_predicted_class") = false)
+           py::arg("return_predicted_class") = false,
+           py::arg("top_k") = std::nullopt)
       .def("predict_batch", &udt::UDT::predictBatch, py::arg("samples"),
            py::arg("sparse_inference") = false,
-           py::arg("return_predicted_class") = false)
+           py::arg("return_predicted_class") = false,
+           py::arg("top_k") = std::nullopt)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),

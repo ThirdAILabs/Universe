@@ -87,6 +87,7 @@ def modify_udt():
         return_predicted_class: bool = False,
         return_metrics: bool = False,
         verbose: bool = True,
+        top_k: int = None
     ):
         data_source = _create_data_source(filename)
 
@@ -98,6 +99,7 @@ def modify_udt():
             return_predicted_class=return_predicted_class,
             verbose=verbose,
             return_metrics=return_metrics,
+            top_k=top_k,
         )
 
     def wrapped_cold_start(

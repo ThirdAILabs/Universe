@@ -95,12 +95,13 @@ void UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
 py::object UDT::evaluate(const dataset::DataSourcePtr& data,
                          const std::vector<std::string>& metrics,
                          bool sparse_inference, bool return_predicted_class,
-                         bool verbose, bool return_metrics) {
+                         bool verbose, bool return_metrics,
+                         std::optional<uint32_t> top_k) {
   bolt::utils::Timer timer;
 
-  auto result =
-      _backend->evaluate(data, metrics, sparse_inference,
-                         return_predicted_class, verbose, return_metrics);
+  auto result = _backend->evaluate(data, metrics, sparse_inference,
+                                   return_predicted_class, verbose,
+                                   return_metrics, top_k);
 
   timer.stop();
   telemetry::client.trackEvaluate(/* evaluate_time_seconds= */ timer.seconds());
@@ -109,11 +110,12 @@ py::object UDT::evaluate(const dataset::DataSourcePtr& data,
 }
 
 py::object UDT::predict(const MapInput& sample, bool sparse_inference,
-                        bool return_predicted_class) {
+                        bool return_predicted_class,
+                        std::optional<uint32_t> top_k) {
   bolt::utils::Timer timer;
 
-  auto result =
-      _backend->predict(sample, sparse_inference, return_predicted_class);
+  auto result = _backend->predict(sample, sparse_inference,
+                                  return_predicted_class, top_k);
 
   timer.stop();
   telemetry::client.trackPrediction(
@@ -123,11 +125,12 @@ py::object UDT::predict(const MapInput& sample, bool sparse_inference,
 }
 
 py::object UDT::predictBatch(const MapInputBatch& sample, bool sparse_inference,
-                             bool return_predicted_class) {
+                             bool return_predicted_class,
+                             std::optional<uint32_t> top_k) {
   bolt::utils::Timer timer;
 
-  auto result =
-      _backend->predictBatch(sample, sparse_inference, return_predicted_class);
+  auto result = _backend->predictBatch(sample, sparse_inference,
+                                       return_predicted_class, top_k);
 
   timer.stop();
   telemetry::client.trackBatchPredictions(

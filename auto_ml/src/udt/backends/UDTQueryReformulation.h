@@ -80,6 +80,12 @@ class UDTQueryReformulation final : public UDTBackend {
     }
   }
 
+  UDTQueryReformulation() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
+
   std::unique_ptr<search::Flash<uint32_t>> _flash_index;
 
   dataset::TabularFeaturizerPtr _inference_featurizer;
