@@ -48,14 +48,6 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
   // This copies
   auto inference_featurizer_input_blocks = labeled_featurizer_input_blocks;
 
-  labeled_featurizer_input_blocks.push_back(_augmentation->inputBlock());
-
-  inference_featurizer_input_blocks.push_back(
-      dataset::NumericalCategoricalBlock::make(
-          /* col= */ target_name,
-          /* n_classes= */ _target->max_length.value() * (n_target_classes + 1),
-          /* delimiter= */ _target->delimiter));
-
   // NOLINTNEXTLINE
   _augmentation = dataset::RecurrenceAugmentation::make(
       /* sequence_column= */ target_name,
@@ -63,6 +55,14 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
       /* max_recurrence= */ _target->max_length.value(),
       /* vocab_size= */ n_target_classes, /* input_vector_index= */ 0,
       /* label_vector_index= */ 1);
+
+  labeled_featurizer_input_blocks.push_back(_augmentation->inputBlock());
+
+  inference_featurizer_input_blocks.push_back(
+      dataset::NumericalCategoricalBlock::make(
+          /* col= */ target_name,
+          /* n_classes= */ _target->max_length.value() * (n_target_classes + 1),
+          /* delimiter= */ _target->delimiter));
 
   _labeled_featurizer = dataset::TabularFeaturizer::make(
       /* block_lists= */
