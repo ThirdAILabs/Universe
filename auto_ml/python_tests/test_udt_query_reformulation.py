@@ -157,3 +157,6 @@ def test_query_reformulation_save_load(query_reformulation_dataset):
     newer_predictions = model.evaluate(filename, top_k=2)
     # The scores may be different because we've inserted duplicate elements
     assert old_predictions[0] == newer_predictions[0]
+
+    os.remove(filename)
+    os.remove(model_path)
