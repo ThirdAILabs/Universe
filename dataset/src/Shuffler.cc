@@ -1,4 +1,6 @@
 #include "Shuffler.h"
+#include <bolt_vector/src/BoltVector.h>
+#include <vector>
 
 namespace thirdai::dataset {
 
@@ -23,16 +25,21 @@ std::vector<BoltDatasetPtr> Shuffler::datasets(uint32_t batch_size,
   std::cout << "allocating output" << std::endl;
 
   for (uint32_t dataset_id = 0; dataset_id < output.size(); dataset_id++) {
-    output[dataset_id] =
-        std::make_shared<BoltDataset>(std::move(shuffled_batches[dataset_id]));
+    std::vector<BoltBatch> batches(num_returned);
+    // batches.reserve(num_returned);
+    std::move(shuffled_batches[dataset_id].begin(),
+              shuffled_batches[dataset_id].begin() + num_returned,
+              batches.begin());
+    output[dataset_id] = std::make_shared<BoltDataset>(std::move(batches));
   }
   std::cout << "Moved batch list to datasets" << std::endl;
 
   _buffer.clear();
   _buffer_size = 0;
   _offsets = {0};
-  for (uint32_t remain_id = shuffled_batches.size() - num_returned;
-       remain_id < shuffled_batches.size(); remain_id++) {
+  for (uint32_t remain_id = num_returned;
+       remain_id < shuffled_batches.front().size(); remain_id++) {
+    std::cout << "REMAIN ID " << remain_id << std::endl;
     std::vector<BoltBatch> batch(shuffled_batches[remain_id].size());
     for (uint32_t column_id = 0; column_id < batch.size(); column_id++) {
       batch[column_id] = std::move(shuffled_batches[column_id][remain_id]);
