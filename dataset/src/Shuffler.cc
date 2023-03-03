@@ -85,7 +85,7 @@ std::vector<std::vector<BoltBatch>> Shuffler::shuffle(
   std::cout << __LINE__ << std::endl;
 
 #pragma omp parallel for default(none) \
-    shared(buffer, shuffled_batches, permutation, batch_size)
+    shared(buffer, shuffled_batches, permutation, batch_size, std::cout)
   for (uint32_t batch_id = 0; batch_id < buffer.size(); batch_id++) {
     for (uint32_t column_id = 0; column_id < buffer[batch_id].size();
          column_id++) {
@@ -96,6 +96,8 @@ std::vector<std::vector<BoltBatch>> Shuffler::shuffle(
         uint32_t shuffled_sample_id = permutation[sample_id];
         uint32_t shuffled_batch_id = shuffled_sample_id / batch_size;
         uint32_t shuffled_vec_id = shuffled_batch_id % batch_size;
+        std::cout << "cid " << column_id << " bid " << batch_id << " vid "
+                  << vec_id << std::endl;
         shuffled_batches[column_id][shuffled_batch_id][shuffled_vec_id] =
             std::move(buffer[batch_id][column_id][vec_id]);
       }
