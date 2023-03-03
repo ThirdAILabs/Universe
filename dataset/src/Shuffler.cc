@@ -10,19 +10,23 @@ void Shuffler::add(std::vector<BoltBatch>&& batch) {
 
 std::vector<BoltDatasetPtr> Shuffler::datasets(uint32_t batch_size,
                                                uint32_t max_batches) {
+  std::cout << "start datasetss()" << std::endl;
   // Equivalent to vector of bolt datasets
   std::vector<std::vector<BoltBatch>> shuffled_batches =
       shuffle(std::move(_buffer), batch_size);
+  std::cout << "finished shuffling" << std::endl;
 
   uint32_t num_returned =
       std::min<uint32_t>(max_batches, shuffled_batches.front().size());
 
   std::vector<BoltDatasetPtr> output(shuffled_batches.size());
+  std::cout << "allocating output" << std::endl;
 
   for (uint32_t dataset_id = 0; dataset_id < output.size(); dataset_id++) {
     output[dataset_id] =
         std::make_shared<BoltDataset>(std::move(shuffled_batches[dataset_id]));
   }
+  std::cout << "Moved batch list to datasets" << std::endl;
 
   _buffer.clear();
   _buffer_size = 0;
@@ -37,16 +41,21 @@ std::vector<BoltDatasetPtr> Shuffler::datasets(uint32_t batch_size,
     _buffer_size += _buffer.front().back().getBatchSize();
     _offsets.push_back(_buffer_size);
   }
+  std::cout << "Moved remains" << std::endl;
   return output;
 }
 
 std::vector<std::vector<BoltBatch>> Shuffler::shuffle(
     std::vector<std::vector<BoltBatch>>&& buffer, uint32_t batch_size) {
+  std::cout << "Start shuffle" << std::endl;
   std::vector<uint32_t> permutation(_buffer_size);
+  std::cout << "Allocated permutation vector" << std::endl;
   std::iota(permutation.begin(), permutation.end(), 0);
+  std::cout << "permutation indices filled" << std::endl;
   if (_shuffle) {
     std::shuffle(permutation.begin(), permutation.end(), _gen);
   }
+  std::cout << "shuffled permutations" << std::endl;
 
   uint32_t n_columns = buffer.front().size();
   uint32_t n_shuffled_batches = (_buffer_size + batch_size - 1) / batch_size;
@@ -55,10 +64,12 @@ std::vector<std::vector<BoltBatch>> Shuffler::shuffle(
   std::vector<std::vector<BoltBatch>> shuffled_batches(
       n_columns,
       std::vector<BoltBatch>(n_shuffled_batches, BoltBatch(batch_size)));
+  std::cout << "Allocated shuffled batches" << std::endl;
 
   for (auto& batch_list : shuffled_batches) {
     batch_list.back() = BoltBatch(last_batch_size);
   }
+  std::cout << "Allocated BoltBatches" << std::endl;
 
 #pragma omp parallel for default(none) \
     shared(buffer, shuffled_batches, permutation, batch_size, std::cout)
@@ -77,6 +88,7 @@ std::vector<std::vector<BoltBatch>> Shuffler::shuffle(
       }
     }
   }
+  std::cout << "Did actual shuffling" << std::endl;
 
   return shuffled_batches;
 }
