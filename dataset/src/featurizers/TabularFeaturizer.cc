@@ -130,7 +130,7 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::consolidate(
   offsets[0] = 0;
   for (uint32_t input_sample_id = 0; input_sample_id < vectors.size();
        input_sample_id++) {
-    n_output_samples += vectors.at(input_sample_id).size();
+    n_output_samples += vectors.at(input_sample_id).front().size();
     offsets[input_sample_id + 1] = n_output_samples;
   }
 
@@ -143,10 +143,9 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::consolidate(
     auto& augmented_vectors = vectors.at(input_sample_id);
     for (uint32_t column_id = 0; column_id < augmented_vectors.size();
          column_id++) {
-      for (uint32_t i = 0; i < augmented_vectors.size(); i++) {
-        outputs[column_id][offsets[input_sample_id] + i] =
-            std::move(augmented_vectors[column_id][i]);
-      }
+      std::move(augmented_vectors[column_id].begin(),
+                augmented_vectors[column_id].end(),
+                outputs[column_id].begin() + offsets[input_sample_id]);
     }
   }
 
