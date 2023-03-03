@@ -80,8 +80,8 @@ TEST(RecurrenceAugmentationTests, AugmentingEmptyVectors) {
 
     We append EOS because the sequence is shorter than the maximum recurrence.
 
-    EOS will get ID 0. Since this test processes the items in the sequence 
-    without parallelism, we can expect a, b, c, and d to get the IDs 1, 2, 3, 
+    EOS will get ID 0. Since this test processes the items in the sequence
+    without parallelism, we can expect a, b, c, and d to get the IDs 1, 2, 3,
     and 4 respectively.
 
     Since we also encode the position, i.e. we encode a_0 instead of just a, we
@@ -173,29 +173,6 @@ TEST(RecurrenceAugmentationTests, AugmentingNonemptyVectors) {
     ASSERT_EQ(label_vec.active_neurons[0], expected_element_ids[row]);
     ASSERT_EQ(label_vec.activations[0], 1.0);
   }
-}
-
-TEST(RecurrenceAugmentationTests, CitiBike) {
-  auto augmentation = RecurrenceAugmentation::make(
-      ColumnIdentifier("start station geohash delimited"), /* delimiter= */ ' ',
-      /* max_recurrence= */ 12, /* vocab_size= */ 32,
-      /* input_vector_index= */ 0,
-      /* label_vector_index= */ 1);
-  auto featurizer = TabularFeaturizer::make(
-      /* block_lists= */ {BlockList({NGramTextBlock::make(ColumnIdentifier(
-                                         "start station name")),
-                                     augmentation->inputBlock()},
-                                    /* hash_range= */ 100000),
-                          BlockList({augmentation->labelBlock()})},
-      /* has_header= */ true);
-
-  auto data_source = FileDataSource::make(
-      "/share/benito/geocode/201306-citibike-with-geohash-shuf-train.csv");
-
-  auto dataset_loader =
-      DatasetLoader(data_source, featurizer, /* shuffle= */ true);
-
-  dataset_loader.loadAll(/* batch_size= */ 2048);
 }
 
 }  // namespace thirdai::dataset::tests
