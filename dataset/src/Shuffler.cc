@@ -31,8 +31,8 @@ std::vector<BoltDatasetPtr> Shuffler::datasets(uint32_t batch_size,
   _buffer.clear();
   _buffer_size = 0;
   _offsets = {0};
-  for (uint32_t remain_id = num_returned; remain_id < shuffled_batches.size();
-       remain_id++) {
+  for (uint32_t remain_id = shuffled_batches.size() - num_returned;
+       remain_id < shuffled_batches.size(); remain_id++) {
     std::vector<BoltBatch> batch(shuffled_batches[remain_id].size());
     for (uint32_t column_id = 0; column_id < batch.size(); column_id++) {
       batch[column_id] = std::move(shuffled_batches[column_id][remain_id]);
