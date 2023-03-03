@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <sys/types.h>
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -147,6 +148,8 @@ class BoltBatch {
 
  public:
   BoltBatch() {}
+
+  explicit BoltBatch(uint32_t batch_size) : _vectors(batch_size) {}
 
   BoltBatch(const uint32_t dim, const uint32_t batch_size, bool is_dense) {
     for (uint32_t i = 0; i < batch_size; i++) {
