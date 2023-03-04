@@ -133,6 +133,7 @@ def test_query_reformulation(train_test_data, supervised):
         assert all(a >= b for a, b in zip(score, score[1:]))
 
 
+@pytest.mark.unit
 def test_query_reformulation_save_load(query_reformulation_dataset):
     filename = "./query_reformluation.csv"
     query_reformulation_dataset[0].to_csv(filename, columns=ALL_COLUMNS, index=False)
