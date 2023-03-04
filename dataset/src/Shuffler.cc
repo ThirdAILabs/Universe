@@ -15,7 +15,7 @@ std::vector<BoltDatasetPtr> Shuffler::datasets(uint32_t batch_size,
   // Equivalent to vector of bolt datasets
   std::vector<std::vector<BoltBatch>> shuffled_batches =
       shuffle(std::move(_buffer), batch_size);
-  
+
   uint32_t num_returned =
       std::min<uint32_t>(max_batches, shuffled_batches.front().size());
 
@@ -32,13 +32,13 @@ std::vector<BoltDatasetPtr> Shuffler::datasets(uint32_t batch_size,
     _buffer_size += _buffer.front().back().getBatchSize();
     _offsets.push_back(_buffer_size);
   }
-  
+
   for (uint32_t dataset_id = 0; dataset_id < output.size(); dataset_id++) {
     shuffled_batches[dataset_id].resize(num_returned);
     output[dataset_id] =
         std::make_shared<BoltDataset>(std::move(shuffled_batches[dataset_id]));
   }
-  
+
   return output;
 }
 
@@ -49,19 +49,26 @@ std::vector<std::vector<BoltBatch>> Shuffler::shuffle(
   if (_shuffle) {
     std::shuffle(permutation.begin(), permutation.end(), _gen);
   }
-  
+
   uint32_t n_columns = buffer.front().size();
   uint32_t n_shuffled_batches = (_buffer_size + batch_size - 1) / batch_size;
   uint32_t last_batch_size = _buffer_size % batch_size;
 
   std::vector<std::vector<BoltBatch>> shuffled_batches(
-      n_columns,
-      std::vector<BoltBatch>(n_shuffled_batches, BoltBatch(batch_size)));
-  
+      n_columns, std::vector<BoltBatch>(n_shuffled_batches));
+
+#pragma omp parallel for default(none) \
+    shared(n_shuffled_batches, shuffled_batches)
+  for (uint32_t shuffled_batch_id = 0;
+       shuffled_batch_id < n_shuffled_batches - 1; shuffled_batch_id++) {
+    for (auto& batch_list : shuffled_batches) {
+      batch_list[shuffled_batch_id] = BoltBatch(batch_size);
+    }
+  }
   for (auto& batch_list : shuffled_batches) {
     batch_list.back() = BoltBatch(last_batch_size);
   }
-  
+
 #pragma omp parallel for default(none) \
     shared(buffer, shuffled_batches, permutation, batch_size, std::cout)
   for (uint32_t batch_id = 0; batch_id < buffer.size(); batch_id++) {
@@ -79,7 +86,7 @@ std::vector<std::vector<BoltBatch>> Shuffler::shuffle(
       }
     }
   }
-  
+
   return shuffled_batches;
 }
 }  // namespace thirdai::dataset
