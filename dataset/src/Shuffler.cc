@@ -25,21 +25,6 @@ std::vector<BoltDatasetPtr> Shuffler::datasets(uint32_t batch_size,
   std::vector<BoltDatasetPtr> output(shuffled_batches.size());
   std::cout << "allocating output" << std::endl;
 
-  auto start = std::chrono::high_resolution_clock::now();
-  for (uint32_t dataset_id = 0; dataset_id < output.size(); dataset_id++) {
-    std::vector<BoltBatch> batches(num_returned);
-    // batches.reserve(num_returned);
-    std::move(shuffled_batches[dataset_id].begin(),
-              shuffled_batches[dataset_id].begin() + num_returned,
-              batches.begin());
-    output[dataset_id] = std::make_shared<BoltDataset>(std::move(batches));
-  }
-  std::cout << "Moved batch list to datasets" << std::endl;
-  auto end = std::chrono::high_resolution_clock::now();
-  auto duration =
-      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
-  std::cout << "Took " << duration << " seconds." << std::endl;
-
   _buffer.clear();
   _buffer_size = 0;
   _offsets = {0};
@@ -54,6 +39,19 @@ std::vector<BoltDatasetPtr> Shuffler::datasets(uint32_t batch_size,
     _buffer_size += _buffer.front().back().getBatchSize();
     _offsets.push_back(_buffer_size);
   }
+
+  auto start = std::chrono::high_resolution_clock::now();
+  for (uint32_t dataset_id = 0; dataset_id < output.size(); dataset_id++) {
+    shuffled_batches[dataset_id].resize(num_returned);
+    output[dataset_id] =
+        std::make_shared<BoltDataset>(std::move(shuffled_batches[dataset_id]));
+  }
+  std::cout << "Moved batch list to datasets" << std::endl;
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration =
+      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+  std::cout << "Took " << duration << " seconds." << std::endl;
+
   std::cout << "Moved remains" << std::endl;
   return output;
 }
