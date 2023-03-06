@@ -318,7 +318,12 @@ std::optional<float> UDTClassifier::tuneBinaryClassificationPredictionThreshold(
     throw std::invalid_argument("No data found for training.");
   }
 
-  auto [data, labels] = utils::split(std::move(*loaded_data_opt));
+  // Did this instead of structured binding auto [data, labels] = ...
+  // since Clang-Tidy would throw this error around pragma omp parallel:
+  // "reference to local binding 'labels' declared in enclosing function"
+  auto split_data = utils::split(std::move(*loaded_data_opt));
+  auto data = std::move(split_data.first);
+  auto labels = std::move(split_data.second);
 
   auto eval_config =
       bolt::EvalConfig::makeConfig().returnActivations().silence();
