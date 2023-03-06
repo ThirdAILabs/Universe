@@ -64,6 +64,18 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
       forwardImpl</*DENSE=*/false, /*PREV_DENSE=*/false>(input, output, labels);
     }
   }
+
+  // std::cout << "AbraKaDabra" << std::endl;
+
+  // std::vector<float> output_vector = output.vectorize(_dim);
+  // // assert(output_vector.size() == _dim);
+
+  // std::cout << "Printing the activations for the layer" << std::endl;
+  // for (auto x : output_vector) {
+  //   std::cout << x << " ";
+  // }
+  // std::cout << std::endl;
+  // std::cout << "Oops" << std::endl;
 }
 
 template <bool DENSE, bool PREV_DENSE>

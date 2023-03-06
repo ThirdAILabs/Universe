@@ -113,6 +113,8 @@ struct BoltVector {
 
   std::string toString() const;
 
+  std::vector<float> vectorize(uint32_t dim) const;
+
   ~BoltVector() noexcept;
 
  private:
