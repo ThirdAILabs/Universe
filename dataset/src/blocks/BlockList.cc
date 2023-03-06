@@ -53,6 +53,20 @@ std::shared_ptr<SegmentedFeatureVector> BlockList::makeSegmentedFeatureVector(
       store_segment_feature_map);
 }
 
+void BlockList::addVectorSegments(ColumnarInputSample& sample,
+                                  SegmentedFeatureVector& segmented_vector) {
+  for (auto& block : _blocks) {
+    block->addVectorSegment(sample, segmented_vector);
+  }
+}
+
+bool BlockList::computeAreDense(const std::vector<BlockPtr>& blocks) {
+  auto are_dense = std::all_of(
+      blocks.begin(), blocks.end(),
+      [](const std::shared_ptr<Block>& block) { return block->isDense(); });
+  return are_dense;
+}
+
 bool BlockList::allBlocksHaveColumnNumbers(
     const std::vector<BlockPtr>& blocks) {
   if (blocks.empty()) {
@@ -87,20 +101,6 @@ uint32_t BlockList::computeFeatureDim(const std::vector<BlockPtr>& blocks) {
     dim += block->featureDim();
   }
   return dim;
-}
-
-void BlockList::addVectorSegments(ColumnarInputSample& sample,
-                                  SegmentedFeatureVector& segmented_vector) {
-  for (auto& block : _blocks) {
-    block->addVectorSegment(sample, segmented_vector);
-  }
-}
-
-bool BlockList::computeAreDense(const std::vector<BlockPtr>& blocks) {
-  auto are_dense = std::all_of(
-      blocks.begin(), blocks.end(),
-      [](const std::shared_ptr<Block>& block) { return block->isDense(); });
-  return are_dense;
 }
 
 }  // namespace thirdai::dataset
