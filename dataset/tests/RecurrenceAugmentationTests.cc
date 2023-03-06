@@ -38,30 +38,35 @@ auto segmentedSparseFeatureVector(uint32_t existing_dim, uint32_t augmented_dim,
   return vector;
 }
 
-TEST(RecurrenceAugmentationTests, IsDense) {
-  auto augmentation = recurrenceAugmentation();
-  ASSERT_FALSE(augmentation.inputBlock()->isDense());
-  ASSERT_FALSE(augmentation.labelBlock()->isDense());
+auto buildersFromInitialFeatures(
+    const std::vector<std::vector<uint32_t>>& initial_features,
+    const std::vector<uint32_t>& initial_dims,
+    RecurrenceAugmentation& augmentation) {
+  assert(initial_features.size() == initial_dims.size());
+  std::vector<SegmentedFeatureVectorPtr> builders(initial_dims.size());
+  for (uint32_t builder_id = 0; builder_id < initial_dims.size();
+       builder_id++) {
+    uint32_t augmented_dim = 0;
+    if (builder_id == INPUT_VECTOR_IDX) {
+      augmented_dim = augmentation.inputBlock()->featureDim();
+    } else if (builder_id == LABEL_VECTOR_IDX) {
+      augmented_dim = augmentation.labelBlock()->featureDim();
+    }
+    builders[builder_id] = segmentedSparseFeatureVector(
+        /* existing_dim= */ initial_dims[builder_id],
+        /* augmented_dim= */ augmented_dim,
+        /* indices= */ initial_features[builder_id]);
+  }
+  return builders;
 }
 
-TEST(RecurrenceAugmentationTests, FeatureDim) {
-  auto augmentation = recurrenceAugmentation();
-  ASSERT_FALSE(augmentation.inputBlock()->isDense());
-  ASSERT_FALSE(augmentation.labelBlock()->isDense());
-}
-
-TEST(RecurrenceAugmentationTests, AugmentingEmptyVectors) {
-  auto augmentation = recurrenceAugmentation();
-
-  std::vector<SegmentedFeatureVectorPtr> builders = {
-      segmentedSparseFeatureVector(
-          /* existing_dim= */ 0,
-          /* augmented_dim= */ augmentation.inputBlock()->featureDim(),
-          /* indices= */ {}),
-      segmentedSparseFeatureVector(
-          /* existing_dim= */ 0,
-          /* augmented_dim= */ augmentation.labelBlock()->featureDim(),
-          /* indices= */ {})};
+void assertCorrectAugmentations(
+    const std::vector<std::vector<uint32_t>>& initial_features,
+    const std::vector<uint32_t>& initial_dims,
+    RecurrenceAugmentation& augmentation) {
+  auto builders =
+      buildersFromInitialFeatures(initial_features, initial_dims, augmentation);
+  uint32_t n_builders = builders.size();
 
   std::unordered_map<std::string, std::string> map_sample = {
       {"sequence", "a b c d"}};
@@ -88,91 +93,94 @@ TEST(RecurrenceAugmentationTests, AugmentingEmptyVectors) {
     offset each ID by position * (vocab_size + 1); +1 is for EOS. For example,
     d_3 corresponds to a feature with index 3 * (4 + 1) + 4 = 19 and value 1.0.
   */
-  std::vector<uint32_t> expected_indices = {
-      1,   // a_0 = 0 * (4 + 1) + 0 = 0
-      7,   // b_1 = 1 * (4 + 1) + 1 = 6
-      13,  // c_2 = 2 * (4 + 1) + 2 = 12
-      19,  // d_3 = 3 * (4 + 1) + 3 = 18
-      20   // EOS_4 = 4 * (4 + 1) + 4 = 24
+  std::vector<uint32_t> expected_augmentation_feats = {
+      1,   // a_0 = 0 * (4 + 1) + 1 = 1
+      7,   // b_1 = 1 * (4 + 1) + 2 = 7
+      13,  // c_2 = 2 * (4 + 1) + 3 = 13
+      19,  // d_3 = 3 * (4 + 1) + 4 = 19
+      20   // EOS_4 = 4 * (4 + 1) + 0 = 20
   };
+  uint32_t n_augmentations = expected_augmentation_feats.size();
 
-  ASSERT_EQ(augmented.size(), 2);
-  ASSERT_EQ(augmented.front().size(), expected_indices.size());
+  // augmented is a n_builders by n_augmentations matrix of BoltVectors.
+  ASSERT_EQ(augmented.size(), n_builders);
+  ASSERT_EQ(augmented.front().size(), n_augmentations);
 
-  for (uint32_t row = 0; row < augmented.front().size(); row++) {
-    auto input_vec = augmented[0][row];
-    auto label_vec = augmented[1][row];
-    ASSERT_EQ(input_vec.len, row);
-    ASSERT_EQ(label_vec.len, 1);
-    for (uint32_t pos = 0; pos < row; pos++) {
-      ASSERT_EQ(input_vec.active_neurons[pos], expected_indices[pos]);
-      ASSERT_EQ(input_vec.activations[pos], 1.0);
+  for (uint32_t builder_id = 0; builder_id < initial_dims.size();
+       builder_id++) {
+    for (uint32_t aug_id = 0; aug_id < augmented.front().size(); aug_id++) {
+      auto vector = augmented[builder_id][aug_id];
+
+      // First assert that we have all the initial features.
+      const auto& vec_initial_feats = initial_features[builder_id];
+      for (uint32_t pos = 0; pos < vec_initial_feats.size(); pos++) {
+        ASSERT_EQ(vector.active_neurons[pos], vec_initial_feats[pos]);
+        ASSERT_EQ(vector.activations[pos], 1.0);
+      }
+
+      // Then assert that we have the augmentation features if relevant
+      uint32_t initial_len = vec_initial_feats.size();
+      uint32_t initial_dim = initial_dims[builder_id];
+
+      switch (builder_id) {
+        case INPUT_VECTOR_IDX:
+          // Expect input vector to have the 0-th through aug_pos - 1-th
+          // elements of expected_augmentation_feats.
+          ASSERT_EQ(vector.len, vec_initial_feats.size() + aug_id);
+          for (uint32_t aug_pos = 0; aug_pos < aug_id; aug_pos++) {
+            ASSERT_EQ(vector.active_neurons[initial_len + aug_pos],
+                      initial_dim + expected_augmentation_feats[aug_pos]);
+            ASSERT_EQ(vector.activations[initial_len + aug_pos], 1.0);
+          }
+          break;
+
+        case LABEL_VECTOR_IDX:
+          // Expect label vector to have aug_pos-th element of
+          // expected_augmentation_feats.
+          ASSERT_EQ(vector.len, 1);
+          ASSERT_EQ(vector.active_neurons[0],
+                    expected_augmentation_feats[aug_id]);
+          ASSERT_EQ(vector.activations[0], 1.0);
+          break;
+
+        default:
+          // No augmentation feats
+          ASSERT_EQ(vector.len, vec_initial_feats.size());
+      }
     }
-    ASSERT_EQ(label_vec.active_neurons[0], expected_indices[row]);
-    ASSERT_EQ(label_vec.activations[0], 1.0);
   }
 }
 
+TEST(RecurrenceAugmentationTests, IsDense) {
+  auto augmentation = recurrenceAugmentation();
+  ASSERT_FALSE(augmentation.inputBlock()->isDense());
+  ASSERT_FALSE(augmentation.labelBlock()->isDense());
+}
+
+TEST(RecurrenceAugmentationTests, FeatureDim) {
+  auto augmentation = recurrenceAugmentation();
+  ASSERT_EQ(augmentation.inputBlock()->featureDim(), 25);
+  ASSERT_EQ(augmentation.labelBlock()->featureDim(), 25);
+}
+
+TEST(RecurrenceAugmentationTests, AugmentingEmptyVectors) {
+  auto augmentation = recurrenceAugmentation();
+  assertCorrectAugmentations(/* initial_features= */ {{}, {}},
+                             /* initial_dims= */ {0, 0}, augmentation);
+}
+
+/**
+ * Tests that augmented input vectors retain features from before augmentation.
+ */
 TEST(RecurrenceAugmentationTests, AugmentingNonemptyVectors) {
   auto augmentation = recurrenceAugmentation();
 
   uint32_t initial_dim = 10;
-  std::vector<std::vector<uint32_t>> initial_input_feats = {{1, 2}, {3, 4}};
-
-  std::vector<SegmentedFeatureVectorPtr> builders = {
-      segmentedSparseFeatureVector(
-          /* existing_dim= */ initial_dim,
-          /* augmented_dim= */ augmentation.inputBlock()->featureDim(),
-          /* indices= */ initial_input_feats.at(0)),
-      segmentedSparseFeatureVector(
-          /* existing_dim= */ 0,
-          /* augmented_dim= */ augmentation.labelBlock()->featureDim(),
-          /* indices= */ {}),
-      segmentedSparseFeatureVector(
-          /* existing_dim= */ initial_dim,
-          /* augmented_dim= */ 0,
-          /* indices= */ initial_input_feats.at(1))
-
-  };
-  uint32_t initial_n_feats = initial_input_feats.front().size();
-  uint32_t n_builders = builders.size();
-
-  std::unordered_map<std::string, std::string> map_sample = {
-      {"sequence", "a b c d"}};
-  MapSampleRef sample(map_sample);
-  auto augmented = augmentation.augment(std::move(builders), sample);
-
-  // See comment in previous test to see why we expect these indices
-  std::vector<uint32_t> expected_element_ids = {1, 7, 13, 19, 20};
-  uint32_t n_augmentations = expected_element_ids.size();
-
-  ASSERT_EQ(augmented.size(), n_builders);
-  ASSERT_EQ(augmented.front().size(), n_augmentations);
-
-  for (uint32_t row = 0; row < augmented.front().size(); row++) {
-    auto input_vec = augmented[0][row];
-    auto other_input_vec = augmented[2][row];
-    auto label_vec = augmented[1][row];
-    ASSERT_EQ(input_vec.len, initial_n_feats + row);
-    ASSERT_EQ(label_vec.len, 1);
-
-    for (uint32_t pos = 0; pos < initial_n_feats; pos++) {
-      ASSERT_EQ(input_vec.active_neurons[pos],
-                initial_input_feats.at(0).at(pos));
-      ASSERT_EQ(input_vec.activations[pos], 1.0);
-      ASSERT_EQ(other_input_vec.active_neurons[pos],
-                initial_input_feats.at(1).at(pos));
-      ASSERT_EQ(other_input_vec.activations[pos], 1.0);
-    }
-
-    for (uint32_t pos = 0; pos < row; pos++) {
-      ASSERT_EQ(input_vec.active_neurons[initial_n_feats + pos],
-                initial_dim + expected_element_ids[pos]);
-      ASSERT_EQ(input_vec.activations[initial_n_feats + pos], 1.0);
-    }
-    ASSERT_EQ(label_vec.active_neurons[0], expected_element_ids[row]);
-    ASSERT_EQ(label_vec.activations[0], 1.0);
-  }
+  assertCorrectAugmentations(
+      // Empty features at index 1 since it's for the label vector.
+      /* initial_features= */ {{1, 2}, {}, {3, 4}},
+      // Initial dim = 0 at index 1 since it's for the label vector.
+      /* initial_dims= */ {10, 0, 10}, augmentation);
 }
 
 }  // namespace thirdai::dataset::tests
