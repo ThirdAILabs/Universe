@@ -286,10 +286,9 @@ class Block {
    * encoded (and what ends up in the vector segment).
    *
    * WARNING: This function may be called in many threads simultaneously,
-   * so it should be thread-safe or robust to data races. However, since this
-   * function is always wrapped by a function that will catch exceptions
-   * before they break the pragma omp loop, implementations should feel free to
-   * throw exceptions.
+   * so it should be thread-safe or robust to data races. This function is
+   * always wrapped by a function that will catch exceptions before they break
+   * the pragma omp loop, hence implementations can throw exceptions.
    */
   virtual void buildSegment(ColumnarInputSample& input_row,
                             SegmentedFeatureVector& vec) = 0;
