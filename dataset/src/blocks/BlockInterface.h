@@ -141,6 +141,8 @@ class SegmentedFeatureVector {
   explicit SegmentedFeatureVector(bool store_segment_feature_map)
       : _store_index_to_segment_feature_map(store_segment_feature_map) {}
 
+  virtual bool empty() const = 0;
+
   /**
    * Increments the feature at the given index of the current vector segment
    * by a value.
