@@ -44,11 +44,10 @@ UDTQueryReformulation::UDTQueryReformulation(
     _flash_index = defaultFlashIndex(dataset_size);
   }
 
-  _phrase_id_map = dataset::ThreadSafeVocabulary::make(
-      /* vocab_size= */ 0, /* limit_vocab_size= */ false);
+  _phrase_id_map = dataset::ThreadSafeVocabulary::make();
 
   _inference_featurizer =
-      dataset::TabularFeaturizer::make(ngramBlocks("phrase"), {});
+      dataset::TabularFeaturizer::make({ngramBlocks("phrase")});
 }
 
 void UDTQueryReformulation::train(
@@ -261,15 +260,16 @@ UDTQueryReformulation::loadData(const dataset::DataSourcePtr& data,
   }
 
   auto featurizer = dataset::TabularFeaturizer::make(
-      ngramBlocks(col_to_hash), label_blocks, /* has_header= */ true,
+      {ngramBlocks(col_to_hash), dataset::BlockList(std::move(label_blocks))},
+      /* has_header= */ true,
       /* delimiter= */ _delimiter);
 
   dataset::DatasetLoader dataset_loader(data, featurizer,
                                         /* shuffle= */ false);
 
-  auto [inputs, labels] = dataset_loader.loadAll(batch_size, verbose);
+  auto datasets = dataset_loader.loadAll(batch_size, verbose);
 
-  return {inputs.at(0), labels};
+  return {datasets.at(0), datasets.at(1)};
 }
 
 void UDTQueryReformulation::addDataToIndex(
@@ -336,7 +336,7 @@ UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
   return std::make_unique<search::Flash<uint32_t>>(hash_fn, reservoir_size);
 }
 
-std::vector<dataset::BlockPtr> UDTQueryReformulation::ngramBlocks(
+dataset::BlockList UDTQueryReformulation::ngramBlocks(
     const std::string& column_name) {
   std::vector<uint32_t> n_grams = {3, 4};
 
@@ -350,7 +350,9 @@ std::vector<dataset::BlockPtr> UDTQueryReformulation::ngramBlocks(
         /* dim = */ std::numeric_limits<uint32_t>::max()));
   }
 
-  return input_blocks;
+  return dataset::BlockList(
+      std::move(input_blocks),
+      /* hash_range= */ std::numeric_limits<uint32_t>::max());
 }
 
 uint32_t UDTQueryReformulation::recall(

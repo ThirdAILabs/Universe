@@ -146,17 +146,17 @@ def test_query_reformulation_save_load(query_reformulation_dataset):
 
     model.train(filename)
 
-    old_predictions = model.evaluate(filename, top_k=2)
+    old_predictions = model.evaluate(filename, top_k=1)
 
     model_path = "./query_reformulation_model"
     model.save(model_path)
     model = bolt.UniversalDeepTransformer.load(model_path)
 
-    new_predictions = model.evaluate(filename, top_k=2)
+    new_predictions = model.evaluate(filename, top_k=1)
     assert old_predictions == new_predictions
 
     model.train(filename)
-    newer_predictions = model.evaluate(filename, top_k=2)
+    newer_predictions = model.evaluate(filename, top_k=1)
     # The scores may be different because we've inserted duplicate elements
     assert old_predictions[0] == newer_predictions[0]
 

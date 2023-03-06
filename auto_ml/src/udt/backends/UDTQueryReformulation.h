@@ -67,7 +67,7 @@ class UDTQueryReformulation final : public UDTBackend {
   static std::unique_ptr<search::Flash<uint32_t>> defaultFlashIndex(
       const std::string& dataset_size);
 
-  static std::vector<dataset::BlockPtr> ngramBlocks(
+  static dataset::BlockList ngramBlocks(
       const std::string& column_name);
 
   static uint32_t recall(
