@@ -8,6 +8,10 @@
 #include <optional>
 namespace thirdai::automl::udt::utils {
 
+// Maps a source (and whether the source should be shuffled) to a data source
+using DataSourceToDatasetLoader = std::function<dataset::DatasetLoaderPtr(
+    const dataset::DataSourcePtr&, bool)>;
+
 void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
            const bolt::TrainConfig& train_config, size_t batch_size,
            std::optional<size_t> max_in_memory_batches, bool freeze_hash_tables,
@@ -30,8 +34,8 @@ bolt::TrainConfig getTrainConfig(
     const std::optional<Validation>& validation,
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval,
-    data::TabularDatasetFactoryPtr& dataset_factory);
+    std::optional<uint32_t> logging_interval, bool has_temporal_relationships,
+    const DataSourceToDatasetLoader& source_to_dataset);
 
 uint32_t predictedClass(const BoltVector& activation_vec,
                         std::optional<float> binary_threshold = std::nullopt);

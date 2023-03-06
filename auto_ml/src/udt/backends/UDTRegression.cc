@@ -61,9 +61,15 @@ void UDTRegression::train(
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
+  utils::DataSourceToDatasetLoader source_to_loader_func =
+      [this](const dataset::DataSourcePtr& source, bool shuffle) {
+        return _dataset_factory->getDatasetLoader(source, shuffle);
+      };
+
   bolt::TrainConfig train_config = utils::getTrainConfig(
       epochs, learning_rate, validation, metrics, callbacks, verbose,
-      logging_interval, _dataset_factory);
+      logging_interval, _dataset_factory->hasTemporalRelationships(),
+      source_to_loader_func);
 
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
