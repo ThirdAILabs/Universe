@@ -67,9 +67,7 @@ class CategoricalBlockTest : public testing::Test {
     }
 
     RowSampleRef input_row_view_ref(input_row_view);
-    if (auto err = block.addVectorSegment(input_row_view_ref, vec)) {
-      std::rethrow_exception(err);
-    }
+    block.addVectorSegment(input_row_view_ref, vec);
   }
 
   /**
@@ -164,7 +162,7 @@ TEST_F(CategoricalBlockTest, TestMultiLabelParsing) {
                                       /* delimiter= */ ',')};
 
   TabularFeaturizer featurizer(
-      /* input_blocks= */ {}, /* label_blocks= */ multi_label_blocks,
+      /* block_lists = */ {dataset::BlockList(std::move(multi_label_blocks))},
       /* has_header= */ false, /* delimiter= */ ' ');
 
   std::vector<std::string> rows = {"4,90,77 21,43,18,0", "55,67,82 49,2",
@@ -172,7 +170,7 @@ TEST_F(CategoricalBlockTest, TestMultiLabelParsing) {
 
   auto batch = featurizer.featurize(rows);
 
-  auto labels = std::move(batch).at(1);
+  auto labels = std::move(batch).at(0);
 
   std::vector<std::vector<uint32_t>> expected_labels = {
       {4, 90, 77, 121, 143, 118, 100},
@@ -190,13 +188,13 @@ TEST_F(CategoricalBlockTest, RegressionCategoricalBlock) {
       /* correct_label_radius= */ 1, /* labels_sum_to_one= */ false)};
 
   TabularFeaturizer featurizer(
-      /* input_blocks= */ {}, /* label_blocks= */ blocks,
-      /* has_header= */ false, /* delimiter= */ ',');
+      /* block_lists = */ {dataset::BlockList(std::move(blocks))},
+      /* has_header= */ false, /* delimiter= */ ' ');
 
   std::vector<std::string> rows = {"3.7", "2.8",  "9.2",  "5.9",
                                    "1.3", "10.8", "12.1", "-3.2"};
 
-  auto labels = featurizer.featurize(rows).at(1);
+  auto labels = featurizer.featurize(rows).at(0);
 
   std::vector<std::vector<uint32_t>> expected_labels = {
       {4, 5, 6}, {2, 3, 4}, {15, 16, 17}, {8, 9, 10},

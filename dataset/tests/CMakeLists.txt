@@ -16,7 +16,8 @@ set(DATASET_TESTS
     MlmFeaturizerTests
     SaveLoadInMemoryDatasetTest
     DatasetLoaderTests
-    TokenEncodingTests)
+    TokenEncodingTests
+    RecurrenceAugmentationTests)
 
 include(GoogleTest)
 
