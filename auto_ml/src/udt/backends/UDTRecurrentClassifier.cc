@@ -124,6 +124,7 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
 
   // We previously incorporated predictions at each step into the sample.
   // Now, we extract
+  // TODO(Geordie/Tharun): Should we join or return list instead?
   return py::cast(text::join(predictions, {_target->delimiter}));
 }
 
@@ -181,6 +182,7 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
 
   py::list output(mutable_samples.size());
   for (uint32_t i = 0; i < mutable_samples.size(); i++) {
+    // TODO(Geordie/Tharun): Should we join or return list instead?
     output[i] = text::join(all_predictions[i], {_target->delimiter});
   }
 
