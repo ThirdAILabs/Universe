@@ -21,7 +21,7 @@ class TabularDatasetFactory {
       const UserProvidedTemporalRelationships& provided_temporal_relationships,
       const std::vector<dataset::BlockPtr>& label_blocks,
       std::set<std::string> label_col_names, const TabularOptions& options,
-      bool force_parallel);
+      bool force_parallel, std::optional<char> label_delimiter, std::string label_column_name);
 
   dataset::DatasetLoaderPtr getDatasetLoader(
       const dataset::DataSourcePtr& data_source, bool shuffle);

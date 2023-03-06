@@ -436,6 +436,7 @@ pybind11_add_module(
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
+  auto_ml/src/cold_start/ColdStartUtils.cc
   auto_ml/src/udt/UDT.cc
   auto_ml/src/udt/utils/Conversion.cc
   auto_ml/src/udt/utils/Models.cc

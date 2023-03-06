@@ -63,4 +63,5 @@ class ColdStartDataSource final : public dataset::DataSource {
   std::string _resource_name;
 };
 
+using ColdStartDataSourcePtr = std::shared_ptr<ColdStartDataSource>;
 }  // namespace thirdai::dataset::cold_start

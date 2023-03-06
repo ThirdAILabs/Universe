@@ -4,6 +4,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt/src/graph/ExecutionConfig.h>
+#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
@@ -11,7 +12,6 @@
 #include <auto_ml/src/udt/utils/Train.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <pybind11/stl.h>
 #include <optional>
@@ -48,7 +48,7 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
   _dataset_factory = std::make_shared<data::TabularDatasetFactory>(
       input_data_types, temporal_tracking_relationships,
       std::vector<dataset::BlockPtr>{_label_block},
-      std::set<std::string>{target_name}, tabular_options, force_parallel);
+      std::set<std::string>{target_name}, tabular_options, force_parallel, _label_block->delimiter(), _label_block->columnName());
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                             defaults::FREEZE_HASH_TABLES);
@@ -180,7 +180,7 @@ void UDTClassifier::coldstart(
         "Cold start pretraining currently only supports integer labels.");
   }
 
-  auto datasource = thirdai::automl::cold_start::preprocessColdStartTrainSource(data, strong_column_names, weak_column_names, _dataset_factory);
+  auto data_source = cold_start::preprocessColdStartTrainSource(data, strong_column_names, weak_column_names, _dataset_factory);
 
   // TODO(david): reconsider validation. Instead of forcing users to pass in a
   // supervised dataset of query product pairs, can we create a synthetic

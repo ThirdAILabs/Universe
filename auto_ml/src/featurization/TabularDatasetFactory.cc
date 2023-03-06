@@ -4,6 +4,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/set.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <utility>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
@@ -17,12 +18,12 @@ TabularDatasetFactory::TabularDatasetFactory(
     const UserProvidedTemporalRelationships& provided_temporal_relationships,
     const std::vector<dataset::BlockPtr>& label_blocks,
     std::set<std::string> label_col_names, const TabularOptions& options,
-    bool force_parallel)
+    bool force_parallel, std::optional<char> label_delimiter, std::string label_column_name)
     : _data_types(std::move(data_types)),
       _label_col_names(std::move(label_col_names)),
       _delimiter(options.delimiter),
-      _label_delimiter_name(label_blocks[0]->delimiter()),
-      _label_column_name(label_blocks[0]->columnName()), {
+      _label_delimiter_name(label_delimiter),
+      _label_column_name(std::move(label_column_name)) {
   _vectors_map = processAllMetadata(_data_types, options);
 
   TemporalRelationships temporal_relationships =
