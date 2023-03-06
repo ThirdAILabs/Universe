@@ -46,6 +46,10 @@ class TrainStateManager:
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0
 
+        self.total_num_of_batches = min(
+            ray.get([worker.total_num_of_batches.remote() for worker in self.workers])
+        )
+
     def run_linear_cluster_communication(self):
         """
         This function implements the linear way of communicating between the node.
@@ -177,5 +181,5 @@ class TrainStateManager:
         epoch so far.
         """
         self.logging.info(
-            f"Epoch No: {epoch}, Batch Count: {self.batch_id_within_epoch}, Bolt Computation Time: {self.bolt_computation_time}, Averaging and Communcation Time: {self.averaging_and_communication_time}"
+            f"Epoch No: {epoch}, Batch Count: {self.batch_id_within_epoch}/{self.total_num_of_batches}, Bolt Computation Time: {self.bolt_computation_time}, Averaging and Communcation Time: {self.averaging_and_communication_time}"
         )

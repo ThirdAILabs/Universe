@@ -59,6 +59,12 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
 
+    # Note(Pratik): This function returns the total number of training
+    # batches. Reading it from file rather than data loader, as most of
+    # the training in distributed setting is in streaming setup.
+    def get_total_samples(self):
+        return sum(1 for _ in open(self.train_file)) // self.batch_size
+
     def load(self):
         self.generator = self.data_processor.get_dataset_loader(
             _create_data_source(self.train_file),

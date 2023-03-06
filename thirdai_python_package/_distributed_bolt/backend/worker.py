@@ -244,6 +244,12 @@ class Worker:
         """
         return self.model.num_batches()
 
+    def total_num_of_batches(self):
+        """
+        This function returns total number of batches, even in streaming setting for UDT.
+        """
+        return self.train_source.get_total_samples()
+
     def freeze_hash_tables(self):
         self.model.freeze_hash_tables(True)
 
