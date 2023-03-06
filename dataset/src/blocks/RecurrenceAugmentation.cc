@@ -44,15 +44,15 @@ std::vector<std::vector<BoltVector>> RecurrenceAugmentation::augment(
 
   for (uint32_t vector_id = 0; vector_id < builders.size(); vector_id++) {
     if (vector_id == _input_vector_index) {
-      vectors.at(vector_id) = inputVectors(
+      vectors.at(vector_id) = augmentInputVectors(
           /* builder= */ *builders.at(vector_id),
           /* elements= */ element_ids);
     } else if (vector_id == _label_vector_index) {
-      vectors.at(vector_id) = labelVectors(
+      vectors.at(vector_id) = augmentLabelVectors(
           /* builder= */ *builders.at(vector_id),
           /* elements= */ element_ids);
     } else {
-      vectors.at(vector_id) = otherVectors(
+      vectors.at(vector_id) = replicateOtherVectors(
           /* builder= */ *builders.at(vector_id),
           /* size= */ element_ids.size());
     }
@@ -61,7 +61,7 @@ std::vector<std::vector<BoltVector>> RecurrenceAugmentation::augment(
   return vectors;
 }
 
-std::vector<BoltVector> RecurrenceAugmentation::inputVectors(
+std::vector<BoltVector> RecurrenceAugmentation::augmentInputVectors(
     SegmentedFeatureVector& builder, std::vector<uint32_t> elements) {
   std::vector<BoltVector> vectors(elements.size());
   vectors[0] = builder.toBoltVector();
@@ -73,7 +73,7 @@ std::vector<BoltVector> RecurrenceAugmentation::inputVectors(
   return vectors;
 }
 
-std::vector<BoltVector> RecurrenceAugmentation::labelVectors(
+std::vector<BoltVector> RecurrenceAugmentation::augmentLabelVectors(
     SegmentedFeatureVector& builder, std::vector<uint32_t> elements) {
   auto vector = builder.toBoltVector();
   if (vector.len > 0) {
@@ -90,7 +90,7 @@ std::vector<BoltVector> RecurrenceAugmentation::labelVectors(
   return vectors;
 }
 
-std::vector<BoltVector> RecurrenceAugmentation::otherVectors(
+std::vector<BoltVector> RecurrenceAugmentation::replicateOtherVectors(
     SegmentedFeatureVector& builder, uint32_t size) {
   std::vector<BoltVector> vectors(size);
   for (auto& bolt_vec : vectors) {

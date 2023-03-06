@@ -71,14 +71,14 @@ class RecurrenceAugmentation final : public Augmentation {
   std::vector<uint32_t> elementIds(
       const std::vector<std::string_view>& sequence);
 
-  static std::vector<BoltVector> inputVectors(SegmentedFeatureVector& builder,
-                                              std::vector<uint32_t> elements);
+  static std::vector<BoltVector> augmentInputVectors(
+      SegmentedFeatureVector& builder, std::vector<uint32_t> elements);
 
-  static std::vector<BoltVector> labelVectors(SegmentedFeatureVector& builder,
-                                              std::vector<uint32_t> elements);
+  static std::vector<BoltVector> augmentLabelVectors(
+      SegmentedFeatureVector& builder, std::vector<uint32_t> elements);
 
-  static std::vector<BoltVector> otherVectors(SegmentedFeatureVector& builder,
-                                              uint32_t size);
+  static std::vector<BoltVector> replicateOtherVectors(
+      SegmentedFeatureVector& builder, uint32_t size);
 
   ColumnIdentifier _sequence_column;
   char _delimiter;
