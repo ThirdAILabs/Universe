@@ -4,12 +4,12 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/set.hpp>
 #include <cereal/types/unordered_map.hpp>
-#include <utility>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
+#include <utility>
 
 namespace thirdai::automl::data {
 
@@ -18,7 +18,8 @@ TabularDatasetFactory::TabularDatasetFactory(
     const UserProvidedTemporalRelationships& provided_temporal_relationships,
     const std::vector<dataset::BlockPtr>& label_blocks,
     std::set<std::string> label_col_names, const TabularOptions& options,
-    bool force_parallel, std::optional<char> label_delimiter, std::string label_column_name)
+    bool force_parallel, std::optional<char> label_delimiter,
+    std::string label_column_name)
     : _data_types(std::move(data_types)),
       _label_col_names(std::move(label_col_names)),
       _delimiter(options.delimiter),

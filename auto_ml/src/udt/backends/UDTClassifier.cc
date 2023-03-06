@@ -48,7 +48,8 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
   _dataset_factory = std::make_shared<data::TabularDatasetFactory>(
       input_data_types, temporal_tracking_relationships,
       std::vector<dataset::BlockPtr>{_label_block},
-      std::set<std::string>{target_name}, tabular_options, force_parallel, _label_block->delimiter(), _label_block->columnName());
+      std::set<std::string>{target_name}, tabular_options, force_parallel,
+      _label_block->delimiter(), _label_block->columnName());
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                             defaults::FREEZE_HASH_TABLES);
@@ -180,7 +181,8 @@ void UDTClassifier::coldstart(
         "Cold start pretraining currently only supports integer labels.");
   }
 
-  auto data_source = cold_start::preprocessColdStartTrainSource(data, strong_column_names, weak_column_names, _dataset_factory);
+  auto data_source = cold_start::preprocessColdStartTrainSource(
+      data, strong_column_names, weak_column_names, _dataset_factory);
 
   // TODO(david): reconsider validation. Instead of forcing users to pass in a
   // supervised dataset of query product pairs, can we create a synthetic

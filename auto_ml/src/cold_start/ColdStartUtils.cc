@@ -4,16 +4,13 @@
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <stdexcept>
 
-
 namespace thirdai::automl::cold_start {
 
-
 dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
-        const dataset::DataSourcePtr& data,
-        const std::vector<std::string>& strong_column_names,
-        const std::vector<std::string>& weak_column_names,
-        data::TabularDatasetFactoryPtr dataset_factory) {
-
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    data::TabularDatasetFactoryPtr dataset_factory) {
   if (dataset_factory->inputDataTypes().size() != 1 ||
       !data::asText(dataset_factory->inputDataTypes().begin()->second)) {
     throw std::invalid_argument(
@@ -46,6 +43,6 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
       /* label_delimiter= */ dataset_factory->labelDelimiter(),
       /* resource_name = */ data->resourceName());
 
-    return data_source;
-    }
-} // namespace thirdai::automl::cold_start
+  return data_source;
+}
+}  // namespace thirdai::automl::cold_start

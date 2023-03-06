@@ -219,13 +219,11 @@ void createModelsSubmodule(py::module_& module) {
       .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"),
            docs::TEXT_CLASSIFIER_SAVE);
 
-
   models_submodule.def("preprocess_cold_start_train_source",
                        &cold_start::preprocessColdStartTrainSource,
-                       py::arg("data"),
-                       py::arg("strong_column_names"),
-                       py::arg("weak_column_names"), py::arg("dataset_factory"));
-
+                       py::arg("data"), py::arg("strong_column_names"),
+                       py::arg("weak_column_names"),
+                       py::arg("dataset_factory"));
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

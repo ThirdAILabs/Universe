@@ -1,10 +1,9 @@
 import os
 
+import pandas as pd
 import pytest
 from distributed_utils import ray_two_node_cluster_config, remove_files
 from thirdai import bolt
-
-import pandas as pd
 
 catalog_file = "amazon-kaggle-product-catalog.csv"
 

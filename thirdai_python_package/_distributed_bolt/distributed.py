@@ -11,9 +11,9 @@ from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
 from thirdai._distributed_bolt.dataset_loaders import (
+    DistributedColdStartDatasetLoader,
     DistributedDatasetLoader,
     DistributedUDTDatasetLoader,
-    DistributedColdStartDatasetLoader,
 )
 from thirdai._thirdai import bolt
 
