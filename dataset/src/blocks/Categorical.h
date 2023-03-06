@@ -12,6 +12,7 @@
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cstdlib>
 #include <exception>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -159,8 +160,11 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
                                ThreadSafeVocabularyPtr vocab,
                                std::optional<char> delimiter = std::nullopt,
                                bool normalize_categories = false)
-      : CategoricalBlock(std::move(col),
-                         /* dim= */ vocab->maxSize().value(), delimiter),
+      : CategoricalBlock(
+            std::move(col),
+            /* dim= */
+            vocab->maxSize().value_or(std::numeric_limits<uint32_t>::max()),
+            delimiter),
         _vocab(std::move(vocab)),
         _normalize_categories(normalize_categories) {}
 
