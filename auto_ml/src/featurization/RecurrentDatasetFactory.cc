@@ -57,6 +57,8 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
 
   labeled_featurizer_input_blocks.push_back(_augmentation->inputBlock());
 
+  // This block is to parse the previous predictions that the model made and
+  // append it to the input
   inference_featurizer_input_blocks.push_back(
       dataset::NumericalCategoricalBlock::make(
           /* col= */ target_name,
