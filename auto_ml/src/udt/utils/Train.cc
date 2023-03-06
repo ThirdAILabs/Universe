@@ -1,5 +1,6 @@
 #include "Train.h"
 #include <auto_ml/src/udt/Defaults.h>
+#include <dataset/src/Datasets.h>
 
 namespace thirdai::automl::udt::utils {
 
@@ -13,7 +14,7 @@ void trainSingleEpochOnStream(bolt::BoltGraphPtr& model,
   while (auto datasets = dataset_loader->loadSome(
              batch_size, /* num_batches = */ max_in_memory_batches,
              /* verbose = */ train_config.verbose())) {
-    auto& [data, labels] = datasets.value();
+    auto [data, labels] = split_data_labels(std::move(datasets.value()));
 
     model->train({data}, labels, train_config, token);
   }
@@ -52,14 +53,14 @@ void trainInMemory(bolt::BoltGraphPtr& model,
                    licensing::TrainPermissionsToken token) {
   auto loaded_data = dataset_loader->loadAll(
       /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
-  auto [train_data, train_labels] = std::move(loaded_data);
+  auto [train_data, train_labels] = split_data_labels(std::move(loaded_data));
 
   uint32_t epochs = train_config.epochs();
 
   if (freeze_hash_tables && epochs > 1) {
     train_config.setEpochs(/* new_epochs=*/1);
 
-    model->train(train_data, train_labels, train_config);
+    model->train(train_data, train_labels, train_config, token);
 
     model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
@@ -101,15 +102,16 @@ bolt::TrainConfig getTrainConfig(
     train_config.silence();
   }
   if (validation) {
-    auto val_data = validation->first->loadAll(
+    auto val_dataset = validation->first->loadAll(
         /* batch_size= */ defaults::BATCH_SIZE, verbose);
+    auto [val_data, val_labels] = split_data_labels(std::move(val_dataset));
 
     bolt::EvalConfig val_config =
         getEvalConfig(validation->second.metrics(),
                       validation->second.sparseInference(), verbose);
 
     train_config.withValidation(
-        val_data.first, val_data.second, val_config,
+        val_data, val_labels, val_config,
         /* validation_frequency = */
         validation->second.stepsPerValidation().value_or(0));
   }

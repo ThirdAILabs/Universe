@@ -37,8 +37,6 @@ class Computation {
    */
   tensor::TensorPtr& tensor();
 
-  const tensor::TensorPtr& tensor() const;
-
   /**
    * Computes the activations of the neurons in the output of the computation
    * from its inputs using its source op. Calls the forward method of the source

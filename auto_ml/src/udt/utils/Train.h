@@ -3,6 +3,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
+#include <dataset/src/Datasets.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <optional>
 namespace thirdai::automl::udt::utils {
@@ -23,5 +24,8 @@ bolt::TrainConfig getTrainConfig(
 bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
                                bool sparse_inference, bool verbose,
                                bool validation = false);
+
+std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split_data_labels(
+    dataset::BoltDatasetList&& datasets);
 
 }  // namespace thirdai::automl::udt::utils

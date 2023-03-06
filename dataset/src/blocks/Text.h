@@ -32,13 +32,13 @@ class TextBlock : public Block {
       uint32_t index, const std::string_view& text) const = 0;
 
  protected:
-  std::exception_ptr buildSegment(ColumnarInputSample& input,
-                                  SegmentedFeatureVector& vec) final {
-    return encodeText(input.column(_col), vec);
+  void buildSegment(ColumnarInputSample& input,
+                    SegmentedFeatureVector& vec) final {
+    encodeText(input.column(_col), vec);
   }
 
-  virtual std::exception_ptr encodeText(std::string_view text,
-                                        SegmentedFeatureVector& vec) = 0;
+  virtual void encodeText(std::string_view text,
+                          SegmentedFeatureVector& vec) = 0;
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
     return {&_col};
@@ -86,16 +86,13 @@ class PairGramTextBlock final : public TextBlock {
   }
 
  protected:
-  std::exception_ptr encodeText(std::string_view text,
-                                SegmentedFeatureVector& vec) final {
+  void encodeText(std::string_view text, SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> pairgrams =
         token_encoding::pairgrams(token_encoding::tokenize(text::split(text)));
     token_encoding::mod(pairgrams, _dim);
     for (auto& [index, value] : token_encoding::sumRepeatedIndices(pairgrams)) {
       vec.addSparseFeatureToSegment(index, value);
     }
-
-    return nullptr;
   }
 
  private:
@@ -141,8 +138,7 @@ class NGramTextBlock final : public TextBlock {
   }
 
  protected:
-  std::exception_ptr encodeText(std::string_view text,
-                                SegmentedFeatureVector& vec) final {
+  void encodeText(std::string_view text, SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> ngrams =
         token_encoding::ngrams(text, /* n= */ _n, _delimiter);
     token_encoding::mod(ngrams, _dim);
@@ -150,8 +146,6 @@ class NGramTextBlock final : public TextBlock {
     for (auto& [index, value] : token_encoding::sumRepeatedIndices(ngrams)) {
       vec.addSparseFeatureToSegment(index, value);
     }
-
-    return nullptr;
   }
 
  private:
@@ -193,10 +187,9 @@ class CharKGramTextBlock final : public TextBlock {
   }
 
  protected:
-  std::exception_ptr encodeText(std::string_view text,
-                                SegmentedFeatureVector& vec) final {
+  void encodeText(std::string_view text, SegmentedFeatureVector& vec) final {
     if (text.empty()) {
-      return nullptr;
+      return;
     }
     std::string lower_case_text = text::lower(text);
 
@@ -220,8 +213,6 @@ class CharKGramTextBlock final : public TextBlock {
          token_encoding::sumRepeatedIndices(char_k_grams)) {
       vec.addSparseFeatureToSegment(index, value);
     }
-
-    return nullptr;
   }
 
  private:
