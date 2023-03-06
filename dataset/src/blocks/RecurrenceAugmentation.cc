@@ -75,7 +75,7 @@ std::vector<BoltVector> RecurrenceAugmentation::augmentInputVectors(
 
 std::vector<BoltVector> RecurrenceAugmentation::augmentLabelVectors(
     SegmentedFeatureVector& builder, std::vector<uint32_t> elements) {
-  if (builder.empty()) {
+  if (!builder.empty()) {
     throw std::invalid_argument(
         "RecurrenceAugmentation expects to be the exclusive feature in the "
         "label vector.");
