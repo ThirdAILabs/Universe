@@ -12,10 +12,6 @@ class NoOpAugmentation final : public Augmentation {
  public:
   NoOpAugmentation() {}
 
-  void prepareForBatch(ColumnarInputBatch& incoming_batch) final {
-    (void)incoming_batch;
-  }
-
   std::vector<std::vector<BoltVector>> augment(
       std::vector<SegmentedFeatureVectorPtr>&& builders,
       ColumnarInputSample& sample) final {

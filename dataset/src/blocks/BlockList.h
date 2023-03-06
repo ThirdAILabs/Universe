@@ -44,9 +44,6 @@ struct BlockList {
   std::shared_ptr<SegmentedFeatureVector> makeSegmentedFeatureVector(
       bool store_segment_feature_map);
 
-  void addVectorSegments(ColumnarInputSample& sample,
-                         SegmentedFeatureVector& segmented_vector);
-
   static bool computeAreDense(const std::vector<BlockPtr>& blocks);
 
   static bool allBlocksHaveColumnNumbers(const std::vector<BlockPtr>& blocks);

@@ -14,7 +14,7 @@ void trainSingleEpochOnStream(bolt::BoltGraphPtr& model,
   while (auto datasets = dataset_loader->loadSome(
              batch_size, /* num_batches = */ max_in_memory_batches,
              /* verbose = */ train_config.verbose())) {
-    auto [data, labels] = split(std::move(datasets.value()));
+    auto [data, labels] = split_data_labels(std::move(datasets.value()));
 
     model->train({data}, labels, train_config, token);
   }
@@ -51,14 +51,14 @@ void trainOnStream(bolt::BoltGraphPtr& model,
 void trainInMemory(bolt::BoltGraphPtr& model, dataset::BoltDatasetList datasets,
                    bolt::TrainConfig train_config, bool freeze_hash_tables,
                    licensing::TrainPermissionsToken token) {
-  auto [train_data, train_labels] = split(std::move(datasets));
+  auto [train_data, train_labels] = split_data_labels(std::move(datasets));
 
   uint32_t epochs = train_config.epochs();
 
   if (freeze_hash_tables && epochs > 1) {
     train_config.setEpochs(/* new_epochs=*/1);
 
-    model->train(train_data, train_labels, train_config);
+    model->train(train_data, train_labels, train_config, token);
 
     model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
@@ -119,7 +119,7 @@ bolt::TrainConfig getTrainConfig(
     bolt::EvalConfig val_config = getEvalConfig(
         validation->metrics(), validation->sparseInference(), verbose);
 
-    auto [val_data, val_labels] = split(std::move(val_dataset));
+    auto [val_data, val_labels] = split_data_labels(std::move(val_dataset));
 
     train_config.withValidation(val_data, val_labels, val_config,
                                 /* validation_frequency = */
@@ -177,7 +177,7 @@ py::object predictedClasses(const BoltBatch& outputs,
 
 // Splits a vector of datasets as returned by a dataset loader (where the labels
 // are the last dataset in the list)
-std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split(
+std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split_data_labels(
     dataset::BoltDatasetList&& datasets) {
   auto labels = datasets.back();
   datasets.pop_back();

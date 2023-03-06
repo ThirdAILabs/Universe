@@ -15,8 +15,6 @@ namespace thirdai::dataset {
 
 class Augmentation {
  public:
-  virtual void prepareForBatch(ColumnarInputBatch& incoming_batch) = 0;
-
   /**
    * Input: All segmented feature vectors (SFV) that correspond to a single
    * input sample.
