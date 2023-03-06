@@ -130,12 +130,12 @@ void TabularFeaturizer::processHeader(const std::string& header) {
 std::vector<std::vector<BoltVector>> TabularFeaturizer::consolidate(
     std::vector<std::vector<std::vector<BoltVector>>>&& vectors) {
   uint32_t n_output_samples = 0;
-  std::vector<uint32_t> offsets(vectors.size() + 1);
-  offsets[0] = 0;
-  for (uint32_t input_sample_id = 0; input_sample_id < vectors.size();
-       input_sample_id++) {
-    n_output_samples += vectors.at(input_sample_id).front().size();
-    offsets[input_sample_id + 1] = n_output_samples;
+  std::vector<uint32_t> offsets;
+  offsets.reserve(vectors.size() + 1);
+  offsets.push_back(0);
+  for (auto& sample : vectors) {
+    n_output_samples += sample.front().size();
+    offsets.push_back(n_output_samples);
   }
 
   std::vector<std::vector<BoltVector>> outputs(
