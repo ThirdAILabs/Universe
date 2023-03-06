@@ -137,4 +137,13 @@ bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
   return eval_config;
 }
 
+// Splits a vector of datasets as returned by a dataset loader (where the labels
+// are the last dataset in the list)
+std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split_data_labels(
+    dataset::BoltDatasetList&& datasets) {
+  auto labels = datasets.back();
+  datasets.pop_back();
+  return {datasets, labels};
+}
+
 }  // namespace thirdai::automl::udt::utils
