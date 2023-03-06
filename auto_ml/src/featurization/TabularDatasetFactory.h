@@ -70,6 +70,13 @@ class TabularDatasetFactory {
   bool hasTemporalRelationships() const { return !_temporal_context.empty(); }
 
   uint32_t inputDim() const {
+    /*
+      TabularDatasetFactory is used by UDTClassifier and UDTRegression,
+      which both expect a single input vector. Since we configured the
+      featurizer with input blocks in the first position and label blocks in
+      the second position, the dimension of the input vectors is the 0-th entry
+      of the return value of _labeld_featurizer->getDimensions()
+    */
     return _labeled_featurizer->getDimensions().at(0);
   }
 
