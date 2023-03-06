@@ -219,7 +219,12 @@ void createModelsSubmodule(py::module_& module) {
       .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"),
            docs::TEXT_CLASSIFIER_SAVE);
 
-  models_submodule.def("preprocess_cold_start_train_source",
+}
+
+void createDistributedPreprocessingWrapper(py::module_& module){
+  auto distributed_preprocessing_module = module.def_submodule("distributed_preprocessing");
+
+  distributed_preprocessing_module.def("preprocess_cold_start_train_source",
                        &cold_start::preprocessColdStartTrainSource,
                        py::arg("data"), py::arg("strong_column_names"),
                        py::arg("weak_column_names"),
