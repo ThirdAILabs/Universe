@@ -5,6 +5,7 @@ from time import time
 
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, logging
+from thirdai._distributed_bolt.dataset_loaders import DistributedUDTDatasetLoader
 
 
 def timed(f):
@@ -248,7 +249,10 @@ class Worker:
         """
         This function returns total number of batches, even in streaming setting for UDT.
         """
-        return self.train_source.get_total_samples()
+        if isinstance(self.train_source, DistributedUDTDatasetLoader):
+            return self.train_source.get_total_samples()
+        else:
+            return self.model.num_batches()
 
     def freeze_hash_tables(self):
         self.model.freeze_hash_tables(True)
