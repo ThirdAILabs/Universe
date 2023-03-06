@@ -12,6 +12,7 @@
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/NoOpAugmentation.h>
 #include <iterator>
+#include <memory>
 
 namespace thirdai::dataset {
 
@@ -24,27 +25,24 @@ class TabularFeaturizer : public Featurizer {
   explicit TabularFeaturizer(std::vector<BlockList> block_lists,
                              bool has_header = false, char delimiter = ',',
                              bool parallel = true)
+      : TabularFeaturizer(std::move(block_lists),
+                          std::make_shared<NoOpAugmentation>(), has_header,
+                          delimiter, parallel) {}
+
+  TabularFeaturizer(std::vector<BlockList> block_lists,
+                    AugmentationPtr augmentation, bool has_header = false,
+                    char delimiter = ',', bool parallel = true)
       : _expects_header(has_header),
         _delimiter(delimiter),
         _parallel(parallel),
         _num_cols_in_header(std::nullopt),
         _block_lists(std::move(block_lists)),
-        _augmentation(std::make_shared<NoOpAugmentation>()),
+        _augmentation(std::move(augmentation)),
         _expected_num_cols(0) {
     for (const auto& block_list : _block_lists) {
       _expected_num_cols =
           std::max(_expected_num_cols, block_list.expectedNumColumns());
     }
-  }
-
-  TabularFeaturizer(std::vector<BlockList> block_lists,
-                    AugmentationPtr augmentation, bool has_header = false,
-                    char delimiter = ',', bool parallel = true)
-      : TabularFeaturizer(std::move(block_lists), has_header, delimiter,
-                          parallel) {
-    // Not initialized in initializer list because initializer for delegating
-    // constructor must appear alone. NOLINTNEXTLINE
-    _augmentation = std::move(augmentation);
   }
 
   std::vector<std::vector<BoltVector>> featurize(
