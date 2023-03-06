@@ -33,9 +33,8 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     this exception_ptr and rethrow after.
   */
   std::exception_ptr featurization_err;
-#pragma omp parallel for default(none)                       \
-    shared(input_batch, featurized_batch, featurization_err, \
-           std::cout) if (_parallel)
+#pragma omp parallel for default(none) \
+    shared(input_batch, featurized_batch, featurization_err) if (_parallel)
   for (size_t sample_id = 0; sample_id < input_batch.size(); ++sample_id) {
     try {
       featurized_batch[sample_id] =
