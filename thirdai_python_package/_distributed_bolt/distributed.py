@@ -13,6 +13,7 @@ from thirdai._distributed_bolt.backend.train_state_manager import TrainStateMana
 from thirdai._distributed_bolt.dataset_loaders import (
     DistributedDatasetLoader,
     DistributedUDTDatasetLoader,
+    DistributedColdStartDatasetLoader,
 )
 from thirdai._thirdai import bolt
 
@@ -125,6 +126,68 @@ def add_distributed_to_udt():
         return metrics
 
     setattr(bolt.UDT, "train_distributed", train_distributed)
+
+    def cold_start_distributed(
+        self,
+        cluster_config: RayTrainingClusterConfig,
+        filenames: List[str],
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+        max_in_memory_batches: Optional[int] = None,
+        batch_size: Optional[int] = None,
+        learning_rate: float = 0.001,
+        epochs: int = 5,
+        metrics: List[str] = [],
+        callbacks: List[bolt.callbacks.Callback] = [],
+    ):
+
+        data_processor = self.get_data_processor()
+
+        # checks and raises an error if the given UDT is not supported in distributed context
+        self.verify_can_distribute()
+
+        train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
+        if callbacks:
+            train_config.with_callbacks(callbacks)
+        if metrics:
+            train_config.with_metrics(metrics)
+
+        if batch_size is None:
+            batch_size = self.default_train_batch_size
+
+        # calculating batch size per node
+        batch_size = batch_size // cluster_config.num_workers
+
+        model = self._get_model()
+
+        dist_model = DistributedDataParallel(
+            cluster_config=cluster_config,
+            model=model,
+            train_config=train_config,
+            train_sources=[
+                DistributedColdStartDatasetLoader(
+                    train_file=file,
+                    batch_size=batch_size,
+                    max_in_memory_batches=max_in_memory_batches,
+                    strong_column_names=strong_column_names,
+                    weak_column_names=weak_column_names,
+                    data_processor=data_processor,
+                )
+                for file in filenames
+            ],
+        )
+
+        # We are freezing hashtables by default for distributed training after one epoch,
+        # Ideally we should read freezehashtables from UDTOptions and then pass
+        # it to distributed Wrapper. However, for the time being we are just
+        # initializing freeze-hash-tables=True by default.
+        metrics = dist_model.train(freeze_hash_tables=True)
+
+        model = dist_model.get_model()
+
+        self._set_model(trained_model=model)
+
+    setattr(bolt.UDT, "cold_start_distributed", cold_start_distributed)
 
 
 class RayTrainingClusterConfig:
