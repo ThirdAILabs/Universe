@@ -78,13 +78,7 @@ py::object UDTRecurrentClassifier::evaluate(
     const dataset::DataSourcePtr& data, const std::vector<std::string>& metrics,
     bool sparse_inference, bool return_predicted_class, bool verbose,
     bool return_metrics) {
-  if (sparse_inference) {
-    // TODO(Geordie): We can actually use a special case of sparse inference
-    // where the active neurons set = the range of activations that corresponds
-    // with the current step. May be quite involved on the BOLT side of things.
-    throw std::invalid_argument(
-        "UDT cannot use sparse inference when doing recurrent classification.");
-  }
+  throwIfSparseInference(sparse_inference);
 
   bolt::EvalConfig eval_config =
       utils::getEvalConfig(metrics, sparse_inference, verbose);
@@ -109,6 +103,7 @@ py::object UDTRecurrentClassifier::evaluate(
 py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                                            bool sparse_inference,
                                            bool return_predicted_class) {
+  throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
 
   auto mutable_sample = sample;
@@ -153,6 +148,7 @@ struct PredictBatchProgress {
 py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
                                                 bool sparse_inference,
                                                 bool return_predicted_class) {
+  throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
 
   PredictBatchProgress progress(samples.size());
