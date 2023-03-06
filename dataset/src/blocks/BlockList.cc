@@ -33,7 +33,9 @@ void BlockList::prepareForBatch(ColumnarInputBatch& incoming_batch) {
 std::shared_ptr<SegmentedFeatureVector> BlockList::buildVector(
     ColumnarInputSample& sample, bool store_segment_feature_map) {
   auto segmented_vector = makeSegmentedFeatureVector(store_segment_feature_map);
-  addVectorSegments(sample, *segmented_vector);
+  for (auto& block : _blocks) {
+    block->addVectorSegment(sample, *segmented_vector);
+  }
   return segmented_vector;
 }
 
@@ -51,13 +53,6 @@ std::shared_ptr<SegmentedFeatureVector> BlockList::makeSegmentedFeatureVector(
   }
   return std::make_shared<SegmentedSparseFeatureVector>(
       store_segment_feature_map);
-}
-
-void BlockList::addVectorSegments(ColumnarInputSample& sample,
-                                  SegmentedFeatureVector& segmented_vector) {
-  for (auto& block : _blocks) {
-    block->addVectorSegment(sample, segmented_vector);
-  }
 }
 
 bool BlockList::computeAreDense(const std::vector<BlockPtr>& blocks) {
