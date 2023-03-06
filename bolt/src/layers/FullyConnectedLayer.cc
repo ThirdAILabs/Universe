@@ -426,8 +426,8 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  uint32_t print_hashes = 1;
-  uint32_t print_neurons = 1;
+  uint32_t print_hashes = 0;
+  uint32_t print_neurons = 0;
 
   if (print_hashes == 1 && !hashes.empty()) {
     std::cout << "AbraKaDabra" << std::endl;
