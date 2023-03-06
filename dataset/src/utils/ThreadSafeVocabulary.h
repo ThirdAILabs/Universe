@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/atomic.hpp>
+#include <cereal/types/optional.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 #include <algorithm>
@@ -75,7 +77,7 @@ class ThreadSafeVocabulary {
   }
 
   uint32_t getUid(const std::string& string) {
-    if (_current_vocab_size == _max_vocab_size) {
+    if (_max_vocab_size && (_current_vocab_size == _max_vocab_size.value())) {
       return getExistingUid(string);
     }
     return getUidInCriticalSection(string);
@@ -120,7 +122,7 @@ class ThreadSafeVocabulary {
     if (!_string_to_uid.count(string)) {
       std::stringstream error_ss;
       error_ss << "[ThreadSafeVocabulary] Seeing a new string '" << string
-               << "' after calling declareSeenAllStrings().";
+               << "' after seeing max_vocab_size strings.";
       throw std::invalid_argument(error_ss.str());
     }
     return _string_to_uid.at(string);
@@ -155,9 +157,6 @@ class ThreadSafeVocabulary {
   std::optional<uint32_t> _max_vocab_size;
   std::unordered_map<std::string, uint32_t> _string_to_uid;
   std::vector<std::string> _uid_to_string;
-
-  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
-  ThreadSafeVocabulary() {}
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
