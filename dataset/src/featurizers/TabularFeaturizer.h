@@ -7,8 +7,12 @@
 #include <cereal/types/vector.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
+#include <dataset/src/blocks/Augmentation.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/BlockList.h>
+#include <dataset/src/blocks/NoOpAugmentation.h>
+#include <iterator>
+#include <memory>
 
 namespace thirdai::dataset {
 
@@ -21,11 +25,19 @@ class TabularFeaturizer : public Featurizer {
   explicit TabularFeaturizer(std::vector<BlockList> block_lists,
                              bool has_header = false, char delimiter = ',',
                              bool parallel = true)
+      : TabularFeaturizer(std::move(block_lists),
+                          std::make_shared<NoOpAugmentation>(), has_header,
+                          delimiter, parallel) {}
+
+  TabularFeaturizer(std::vector<BlockList> block_lists,
+                    AugmentationPtr augmentation, bool has_header = false,
+                    char delimiter = ',', bool parallel = true)
       : _expects_header(has_header),
         _delimiter(delimiter),
         _parallel(parallel),
         _num_cols_in_header(std::nullopt),
         _block_lists(std::move(block_lists)),
+        _augmentation(std::move(augmentation)),
         _expected_num_cols(0) {
     for (const auto& block_list : _block_lists) {
       _expected_num_cols =
@@ -83,17 +95,28 @@ class TabularFeaturizer : public Featurizer {
                                                has_header, delimiter, parallel);
   }
 
+  static std::shared_ptr<TabularFeaturizer> make(
+      std::vector<BlockList> block_lists, AugmentationPtr augmentation,
+      bool has_header = false, char delimiter = ',', bool parallel = true) {
+    return std::make_shared<TabularFeaturizer>(std::move(block_lists),
+                                               std::move(augmentation),
+                                               has_header, delimiter, parallel);
+  }
+
  private:
-  void featurizeSampleInBatch(
-      uint32_t index_in_batch, ColumnarInputBatch& input_batch,
-      std::vector<std::vector<BoltVector>>& featurized_batch);
+  std::vector<std::vector<BoltVector>> featurizeSampleInBatch(
+      ColumnarInputSample& input_sample);
+
+  std::vector<std::vector<BoltVector>> consolidate(
+      std::vector<std::vector<std::vector<BoltVector>>>&& vectors);
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<Featurizer>(this), _expects_header, _delimiter,
-            _parallel, _num_cols_in_header, _expected_num_cols, _block_lists);
+            _parallel, _num_cols_in_header, _expected_num_cols, _block_lists,
+            _augmentation);
   }
 
   // Private constructor for cereal.
@@ -105,6 +128,7 @@ class TabularFeaturizer : public Featurizer {
   std::optional<uint32_t> _num_cols_in_header;
 
   std::vector<BlockList> _block_lists;
+  AugmentationPtr _augmentation;
   uint32_t _expected_num_cols;
 };
 

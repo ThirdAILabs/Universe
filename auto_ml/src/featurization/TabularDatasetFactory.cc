@@ -119,8 +119,7 @@ TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   auto input_blocks = makeNonTemporalInputBlocks(
       metadata->column_data_types, {metadata->key}, {}, {}, options);
 
-  auto key_vocab = dataset::ThreadSafeVocabulary::make(
-      /* vocab_size= */ 0, /* limit_vocab_size= */ false);
+  auto key_vocab = dataset::ThreadSafeVocabulary::make();
   auto label_block =
       dataset::StringLookupCategoricalBlock::make(metadata->key, key_vocab);
 

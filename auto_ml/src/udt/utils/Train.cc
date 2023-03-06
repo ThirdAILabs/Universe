@@ -105,16 +105,15 @@ bolt::TrainConfig getTrainConfig(
     const std::optional<Validation>& validation,
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval,
-    data::TabularDatasetFactoryPtr& dataset_factory) {
+    std::optional<uint32_t> logging_interval, bool has_temporal_relationships,
+    const DataSourceToDatasetLoader& source_to_dataset) {
   bolt::TrainConfig train_config =
       getTrainConfig(epochs, learning_rate, train_metrics, callbacks, verbose,
                      logging_interval);
-  if (validation && !dataset_factory->hasTemporalRelationships()) {
+  if (validation && !has_temporal_relationships) {
     auto val_dataset =
-        dataset_factory
-            ->getDatasetLoader(validation->data(),
-                               /* training= */ false)
+        source_to_dataset(validation->data(),
+                          /* training= */ false)
             ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
 
     bolt::EvalConfig val_config = getEvalConfig(

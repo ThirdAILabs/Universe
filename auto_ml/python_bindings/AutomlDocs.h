@@ -582,16 +582,16 @@ Args:
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
 
 Returns: 
-    (np.ndarray, Tuple[np.ndarray, np.ndarray], or List[int]): 
+    (np.ndarray, Tuple[np.ndarray, np.ndarray], List[int], or str): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
     of the active neurons and activations if the output is sparse. The shape of 
     each array will be (num_nonzeros_in_output, ). When the 
     `consecutive_integer_ids` argument of target column's categorical ColumnType
     object is set to False (as it is by default), UDT creates an internal 
     mapping between target class names and neuron ids. You can map neuron ids back to
-    target class names by calling the `class_names()` method. If the `prediction_depth`
-    of the model is > 1 and the task is classification then it will return a numpy array 
-    of integers indicating the predicted class for each timstamp up to `prediction_depth`.
+    target class names by calling the `class_names()` method. If the target column is 
+    a sequence, UDT will perform inference recursively and return a sequence in the 
+    same format as the target column; a string of elements delimited by a character.
 
 Examples:
     >>> # Suppose we configure UDT as follows:
@@ -666,17 +666,16 @@ Args:
     use_sparse_inference (bool, default=False): Whether or not to use sparse inference.
 
 Returns: 
-    (np.ndarray, Tuple[np.ndarray, np.ndarray], or List[List[int]]): 
+    (np.ndarray, Tuple[np.ndarray, np.ndarray], List[List[int]], or List[str]): 
     Returns a numpy array of the activations if the output is dense, or a tuple 
     of the active neurons and activations if the output is sparse. The shape of 
     each array will be (batch_size, num_nonzeros_in_output). When the 
     `consecutive_integer_ids` argument of target column's categorical ColumnType
     object is set to False (as it is by default), UDT creates an internal 
     mapping between target class names and neuron ids. You can map neuron ids back to
-    target class names by calling the `class_names()` method. If the `prediction_depth`
-    of the model is > 1 and the task is classification then it will return a numpy 
-    array of shape `(batch_size, prediction_depth)` which gives the predictions at
-    each timestep for each element in the batch.
+    target class names by calling the `class_names()` method. If the target column is 
+    a sequence, UDT will perform inference recursively and return a sequence in the 
+    same format as the target column; a string of elements delimited by a character. 
 
 Examples:
     >>> activations = model.predict_batch([
@@ -1237,7 +1236,7 @@ Example:
     A531,22
     A339,29
     ...
-    >>> deployment.UniversalDeepTransformer(
+    >>> bolt.UniversalDeepTransformer(
             data_types: {
                 "user_id": bolt.types.categorical(
                     delimiter=' ',
@@ -1273,7 +1272,7 @@ Example:
     >>> # We want to predict the current week's sales performance for each product using temporal context.
     >>> # For each product ID, we would like to track both their ad spend level and sales performance over time.
     >>> # Ad spend level is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
-    >>> model = deployment.UniversalDeepTransformer(
+    >>> model = bolt.UniversalDeepTransformer(
             data_types={
                 "product_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
@@ -1314,7 +1313,7 @@ Example:
     >>> # We want to predict the current week's sales performance for each product using temporal context.
     >>> # For each product ID, we would like to track both their ad spend and sales performance over time.
     >>> # Ad spend is known at the time of inference but sales performance is not. Then we can configure UDT as follows:
-    >>> model = deployment.UniversalDeepTransformer(
+    >>> model = bolt.UniversalDeepTransformer(
             data_types={
                 "product_id": bolt.types.categorical(),
                 "timestamp": bolt.types.date(),
@@ -1356,7 +1355,7 @@ Args:
         column.
 
 Example:
-    >>> deployment.UniversalDeepTransformer(
+    >>> bolt.UniversalDeepTransformer(
             data_types: {
                 "user_id": bolt.types.categorical(
                     delimiter=' ',
@@ -1381,7 +1380,7 @@ Args:
 
 
 Example:
-    >>> deployment.UniversalDeepTransformer(
+    >>> bolt.UniversalDeepTransformer(
             data_types: {
                 "hours_watched": bolt.types.numerical(range=(0, 25), granularity="xs")
             }
@@ -1404,7 +1403,7 @@ Args:
         appropriate encoding type.
 
 Example:
-    >>> deployment.UniversalDeepTransformer(
+    >>> bolt.UniversalDeepTransformer(
             data_types: {
                 "user_motto": bolt.types.text(average_n_words=10),
                 "user_bio": bolt.types.text()
@@ -1418,13 +1417,39 @@ Date column type. Use this object if a column contains date strings.
 Date strings must be in YYYY-MM-DD format.
 
 Example:
-    >>> deployment.UniversalDeepTransformer(
+    >>> bolt.UniversalDeepTransformer(
             data_types: {
                 "timestamp": bolt.types.date()
             }
             ...
         )
 )pbdoc";
+
+const char* const UDT_SEQUENCE_TYPE = R"pbdoc(
+ Sequence column type. Use this object if a column contains an ordered sequence 
+ of strings delimited by a character. The delimiter must be different than the 
+ delimiter between columns.
+
+ When the target column is a sequence type, then UDT will perform inferences 
+ recursively.
+
+ Args:
+     delimiter (str): Optional. The sequence delimiter. Defaults to " ".
+     max_length (int): Required if the column is the target. The maximum length 
+         of the sequence. If UDT sees longer sequences, elements beyond the provided
+         upper bound will be ignored.
+
+ Example:
+     >>> bolt.UniversalDeepTransformer(
+             data_types: {
+                 "input_sequence": bolt.types.sequence(delimiter='\t')
+                 "output_sequence": bolt.types.sequence(max_length=30) # max_length must be provided for target sequence.
+             },
+             target="output_sequence",
+             n_target_classes=26
+             ...
+         )
+ )pbdoc";
 
 const char* const TEXT_CLASSIFIER_INIT = R"pbdoc(
 Constructs a text classifier which takes in bert tokens and metadata and returns 
