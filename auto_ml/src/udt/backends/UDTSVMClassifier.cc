@@ -15,32 +15,36 @@ UDTSVMClassifier::UDTSVMClassifier(
     uint32_t n_target_classes, uint32_t input_dim,
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
-    : _classifier(utils::buildModel(input_dim, n_target_classes, user_args,
-                                    model_config),
+    : _classifier(utils::buildModel(
+                      /* input_dim= */ input_dim,
+                      /* output_dim= */ n_target_classes,
+                      /* args= */ user_args, /* model_config= */ model_config),
                   user_args.get<bool>("freeze_hash_tables", "boolean",
                                       defaults::FREEZE_HASH_TABLES)) {}
 
 void UDTSVMClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<DataSourceValidation>& validation,
+    const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
   auto featurizer = std::make_shared<dataset::SvmFeaturizer>();
-  auto dataset = svmDatasetLoader(data, /* shuffle= */ true);
+  auto train_dataset_loader = svmDatasetLoader(data, /* shuffle= */ true);
 
-  std::optional<DatasetLoaderValidation> validation_dataset = std::nullopt;
+  std::optional<ValidationDatasetLoader> validation_dataset_loader =
+      std::nullopt;
   if (validation) {
-    validation_dataset = DatasetLoaderValidation(
+    validation_dataset_loader = ValidationDatasetLoader(
         svmDatasetLoader(validation->first, /* shuffle= */ false),
         validation->second);
   }
 
-  _classifier.train(dataset, learning_rate, epochs, validation_dataset,
-                    batch_size_opt, max_in_memory_batches, metrics, callbacks,
-                    verbose, logging_interval);
+  _classifier.train(train_dataset_loader, learning_rate, epochs,
+                    validation_dataset_loader, batch_size_opt,
+                    max_in_memory_batches, metrics, callbacks, verbose,
+                    logging_interval);
 }
 
 py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,

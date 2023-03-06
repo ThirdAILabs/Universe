@@ -32,8 +32,8 @@ class ValidationArgs {
   bool _sparse_inference;
 };
 
-using DataSourceValidation = std::pair<dataset::DataSourcePtr, ValidationArgs>;
-using DatasetLoaderValidation =
+using ValidationDataSource = std::pair<dataset::DataSourcePtr, ValidationArgs>;
+using ValidationDatasetLoader =
     std::pair<dataset::DatasetLoaderPtr, ValidationArgs>;
 
 }  // namespace thirdai::automl::udt

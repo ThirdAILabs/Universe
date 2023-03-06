@@ -30,8 +30,10 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
                              const data::TabularOptions& tabular_options,
                              const std::optional<std::string>& model_config,
                              const config::ArgumentMap& user_args)
-    : _classifier(utils::buildModel(tabular_options.feature_hash_range,
-                                    n_target_classes, user_args, model_config),
+    : _classifier(utils::buildModel(
+                      /* input_dim= */ tabular_options.feature_hash_range,
+                      /* output_dim= */ n_target_classes,
+                      /* args= */ user_args, /* model_config= */ model_config),
                   user_args.get<bool>("freeze_hash_tables", "boolean",
                                       defaults::FREEZE_HASH_TABLES)) {
   bool normalize_target_categories = utils::hasSoftmaxOutput(model());
@@ -48,27 +50,28 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
 
 void UDTClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<DataSourceValidation>& validation,
+    const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
-  std::optional<DatasetLoaderValidation> validation_dataset = std::nullopt;
+  std::optional<ValidationDatasetLoader> validation_dataset_loader =
+      std::nullopt;
   if (validation) {
-    validation_dataset =
-        DatasetLoaderValidation(_dataset_factory->getDatasetLoader(
+    validation_dataset_loader =
+        ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
                                     validation->first, /* shuffle= */ false),
                                 validation->second);
   }
 
-  auto train_dataset =
+  auto train_dataset_loader =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  _classifier.train(train_dataset, learning_rate, epochs, validation_dataset,
-                    batch_size_opt, max_in_memory_batches, metrics, callbacks,
-                    verbose, logging_interval,
-                    licensing::TrainPermissionsToken(data));
+  _classifier.train(train_dataset_loader, learning_rate, epochs,
+                    validation_dataset_loader, batch_size_opt,
+                    max_in_memory_batches, metrics, callbacks, verbose,
+                    logging_interval, licensing::TrainPermissionsToken(data));
 }
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -120,7 +123,7 @@ void UDTClassifier::coldstart(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
-    const std::optional<DataSourceValidation>& validation,
+    const std::optional<ValidationDataSource>& validation,
     const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
   if (!integerTarget()) {
     throw std::invalid_argument(

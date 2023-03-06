@@ -86,7 +86,7 @@ void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
 
 bolt::TrainConfig getTrainConfig(
     uint32_t epochs, float learning_rate,
-    const std::optional<DatasetLoaderValidation>& validation,
+    const std::optional<ValidationDatasetLoader>& validation,
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {

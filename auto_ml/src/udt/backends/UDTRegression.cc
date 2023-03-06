@@ -22,8 +22,10 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
                              const config::ArgumentMap& user_args) {
   uint32_t output_bins = num_bins.value_or(defaults::REGRESSION_BINS);
 
-  _model = utils::buildModel(tabular_options.feature_hash_range, output_bins,
-                             user_args, model_config);
+  _model = utils::buildModel(
+      /* input_dim= */ tabular_options.feature_hash_range,
+      /* output_dim= */ output_bins, /* args= */ user_args,
+      /* model_config= */ model_config);
 
   _binning = dataset::RegressionBinningStrategy(
       target->range.first, target->range.second, output_bins);
@@ -46,7 +48,7 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
 
 void UDTRegression::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<DataSourceValidation>& validation,
+    const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
@@ -54,10 +56,10 @@ void UDTRegression::train(
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
-  std::optional<DatasetLoaderValidation> validation_dataset = std::nullopt;
+  std::optional<ValidationDatasetLoader> validation_dataset = std::nullopt;
   if (validation) {
     validation_dataset =
-        DatasetLoaderValidation(_dataset_factory->getDatasetLoader(
+        ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
                                     validation->first, /* shuffle= */ false),
                                 validation->second);
   }

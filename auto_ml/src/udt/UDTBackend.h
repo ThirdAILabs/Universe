@@ -31,7 +31,7 @@ class UDTBackend {
    */
   virtual void train(
       const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-      const std::optional<DataSourceValidation>& validation,
+      const std::optional<ValidationDataSource>& validation,
       std::optional<size_t> batch_size,
       std::optional<size_t> max_in_memory_batches,
       const std::vector<std::string>& metrics,
@@ -113,7 +113,7 @@ class UDTBackend {
                          const std::vector<std::string>& weak_column_names,
                          float learning_rate, uint32_t epochs,
                          const std::vector<std::string>& metrics,
-                         const std::optional<DataSourceValidation>& validation,
+                         const std::optional<ValidationDataSource>& validation,
                          const std::vector<bolt::CallbackPtr>& callbacks,
                          bool verbose) {
     (void)data;

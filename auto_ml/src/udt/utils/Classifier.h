@@ -18,7 +18,7 @@ class Classifier {
 
   void train(dataset::DatasetLoaderPtr& dataset, float learning_rate,
              uint32_t epochs,
-             const std::optional<DatasetLoaderValidation>& validation,
+             const std::optional<ValidationDatasetLoader>& validation,
              std::optional<size_t> batch_size_opt,
              std::optional<size_t> max_in_memory_batches,
              const std::vector<std::string>& metrics,
