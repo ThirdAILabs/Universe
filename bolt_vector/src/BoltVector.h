@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cereal/access.hpp>
-#include <sys/types.h>
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
