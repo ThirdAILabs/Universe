@@ -165,8 +165,6 @@ TEST(ThreadSafeVocabularyTests, SeenAllStringsBehavior) {
 
   getUids(vocab, seen_strings);  // Build vocabulary.
 
-  vocab.fixVocab();
-
   std::vector<uint32_t> uids = getUids(vocab, seen_strings);
 
   auto reverted_strings = backToStrings(vocab, uids);
@@ -186,7 +184,7 @@ TEST(ThreadSafeVocabularyTests, UidOutOfRangeThrowsError) {
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       ThreadSafeVocabulary::make(std::move(string_to_uid_map),
-                                 /* fixed = */ true),
+                                 /* max_vocab_size= */ 1),
       std::invalid_argument);
 }
 

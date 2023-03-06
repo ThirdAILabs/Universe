@@ -39,14 +39,14 @@ class RecurrenceAugmentation final : public Augmentation {
   BlockPtr inputBlock() {
     return std::make_shared<PlaceholderBlock>(
         /* name= */ "RecurrenceInput",
-        /* dim= */ _vocab.vocabSize() * _max_recurrence,
+        /* dim= */ _vocab.maxSize().value() * _max_recurrence,
         /* dense= */ false, /* column_identifier= */ _sequence_column);
   }
 
   BlockPtr labelBlock() {
     return std::make_shared<PlaceholderBlock>(
         /* name= */ "RecurrenceLabel",
-        /* dim= */ _vocab.vocabSize() * _max_recurrence,
+        /* dim= */ _vocab.maxSize().value() * _max_recurrence,
         /* dense= */ false, /* column_identifiers= */ _sequence_column);
   }
 

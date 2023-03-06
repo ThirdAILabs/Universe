@@ -160,7 +160,7 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
                                std::optional<char> delimiter = std::nullopt,
                                bool normalize_categories = false)
       : CategoricalBlock(std::move(col),
-                         /* dim= */ vocab->vocabSize(), delimiter),
+                         /* dim= */ vocab->maxSize().value(), delimiter),
         _vocab(std::move(vocab)),
         _normalize_categories(normalize_categories) {}
 

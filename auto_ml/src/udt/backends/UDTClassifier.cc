@@ -269,7 +269,7 @@ dataset::CategoricalBlockPtr UDTClassifier::labelBlock(
   }
 
   _class_name_to_neuron = dataset::ThreadSafeVocabulary::make(
-      /* vocab_size= */ n_target_classes);
+      /* max_vocab_size= */ n_target_classes);
 
   return dataset::StringLookupCategoricalBlock::make(
       /* col= */ target_name, /* vocab= */ _class_name_to_neuron,
