@@ -113,6 +113,7 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurizeSampleInBatch(
 }
 
 void TabularFeaturizer::processHeader(const std::string& header) {
+  // TODO(Geordie): We don't need both num cols in header and expected num cols.
   dataset::ColumnNumberMap column_number_map(header, _delimiter);
   _num_cols_in_header = column_number_map.size();
 
