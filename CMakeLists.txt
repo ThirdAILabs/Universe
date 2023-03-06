@@ -366,7 +366,6 @@ set(THIRDAI_SOURCES
     hashtable/src/VectorHashTable.cc
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
-    dataset/src/VectorBuffer.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
     dataset/src/Shuffler.cc
     dataset/src/utils/TokenEncoding.cc

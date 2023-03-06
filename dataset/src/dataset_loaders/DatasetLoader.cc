@@ -132,34 +132,4 @@ void DatasetLoader::fillVectorBuffer(size_t num_rows) {
   }
 }
 
-// std::vector<DatasetSlice> DatasetLoader::popFromBuffer(
-//     size_t target_num_batches, size_t target_batch_size) {
-//   size_t num_datasets = _featurizer->getNumDatasets();
-//   std::vector<std::vector<BoltBatch>> batches(num_datasets);
-
-//   for (size_t batch_id = 0; batch_id < target_num_batches; batch_id++) {
-//     // The ith element in this list contains BoltVectors corresponding to the
-//     // ith Dataset this DatasetLoader is loading
-//     std::vector<std::vector<BoltVector>> batch(num_datasets);
-//     for (size_t vec_id = 0; vec_id < target_batch_size; vec_id++) {
-//       if (auto next_vectors = _buffer.pop()) {
-//         assert(next_vectors->size() == num_datasets);
-//         for (size_t dataset_id = 0; dataset_id < num_datasets; dataset_id++)
-//         {
-//           batch.at(dataset_id).push_back(next_vectors->at(dataset_id));
-//         }
-//       }
-//     }
-
-//     if (batch.at(0).empty()) {
-//       break;
-//     }
-
-//     for (size_t dataset_id = 0; dataset_id < batch.size(); dataset_id++) {
-//       batches.at(dataset_id).emplace_back(std::move(batch.at(dataset_id)));
-//     }
-//   }
-
-//   return batches;
-// }
 }  // namespace thirdai::dataset
