@@ -25,7 +25,6 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
   for (BlockList& block_list : _block_lists) {
     block_list.prepareForBatch(input_batch);
   }
-  _augmentation->prepareForBatch(input_batch);
 
   /*
     Because throwing an error inside an OpenMP structured block has undefined

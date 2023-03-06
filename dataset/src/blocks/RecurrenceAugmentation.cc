@@ -28,12 +28,6 @@ RecurrenceAugmentation::RecurrenceAugmentation(ColumnIdentifier sequence_column,
   _vocab.getUid(EOS);
 }
 
-void RecurrenceAugmentation::prepareForBatch(
-    ColumnarInputBatch& incoming_batch) {
-  (void)incoming_batch;
-  // Do nothing.
-}
-
 std::vector<std::vector<BoltVector>> RecurrenceAugmentation::augment(
     std::vector<SegmentedFeatureVectorPtr>&& builders,
     ColumnarInputSample& input_sample) {

@@ -26,8 +26,6 @@ class RecurrenceAugmentation final : public Augmentation {
                                   uint32_t input_vector_index,
                                   uint32_t label_vector_index);
 
-  void prepareForBatch(ColumnarInputBatch& incoming_batch) final;
-
   std::vector<std::vector<BoltVector>> augment(
       std::vector<SegmentedFeatureVectorPtr>&& builders,
       ColumnarInputSample& input_sample) final;
