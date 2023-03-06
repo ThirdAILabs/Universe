@@ -124,8 +124,9 @@ class TrainStateManager:
 
     def move_to_next_epoch(self):
         self.batch_id_within_epoch = 0
-        ray.get([worker.end_epoch.remote() for worker in self.workers])
+        metrics = ray.get([worker.end_epoch.remote() for worker in self.workers])
         ray.get([worker.move_to_next_epoch.remote() for worker in self.workers])
+        return metrics
 
     def freeze_hash_tables(self):
         ray.get([worker.freeze_hash_tables.remote() for worker in self.workers])

@@ -187,6 +187,8 @@ def add_distributed_to_udt():
 
         self._set_model(trained_model=model)
 
+        return metrics
+
     setattr(bolt.UDT, "cold_start_distributed", cold_start_distributed)
 
 
@@ -387,7 +389,7 @@ class DistributedDataParallel:
         while train_state_manager.train_batch(epoch=epoch):
             self.total_batches_trained += 1
         self.total_batches_trained += 1
-        train_state_manager.move_to_next_epoch()
+        return train_state_manager.move_to_next_epoch()
 
     def train(self, freeze_hash_tables=False) -> Dict[str, Union[int, str]]:
         """
@@ -412,8 +414,9 @@ class DistributedDataParallel:
         )
 
         starting_epoch = 0
+        train_metrics = {}
         if freeze_hash_tables:
-            self.train_on_epoch(
+            train_metrics = self.train_on_epoch(
                 train_state_manager=train_state_manager,
                 epoch=starting_epoch,
             )
@@ -423,12 +426,16 @@ class DistributedDataParallel:
             starting_epoch += 1
 
         for epoch in range(starting_epoch, self.train_config.num_epochs):
-            self.train_on_epoch(train_state_manager=train_state_manager, epoch=epoch)
+            train_metrics = self.train_on_epoch(
+                train_state_manager=train_state_manager, epoch=epoch
+            )
 
-        return {
+        distributed_train_metrics = {
             "time": time.time() - train_start,
             "total_batches_trained": self.total_batches_trained,
+            "train_metrics": train_metrics,
         }
+        return distributed_train_metrics
 
     def get_model(self, worker_id=0):
         return ray.get(self.workers[worker_id].model.remote())

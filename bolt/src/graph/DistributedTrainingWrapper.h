@@ -86,7 +86,13 @@ class DistributedTrainingWrapper {
     _bolt_graph->freezeHashTables(insert_labels_if_not_found);
   }
 
-  void end_epoch() { _metric_aggregator.logAndReset(); }
+  MetricData end_epoch() { 
+    _metric_aggregator.logAndReset(); 
+    auto metric_data = _metric_aggregator.getOutput();
+    return metric_data;
+  }
+
+
 
  private:
   void requireTrainContext() {

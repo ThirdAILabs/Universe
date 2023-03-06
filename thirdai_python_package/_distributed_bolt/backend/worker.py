@@ -248,7 +248,7 @@ class Worker:
         self.model.freeze_hash_tables(True)
 
     def end_epoch(self):
-        self.model.end_epoch()
+        return self.model.end_epoch()
 
     def model(self):
         return self.model.model

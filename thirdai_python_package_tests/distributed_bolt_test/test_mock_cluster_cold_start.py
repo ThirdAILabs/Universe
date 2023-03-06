@@ -2,16 +2,29 @@ import os
 
 import pandas as pd
 import pytest
-from distributed_utils import ray_two_node_cluster_config, remove_files
+from distributed_utils import ray_two_node_cluster_config, split_into_2
 from thirdai import bolt
 
 catalog_file = "amazon-kaggle-product-catalog.csv"
 
 
 def setup_module():
-    os.system(
-        "curl -L https://www.dropbox.com/s/tf7e5m0cikhcb95/amazon-kaggle-product-catalog-sampled-0.05.csv?dl=0 -o amazon-kaggle-product-catalog.csv"
-    )
+    import os
+
+    path = "amazon_product_catalog"
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    if not os.path.exists(f"{path}/part1") or not os.path.exists(f"{path}/part2"):
+        os.system(
+            "curl -L https://www.dropbox.com/s/tf7e5m0cikhcb95/amazon-kaggle-product-catalog-sampled-0.05.csv?dl=0 -o amazon-kaggle-product-catalog.csv"
+        )
+        split_into_2(
+            file_to_split="amazon-kaggle-product-catalog.csv",
+            destination_file_1=f"{path}/part1",
+            destination_file_2=f"{path}/part2",
+            with_header=True,
+        )
 
 
 def get_udt_cold_start_model():
@@ -35,7 +48,10 @@ def test_distributed_cold_start(ray_two_node_cluster_config):
 
     metrics = udt_model.cold_start_distributed(
         cluster_config=ray_two_node_cluster_config("linear"),
-        filenames=[f"{os.getcwd()}/xaa", f"{os.getcwd()}/xab"],
+        filenames=[
+            f"{os.getcwd()}/amazon_product_catalog/part1",
+            f"{os.getcwd()}/amazon_product_catalog/part2",
+        ],
         strong_column_names=["TITLE"],
         weak_column_names=["DESCRIPTION", "BULLET_POINTS", "BRAND"],
         batch_size=2048,
@@ -43,3 +59,12 @@ def test_distributed_cold_start(ray_two_node_cluster_config):
         epochs=5,
         metrics=["categorical_accuracy"],
     )
+    train_metrics = metrics["train_metrics"]
+    overall_metrics = {}
+    for metrics_per_node in train_metrics:
+        for key, value in metrics_per_node.items():
+            if key not in overall_metrics:
+                overall_metrics[key] = 0
+            overall_metrics[key] += value[0] / 2
+
+    assert overall_metrics["categorical_accuracy"] > 0.7
