@@ -119,8 +119,7 @@ TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
   auto input_blocks = makeNonTemporalInputBlocks(
       metadata->column_data_types, {metadata->key}, {}, {}, options);
 
-  auto key_vocab = dataset::ThreadSafeVocabulary::make(
-      /* vocab_size= */ 0, /* limit_vocab_size= */ false);
+  auto key_vocab = dataset::ThreadSafeVocabulary::make();
   auto label_block =
       dataset::StringLookupCategoricalBlock::make(metadata->key, key_vocab);
 
@@ -130,7 +129,7 @@ TabularDatasetFactory::makeProcessedVectorsForCategoricalColumn(
                                /* hash_range= */ options.feature_hash_range),
                            dataset::BlockList({label_block})},
       /* has_header= */ true,
-      /* delimiter= */ metadata->delimiter, /* parallel= */ true);
+      /* delimiter= */ metadata->delimiter);
 
   // Here we set parallel=true because there are no temporal
   // relationships in the metadata file.
@@ -154,8 +153,8 @@ TabularDatasetFactory::preprocessedVectorsFromDataset(
 
   if (datasets.size() != 2) {
     throw std::runtime_error(
-        "For now, the featurizer should return just a single input and label"
-        "dataset.");
+        "The featurizer for preprocessed vectors should return only a single "
+        "input and label");
   }
   auto vectors = datasets.at(0);
   auto ids = datasets.at(1);

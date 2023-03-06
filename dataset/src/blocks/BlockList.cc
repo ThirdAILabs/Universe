@@ -24,6 +24,7 @@ void BlockList::updateColumnNumbers(const ColumnNumberMap& column_number_map) {
   }
   _expected_num_columns = computeExpectedNumColumns(_blocks);
 }
+
 void BlockList::prepareForBatch(ColumnarInputBatch& incoming_batch) {
   for (const auto& block : _blocks) {
     block->prepareForBatch(incoming_batch);
@@ -33,7 +34,9 @@ void BlockList::prepareForBatch(ColumnarInputBatch& incoming_batch) {
 std::shared_ptr<SegmentedFeatureVector> BlockList::buildVector(
     ColumnarInputSample& sample, bool store_segment_feature_map) {
   auto segmented_vector = makeSegmentedFeatureVector(store_segment_feature_map);
-  addVectorSegments(sample, *segmented_vector);
+  for (auto& block : _blocks) {
+    block->addVectorSegment(sample, *segmented_vector);
+  }
   return segmented_vector;
 }
 
@@ -51,6 +54,13 @@ std::shared_ptr<SegmentedFeatureVector> BlockList::makeSegmentedFeatureVector(
   }
   return std::make_shared<SegmentedSparseFeatureVector>(
       store_segment_feature_map);
+}
+
+bool BlockList::computeAreDense(const std::vector<BlockPtr>& blocks) {
+  auto are_dense = std::all_of(
+      blocks.begin(), blocks.end(),
+      [](const std::shared_ptr<Block>& block) { return block->isDense(); });
+  return are_dense;
 }
 
 bool BlockList::allBlocksHaveColumnNumbers(
@@ -87,20 +97,6 @@ uint32_t BlockList::computeFeatureDim(const std::vector<BlockPtr>& blocks) {
     dim += block->featureDim();
   }
   return dim;
-}
-
-void BlockList::addVectorSegments(ColumnarInputSample& sample,
-                                  SegmentedFeatureVector& segmented_vector) {
-  for (auto& block : _blocks) {
-    block->addVectorSegment(sample, segmented_vector);
-  }
-}
-
-bool BlockList::computeAreDense(const std::vector<BlockPtr>& blocks) {
-  auto are_dense = std::all_of(
-      blocks.begin(), blocks.end(),
-      [](const std::shared_ptr<Block>& block) { return block->isDense(); });
-  return are_dense;
 }
 
 }  // namespace thirdai::dataset

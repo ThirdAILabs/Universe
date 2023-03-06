@@ -78,20 +78,14 @@ py::object UDTRecurrentClassifier::evaluate(
     const dataset::DataSourcePtr& data, const std::vector<std::string>& metrics,
     bool sparse_inference, bool return_predicted_class, bool verbose,
     bool return_metrics) {
-  if (sparse_inference) {
-    // TODO(Geordie): We can actually use a special case of sparse inference
-    // where the active neurons set = the range of activations that corresponds
-    // with the current step. May be quite involved on the BOLT side of things.
-    throw std::invalid_argument(
-        "UDT cannot use sparse inference when doing recurrent classification.");
-  }
+  throwIfSparseInference(sparse_inference);
 
   bolt::EvalConfig eval_config =
       utils::getEvalConfig(metrics, sparse_inference, verbose);
 
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
                      ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
-  auto [test_data, test_labels] = utils::split(std::move(dataset));
+  auto [test_data, test_labels] = utils::split_data_labels(std::move(dataset));
 
   auto [output_metrics, output] =
       _model->evaluate(test_data, test_labels, eval_config);
@@ -109,6 +103,7 @@ py::object UDTRecurrentClassifier::evaluate(
 py::object UDTRecurrentClassifier::predict(const MapInput& sample,
                                            bool sparse_inference,
                                            bool return_predicted_class) {
+  throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
 
   auto mutable_sample = sample;
@@ -129,6 +124,7 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
 
   // We previously incorporated predictions at each step into the sample.
   // Now, we extract
+  // TODO(Geordie/Tharun): Should we join or return list instead?
   return py::cast(text::join(predictions, {_target->delimiter}));
 }
 
@@ -153,6 +149,7 @@ struct PredictBatchProgress {
 py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
                                                 bool sparse_inference,
                                                 bool return_predicted_class) {
+  throwIfSparseInference(sparse_inference);
   (void)return_predicted_class;
 
   PredictBatchProgress progress(samples.size());
@@ -185,6 +182,7 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
 
   py::list output(mutable_samples.size());
   for (uint32_t i = 0; i < mutable_samples.size(); i++) {
+    // TODO(Geordie/Tharun): Should we join or return list instead?
     output[i] = text::join(all_predictions[i], {_target->delimiter});
   }
 

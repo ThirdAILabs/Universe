@@ -52,7 +52,7 @@ bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
                                bool sparse_inference, bool verbose,
                                bool validation = false);
 
-std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split(
+std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split_data_labels(
     dataset::BoltDatasetList&& datasets);
 
 }  // namespace thirdai::automl::udt::utils

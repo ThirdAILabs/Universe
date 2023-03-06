@@ -48,7 +48,6 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
   // This copies
   auto inference_featurizer_input_blocks = labeled_featurizer_input_blocks;
 
-  // NOLINTNEXTLINE
   _augmentation = dataset::RecurrenceAugmentation::make(
       /* sequence_column= */ target_name,
       /* delimiter= */ _target->delimiter,
@@ -58,6 +57,8 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
 
   labeled_featurizer_input_blocks.push_back(_augmentation->inputBlock());
 
+  // This block is to parse the previous predictions that the model made and
+  // append it to the input
   inference_featurizer_input_blocks.push_back(
       dataset::NumericalCategoricalBlock::make(
           /* col= */ target_name,
@@ -86,10 +87,10 @@ RecurrentDatasetFactory::RecurrentDatasetFactory(
 }
 
 dataset::DatasetLoaderPtr RecurrentDatasetFactory::getDatasetLoader(
-    const dataset::DataSourcePtr& data_source, bool training) {
+    const dataset::DataSourcePtr& data_source, bool shuffle) {
   return std::make_unique<dataset::DatasetLoader>(data_source,
                                                   _labeled_featurizer,
-                                                  /* shuffle= */ training);
+                                                  /* shuffle= */ shuffle);
 }
 
 std::vector<BoltVector> RecurrentDatasetFactory::featurizeInput(

@@ -17,16 +17,13 @@ namespace thirdai::dataset {
 
 class RecurrenceAugmentation final : public Augmentation {
  public:
-  static constexpr auto EOS = "$EOS$";
-  static constexpr size_t EOS_SIZE = 5;
+  static constexpr std::string_view EOS = "$EOS$";
 
   explicit RecurrenceAugmentation(ColumnIdentifier sequence_column,
                                   char delimiter, uint32_t max_recurrence,
                                   uint32_t vocab_size,
                                   uint32_t input_vector_index,
                                   uint32_t label_vector_index);
-
-  void prepareForBatch(ColumnarInputBatch& incoming_batch) final;
 
   std::vector<std::vector<BoltVector>> augment(
       std::vector<SegmentedFeatureVectorPtr>&& builders,
@@ -39,14 +36,14 @@ class RecurrenceAugmentation final : public Augmentation {
   BlockPtr inputBlock() {
     return std::make_shared<PlaceholderBlock>(
         /* name= */ "RecurrenceInput",
-        /* dim= */ _vocab.vocabSize() * _max_recurrence,
+        /* dim= */ _vocab.maxSize().value() * _max_recurrence,
         /* dense= */ false, /* column_identifier= */ _sequence_column);
   }
 
   BlockPtr labelBlock() {
     return std::make_shared<PlaceholderBlock>(
         /* name= */ "RecurrenceLabel",
-        /* dim= */ _vocab.vocabSize() * _max_recurrence,
+        /* dim= */ _vocab.maxSize().value() * _max_recurrence,
         /* dense= */ false, /* column_identifiers= */ _sequence_column);
   }
 
@@ -71,14 +68,14 @@ class RecurrenceAugmentation final : public Augmentation {
   std::vector<uint32_t> elementIds(
       const std::vector<std::string_view>& sequence);
 
-  static std::vector<BoltVector> inputVectors(SegmentedFeatureVector& builder,
-                                              std::vector<uint32_t> elements);
+  static std::vector<BoltVector> augmentInputVectors(
+      SegmentedFeatureVector& builder, std::vector<uint32_t> elements);
 
-  static std::vector<BoltVector> labelVectors(SegmentedFeatureVector& builder,
-                                              std::vector<uint32_t> elements);
+  static std::vector<BoltVector> augmentLabelVectors(
+      SegmentedFeatureVector& builder, std::vector<uint32_t> elements);
 
-  static std::vector<BoltVector> otherVectors(SegmentedFeatureVector& builder,
-                                              uint32_t size);
+  static std::vector<BoltVector> replicateOtherVectors(
+      SegmentedFeatureVector& builder, uint32_t size);
 
   ColumnIdentifier _sequence_column;
   char _delimiter;

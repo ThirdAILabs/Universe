@@ -10,10 +10,12 @@ namespace thirdai::dataset {
 /**
  * A concrete implementation of SegmentedSparseFeatureVector for sparse vectors.
  */
-class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
+class SegmentedSparseFeatureVector final : public SegmentedFeatureVector {
  public:
   explicit SegmentedSparseFeatureVector(bool store_segment_feature_map = false)
       : SegmentedFeatureVector(store_segment_feature_map) {}
+
+  bool empty() const final { return _indices.empty(); }
 
   void addSparseFeatureToSegment(uint32_t index, float value) final {
     if (_n_dense_added > 0) {
@@ -120,12 +122,14 @@ class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
  * are not concatenated but instead hashed to the same range with a
  * different salt for each segment.
  */
-class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
+class HashedSegmentedFeatureVector final : public SegmentedFeatureVector {
  public:
   explicit HashedSegmentedFeatureVector(uint32_t hash_range,
                                         bool store_segment_feature_map = false)
       : SegmentedFeatureVector(store_segment_feature_map),
         _hash_range(hash_range) {}
+
+  bool empty() const final { return _indices.empty(); }
 
   void addSparseFeatureToSegment(uint32_t index, float value) final {
     if (_n_dense_added > 0) {
@@ -216,10 +220,12 @@ class HashedSegmentedFeatureVector : public SegmentedFeatureVector {
 /**
  * A concrete implementation of SegmentedFeatureVector for dense vectors.
  */
-class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
+class SegmentedDenseFeatureVector final : public SegmentedFeatureVector {
  public:
   explicit SegmentedDenseFeatureVector(bool store_segment_feature_map = false)
       : SegmentedFeatureVector(store_segment_feature_map) {}
+
+  bool empty() const final { return _values.empty(); }
 
   void addSparseFeatureToSegment(uint32_t index, float value) final {
     (void)index;

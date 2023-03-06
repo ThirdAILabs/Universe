@@ -55,6 +55,11 @@ UDT::UDT(data::ColumnDataTypes data_types,
         data_types, temporal_tracking_relationships, target_col, numerical,
         n_target_classes, tabular_options, model_config, user_args);
   } else if (auto sequence = data::asSequence(target)) {
+    if (!n_target_classes.has_value()) {
+      throw std::invalid_argument(
+          "The number of target classes must be specified for sequence "
+          "data.");
+    }
     _backend = std::make_unique<UDTRecurrentClassifier>(
         data_types, temporal_tracking_relationships, target_col, sequence,
         n_target_classes.value(), tabular_options, model_config, user_args);

@@ -18,24 +18,14 @@ RecurrenceAugmentation::RecurrenceAugmentation(ColumnIdentifier sequence_column,
       _max_recurrence(max_recurrence),
       _input_vector_index(input_vector_index),
       _label_vector_index(label_vector_index),
-      _vocab(vocab_size + 1, true) {
+      _vocab(vocab_size + 1) {
   /*
     We will fix the vocabulary for better parallelism when the vocabulary is
     full. The EOS token is registered at construction time to avoid the case
     where we cannot fix the vocabulary because EOS is not found in the dataset,
     e.g. if all target sequences are max_recurrence elements long.
   */
-  _vocab.getUid(EOS);
-}
-
-void RecurrenceAugmentation::prepareForBatch(
-    ColumnarInputBatch& incoming_batch) {
-  (void)incoming_batch;
-  // Fix vocabulary when we no longer expect new elements. If the vocabulary is
-  // fixed, we can convert strings to IDs without entering a critical section.
-  if (_vocab.isFull()) {
-    _vocab.fixVocab();
-  }
+  _vocab.getUid(std::string(EOS));
 }
 
 std::vector<std::vector<BoltVector>> RecurrenceAugmentation::augment(
@@ -48,15 +38,15 @@ std::vector<std::vector<BoltVector>> RecurrenceAugmentation::augment(
 
   for (uint32_t vector_id = 0; vector_id < builders.size(); vector_id++) {
     if (vector_id == _input_vector_index) {
-      vectors.at(vector_id) = inputVectors(
+      vectors.at(vector_id) = augmentInputVectors(
           /* builder= */ *builders.at(vector_id),
           /* elements= */ element_ids);
     } else if (vector_id == _label_vector_index) {
-      vectors.at(vector_id) = labelVectors(
+      vectors.at(vector_id) = augmentLabelVectors(
           /* builder= */ *builders.at(vector_id),
           /* elements= */ element_ids);
     } else {
-      vectors.at(vector_id) = otherVectors(
+      vectors.at(vector_id) = replicateOtherVectors(
           /* builder= */ *builders.at(vector_id),
           /* size= */ element_ids.size());
     }
@@ -65,7 +55,7 @@ std::vector<std::vector<BoltVector>> RecurrenceAugmentation::augment(
   return vectors;
 }
 
-std::vector<BoltVector> RecurrenceAugmentation::inputVectors(
+std::vector<BoltVector> RecurrenceAugmentation::augmentInputVectors(
     SegmentedFeatureVector& builder, std::vector<uint32_t> elements) {
   std::vector<BoltVector> vectors(elements.size());
   vectors[0] = builder.toBoltVector();
@@ -77,10 +67,9 @@ std::vector<BoltVector> RecurrenceAugmentation::inputVectors(
   return vectors;
 }
 
-std::vector<BoltVector> RecurrenceAugmentation::labelVectors(
+std::vector<BoltVector> RecurrenceAugmentation::augmentLabelVectors(
     SegmentedFeatureVector& builder, std::vector<uint32_t> elements) {
-  auto vector = builder.toBoltVector();
-  if (vector.len > 0) {
+  if (!builder.empty()) {
     throw std::invalid_argument(
         "RecurrenceAugmentation expects to be the exclusive feature in the "
         "label vector.");
@@ -94,7 +83,7 @@ std::vector<BoltVector> RecurrenceAugmentation::labelVectors(
   return vectors;
 }
 
-std::vector<BoltVector> RecurrenceAugmentation::otherVectors(
+std::vector<BoltVector> RecurrenceAugmentation::replicateOtherVectors(
     SegmentedFeatureVector& builder, uint32_t size) {
   std::vector<BoltVector> vectors(size);
   for (auto& bolt_vec : vectors) {
@@ -109,8 +98,8 @@ uint32_t RecurrenceAugmentation::elementIdAtStep(const BoltVector& output,
     throw std::invalid_argument(
         "Cannot get sequence element name from dense output");
   }
-  auto begin = step * _vocab.vocabSize();
-  auto end = begin + _vocab.vocabSize();
+  auto begin = step * _vocab.maxSize().value();
+  auto end = begin + _vocab.maxSize().value();
 
   uint32_t arg_max = 0;
   float max_act = -std::numeric_limits<float>::max();
@@ -125,7 +114,7 @@ uint32_t RecurrenceAugmentation::elementIdAtStep(const BoltVector& output,
 }
 
 std::string RecurrenceAugmentation::elementString(uint32_t element_id) {
-  uint32_t element_id_without_position = element_id % _vocab.vocabSize();
+  uint32_t element_id_without_position = element_id % _vocab.maxSize().value();
   return _vocab.getString(element_id_without_position);
 }
 
@@ -138,7 +127,7 @@ std::vector<std::string_view> RecurrenceAugmentation::sequence(
   auto sequence =
       text::split(input_sample.column(_sequence_column), _delimiter);
   if (sequence.size() < _max_recurrence) {
-    sequence.push_back(std::string_view(EOS, EOS_SIZE));
+    sequence.push_back(EOS);
   }
 
   if (sequence.size() > _max_recurrence) {
@@ -151,7 +140,7 @@ std::vector<uint32_t> RecurrenceAugmentation::elementIds(
     const std::vector<std::string_view>& sequence) {
   std::vector<uint32_t> element_ids(sequence.size());
   for (uint32_t i = 0; i < element_ids.size(); i++) {
-    uint32_t offset = i * _vocab.vocabSize();
+    uint32_t offset = i * _vocab.maxSize().value();
     element_ids[i] = offset + _vocab.getUid(std::string(sequence[i]));
   }
   return element_ids;

@@ -43,7 +43,7 @@ struct DataType {
 
 using DataTypePtr = std::shared_ptr<DataType>;
 
-struct CategoricalDataType : DataType {
+struct CategoricalDataType final : public DataType {
   explicit CategoricalDataType(std::optional<char> delimiter = std::nullopt,
                                CategoricalMetadataConfigPtr metadata = nullptr)
       : delimiter(delimiter), metadata_config(std::move(metadata)) {}
@@ -90,7 +90,7 @@ inline TextEncodingType getTextEncodingFromString(const std::string& encoding) {
   return contextual_encodings[encoding];
 }
 
-struct TextDataType : DataType {
+struct TextDataType final : public DataType {
   explicit TextDataType(std::optional<double> average_n_words = std::nullopt,
                         const std::string& contextual_encoding = "none")
       : average_n_words(average_n_words),
@@ -112,7 +112,7 @@ struct TextDataType : DataType {
 
 using TextDataTypePtr = std::shared_ptr<TextDataType>;
 
-struct NumericalDataType : DataType {
+struct NumericalDataType final : public DataType {
   explicit NumericalDataType(std::pair<double, double> _range,
                              std::string _granularity = "m")
       : range(std::move(_range)), granularity(std::move(_granularity)) {}
@@ -138,7 +138,7 @@ struct NumericalDataType : DataType {
 
 using NumericalDataTypePtr = std::shared_ptr<NumericalDataType>;
 
-struct DateDataType : DataType {
+struct DateDataType final : public DataType {
   std::string toString() const final { return R"({"type": "date"})"; }
 
  private:
@@ -151,7 +151,7 @@ struct DateDataType : DataType {
 
 using DateDataTypePtr = std::shared_ptr<DateDataType>;
 
-struct SequenceDataType : DataType {
+struct SequenceDataType final : public DataType {
   explicit SequenceDataType(char delimiter = ' ',
                             std::optional<uint32_t> max_length = std::nullopt)
       : delimiter(delimiter), max_length(max_length) {

@@ -25,7 +25,6 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
   for (BlockList& block_list : _block_lists) {
     block_list.prepareForBatch(input_batch);
   }
-  _augmentation->prepareForBatch(input_batch);
 
   /*
     Because throwing an error inside an OpenMP structured block has undefined
@@ -33,9 +32,8 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     this exception_ptr and rethrow after.
   */
   std::exception_ptr featurization_err;
-#pragma omp parallel for default(none)                       \
-    shared(input_batch, featurized_batch, featurization_err, \
-           std::cout) if (_parallel)
+#pragma omp parallel for default(none) \
+    shared(input_batch, featurized_batch, featurization_err) if (_parallel)
   for (size_t sample_id = 0; sample_id < input_batch.size(); ++sample_id) {
     try {
       featurized_batch[sample_id] =
@@ -115,6 +113,7 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurizeSampleInBatch(
 }
 
 void TabularFeaturizer::processHeader(const std::string& header) {
+  // TODO(Geordie): We don't need both num cols in header and expected num cols.
   dataset::ColumnNumberMap column_number_map(header, _delimiter);
   _num_cols_in_header = column_number_map.size();
 
@@ -131,12 +130,12 @@ void TabularFeaturizer::processHeader(const std::string& header) {
 std::vector<std::vector<BoltVector>> TabularFeaturizer::consolidate(
     std::vector<std::vector<std::vector<BoltVector>>>&& vectors) {
   uint32_t n_output_samples = 0;
-  std::vector<uint32_t> offsets(vectors.size() + 1);
-  offsets[0] = 0;
-  for (uint32_t input_sample_id = 0; input_sample_id < vectors.size();
-       input_sample_id++) {
-    n_output_samples += vectors.at(input_sample_id).front().size();
-    offsets[input_sample_id + 1] = n_output_samples;
+  std::vector<uint32_t> offsets;
+  offsets.reserve(vectors.size() + 1);
+  offsets.push_back(0);
+  for (auto& sample : vectors) {
+    n_output_samples += sample.front().size();
+    offsets.push_back(n_output_samples);
   }
 
   std::vector<std::vector<BoltVector>> outputs(

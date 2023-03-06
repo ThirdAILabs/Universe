@@ -25,7 +25,7 @@ class RecurrentDatasetFactory {
   uint32_t outputDim() { return _labeled_featurizer->getDimensions().back(); }
 
   dataset::DatasetLoaderPtr getDatasetLoader(
-      const dataset::DataSourcePtr& data_source, bool training);
+      const dataset::DataSourcePtr& data_source, bool shuffle);
 
   std::vector<BoltVector> featurizeInput(const MapInput& sample);
 
