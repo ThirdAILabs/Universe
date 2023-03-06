@@ -58,7 +58,7 @@ void trainInMemory(bolt::BoltGraphPtr& model, dataset::BoltDatasetList datasets,
   if (freeze_hash_tables && epochs > 1) {
     train_config.setEpochs(/* new_epochs=*/1);
 
-    model->train(train_data, train_labels, train_config);
+    model->train(train_data, train_labels, train_config, token);
 
     model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
