@@ -24,6 +24,7 @@ void BlockList::updateColumnNumbers(const ColumnNumberMap& column_number_map) {
   }
   _expected_num_columns = computeExpectedNumColumns(_blocks);
 }
+
 void BlockList::prepareForBatch(ColumnarInputBatch& incoming_batch) {
   for (const auto& block : _blocks) {
     block->prepareForBatch(incoming_batch);
