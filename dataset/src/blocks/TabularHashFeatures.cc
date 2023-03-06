@@ -69,14 +69,12 @@ Explanation TabularHashFeatures::explainIndex(uint32_t index_within_block,
   ColumnIdentifier first_column;
   ColumnIdentifier second_column;
 
-  if (auto e = forEachOutputToken(input, [&](Token& token) {
-        if (token.token == index_within_block) {
-          first_column = std::move(token.first_column);
-          second_column = std::move(token.second_column);
-        }
-      })) {
-    std::rethrow_exception(e);
-  }
+  forEachOutputToken(input, [&](Token& token) {
+    if (token.token == index_within_block) {
+      first_column = std::move(token.first_column);
+      second_column = std::move(token.second_column);
+    }
+  });
 
   if (first_column == second_column) {
     return {first_column.name(), std::string(input.column(first_column))};
@@ -89,20 +87,15 @@ Explanation TabularHashFeatures::explainIndex(uint32_t index_within_block,
   return {column_name, keyword};
 }
 
-std::exception_ptr TabularHashFeatures::buildSegment(
-    ColumnarInputSample& input, SegmentedFeatureVector& vec) {
+void TabularHashFeatures::buildSegment(ColumnarInputSample& input,
+                                       SegmentedFeatureVector& vec) {
   std::vector<uint32_t> tokens;
-  if (auto e = forEachOutputToken(input, [&tokens](const Token& token) {
-        tokens.push_back(token.token);
-      })) {
-    return e;
-  };
+  forEachOutputToken(
+      input, [&tokens](const Token& token) { tokens.push_back(token.token); });
 
   for (auto& [index, value] : token_encoding::sumRepeatedIndices(tokens)) {
     vec.addSparseFeatureToSegment(index, value);
   }
-
-  return nullptr;
 }
 
 /**
@@ -111,7 +104,7 @@ std::exception_ptr TabularHashFeatures::buildSegment(
  * buildSegment() and explainIndex()
  */
 template <typename TOKEN_PROCESSOR_T>
-std::exception_ptr TabularHashFeatures::forEachOutputToken(
+void TabularHashFeatures::forEachOutputToken(
     ColumnarInputSample& input, TOKEN_PROCESSOR_T token_processor) {
   static_assert(std::is_convertible<TOKEN_PROCESSOR_T,
                                     std::function<void(Token&)>>::value);
@@ -139,8 +132,8 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
         break;
       }
       default: {
-        return std::make_exception_ptr(std::invalid_argument(
-            "Column type was expected to be numeric or categorical."));
+        throw std::invalid_argument(
+            "Column type was expected to be numeric or categorical.");
       }
     }
     // Hash with different salt per column so the same bin in a different
@@ -166,7 +159,6 @@ std::exception_ptr TabularHashFeatures::forEachOutputToken(
       token_processor(token);
     }
   }
-  return nullptr;
 }
 
 std::vector<ColumnIdentifier*>

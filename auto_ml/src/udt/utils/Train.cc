@@ -1,5 +1,6 @@
 #include "Train.h"
 #include <auto_ml/src/udt/Defaults.h>
+#include <dataset/src/Datasets.h>
 
 namespace thirdai::automl::udt::utils {
 
@@ -13,7 +14,7 @@ void trainSingleEpochOnStream(bolt::BoltGraphPtr& model,
   while (auto datasets = dataset_loader->loadSome(
              batch_size, /* num_batches = */ max_in_memory_batches,
              /* verbose = */ train_config.verbose())) {
-    auto& [data, labels] = datasets.value();
+    auto [data, labels] = split_data_labels(std::move(datasets.value()));
 
     model->train({data}, labels, train_config, token);
   }
@@ -47,12 +48,10 @@ void trainOnStream(bolt::BoltGraphPtr& model,
 
 }  // namespace
 
-void trainInMemory(
-    bolt::BoltGraphPtr& model,
-    std::pair<dataset::InputDatasets, dataset::LabelDataset> datasets,
-    bolt::TrainConfig train_config, bool freeze_hash_tables,
-    licensing::TrainPermissionsToken token) {
-  auto [train_data, train_labels] = std::move(datasets);
+void trainInMemory(bolt::BoltGraphPtr& model, dataset::BoltDatasetList datasets,
+                   bolt::TrainConfig train_config, bool freeze_hash_tables,
+                   licensing::TrainPermissionsToken token) {
+  auto [train_data, train_labels] = split_data_labels(std::move(datasets));
 
   uint32_t epochs = train_config.epochs();
 
@@ -112,7 +111,7 @@ bolt::TrainConfig getTrainConfig(
       getTrainConfig(epochs, learning_rate, train_metrics, callbacks, verbose,
                      logging_interval);
   if (validation && !dataset_factory->hasTemporalRelationships()) {
-    auto val_data =
+    auto val_dataset =
         dataset_factory
             ->getDatasetLoader(validation->data(),
                                /* training= */ false)
@@ -121,7 +120,9 @@ bolt::TrainConfig getTrainConfig(
     bolt::EvalConfig val_config = getEvalConfig(
         validation->metrics(), validation->sparseInference(), verbose);
 
-    train_config.withValidation(val_data.first, val_data.second, val_config,
+    auto [val_data, val_labels] = split_data_labels(std::move(val_dataset));
+
+    train_config.withValidation(val_data, val_labels, val_config,
                                 /* validation_frequency = */
                                 validation->stepsPerValidation().value_or(0));
   }
@@ -173,6 +174,15 @@ py::object predictedClasses(const BoltBatch& outputs,
     predictions.mutable_at(i) = predictedClass(outputs[i], binary_threshold);
   }
   return py::object(std::move(predictions));
+}
+
+// Splits a vector of datasets as returned by a dataset loader (where the labels
+// are the last dataset in the list)
+std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split_data_labels(
+    dataset::BoltDatasetList&& datasets) {
+  auto labels = datasets.back();
+  datasets.pop_back();
+  return {datasets, labels};
 }
 
 }  // namespace thirdai::automl::udt::utils

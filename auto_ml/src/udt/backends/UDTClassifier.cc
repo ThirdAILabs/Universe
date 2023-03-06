@@ -107,9 +107,9 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
   bolt::EvalConfig eval_config =
       utils::getEvalConfig(metrics, sparse_inference, verbose);
 
-  auto [test_data, test_labels] =
-      _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
-          ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
+  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
+                     ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
+  auto [test_data, test_labels] = utils::split_data_labels(std::move(dataset));
 
   auto [output_metrics, output] =
       _model->evaluate(test_data, test_labels, eval_config);
@@ -317,10 +317,13 @@ std::optional<float> UDTClassifier::tuneBinaryClassificationPredictionThreshold(
   if (!loaded_data_opt.has_value()) {
     throw std::invalid_argument("No data found for training.");
   }
-  auto loaded_data = *loaded_data_opt;
 
-  auto data = std::move(loaded_data.first);
-  auto labels = std::move(loaded_data.second);
+  // Did this instead of structured binding auto [data, labels] = ...
+  // since Clang-Tidy would throw this error around pragma omp parallel:
+  // "reference to local binding 'labels' declared in enclosing function"
+  auto split_data = utils::split_data_labels(std::move(*loaded_data_opt));
+  auto data = std::move(split_data.first);
+  auto labels = std::move(split_data.second);
 
   auto eval_config =
       bolt::EvalConfig::makeConfig().returnActivations().silence();
