@@ -17,8 +17,7 @@ namespace thirdai::dataset {
 
 class RecurrenceAugmentation final : public Augmentation {
  public:
-  static constexpr auto EOS = "$EOS$";
-  static constexpr size_t EOS_SIZE = 5;
+  static constexpr std::string_view EOS = "$EOS$";
 
   explicit RecurrenceAugmentation(ColumnIdentifier sequence_column,
                                   char delimiter, uint32_t max_recurrence,
