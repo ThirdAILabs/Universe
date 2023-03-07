@@ -51,8 +51,8 @@ class DenseArrayBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(ColumnarInputSample& input_row,
-                                  SegmentedFeatureVector& vec) final {
+  void buildSegment(ColumnarInputSample& input_row,
+                    SegmentedFeatureVector& vec) final {
     for (uint32_t i = _start_col.number(); i < _start_col.number() + _dim;
          i++) {
       char* end;
@@ -65,7 +65,6 @@ class DenseArrayBlock final : public Block {
       }
       vec.addDenseFeatureToSegment(value);
     }
-    return nullptr;
   }
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
