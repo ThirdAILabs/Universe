@@ -187,6 +187,12 @@ static bool quotesAreMalformed(StateMachine& state_machine, bool is_last_char) {
 }
 
 static std::string_view trimNewlineAtEndOfLine(const std::string& line) {
+  if (line.size() >= 2 && line.substr(line.size() - 2) == "\r\n") {
+    return {line.data(), line.size() - 2};
+  }
+  if (!line.empty() && line.back() == '\r') {
+    return {line.data(), line.size() - 1};
+  }
   if (!line.empty() && line.back() == '\n') {
     return {line.data(), line.size() - 1};
   }
