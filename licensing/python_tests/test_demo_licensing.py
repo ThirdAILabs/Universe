@@ -33,7 +33,7 @@ def test_census_key_works_on_small_census():
                     break
                 output.write(f"{line}")
     model = get_udt_census_income_model()
-    model.train(small_census_filename, epochs=1, learning_rate=0.01)
+    model.train(small_census_filename, epochs=3, learning_rate=0.01)
     os.remove(small_census_filename)
 
 

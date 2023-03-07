@@ -1,8 +1,6 @@
 #include "Train.h"
-#include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/Datasets.h>
-#include <pybind11/stl.h>
 
 namespace thirdai::automl::udt::utils {
 
@@ -13,11 +11,12 @@ void trainSingleEpochOnStream(bolt::BoltGraphPtr& model,
                               const bolt::TrainConfig& train_config,
                               uint32_t max_in_memory_batches, size_t batch_size,
                               licensing::TrainPermissionsToken token) {
-  while (auto datasets_opt = dataset_loader->loadSome(
+  while (auto datasets = dataset_loader->loadSome(
              batch_size, /* num_batches = */ max_in_memory_batches,
              /* verbose = */ train_config.verbose())) {
-    auto [datasets, labels] = split(std::move(*datasets_opt));
-    model->train(datasets, labels, train_config, token);
+    auto [data, labels] = split_data_labels(std::move(datasets.value()));
+
+    model->train({data}, labels, train_config, token);
   }
 
   dataset_loader->restart();
@@ -52,23 +51,23 @@ void trainInMemory(bolt::BoltGraphPtr& model,
                    bolt::TrainConfig train_config, size_t batch_size,
                    bool freeze_hash_tables,
                    licensing::TrainPermissionsToken token) {
-  auto datasets_and_labels = dataset_loader->loadAll(
+  auto loaded_data = dataset_loader->loadAll(
       /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
-  auto [datasets, labels] = split(std::move(datasets_and_labels));
+  auto [train_data, train_labels] = split_data_labels(std::move(loaded_data));
 
   uint32_t epochs = train_config.epochs();
 
   if (freeze_hash_tables && epochs > 1) {
     train_config.setEpochs(/* new_epochs=*/1);
 
-    model->train(datasets, labels, train_config);
+    model->train(train_data, train_labels, train_config, token);
 
     model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
     train_config.setEpochs(/* new_epochs= */ epochs - 1);
   }
 
-  model->train(datasets, labels, train_config, token);
+  model->train(train_data, train_labels, train_config, token);
 }
 
 }  // namespace
@@ -88,11 +87,10 @@ void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
 
 bolt::TrainConfig getTrainConfig(
     uint32_t epochs, float learning_rate,
-    const std::optional<Validation>& validation,
+    const std::optional<ValidationDatasetLoader>& validation,
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval,
-    const DataSourceToDatasetLoader& func) {
+    std::optional<uint32_t> logging_interval) {
   bolt::TrainConfig train_config =
       bolt::TrainConfig::makeConfig(learning_rate, epochs)
           .withMetrics(train_metrics)
@@ -103,20 +101,19 @@ bolt::TrainConfig getTrainConfig(
   if (!verbose) {
     train_config.silence();
   }
-  return train_config;
-
   if (validation) {
-    auto val_datasets_and_labels =
-        func(validation->data(), /* shuffle = */ false)
-            ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
-    auto [val_data, val_labels] = split(std::move(val_datasets_and_labels));
+    auto val_dataset = validation->first->loadAll(
+        /* batch_size= */ defaults::BATCH_SIZE, verbose);
+    auto [val_data, val_labels] = split_data_labels(std::move(val_dataset));
 
-    bolt::EvalConfig val_config = getEvalConfig(
-        validation->metrics(), validation->sparseInference(), verbose);
+    bolt::EvalConfig val_config =
+        getEvalConfig(validation->second.metrics(),
+                      validation->second.sparseInference(), verbose);
 
-    train_config.withValidation(val_data, val_labels, val_config,
-                                /* validation_frequency = */
-                                validation->stepsPerValidation().value_or(0));
+    train_config.withValidation(
+        val_data, val_labels, val_config,
+        /* validation_frequency = */
+        validation->second.stepsPerValidation().value_or(0));
   }
 
   return train_config;
@@ -140,204 +137,9 @@ bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
   return eval_config;
 }
 
-uint32_t predictedClass(const BoltVector& activation_vec,
-                        std::optional<float> binary_threshold) {
-  if (!binary_threshold.has_value()) {
-    return activation_vec.getHighestActivationId();
-  }
-  return activation_vec.activations[1] >= *binary_threshold;
-}
-
-py::object predictedClasses(bolt::InferenceOutputTracker& output,
-                            std::optional<float> binary_threshold) {
-  utils::NumpyArray<uint32_t> predictions(output.numSamples());
-  for (uint32_t i = 0; i < output.numSamples(); i++) {
-    BoltVector activation_vec = output.getSampleAsNonOwningBoltVector(i);
-    predictions.mutable_at(i) =
-        predictedClass(activation_vec, binary_threshold);
-  }
-  return py::object(std::move(predictions));
-}
-
-py::object predictedClasses(const BoltBatch& outputs,
-                            std::optional<float> binary_threshold) {
-  utils::NumpyArray<uint32_t> predictions(outputs.getBatchSize());
-  for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
-    predictions.mutable_at(i) = predictedClass(outputs[i], binary_threshold);
-  }
-  return py::object(std::move(predictions));
-}
-
-/**
- * Computes the optimal binary prediction threshold to maximize the given
- * metric on max_num_batches batches of the given dataset. Note: does not
- * shuffle the data to obtain the batches.
- */
-std::optional<float> tuneBinaryClassificationPredictionThreshold(
-    const dataset::DataSourcePtr& data_source, const std::string& metric_name,
-    size_t batch_size, const bolt::BoltGraphPtr& model,
-    const DataSourceToDatasetLoader& func) {
-  // The number of samples used is capped to ensure tuning is fast even for
-  // larger datasets.
-  uint32_t num_batches =
-      defaults::MAX_SAMPLES_FOR_THRESHOLD_TUNING / batch_size;
-
-  auto dataset_loader = func(data_source, /* shuffle = */ false);
-
-  auto loaded_data_and_labels_opt = dataset_loader->loadSome(
-      /* batch_size = */ defaults::BATCH_SIZE, num_batches,
-      /* verbose = */ false);
-  if (!loaded_data_and_labels_opt.has_value()) {
-    throw std::invalid_argument("No data found for training.");
-  }
-  // We need to declare these first and use std::tie instead of auto[a, b]
-  // so that labels can be passed to the pragma omp parallel block,
-  // this a known clang/c++ bug: https://stackoverflow.com/q/46114214
-  dataset::BoltDatasetList datasets;
-  dataset::BoltDatasetPtr labels;
-  std::tie(datasets, labels) = split(std::move(*loaded_data_and_labels_opt));
-
-  auto eval_config =
-      bolt::EvalConfig::makeConfig().returnActivations().silence();
-  auto output = model->evaluate(datasets, labels, eval_config);
-  auto& activations = output.second;
-
-  double best_metric_value = bolt::makeMetric(metric_name)->worst();
-  std::optional<float> best_threshold = std::nullopt;
-
-#pragma omp parallel for default(none) shared( \
-    labels, best_metric_value, best_threshold, metric_name, activations)
-  for (uint32_t t_idx = 1; t_idx < defaults::NUM_THRESHOLDS_TO_CHECK; t_idx++) {
-    auto metric = bolt::makeMetric(metric_name);
-
-    float threshold =
-        static_cast<float>(t_idx) / defaults::NUM_THRESHOLDS_TO_CHECK;
-
-    uint32_t sample_idx = 0;
-    for (const auto& label_batch : *labels) {
-      for (const auto& label_vec : label_batch) {
-        /**
-         * The output bolt vector from activations cannot be passed in
-         * directly because it doesn't incorporate the threshold, and
-         * metrics like categorical_accuracy cannot use a threshold. To
-         * solve this we create a new output vector where the neuron with
-         * the largest activation is the same as the neuron that would be
-         * choosen as the prediction if we applied the given prediction
-         * threshold.
-         *
-         * For metrics like F1 or categorical accuracy the value of the
-         * activation does not matter, only the predicted class so this
-         * modification does not affect the metric. Metrics like mean
-         * squared error do not really make sense to compute at different
-         * thresholds anyway and so we can ignore the effect of this
-         * modification on them.
-         */
-        if (activations.activationsForSample(sample_idx++)[1] >= threshold) {
-          metric->record(
-              /* output= */ BoltVector::makeDenseVector({0, 1.0}),
-              /* labels= */ label_vec);
-        } else {
-          metric->record(
-              /* output= */ BoltVector::makeDenseVector({1.0, 0.0}),
-              /* labels= */ label_vec);
-        }
-      }
-    }
-
-#pragma omp critical
-    if (metric->betterThan(metric->value(), best_metric_value)) {
-      best_metric_value = metric->value();
-      best_threshold = threshold;
-    }
-  }
-
-  return best_threshold;
-}
-
-std::optional<float> getBinaryClassificationPredictionThreshold(
-    const dataset::DataSourcePtr& data,
-    const std::optional<Validation>& validation, size_t& batch_size,
-    bolt::TrainConfig& train_config, const bolt::BoltGraphPtr& model,
-    const DataSourceToDatasetLoader& func) {
-  if (model->outputDim() == 2) {
-    if (validation && !validation->metrics().empty()) {
-      validation->data()->restart();
-      return tuneBinaryClassificationPredictionThreshold(
-          /* data_source= */ validation->data(),
-          /* metric_name= */ validation->metrics().at(0), batch_size, model,
-          func);
-    }
-    if (!train_config.metrics().empty()) {
-      data->restart();
-      return tuneBinaryClassificationPredictionThreshold(
-          /* data_source= */ data,
-          /* metric_name= */ train_config.metrics().at(0), batch_size, model,
-          func);
-    }
-  }
-  return std::nullopt;
-}
-
-py::object evaluateClassifier(
-    const std::vector<std::string>& metrics, bool sparse_inference,
-    bool return_predicted_class, bool verbose, bool return_metrics,
-    const bolt::BoltGraphPtr& model,
-    const dataset::DatasetLoaderPtr& dataset_loader,
-    const std::optional<float>& binary_prediction_threshold) {
-  bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose);
-
-  auto datasets_and_labels =
-      dataset_loader->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
-  auto [datasets, labels] = split(std::move(datasets_and_labels));
-
-  auto [output_metrics, output] =
-      model->evaluate(datasets, labels, eval_config);
-  if (return_metrics) {
-    return py::cast(output_metrics);
-  }
-
-  if (return_predicted_class) {
-    return utils::predictedClasses(output, binary_prediction_threshold);
-  }
-
-  return utils::convertInferenceTrackerToNumpy(output);
-}
-
-std::optional<float> trainClassifier(
-    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<Validation>& validation,
-    std::optional<size_t> batch_size_opt,
-    std::optional<size_t> max_in_memory_batches,
-    const std::vector<std::string>& metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval, bool freeze_hash_tables,
-    const utils::DataSourceToDatasetLoader& source_to_loader_func,
-    bolt::BoltGraphPtr& model) {
-  size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
-
-  bolt::TrainConfig train_config = utils::getTrainConfig(
-      epochs, learning_rate, validation, metrics, callbacks, verbose,
-      logging_interval, source_to_loader_func);
-
-  auto train_dataset_loader = source_to_loader_func(data, /* shuffle = */ true);
-
-  utils::train(model, train_dataset_loader, train_config, batch_size,
-               max_in_memory_batches, freeze_hash_tables,
-               licensing::TrainPermissionsToken(data));
-
-  /**
-   * For binary classification we tune the prediction threshold to optimize some
-   * metric. This can improve performance particularly on datasets with a class
-   * imbalance.
-   */
-  return utils::getBinaryClassificationPredictionThreshold(
-      data, validation, batch_size, train_config, model, source_to_loader_func);
-}
-
 // Splits a vector of datasets as returned by a dataset loader (where the labels
 // are the last dataset in the list)
-std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split(
+std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split_data_labels(
     dataset::BoltDatasetList&& datasets) {
   auto labels = datasets.back();
   datasets.pop_back();

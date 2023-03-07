@@ -12,7 +12,6 @@ from thirdai.demos import (
 from thirdai.demos import download_mnist_dataset as download_mnist_dataset_wrapped
 from thirdai.demos import download_yelp_chi_dataset as download_yelp_chi_dataset_wrapped
 
-
 @pytest.fixture(scope="session")
 def download_clinc_dataset():
     return download_clinc_dataset_wrapped()

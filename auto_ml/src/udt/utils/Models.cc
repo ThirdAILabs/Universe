@@ -4,8 +4,20 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
+#include <auto_ml/src/udt/Defaults.h>
 
 namespace thirdai::automl::udt::utils {
+
+bolt::BoltGraphPtr buildModel(uint32_t input_dim, uint32_t output_dim,
+                              const config::ArgumentMap& args,
+                              const std::optional<std::string>& model_config) {
+  if (model_config) {
+    return utils::loadModel({input_dim}, output_dim, *model_config);
+  }
+  uint32_t hidden_dim = args.get<uint32_t>("embedding_dimension", "integer",
+                                           defaults::HIDDEN_DIM);
+  return utils::defaultModel(input_dim, hidden_dim, output_dim);
+}
 
 namespace {
 
@@ -65,11 +77,4 @@ bool hasSoftmaxOutput(const bolt::BoltGraphPtr& model) {
                        bolt::ActivationFunction::Softmax);
 }
 
-void setModel(bolt::BoltGraphPtr& current_model,
-              bolt::BoltGraphPtr& new_model) {
-  if (current_model->outputDim() != new_model->outputDim()) {
-    throw std::invalid_argument("Output dim mismatch in set_model.");
-  }
-  current_model = std::move(new_model);
-}
 }  // namespace thirdai::automl::udt::utils

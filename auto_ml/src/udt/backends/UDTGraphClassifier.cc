@@ -2,6 +2,7 @@
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
+#include <auto_ml/src/udt/utils/Classifier.h>
 #include <auto_ml/src/udt/utils/Train.h>
 
 namespace thirdai::automl::udt {
@@ -20,28 +21,38 @@ UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
       data_types, target_col, n_target_classes, options);
 
   // TODO(Josh): Add customization/autotuning like in UDTClassifier
-  _model = createGNN(
+  auto model = createGNN(
       /* input_dims = */ _dataset_manager->getInputDims(),
       /* output_dim = */ _dataset_manager->getLabelDim());
+
+  _classifier = std::make_shared<utils::Classifier>(
+      model, /* freeze_hash_tables = */ false);
 }
 
 void UDTGraphClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<Validation>& validation,
+    const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
-  utils::DataSourceToDatasetLoader source_to_loader_func =
-      [this](const dataset::DataSourcePtr& source, bool shuffle) {
-        return _dataset_manager->indexAndGetDatasetLoader(source, shuffle);
-      };
+  auto train_dataset_loader =
+      _dataset_manager->indexAndGetDatasetLoader(data, /* shuffle = */ true);
 
-  _binary_prediction_threshold = utils::trainClassifier(
-      data, learning_rate, epochs, validation, batch_size_opt,
-      max_in_memory_batches, metrics, callbacks, verbose, logging_interval,
-      /* freeze_hash_tables = */ false, source_to_loader_func, _model);
+  std::optional<ValidationDatasetLoader> validation_dataset_loader =
+      std::nullopt;
+  if (validation) {
+    validation_dataset_loader =
+        ValidationDatasetLoader(_dataset_manager->indexAndGetDatasetLoader(
+                                    validation->first, /* shuffle = */ false),
+                                validation->second);
+  }
+
+  _classifier->train(train_dataset_loader, learning_rate, epochs,
+                     validation_dataset_loader, batch_size_opt,
+                     max_in_memory_batches, metrics, callbacks, verbose,
+                     logging_interval, licensing::TrainPermissionsToken(data));
 }
 
 py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -49,11 +60,11 @@ py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
                                         bool sparse_inference,
                                         bool return_predicted_class,
                                         bool verbose, bool return_metrics) {
-  auto dataset_loader =
+  auto eval_dataset_loader =
       _dataset_manager->indexAndGetDatasetLoader(data, /* shuffle = */ false);
-  return utils::evaluateClassifier(
-      metrics, sparse_inference, return_predicted_class, verbose,
-      return_metrics, _model, dataset_loader, _binary_prediction_threshold);
+
+  return _classifier->evaluate(eval_dataset_loader, metrics, sparse_inference,
+                               return_predicted_class, verbose, return_metrics);
 }
 
 template void UDTGraphClassifier::serialize(cereal::BinaryInputArchive&);
@@ -61,8 +72,7 @@ template void UDTGraphClassifier::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void UDTGraphClassifier::serialize(Archive& archive) {
-  archive(cereal::base_class<UDTBackend>(this), _model, _dataset_manager,
-          _binary_prediction_threshold);
+  archive(cereal::base_class<UDTBackend>(this), _classifier, _dataset_manager);
 }
 
 bolt::BoltGraphPtr UDTGraphClassifier::createGNN(

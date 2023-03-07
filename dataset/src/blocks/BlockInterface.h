@@ -141,6 +141,8 @@ class SegmentedFeatureVector {
   explicit SegmentedFeatureVector(bool store_segment_feature_map)
       : _store_index_to_segment_feature_map(store_segment_feature_map) {}
 
+  virtual bool empty() const = 0;
+
   /**
    * Increments the feature at the given index of the current vector segment
    * by a value.
@@ -169,6 +171,8 @@ class SegmentedFeatureVector {
 
   virtual ~SegmentedFeatureVector() = default;
 };
+
+using SegmentedFeatureVectorPtr = std::shared_ptr<SegmentedFeatureVector>;
 
 /**
  * Block abstract class.
@@ -286,10 +290,9 @@ class Block {
    * encoded (and what ends up in the vector segment).
    *
    * WARNING: This function may be called in many threads simultaneously,
-   * so it should be thread-safe or robust to data races. However, since this
-   * function is always wrapped by a function that will catch exceptions
-   * before they break the pragma omp loop, implementations should feel free to
-   * throw exceptions.
+   * so it should be thread-safe or robust to data races. This function is
+   * always wrapped by a function that will catch exceptions before they break
+   * the pragma omp loop, hence implementations can throw exceptions.
    */
   virtual void buildSegment(ColumnarInputSample& input_row,
                             SegmentedFeatureVector& vec) = 0;

@@ -3,7 +3,7 @@
 #include <bolt/src/graph/Graph.h>
 #include <auto_ml/src/featurization/GraphDatasetManager.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/utils/Models.h>
+#include <auto_ml/src/udt/utils/Classifier.h>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -15,7 +15,8 @@ class UDTGraphClassifier final : public UDTBackend {
                      bool integer_target, const data::TabularOptions& options);
 
   void train(const dataset::DataSourcePtr& data, float learning_rate,
-             uint32_t epochs, const std::optional<Validation>& validation,
+             uint32_t epochs,
+             const std::optional<ValidationDataSource>& validation,
              std::optional<size_t> batch_size,
              std::optional<size_t> max_in_memory_batches,
              const std::vector<std::string>& metrics,
@@ -45,12 +46,6 @@ class UDTGraphClassifier final : public UDTBackend {
         "Predict is not yet implemented for graph neural networks");
   }
 
-  bolt::BoltGraphPtr model() const final { return _model; }
-
-  void setModel(bolt::BoltGraphPtr model) final {
-    utils::setModel(_model, model);
-  }
-
   void indexNodes(const dataset::DataSourcePtr& source) final {
     _dataset_manager->index(source);
   }
@@ -68,9 +63,8 @@ class UDTGraphClassifier final : public UDTBackend {
   template <class Archive>
   void serialize(Archive& archive);
 
-  bolt::BoltGraphPtr _model;
+  utils::ClassifierPtr _classifier;
   data::GraphDatasetManagerPtr _dataset_manager;
-  std::optional<float> _binary_prediction_threshold;
 };
 
 }  // namespace thirdai::automl::udt

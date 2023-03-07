@@ -4,7 +4,6 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/utils/Models.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <stdexcept>
 
@@ -23,7 +22,8 @@ class UDTRegression final : public UDTBackend {
                 const config::ArgumentMap& user_args);
 
   void train(const dataset::DataSourcePtr& data, float learning_rate,
-             uint32_t epochs, const std::optional<Validation>& validation,
+             uint32_t epochs,
+             const std::optional<ValidationDataSource>& validation,
              std::optional<size_t> batch_size,
              std::optional<size_t> max_in_memory_batches,
              const std::vector<std::string>& metrics,
@@ -42,10 +42,6 @@ class UDTRegression final : public UDTBackend {
                           bool return_predicted_class) final;
 
   bolt::BoltGraphPtr model() const final { return _model; }
-
-  void setModel(bolt::BoltGraphPtr model) final {
-    utils::setModel(_model, model);
-  }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;

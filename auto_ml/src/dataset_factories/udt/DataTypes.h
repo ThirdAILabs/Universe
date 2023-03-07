@@ -43,7 +43,7 @@ struct DataType {
 
 using DataTypePtr = std::shared_ptr<DataType>;
 
-struct CategoricalDataType : DataType {
+struct CategoricalDataType final : public DataType {
   explicit CategoricalDataType(std::optional<char> delimiter = std::nullopt,
                                CategoricalMetadataConfigPtr metadata = nullptr)
       : delimiter(delimiter), metadata_config(std::move(metadata)) {}
@@ -90,7 +90,7 @@ inline TextEncodingType getTextEncodingFromString(const std::string& encoding) {
   return contextual_encodings[encoding];
 }
 
-struct TextDataType : DataType {
+struct TextDataType final : public DataType {
   explicit TextDataType(std::optional<double> average_n_words = std::nullopt,
                         const std::string& contextual_encoding = "none")
       : average_n_words(average_n_words),
@@ -112,7 +112,7 @@ struct TextDataType : DataType {
 
 using TextDataTypePtr = std::shared_ptr<TextDataType>;
 
-struct NumericalDataType : DataType {
+struct NumericalDataType final : public DataType {
   explicit NumericalDataType(std::pair<double, double> _range,
                              std::string _granularity = "m")
       : range(std::move(_range)), granularity(std::move(_granularity)) {}
@@ -138,7 +138,7 @@ struct NumericalDataType : DataType {
 
 using NumericalDataTypePtr = std::shared_ptr<NumericalDataType>;
 
-struct DateDataType : DataType {
+struct DateDataType final : public DataType {
   std::string toString() const final { return R"({"type": "date"})"; }
 
  private:
@@ -150,6 +150,30 @@ struct DateDataType : DataType {
 };
 
 using DateDataTypePtr = std::shared_ptr<DateDataType>;
+
+struct SequenceDataType final : public DataType {
+  explicit SequenceDataType(char delimiter = ' ',
+                            std::optional<uint32_t> max_length = std::nullopt)
+      : delimiter(delimiter), max_length(max_length) {
+    if (max_length && max_length.value() == 0) {
+      throw std::invalid_argument("Sequence max_length cannot be 0.");
+    }
+  }
+
+  char delimiter;
+  std::optional<uint32_t> max_length;
+
+  std::string toString() const final { return R"({"type": "sequence"})"; }
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<DataType>(this), delimiter, max_length);
+  }
+};
+
+using SequenceDataTypePtr = std::shared_ptr<SequenceDataType>;
 
 /**
  * Should only be used for graph data. Represents the neighbors of a node
@@ -206,6 +230,8 @@ NumericalDataTypePtr asNumerical(const DataTypePtr& data_type);
 TextDataTypePtr asText(const DataTypePtr& data_type);
 
 DateDataTypePtr asDate(const DataTypePtr& data_type);
+
+SequenceDataTypePtr asSequence(const DataTypePtr& data_type);
 
 NeighborsDataTypePtr asNeighbors(const DataTypePtr& data_type);
 

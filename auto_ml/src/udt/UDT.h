@@ -36,7 +36,8 @@ class UDT {
       const config::ArgumentMap& user_args);
 
   void train(const dataset::DataSourcePtr& data, float learning_rate,
-             uint32_t epochs, const std::optional<Validation>& validation,
+             uint32_t epochs,
+             const std::optional<ValidationDataSource>& validation,
              std::optional<size_t> batch_size,
              std::optional<size_t> max_in_memory_batches,
              const std::vector<std::string>& metrics,
@@ -63,7 +64,7 @@ class UDT {
                  const std::vector<std::string>& weak_column_names,
                  float learning_rate, uint32_t epochs,
                  const std::vector<std::string>& metrics,
-                 const std::optional<Validation>& validation,
+                 const std::optional<ValidationDataSource>& validation,
                  const std::vector<bolt::CallbackPtr>& callbacks,
                  bool verbose) {
     return _backend->coldstart(data, strong_column_names, weak_column_names,
@@ -122,9 +123,7 @@ class UDT {
 
   bolt::BoltGraphPtr model() const { return _backend->model(); }
 
-  void setModel(bolt::BoltGraphPtr model) {
-    _backend->setModel(std::move(model));
-  }
+  void setModel(const bolt::BoltGraphPtr& model) { _backend->setModel(model); }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();

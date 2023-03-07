@@ -1,5 +1,4 @@
 #include "GraphDatasetManager.h"
-#include "FeaturizationUtils.h"
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
@@ -68,15 +67,11 @@ dataset::DatasetLoaderPtr GraphDatasetManager::indexAndGetDatasetLoader(
 
   data_source->restart();
 
-  utils::updateFeaturizerWithHeader(_featurizer, data_source, _delimiter);
-
   return std::make_unique<dataset::DatasetLoader>(data_source, _featurizer,
                                                   shuffle);
 }
 
 void GraphDatasetManager::index(const dataset::DataSourcePtr& data_source) {
-  utils::updateFeaturizerWithHeader(_graph_builder, data_source, _delimiter);
-
   dataset::DatasetLoader graph_builder_loader(data_source, _graph_builder,
                                               /* shuffle = */ false);
 

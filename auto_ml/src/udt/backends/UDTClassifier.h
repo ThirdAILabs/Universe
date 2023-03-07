@@ -6,7 +6,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/utils/Models.h>
+#include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -27,7 +27,8 @@ class UDTClassifier final : public UDTBackend {
                 const config::ArgumentMap& user_args);
 
   void train(const dataset::DataSourcePtr& data, float learning_rate,
-             uint32_t epochs, const std::optional<Validation>& validation,
+             uint32_t epochs,
+             const std::optional<ValidationDataSource>& validation,
              std::optional<size_t> batch_size,
              std::optional<size_t> max_in_memory_batches,
              const std::vector<std::string>& metrics,
@@ -55,7 +56,7 @@ class UDTClassifier final : public UDTBackend {
                  const std::vector<std::string>& weak_column_names,
                  float learning_rate, uint32_t epochs,
                  const std::vector<std::string>& metrics,
-                 const std::optional<Validation>& validation,
+                 const std::optional<ValidationDataSource>& validation,
                  const std::vector<bolt::CallbackPtr>& callbacks,
                  bool verbose) final;
 
@@ -71,10 +72,14 @@ class UDTClassifier final : public UDTBackend {
     return std::to_string(class_id);
   }
 
-  bolt::BoltGraphPtr model() const final { return _model; }
+  bolt::BoltGraphPtr model() const final { return _classifier.model(); }
 
-  void setModel(bolt::BoltGraphPtr model) final {
-    utils::setModel(_model, model);
+  void setModel(const bolt::BoltGraphPtr& model) final {
+    bolt::BoltGraphPtr& curr_model = _classifier.model();
+    if (curr_model->outputDim() != curr_model->outputDim()) {
+      throw std::invalid_argument("Output dim mismatch in set_model.");
+    }
+    curr_model = model;
   }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
@@ -104,7 +109,7 @@ class UDTClassifier final : public UDTBackend {
 
   bool integerTarget() const { return !_class_name_to_neuron; }
 
-  UDTClassifier() {}
+  UDTClassifier() : _classifier(nullptr, false) {}
 
   friend cereal::access;
 
@@ -114,12 +119,9 @@ class UDTClassifier final : public UDTBackend {
   dataset::ThreadSafeVocabularyPtr _class_name_to_neuron;
   dataset::CategoricalBlockPtr _label_block;
 
-  bolt::BoltGraphPtr _model;
+  utils::Classifier _classifier;
+
   data::TabularDatasetFactoryPtr _dataset_factory;
-
-  bool _freeze_hash_tables;
-
-  std::optional<float> _binary_prediction_threshold;
 };
 
 }  // namespace thirdai::automl::udt

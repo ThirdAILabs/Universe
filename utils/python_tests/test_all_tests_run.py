@@ -7,7 +7,7 @@ import pytest
 
 
 # This test collects all of the python tests that we run in github actions
-# (currently unit, release, and distributed, as well as some we
+# (currently unit, integration, release, and distributed, as well as some we
 # explicitly don't run marked with ignore) and ensures that they
 # cover all python tests we have overall.
 # We just need to hope that THIS test always runs!
