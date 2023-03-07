@@ -6,11 +6,13 @@
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
+#include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
 #include <exceptions/src/Exceptions.h>
 #include <telemetry/src/PrometheusClient.h>
 #include <cstddef>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 
@@ -43,10 +45,14 @@ UDT::UDT(data::ColumnDataTypes data_types,
   bool has_graph_inputs = hasGraphInputs(data_types);
   auto as_categorical = data::asCategorical(target);
   auto as_numerical = data::asNumerical(target);
+  auto as_sequence = data::asSequence(target);
 
-  if (!n_target_classes.has_value() && as_categorical) {
-    throw std::invalid_argument(
-        "The number of target classes must be specified for categorical data.");
+  if (as_categorical || as_sequence) {
+    if (!n_target_classes.has_value()) {
+      throw std::invalid_argument(
+          "The number of target classes must be specified for categorical "
+          "data.");
+    }
   }
 
   if (as_categorical && has_graph_inputs) {
@@ -63,9 +69,13 @@ UDT::UDT(data::ColumnDataTypes data_types,
     _backend = std::make_unique<UDTRegression>(
         data_types, temporal_tracking_relationships, target_col, as_numerical,
         n_target_classes, tabular_options, model_config, user_args);
+  } else if (as_sequence && !has_graph_inputs) {
+    _backend = std::make_unique<UDTRecurrentClassifier>(
+        data_types, temporal_tracking_relationships, target_col, as_sequence,
+        n_target_classes.value(), tabular_options, model_config, user_args);
   } else {
     throwUnsupportedUDTConfigurationError(as_categorical, as_numerical,
-                                          has_graph_inputs);
+                                          as_sequence, has_graph_inputs);
   }
 }
 
@@ -218,6 +228,7 @@ void UDT::serialize(Archive& archive) {
 void UDT::throwUnsupportedUDTConfigurationError(
     const data::CategoricalDataTypePtr& target_as_categorical,
     const data::NumericalDataTypePtr& target_as_numerical,
+    const data::SequenceDataTypePtr& target_as_sequence,
     bool has_graph_inputs) {
   std::stringstream error_msg;
   error_msg << "Unsupported UDT configuration: ";
@@ -226,8 +237,10 @@ void UDT::throwUnsupportedUDTConfigurationError(
     error_msg << "categorical target";
   } else if (target_as_numerical) {
     error_msg << "numerical target";
+  } else if (target_as_sequence) {
+    error_msg << "sequential target";
   } else {
-    error_msg << "non numeric/categorical target";
+    error_msg << "non numeric/categorical/sequential target";
   }
 
   if (has_graph_inputs) {

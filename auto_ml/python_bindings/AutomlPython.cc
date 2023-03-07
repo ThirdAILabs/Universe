@@ -248,6 +248,12 @@ void createUDTTypesSubmodule(py::module_& module) {
   py::class_<automl::data::DateDataType, automl::data::DataType,
              automl::data::DateDataTypePtr>(udt_types_submodule, "date")
       .def(py::init<>(), docs::UDT_DATE_TYPE);
+
+  py::class_<automl::data::SequenceDataType, automl::data::DataType,
+             automl::data::SequenceDataTypePtr>(udt_types_submodule, "sequence")
+      .def(py::init<char, std::optional<uint32_t>>(),
+           py::arg("delimiter") = ' ', py::arg("max_length") = std::nullopt,
+           docs::UDT_SEQUENCE_TYPE);
 }
 
 void createUDTTemporalSubmodule(py::module_& module) {

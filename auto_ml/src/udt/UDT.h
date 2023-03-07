@@ -147,6 +147,7 @@ class UDT {
   static void throwUnsupportedUDTConfigurationError(
       const data::CategoricalDataTypePtr& target_as_categorical,
       const data::NumericalDataTypePtr& target_as_numerical,
+      const data::SequenceDataTypePtr& target_as_sequence,
       bool has_graph_inputs);
 
   friend class cereal::access;
