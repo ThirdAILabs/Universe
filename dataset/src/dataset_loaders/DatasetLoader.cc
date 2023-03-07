@@ -4,6 +4,7 @@
 #include <dataset/src/Datasets.h>
 #include <utils/Logging.h>
 #include <limits>
+#include <optional>
 #include <utility>
 
 namespace thirdai::dataset {
@@ -73,12 +74,15 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
   fillVectorBuffer(fill_size);
   auto data = _shuffler.datasets(/* batch_size= */ batch_size,
                                  /* max_batches= */ num_batches);
+  if (!data) {
+    return std::nullopt;
+  }
 
   auto end = std::chrono::high_resolution_clock::now();
   auto duration =
       std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
-  if (data.at(0)->len() == 0) {
+  if (data->at(0)->len() == 0) {
 #if THIRDAI_EXPOSE_ALL
     if (verbose) {
       // This is to ensure that it always prints complete if it prints that it
@@ -94,8 +98,8 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
 
   if (verbose) {
     std::cout << "loaded data | source '" << _data_source->resourceName()
-              << "' | vectors " << data.at(0)->len() << " | batches "
-              << data.at(0)->numBatches() << " | time " << duration
+              << "' | vectors " << data->at(0)->len() << " | batches "
+              << data->at(0)->numBatches() << " | time " << duration
               << "s | complete\n"
               << std::endl;
   }
@@ -121,7 +125,6 @@ void DatasetLoader::fillVectorBuffer(size_t num_rows) {
     if (!rows) {
       return;
     }
-
     auto vectors = _featurizer->featurize(*rows);
     std::vector<BoltBatch> batch;
     batch.reserve(vectors.size());

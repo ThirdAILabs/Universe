@@ -1,92 +1,174 @@
 #include "Shuffler.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <optional>
+#include <random>
+#include <stdexcept>
 #include <vector>
 
 namespace thirdai::dataset {
 
-void Shuffler::add(std::vector<BoltBatch>&& batch) {
-  _buffer_size += batch.front().getBatchSize();
-  _offsets.push_back(_buffer_size);
-  _buffer.push_back(std::move(batch));
+BatchBuffer::BatchBuffer(BatchBuffer&& other) noexcept
+    : _size(other._size),
+      _start_ids(std::move(other._start_ids)),
+      _batches(std::move(other._batches)) {
+  other._size = 0;
 }
 
-std::vector<BoltDatasetPtr> Shuffler::datasets(uint32_t batch_size,
-                                               uint32_t max_batches) {
-  // Equivalent to vector of bolt datasets
-  std::vector<std::vector<BoltBatch>> shuffled_batches =
-      shuffle(std::move(_buffer), batch_size);
+BatchBuffer& BatchBuffer::operator=(BatchBuffer&& other) noexcept {
+  _size = other._size;
+  _start_ids = std::move(other._start_ids);
+  _batches = std::move(other._batches);
 
-  uint32_t num_returned =
-      std::min<uint32_t>(max_batches, shuffled_batches.front().size());
+  other._size = 0;
 
-  std::vector<BoltDatasetPtr> output(shuffled_batches.size());
-  _buffer_size = 0;
-  _offsets = {0};
-  for (uint32_t remain_id = num_returned;
-       remain_id < shuffled_batches.front().size(); remain_id++) {
-    std::vector<BoltBatch> batch(shuffled_batches[remain_id].size());
-    for (uint32_t column_id = 0; column_id < batch.size(); column_id++) {
-      batch[column_id] = std::move(shuffled_batches[column_id][remain_id]);
-    }
-    _buffer.push_back(std::move(batch));
-    _buffer_size += _buffer.front().back().getBatchSize();
-    _offsets.push_back(_buffer_size);
+  return *this;
+}
+
+void BatchBuffer::add(std::vector<BoltBatch>&& batch) {
+  uint32_t batch_size = batch.front().getBatchSize();
+  validateBatchSize(batch, batch_size);
+  validateBatchColumns(batch);
+
+  _size += batch.front().getBatchSize();
+  _start_ids.push_back(_size);
+
+  if (_batches.empty()) {
+    _batches.resize(batch.size());
   }
 
+  for (uint32_t column = 0; column < _batches.size(); column++) {
+    _batches[column].push_back(std::move(batch[column]));
+  }
+}
+
+void BatchBuffer::forEachVector(const ForEachVectorFunctor& functor) {
+  /* aaa
+#pragma omp parallel for default(none) \
+    shared(size, numColumns, batchSize, _start_ids, functor, _batches)
+    aaa
+    */
+  if (_batches.empty()) {
+    return;
+  }
+  for (uint32_t batch_id = 0; batch_id < _batches.front().size(); batch_id++) {
+    for (uint32_t column = 0; column < numColumns(); column++) {
+      for (uint32_t vec_id = 0; vec_id < batchSize(batch_id); vec_id++) {
+        uint32_t sample_id = _start_ids[batch_id] + vec_id;
+
+        Coordinates coords;
+        coords.column = column;
+        coords.sample_id = sample_id;
+        functor(coords, std::move(_batches[column][batch_id][vec_id]));
+      }
+    }
+  }
+}
+
+void BatchBuffer::validateBatchSize(const std::vector<BoltBatch>& batch,
+                                    uint32_t batch_size) {
+  for (const auto& column : batch) {
+    if (column.getBatchSize() != batch_size) {
+      throw std::invalid_argument(
+          "Saw a batch with inconsistent sizes across columns.");
+    }
+  }
+}
+
+void BatchBuffer::validateBatchColumns(const std::vector<BoltBatch>& batch) {
+  if (!_batches.empty() && batch.size() != _batches.size()) {
+    throw std::invalid_argument(
+        "Saw a batch with inconsistent number of columns.");
+  }
+}
+
+std::optional<std::vector<BoltDatasetPtr>> Shuffler::datasets(
+    uint32_t batch_size, uint32_t max_batches) {
+  if (_buffer.empty()) {
+    return std::nullopt;
+  }
+  auto tidy_batches =
+      tidyBatches(std::move(_buffer), batch_size, _shuffle, _gen);
+
+  uint32_t num_batches = tidy_batches.front().size();
+  uint32_t num_batches_returned = std::min<uint32_t>(max_batches, num_batches);
+
+  _buffer = bufferWithRemains(tidy_batches, num_batches_returned, num_batches);
+
+  std::vector<BoltDatasetPtr> output(tidy_batches.size());
   for (uint32_t dataset_id = 0; dataset_id < output.size(); dataset_id++) {
-    shuffled_batches[dataset_id].resize(num_returned);
+    tidy_batches[dataset_id].resize(num_batches_returned);
     output[dataset_id] =
-        std::make_shared<BoltDataset>(std::move(shuffled_batches[dataset_id]));
+        std::make_shared<BoltDataset>(std::move(tidy_batches[dataset_id]));
   }
 
   return output;
 }
 
-std::vector<std::vector<BoltBatch>> Shuffler::shuffle(
-    std::vector<std::vector<BoltBatch>>&& buffer, uint32_t batch_size) {
-  std::vector<uint32_t> permutation(_buffer_size);
+std::vector<std::vector<BoltBatch>> Shuffler::tidyBatches(BatchBuffer&& buffer,
+                                                          uint32_t batch_size,
+                                                          bool shuffle,
+                                                          std::mt19937& gen) {
+  auto permutation = permute(buffer.size(), shuffle, gen);
+  auto tidy_batches = allocateTidyBatches(buffer, batch_size);
+
+  buffer.forEachVector([&permutation, &tidy_batches, &batch_size](
+                           Coordinates coords, BoltVector&& vector) {
+    uint32_t sample_id = permutation[coords.sample_id];
+    uint32_t batch_id = sample_id / batch_size;
+    uint32_t vec_id = sample_id % batch_size;
+
+    tidy_batches[coords.column][batch_id][vec_id] = std::move(vector);
+  });
+
+  return tidy_batches;
+}
+
+std::vector<uint32_t> Shuffler::permute(uint32_t size, bool shuffle,
+                                        std::mt19937& gen) {
+  std::vector<uint32_t> permutation(size);
   std::iota(permutation.begin(), permutation.end(), 0);
-  if (_shuffle) {
-    std::shuffle(permutation.begin(), permutation.end(), _gen);
+  if (shuffle) {
+    std::shuffle(permutation.begin(), permutation.end(), gen);
   }
+  return permutation;
+}
 
-  uint32_t n_columns = buffer.front().size();
-  uint32_t n_shuffled_batches = (_buffer_size + batch_size - 1) / batch_size;
-  uint32_t last_batch_size = _buffer_size % batch_size;
+std::vector<std::vector<BoltBatch>> Shuffler::allocateTidyBatches(
+    const BatchBuffer& buffer, uint32_t batch_size) {
+  uint32_t n_shuffled_batches = (buffer.size() + batch_size - 1) / batch_size;
+  uint32_t last_batch_size = buffer.size() % batch_size;
 
-  std::vector<std::vector<BoltBatch>> shuffled_batches(
-      n_columns, std::vector<BoltBatch>(n_shuffled_batches));
+  std::vector<std::vector<BoltBatch>> tidy_batches(
+      buffer.numColumns(), std::vector<BoltBatch>(n_shuffled_batches));
 
 #pragma omp parallel for default(none) \
-    shared(n_shuffled_batches, shuffled_batches, batch_size)
+    shared(n_shuffled_batches, tidy_batches, batch_size)
   for (uint32_t shuffled_batch_id = 0;
        shuffled_batch_id < n_shuffled_batches - 1; shuffled_batch_id++) {
-    for (auto& batch_list : shuffled_batches) {
+    for (auto& batch_list : tidy_batches) {
       batch_list[shuffled_batch_id] = BoltBatch(batch_size);
     }
   }
-  for (auto& batch_list : shuffled_batches) {
+  for (auto& batch_list : tidy_batches) {
     batch_list.back() = BoltBatch(last_batch_size);
   }
 
-#pragma omp parallel for default(none) \
-    shared(buffer, shuffled_batches, permutation, batch_size, std::cout)
-  for (uint32_t batch_id = 0; batch_id < buffer.size(); batch_id++) {
-    for (uint32_t column_id = 0; column_id < buffer[batch_id].size();
-         column_id++) {
-      auto& unshuffled_batch = buffer[batch_id][column_id];
-      for (uint32_t vec_id = 0; vec_id < unshuffled_batch.getBatchSize();
-           vec_id++) {
-        uint32_t sample_id = _offsets[batch_id] + vec_id;
-        uint32_t shuffled_sample_id = permutation[sample_id];
-        uint32_t shuffled_batch_id = shuffled_sample_id / batch_size;
-        uint32_t shuffled_vec_id = shuffled_sample_id % batch_size;
-        shuffled_batches[column_id][shuffled_batch_id][shuffled_vec_id] =
-            std::move(buffer[batch_id][column_id][vec_id]);
-      }
+  return tidy_batches;
+}
+
+BatchBuffer Shuffler::bufferWithRemains(
+    std::vector<std::vector<BoltBatch>>& tidy_batches,
+    uint32_t num_batches_returned, uint32_t num_batches) {
+  BatchBuffer buffer;
+  for (uint32_t remain_id = num_batches_returned; remain_id < num_batches;
+       remain_id++) {
+    std::vector<BoltBatch> remain_batch(tidy_batches.size());
+    for (uint32_t column = 0; column < tidy_batches.size(); column++) {
+      remain_batch[column] = std::move(tidy_batches[column][remain_id]);
     }
+    buffer.add(std::move(remain_batch));
   }
 
-  return shuffled_batches;
+  return buffer;
 }
 }  // namespace thirdai::dataset

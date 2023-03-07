@@ -10,27 +10,80 @@
 
 namespace thirdai::dataset {
 
-class Shuffler {
+struct Coordinates {
+  uint32_t column;
+  uint32_t sample_id;
+};
+
+using ForEachVectorFunctor = std::function<void(Coordinates, BoltVector&&)>;
+
+class BatchBuffer {
  public:
-  explicit Shuffler(bool shuffle, uint32_t seed)
-      : _gen(seed), _shuffle(shuffle), _buffer_size(0), _offsets({0}) {}
+  BatchBuffer()
+      : _size(0),
+        // Starting ID of first batch is 0
+        _start_ids({0}) {}
+
+  BatchBuffer(BatchBuffer&& other) noexcept;
+
+  BatchBuffer& operator=(BatchBuffer&& other) noexcept;
 
   void add(std::vector<BoltBatch>&& batch);
 
-  uint32_t size() const { return _buffer_size; }
+  uint32_t size() const { return _size; }
 
-  std::vector<BoltDatasetPtr> datasets(uint32_t batch_size,
-                                       uint32_t max_batches);
+  bool empty() const { return _size == 0; }
 
-  std::vector<std::vector<BoltBatch>> shuffle(
-      std::vector<std::vector<BoltBatch>>&& buffer, uint32_t batch_size);
+  uint32_t numColumns() const { return _batches.size(); }
+
+  void forEachVector(const ForEachVectorFunctor& functor);
 
  private:
+  static void validateBatchSize(const std::vector<BoltBatch>& batch,
+                                uint32_t batch_size);
+
+  void validateBatchColumns(const std::vector<BoltBatch>& batch);
+
+  uint32_t batchSize(uint32_t batch_id) const {
+    return _batches.front().at(batch_id).getBatchSize();
+  }
+
+  uint32_t _size;
+  std::vector<uint32_t> _start_ids;
+  std::vector<std::vector<BoltBatch>> _batches;
+};
+
+class Shuffler {
+ public:
+  explicit Shuffler(bool shuffle, uint32_t seed)
+      : _gen(seed), _shuffle(shuffle) {}
+
+  void add(std::vector<BoltBatch>&& batch) { _buffer.add(std::move(batch)); }
+
+  uint32_t size() const { return _buffer.size(); }
+
+  std::optional<std::vector<BoltDatasetPtr>> datasets(uint32_t batch_size,
+                                                      uint32_t max_batches);
+
+ private:
+  static std::vector<std::vector<BoltBatch>> tidyBatches(BatchBuffer&& buffer,
+                                                         uint32_t batch_size,
+                                                         bool shuffle,
+                                                         std::mt19937& gen);
+
+  static std::vector<uint32_t> permute(uint32_t size, bool shuffle,
+                                       std::mt19937& gen);
+
+  static std::vector<std::vector<BoltBatch>> allocateTidyBatches(
+      const BatchBuffer& buffer, uint32_t batch_size);
+
+  static BatchBuffer bufferWithRemains(
+      std::vector<std::vector<BoltBatch>>& tidy_batches,
+      uint32_t num_batches_returned, uint32_t num_batches);
+
   std::mt19937 _gen;
   bool _shuffle;
-  uint32_t _buffer_size;
-  std::vector<uint32_t> _offsets;
-  std::vector<std::vector<BoltBatch>> _buffer;
+  BatchBuffer _buffer;
 };
 
 }  // namespace thirdai::dataset
