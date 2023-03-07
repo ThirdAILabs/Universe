@@ -52,7 +52,7 @@ UDTQueryReformulation::UDTQueryReformulation(
 
 void UDTQueryReformulation::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<Validation>& validation,
+    const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
