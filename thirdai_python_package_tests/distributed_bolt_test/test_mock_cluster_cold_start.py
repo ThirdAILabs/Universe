@@ -7,6 +7,7 @@ from thirdai import bolt
 
 catalog_file = "amazon-kaggle-product-catalog.csv"
 
+pytestmark = [pytest.mark.distributed]
 
 def setup_module():
     import os
