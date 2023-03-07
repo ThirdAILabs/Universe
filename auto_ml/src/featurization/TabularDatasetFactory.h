@@ -22,7 +22,7 @@ class TabularDatasetFactory {
       const std::vector<dataset::BlockPtr>& label_blocks,
       std::set<std::string> label_col_names, const TabularOptions& options,
       bool force_parallel, std::optional<char> label_delimiter,
-      std::string label_column_name);
+      std::string label_column_name, bool integer_target);
 
   dataset::DatasetLoaderPtr getDatasetLoader(
       const dataset::DataSourcePtr& data_source, bool shuffle);
@@ -100,6 +100,10 @@ class TabularDatasetFactory {
   std::optional<char> labelDelimiter() { return _label_delimiter_name; }
   std::string labelColumn() { return _label_column_name; }
 
+  bool integerTarget(){
+    return _integer_target;
+  }
+
  private:
   dataset::TabularFeaturizerPtr makeFeaturizer(
       const TemporalRelationships& temporal_relationships,
@@ -156,6 +160,7 @@ class TabularDatasetFactory {
   char _delimiter;
   std::optional<char> _label_delimiter_name;
   std::string _label_column_name;
+  bool _integer_target;
 };
 
 using TabularDatasetFactoryPtr = std::shared_ptr<TabularDatasetFactory>;

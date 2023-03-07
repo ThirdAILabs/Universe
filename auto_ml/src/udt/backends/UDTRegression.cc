@@ -46,7 +46,7 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
       input_data_types, temporal_tracking_relationships,
       std::vector<dataset::BlockPtr>{label_block},
       std::set<std::string>{target_name}, tabular_options, force_parallel,
-      label_block->delimiter(), label_block->columnName());
+      label_block->delimiter(), label_block->columnName(), false);
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                             defaults::FREEZE_HASH_TABLES);

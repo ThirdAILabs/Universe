@@ -49,7 +49,7 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
       input_data_types, temporal_tracking_relationships,
       std::vector<dataset::BlockPtr>{_label_block},
       std::set<std::string>{target_name}, tabular_options, force_parallel,
-      _label_block->delimiter(), _label_block->columnName());
+      _label_block->delimiter(), _label_block->columnName(), integer_target);
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                             defaults::FREEZE_HASH_TABLES);
@@ -176,10 +176,6 @@ void UDTClassifier::coldstart(
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::optional<Validation>& validation,
     const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
-  if (!integerTarget()) {
-    throw std::invalid_argument(
-        "Cold start pretraining currently only supports integer labels.");
-  }
 
   auto data_source = cold_start::preprocessColdStartTrainSource(
       data, strong_column_names, weak_column_names, _dataset_factory);

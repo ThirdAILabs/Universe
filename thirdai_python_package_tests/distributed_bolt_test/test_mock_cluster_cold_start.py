@@ -15,10 +15,11 @@ def setup_module():
     if not os.path.exists(path):
         os.makedirs(path)
 
-    if not os.path.exists(f"{path}/part1") or not os.path.exists(f"{path}/part2"):
+    if not os.path.exists("amazon-kaggle-product-catalog.csv"):
         os.system(
             "curl -L https://www.dropbox.com/s/tf7e5m0cikhcb95/amazon-kaggle-product-catalog-sampled-0.05.csv?dl=0 -o amazon-kaggle-product-catalog.csv"
         )
+    if not os.path.exists(f"{path}/part1") or not os.path.exists(f"{path}/part2"):
         split_into_2(
             file_to_split="amazon-kaggle-product-catalog.csv",
             destination_file_1=f"{path}/part1",
