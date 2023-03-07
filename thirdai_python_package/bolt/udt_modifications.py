@@ -40,12 +40,7 @@ def modify_udt():
 
     def _convert_validation(validation: Optional[bolt.Validation]) -> None:
         if validation is not None:
-            return bolt.UDTValidation(
-                data=_create_data_source(validation.filename()),
-                metrics=validation.metrics(),
-                steps_per_validation=validation.interval(),
-                sparse_inference=validation.sparse_inference(),
-            )
+            return (_create_data_source(validation.filename()), validation.args())
         return None
 
     def wrapped_train(

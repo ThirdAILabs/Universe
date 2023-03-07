@@ -3,7 +3,9 @@
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ModelConfig.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
@@ -18,34 +20,15 @@ class ValidationOptions {
   ValidationOptions(std::string filename, std::vector<std::string> metrics,
                     std::optional<uint32_t> interval, bool use_sparse_inference)
       : _filename(std::move(filename)),
-        _metrics(std::move(metrics)),
-        _interval(interval),
-        _use_sparse_inference(use_sparse_inference) {}
+        _args(std::move(metrics), interval, use_sparse_inference) {}
 
   const std::string& filename() const { return _filename; }
 
-  uint32_t interval() const { return _interval.value_or(0); }
-
-  bolt::EvalConfig validationConfig() const {
-    bolt::EvalConfig val_config =
-        bolt::EvalConfig::makeConfig().withMetrics(_metrics);
-
-    if (_use_sparse_inference) {
-      val_config.enableSparseInference();
-    }
-
-    return val_config;
-  }
-
-  const std::vector<std::string>& metrics() const { return _metrics; }
-
-  bool sparseInference() const { return _use_sparse_inference; }
+  const udt::ValidationArgs& args() const { return _args; }
 
  private:
   std::string _filename;
-  std::vector<std::string> _metrics;
-  std::optional<uint32_t> _interval;
-  bool _use_sparse_inference;
+  udt::ValidationArgs _args;
 };
 
 void defineAutomlInModule(py::module_& module) {
@@ -56,9 +39,9 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("interval") = std::nullopt,
            py::arg("use_sparse_inference") = false, docs::VALIDATION)
       .def("filename", &ValidationOptions::filename)
-      .def("metrics", &ValidationOptions::metrics)
-      .def("interval", &ValidationOptions::interval)
-      .def("sparse_inference", &ValidationOptions::sparseInference);
+      .def("args", &ValidationOptions::args);
+
+  py::class_<udt::ValidationArgs>(module, "ValidationArgs");  // NOLINT
 
   /**
    * This class definition overrides the __new__ method because we want to
@@ -97,13 +80,6 @@ void defineAutomlInModule(py::module_& module) {
            docs::TEXT_CLASSIFIER_INIT)
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
-
-  py::class_<udt::Validation>(module, "UDTValidation")
-      .def(py::init<dataset::DataSourcePtr, std::vector<std::string>,
-                    std::optional<uint32_t>, bool>(),
-           py::arg("data"), py::arg("metrics"),
-           py::arg("steps_per_validation") = std::nullopt,
-           py::arg("sparse_inference") = false);
 
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module, "UDT")
       .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),
@@ -260,6 +236,12 @@ void createUDTTypesSubmodule(py::module_& module) {
   py::class_<automl::data::DateDataType, automl::data::DataType,
              automl::data::DateDataTypePtr>(udt_types_submodule, "date")
       .def(py::init<>(), docs::UDT_DATE_TYPE);
+
+  py::class_<automl::data::SequenceDataType, automl::data::DataType,
+             automl::data::SequenceDataTypePtr>(udt_types_submodule, "sequence")
+      .def(py::init<char, std::optional<uint32_t>>(),
+           py::arg("delimiter") = ' ', py::arg("max_length") = std::nullopt,
+           docs::UDT_SEQUENCE_TYPE);
 }
 
 void createUDTTemporalSubmodule(py::module_& module) {

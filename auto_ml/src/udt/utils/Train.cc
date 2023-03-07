@@ -1,5 +1,6 @@
 #include "Train.h"
 #include <auto_ml/src/udt/Defaults.h>
+#include <dataset/src/Datasets.h>
 
 namespace thirdai::automl::udt::utils {
 
@@ -13,7 +14,7 @@ void trainSingleEpochOnStream(bolt::BoltGraphPtr& model,
   while (auto datasets = dataset_loader->loadSome(
              batch_size, /* num_batches = */ max_in_memory_batches,
              /* verbose = */ train_config.verbose())) {
-    auto& [data, labels] = datasets.value();
+    auto [data, labels] = split_data_labels(std::move(datasets.value()));
 
     model->train({data}, labels, train_config, token);
   }
@@ -45,14 +46,14 @@ void trainOnStream(bolt::BoltGraphPtr& model,
   }
 }
 
-}  // namespace
-
-void trainInMemory(
-    bolt::BoltGraphPtr& model,
-    std::pair<dataset::InputDatasets, dataset::LabelDataset> datasets,
-    bolt::TrainConfig train_config, bool freeze_hash_tables,
-    licensing::TrainPermissionsToken token) {
-  auto [train_data, train_labels] = std::move(datasets);
+void trainInMemory(bolt::BoltGraphPtr& model,
+                   dataset::DatasetLoaderPtr& dataset_loader,
+                   bolt::TrainConfig train_config, size_t batch_size,
+                   bool freeze_hash_tables,
+                   licensing::TrainPermissionsToken token) {
+  auto loaded_data = dataset_loader->loadAll(
+      /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
+  auto [train_data, train_labels] = split_data_labels(std::move(loaded_data));
 
   uint32_t epochs = train_config.epochs();
 
@@ -69,6 +70,8 @@ void trainInMemory(
   model->train(train_data, train_labels, train_config, token);
 }
 
+}  // namespace
+
 void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
            const bolt::TrainConfig& train_config, size_t batch_size,
            std::optional<size_t> max_in_memory_batches, bool freeze_hash_tables,
@@ -77,14 +80,14 @@ void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
     trainOnStream(model, dataset_loader, train_config, batch_size,
                   max_in_memory_batches.value(), freeze_hash_tables, token);
   } else {
-    auto loaded_data = dataset_loader->loadAll(
-        /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
-    trainInMemory(model, loaded_data, train_config, freeze_hash_tables, token);
+    trainInMemory(model, dataset_loader, train_config, batch_size,
+                  freeze_hash_tables, token);
   }
 }
 
 bolt::TrainConfig getTrainConfig(
     uint32_t epochs, float learning_rate,
+    const std::optional<ValidationDatasetLoader>& validation,
     const std::vector<std::string>& train_metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
@@ -98,32 +101,19 @@ bolt::TrainConfig getTrainConfig(
   if (!verbose) {
     train_config.silence();
   }
-  return train_config;
-}
+  if (validation) {
+    auto val_dataset = validation->first->loadAll(
+        /* batch_size= */ defaults::BATCH_SIZE, verbose);
+    auto [val_data, val_labels] = split_data_labels(std::move(val_dataset));
 
-bolt::TrainConfig getTrainConfig(
-    uint32_t epochs, float learning_rate,
-    const std::optional<Validation>& validation,
-    const std::vector<std::string>& train_metrics,
-    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
-    std::optional<uint32_t> logging_interval,
-    data::TabularDatasetFactoryPtr& dataset_factory) {
-  bolt::TrainConfig train_config =
-      getTrainConfig(epochs, learning_rate, train_metrics, callbacks, verbose,
-                     logging_interval);
-  if (validation && !dataset_factory->hasTemporalRelationships()) {
-    auto val_data =
-        dataset_factory
-            ->getDatasetLoader(validation->data(),
-                               /* training= */ false)
-            ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
+    bolt::EvalConfig val_config =
+        getEvalConfig(validation->second.metrics(),
+                      validation->second.sparseInference(), verbose);
 
-    bolt::EvalConfig val_config = getEvalConfig(
-        validation->metrics(), validation->sparseInference(), verbose);
-
-    train_config.withValidation(val_data.first, val_data.second, val_config,
-                                /* validation_frequency = */
-                                validation->stepsPerValidation().value_or(0));
+    train_config.withValidation(
+        val_data, val_labels, val_config,
+        /* validation_frequency = */
+        validation->second.stepsPerValidation().value_or(0));
   }
 
   return train_config;
@@ -147,32 +137,13 @@ bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
   return eval_config;
 }
 
-uint32_t predictedClass(const BoltVector& activation_vec,
-                        std::optional<float> binary_threshold) {
-  if (!binary_threshold.has_value()) {
-    return activation_vec.getHighestActivationId();
-  }
-  return activation_vec.activations[1] >= *binary_threshold;
-}
-
-py::object predictedClasses(bolt::InferenceOutputTracker& output,
-                            std::optional<float> binary_threshold) {
-  utils::NumpyArray<uint32_t> predictions(output.numSamples());
-  for (uint32_t i = 0; i < output.numSamples(); i++) {
-    BoltVector activation_vec = output.getSampleAsNonOwningBoltVector(i);
-    predictions.mutable_at(i) =
-        predictedClass(activation_vec, binary_threshold);
-  }
-  return py::object(std::move(predictions));
-}
-
-py::object predictedClasses(const BoltBatch& outputs,
-                            std::optional<float> binary_threshold) {
-  utils::NumpyArray<uint32_t> predictions(outputs.getBatchSize());
-  for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
-    predictions.mutable_at(i) = predictedClass(outputs[i], binary_threshold);
-  }
-  return py::object(std::move(predictions));
+// Splits a vector of datasets as returned by a dataset loader (where the labels
+// are the last dataset in the list)
+std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split_data_labels(
+    dataset::BoltDatasetList&& datasets) {
+  auto labels = datasets.back();
+  datasets.pop_back();
+  return {datasets, labels};
 }
 
 }  // namespace thirdai::automl::udt::utils
