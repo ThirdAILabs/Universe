@@ -86,7 +86,7 @@ class DistributedTrainingWrapper {
     _bolt_graph->freezeHashTables(insert_labels_if_not_found);
   }
 
-  MetricData end_epoch() {
+  MetricData postTrainingEpochUpdates() {
     _metric_aggregator.logAndReset();
     auto metric_data = _metric_aggregator.getOutput();
     return metric_data;
