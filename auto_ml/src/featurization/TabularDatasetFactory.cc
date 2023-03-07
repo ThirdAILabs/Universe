@@ -221,7 +221,8 @@ template <class Archive>
 void TabularDatasetFactory::serialize(Archive& archive) {
   archive(_labeled_featurizer, _inference_featurizer, _metadata_processors,
           _vectors_map, _temporal_context, _data_types, _label_col_names,
-          _delimiter, _label_delimiter_name, _label_column_name, _integer_target);
+          _delimiter, _label_delimiter_name, _label_column_name,
+          _integer_target);
 }
 
 }  // namespace thirdai::automl::data

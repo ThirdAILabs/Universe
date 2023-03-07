@@ -100,9 +100,7 @@ class TabularDatasetFactory {
   std::optional<char> labelDelimiter() { return _label_delimiter_name; }
   std::string labelColumn() { return _label_column_name; }
 
-  bool integerTarget(){
-    return _integer_target;
-  }
+  bool integerTarget() { return _integer_target; }
 
  private:
   dataset::TabularFeaturizerPtr makeFeaturizer(

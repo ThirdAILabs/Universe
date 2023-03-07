@@ -21,13 +21,15 @@ from .utils import get_num_cpus, init_logging
 
 
 def add_distributed_to_udt():
-    def train_with_data_sources(self, learning_rate, epochs, verbose, cluster_config, train_sources):
+    def train_with_data_sources(
+        self, learning_rate, epochs, verbose, cluster_config, train_sources
+    ):
 
         # checks and raises an error if the given UDT is not supported in distributed context
         self.verify_can_distribute()
 
         train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
-        
+
         if not verbose:
             train_config.silence()
         if metrics:
@@ -120,18 +122,19 @@ def add_distributed_to_udt():
         # calculating batch size per node
         batch_size = batch_size // cluster_config.num_workers
 
-
         train_sources = [
-                DistributedUDTDatasetLoader(
-                    train_file=file,
-                    batch_size=batch_size,
-                    max_in_memory_batches=max_in_memory_batches,
-                    data_processor=self.get_data_processor(),
-                )
-                for file in filenames
-            ]
-        
-        return train_with_data_sources(self, learning_rate, epochs, verbose, cluster_config, train_sources)
+            DistributedUDTDatasetLoader(
+                train_file=file,
+                batch_size=batch_size,
+                max_in_memory_batches=max_in_memory_batches,
+                data_processor=self.get_data_processor(),
+            )
+            for file in filenames
+        ]
+
+        return train_with_data_sources(
+            self, learning_rate, epochs, verbose, cluster_config, train_sources
+        )
 
     setattr(bolt.UDT, "train_distributed", train_distributed)
 
@@ -155,20 +158,21 @@ def add_distributed_to_udt():
         # calculating batch size per node
         batch_size = batch_size // cluster_config.num_workers
 
-        
         train_sources = [
-                DistributedColdStartDatasetLoader(
-                    train_file=file,
-                    batch_size=batch_size,
-                    max_in_memory_batches=max_in_memory_batches,
-                    strong_column_names=strong_column_names,
-                    weak_column_names=weak_column_names,
-                    data_processor=self.get_data_processor(),
-                )
-                for file in filenames
-            ]
+            DistributedColdStartDatasetLoader(
+                train_file=file,
+                batch_size=batch_size,
+                max_in_memory_batches=max_in_memory_batches,
+                strong_column_names=strong_column_names,
+                weak_column_names=weak_column_names,
+                data_processor=self.get_data_processor(),
+            )
+            for file in filenames
+        ]
 
-        return train_with_data_sources(self, learning_rate, epochs, verbose, cluster_config, train_sources)
+        return train_with_data_sources(
+            self, learning_rate, epochs, verbose, cluster_config, train_sources
+        )
 
     setattr(bolt.UDT, "cold_start_distributed", cold_start_distributed)
 

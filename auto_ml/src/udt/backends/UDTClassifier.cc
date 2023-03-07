@@ -176,7 +176,6 @@ void UDTClassifier::coldstart(
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::optional<Validation>& validation,
     const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
-
   auto data_source = cold_start::preprocessColdStartTrainSource(
       data, strong_column_names, weak_column_names, _dataset_factory);
 
