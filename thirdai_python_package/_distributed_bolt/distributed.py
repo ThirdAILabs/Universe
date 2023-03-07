@@ -413,6 +413,9 @@ class DistributedDataParallel:
                 train_state_manager=train_state_manager, epoch=epoch
             )
 
+        # Here we are returning the whole train_metrics independently for each of
+        # the worker with the assumption that train_metrics for each of the worker
+        # would be aggregated by the user.
         distributed_train_metrics = {
             "time": time.time() - train_start,
             "total_batches_trained": self.total_batches_trained,

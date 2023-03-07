@@ -10,9 +10,9 @@ namespace thirdai::automl::cold_start {
  * both serial and distributed pre-processing for cold-start.
  */
 /*
- * Note(pratik): In distributed setting, this particular function runs independently on each of the
+ * Note(pratkpranav): In the distributed setting, this particular function runs independently on each of the
  * worker, hence almost any additions should be fine except the additions which
- * involves going through whole training data for once.
+ * involves going through the whole training data for once.
  */
 dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const dataset::DataSourcePtr& data,
