@@ -269,8 +269,8 @@ void PrecisionAtK::record(const BoltVector& output, const BoltVector& labels) {
     top_k.pop();
   }
 
-  _correct_guesses.fetch_add(correct_guesses);
-  _samples.fetch_add(1);
+  _correct_guesses += correct_guesses;
+  _samples += 1;
 }
 
 double PrecisionAtK::value() {
