@@ -10,7 +10,7 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    data::TabularDatasetFactoryPtr dataset_factory) {
+    data::TabularDatasetFactoryPtr& dataset_factory) {
   if (!dataset_factory->integerTarget()) {
     throw std::invalid_argument(
         "Cold start pretraining currently only supports integer labels.");

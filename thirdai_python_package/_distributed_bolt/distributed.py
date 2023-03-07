@@ -22,7 +22,7 @@ from .utils import get_num_cpus, init_logging
 
 def add_distributed_to_udt():
     def train_with_data_sources(
-        self, learning_rate, epochs, verbose, cluster_config, train_sources
+        self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
     ):
 
         # checks and raises an error if the given UDT is not supported in distributed context
@@ -133,7 +133,7 @@ def add_distributed_to_udt():
         ]
 
         return train_with_data_sources(
-            self, learning_rate, epochs, verbose, cluster_config, train_sources
+            self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
         )
 
     setattr(bolt.UDT, "train_distributed", train_distributed)
@@ -171,7 +171,7 @@ def add_distributed_to_udt():
         ]
 
         return train_with_data_sources(
-            self, learning_rate, epochs, verbose, cluster_config, train_sources
+            self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
         )
 
     setattr(bolt.UDT, "cold_start_distributed", cold_start_distributed)
