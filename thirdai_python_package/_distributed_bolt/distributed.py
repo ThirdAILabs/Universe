@@ -24,7 +24,6 @@ def add_distributed_to_udt():
     def train_with_data_sources(
         self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
     ):
-
         # checks and raises an error if the given UDT is not supported in distributed context
         self.verify_can_distribute()
 
@@ -151,7 +150,6 @@ def add_distributed_to_udt():
         metrics: List[str] = [],
         verbose: bool = True,
     ):
-
         if batch_size is None:
             batch_size = 2048
 
