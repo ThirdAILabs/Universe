@@ -25,7 +25,7 @@ float autotuneSparsity(uint32_t dim) {
 }  // namespace
 
 bolt::BoltGraphPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
-                                uint32_t output_dim) {
+                                uint32_t output_dim, bool use_sigmoid_bce) {
   bolt::InputPtr input_node = bolt::Input::make(input_dim);
 
   auto hidden = bolt::FullyConnectedNode::makeDense(hidden_dim,
@@ -33,7 +33,7 @@ bolt::BoltGraphPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
   hidden->addPredecessor(input_node);
 
   auto sparsity = autotuneSparsity(output_dim);
-  const auto* activation = "softmax";
+  const auto* activation = use_sigmoid_bce ? "sigmoid" : "softmax";
   auto output =
       bolt::FullyConnectedNode::makeAutotuned(output_dim, sparsity, activation);
   output->addPredecessor(hidden);
@@ -41,8 +41,11 @@ bolt::BoltGraphPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
   auto graph = std::make_shared<bolt::BoltGraph>(
       /* inputs= */ std::vector<bolt::InputPtr>{input_node}, output);
 
-  graph->compile(
-      bolt::CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss());
+  use_sigmoid_bce
+      ? graph->compile(
+            bolt::BinaryCrossEntropyLoss::makeBinaryCrossEntropyLoss())
+      : graph->compile(bolt::CategoricalCrossEntropyLoss::
+                           makeCategoricalCrossEntropyLoss());
 
   return graph;
 }
