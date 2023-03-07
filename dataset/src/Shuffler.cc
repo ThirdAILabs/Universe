@@ -42,11 +42,8 @@ void BatchBuffer::add(std::vector<BoltBatch>&& batch) {
 }
 
 void BatchBuffer::forEachVector(const ForEachVectorFunctor& functor) {
-  /* aaa
 #pragma omp parallel for default(none) \
     shared(size, numColumns, batchSize, _start_ids, functor, _batches)
-    aaa
-    */
   if (_batches.empty()) {
     return;
   }
