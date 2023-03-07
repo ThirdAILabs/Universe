@@ -616,7 +616,8 @@ That's all for now, folks! More docs coming soon :)
           },
           py::return_value_policy::reference_internal,
           "Returns gradient reference for Distributed Training Wrapper")
-      .def("post_training_epoch_updates", &thirdai::bolt::DistributedTrainingWrapper::postTrainingEpochUpdates,
+      .def("post_training_epoch_updates",
+           &thirdai::bolt::DistributedTrainingWrapper::postTrainingEpochUpdates,
            bolt::python::OutputRedirect());
 
   createLossesSubmodule(nn_submodule);

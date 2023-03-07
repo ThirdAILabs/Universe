@@ -47,7 +47,6 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
       std::vector<dataset::BlockPtr>{_label_block},
       std::set<std::string>{target_name}, tabular_options, force_parallel,
       _label_block->delimiter(), _label_block->columnName(), integer_target);
-
 }
 
 void UDTClassifier::train(
