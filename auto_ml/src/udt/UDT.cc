@@ -93,7 +93,8 @@ UDT::UDT(const std::string& file_format, uint32_t n_target_classes,
 }
 
 void UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
-                uint32_t epochs, const std::optional<Validation>& validation,
+                uint32_t epochs,
+                const std::optional<ValidationDataSource>& validation,
                 std::optional<size_t> batch_size,
                 std::optional<size_t> max_in_memory_batches,
                 const std::vector<std::string>& metrics,

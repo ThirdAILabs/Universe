@@ -452,6 +452,7 @@ pybind11_add_module(
   auto_ml/src/udt/backends/UDTRegression.cc
   auto_ml/src/udt/backends/UDTQueryReformulation.cc
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
+  auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/models/TextClassifier.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)

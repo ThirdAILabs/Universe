@@ -3,8 +3,10 @@
 #include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/pybind11.h>
 #include <optional>
 #include <stdexcept>
@@ -14,43 +16,13 @@ namespace py = pybind11;
 namespace thirdai::automl::udt {
 
 /**
- * Stores necessary information for validation, used to simplify args and avoid
- * having to pass in multiple optional arguments and verify that they are
- * correctly specified together.
- */
-class Validation {
- public:
-  Validation(dataset::DataSourcePtr data, std::vector<std::string> metrics,
-             std::optional<uint32_t> steps_per_validation = std::nullopt,
-             bool sparse_inference = false)
-      : _data(std::move(data)),
-        _metrics(std::move(metrics)),
-        _steps_per_validation(steps_per_validation),
-        _sparse_inference(sparse_inference) {}
-
-  const auto& data() const { return _data; }
-
-  const auto& metrics() const { return _metrics; }
-
-  const auto& stepsPerValidation() const { return _steps_per_validation; }
-
-  bool sparseInference() const { return _sparse_inference; }
-
- private:
-  dataset::DataSourcePtr _data;
-  std::vector<std::string> _metrics;
-  std::optional<uint32_t> _steps_per_validation;
-  bool _sparse_inference;
-};
-
-/**
- * This is an interface for the backends that are used in a UDT model. To add a
- * new backend a user must implement the required methods (train, evaluate,
- * predict, etc.) and any desired optional methods (explainability, cold start,
- * etc.). These methods are designed to be general in their arguments and
- * support the options that are required for most backends, though some backends
- * may not use all of the args. For instance return_predicted_class is not
- * applicable for regression models.
+ * This is an interface for the backends that are used in a UDT model. To
+ * add a new backend a user must implement the required methods (train,
+ * evaluate, predict, etc.) and any desired optional methods
+ * (explainability, cold start, etc.). These methods are designed to be
+ * general in their arguments and support the options that are required for
+ * most backends, though some backends may not use all of the args. For
+ * instance return_predicted_class is not applicable for regression models.
  */
 class UDTBackend {
  public:
@@ -59,7 +31,7 @@ class UDTBackend {
    */
   virtual void train(
       const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-      const std::optional<Validation>& validation,
+      const std::optional<ValidationDataSource>& validation,
       std::optional<size_t> batch_size,
       std::optional<size_t> max_in_memory_batches,
       const std::vector<std::string>& metrics,
@@ -145,7 +117,7 @@ class UDTBackend {
                          const std::vector<std::string>& weak_column_names,
                          float learning_rate, uint32_t epochs,
                          const std::vector<std::string>& metrics,
-                         const std::optional<Validation>& validation,
+                         const std::optional<ValidationDataSource>& validation,
                          const std::vector<bolt::CallbackPtr>& callbacks,
                          bool verbose) {
     (void)data;

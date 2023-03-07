@@ -47,7 +47,7 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
 
 void UDTRecurrentClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<Validation>& validation,
+    const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
@@ -55,15 +55,18 @@ void UDTRecurrentClassifier::train(
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
-  utils::DataSourceToDatasetLoader source_to_loader_func =
-      [this](const dataset::DataSourcePtr& source, bool shuffle) {
-        return _dataset_factory->getDatasetLoader(source, shuffle);
-      };
+  std::optional<ValidationDatasetLoader> validation_dataset_loader =
+      std::nullopt;
+  if (validation) {
+    validation_dataset_loader =
+        ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
+                                    validation->first, /* shuffle= */ false),
+                                validation->second);
+  }
 
-  bolt::TrainConfig train_config = utils::getTrainConfig(
-      epochs, learning_rate, validation, metrics, callbacks, verbose,
-      logging_interval, /* has_temporal_relationships= */ false,
-      source_to_loader_func);
+  bolt::TrainConfig train_config =
+      utils::getTrainConfig(epochs, learning_rate, validation_dataset_loader,
+                            metrics, callbacks, verbose, logging_interval);
 
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
@@ -96,7 +99,12 @@ py::object UDTRecurrentClassifier::evaluate(
   }
 
   if (return_predicted_class) {
-    return utils::predictedClasses(output, _binary_prediction_threshold);
+    utils::NumpyArray<uint32_t> predictions(output.numSamples());
+    for (uint32_t i = 0; i < output.numSamples(); i++) {
+      BoltVector activation_vec = output.getSampleAsNonOwningBoltVector(i);
+      predictions.mutable_at(i) = activation_vec.getHighestActivationId();
+    }
+    return std::move(predictions);
   }
 
   return utils::convertInferenceTrackerToNumpy(output);
@@ -192,7 +200,7 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
     output[i] = text::join(all_predictions[i], {_target->delimiter});
   }
 
-  return output;
+  return std::move(output);
 }
 
 template void UDTRecurrentClassifier::serialize(cereal::BinaryInputArchive&);

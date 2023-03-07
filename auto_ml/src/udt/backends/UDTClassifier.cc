@@ -12,6 +12,7 @@
 #include <auto_ml/src/udt/utils/Train.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <licensing/src/CheckLicense.h>
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <pybind11/stl.h>
 #include <optional>
@@ -28,18 +29,14 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
                              uint32_t n_target_classes, bool integer_target,
                              const data::TabularOptions& tabular_options,
                              const std::optional<std::string>& model_config,
-                             const config::ArgumentMap& user_args) {
-  if (model_config) {
-    _model = utils::loadModel({tabular_options.feature_hash_range},
-                              n_target_classes, *model_config);
-  } else {
-    uint32_t hidden_dim = user_args.get<uint32_t>(
-        "embedding_dimension", "integer", defaults::HIDDEN_DIM);
-    _model = utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
-                                 n_target_classes);
-  }
-
-  bool normalize_target_categories = utils::hasSoftmaxOutput(_model);
+                             const config::ArgumentMap& user_args)
+    : _classifier(utils::buildModel(
+                      /* input_dim= */ tabular_options.feature_hash_range,
+                      /* output_dim= */ n_target_classes,
+                      /* args= */ user_args, /* model_config= */ model_config),
+                  user_args.get<bool>("freeze_hash_tables", "boolean",
+                                      defaults::FREEZE_HASH_TABLES)) {
+  bool normalize_target_categories = utils::hasSoftmaxOutput(model());
   _label_block = labelBlock(target_name, target, n_target_classes,
                             integer_target, normalize_target_categories);
 
@@ -49,60 +46,32 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
       input_data_types, temporal_tracking_relationships,
       std::vector<dataset::BlockPtr>{_label_block},
       std::set<std::string>{target_name}, tabular_options, force_parallel);
-
-  _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
-                                            defaults::FREEZE_HASH_TABLES);
 }
 
 void UDTClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<Validation>& validation,
+    const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
-  size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
+  std::optional<ValidationDatasetLoader> validation_dataset_loader =
+      std::nullopt;
+  if (validation) {
+    validation_dataset_loader =
+        ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
+                                    validation->first, /* shuffle= */ false),
+                                validation->second);
+  }
 
-  utils::DataSourceToDatasetLoader source_to_loader_func =
-      [this](const dataset::DataSourcePtr& source, bool shuffle) {
-        return _dataset_factory->getDatasetLoader(source, shuffle);
-      };
-
-  bolt::TrainConfig train_config = utils::getTrainConfig(
-      epochs, learning_rate, validation, metrics, callbacks, verbose,
-      logging_interval, _dataset_factory->hasTemporalRelationships(),
-      source_to_loader_func);
-
-  auto train_dataset =
+  auto train_dataset_loader =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  utils::train(_model, train_dataset, train_config, batch_size,
-               max_in_memory_batches,
-               /* freeze_hash_tables= */ _freeze_hash_tables,
-               licensing::TrainPermissionsToken(data));
-
-  /**
-   * For binary classification we tune the prediction threshold to optimize some
-   * metric. This can improve performance particularly on datasets with a class
-   * imbalance.
-   */
-  if (_model->outputDim() == 2) {
-    if (validation && !validation->metrics().empty()) {
-      validation->data()->restart();
-      _binary_prediction_threshold =
-          tuneBinaryClassificationPredictionThreshold(
-              /* data_source= */ validation->data(),
-              /* metric_name= */ validation->metrics().at(0), batch_size);
-
-    } else if (!train_config.metrics().empty()) {
-      data->restart();
-      _binary_prediction_threshold =
-          tuneBinaryClassificationPredictionThreshold(
-              /* data_source= */ data,
-              /* metric_name= */ train_config.metrics().at(0), batch_size);
-    }
-  }
+  _classifier.train(train_dataset_loader, learning_rate, epochs,
+                    validation_dataset_loader, batch_size_opt,
+                    max_in_memory_batches, metrics, callbacks, verbose,
+                    logging_interval, licensing::TrainPermissionsToken(data));
 }
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -112,41 +81,18 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    bool return_metrics,
                                    std::optional<uint32_t> top_k) {
   (void)top_k;
+  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
-  bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose);
-
-  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
-                     ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
-  auto [test_data, test_labels] = utils::split_data_labels(std::move(dataset));
-
-  auto [output_metrics, output] =
-      _model->evaluate(test_data, test_labels, eval_config);
-  if (return_metrics) {
-    return py::cast(output_metrics);
-  }
-
-  if (return_predicted_class) {
-    return utils::predictedClasses(output, _binary_prediction_threshold);
-  }
-
-  return utils::convertInferenceTrackerToNumpy(output);
+  return _classifier.evaluate(dataset, metrics, sparse_inference,
+                              return_predicted_class, verbose, return_metrics);
 }
 
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class,
                                   std::optional<uint32_t> top_k) {
   (void)top_k;
-
-  BoltVector output = _model->predictSingle(
-      _dataset_factory->featurizeInput(sample), sparse_inference);
-
-  if (return_predicted_class) {
-    return py::cast(
-        utils::predictedClass(output, _binary_prediction_threshold));
-  }
-
-  return utils::convertBoltVectorToNumpy(output);
+  return _classifier.predict(_dataset_factory->featurizeInput(sample),
+                             sparse_inference, return_predicted_class);
 }
 
 py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
@@ -154,15 +100,9 @@ py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        bool return_predicted_class,
                                        std::optional<uint32_t> top_k) {
   (void)top_k;
-
-  BoltBatch outputs = _model->predictSingleBatch(
-      _dataset_factory->featurizeInputBatch(samples), sparse_inference);
-
-  if (return_predicted_class) {
-    return utils::predictedClasses(outputs, _binary_prediction_threshold);
-  }
-
-  return utils::convertBoltBatchToNumpy(outputs);
+  return _classifier.predictBatch(
+      _dataset_factory->featurizeInputBatch(samples), sparse_inference,
+      return_predicted_class);
 }
 
 std::vector<dataset::Explanation> UDTClassifier::explain(
@@ -173,10 +113,11 @@ std::vector<dataset::Explanation> UDTClassifier::explain(
     target_neuron = labelToNeuronId(*target_class);
   }
 
-  auto [gradients_indices, gradients_ratio] = _model->getInputGradientSingle(
-      /* input_data= */ {_dataset_factory->featurizeInput(sample)},
-      /* explain_prediction_using_highest_activation= */ true,
-      /* neuron_to_explain= */ target_neuron);
+  auto [gradients_indices, gradients_ratio] =
+      _classifier.model()->getInputGradientSingle(
+          /* input_data= */ {_dataset_factory->featurizeInput(sample)},
+          /* explain_prediction_using_highest_activation= */ true,
+          /* neuron_to_explain= */ target_neuron);
   auto explanation =
       _dataset_factory->explain(gradients_indices, gradients_ratio, sample);
 
@@ -188,7 +129,7 @@ void UDTClassifier::coldstart(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
-    const std::optional<Validation>& validation,
+    const std::optional<ValidationDataSource>& validation,
     const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
   if (!integerTarget()) {
     throw std::invalid_argument(
@@ -244,7 +185,8 @@ void UDTClassifier::coldstart(
 
 py::object UDTClassifier::embedding(const MapInput& sample) {
   auto input_vector = _dataset_factory->featurizeInput(sample);
-  BoltVector emb = _model->predictSingle(std::move(input_vector),
+  BoltVector emb =
+      _classifier.model()->predictSingle(std::move(input_vector),
                                          /* use_sparse_inference= */ false,
                                          /* output_node_name= */ "fc_1");
   return utils::convertBoltVectorToNumpy(emb);
@@ -254,7 +196,8 @@ py::object UDTClassifier::entityEmbedding(
     const std::variant<uint32_t, std::string>& label) {
   uint32_t neuron_id = labelToNeuronId(label);
 
-  auto fc_layers = _model->getNodes().back()->getInternalFullyConnectedLayers();
+  auto fc_layers =
+      _classifier.model()->getNodes().back()->getInternalFullyConnectedLayers();
 
   if (fc_layers.size() != 1) {
     throw std::invalid_argument(
@@ -315,96 +258,13 @@ uint32_t UDTClassifier::labelToNeuronId(
   throw std::invalid_argument("Invalid entity type.");
 }
 
-std::optional<float> UDTClassifier::tuneBinaryClassificationPredictionThreshold(
-    const dataset::DataSourcePtr& data_source, const std::string& metric_name,
-    size_t batch_size) {
-  // The number of samples used is capped to ensure tuning is fast even for
-  // larger datasets.
-  uint32_t num_batches =
-      defaults::MAX_SAMPLES_FOR_THRESHOLD_TUNING / batch_size;
-
-  auto dataset =
-      _dataset_factory->getDatasetLoader(data_source, /* shuffle= */ true);
-
-  auto loaded_data_opt =
-      dataset->loadSome(/* batch_size = */ defaults::BATCH_SIZE, num_batches,
-                        /* verbose = */ false);
-  if (!loaded_data_opt.has_value()) {
-    throw std::invalid_argument("No data found for training.");
-  }
-
-  // Did this instead of structured binding auto [data, labels] = ...
-  // since Clang-Tidy would throw this error around pragma omp parallel:
-  // "reference to local binding 'labels' declared in enclosing function"
-  auto split_data = utils::split_data_labels(std::move(*loaded_data_opt));
-  auto data = std::move(split_data.first);
-  auto labels = std::move(split_data.second);
-
-  auto eval_config =
-      bolt::EvalConfig::makeConfig().returnActivations().silence();
-  auto output = _model->evaluate({data}, labels, eval_config);
-  auto& activations = output.second;
-
-  double best_metric_value = bolt::makeMetric(metric_name)->worst();
-  std::optional<float> best_threshold = std::nullopt;
-
-#pragma omp parallel for default(none) shared( \
-    labels, best_metric_value, best_threshold, metric_name, activations)
-  for (uint32_t t_idx = 1; t_idx < defaults::NUM_THRESHOLDS_TO_CHECK; t_idx++) {
-    auto metric = bolt::makeMetric(metric_name);
-
-    float threshold =
-        static_cast<float>(t_idx) / defaults::NUM_THRESHOLDS_TO_CHECK;
-
-    uint32_t sample_idx = 0;
-    for (const auto& label_batch : *labels) {
-      for (const auto& label_vec : label_batch) {
-        /**
-         * The output bolt vector from activations cannot be passed in
-         * directly because it doesn't incorporate the threshold, and
-         * metrics like categorical_accuracy cannot use a threshold. To
-         * solve this we create a new output vector where the neuron with
-         * the largest activation is the same as the neuron that would be
-         * choosen as the prediction if we applied the given prediction
-         * threshold.
-         *
-         * For metrics like F1 or categorical accuracy the value of the
-         * activation does not matter, only the predicted class so this
-         * modification does not affect the metric. Metrics like mean
-         * squared error do not really make sense to compute at different
-         * thresholds anyway and so we can ignore the effect of this
-         * modification on them.
-         */
-        if (activations.activationsForSample(sample_idx++)[1] >= threshold) {
-          metric->record(
-              /* output= */ BoltVector::makeDenseVector({0, 1.0}),
-              /* labels= */ label_vec);
-        } else {
-          metric->record(
-              /* output= */ BoltVector::makeDenseVector({1.0, 0.0}),
-              /* labels= */ label_vec);
-        }
-      }
-    }
-
-#pragma omp critical
-    if (metric->betterThan(metric->value(), best_metric_value)) {
-      best_metric_value = metric->value();
-      best_threshold = threshold;
-    }
-  }
-
-  return best_threshold;
-}
-
 template void UDTClassifier::serialize(cereal::BinaryInputArchive&);
 template void UDTClassifier::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void UDTClassifier::serialize(Archive& archive) {
   archive(cereal::base_class<UDTBackend>(this), _class_name_to_neuron,
-          _label_block, _model, _dataset_factory, _freeze_hash_tables,
-          _binary_prediction_threshold);
+          _label_block, _classifier, _dataset_factory);
 }
 
 }  // namespace thirdai::automl::udt
