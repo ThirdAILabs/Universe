@@ -255,14 +255,15 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<Featurizer, FeaturizerPtr>(dataset_submodule,  // NOLINT
                                         "Featurizer");
 
+  py::class_<BlockList, BlockListPtr>(dataset_submodule, "BlockList")
+      .def(py::init<std::vector<BlockPtr>, std::optional<uint32_t>>(),
+           py::arg("block_lists"), py::arg("hash_range") = std::nullopt);
+
   py::class_<TabularFeaturizer, Featurizer, TabularFeaturizerPtr>(
       dataset_submodule, "TabularFeaturizer")
-      .def(py::init<std::vector<std::shared_ptr<Block>>,
-                    std::vector<std::shared_ptr<Block>>, bool, char, bool,
-                    std::optional<uint32_t>>(),
-           py::arg("input_blocks"), py::arg("label_blocks"),
-           py::arg("has_header") = false, py::arg("delimiter") = ',',
-           py::arg("parallel") = true, py::arg("hash_range") = std::nullopt);
+      .def(py::init<std::vector<BlockList>, bool, char, bool>(),
+           py::arg("block_lists"), py::arg("has_header") = false,
+           py::arg("delimiter") = ',', py::arg("parallel") = true);
 
   py::class_<MaskedSentenceFeaturizer, Featurizer, MaskedSentenceFeaturizerPtr>(
       dataset_submodule, "MLMFeaturizer")

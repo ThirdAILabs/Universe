@@ -65,23 +65,29 @@ def get_config(have_user_specified_parameters: bool = False):
     return config
 
 
-@pytest.mark.unit
-def test_load_model_from_config():
+def verify_model_summary(config, params, input_dims, expected_summary):
     from thirdai import deployment
 
     CONFIG_FILE = "./model_config"
-
-    config = get_config(have_user_specified_parameters=True)
 
     deployment.dump_config(json.dumps(config), CONFIG_FILE)
 
     model = deployment.load_model_from_config(
         config_file=CONFIG_FILE,
-        parameters={"use_sparsity": "sparse", "act": "tanh", "output_dim": 50},
-        input_dims=[100],
+        parameters=params,
+        input_dims=input_dims,
     )
 
+    os.remove(CONFIG_FILE)
+
     summary = model.summary(detailed=True, print=False)
+
+    assert textwrap.dedent(summary).strip() == textwrap.dedent(expected_summary).strip()
+
+
+@pytest.mark.unit
+def test_load_model_from_config():
+    config = get_config(have_user_specified_parameters=True)
 
     expected_summary = """
     ======================= Bolt Model =======================
@@ -93,9 +99,56 @@ def test_load_model_from_config():
     ============================================================
     """
 
-    assert textwrap.dedent(summary).strip() == textwrap.dedent(expected_summary).strip()
+    verify_model_summary(
+        config=config,
+        params={"use_sparsity": "sparse", "act": "tanh", "output_dim": 50},
+        input_dims=[100],
+        expected_summary=expected_summary,
+    )
 
-    os.remove(CONFIG_FILE)
+
+@pytest.mark.unit
+def test_embedding_layer_config():
+    config = {
+        "inputs": ["input"],
+        "nodes": [
+            {
+                "name": "emb",
+                "type": "embedding",
+                "num_embedding_lookups": 4,
+                "lookup_size": 8,
+                "log_embedding_block_size": 10,
+                "reduction": "concat",
+                "num_tokens_per_input": 5,
+                "predecessor": "input",
+            },
+            {
+                "name": "fc",
+                "type": "fully_connected",
+                "dim": 10,
+                "sparsity": 1.0,
+                "activation": "softmax",
+                "predecessor": "emb",
+            },
+        ],
+        "output": "fc",
+        "loss": "CategoricalCrossEntropyLoss",
+    }
+
+    expected_summary = """
+    ======================= Bolt Model =======================
+    input_1 (Input): dim=100
+    input_1 -> embedding_1: (Embedding): num_embedding_lookups=4, lookup_size=8, log_embedding_block_size=10, reduction=concatenation, num_tokens_per_input=5
+    embedding_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=Softmax
+    ============================================================
+    """
+
+    verify_model_summary(
+        config=config,
+        params={},
+        input_dims=[100],
+        expected_summary=expected_summary,
+    )
 
 
 @pytest.mark.unit

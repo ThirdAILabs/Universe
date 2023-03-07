@@ -218,7 +218,8 @@ class Worker:
             self.train_labels = None
             return False
 
-        self.train_data, self.train_labels = load
+        self.train_labels = load[-1]
+        self.train_data = load[:-1]
         self.model.set_datasets(self.train_data, self.train_labels)
         self.batch_id_within_dataset = 0
 
