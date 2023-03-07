@@ -4,8 +4,20 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
+#include <auto_ml/src/udt/Defaults.h>
 
 namespace thirdai::automl::udt::utils {
+
+bolt::BoltGraphPtr buildModel(uint32_t input_dim, uint32_t output_dim,
+                              const config::ArgumentMap& args,
+                              const std::optional<std::string>& model_config) {
+  if (model_config) {
+    return utils::loadModel({input_dim}, output_dim, *model_config);
+  }
+  uint32_t hidden_dim = args.get<uint32_t>("embedding_dimension", "integer",
+                                           defaults::HIDDEN_DIM);
+  return utils::defaultModel(input_dim, hidden_dim, output_dim);
+}
 
 namespace {
 
