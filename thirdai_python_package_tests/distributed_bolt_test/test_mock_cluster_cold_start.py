@@ -64,8 +64,9 @@ def test_distributed_cold_start(ray_two_node_cluster_config):
     overall_metrics = {}
     for metrics_per_node in train_metrics:
         for key, value in metrics_per_node.items():
+            print(value)
             if key not in overall_metrics:
                 overall_metrics[key] = 0
-            overall_metrics[key] += value[0] / 2
+            overall_metrics[key] += value[-1] / 2
 
     assert overall_metrics["categorical_accuracy"] > 0.7
