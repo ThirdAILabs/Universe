@@ -60,7 +60,7 @@ std::vector<std::vector<BoltBatch>> TidyBatcher::allocateTidyBatches(
       numColumns(), std::vector<BoltBatch>(num_batches));
 
 #pragma omp parallel for default(none) \
-    shared(num_batches, batch_size, last_batch_size, natches)
+    shared(num_batches, batch_size, last_batch_size, batches)
   for (uint32_t batch_id = 0; batch_id < num_batches; batch_id++) {
     uint32_t this_batch_size =
         batch_id == num_batches - 1 ? last_batch_size : batch_size;
