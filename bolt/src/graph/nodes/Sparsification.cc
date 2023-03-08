@@ -32,7 +32,7 @@ void SparsificationNode::forwardImpl(uint32_t vec_index,
   (void)labels;
 
   const BoltVector& input = _input->getOutputVector(vec_index);
-  BoltVector& output = (*_outputs)[vec_index];
+  BoltVector& output = getOutputVectorImpl(vec_index);
 
   if (output.len < input.len) {
     NeuronQueue queue;
@@ -63,7 +63,7 @@ void SparsificationNode::forwardImpl(uint32_t vec_index,
 
 void SparsificationNode::backpropagateImpl(uint32_t vec_index) {
   const BoltVector& input = _input->getOutputVector(vec_index);
-  BoltVector& output = (*_outputs)[vec_index];
+  BoltVector& output = getOutputVectorImpl(vec_index);
 
   if (output.len < input.len) {
     for (uint32_t i = 0; i < output.len; i++) {
