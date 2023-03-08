@@ -32,11 +32,11 @@ void Sparsification::forwardImpl(uint32_t vec_index, const BoltVector* labels) {
   if (output.len < input.len) {
     NeuronQueue queue;
     for (uint32_t i = 0; i < output.len; i++) {
-      queue.emplace(input.active_neurons[i], input.activations[i]);
+      queue.emplace(i, input.activations[i]);
     }
 
     for (uint32_t i = output.len; i < input.len; i++) {
-      NeuronInfo info(input.active_neurons[i], input.activations[i]);
+      NeuronInfo info(i, input.activations[i]);
       if (info.activation_magnitude > queue.top().activation_magnitude) {
         queue.pop();
         queue.push(info);
@@ -47,6 +47,7 @@ void Sparsification::forwardImpl(uint32_t vec_index, const BoltVector* labels) {
     while (!queue.empty()) {
       output.active_neurons[index] = queue.top().neuron;
       output.activations[index] = queue.top().activation;
+      queue.pop();
       index++;
     }
   } else {

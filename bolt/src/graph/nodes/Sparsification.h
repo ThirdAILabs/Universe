@@ -2,11 +2,34 @@
 
 #include <bolt/src/graph/Node.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <memory>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
-class Sparsification final : public Node {
+class Sparsification final
+    : public Node,
+      public std::enable_shared_from_this<Sparsification> {
+ private:
+  explicit Sparsification(float sparsity) : _sparsity(sparsity) {}
+
  public:
+  static auto make(float sparsity) {
+    return std::shared_ptr<Sparsification>(new Sparsification(sparsity));
+  }
+
+  auto addPredecessor(NodePtr input) {
+    if (getState() != NodeState::Constructed) {
+      throw exceptions::NodeStateMachineError(
+          "SparsificationNode expected to have exactly one predecessor, and "
+          "addPredecessor cannot be called twice.");
+    }
+
+    _input = std::move(input);
+
+    return shared_from_this();
+  }
+
   uint32_t outputDim() const final { return _input->outputDim(); }
 
   bool isInputNode() const final { return false; }
@@ -15,6 +38,7 @@ class Sparsification final : public Node {
 
   bool hasParameters() final { return false; }
 
+ private:
   void compileImpl() final { _compiled = true; }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
@@ -24,9 +48,15 @@ class Sparsification final : public Node {
 
   void prepareForBatchProcessingImpl(uint32_t batch_size,
                                      bool use_sparsity) final {
-    uint32_t dim = use_sparsity ? _sparse_dim : _input->outputDim();
+    if (_input->numNonzerosInOutput() != _input->outputDim()) {
+      throw std::runtime_error(
+          "Sparsification op can only be applied to dense vectors.");
+    }
+    uint32_t dim =
+        use_sparsity ? _sparsity * _input->outputDim() : _input->outputDim();
 
-    _outputs = BoltBatch(dim, batch_size, dim == _sparse_dim);
+    _outputs = BoltBatch(/* dim= */ dim, /* batch_size= */ batch_size,
+                         /* is_dense= */ !use_sparsity);
   }
 
   uint32_t numNonzerosInOutputImpl() const final { return (*_outputs)[0].len; }
@@ -49,19 +79,18 @@ class Sparsification final : public Node {
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {
     (void)detailed;
     summary << _input->name() << " -> " << name()
-            << " (Sparsification): sparse_dim=" << _sparse_dim;
+            << " (Sparsification): sparsity=" << _sparsity;
   }
 
   std::string type() const final { return "sparsification"; }
 
   NodeState getState() const final;
 
- private:
   bool _compiled;
 
   NodePtr _input;
 
-  uint32_t _sparse_dim;
+  float _sparsity;
 
   std::optional<BoltBatch> _outputs;
 };
