@@ -71,6 +71,11 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
                                    : num_batches * batch_size + _buffer_size;
   fillVectorBuffer(fill_size);
 
+  std::cout << "Finished filling buffer in "
+            << std::chrono::duration_cast<std::chrono::seconds>(
+                   std::chrono::high_resolution_clock::now() - start)
+                   .count()
+            << " seconds" << std::endl;
   auto dataset_slices = _batcher.pop(/* max_num_batches = */ num_batches,
                                      /* target_batch_size = */ batch_size);
 
