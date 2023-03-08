@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <memory>
@@ -7,15 +8,16 @@
 
 namespace thirdai::bolt {
 
-class Sparsification final
+class SparsificationNode final
     : public Node,
-      public std::enable_shared_from_this<Sparsification> {
+      public std::enable_shared_from_this<SparsificationNode> {
  private:
-  explicit Sparsification(float sparsity) : _sparsity(sparsity) {}
+  explicit SparsificationNode(float sparsity) : _sparsity(sparsity) {}
 
  public:
   static auto make(float sparsity) {
-    return std::shared_ptr<Sparsification>(new Sparsification(sparsity));
+    return std::shared_ptr<SparsificationNode>(
+        new SparsificationNode(sparsity));
   }
 
   auto addPredecessor(NodePtr input) {
@@ -79,7 +81,7 @@ class Sparsification final
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {
     (void)detailed;
     summary << _input->name() << " -> " << name()
-            << " (Sparsification): sparsity=" << _sparsity;
+            << " (Sparsification): sparsity=" << _sparsity << std::endl;
   }
 
   std::string type() const final { return "sparsification"; }
@@ -87,12 +89,17 @@ class Sparsification final
   NodeState getState() const final;
 
   bool _compiled;
-
   NodePtr _input;
-
   float _sparsity;
-
   std::optional<BoltBatch> _outputs;
+
+  SparsificationNode() : _compiled(false) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
+
+using SparsificationNodePtr = std::shared_ptr<SparsificationNode>;
 
 }  // namespace thirdai::bolt

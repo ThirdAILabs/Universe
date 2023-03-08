@@ -13,7 +13,7 @@ TEST(SparsificationTest, CorrectNonzeros) {
   auto mock_input =
       std::make_shared<MockNodeWithOutput>(dense_vec, dense_vec.len);
 
-  auto sparsification = Sparsification::make(/* sparsity= */ 0.5);
+  auto sparsification = SparsificationNode::make(/* sparsity= */ 0.5);
   sparsification->addPredecessor(mock_input);
 
   LayerNameManager name_manager;

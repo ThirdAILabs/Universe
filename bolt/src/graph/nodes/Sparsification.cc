@@ -1,4 +1,8 @@
 #include "Sparsification.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
 #include <queue>
 
 namespace thirdai::bolt {
@@ -23,7 +27,8 @@ struct NeuronInfoCmp {
 using NeuronQueue =
     std::priority_queue<NeuronInfo, std::vector<NeuronInfo>, NeuronInfoCmp>;
 
-void Sparsification::forwardImpl(uint32_t vec_index, const BoltVector* labels) {
+void SparsificationNode::forwardImpl(uint32_t vec_index,
+                                     const BoltVector* labels) {
   (void)labels;
 
   const BoltVector& input = _input->getOutputVector(vec_index);
@@ -56,7 +61,7 @@ void Sparsification::forwardImpl(uint32_t vec_index, const BoltVector* labels) {
   }
 }
 
-void Sparsification::backpropagateImpl(uint32_t vec_index) {
+void SparsificationNode::backpropagateImpl(uint32_t vec_index) {
   const BoltVector& input = _input->getOutputVector(vec_index);
   BoltVector& output = (*_outputs)[vec_index];
 
@@ -69,7 +74,7 @@ void Sparsification::backpropagateImpl(uint32_t vec_index) {
   }
 }
 
-Node::NodeState Sparsification::getState() const {
+Node::NodeState SparsificationNode::getState() const {
   if (!_input && !_compiled && !_outputs) {
     return NodeState::Constructed;
   }
@@ -86,4 +91,15 @@ Node::NodeState Sparsification::getState() const {
       "SparsificationNode is in an invalid internal state.");
 }
 
+template void SparsificationNode::serialize(cereal::BinaryInputArchive&);
+template void SparsificationNode::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void SparsificationNode::serialize(Archive& archive) {
+  archive(cereal::base_class<Node>(this), _compiled, _input, _sparsity,
+          _outputs);
+}
+
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::SparsificationNode)
