@@ -39,13 +39,24 @@ BatchColumns TidyBatcher::pop(size_t max_num_batches, size_t batch_size) {
   size_t last_batch_size = _buffer.size() % batch_size;
   size_t num_columns = _buffer.front().size();
 
+  std::vector<std::vector<std::vector<BoltVector>>> batch_vectors(num_batches);
+
+#pragma omp parallel for default(none) \
+    shared(batch_vectors, num_batches, last_batch_size, batch_size)
+  for (uint32_t batch_id = 0; batch_id < num_batches; batch_id++) {
+    size_t this_batch_size =
+        batch_id == num_batches_in_buffer - 1 ? last_batch_size : batch_size;
+    batch_vectors[batch_id] = std::vector<std::vector<BoltVector>>(
+        num_columns, std::vector<BoltVector>(this_batch_size));
+  }
+
   BatchColumns batches(num_columns, std::vector<BoltBatch>(num_batches));
   for (size_t batch_id = 0; batch_id < num_batches; batch_id++) {
     size_t this_batch_size =
         batch_id == num_batches_in_buffer - 1 ? last_batch_size : batch_size;
 
-    std::vector<std::vector<BoltVector>> batch_vectors(
-        num_columns, std::vector<BoltVector>(this_batch_size));
+    // std::vector<std::vector<BoltVector>> batch_vectors(
+    //     num_columns, std::vector<BoltVector>(this_batch_size));
 
 #pragma omp parallel for default(none) \
     shared(this_batch_size, num_columns, batch_vectors, _buffer)
