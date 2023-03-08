@@ -38,6 +38,7 @@ class DistributedDatasetLoader(ABC):
         """
         pass
 
+
 class DistributedMultiDatasourceloader(DistributedDatasetLoader):
     def __init__(
         self,
@@ -57,7 +58,6 @@ class DistributedMultiDatasourceloader(DistributedDatasetLoader):
         self.args = args
         self.kwargs = kwargs
         self.dataset_finished = False
-    
 
     def load(self):
         data_source = self.datasource(*self.args, **self.kwargs)
@@ -83,6 +83,7 @@ class DistributedMultiDatasourceloader(DistributedDatasetLoader):
 
     def restart(self):
         self.generator.restart()
+
 
 class DistributedUDTDatasetLoader(DistributedDatasetLoader):
     def __init__(
