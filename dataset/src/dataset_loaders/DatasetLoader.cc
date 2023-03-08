@@ -66,7 +66,10 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
   TidyBatcher tidy(_gen);
 
   if (_leftovers) {
-    auto to_add = removeLeftovers(std::move(*_leftovers), num_vectors);
+    auto [to_add, leftovers] =
+        removeLeftovers(std::move(*_leftovers),
+                        /* num_kept= */ num_vectors - tidy.size());
+    _leftovers = std::move(leftovers);
     tidy.add(toBatch(std::move(to_add)));
   }
 
@@ -77,11 +80,12 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
       break;
     }
     auto vectors = _featurizer->featurize(*rows);
-    auto to_add = removeLeftovers(std::move(vectors),
-                                  /* num_kept= */ num_vectors - tidy.size());
+    auto [to_add, leftovers] =
+        removeLeftovers(std::move(vectors),
+                        /* num_kept= */ num_vectors - tidy.size());
+    _leftovers = std::move(leftovers);
     tidy.add(toBatch(std::move(to_add)));
   }
-
   auto batches =
       tidy.batches(/* batch_size= */ batch_size, /* shuffle= */ _shuffle);
 
@@ -131,24 +135,24 @@ void DatasetLoader::restart() {
   }
 }
 
-std::vector<std::vector<BoltVector>> DatasetLoader::removeLeftovers(
+std::pair<std::vector<std::vector<BoltVector>>,
+          std::optional<std::vector<std::vector<BoltVector>>>>
+DatasetLoader::removeLeftovers(
     std::vector<std::vector<BoltVector>>&& vector_columns, size_t num_kept) {
   if (vector_columns.front().size() <= num_kept) {
-    return std::move(vector_columns);
+    return {std::move(vector_columns), std::nullopt};
   }
 
   size_t num_leftovers = vector_columns.front().size() - num_kept;
 
-  std::vector<std::vector<BoltVector>> leftovers(vector_columns.size());
+  std::vector<std::vector<BoltVector>> leftovers(
+      vector_columns.size(), std::vector<BoltVector>(num_leftovers));
   for (size_t column_id = 0; column_id < vector_columns.size(); column_id++) {
-    leftovers[column_id].reserve(num_leftovers);
-    std::move(vector_columns[column_id].begin(),
+    std::move(vector_columns[column_id].begin() + num_kept,
               vector_columns[column_id].end(), leftovers[column_id].begin());
     vector_columns[column_id].resize(num_kept);
   }
-  _leftovers = std::move(leftovers);
-
-  return std::move(vector_columns);
+  return {std::move(vector_columns), std::move(leftovers)};
 }
 
 std::vector<BoltDatasetPtr> DatasetLoader::toDataset(

@@ -48,8 +48,10 @@ class DatasetLoader final {
   // reaches the passed in number of rows
   void fillBatchBuffer(uint32_t num_batches, uint32_t batch_size);
 
-  std::vector<std::vector<BoltVector>> removeLeftovers(
-      std::vector<std::vector<BoltVector>>&& vector_columns, size_t num_kept);
+  static std::pair<std::vector<std::vector<BoltVector>>,
+                   std::optional<std::vector<std::vector<BoltVector>>>>
+  removeLeftovers(std::vector<std::vector<BoltVector>>&& vector_columns,
+                  size_t num_kept);
 
   static std::vector<BoltDatasetPtr> toDataset(
       std::vector<std::vector<BoltBatch>>&& batches);
