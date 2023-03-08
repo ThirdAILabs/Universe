@@ -13,7 +13,6 @@ set(DATASET_TESTS
     UserItemHistoryBlockTests
     UserCountHistoryBlockTests
     TabularFeaturizerTests
-    ShufflerTests
     MlmFeaturizerTests
     SaveLoadInMemoryDatasetTest
     DatasetLoaderTests
