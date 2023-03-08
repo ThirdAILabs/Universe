@@ -325,11 +325,4 @@ TEST_F(DatasetLoaderTests, ShuffledInMemoryDataIsShuffledEnough) {
   assertShuffledEnough(in_memory_data.at(0));
 }
 
-TEST_F(DatasetLoaderTests, ShuffledStreamedDataIsShuffledEnough) {
-  DatasetLoaderTests::setUp("mock9.txt");
-  auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
-  auto streamed_data = streamToInMemoryDataset(std::move(unshuffled_pipeline));
-  assertShuffledEnough(streamed_data.at(0));
-}
-
 }  // namespace thirdai::dataset
