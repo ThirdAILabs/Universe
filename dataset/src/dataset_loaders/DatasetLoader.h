@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dataset/src/Datasets.h>
+#include <dataset/src/TidyBatcher.h>
 #include <dataset/src/VectorBuffer.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
@@ -53,21 +54,20 @@ class DatasetLoader final {
   // reaches the passed in number of rows
   void fillVectorBuffer(size_t num_rows);
 
-  // Pops _featurizer.numDatasets() DatasetSlices from _buffer. The ith
-  // DatasetSlice corresponds to the ith BoltDataset this DatasetLoader is
-  // loading (out of _featurizer.numDatasets() total datasets). Each
-  // DatasetSlice will have the same number of batches and the same batch sizes.
-  std::vector<DatasetSlice> popFromBuffer(size_t target_num_batches,
-                                          size_t target_batch_size);
+  // // Pops _featurizer.numDatasets() DatasetSlices from _buffer. The ith
+  // // DatasetSlice corresponds to the ith BoltDataset this DatasetLoader is
+  // // loading (out of _featurizer.numDatasets() total datasets). Each
+  // // DatasetSlice will have the same number of batches and the same batch
+  // sizes. std::vector<DatasetSlice> popFromBuffer(size_t target_num_batches,
+  //                                         size_t target_batch_size);
 
   DataSourcePtr _data_source;
   std::shared_ptr<Featurizer> _featurizer;
 
-  bool _shuffle;
   // We try to ensure at least this many batches are in the buffer and shuffled
   // when we return shuffled values
   size_t _buffer_size;
-  VectorBuffer _buffer;
+  TidyBatcher _batcher;
 
   // Batch size we use for loading from the data source and passing to the
   // Featurizer

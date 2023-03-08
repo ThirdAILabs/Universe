@@ -14,11 +14,8 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
                              size_t internal_featurization_batch_size)
     : _data_source(std::move(data_source)),
       _featurizer(std::move(featurizer)),
-      _shuffle(shuffle),
       _buffer_size(shuffle_config.min_buffer_size),
-      _buffer(/* should_shuffle = */ _shuffle,
-              /* shuffle_seed = */ shuffle_config.seed,
-              /* num_datasets = */ _featurizer->getNumDatasets()),
+      _batcher(_featurizer->getNumDatasets(), shuffle, shuffle_config.seed),
       _featurization_batch_size(internal_featurization_batch_size) {
   // Different formats of data may or may not contain headers. Thus we
   // delegate to the particular featurizer to determine if a header is
@@ -74,8 +71,9 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
                                    : num_batches * batch_size + _buffer_size;
   fillVectorBuffer(fill_size);
 
-  auto dataset_slices = popFromBuffer(/* target_num_batches = */ num_batches,
-                                      /* target_batch_size = */ batch_size);
+  auto dataset_slices = _batcher.pop(/* max_num_batches = */ num_batches,
+                                     /* target_batch_size = */ batch_size);
+
   auto end = std::chrono::high_resolution_clock::now();
   auto duration =
       std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
@@ -123,7 +121,7 @@ void DatasetLoader::restart() {
 }
 
 void DatasetLoader::fillVectorBuffer(size_t num_rows) {
-  while (_buffer.size() <= num_rows) {
+  while (_batcher.size() <= num_rows) {
     auto rows = _data_source->nextBatch(
         /* target_batch_size = */ _featurization_batch_size);
     if (!rows) {
@@ -131,44 +129,38 @@ void DatasetLoader::fillVectorBuffer(size_t num_rows) {
     }
 
     auto batch = _featurizer->featurize(*rows);
-    for (size_t i = 0; i < batch.at(0).size(); i++) {
-      std::vector<BoltVector> temp_vector;
-      temp_vector.reserve(batch.size());
-      for (auto& j : batch) {
-        temp_vector.push_back(std::move(j[i]));
-      }
-      _buffer.insert(std::move(temp_vector));
-    }
+    _batcher.add(std::move(batch));
   }
 }
 
-std::vector<DatasetSlice> DatasetLoader::popFromBuffer(
-    size_t target_num_batches, size_t target_batch_size) {
-  size_t num_datasets = _featurizer->getNumDatasets();
-  std::vector<std::vector<BoltBatch>> batches(num_datasets);
+// std::vector<DatasetSlice> DatasetLoader::popFromBuffer(
+//     size_t target_num_batches, size_t target_batch_size) {
+//   size_t num_datasets = _featurizer->getNumDatasets();
+//   std::vector<std::vector<BoltBatch>> batches(num_datasets);
 
-  for (size_t batch_id = 0; batch_id < target_num_batches; batch_id++) {
-    // The ith element in this list contains BoltVectors corresponding to the
-    // ith Dataset this DatasetLoader is loading
-    std::vector<std::vector<BoltVector>> batch(num_datasets);
-    for (size_t vec_id = 0; vec_id < target_batch_size; vec_id++) {
-      if (auto next_vectors = _buffer.pop()) {
-        assert(next_vectors->size() == num_datasets);
-        for (size_t dataset_id = 0; dataset_id < num_datasets; dataset_id++) {
-          batch.at(dataset_id).push_back(next_vectors->at(dataset_id));
-        }
-      }
-    }
+//   for (size_t batch_id = 0; batch_id < target_num_batches; batch_id++) {
+//     // The ith element in this list contains BoltVectors corresponding to the
+//     // ith Dataset this DatasetLoader is loading
+//     std::vector<std::vector<BoltVector>> batch(num_datasets);
+//     for (size_t vec_id = 0; vec_id < target_batch_size; vec_id++) {
+//       if (auto next_vectors = _buffer.pop()) {
+//         assert(next_vectors->size() == num_datasets);
+//         for (size_t dataset_id = 0; dataset_id < num_datasets; dataset_id++)
+//         {
+//           batch.at(dataset_id).push_back(next_vectors->at(dataset_id));
+//         }
+//       }
+//     }
 
-    if (batch.at(0).empty()) {
-      break;
-    }
+//     if (batch.at(0).empty()) {
+//       break;
+//     }
 
-    for (size_t dataset_id = 0; dataset_id < batch.size(); dataset_id++) {
-      batches.at(dataset_id).emplace_back(std::move(batch.at(dataset_id)));
-    }
-  }
+//     for (size_t dataset_id = 0; dataset_id < batch.size(); dataset_id++) {
+//       batches.at(dataset_id).emplace_back(std::move(batch.at(dataset_id)));
+//     }
+//   }
 
-  return batches;
-}
+//   return batches;
+// }
 }  // namespace thirdai::dataset
