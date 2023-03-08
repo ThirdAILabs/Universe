@@ -28,7 +28,7 @@ class TidyBatcher {
  private:
   size_t numColumns() const { return _batches.front().size(); }
 
-  std::vector<std::vector<BoltBatch>> allocatePoppedBatches(size_t batch_size);
+  std::vector<std::vector<BoltBatch>> allocateTidyBatches(size_t batch_size);
 
   std::vector<uint32_t> ordering(bool shuffle);
 

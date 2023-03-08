@@ -23,13 +23,14 @@ std::optional<std::vector<std::vector<BoltBatch>>> TidyBatcher::batches(
     return std::nullopt;
   }
 
-  auto tidy = allocatePoppedBatches(batch_size);
+  auto tidy = allocateTidyBatches(batch_size);
   auto permutation = ordering(shuffle);
 
 #pragma omp parallel for default(none) \
     shared(_batches, _start_ids, batch_size, tidy, permutation)
   for (size_t batch_id = 0; batch_id < _batches.size(); batch_id++) {
-    for (size_t vec_id = 0; vec_id < _batches[batch_id].size(); vec_id++) {
+    for (size_t vec_id = 0; vec_id < _batches[batch_id].front().getBatchSize();
+         vec_id++) {
       size_t id = _start_ids[batch_id] + vec_id;
       size_t tidy_id = permutation[id];
 
@@ -47,10 +48,13 @@ std::optional<std::vector<std::vector<BoltBatch>>> TidyBatcher::batches(
   return tidy;
 }
 
-std::vector<std::vector<BoltBatch>> TidyBatcher::allocatePoppedBatches(
+std::vector<std::vector<BoltBatch>> TidyBatcher::allocateTidyBatches(
     size_t batch_size) {
   size_t num_batches = (_size + batch_size - 1) / batch_size;
   size_t last_batch_size = _size % batch_size;
+  if (last_batch_size == 0) {
+    last_batch_size = batch_size;
+  }
 
   std::vector<std::vector<BoltBatch>> batches(
       numColumns(), std::vector<BoltBatch>(num_batches));
@@ -59,7 +63,7 @@ std::vector<std::vector<BoltBatch>> TidyBatcher::allocatePoppedBatches(
     shared(num_batches, batch_size, last_batch_size, natches)
   for (uint32_t batch_id = 0; batch_id < num_batches; batch_id++) {
     uint32_t this_batch_size =
-        batch_id == num_batches - 1 ? batch_size : last_batch_size;
+        batch_id == num_batches - 1 ? last_batch_size : batch_size;
     for (auto& batch_list : batches) {
       batch_list[batch_id] = BoltBatch(this_batch_size);
     }
