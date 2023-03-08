@@ -4,17 +4,12 @@ from typing import Callable, List, Optional, Tuple, Union
 from thirdai import data, dataset
 from thirdai.bolt.udt_modifications import _create_data_source
 
+# TODO(Josh/Pratik): Clean up this file and remove the unnecessary DatasetLoaders
+
 
 class DistributedDatasetLoader(ABC):
     @abstractmethod
-    def next() -> (
-        Optional[
-            Tuple[
-                Union[dataset.BoltDataset, List[dataset.BoltDataset]],
-                dataset.BoltDataset,
-            ]
-        ]
-    ):
+    def next() -> Optional[List[dataset.BoltDataset]]:
         """
         This function returns training data and labels if there is training data left for
         ingestion for a epoch else, will return NULL.
@@ -165,7 +160,7 @@ class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
             if not (isinstance(self.current_dataset, list)):
                 self.current_dataset = [self.current_dataset]
 
-        return self.current_dataset, self.current_labels
+        return self.current_dataset + [self.current_labels]
 
     def restart(self):
         self.generated_for_this_epoch = False
@@ -230,7 +225,7 @@ class DistributedTabularDatasetLoader(DistributedDatasetLoader):
         if len(x_data) == 1:
             return None
 
-        return [x_data], y_data
+        return [x_data, y_data]
 
     def restart(self):
         self.column_map_generator.restart()

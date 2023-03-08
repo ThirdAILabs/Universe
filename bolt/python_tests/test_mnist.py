@@ -1,17 +1,17 @@
 import pytest
-from download_datasets import download_mnist
+from download_dataset_fixtures import download_mnist_dataset
 from thirdai import bolt, dataset
 
 # Add an integration test marker for all tests in this file
-pytestmark = [pytest.mark.integration]
+pytestmark = [pytest.mark.unit]
 
 
 LEARNING_RATE = 0.0001
 
 
 @pytest.fixture
-def load_mnist(download_mnist):
-    train_file, test_file = download_mnist
+def load_mnist(download_mnist_dataset):
+    train_file, test_file = download_mnist_dataset
     train_x, train_y = dataset.load_bolt_svm_dataset(train_file, 250)
     test_x, test_y = dataset.load_bolt_svm_dataset(test_file, 250)
     return train_x, train_y, test_x, test_y

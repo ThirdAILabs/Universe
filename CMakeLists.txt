@@ -371,11 +371,16 @@ set(THIRDAI_SOURCES
     dataset/src/utils/TokenEncoding.cc
     dataset/src/featurizers/TextGenerationFeaturizer.cc
     dataset/src/utils/CsvParser.cc
+    dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
     dataset/src/featurizers/MaskedSentenceFeaturizer.cc
     dataset/src/featurizers/ProcessorUtils.cc
     dataset/src/featurizers/SvmFeaturizer.cc
     dataset/src/featurizers/TabularFeaturizer.cc
+    dataset/src/blocks/ColumnIdentifier.cc
+    dataset/src/blocks/BlockList.cc
+    dataset/src/blocks/RecurrenceAugmentation.cc
+    dataset/src/blocks/Sequence.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
@@ -386,12 +391,12 @@ set(THIRDAI_SOURCES
     compression/src/CountSketch.cc
     compression/src/DragonVector.cc
     auto_ml/src/dataset_factories/udt/DataTypes.cc
-    auto_ml/src/dataset_factories/udt/FeatureComposer.cc
-    auto_ml/src/dataset_factories/udt/UDTDatasetFactory.cc
+    auto_ml/src/featurization/TabularBlockComposer.cc
+    auto_ml/src/featurization/TabularDatasetFactory.cc
+    auto_ml/src/featurization/RecurrentDatasetFactory.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartDataSource.cc
-    auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc
     utils/StringManipulation.cc)
 
@@ -438,10 +443,16 @@ pybind11_add_module(
   search/python_bindings/BeamSearch.cc
   hashing/python_bindings/HashingPython.cc
   auto_ml/python_bindings/AutomlPython.cc
-  auto_ml/src/models/ModelPipeline.cc
-  auto_ml/src/models/OutputProcessor.cc
+  auto_ml/src/udt/UDT.cc
+  auto_ml/src/udt/utils/Conversion.cc
+  auto_ml/src/udt/utils/Models.cc
+  auto_ml/src/udt/utils/Train.cc
+  auto_ml/src/udt/backends/UDTClassifier.cc
+  auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
+  auto_ml/src/udt/backends/UDTRegression.cc
+  auto_ml/src/udt/backends/UDTSVMClassifier.cc
+  auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/models/TextClassifier.cc
-  auto_ml/src/models/UniversalDeepTransformer.cc
   telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 

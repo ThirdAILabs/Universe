@@ -582,4 +582,41 @@ TEST(MetricTest, Recall) {
   }
 }
 
+TEST(MetricTest, Precision) {
+  std::vector<uint32_t> good_sparse_label_active_neurons = {0, 5};
+  std::vector<uint32_t> ok_sparse_label_active_neurons = {0, 4};
+  std::vector<uint32_t> bad_sparse_label_active_neurons = {1, 2};
+  std::vector<float> sparse_label_activations = {1.0, 1.0};
+
+  auto good_labels = BoltVector::makeSparseVector(
+      good_sparse_label_active_neurons, sparse_label_activations);
+  auto ok_labels = BoltVector::makeSparseVector(ok_sparse_label_active_neurons,
+                                                sparse_label_activations);
+  auto bad_labels = BoltVector::makeSparseVector(
+      bad_sparse_label_active_neurons, sparse_label_activations);
+
+  std::vector<float> output_activations = {1.0, 0, 0, 0, 0.8, 0.9};
+  auto output = BoltVector::makeDenseVector(output_activations);
+
+  PrecisionAtK metric(2);
+
+  metric.record(output, good_labels);
+  ASSERT_EQ(metric.value(), 1);
+  metric.reset();
+
+  metric.record(output, ok_labels);
+  ASSERT_EQ(metric.value(), 0.5);
+  metric.reset();
+
+  metric.record(output, bad_labels);
+  ASSERT_EQ(metric.value(), 0);
+  metric.reset();
+
+  metric.record(output, good_labels);
+  metric.record(output, ok_labels);
+  ASSERT_EQ(metric.value(), 0.75);
+  metric.record(output, bad_labels);
+  ASSERT_EQ(metric.value(), 0.5);
+}
+
 }  // namespace thirdai::bolt::tests

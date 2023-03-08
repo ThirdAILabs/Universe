@@ -1,4 +1,5 @@
 #include "BoltV2NNPython.h"
+#include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
@@ -73,7 +74,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
           py::return_value_policy::reference_internal);
 
   py::class_<autograd::Computation, autograd::ComputationPtr>(nn, "Computation")
-      .def("name", &autograd::Computation::name);
+      .def("name", &autograd::Computation::name)
+      .def("tensor", &autograd::Computation::tensor);
 
   py::class_<ops::Op, ops::OpPtr>(nn, "Op").def("name", &ops::Op::name);
 

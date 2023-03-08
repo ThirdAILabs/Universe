@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -19,8 +20,12 @@ class ArgumentMap {
   }
 
   template <typename T>
-  T get(const std::string& key, const std::string& type_name) const {
+  T get(const std::string& key, const std::string& type_name,
+        std::optional<T> default_val = std::nullopt) const {
     if (!_arguments.count(key)) {
+      if (default_val) {
+        return *default_val;
+      }
       throw std::invalid_argument("No value specified for parameter '" + key +
                                   "'.");
     }

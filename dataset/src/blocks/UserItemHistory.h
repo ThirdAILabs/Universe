@@ -159,42 +159,37 @@ class UserItemHistoryBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(ColumnarInputSample& input,
-                                  SegmentedFeatureVector& vec) final {
-    try {
-      auto user_str = std::string(input.column(_user_col));
-      auto item_str = std::string(input.column(_item_col));
-      auto timestamp_str = std::string(input.column(_timestamp_col));
+  void buildSegment(ColumnarInputSample& input,
+                    SegmentedFeatureVector& vec) final {
+    auto user_str = std::string(input.column(_user_col));
+    auto item_str = std::string(input.column(_item_col));
+    auto timestamp_str = std::string(input.column(_timestamp_col));
 
-      int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
+    int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 
-      std::vector<std::string> items;
-      if (!item_str.empty()) {
-        items = getItems(item_str);
-      }
+    std::vector<std::string> items;
+    if (!item_str.empty()) {
+      items = getItems(item_str);
+    }
 
 #pragma omp critical(user_item_history_block)
-      {
-        if (_include_current_row) {
-          addNewItemsToUserHistory(user_str, timestamp_seconds, items);
-        }
-
-        extendVectorWithUserHistory(
-            user_str, timestamp_seconds - _time_lag, vec,
-            /* remove_outdated_elements= */ _should_update_history);
-
-        if (_include_current_row && !_should_update_history) {
-          removeNewItemsFromUserHistory(user_str, items);
-        }
-
-        if (!_include_current_row && _should_update_history) {
-          addNewItemsToUserHistory(user_str, timestamp_seconds, items);
-        }
+    {
+      if (_include_current_row) {
+        addNewItemsToUserHistory(user_str, timestamp_seconds, items);
       }
-    } catch (...) {
-      return std::current_exception();
+
+      extendVectorWithUserHistory(
+          user_str, timestamp_seconds - _time_lag, vec,
+          /* remove_outdated_elements= */ _should_update_history);
+
+      if (_include_current_row && !_should_update_history) {
+        removeNewItemsFromUserHistory(user_str, items);
+      }
+
+      if (!_include_current_row && _should_update_history) {
+        addNewItemsToUserHistory(user_str, timestamp_seconds, items);
+      }
     }
-    return nullptr;
   }
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {

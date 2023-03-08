@@ -255,6 +255,65 @@ uint32_t RecallAtK::countLabels(const BoltVector& labels) {
   return correct_labels;
 }
 
+void PrecisionAtK::record(const BoltVector& output, const BoltVector& labels) {
+  auto top_k = output.findKLargestActivations(_k);
+
+  uint32_t correct_guesses = 0;
+  while (!top_k.empty()) {
+    if (labels
+            .findActiveNeuronNoTemplate(
+                /* active_neuron= */ top_k.top().second)
+            .activation > 0) {
+      correct_guesses++;
+    }
+    top_k.pop();
+  }
+
+  _correct_guesses += correct_guesses;
+  _samples += 1;
+}
+
+double PrecisionAtK::value() {
+  double metric = static_cast<double>(_correct_guesses) / (_samples * _k);
+  return metric;
+}
+
+void PrecisionAtK::reset() {
+  _correct_guesses = 0;
+  _samples = 0;
+}
+
+std::string PrecisionAtK::summary() {
+  std::stringstream stream;
+  stream << "Precision@" << _k << ": " << std::setprecision(3) << value();
+  return stream.str();
+}
+
+bool PrecisionAtK::isPrecisionAtK(const std::string& name) {
+  return std::regex_match(name, std::regex("precision@[1-9]\\d*"));
+}
+
+std::shared_ptr<Metric> PrecisionAtK::make(const std::string& name) {
+  if (!isPrecisionAtK(name)) {
+    std::stringstream error_ss;
+    error_ss << "Invoked PrecisionAtK::make with invalid string '" << name
+             << "'. PrecisionAtK::make should be invoked with a string in "
+                "the format 'precision@k', where k is a positive integer.";
+    throw std::invalid_argument(error_ss.str());
+  }
+
+  char* end_ptr;
+  auto k = std::strtol(name.data() + 10, &end_ptr, 10);
+  if (k <= 0) {
+    std::stringstream error_ss;
+    error_ss << "PrecisionAtK invoked with k = " << k
+             << ". k should be greater than 0.";
+    throw std::invalid_argument(error_ss.str());
+  }
+
+  return std::make_shared<PrecisionAtK>(k);
+}
+
 void FMeasure::record(const BoltVector& output, const BoltVector& labels) {
   auto predictions = output.getThresholdedNeurons(
       /* activation_threshold = */ _threshold,

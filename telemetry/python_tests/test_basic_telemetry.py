@@ -13,6 +13,8 @@ from test_udt_simple import (
 )
 from thirdai import telemetry
 
+pytestmark = [pytest.mark.unit, pytest.mark.release]
+
 THIRDAI_TEST_TELEMETRY_PORT = 20730
 THIRDAI_TEST_TELEMETRY_URL = f"http://localhost:{20730}/metrics"
 

@@ -1,5 +1,7 @@
 import pytest
 
+pytestmark = [pytest.mark.ignore]
+
 
 def test_bolt_smoke():
     from thirdai import bolt, search

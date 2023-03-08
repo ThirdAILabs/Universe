@@ -42,6 +42,10 @@ class TemporalContext {
     }
   }
 
+  bool empty() const {
+    return _numerical_histories.empty() && _categorical_histories.empty();
+  }
+
  private:
   std::unordered_map<uint32_t, dataset::QuantityHistoryTrackerPtr>
       _numerical_histories;

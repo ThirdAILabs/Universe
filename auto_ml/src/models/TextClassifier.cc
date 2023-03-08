@@ -219,8 +219,12 @@ BoltVector TextClassifier::concatTokensAndMetadata(
   BoltVector vector(/* l= */ n_tokens + metadata_nonzeros.size(),
                     /* is_dense= */ false, /* has_gradient= */ false);
 
-  std::copy(tokens.data(start), tokens.data(start) + n_tokens,
-            vector.active_neurons);
+  // If the last doc is empty then start = len(tokens) and so accessing
+  // tokens.data(start) is an error.
+  if (n_tokens > 0) {
+    std::copy(tokens.data(start), tokens.data(start) + n_tokens,
+              vector.active_neurons);
+  }
 
   std::copy(metadata_nonzeros.begin(), metadata_nonzeros.end(),
             vector.active_neurons + n_tokens);
@@ -334,7 +338,7 @@ void TextClassifier::verifyArrayShape(const NumpyArray<uint32_t>& array,
 void TextClassifier::verifyOffsets(const NumpyArray<uint32_t>& offsets,
                                    uint32_t num_tokens) {
   for (uint32_t i = 0; i < offsets.shape(0) - 1; i++) {
-    if (offsets.at(i) >= num_tokens) {
+    if (offsets.at(i) > num_tokens) {
       throw std::invalid_argument("Invalid offset " +
                                   std::to_string(offsets.at(i)) +
                                   " for CSR tokens array of length " +
