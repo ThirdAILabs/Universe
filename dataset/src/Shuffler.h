@@ -62,8 +62,7 @@ class Shuffler {
 
   uint32_t size() const { return _buffer.size(); }
 
-  std::optional<std::vector<BoltDatasetPtr>> datasets(uint32_t batch_size,
-                                                      uint32_t max_batches);
+  std::optional<std::vector<BoltDatasetPtr>> datasets(uint32_t batch_size);
 
  private:
   static std::vector<std::vector<BoltBatch>> tidyBatches(BatchBuffer&& buffer,
@@ -76,10 +75,6 @@ class Shuffler {
 
   static std::vector<std::vector<BoltBatch>> allocateTidyBatches(
       const BatchBuffer& buffer, uint32_t batch_size);
-
-  static BatchBuffer bufferWithRemains(
-      std::vector<std::vector<BoltBatch>>& tidy_batches,
-      uint32_t num_batches_returned, uint32_t num_batches);
 
   std::mt19937 _gen;
   bool _shuffle;

@@ -79,7 +79,7 @@ void BatchBuffer::validateBatchColumns(const std::vector<BoltBatch>& batch) {
 }
 
 std::optional<std::vector<BoltDatasetPtr>> Shuffler::datasets(
-    uint32_t batch_size, uint32_t max_batches) {
+    uint32_t batch_size) {
   if (_buffer.empty()) {
     return std::nullopt;
   }
@@ -87,13 +87,10 @@ std::optional<std::vector<BoltDatasetPtr>> Shuffler::datasets(
       tidyBatches(std::move(_buffer), batch_size, _shuffle, _gen);
 
   uint32_t num_batches = tidy_batches.front().size();
-  uint32_t num_batches_returned = std::min<uint32_t>(max_batches, num_batches);
-
-  _buffer = bufferWithRemains(tidy_batches, num_batches_returned, num_batches);
 
   std::vector<BoltDatasetPtr> output(tidy_batches.size());
   for (uint32_t dataset_id = 0; dataset_id < output.size(); dataset_id++) {
-    tidy_batches[dataset_id].resize(num_batches_returned);
+    tidy_batches[dataset_id].resize(num_batches);
     output[dataset_id] =
         std::make_shared<BoltDataset>(std::move(tidy_batches[dataset_id]));
   }
@@ -153,19 +150,4 @@ std::vector<std::vector<BoltBatch>> Shuffler::allocateTidyBatches(
   return tidy_batches;
 }
 
-BatchBuffer Shuffler::bufferWithRemains(
-    std::vector<std::vector<BoltBatch>>& tidy_batches,
-    uint32_t num_batches_returned, uint32_t num_batches) {
-  BatchBuffer buffer;
-  for (uint32_t remain_id = num_batches_returned; remain_id < num_batches;
-       remain_id++) {
-    std::vector<BoltBatch> remain_batch(tidy_batches.size());
-    for (uint32_t column = 0; column < tidy_batches.size(); column++) {
-      remain_batch[column] = std::move(tidy_batches[column][remain_id]);
-    }
-    buffer.add(std::move(remain_batch));
-  }
-
-  return buffer;
-}
 }  // namespace thirdai::dataset

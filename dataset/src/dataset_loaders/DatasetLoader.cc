@@ -11,13 +11,11 @@ namespace thirdai::dataset {
 
 DatasetLoader::DatasetLoader(DataSourcePtr data_source,
                              dataset::FeaturizerPtr featurizer, bool shuffle,
-                             DatasetShuffleConfig shuffle_config,
+                             uint32_t shuffle_seed,
                              size_t internal_featurization_batch_size)
     : _data_source(std::move(data_source)),
       _featurizer(std::move(featurizer)),
-      _shuffle(shuffle),
-      _buffer_size(shuffle_config.min_buffer_size),
-      _shuffler(/* shuffle= */ _shuffle, /* seed= */ shuffle_config.seed),
+      _shuffler(/* shuffle= */ shuffle, /* seed= */ shuffle_seed),
       _featurization_batch_size(internal_featurization_batch_size) {
   // Different formats of data may or may not contain headers. Thus we
   // delegate to the particular featurizer to determine if a header is
@@ -58,22 +56,12 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  // We fill the buffer with num_batches * batch_size + _buffer_size vectors
-  // so that after exporting num_batches from the buffer we still have
-  // _buffer_size vectors left for future shuffling.
-  // We also must check if anything in this multiplication and sum overflows and
-  // use std::numeric_limits<size_t>::max() in that case, since sometimes (when
-  // we want to load everything) we pass in std::numeric_limits<size_t>::max()
-  // as num_batches, which would make the expression overflow
   bool will_overflow =
-      (std::numeric_limits<size_t>::max() / num_batches <= batch_size) ||
-      (std::numeric_limits<size_t>::max() - _buffer_size <=
-       num_batches * batch_size);
+      num_batches > (std::numeric_limits<size_t>::max() / batch_size);
   size_t fill_size = will_overflow ? std::numeric_limits<size_t>::max()
-                                   : num_batches * batch_size + _buffer_size;
-  fillVectorBuffer(fill_size);
-  auto data = _shuffler.datasets(/* batch_size= */ batch_size,
-                                 /* max_batches= */ num_batches);
+                                   : num_batches * batch_size;
+  fillShuffler(fill_size);
+  auto data = _shuffler.datasets(/* batch_size= */ batch_size);
   if (!data) {
     return std::nullopt;
   }
@@ -118,7 +106,7 @@ void DatasetLoader::restart() {
   }
 }
 
-void DatasetLoader::fillVectorBuffer(size_t num_rows) {
+void DatasetLoader::fillShuffler(size_t num_rows) {
   while (_shuffler.size() <= num_rows) {
     auto rows = _data_source->nextBatch(
         /* target_batch_size = */ _featurization_batch_size);

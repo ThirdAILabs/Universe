@@ -8,15 +8,6 @@
 
 namespace thirdai::dataset {
 
-struct DatasetShuffleConfig {
-  explicit DatasetShuffleConfig(size_t min_vecs_in_buffer = 64000,
-                                uint32_t seed = time(NULL))
-      : min_buffer_size(min_vecs_in_buffer), seed(seed) {}
-
-  size_t min_buffer_size;
-  uint32_t seed;
-};
-
 const uint32_t DEFAULT_FEATURIZATION_BATCH_SIZE = 2048;
 
 using DatasetSlice = std::vector<BoltBatch>;
@@ -24,7 +15,7 @@ class DatasetLoader final {
  public:
   DatasetLoader(std::shared_ptr<dataset::DataSource> data_source,
                 dataset::FeaturizerPtr featurizer, bool shuffle,
-                DatasetShuffleConfig shuffle_config = DatasetShuffleConfig(),
+                uint32_t shuffle_seed = time(NULL),
                 size_t internal_featurization_batch_size =
                     DEFAULT_FEATURIZATION_BATCH_SIZE);
 
@@ -51,15 +42,11 @@ class DatasetLoader final {
  private:
   // Adds batches to the buffer until the data source is finished or the buffer
   // reaches the passed in number of rows
-  void fillVectorBuffer(size_t num_rows);
+  void fillShuffler(size_t num_rows);
 
   DataSourcePtr _data_source;
   std::shared_ptr<Featurizer> _featurizer;
 
-  bool _shuffle;
-  // We try to ensure at least this many batches are in the buffer and shuffled
-  // when we return shuffled values
-  size_t _buffer_size;
   Shuffler _shuffler;
 
   // Batch size we use for loading from the data source and passing to the
