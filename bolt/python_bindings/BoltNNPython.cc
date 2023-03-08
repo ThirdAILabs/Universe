@@ -1,6 +1,5 @@
 #include "BoltNNPython.h"
 #include "PybindUtils.h"
-#include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/DistributedTrainingWrapper.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
