@@ -12,7 +12,8 @@ class SparsificationNode final
     : public Node,
       public std::enable_shared_from_this<SparsificationNode> {
  private:
-  explicit SparsificationNode(float sparsity) : _sparsity(sparsity) {}
+  explicit SparsificationNode(float sparsity)
+      : _compiled(false), _sparsity(sparsity) {}
 
  public:
   static auto make(float sparsity) {
