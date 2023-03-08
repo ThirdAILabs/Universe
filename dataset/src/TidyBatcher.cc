@@ -26,6 +26,8 @@ std::optional<std::vector<std::vector<BoltBatch>>> TidyBatcher::batches(
   auto tidy = allocatePoppedBatches(batch_size);
   auto permutation = ordering(shuffle);
 
+#pragma omp parallel for default(none) \
+    shared(_batches, _start_ids, batch_size, tidy, permutation)
   for (size_t batch_id = 0; batch_id < _batches.size(); batch_id++) {
     for (size_t vec_id = 0; vec_id < _batches[batch_id].size(); vec_id++) {
       size_t id = _start_ids[batch_id] + vec_id;
