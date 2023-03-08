@@ -12,7 +12,7 @@ namespace thirdai::automl::data {
 
 struct GraphBlocks {
   std::shared_ptr<dataset::GraphBuilderBlock> builder_block;
-  std::shared_ptr<dataset::NeighborTokensBlock> sparse_neighbor_block;
+  std::shared_ptr<dataset::NeighborTokensBlock> neighbor_tokens_block;
   std::shared_ptr<dataset::NormalizedNeighborVectorsBlock>
       normalized_neighbors_block;
 };
@@ -50,7 +50,7 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
                                               /* hash_range = */ udt::defaults::
                                                   FEATURE_HASH_RANGE),
                            dataset::BlockList(
-                               {graph_blocks.sparse_neighbor_block}),
+                               {graph_blocks.neighbor_tokens_block}),
                            dataset::BlockList({label_block})},
       /* has_header= */ true,
       /* delimiter= */ _delimiter, /* parallel= */ true);
@@ -87,6 +87,8 @@ std::pair<GraphInfoPtr, GraphBlocks> createGraphInfoAndGraphBlocks(
   GraphInfoPtr graph_info =
       std::make_shared<GraphInfo>(/* feature_dim = */ feature_col_names.size());
 
+  // TODO(Josh): Look in to combining non-numeric data from neighbors as well,
+  // e.g. for a string column concatenating each neighbor's text.
   for (const auto& [col_name, data_type] : data_types) {
     if (asNeighbors(data_type)) {
       neighbor_col_name = col_name;
@@ -106,7 +108,7 @@ std::pair<GraphInfoPtr, GraphBlocks> createGraphInfoAndGraphBlocks(
   // We could alternatively build this block with the neighbors
   // column, but using the node id column and graph_info instead allows us to
   // potentially not have to have a neighbors column for inference.
-  graph_blocks.sparse_neighbor_block =
+  graph_blocks.neighbor_tokens_block =
       dataset::NeighborTokensBlock::make(node_id_col_name, graph_info);
 
   graph_blocks.builder_block = dataset::GraphBuilderBlock::make(

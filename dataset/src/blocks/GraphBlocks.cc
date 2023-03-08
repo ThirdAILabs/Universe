@@ -16,8 +16,7 @@
 namespace thirdai::dataset {
 
 uint64_t parseUint64(const std::string_view& view) {
-  char* end;
-  return std::strtoul(view.data(), &end, /* base = */ 10);
+  return std::strtoul(view.data(), nullptr, /* base = */ 10);
 }
 
 uint64_t parseUint64(const ColumnIdentifier& identifier,
@@ -27,8 +26,7 @@ uint64_t parseUint64(const ColumnIdentifier& identifier,
 
 uint64_t parseFloat(const ColumnIdentifier& identifier,
                     ColumnarInputSample& input) {
-  char* end;
-  return std::strtof(input.column(identifier).data(), &end);
+  return std::strtof(input.column(identifier).data(), nullptr);
 }
 
 std::vector<uint64_t> parseUint64Array(const std::string& array_string,
