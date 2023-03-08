@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable, List, Optional, Tuple, Union
 
-from thirdai import bolt, data, dataset
+from thirdai import data, dataset
 from thirdai.bolt.udt_modifications import _create_data_source
 
 # TODO(Josh/Pratik): Clean up this file and remove the unnecessary DatasetLoaders
@@ -61,7 +61,7 @@ class DistributedColdStartDatasetLoader(DistributedDatasetLoader):
     def load(self):
         original_data_source = _create_data_source(self.train_file)
         cold_start_data_source = (
-            bolt.distributed_preprocessing.preprocess_cold_start_train_source(
+            dataset.distributed_preprocessing.preprocess_cold_start_train_source(
                 original_data_source,
                 self.strong_column_names,
                 self.weak_column_names,
