@@ -60,13 +60,11 @@ class DistributedColdStartDatasetLoader(DistributedDatasetLoader):
 
     def load(self):
         original_data_source = _create_data_source(self.train_file)
-        cold_start_data_source = (
-            dataset.distributed_preprocessing.preprocess_cold_start_train_source(
-                original_data_source,
-                self.strong_column_names,
-                self.weak_column_names,
-                self.data_processor,
-            )
+        cold_start_data_source = dataset.preprocess_cold_start_train_source(
+            original_data_source,
+            self.strong_column_names,
+            self.weak_column_names,
+            self.data_processor,
         )
         self.generator = self.data_processor.get_dataset_loader(
             cold_start_data_source, training=True

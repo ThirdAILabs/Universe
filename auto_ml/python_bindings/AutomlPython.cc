@@ -196,11 +196,9 @@ void createModelsSubmodule(py::module_& module) {
            docs::TEXT_CLASSIFIER_SAVE);
 }
 
-void createDistributedPreprocessingWrapper(py::module_& module) {
-  auto distributed_preprocessing_module =
-      module.def_submodule("distributed_preprocessing");
+void createDistributedPreprocessingWrapper(py::module_& dataset_module) {
 
-  distributed_preprocessing_module.def(
+  dataset_module.def(
       "preprocess_cold_start_train_source",
       &cold_start::preprocessColdStartTrainSource, py::arg("data"),
       py::arg("strong_column_names"), py::arg("weak_column_names"),
