@@ -148,6 +148,8 @@ class BoltBatch {
  public:
   BoltBatch() {}
 
+  explicit BoltBatch(const uint32_t batch_size) : _vectors(batch_size) {}
+
   BoltBatch(const uint32_t dim, const uint32_t batch_size, bool is_dense) {
     for (uint32_t i = 0; i < batch_size; i++) {
       _vectors.push_back(BoltVector(dim, is_dense));
@@ -176,6 +178,8 @@ class BoltBatch {
   auto end() { return _vectors.end(); }
 
   uint32_t getBatchSize() const { return _vectors.size(); }
+
+  bool empty() const { return _vectors.empty(); }
 
   /*
    * Throws an exception if the vector is not of the passed in
