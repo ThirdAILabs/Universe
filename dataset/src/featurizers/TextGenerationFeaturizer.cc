@@ -11,20 +11,6 @@
 
 namespace thirdai::dataset {
 
-TextGenerationFeaturizer::TextGenerationFeaturizer(uint32_t sequence_len,
-                                                   uint32_t vocab_size,
-                                                   uint32_t last_n_tokens,
-                                                   bool pairgrams)
-    : _sequence_len(sequence_len),
-      _vocab_size(vocab_size),
-      _last_n_tokens(last_n_tokens),
-      _pairgrams(pairgrams) {
-  if (_last_n_tokens >= sequence_len) {
-    throw std::invalid_argument(
-        "Last n tokens must be less than the sequence length.");
-  }
-}
-
 std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
     const std::vector<std::string>& lines) {
   std::vector<std::vector<std::vector<BoltVector>>> featurized_samples(
@@ -35,7 +21,7 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
     featurized_samples[i] = featurizeText(lines[i]);
   }
 
-  std::vector<std::vector<BoltVector>> data(3);
+  std::vector<std::vector<BoltVector>> data(4);
 
   for (auto& vectors : featurized_samples) {
     for (auto& sample : vectors) {
@@ -54,34 +40,11 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
 
   std::vector<std::vector<BoltVector>> vectors;
 
-  for (uint32_t i = _sequence_len; i < tokens.size(); i++) {
-    const uint32_t* phrase_start = tokens.data() + i - _sequence_len;
-
-    std::vector<uint32_t> context_tokens;
-    if (_pairgrams) {
-      context_tokens = token_encoding::pairgrams(phrase_start, _sequence_len);
-    } else {
-      context_tokens =
-          std::vector<uint32_t>(phrase_start, phrase_start + _sequence_len);
-    }
-
-    BoltVector vector(/* l= */ context_tokens.size(), /* is_dense= */ false,
-                      /* has_gradient= */ false);
-    std::copy(context_tokens.begin(), context_tokens.end(),
-              vector.active_neurons);
-    std::fill_n(vector.activations, vector.len, 1.0);
-
-    BoltVector last_tokens(/* l= */ _last_n_tokens, /* is_dense= */ false,
-                           /* has_gradient= */ false);
-    for (uint32_t t = 0; t < _last_n_tokens; t++) {
-      last_tokens.active_neurons[t] = tokens[i - _last_n_tokens + t];
-      last_tokens.activations[t] = 1.0;
-    }
-
+  for (uint32_t i = 1; i < tokens.size(); i++) {
     BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
 
-    vectors.push_back(
-        {std::move(vector), std::move(last_tokens), std::move(label)});
+    vectors.push_back({lrcContext(tokens, i), ircContext(tokens, i),
+                       srcContext(tokens, i), std::move(label)});
   }
 
   return vectors;
@@ -103,21 +66,62 @@ std::vector<uint32_t> TextGenerationFeaturizer::parseTokens(
   return tokens;
 }
 
+BoltVector TextGenerationFeaturizer::lrcContext(
+    const std::vector<uint32_t>& tokens, uint32_t label_index) const {
+  uint32_t lrc_len = std::min(label_index, _lrc_len);
+
+  const uint32_t* context_start = tokens.data() + label_index - lrc_len;
+
+  BoltVector vector(/* l= */ lrc_len, /* is_dense= */ false,
+                    /* has_gradient= */ false);
+  std::copy(context_start, context_start + lrc_len, vector.active_neurons);
+  std::fill_n(vector.activations, vector.len, 1.0);
+
+  return vector;
+}
+
+BoltVector TextGenerationFeaturizer::ircContext(
+    const std::vector<uint32_t>& tokens, uint32_t label_index) const {
+  uint32_t irc_len = std::min(label_index, _irc_len);
+
+  std::vector<uint32_t> irc_context =
+      token_encoding::pairgrams(tokens.data() + label_index - irc_len, irc_len);
+
+  BoltVector vector(/* l= */ irc_context.size(), /* is_dense= */ false,
+                    /* has_gradient= */ false);
+  std::copy(irc_context.begin(), irc_context.end(), vector.active_neurons);
+  std::fill_n(vector.activations, vector.len, 1.0);
+
+  return vector;
+}
+
+BoltVector TextGenerationFeaturizer::srcContext(
+    const std::vector<uint32_t>& tokens, uint32_t label_index) const {
+  uint32_t src_len = std::min(label_index, _src_len);
+  uint32_t padding_len = _src_len - src_len;
+
+  const uint32_t* context_start = tokens.data() + label_index - src_len;
+
+  BoltVector vector(/* l= */ _src_len, /* is_dense= */ false,
+                    /* has_gradient= */ false);
+
+  // Zero pad if short range context length is greater than number of tokens. We
+  // pad the begining so that the last token before the prediction is always at
+  // the end.
+  std::fill_n(vector.active_neurons, padding_len, 0);
+  std::copy(context_start, context_start + src_len,
+            vector.active_neurons + padding_len);
+  std::fill_n(vector.activations, vector.len, 1.0);
+
+  return vector;
+}
+
 std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
     const std::vector<uint32_t>& tokens) const {
-  auto context = _pairgrams ? token_encoding::pairgrams(tokens) : tokens;
-
-  BoltVector vector = BoltVector::makeSparseVector(
-      context, std::vector<float>(context.size(), 1.0));
-
-  BoltVector last_tokens(/* l= */ _last_n_tokens, /* is_dense= */ false,
-                         /* has_gradient= */ false);
-  for (uint32_t t = 0; t < _last_n_tokens; t++) {
-    last_tokens.active_neurons[t] = tokens[tokens.size() - _last_n_tokens + t];
-    last_tokens.activations[t] = 1.0;
-  }
-
-  return {std::move(vector), std::move(last_tokens)};
+  uint32_t prediction_index = tokens.size();
+  return {lrcContext(tokens, prediction_index),
+          ircContext(tokens, prediction_index),
+          srcContext(tokens, prediction_index)};
 }
 
 void TextGenerationFeaturizer::save(const std::string& filename) const {
