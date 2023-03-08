@@ -28,6 +28,7 @@
 #include <pybind11/stl.h>
 #include <sys/types.h>
 #include <chrono>
+#include <ctime>
 #include <limits>
 #include <optional>
 #include <type_traits>
@@ -273,16 +274,12 @@ void createDatasetSubmodule(py::module_& module) {
 
 #endif
 
-  py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleConfig")
-      .def(py::init<size_t, uint32_t>(), py::arg("min_vecs_in_buffer") = 64000,
-           py::arg("seed") = time(NULL));
-
   py::class_<DatasetLoader, DatasetLoaderPtr>(dataset_submodule,
                                               "DatasetLoader")
       .def(py::init<std::shared_ptr<dataset::DataSource>,
-                    dataset::FeaturizerPtr, bool, DatasetShuffleConfig>(),
+                    dataset::FeaturizerPtr, bool, uint32_t>(),
            py::arg("data_source"), py::arg("featurizer"), py::arg("shuffle"),
-           py::arg("shuffle_config") = DatasetShuffleConfig())
+           py::arg("shuffle_seed") = time(NULL))
       .def("get_input_dim", &DatasetLoader::getInputDim)
       .def("get_label_dim", &DatasetLoader::getLabelDim)
       .def("load_all", &DatasetLoader::loadAll, py::arg("batch_size"),

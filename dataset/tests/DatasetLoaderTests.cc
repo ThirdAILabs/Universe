@@ -42,8 +42,7 @@ class DatasetLoaderTests : public ::testing::Test {
         /* block_lists = */ {dataset::BlockList({mock_block, mock_block}),
                              dataset::BlockList({mock_block})});
 
-    return DatasetLoader(data_source, featurizer, shuffle,
-                         DatasetShuffleConfig(n_vecs_in_shuffle_buffer, seed));
+    return DatasetLoader(data_source, featurizer, shuffle, seed);
   }
 
   static std::vector<BoltDatasetPtr> streamToInMemoryDataset(
