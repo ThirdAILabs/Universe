@@ -2,6 +2,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
+#include <dataset/src/TidyBatcher.h>
 #include <utils/Logging.h>
 #include <limits>
 #include <optional>
@@ -15,7 +16,8 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
                              size_t internal_featurization_batch_size)
     : _data_source(std::move(data_source)),
       _featurizer(std::move(featurizer)),
-      _shuffler(/* shuffle= */ shuffle, /* seed= */ shuffle_seed),
+      _shuffle(shuffle),
+      _gen(shuffle_seed),
       _featurization_batch_size(internal_featurization_batch_size) {
   // Different formats of data may or may not contain headers. Thus we
   // delegate to the particular featurizer to determine if a header is
@@ -56,21 +58,44 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  bool will_overflow =
-      num_batches > (std::numeric_limits<size_t>::max() / batch_size);
-  size_t fill_size = will_overflow ? std::numeric_limits<size_t>::max()
-                                   : num_batches * batch_size;
-  fillShuffler(fill_size);
-  auto data = _shuffler.datasets(/* batch_size= */ batch_size);
-  if (!data) {
+  bool no_limit =
+      num_batches >= (std::numeric_limits<uint32_t>::max() / batch_size);
+  size_t num_vectors = no_limit ? std::numeric_limits<uint32_t>::max()
+                                : num_batches * batch_size;
+
+  TidyBatcher tidy(_gen);
+
+  if (_leftovers) {
+    auto to_add = removeLeftovers(std::move(*_leftovers), num_vectors);
+    tidy.add(toBatch(std::move(to_add)));
+  }
+
+  while (tidy.size() < num_vectors) {
+    auto rows = _data_source->nextBatch(
+        /* target_batch_size = */ _featurization_batch_size);
+    if (!rows) {
+      break;
+    }
+    auto vectors = _featurizer->featurize(*rows);
+    auto to_add = removeLeftovers(std::move(vectors),
+                                  /* num_kept= */ num_vectors - tidy.size());
+    tidy.add(toBatch(std::move(to_add)));
+  }
+
+  auto batches =
+      tidy.batches(/* batch_size= */ batch_size, /* shuffle= */ _shuffle);
+
+  if (!batches) {
     return std::nullopt;
   }
+
+  auto data = toDataset(std::move(*batches));
 
   auto end = std::chrono::high_resolution_clock::now();
   auto duration =
       std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
-  if (data->at(0)->len() == 0) {
+  if (data.at(0)->len() == 0) {
 #if THIRDAI_EXPOSE_ALL
     if (verbose) {
       // This is to ensure that it always prints complete if it prints that it
@@ -86,8 +111,8 @@ std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
 
   if (verbose) {
     std::cout << "loaded data | source '" << _data_source->resourceName()
-              << "' | vectors " << data->at(0)->len() << " | batches "
-              << data->at(0)->numBatches() << " | time " << duration
+              << "' | vectors " << data.at(0)->len() << " | batches "
+              << data.at(0)->numBatches() << " | time " << duration
               << "s | complete\n"
               << std::endl;
   }
@@ -106,21 +131,44 @@ void DatasetLoader::restart() {
   }
 }
 
-void DatasetLoader::fillShuffler(size_t num_rows) {
-  while (_shuffler.size() <= num_rows) {
-    auto rows = _data_source->nextBatch(
-        /* target_batch_size = */ _featurization_batch_size);
-    if (!rows) {
-      return;
-    }
-    auto vectors = _featurizer->featurize(*rows);
-    std::vector<BoltBatch> batch;
-    batch.reserve(vectors.size());
-    for (auto& vector_list : vectors) {
-      batch.emplace_back(std::move(vector_list));
-    }
-    _shuffler.add(std::move(batch));
+std::vector<std::vector<BoltVector>> DatasetLoader::removeLeftovers(
+    std::vector<std::vector<BoltVector>>&& vector_columns, size_t num_kept) {
+  if (vector_columns.front().size() <= num_kept) {
+    return std::move(vector_columns);
   }
+
+  size_t num_leftovers = vector_columns.front().size() - num_kept;
+
+  std::vector<std::vector<BoltVector>> leftovers(vector_columns.size());
+  for (size_t column_id = 0; column_id < vector_columns.size(); column_id++) {
+    leftovers[column_id].reserve(num_leftovers);
+    std::move(vector_columns[column_id].begin(),
+              vector_columns[column_id].end(), leftovers[column_id].begin());
+    vector_columns[column_id].resize(num_kept);
+  }
+  _leftovers = std::move(leftovers);
+
+  return std::move(vector_columns);
+}
+
+std::vector<BoltDatasetPtr> DatasetLoader::toDataset(
+    std::vector<std::vector<BoltBatch>>&& batches) {
+  std::vector<BoltDatasetPtr> dataset;
+  dataset.reserve(batches.size());
+  for (auto& column : batches) {
+    dataset.push_back(std::make_shared<BoltDataset>(std::move(column)));
+  }
+  return dataset;
+}
+
+std::vector<BoltBatch> DatasetLoader::toBatch(
+    std::vector<std::vector<BoltVector>>&& vectors) {
+  std::vector<BoltBatch> batch;
+  batch.reserve(vectors.size());
+  for (auto& vector_list : vectors) {
+    batch.emplace_back(std::move(vector_list));
+  }
+  return batch;
 }
 
 }  // namespace thirdai::dataset

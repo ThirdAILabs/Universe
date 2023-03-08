@@ -1,10 +1,14 @@
 #pragma once
 
+#include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/Shuffler.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
+#include <cstddef>
+#include <optional>
+#include <random>
 #include <stdexcept>
+#include <vector>
 
 namespace thirdai::dataset {
 
@@ -42,12 +46,23 @@ class DatasetLoader final {
  private:
   // Adds batches to the buffer until the data source is finished or the buffer
   // reaches the passed in number of rows
-  void fillShuffler(size_t num_rows);
+  void fillBatchBuffer(uint32_t num_batches, uint32_t batch_size);
+
+  std::vector<std::vector<BoltVector>> removeLeftovers(
+      std::vector<std::vector<BoltVector>>&& vector_columns, size_t num_kept);
+
+  static std::vector<BoltDatasetPtr> toDataset(
+      std::vector<std::vector<BoltBatch>>&& batches);
+
+  static std::vector<BoltBatch> toBatch(
+      std::vector<std::vector<BoltVector>>&& vectors);
 
   DataSourcePtr _data_source;
   std::shared_ptr<Featurizer> _featurizer;
+  std::optional<std::vector<std::vector<BoltVector>>> _leftovers;
 
-  Shuffler _shuffler;
+  bool _shuffle;
+  std::mt19937 _gen;
 
   // Batch size we use for loading from the data source and passing to the
   // Featurizer

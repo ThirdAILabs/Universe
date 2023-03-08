@@ -367,7 +367,7 @@ set(THIRDAI_SOURCES
     dataset/src/Vocabulary.cc
     dataset/src/InMemoryDataset.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
-    dataset/src/Shuffler.cc
+    dataset/src/TidyBatcher.cc
     dataset/src/utils/TokenEncoding.cc
     dataset/src/utils/CsvParser.cc
     dataset/src/blocks/ColumnIdentifier.cc
