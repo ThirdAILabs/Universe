@@ -11,7 +11,7 @@ struct NeuronInfo {
   NeuronInfo(uint32_t neuron, float activation)
       : neuron(neuron),
         activation(activation),
-        activation_magnitude(abs(activation)) {}
+        activation_magnitude(std::abs(activation)) {}
 
   uint32_t neuron;
   float activation;
