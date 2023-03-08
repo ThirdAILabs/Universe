@@ -8,7 +8,8 @@ namespace thirdai::automl::udt::utils {
 
 bolt::BoltGraphPtr buildModel(uint32_t input_dim, uint32_t output_dim,
                               const config::ArgumentMap& args,
-                              const std::optional<std::string>& model_config);
+                              const std::optional<std::string>& model_config,
+                              bool use_sigmoid_bce = false);
 
 bolt::BoltGraphPtr defaultModel(uint32_t input_dim, uint32_t hidden_dim,
                                 uint32_t output_dim,

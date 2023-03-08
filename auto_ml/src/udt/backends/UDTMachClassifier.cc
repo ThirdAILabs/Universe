@@ -14,12 +14,17 @@ UDTMachClassifier::UDTMachClassifier(
     const std::string& target_name, data::CategoricalDataTypePtr target,
     uint32_t n_target_classes, bool integer_target,
     const data::TabularOptions& tabular_options,
-    const config::ArgumentMap& user_args) {
-  uint32_t hidden_dim = user_args.get<uint32_t>(
-      "embedding_dimension", "integer", defaults::HIDDEN_DIM);
-  _model = utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
-                               output_dim,
-                               /* use_sigmoid_bce = */ true);
+    const std::optional<std::string>& model_config,
+    const config::ArgumentMap& user_args)
+    : _classifier(utils::buildModel(
+                      /* input_dim= */ tabular_options.feature_hash_range,
+                      /* output_dim= */ autotuneMachOutputDim(n_target_classes),
+                      /* args= */ user_args, /* model_config= */ model_config,
+                      /* use_sigmoid_bce = */ true),
+                  user_args.get<bool>("freeze_hash_tables", "boolean",
+                                      defaults::FREEZE_HASH_TABLES)) {
+  // TODO(david) should we freeze hash tables for mach? how does this work with
+  // coldstart? is this why we're getting bad msmarco accuracy?
 
   // TODO(david) move things like label block and coldstart out of here and into
   // a classifier utils file?
@@ -36,25 +41,28 @@ UDTMachClassifier::UDTMachClassifier(
 
 void UDTMachClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<Validation>& validation,
+    const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
-  size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
+  std::optional<ValidationDatasetLoader> validation_dataset_loader =
+      std::nullopt;
+  if (validation) {
+    validation_dataset_loader =
+        ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
+                                    validation->first, /* shuffle= */ false),
+                                validation->second);
+  }
 
-  bolt::TrainConfig train_config = utils::getTrainConfig(
-      epochs, learning_rate, validation, metrics, callbacks, verbose,
-      logging_interval, _dataset_factory);
-
-  auto train_dataset =
+  auto train_dataset_loader =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  utils::train(_model, train_dataset, train_config, batch_size,
-               max_in_memory_batches,
-               /* freeze_hash_tables= */ _freeze_hash_tables,
-               licensing::TrainPermissionsToken(data));
+  _classifier.train(train_dataset_loader, learning_rate, epochs,
+                    validation_dataset_loader, batch_size_opt,
+                    max_in_memory_batches, metrics, callbacks, verbose,
+                    logging_interval, licensing::TrainPermissionsToken(data));
 }
 
 py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -62,16 +70,26 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        bool sparse_inference,
                                        bool return_predicted_class,
                                        bool verbose, bool return_metrics) {
-                                        // should this just return an ordered list 
-                                       }
+  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
+
+  return _classifier.evaluate(dataset, metrics, sparse_inference,
+                              return_predicted_class, verbose, return_metrics);
+}
 
 py::object UDTMachClassifier::predict(const MapInput& sample,
                                       bool sparse_inference,
-                                      bool return_predicted_class) {}
+                                      bool return_predicted_class) {
+  return _classifier.predict(_dataset_factory->featurizeInput(sample),
+                             sparse_inference, return_predicted_class);
+}
 
-py::object UDTMachClassifier::predictBatch(const MapInputBatch& sample,
+py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                            bool sparse_inference,
-                                           bool return_predicted_class) {}
+                                           bool return_predicted_class) {
+  return _classifier.predictBatch(
+      _dataset_factory->featurizeInputBatch(samples), sparse_inference,
+      return_predicted_class);
+}
 
 std::vector<dataset::Explanation> UDTMachClassifier::explain(
     const MapInput& sample,
@@ -82,7 +100,7 @@ void UDTMachClassifier::coldstart(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
-    const std::optional<Validation>& validation,
+    const std::optional<ValidationDataSource>& validation,
     const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {}
 
 py::object UDTMachClassifier::embedding(const MapInput& sample) {}
@@ -92,17 +110,16 @@ py::object UDTMachClassifier::entityEmbedding(
 
 std::string UDTMachClassifier::className(uint32_t class_id) const {}
 
-data::TabularDatasetFactoryPtr UDTMachClassifier::tabularDatasetFactory()
-    const {}
-
 dataset::CategoricalBlockPtr UDTMachClassifier::labelBlock(
     const std::string& target_name, data::CategoricalDataTypePtr& target_config,
     uint32_t n_target_classes, bool integer_target) {}
 
 template <class Archive>
-void serialize(Archive& archive);
-
-bolt::BoltGraphPtr _model;
-bool _freeze_hash_tables;
+void serialize(Archive& archive) {
+  archive(cereal::base_class<UDTBackend>(this), _classifier,
+          _multi_hash_label_block, _dataset_factory);
+}
 
 }  // namespace thirdai::automl::udt
+
+CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTMachlassifier)

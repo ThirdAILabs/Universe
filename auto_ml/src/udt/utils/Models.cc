@@ -10,13 +10,15 @@ namespace thirdai::automl::udt::utils {
 
 bolt::BoltGraphPtr buildModel(uint32_t input_dim, uint32_t output_dim,
                               const config::ArgumentMap& args,
-                              const std::optional<std::string>& model_config) {
+                              const std::optional<std::string>& model_config,
+                              bool use_sigmoid_bce) {
   if (model_config) {
     return utils::loadModel({input_dim}, output_dim, *model_config);
   }
   uint32_t hidden_dim = args.get<uint32_t>("embedding_dimension", "integer",
                                            defaults::HIDDEN_DIM);
-  return utils::defaultModel(input_dim, hidden_dim, output_dim);
+  return utils::defaultModel(input_dim, hidden_dim, output_dim,
+                             use_sigmoid_bce);
 }
 
 namespace {
