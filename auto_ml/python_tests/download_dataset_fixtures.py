@@ -10,6 +10,7 @@ from thirdai.demos import (
     download_internet_ads_dataset as download_internet_ads_dataset_wrapped,
 )
 from thirdai.demos import download_mnist_dataset as download_mnist_dataset_wrapped
+from thirdai.demos import download_yelp_chi_dataset as download_yelp_chi_dataset_wrapped
 
 
 @pytest.fixture(scope="session")
@@ -37,3 +38,8 @@ def download_brazilian_houses_dataset():
 @pytest.fixture(scope="session")
 def download_mnist_dataset():
     return download_mnist_dataset_wrapped()
+
+
+@pytest.fixture(scope="session")
+def download_yelp_chi_dataset():
+    return download_yelp_chi_dataset_wrapped()

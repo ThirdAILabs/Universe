@@ -376,10 +376,12 @@ set(THIRDAI_SOURCES
     dataset/src/featurizers/ProcessorUtils.cc
     dataset/src/featurizers/SvmFeaturizer.cc
     dataset/src/featurizers/TabularFeaturizer.cc
-    dataset/src/blocks/ColumnIdentifier.cc
+    dataset/src/blocks/GraphBlocks.cc
     dataset/src/blocks/BlockList.cc
+    dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
+    dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
@@ -393,6 +395,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/TabularBlockComposer.cc
     auto_ml/src/featurization/TabularDatasetFactory.cc
     auto_ml/src/featurization/RecurrentDatasetFactory.cc
+    auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartDataSource.cc
@@ -446,10 +449,12 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Conversion.cc
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Train.cc
+  auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
+  auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/models/TextClassifier.cc
   telemetry/python_bindings/TelemetryPython.cc
