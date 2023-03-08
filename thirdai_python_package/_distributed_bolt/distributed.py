@@ -21,6 +21,15 @@ from .utils import get_num_cpus, init_logging
 
 
 def add_distributed_to_udt():
+    def batch_size_per_node(batch_size, cluster_config):
+
+        if batch_size is None:
+            batch_size = 2048
+
+        # calculating batch size per node
+        batch_size = batch_size // cluster_config.num_workers
+        return batch_size
+
     def train_with_data_sources(
         self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
     ):
@@ -115,16 +124,10 @@ def add_distributed_to_udt():
             )
         """
 
-        if batch_size is None:
-            batch_size = 2048
-
-        # calculating batch size per node
-        batch_size = batch_size // cluster_config.num_workers
-
         train_sources = [
             DistributedUDTDatasetLoader(
                 train_file=file,
-                batch_size=batch_size,
+                batch_size=batch_size_per_node(batch_size,cluster_config),
                 max_in_memory_batches=max_in_memory_batches,
                 data_processor=self.get_data_processor(),
             )
@@ -150,16 +153,11 @@ def add_distributed_to_udt():
         metrics: List[str] = [],
         verbose: bool = True,
     ):
-        if batch_size is None:
-            batch_size = 2048
-
-        # calculating batch size per node
-        batch_size = batch_size // cluster_config.num_workers
 
         train_sources = [
             DistributedColdStartDatasetLoader(
                 train_file=file,
-                batch_size=batch_size,
+                batch_size=batch_size_per_node(batch_size, cluster_config),
                 max_in_memory_batches=max_in_memory_batches,
                 strong_column_names=strong_column_names,
                 weak_column_names=weak_column_names,

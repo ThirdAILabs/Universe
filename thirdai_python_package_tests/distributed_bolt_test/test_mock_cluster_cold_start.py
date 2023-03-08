@@ -66,7 +66,6 @@ def test_distributed_cold_start(ray_two_node_cluster_config):
     overall_metrics = {}
     for metrics_per_node in train_metrics:
         for key, value in metrics_per_node.items():
-            print(value)
             if key not in overall_metrics:
                 overall_metrics[key] = 0
             # Here we are averaging the metrics, hence divding the
