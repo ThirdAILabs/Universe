@@ -22,7 +22,6 @@ from .utils import get_num_cpus, init_logging
 
 def add_distributed_to_udt():
     def batch_size_per_node(batch_size, cluster_config):
-
         if batch_size is None:
             batch_size = 2048
 
@@ -127,7 +126,7 @@ def add_distributed_to_udt():
         train_sources = [
             DistributedUDTDatasetLoader(
                 train_file=file,
-                batch_size=batch_size_per_node(batch_size,cluster_config),
+                batch_size=batch_size_per_node(batch_size, cluster_config),
                 max_in_memory_batches=max_in_memory_batches,
                 data_processor=self.get_data_processor(),
             )
@@ -153,7 +152,6 @@ def add_distributed_to_udt():
         metrics: List[str] = [],
         verbose: bool = True,
     ):
-
         train_sources = [
             DistributedColdStartDatasetLoader(
                 train_file=file,
@@ -162,6 +160,7 @@ def add_distributed_to_udt():
                 strong_column_names=strong_column_names,
                 weak_column_names=weak_column_names,
                 data_processor=self.get_data_processor(),
+                cold_start_meta_data=self.get_cold_start_meta_data(),
             )
             for file in filenames
         ]

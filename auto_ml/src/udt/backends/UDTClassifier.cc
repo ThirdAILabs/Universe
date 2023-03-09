@@ -4,7 +4,6 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt/src/graph/ExecutionConfig.h>
-#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
@@ -126,8 +125,10 @@ void UDTClassifier::coldstart(
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::optional<ValidationDataSource>& validation,
     const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
+  auto metadata = getColdStartMetaData();
+
   auto data_source = cold_start::preprocessColdStartTrainSource(
-      data, strong_column_names, weak_column_names, _dataset_factory);
+      data, strong_column_names, weak_column_names, _dataset_factory, metadata);
 
   // TODO(david): reconsider validation. Instead of forcing users to pass in a
   // supervised dataset of query product pairs, can we create a synthetic

@@ -125,6 +125,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
+      .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &UDTFactory::save_udt, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"));
 }
@@ -197,12 +198,16 @@ void createModelsSubmodule(py::module_& module) {
 }
 
 void createDistributedPreprocessingWrapper(py::module_& dataset_module) {
+  dataset_module.def("preprocess_cold_start_train_source",
+                     &cold_start::preprocessColdStartTrainSource,
+                     py::arg("data"), py::arg("strong_column_names"),
+                     py::arg("weak_column_names"), py::arg("dataset_factory"),
+                     py::arg("metadata"));
 
-  dataset_module.def(
-      "preprocess_cold_start_train_source",
-      &cold_start::preprocessColdStartTrainSource, py::arg("data"),
-      py::arg("strong_column_names"), py::arg("weak_column_names"),
-      py::arg("dataset_factory"));
+  py::class_<cold_start::ColdStartMetaData, cold_start::ColdStartMetaDataPtr>(
+      dataset_module, "ColdStartMetaData")
+      .def(bolt::python::getPickleFunction<cold_start::ColdStartMetaData>());
+  ;
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

@@ -39,7 +39,6 @@ class DistributedDatasetLoader(ABC):
         pass
 
 
-
 class DistributedUDTDatasetLoader(DistributedDatasetLoader):
     def __init__(
         self,
@@ -80,7 +79,6 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.generator.restart()
 
 
-
 class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
     def __init__(
         self,
@@ -90,6 +88,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         strong_column_names: List[str],
         weak_column_names: List[str],
         data_processor,
+        cold_start_meta_data,
     ):
         self.generator = None
         self.train_file = train_file
@@ -99,6 +98,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
         self.data_processor = data_processor
+        self.cold_start_meta_data = cold_start_meta_data
 
     def load(self):
         original_data_source = _create_data_source(self.train_file)
@@ -107,6 +107,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
             self.strong_column_names,
             self.weak_column_names,
             self.data_processor,
+            self.cold_start_meta_data,
         )
         self.generator = self.data_processor.get_dataset_loader(
             cold_start_data_source, training=True

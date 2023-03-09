@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/callbacks/Callback.h>
+#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/Validation.h>
@@ -163,6 +164,10 @@ class UDTBackend {
    */
   virtual data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return nullptr;
+  }
+
+  virtual cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
+    throw notSupported("getColdStartMetaData");
   }
 
   virtual ~UDTBackend() = default;
