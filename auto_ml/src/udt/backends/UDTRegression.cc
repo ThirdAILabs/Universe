@@ -40,8 +40,7 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
   _dataset_factory = std::make_shared<data::TabularDatasetFactory>(
       input_data_types, temporal_tracking_relationships,
       std::vector<dataset::BlockPtr>{label_block},
-      std::set<std::string>{target_name}, tabular_options, force_parallel,
-      label_block->delimiter(), label_block->columnName(), false);
+      std::set<std::string>{target_name}, tabular_options, force_parallel);
 
   _freeze_hash_tables = user_args.get<bool>("freeze_hash_tables", "boolean",
                                             defaults::FREEZE_HASH_TABLES);
