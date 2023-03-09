@@ -68,7 +68,7 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
   // std::cout << "AbraKaDabra" << std::endl;
 
   // std::vector<float> output_vector = output.vectorize(_dim);
-  // // assert(output_vector.size() == _dim);
+  // assert(output_vector.size() == _dim);
 
   // std::cout << "Printing the activations for the layer" << std::endl;
   // for (auto x : output_vector) {

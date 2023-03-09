@@ -411,19 +411,17 @@ std::vector<float> BoltVector::vectorize(uint32_t dim) const {
       uint32_t act_neuron = this->activeNeuronAtIndex<true>(i);
       assert(act_neuron < dim);
       float activation = this->activations[i];
-      std::cout << activation << " ";
       vector_representation[act_neuron] = activation;
     } else {
       uint32_t act_neuron = this->activeNeuronAtIndex<false>(i);
       assert(act_neuron < dim);
       float activation = this->activations[i];
-      std::cout << activation << " ";
       vector_representation[act_neuron] = activation;
     }
   }
 
-  return std::vector<float>(1, 0);
-  // return vector_representation;
+  // return std::vector<float>(1, 0);
+  return vector_representation;
 }
 
 template <class Archive>

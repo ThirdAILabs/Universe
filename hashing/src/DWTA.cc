@@ -96,7 +96,7 @@ void DWTAHashFunction::hashSingleSparse(const uint32_t* indices,
   }
   delete[] bin_values;
 
-  densifyHashes(hashes, _num_hashes);
+  // densifyHashes(hashes, _num_hashes);
   compactHashes(hashes, output);
 
   delete[] hashes;
