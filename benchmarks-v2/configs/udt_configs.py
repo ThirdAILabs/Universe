@@ -190,7 +190,7 @@ class MovieLensUDTBenchmark(UDTBenchmarkConfig):
 
     learning_rate = 0.0001
     num_epochs = 5
-    metrics = ["recall@10"]
+    metrics = ["recall@10", "precision@10"]
 
     @staticmethod
     @abstractmethod
