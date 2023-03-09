@@ -63,7 +63,14 @@ def test_udt_on_yelp_chi(download_yelp_chi_dataset):
     model.index_nodes("yelp_test.csv")
 
     for epoch in range(15):
-        model.train("yelp_train.csv", learning_rate=0.001, epochs=1)
+        metrics = model.train(
+            "yelp_train.csv",
+            learning_rate=0.001,
+            epochs=1,
+            metrics=["categorical_accuracy"],
+        )
+        assert metrics["categorical_accuracy"][-1] > 0
+
         activations = model.evaluate("yelp_test.csv")
         auc = metrics.roc_auc_score(ground_truth, activations[:, 1])
         print("AUC: ", auc)

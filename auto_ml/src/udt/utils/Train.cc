@@ -6,6 +6,10 @@ namespace thirdai::automl::udt::utils {
 
 namespace {
 
+/**
+ * Copies all metrics from the "from" map to the "to" map, extending the end of
+ * the "to" map. Modifes in place.
+ */
 void aggregateMetrics(bolt::MetricData& to, const bolt::MetricData& from) {
   for (const auto& [metric_name, metric_values] : from) {
     if (!to.count(metric_name)) {
@@ -28,7 +32,8 @@ bolt::MetricData trainSingleEpochOnStream(
     auto [data, labels] = split_data_labels(std::move(datasets.value()));
 
     auto partial_metrics = model->train({data}, labels, train_config, token);
-    aggregateMetrics(/* to =*/aggregated_metrics, /* from = */ partial_metrics);
+    aggregateMetrics(/* to = */ aggregated_metrics,
+                     /* from = */ partial_metrics);
   }
 
   dataset_loader->restart();
@@ -53,7 +58,8 @@ bolt::MetricData trainOnStream(bolt::BoltGraphPtr& model,
     auto partial_metrics =
         trainSingleEpochOnStream(model, dataset_loader, train_config,
                                  max_in_memory_batches, batch_size, token);
-    aggregateMetrics(/* to =*/aggregated_metrics, /* from = */ partial_metrics);
+    aggregateMetrics(/* to = */ aggregated_metrics,
+                     /* from = */ partial_metrics);
 
     model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
@@ -65,7 +71,8 @@ bolt::MetricData trainOnStream(bolt::BoltGraphPtr& model,
         trainSingleEpochOnStream(model, dataset_loader, train_config,
                                  max_in_memory_batches, batch_size, token);
 
-    aggregateMetrics(/* to =*/aggregated_metrics, /* from = */ partial_metrics);
+    aggregateMetrics(/* to = */ aggregated_metrics,
+                     /* from = */ partial_metrics);
   }
 
   return aggregated_metrics;

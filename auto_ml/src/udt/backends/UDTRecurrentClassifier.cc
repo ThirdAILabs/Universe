@@ -6,6 +6,7 @@
 #include <dataset/src/blocks/RecurrenceAugmentation.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/pytypes.h>
+#include <pybind11/stl.h>
 #include <utils/StringManipulation.h>
 #include <stdexcept>
 

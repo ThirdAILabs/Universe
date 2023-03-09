@@ -55,7 +55,7 @@ def test_udt_cold_start_kaggle():
     os.remove(catalog_file)
 
     assert final_metric.ending_train_metric > 0.5
-    assert metrics["categorical_accuracy"][-1] == final_metric.ending_train_metric 
+    assert metrics["categorical_accuracy"][-1] == final_metric.ending_train_metric
 
 
 def setup_testing_file(missing_values, bad_csv_line):
