@@ -6,6 +6,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
 #include <pybind11/pybind11.h>
+#include <memory>
 
 namespace py = pybind11;
 
@@ -63,5 +64,7 @@ class Classifier {
   bool _freeze_hash_tables;
   std::optional<float> _binary_prediction_threshold;
 };
+
+using ClassifierPtr = std::shared_ptr<Classifier>;
 
 }  // namespace thirdai::automl::udt::utils

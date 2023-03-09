@@ -170,6 +170,13 @@ class UDTBackend {
     throw notSupported("getColdStartMetaData");
   }
 
+  virtual void indexNodes(const dataset::DataSourcePtr& source) {
+    (void)source;
+    throw notSupported("index_nodes");
+  }
+
+  virtual void clearGraph() { throw notSupported("clear_graph"); }
+
   virtual ~UDTBackend() = default;
 
  protected:
