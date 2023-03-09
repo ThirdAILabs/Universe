@@ -11,6 +11,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <dataset/src/utils/TimeUtils.h>
@@ -158,42 +159,37 @@ class UserItemHistoryBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(ColumnarInputSample& input,
-                                  SegmentedFeatureVector& vec) final {
-    try {
-      auto user_str = std::string(input.column(_user_col));
-      auto item_str = std::string(input.column(_item_col));
-      auto timestamp_str = std::string(input.column(_timestamp_col));
+  void buildSegment(ColumnarInputSample& input,
+                    SegmentedFeatureVector& vec) final {
+    auto user_str = std::string(input.column(_user_col));
+    auto item_str = std::string(input.column(_item_col));
+    auto timestamp_str = std::string(input.column(_timestamp_col));
 
-      int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
+    int64_t timestamp_seconds = TimeObject(timestamp_str).secondsSinceEpoch();
 
-      std::vector<std::string> items;
-      if (!item_str.empty()) {
-        items = getItems(item_str);
-      }
+    std::vector<std::string> items;
+    if (!item_str.empty()) {
+      items = getItems(item_str);
+    }
 
 #pragma omp critical(user_item_history_block)
-      {
-        if (_include_current_row) {
-          addNewItemsToUserHistory(user_str, timestamp_seconds, items);
-        }
-
-        extendVectorWithUserHistory(
-            user_str, timestamp_seconds - _time_lag, vec,
-            /* remove_outdated_elements= */ _should_update_history);
-
-        if (_include_current_row && !_should_update_history) {
-          removeNewItemsFromUserHistory(user_str, items);
-        }
-
-        if (!_include_current_row && _should_update_history) {
-          addNewItemsToUserHistory(user_str, timestamp_seconds, items);
-        }
+    {
+      if (_include_current_row) {
+        addNewItemsToUserHistory(user_str, timestamp_seconds, items);
       }
-    } catch (...) {
-      return std::current_exception();
+
+      extendVectorWithUserHistory(
+          user_str, timestamp_seconds - _time_lag, vec,
+          /* remove_outdated_elements= */ _should_update_history);
+
+      if (_include_current_row && !_should_update_history) {
+        removeNewItemsFromUserHistory(user_str, items);
+      }
+
+      if (!_include_current_row && _should_update_history) {
+        addNewItemsToUserHistory(user_str, timestamp_seconds, items);
+      }
     }
-    return nullptr;
   }
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
@@ -206,7 +202,7 @@ class UserItemHistoryBlock final : public Block {
       return {item_str};
     }
     auto item_id_views =
-        ProcessorUtils::parseCsvRow(item_str, _item_col_delimiter.value());
+        parsers::CSV::parseLine(item_str, _item_col_delimiter.value());
     std::vector<std::string> items;
     items.reserve(item_id_views.size());
     for (auto item_id_view : item_id_views) {

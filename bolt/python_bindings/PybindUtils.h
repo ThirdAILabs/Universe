@@ -13,32 +13,12 @@
 
 namespace thirdai::bolt::python {
 
-void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim);
-
-void printCopyWarning(const std::string& array_name, const py::str& dtype_recv,
-                      const std::string& dtype_expected);
-
-void biasDimensionCheck(
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& biases,
-    uint64_t dim, const std::string& matrix_type);
-
-void weightDimensionCheck(
-    const py::array_t<float, py::array::c_style | py::array::forcecast>&
-        new_weights,
-    uint64_t dim, uint64_t prev_dim, const std::string& matrix_type = "");
-
-void layerIndexCheck(uint32_t layer_index, uint32_t num_layers);
-
 //  Checks that the dimensions of the given numpy array match the expected
 //  dimensions.
 void checkNumpyArrayDimensions(
     const std::vector<uint32_t>& expected_dimensions,
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         numpy_array);
-
-void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
-                         uint32_t** active_neurons, float** activations,
-                         bool output_sparse);
 
 // Takes in the activations arrays (if they were allocated) and returns the
 // python tuple containing the metrics computed, along with the activations
@@ -61,9 +41,6 @@ py::tuple constructPythonInferenceTuple(py::dict&& py_metric_data,
                                         uint32_t inference_dim,
                                         const float* activations,
                                         const uint32_t* active_neurons);
-
-py::array_t<float, py::array::c_style | py::array::forcecast>
-denseBoltVectorToNumpy(const BoltVector& output);
 
 // This struct is used to wrap a char* into a stream, see
 // https://stackoverflow.com/questions/7781898/get-an-istream-from-a-char

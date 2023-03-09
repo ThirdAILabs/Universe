@@ -424,9 +424,9 @@ def download_clinc_dataset(
     train_df = pd.DataFrame({"text": train_text, "category": train_category})
     test_df = pd.DataFrame({"text": test_text, "category": test_category})
 
-    train_df["text"] = train_df["text"].apply(lambda x: x.replace(",", ""))
+    train_df["text"] = train_df["text"]
     train_df["category"] = pd.Categorical(train_df["category"]).codes
-    test_df["text"] = test_df["text"].apply(lambda x: x.replace(",", ""))
+    test_df["text"] = test_df["text"]
     test_df["category"] = pd.Categorical(test_df["category"]).codes
 
     test_df.to_csv(TEST_FILE, index=False, columns=["category", "text"])
@@ -540,3 +540,29 @@ def download_internet_ads_dataset(seed=42):
             inference_samples.append((column_vals, label))
 
     return TRAIN_FILE, TEST_FILE, inference_samples
+
+
+def download_mnist_dataset():
+    TRAIN_FILE = "mnist"
+    TEST_FILE = "mnist.t"
+    if not os.path.exists(TRAIN_FILE):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
+        )
+        os.system("bzip2 -d mnist.bz2")
+
+    if not os.path.exists(TEST_FILE):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
+        )
+        os.system("bzip2 -d mnist.t.bz2")
+
+    return TRAIN_FILE, TEST_FILE
+
+
+def download_yelp_chi_dataset():
+    PATH = "yelp_all.csv"
+    URL = "https://www.dropbox.com/s/ge2sr9iab16hc1x/yelp_all.csv"
+    if not os.path.exists(PATH):
+        # -L will follow the redirects to correctly download the file from dropbox
+        os.system(f"curl -L {URL} --output {PATH}")

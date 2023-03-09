@@ -7,10 +7,12 @@
 #include <cereal/types/polymorphic.hpp>
 #include "BlockInterface.h"
 #include <dataset/src/featurizers/ProcessorUtils.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/PreprocessedVectors.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <cstdlib>
 #include <exception>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -50,32 +52,31 @@ class CategoricalBlock : public Block {
       uint32_t index_within_block,
       const std::string_view& category_value) const = 0;
 
+  std::string columnName() const { return _col.name(); }
+
+  std::optional<char> delimiter() const { return _delimiter; }
+
  protected:
-  std::exception_ptr buildSegment(ColumnarInputSample& input,
-                                  SegmentedFeatureVector& vec) final {
+  void buildSegment(ColumnarInputSample& input,
+                    SegmentedFeatureVector& vec) final {
     auto column = input.column(_col);
 
     if (!_delimiter) {
-      return encodeCategory(column,
-                            /* num_categories_in_sample= */ 1, vec);
+      encodeCategory(column, /* num_categories_in_sample= */ 1, vec);
+      return;
     }
 
     auto csv_category_set = std::string(column);
     auto categories =
-        ProcessorUtils::parseCsvRow(csv_category_set, _delimiter.value());
+        parsers::CSV::parseLine(csv_category_set, _delimiter.value());
     for (auto category : categories) {
-      auto exception = encodeCategory(category, categories.size(), vec);
-      if (exception) {
-        return exception;
-      }
+      encodeCategory(category, categories.size(), vec);
     }
-
-    return nullptr;
   }
 
-  virtual std::exception_ptr encodeCategory(std::string_view category,
-                                            uint32_t num_categories_in_sample,
-                                            SegmentedFeatureVector& vec) = 0;
+  virtual void encodeCategory(std::string_view category,
+                              uint32_t num_categories_in_sample,
+                              SegmentedFeatureVector& vec) = 0;
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {
     return {&_col};
@@ -122,22 +123,20 @@ class NumericalCategoricalBlock final : public CategoricalBlock {
   }
 
  protected:
-  std::exception_ptr encodeCategory(std::string_view category,
-                                    uint32_t num_categories_in_sample,
-                                    SegmentedFeatureVector& vec) final {
+  void encodeCategory(std::string_view category,
+                      uint32_t num_categories_in_sample,
+                      SegmentedFeatureVector& vec) final {
     char* end;
     uint32_t id = std::strtoul(category.data(), &end, 10);
     if (id >= _dim) {
-      return std::make_exception_ptr(
-          std::invalid_argument("Received label " + std::to_string(id) +
-                                " larger than or equal to n_classes"));
+      throw std::invalid_argument("Received label " + std::to_string(id) +
+                                  " larger than or equal to n_classes");
     }
     if (_normalize_categories) {
       vec.addSparseFeatureToSegment(id, 1.0 / num_categories_in_sample);
     } else {
       vec.addSparseFeatureToSegment(id, 1.0);
     }
-    return nullptr;
   }
 
  private:
@@ -161,8 +160,11 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
                                ThreadSafeVocabularyPtr vocab,
                                std::optional<char> delimiter = std::nullopt,
                                bool normalize_categories = false)
-      : CategoricalBlock(std::move(col),
-                         /* dim= */ vocab->vocabSize(), delimiter),
+      : CategoricalBlock(
+            std::move(col),
+            /* dim= */
+            vocab->maxSize().value_or(std::numeric_limits<uint32_t>::max()),
+            delimiter),
         _vocab(std::move(vocab)),
         _normalize_categories(normalize_categories) {}
 
@@ -195,25 +197,18 @@ class StringLookupCategoricalBlock final : public CategoricalBlock {
   }
 
  protected:
-  std::exception_ptr encodeCategory(std::string_view category,
-                                    uint32_t num_categories_in_sample,
-                                    SegmentedFeatureVector& vec) final {
+  void encodeCategory(std::string_view category,
+                      uint32_t num_categories_in_sample,
+                      SegmentedFeatureVector& vec) final {
     auto id_str = std::string(category);
 
-    uint32_t uid;
-    try {
-      uid = _vocab->getUid(id_str);
-    } catch (...) {
-      return std::current_exception();
-    }
+    uint32_t uid = _vocab->getUid(id_str);
 
     if (_normalize_categories) {
       vec.addSparseFeatureToSegment(uid, 1.0 / num_categories_in_sample);
     } else {
       vec.addSparseFeatureToSegment(uid, 1.0);
     }
-
-    return nullptr;
   }
 
  private:
@@ -255,12 +250,11 @@ class MetadataCategoricalBlock final : public CategoricalBlock {
   }
 
  protected:
-  std::exception_ptr encodeCategory(std::string_view category,
-                                    uint32_t num_categories_in_sample,
-                                    SegmentedFeatureVector& vec) final {
+  void encodeCategory(std::string_view category,
+                      uint32_t num_categories_in_sample,
+                      SegmentedFeatureVector& vec) final {
     (void)num_categories_in_sample;
     _vectors->appendPreprocessedFeaturesToVector(std::string(category), vec);
-    return nullptr;
   }
 
  private:
@@ -372,15 +366,15 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
  protected:
   // Bins the float value by subtracting the min and dividing by the binsize.
   // Values outside the range [min, max] are truncated to this range.
-  std::exception_ptr encodeCategory(std::string_view category,
-                                    uint32_t num_categories_in_sample,
-                                    SegmentedFeatureVector& vec) final {
+  void encodeCategory(std::string_view category,
+                      uint32_t num_categories_in_sample,
+                      SegmentedFeatureVector& vec) final {
     (void)num_categories_in_sample;
     char* end;
     float value = std::strtof(category.data(), &end);
     if (category.data() == end) {
-      return std::make_exception_ptr(std::invalid_argument(
-          "Missing float data in regression target column."));
+      throw std::invalid_argument(
+          "Missing float data in regression target column.");
     }
 
     uint32_t bin = _binning_strategy.bin(value);
@@ -392,8 +386,6 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
     for (uint32_t i = label_start; i <= label_end; i++) {
       vec.addSparseFeatureToSegment(i, _label_value);
     }
-
-    return nullptr;
   }
 
  private:

@@ -11,6 +11,13 @@ namespace thirdai::text {
  */
 std::vector<std::string_view> split(std::string_view sentence,
                                     char delimiter = ' ');
+
+/**
+ * Joins a vector of strings into a single delimited string.
+ */
+std::string join(const std::vector<std::string>& strings,
+                 const std::string& delimiter);
+
 /**
  * Creates a copy of the original stringview where all characters are lowercase.
  */

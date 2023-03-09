@@ -79,14 +79,11 @@ def add_distributed_to_udt():
                 filenames=["train_file_1", "train_file_2",....],
             )
         """
-
-        data_processor = self.get_data_processor()
-
         # checks and raises an error if the given UDT is not supported in distributed context
-        data_processor.verify_can_distribute()
+        self.verify_can_distribute()
 
         if batch_size is None:
-            batch_size = self.default_train_batch_size
+            batch_size = 2048
 
         # calculating batch size per node
         batch_size = batch_size // cluster_config.num_workers
@@ -109,7 +106,7 @@ def add_distributed_to_udt():
                     train_file=file,
                     batch_size=batch_size,
                     max_in_memory_batches=max_in_memory_batches,
-                    data_processor=data_processor,
+                    data_processor=self.get_data_processor(),
                 )
                 for file in filenames
             ],
@@ -127,7 +124,7 @@ def add_distributed_to_udt():
 
         return metrics
 
-    setattr(bolt.models.Pipeline, "train_distributed", train_distributed)
+    setattr(bolt.UDT, "train_distributed", train_distributed)
 
 
 class RayTrainingClusterConfig:
@@ -202,7 +199,7 @@ class RayTrainingClusterConfig:
         runtime_env = copy.deepcopy(runtime_env)
         if "env_vars" not in runtime_env:
             runtime_env["env_vars"] = {}
-        runtime_env["env_vars"]["OMP_NUM_THREADS"] = str(get_num_cpus())
+        runtime_env["env_vars"]["OMP_NUM_THREADS"] = num_omp_threads
 
         ray.init(
             address=cluster_address,
@@ -224,7 +221,7 @@ class RayTrainingClusterConfig:
 
         num_cpus_on_this_node = get_num_cpus()
         if requested_cpus_per_node != -1:
-            num_cpus_to_use = min(requested_cpus_per_node, num_cpus_on_this_node)
+            num_cpus_to_use = requested_cpus_per_node
         else:
             num_cpus_to_use = num_cpus_on_this_node
 

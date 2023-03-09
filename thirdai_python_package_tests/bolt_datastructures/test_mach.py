@@ -38,7 +38,6 @@ def build_and_train_mach(
     batch_size=512,
     num_epochs=5,
 ):
-
     # Import here to avoid collection error since experimental is not defined in release mode.
     from thirdai import experimental
 
@@ -132,7 +131,6 @@ def test_mach_save_load():
 
 @pytest.mark.unit
 def test_mach_random_data():
-
     num_train = 10000
     num_test = 1000
     num_true_labels_per_sample = 10

@@ -19,6 +19,8 @@ thirdai.egg-info
 # in 90 days).
 !docker/product/slim/license.serialized
 !licensing/python_tests/*.serialized
+# Ignore this binary server file. TODO(Josh): prevent it from being generated
+licensing/src/server/data.pqt 
 
 # Ignore zipped files
 *.bz2
@@ -91,3 +93,6 @@ tags
 
 # Ignore log files
 *.log
+
+# OpenMP deps
+deps/openmp/*

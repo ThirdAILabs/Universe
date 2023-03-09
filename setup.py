@@ -32,6 +32,7 @@ else:
     feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
     is_public_release = True
 
+
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
 # If you need multiple extensions, see scikit-build.
@@ -43,7 +44,6 @@ class CMakeExtension(Extension):
 
 class CMakeBuild(build_ext):
     def build_extension(self, ext):
-
         global build_mode
         global feature_flags
         global num_jobs
@@ -106,7 +106,6 @@ class CMakeBuild(build_ext):
                     pass
 
         else:
-
             # Single config generators are handled "normally"
             single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
 
@@ -204,6 +203,7 @@ setup(
             "gcsfs",
             "s3fs",
             "mock",
+            "scikit-learn",
         ],
         "benchmark": [
             "toml",

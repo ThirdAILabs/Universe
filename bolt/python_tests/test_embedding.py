@@ -4,7 +4,6 @@ from thirdai import bolt, dataset
 
 
 def get_sum_model(input_dim):
-
     input_1 = bolt.nn.TokenInput(dim=input_dim, num_tokens_range=(1, 1))
 
     input_2 = bolt.nn.TokenInput(dim=input_dim, num_tokens_range=(1, 1))
@@ -49,7 +48,6 @@ def generate_sum_datasets_and_labels(input_dim, num_examples):
 # The real thing it tests is 1. multiple inputs and 2. numpy to token datasets
 @pytest.mark.unit
 def test_token_sum():
-
     input_dim = 10
     num_train = 10000
     num_test = 100
