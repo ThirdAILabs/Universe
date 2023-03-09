@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 import pytest
 from thirdai import bolt_v2 as bolt
@@ -7,7 +5,7 @@ from thirdai import bolt_v2 as bolt
 from utils import gen_numpy_training_data
 
 
-def concat_active_neurons(computations: List[bolt.nn.Computation]) -> np.ndarray:
+def concat_active_neurons(computations):
     arrays = []
     total_dim = 0
     for comp in computations:
@@ -28,19 +26,19 @@ def concat_active_neurons(computations: List[bolt.nn.Computation]) -> np.ndarray
     return np.concatenate(arrays, axis=1, dtype=np.uint32)
 
 
-def concat_activations(computations: List[bolt.nn.Computation]) -> np.ndarray:
+def concat_activations(computations):
     return np.concatenate(
         [comp.tensor().activations for comp in computations], axis=1, dtype=np.float32
     )
 
 
-def concat_gradients(computations: List[bolt.nn.Computation]) -> np.ndarray:
+def concat_gradients(computations):
     return np.concatenate(
         [comp.tensor().gradients for comp in computations], axis=1, dtype=np.float32
     )
 
 
-def get_data(n_classes: int):
+def get_data(n_classes):
     x, y = gen_numpy_training_data(n_classes=n_classes)
 
     x = bolt.train.convert_dataset(x, dim=n_classes)

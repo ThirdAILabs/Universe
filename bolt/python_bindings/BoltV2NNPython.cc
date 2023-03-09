@@ -5,7 +5,10 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Concatenate.h>
+<<<<<<< HEAD
 #include <bolt/src/nn/ops/Embedding.h>
+=======
+>>>>>>> c21371641d59d488bc3121a621305f672675bf74
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
