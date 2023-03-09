@@ -13,15 +13,15 @@ namespace thirdai::automl::cold_start {
 class ColdStartMetaData;
 using ColdStartMetaDataPtr = std::shared_ptr<ColdStartMetaData>;
 
-class ColdStartMetaData {  
- /*
-  * ColdStartMetaData consist of the fields which is needed by the distributed, We
-  * went for a class implementation rather than a struct implementation due to the
-  * need of pickling which requires references to move around, hence class made more 
-  * sense. If we want to add any new field to ColdStartDataSource, we should do it through
-  * ColdStartMetaData. So, those changes can easily be included for coldstart 
-  * distributed training. 
-  */
+class ColdStartMetaData {
+  /*
+   * ColdStartMetaData consist of the fields which is needed by the distributed,
+   * We went for a class implementation rather than a struct implementation due
+   * to the need of pickling which requires references to move around, hence
+   * class made more sense. If we want to add any new field to
+   * ColdStartDataSource, we should do it through ColdStartMetaData. So, those
+   * changes can easily be included for coldstart distributed training.
+   */
 
  public:
   ColdStartMetaData(std::optional<char> label_delimiter,
