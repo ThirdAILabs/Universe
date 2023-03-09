@@ -363,6 +363,25 @@ def test_works_without_temporal_relationships():
 
 def test_return_metrics():
     model = make_simple_trained_model()
+
+    metrics = model.train(TEST_FILE, epochs=1, metrics=["categorical_accuracy"])
+    assert metrics["categorical_accuracy"][-1] >= 0
+
+    num_metrics_counted = len(metrics["categorical_accuracy"])
+    metrics = model.train(
+        TRAIN_FILE,
+        epochs=1,
+        metrics=["categorical_accuracy"],
+        max_in_memory_batches=1,
+        batch_size=1,
+    )
+    print(metrics)
+    assert metrics["categorical_accuracy"][-1] >= 0
+    # this next assert assumes that there are at least 3 samples in the train 
+    # file and asserts that we get a metric for each of the streamed batches as 
+    # specified in max_in_memory_batches above
+    assert len(metrics["categorical_accuracy"]) - num_metrics_counted >= 3
+
     metrics = model.evaluate(
         TEST_FILE, metrics=["categorical_accuracy"], return_metrics=True
     )

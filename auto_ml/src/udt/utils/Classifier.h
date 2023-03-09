@@ -17,7 +17,7 @@ class Classifier {
   Classifier(bolt::BoltGraphPtr model, bool freeze_hash_tables)
       : _model(std::move(model)), _freeze_hash_tables(freeze_hash_tables) {}
 
-  void train(dataset::DatasetLoaderPtr& dataset, float learning_rate,
+  py::object train(dataset::DatasetLoaderPtr& dataset, float learning_rate,
              uint32_t epochs,
              const std::optional<ValidationDatasetLoader>& validation,
              std::optional<size_t> batch_size_opt,
