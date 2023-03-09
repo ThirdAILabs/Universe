@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 import pytest
 from thirdai import bolt_v2 as bolt
@@ -5,7 +7,7 @@ from thirdai import bolt_v2 as bolt
 from utils import gen_numpy_training_data
 
 
-def concat_active_neurons(computations: bolt.nn.Computation) -> np.ndarray:
+def concat_active_neurons(computations: List[bolt.nn.Computation]) -> np.ndarray:
     arrays = []
     total_dim = 0
     for comp in computations:
@@ -26,13 +28,13 @@ def concat_active_neurons(computations: bolt.nn.Computation) -> np.ndarray:
     return np.concatenate(arrays, axis=1, dtype=np.uint32)
 
 
-def concat_activations(computations: bolt.nn.Computation) -> np.ndarray:
+def concat_activations(computations: List[bolt.nn.Computation]) -> np.ndarray:
     return np.concatenate(
         [comp.tensor().activations for comp in computations], axis=1, dtype=np.float32
     )
 
 
-def concat_gradients(computations: bolt.nn.Computation) -> np.ndarray:
+def concat_gradients(computations: List[bolt.nn.Computation]) -> np.ndarray:
     return np.concatenate(
         [comp.tensor().gradients for comp in computations], axis=1, dtype=np.float32
     )
@@ -75,7 +77,7 @@ def test_concatenation_op(use_sparsity):
 
     train_x, train_y = get_data(n_classes)
 
-    for (x, y) in zip(train_x, train_y):
+    for x, y in zip(train_x, train_y):
         model.train_on_batch(x, y)
         model.update_parameters(0.0001)
 
