@@ -87,9 +87,7 @@ class UDTMachClassifier final : public UDTBackend {
       data::CategoricalDataTypePtr& target_config, uint32_t n_target_classes,
       bool integer_target);
 
-  uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
-    
-  }
+  uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {}
 
   UDTMachClassifier() : _classifier(nullptr, false) {}
 

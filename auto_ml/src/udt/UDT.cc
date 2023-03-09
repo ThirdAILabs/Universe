@@ -5,6 +5,7 @@
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
+#include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
@@ -12,6 +13,7 @@
 #include <telemetry/src/PrometheusClient.h>
 #include <cstddef>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -40,33 +42,40 @@ UDT::UDT(data::ColumnDataTypes data_types,
 
   auto target = data_types.at(target_col);
 
-  if (auto categorical = data::asCategorical(target)) {
+  bool has_graph_inputs = hasGraphInputs(data_types);
+  auto as_categorical = data::asCategorical(target);
+  auto as_numerical = data::asNumerical(target);
+  auto as_sequence = data::asSequence(target);
+
+  if (as_categorical || as_sequence) {
     if (!n_target_classes.has_value()) {
       throw std::invalid_argument(
           "The number of target classes must be specified for categorical "
           "data.");
     }
+  }
+
+  if (as_categorical && has_graph_inputs) {
+    // TODO(Josh): Add support for model config and user args
+    _backend = std::make_unique<UDTGraphClassifier>(
+        data_types, target_col, n_target_classes.value(), integer_target,
+        tabular_options);
+  } else if (as_categorical && !has_graph_inputs) {
     _backend = std::make_unique<UDTClassifier>(
-        data_types, temporal_tracking_relationships, target_col, categorical,
+        data_types, temporal_tracking_relationships, target_col, as_categorical,
         n_target_classes.value(), integer_target, tabular_options, model_config,
         user_args);
-  } else if (auto numerical = data::asNumerical(target)) {
+  } else if (as_numerical && !has_graph_inputs) {
     _backend = std::make_unique<UDTRegression>(
-        data_types, temporal_tracking_relationships, target_col, numerical,
+        data_types, temporal_tracking_relationships, target_col, as_numerical,
         n_target_classes, tabular_options, model_config, user_args);
-  } else if (auto sequence = data::asSequence(target)) {
-    if (!n_target_classes.has_value()) {
-      throw std::invalid_argument(
-          "The number of target classes must be specified for sequence "
-          "data.");
-    }
+  } else if (as_sequence && !has_graph_inputs) {
     _backend = std::make_unique<UDTRecurrentClassifier>(
-        data_types, temporal_tracking_relationships, target_col, sequence,
+        data_types, temporal_tracking_relationships, target_col, as_sequence,
         n_target_classes.value(), tabular_options, model_config, user_args);
   } else {
-    throw std::invalid_argument(
-        "Invalid target type. Target must be categorical, numerical, or "
-        "sequence.");
+    throwUnsupportedUDTConfigurationError(as_categorical, as_numerical,
+                                          as_sequence, has_graph_inputs);
   }
 }
 
@@ -183,12 +192,63 @@ std::shared_ptr<UDT> UDT::load_stream(std::istream& input_stream) {
   return deserialize_into;
 }
 
+bool UDT::hasGraphInputs(const data::ColumnDataTypes& data_types) {
+  uint64_t neighbor_col_count = 0;
+  uint64_t node_id_col_count = 0;
+  for (const auto& [col_name, data_type] : data_types) {
+    if (asNeighbors(data_type)) {
+      neighbor_col_count++;
+    }
+    if (asNodeID(data_type)) {
+      node_id_col_count++;
+    }
+  }
+  if (neighbor_col_count == 0 && node_id_col_count == 0) {
+    return false;
+  }
+  if (neighbor_col_count == 1 && node_id_col_count == 1) {
+    return true;
+  }
+  throw std::invalid_argument(
+      "Expected either 1 of both neighbor and node id data types (for a graph "
+      "learning problem) or 0 of both (for a non-graph learning problem). "
+      "Instead, found " +
+      std::to_string(neighbor_col_count) + " neighbor data types and " +
+      std::to_string(node_id_col_count) + " node id data types.");
+}
+
 template void UDT::serialize(cereal::BinaryInputArchive&);
 template void UDT::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void UDT::serialize(Archive& archive) {
   archive(_backend);
+}
+
+void UDT::throwUnsupportedUDTConfigurationError(
+    const data::CategoricalDataTypePtr& target_as_categorical,
+    const data::NumericalDataTypePtr& target_as_numerical,
+    const data::SequenceDataTypePtr& target_as_sequence,
+    bool has_graph_inputs) {
+  std::stringstream error_msg;
+  error_msg << "Unsupported UDT configuration: ";
+
+  if (target_as_categorical) {
+    error_msg << "categorical target";
+  } else if (target_as_numerical) {
+    error_msg << "numerical target";
+  } else if (target_as_sequence) {
+    error_msg << "sequential target";
+  } else {
+    error_msg << "non numeric/categorical/sequential target";
+  }
+
+  if (has_graph_inputs) {
+    error_msg << " with a graph dataset";
+  }
+
+  error_msg << ".";
+  throw std::invalid_argument(error_msg.str());
 }
 
 }  // namespace thirdai::automl::udt

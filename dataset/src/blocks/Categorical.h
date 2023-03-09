@@ -408,9 +408,7 @@ class RegressionCategoricalBlock final : public CategoricalBlock {
 using RegressionCategoricalBlockPtr =
     std::shared_ptr<RegressionCategoricalBlock>;
 
-class MultiHashCategoricalBlock final : public CategoricalBlock {
-
-};
+class MultiHashCategoricalBlock final : public CategoricalBlock {};
 
 }  // namespace thirdai::dataset
 

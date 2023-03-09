@@ -1,5 +1,6 @@
 
 #include "CheckLicense.h"
+#include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <dataset/src/DataSource.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/file/SignedLicense.h>
@@ -37,11 +38,13 @@ TrainPermissionsToken::TrainPermissionsToken(
   }
 
   // If the user just has a demo license and we are going to read in the dataset
-  // from the resourceName, we require FileDataSources. This prevents a user
-  // from extending the DataSource class in python and making resourceName()
-  // point to a valid file, while the actual nextLine call returns lines from
-  // some other file they want to train on.
-  if (!dynamic_cast<dataset::FileDataSource*>(training_source.get())) {
+  // from the resourceName, we require FileDataSources or ColdStartDataSources.
+  // This prevents a user from extending the DataSource class in python and
+  // making resourceName() point to a valid file, while the actual nextLine call
+  // returns lines from some other file they want to train on.
+  if (!dynamic_cast<dataset::FileDataSource*>(training_source.get()) &&
+      !dynamic_cast<automl::cold_start::ColdStartDataSource*>(
+          training_source.get())) {
     throw exceptions::LicenseCheckException(
         "Can only train on file data sources with a demo license");
   }
@@ -92,7 +95,5 @@ void endHeartbeat() { _heartbeat_thread = nullptr; }
 void setLicensePath(const std::string& license_path) {
   _license_path = license_path;
 }
-
-void disableForDemoLicenses() { assertUserHasFullAccess(); }
 
 }  // namespace thirdai::licensing
