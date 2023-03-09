@@ -6,6 +6,7 @@ import zipfile
 
 import numpy as np
 import pandas as pd
+from thirdai._thirdai import bolt
 
 
 def _download_dataset(url, zip_file, check_existence, output_dir):
@@ -563,6 +564,41 @@ def download_mnist_dataset():
 def download_yelp_chi_dataset():
     PATH = "yelp_all.csv"
     URL = "https://www.dropbox.com/s/ge2sr9iab16hc1x/yelp_all.csv"
+    TRAIN_FILE = "yelp_train.csv"
+    EVAL_FILE = "yelp_test.csv"
+
     if not os.path.exists(PATH):
         # -L will follow the redirects to correctly download the file from dropbox
         os.system(f"curl -L {URL} --output {PATH}")
+
+    all_data = pd.read_csv("yelp_all.csv")
+    all_data = all_data.sample(frac=1, random_state=42)
+
+    # Create train and test splits
+    numerical_col_names = ["col_" + str(i) for i in range(32)]
+    numerical_col_ranges = (
+        all_data[numerical_col_names].agg([min, max]).T.values.tolist()
+    )
+
+    train_length = all_data.shape[0] // 2
+    test_length = all_data.shape[0] - train_length
+    train_data, test_data = all_data.head(train_length), all_data.tail(test_length)
+
+    train_data.to_csv(TRAIN_FILE, index=False)
+
+    ground_truth = test_data["target"].to_numpy()
+    # Zero the ground truth so the model doesn't have access to it during evaluation
+    test_data["target"] = np.zeros(len(ground_truth))
+    test_data.to_csv(EVAL_FILE, index=False)
+
+    udt_data_types = {
+        "node_id": bolt.types.node_id(),
+        **{
+            col_name: bolt.types.numerical(col_range)
+            for col_range, col_name in zip(numerical_col_ranges, numerical_col_names)
+        },
+        "target": bolt.types.categorical(),
+        "neighbors": bolt.types.neighbors(),
+    }
+
+    return TRAIN_FILE, EVAL_FILE, udt_data_types, ground_truth
