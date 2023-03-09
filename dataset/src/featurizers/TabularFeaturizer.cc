@@ -17,6 +17,16 @@
 
 namespace thirdai::dataset {
 
+std::vector<BoltVector> TabularFeaturizer::featurize(
+    ColumnarInputSample& input_sample) {
+  std::vector<BoltVector> featurized_vectors(_block_lists.size());
+  for (size_t i = 0; i < _block_lists.size(); i++) {
+    featurized_vectors.at(i) =
+        _block_lists.at(i).buildVector(input_sample)->toBoltVector();
+  }
+  return featurized_vectors;
+}
+
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     ColumnarInputBatch& input_batch) {
   std::vector<std::vector<std::vector<BoltVector>>> featurized_batch(
@@ -59,10 +69,6 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
   CsvBatchRef input_batch_ref(input_batch, _delimiter,
                               expected_num_cols_in_batch);
   return featurize(input_batch_ref);
-}
-
-BoltVector TabularFeaturizer::makeInputVector(ColumnarInputSample& sample) {
-  return _block_lists.at(0).buildVector(sample)->toBoltVector();
 }
 
 /**

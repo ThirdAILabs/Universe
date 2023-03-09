@@ -30,20 +30,15 @@ class UDTGraphClassifier final : public UDTBackend {
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class) final {
-    (void)sample;
-    (void)sparse_inference;
-    (void)return_predicted_class;
-    throw exceptions::NotImplemented(
-        "Predict is not yet implemented for graph neural networks");
+    return _classifier->predict(_dataset_manager->featurizeInput(sample),
+                                sparse_inference, return_predicted_class);
   }
 
-  py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
+  py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class) final {
-    (void)sample;
-    (void)sparse_inference;
-    (void)return_predicted_class;
-    throw exceptions::NotImplemented(
-        "Predict is not yet implemented for graph neural networks");
+    return _classifier->predictBatch(
+        _dataset_manager->featurizeInputBatch(samples), sparse_inference,
+        return_predicted_class);
   }
 
   void indexNodes(const dataset::DataSourcePtr& source) final {

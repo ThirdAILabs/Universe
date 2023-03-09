@@ -7,6 +7,8 @@
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 
@@ -28,13 +30,29 @@ TabularDatasetFactory::TabularDatasetFactory(
           _data_types, provided_temporal_relationships, options.lookahead);
 
   bool parallel = force_parallel || temporal_relationships.empty();
-  _labeled_featurizer = makeFeaturizer(temporal_relationships,
-                                       /* should_update_history= */ true,
-                                       options, label_blocks, parallel);
-  _inference_featurizer =
-      makeFeaturizer(temporal_relationships,
-                     /* should_update_history= */ false, options,
-                     /* label_blocks= */ {}, parallel);
+
+  auto input_blocks_with_history_update = makeTabularInputBlocks(
+      _data_types, _label_col_names, temporal_relationships, _vectors_map,
+      _temporal_context, /* should_update_history = */ true, options);
+  auto input_blocks_without_history_update = makeTabularInputBlocks(
+      _data_types, _label_col_names, temporal_relationships, _vectors_map,
+      _temporal_context, /* should_update_history = */ false, options);
+
+  _inference_featurizer = dataset::TabularFeaturizer::make(
+      /* block_lists = */ {dataset::BlockList(
+          std::move(input_blocks_without_history_update),
+          /* hash_range= */ options.feature_hash_range)},
+      /* has_header= */ true,
+      /* delimiter= */ options.delimiter, /* parallel= */ parallel);
+
+  std::vector<dataset::BlockPtr> label_blocks_copy = label_blocks;
+  _labeled_featurizer = dataset::TabularFeaturizer::make(
+      /* block_lists = */ {dataset::BlockList(
+                               std::move(input_blocks_with_history_update),
+                               /* hash_range= */ options.feature_hash_range),
+                           dataset::BlockList(std::move(label_blocks_copy))},
+      /* has_header= */ true,
+      /* delimiter= */ options.delimiter, /* parallel= */ parallel);
 }
 
 dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
@@ -51,7 +69,7 @@ void TabularDatasetFactory::updateMetadata(const std::string& col_name,
   auto metadata_config = getColumnMetadataConfig(col_name);
 
   dataset::MapSampleRef update_ref(update);
-  auto vec = _metadata_processors.at(col_name)->makeInputVector(update_ref);
+  auto vec = _metadata_processors.at(col_name)->featurize(update_ref).at(0);
 
   const auto& key = update.at(metadata_config->key);
   _vectors_map.at(col_name)->vectors[key] = vec;
@@ -70,23 +88,6 @@ void TabularDatasetFactory::updateMetadataBatch(const std::string& col_name,
     const auto& key = updates.at(update_idx).at(metadata_config->key);
     _vectors_map.at(col_name)->vectors[key] = batch.at(update_idx);
   }
-}
-
-dataset::TabularFeaturizerPtr TabularDatasetFactory::makeFeaturizer(
-    const TemporalRelationships& temporal_relationships,
-    bool should_update_history, const TabularOptions& options,
-    std::vector<dataset::BlockPtr> label_blocks, bool parallel) {
-  auto input_blocks = makeTabularInputBlocks(
-      _data_types, _label_col_names, temporal_relationships, _vectors_map,
-      _temporal_context, should_update_history, options);
-
-  return dataset::TabularFeaturizer::make(
-      /* block_lists = */ {dataset::BlockList(
-                               std::move(input_blocks),
-                               /* hash_range= */ options.feature_hash_range),
-                           dataset::BlockList(std::move(label_blocks))},
-      /* has_header= */ true,
-      /* delimiter= */ options.delimiter, /* parallel= */ parallel);
 }
 
 PreprocessedVectorsMap TabularDatasetFactory::processAllMetadata(

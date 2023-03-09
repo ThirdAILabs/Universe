@@ -28,7 +28,7 @@ class TabularDatasetFactory {
 
   std::vector<BoltVector> featurizeInput(const MapInput& input) {
     dataset::MapSampleRef input_ref(input);
-    return {_inference_featurizer->makeInputVector(input_ref)};
+    return _inference_featurizer->featurize(input_ref);
   }
 
   std::vector<BoltBatch> featurizeInputBatch(const MapInputBatch& inputs) {
@@ -44,7 +44,7 @@ class TabularDatasetFactory {
 
   void updateTemporalTrackers(const MapInput& input) {
     dataset::MapSampleRef input_ref(input);
-    _labeled_featurizer->makeInputVector(input_ref);
+    _labeled_featurizer->featurize(input_ref);
   }
 
   void updateTemporalTrackersBatch(const MapInputBatch& inputs) {
@@ -106,11 +106,6 @@ class TabularDatasetFactory {
       std::istream& input_stream);
 
  private:
-  dataset::TabularFeaturizerPtr makeFeaturizer(
-      const TemporalRelationships& temporal_relationships,
-      bool should_update_history, const TabularOptions& options,
-      std::vector<dataset::BlockPtr> label_blocks, bool parallel);
-
   PreprocessedVectorsMap processAllMetadata(
       const ColumnDataTypes& input_data_types, const TabularOptions& options);
 

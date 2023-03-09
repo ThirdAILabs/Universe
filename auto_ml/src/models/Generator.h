@@ -589,7 +589,7 @@ class QueryCandidateGenerator {
     std::vector<std::string_view> input_vector{
         std::string_view(query.data(), query.length())};
     dataset::RowSampleRef input_vector_ref(input_vector);
-    return _inference_featurizer->makeInputVector(input_vector_ref);
+    return _inference_featurizer->featurize(input_vector_ref).at(0);
   }
 
   std::shared_ptr<dataset::BoltDataset> loadDatasetInMemory(

@@ -45,7 +45,7 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
       /* col = */ _target_col,
       /* n_classes= */ _n_target_classes);
 
-  _featurizer = dataset::TabularFeaturizer::make(
+  _labeled_featurizer = dataset::TabularFeaturizer::make(
       /* block_lists = */ {dataset::BlockList(std::move(feature_blocks),
                                               /* hash_range = */ udt::defaults::
                                                   FEATURE_HASH_RANGE),
@@ -55,20 +55,29 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
       /* has_header= */ true,
       /* delimiter= */ _delimiter, /* parallel= */ true);
 
+  _inference_featurizer = dataset::TabularFeaturizer::make(
+      /* block_lists = */ {dataset::BlockList(std::move(feature_blocks),
+                                              /* hash_range = */ udt::defaults::
+                                                  FEATURE_HASH_RANGE),
+                           dataset::BlockList(
+                               {graph_blocks.neighbor_tokens_block})},
+      /* has_header= */ true,
+      /* delimiter= */ _delimiter, /* parallel= */ true);
+
   _graph_builder = dataset::TabularFeaturizer::make(
       /* blocks = */ {dataset::BlockList({graph_blocks.builder_block})},
       /* has_header= */ true,
       /* delimiter= */ _delimiter, /* parallel= */ true);
 }
 
-dataset::DatasetLoaderPtr GraphDatasetManager::indexAndGetDatasetLoader(
+dataset::DatasetLoaderPtr GraphDatasetManager::indexAndGetLabeledDatasetLoader(
     const dataset::DataSourcePtr& data_source, bool shuffle) {
   index(data_source);
 
   data_source->restart();
 
-  return std::make_unique<dataset::DatasetLoader>(data_source, _featurizer,
-                                                  shuffle);
+  return std::make_unique<dataset::DatasetLoader>(data_source,
+                                                  _labeled_featurizer, shuffle);
 }
 
 void GraphDatasetManager::index(const dataset::DataSourcePtr& data_source) {
@@ -123,7 +132,26 @@ template void GraphDatasetManager::serialize(cereal::BinaryOutputArchive&);
 template <class Archive>
 void GraphDatasetManager::serialize(Archive& archive) {
   archive(_data_types, _target_col, _n_target_classes, _delimiter,
-          _graph_builder, _featurizer, _graph_info);
+          _graph_builder, _labeled_featurizer, _inference_featurizer,
+          _graph_info);
+}
+
+std::vector<BoltBatch> GraphDatasetManager::featurizeInputBatch(
+    const dataset::MapInputBatch& inputs) {
+  dataset::MapBatchRef inputs_ref(inputs);
+
+  std::vector<BoltBatch> result;
+
+  result.emplace_back(
+      std::move(_inference_featurizer->featurize(inputs_ref).at(0)));
+
+  return result;
+}
+
+std::vector<BoltVector> GraphDatasetManager::featurizeInput(
+    const dataset::MapInput& input) {
+  dataset::MapSampleRef input_ref(input);
+  return _inference_featurizer->featurize(input_ref);
 }
 
 }  // namespace thirdai::automl::data

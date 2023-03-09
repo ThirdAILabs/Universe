@@ -96,7 +96,7 @@ dataset::DatasetLoaderPtr RecurrentDatasetFactory::getDatasetLoader(
 std::vector<BoltVector> RecurrentDatasetFactory::featurizeInput(
     const MapInput& sample) {
   dataset::MapSampleRef sample_ref(sample);
-  return {_inference_featurizer->makeInputVector(sample_ref)};
+  return _inference_featurizer->featurize(sample_ref);
 }
 
 std::vector<BoltBatch> RecurrentDatasetFactory::featurizeInputBatch(
