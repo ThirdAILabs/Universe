@@ -32,9 +32,6 @@ def add_distributed_to_udt():
     def train_with_data_sources(
         self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
     ):
-        # checks and raises an error if the given UDT is not supported in distributed context
-        self.verify_can_distribute()
-
         train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
 
         if not verbose:
@@ -122,6 +119,9 @@ def add_distributed_to_udt():
                 filenames=["train_file_1", "train_file_2",....],
             )
         """
+
+        # checks and raises an error if the given UDT is not supported in distributed context
+        self.verify_can_distribute()
 
         train_sources = [
             DistributedUDTDatasetLoader(
@@ -219,6 +219,9 @@ def add_distributed_to_udt():
                 weak_columns=[....],
             )
         """
+        # checks and raises an error if the given UDT is not supported in distributed context
+        self.verify_can_distribute()
+
         train_sources = [
             DistributedColdStartDatasetLoader(
                 train_file=file,
