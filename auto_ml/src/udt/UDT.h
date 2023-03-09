@@ -35,14 +35,14 @@ class UDT {
       uint32_t input_dim, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
-  py::object train(const dataset::DataSourcePtr& data, float learning_rate,
-             uint32_t epochs,
-             const std::optional<ValidationDataSource>& validation,
-             std::optional<size_t> batch_size,
-             std::optional<size_t> max_in_memory_batches,
-             const std::vector<std::string>& metrics,
-             const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-             bool verbose, std::optional<uint32_t> logging_interval);
+  py::object train(
+      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+      const std::optional<ValidationDataSource>& validation,
+      std::optional<size_t> batch_size,
+      std::optional<size_t> max_in_memory_batches,
+      const std::vector<std::string>& metrics,
+      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
+      bool verbose, std::optional<uint32_t> logging_interval);
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -60,13 +60,13 @@ class UDT {
       const std::optional<std::variant<uint32_t, std::string>>& target_class);
 
   py::object coldstart(const dataset::DataSourcePtr& data,
-                 const std::vector<std::string>& strong_column_names,
-                 const std::vector<std::string>& weak_column_names,
-                 float learning_rate, uint32_t epochs,
-                 const std::vector<std::string>& metrics,
-                 const std::optional<ValidationDataSource>& validation,
-                 const std::vector<bolt::CallbackPtr>& callbacks,
-                 bool verbose) {
+                       const std::vector<std::string>& strong_column_names,
+                       const std::vector<std::string>& weak_column_names,
+                       float learning_rate, uint32_t epochs,
+                       const std::vector<std::string>& metrics,
+                       const std::optional<ValidationDataSource>& validation,
+                       const std::vector<bolt::CallbackPtr>& callbacks,
+                       bool verbose) {
     return _backend->coldstart(data, strong_column_names, weak_column_names,
                                learning_rate, epochs, metrics, validation,
                                callbacks, verbose);

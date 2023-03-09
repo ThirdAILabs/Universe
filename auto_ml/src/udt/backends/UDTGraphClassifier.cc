@@ -49,10 +49,10 @@ py::object UDTGraphClassifier::train(
                                 validation->second);
   }
 
-  return _classifier->train(train_dataset_loader, learning_rate, epochs,
-                     validation_dataset_loader, batch_size_opt,
-                     max_in_memory_batches, metrics, callbacks, verbose,
-                     logging_interval, licensing::TrainPermissionsToken(data));
+  return _classifier->train(
+      train_dataset_loader, learning_rate, epochs, validation_dataset_loader,
+      batch_size_opt, max_in_memory_batches, metrics, callbacks, verbose,
+      logging_interval, licensing::TrainPermissionsToken(data));
 }
 
 py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
