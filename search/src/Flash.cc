@@ -148,7 +148,6 @@ template void Flash<uint64_t>::serialize(cereal::BinaryOutputArchive&);
 template <typename LABEL_T>
 template <class Archive>
 void Flash<LABEL_T>::serialize(Archive& archive) {
-  licensing::disableForDemoLicenses();
   archive(_hash_function, _num_tables, _range, _hashtable);
 }
 
