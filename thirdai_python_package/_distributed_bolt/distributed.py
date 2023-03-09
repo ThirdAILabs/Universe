@@ -153,7 +153,7 @@ def add_distributed_to_udt():
         verbose: bool = True,
     ):
         """
-        This function does cold-start pretraining for UDT in the distributed setting. 
+        This function does cold-start pretraining for UDT in the distributed setting.
         ThirdAI uses Ray Core(https://docs.ray.io/en/latest/ray-core/walkthrough.html) for its
         distributed offering. This function assumes there is a ray cluster already
         running on the machine where this function is called or the machine should
@@ -173,17 +173,17 @@ def add_distributed_to_udt():
                 Hence, program could be errorneous, if each node doesn't have access to all the files.
                 However, one way around is to save the individual file on all nodes, with same name.
                 This way we could train in distributed setting without need to have shared mount.
-            strong_column_names (List[str]): The strong column names indicate which 
-                text columns are most closely related to the output class. In this 
+            strong_column_names (List[str]): The strong column names indicate which
+                text columns are most closely related to the output class. In this
                 case closely related means that all of the words in the text are useful
-                in identifying the output class in that row. For example in the 
-                case of a product catalog then a strong column could be the full title 
+                in identifying the output class in that row. For example in the
+                case of a product catalog then a strong column could be the full title
                 of the product.
-            weak_column_names (List[str]): The weak column names indicate which text 
-                columns are either more loosely related to the output class. In 
-                this case loosely related means that parts of the text are useful in 
-                identifying the output class, but there may also be parts of the 
-                text that contain more generic words or phrases that don't have as high 
+            weak_column_names (List[str]): The weak column names indicate which text
+                columns are either more loosely related to the output class. In
+                this case loosely related means that parts of the text are useful in
+                identifying the output class, but there may also be parts of the
+                text that contain more generic words or phrases that don't have as high
                 of a correlation. For example in a product catalog the description of
                 the product could be a weak column because while there is a correlation,
                 parts of the description may be fairly similar between products or be
