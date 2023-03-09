@@ -556,6 +556,9 @@ std::shared_ptr<Metric> makeMetric(const std::string& name) {
   if (RecallAtK::isRecallAtK(name)) {
     return RecallAtK::make(name);
   }
+  if (PrecisionAtK::isPrecisionAtK(name)) {
+    return PrecisionAtK::make(name);
+  }
   if (name == CategoricalCrossEntropy::NAME) {
     return std::make_shared<CategoricalCrossEntropy>();
   }
