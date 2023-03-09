@@ -1,6 +1,6 @@
 
 #include "CheckLicense.h"
-#include <auto_ml/src/cold_start/ColdStartDataSource.h>
+#include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <dataset/src/DataSource.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/file/SignedLicense.h>
