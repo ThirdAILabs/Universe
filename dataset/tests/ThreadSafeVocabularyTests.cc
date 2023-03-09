@@ -1,5 +1,6 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <gtest/gtest.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -25,12 +26,13 @@ static std::vector<std::string> generateRandomStrings(size_t n_unique,
       "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
       "abcdefghijklmnopqrstuvwxyz";
 
+  std::srand(0);
+
   std::vector<std::string> strings(n_unique * repetitions);
   for (uint32_t unique = 0; unique < n_unique; unique++) {
     std::string random_string;
     random_string.reserve(len);
 
-    std::srand(0);
     for (uint32_t i = 0; i < len; ++i) {
       random_string += alphanum[std::rand() % strlen(alphanum)];
     }
@@ -113,8 +115,8 @@ TEST(ThreadSafeVocabularyTests, InBlock) {
   auto lookup_block = StringLookupCategoricalBlock::make(
       /* col = */ 0, vocab);
 
-  TabularFeaturizer processor(/* input_blocks = */ {lookup_block},
-                              /* label_blocks = */ {});
+  TabularFeaturizer processor(
+      /* block_lists = */ {dataset::BlockList({lookup_block})});
   auto batch = processor.featurize(strings).at(0);
 
   auto uids = getUidsFromBatch(batch);
@@ -135,8 +137,8 @@ TEST(ThreadSafeVocabularyTests, InMultipleBlocks) {
       /* col = */ 0, vocab);
 
   TabularFeaturizer processor(
-      /* input_blocks = */ {lookup_block_1, lookup_block_2, lookup_block_3},
-      /* label_blocks = */ {});
+      /* block_lists = */ {dataset::BlockList(
+          {lookup_block_1, lookup_block_2, lookup_block_3})});
   auto batch = processor.featurize(strings).at(0);
 
   uint32_t lookup_block_dim = lookup_block_1->featureDim();
@@ -164,8 +166,6 @@ TEST(ThreadSafeVocabularyTests, SeenAllStringsBehavior) {
 
   getUids(vocab, seen_strings);  // Build vocabulary.
 
-  vocab.fixVocab();
-
   std::vector<uint32_t> uids = getUids(vocab, seen_strings);
 
   auto reverted_strings = backToStrings(vocab, uids);
@@ -185,7 +185,7 @@ TEST(ThreadSafeVocabularyTests, UidOutOfRangeThrowsError) {
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       ThreadSafeVocabulary::make(std::move(string_to_uid_map),
-                                 /* fixed = */ true),
+                                 /* max_vocab_size= */ 1),
       std::invalid_argument);
 }
 

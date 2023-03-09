@@ -9,6 +9,7 @@ _CATEGORICAL_DELIMITERS = [";", ":", "-", "\t", "|"]
 # the column is indeed multi-categorical (or text)
 _DELIMITER_RATIO_THRESHOLD = 1.5
 
+
 # Returns the average number of entries per row there would be if the passed in
 # delimiter was the actual delimiter
 def _get_delimiter_ratio(column: pd.Series, delimiter: str) -> float:
@@ -147,7 +148,6 @@ def semantic_type_inference(
 
     semantic_types = {}
     for column_name in df:
-
         # Mypy says this can happen sometimes, but I'm not sure when.
         if isinstance(column_name, float):
             raise ValueError(

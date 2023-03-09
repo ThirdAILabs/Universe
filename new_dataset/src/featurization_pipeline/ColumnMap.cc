@@ -1,6 +1,7 @@
 #include "ColumnMap.h"
 #include <dataset/src/DataSource.h>
 #include <dataset/src/featurizers/ProcessorUtils.h>
+#include <dataset/src/utils/CsvParser.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 #include <exception>
@@ -222,14 +223,24 @@ ColumnMap ColumnMap::createStringColumnMapFromFile(
   if (!header_string.has_value()) {
     throw std::invalid_argument("Source was found to be empty.");
   }
-  auto header = dataset::ProcessorUtils::parseCsvRow(*header_string, delimiter);
+  auto header = dataset::parsers::CSV::parseLine(*header_string, delimiter);
 
   std::vector<std::vector<std::string>> columns(header.size());
   while (auto line_str = source->nextLine()) {
-    auto line = dataset::ProcessorUtils::parseCsvRow(*line_str, delimiter);
+    auto line = dataset::parsers::CSV::parseLine(*line_str, delimiter);
     if (line.size() != header.size()) {
+      std::stringstream s;
+      for (const auto& substr : line) {
+        if (substr != line[0]) {
+          s << delimiter;
+        }
+        s << substr;
+      }
       throw std::invalid_argument(
-          "Different number of entries in row than in the header.");
+          "Received a row with a different number of entries than in the "
+          "header. Expected " +
+          std::to_string(header.size()) + " entries but received " +
+          std::to_string(line.size()) + " entries. Line: " + s.str());
     }
     for (size_t i = 0; i < columns.size(); i++) {
       columns.at(i).emplace_back(line.at(i));

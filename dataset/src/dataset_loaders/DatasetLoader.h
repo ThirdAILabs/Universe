@@ -19,8 +19,6 @@ struct DatasetShuffleConfig {
 
 const uint32_t DEFAULT_FEATURIZATION_BATCH_SIZE = 2048;
 
-using InputDatasets = std::vector<dataset::BoltDatasetPtr>;
-using LabelDataset = dataset::BoltDatasetPtr;
 using DatasetSlice = std::vector<BoltBatch>;
 class DatasetLoader final {
  public:
@@ -30,15 +28,11 @@ class DatasetLoader final {
                 size_t internal_featurization_batch_size =
                     DEFAULT_FEATURIZATION_BATCH_SIZE);
 
-  // TODO(Josh/Geordie/Nick/David): We should generalize these next two load
-  // methods to return a vector of BoltDatasets, and figure out which are
-  // inputs and which are labels in UDT
+  std::vector<BoltDatasetPtr> loadAll(size_t batch_size, bool verbose = true);
 
-  std::pair<InputDatasets, LabelDataset> loadAll(size_t batch_size,
-                                                 bool verbose = true);
-
-  std::optional<std::pair<InputDatasets, LabelDataset>> loadSome(
-      size_t batch_size, size_t num_batches, bool verbose = true);
+  std::optional<std::vector<BoltDatasetPtr>> loadSome(size_t batch_size,
+                                                      size_t num_batches,
+                                                      bool verbose = true);
 
   void restart();
 

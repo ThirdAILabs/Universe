@@ -1,20 +1,19 @@
 #pragma once
 
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/models/Generator.h>
-#include <auto_ml/src/models/ModelPipeline.h>
 #include <auto_ml/src/models/TextClassifier.h>
-#include <auto_ml/src/models/UniversalDeepTransformer.h>
+#include <auto_ml/src/udt/UDT.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
 namespace thirdai::automl::python {
 
-using models::ModelPipeline;
 using models::QueryCandidateGenerator;
 using models::TextClassifier;
-using models::UniversalDeepTransformer;
 
 void defineAutomlInModule(py::module_& module);
 
@@ -29,10 +28,6 @@ void createDeploymentSubmodule(py::module_& module);
 // Python wrappers for ModelPipline methods
 
 config::ArgumentMap createArgumentMap(const py::dict& input_args);
-
-py::object predictTokensWrapper(ModelPipeline& model,
-                                const std::vector<uint32_t>& tokens,
-                                bool use_sparse_inference);
 
 // UDT Factory
 class UDTFactory {
@@ -52,22 +47,28 @@ class UDTFactory {
                                             uint32_t n_classes,
                                             const std::string& model_size);
 
-  static UniversalDeepTransformer buildUDTClassifierWrapper(
+  static std::shared_ptr<udt::UDT> buildUDT(
       py::object& obj, data::ColumnDataTypes data_types,
-      data::UserProvidedTemporalRelationships temporal_tracking_relationships,
-      std::string target_col, std::optional<uint32_t> n_target_classes,
+      const data::UserProvidedTemporalRelationships&
+          temporal_tracking_relationships,
+      const std::string& target_col, std::optional<uint32_t> n_target_classes,
       bool integer_target, std::string time_granularity, uint32_t lookahead,
       char delimiter, const std::optional<std::string>& model_config,
       const py::dict& options);
 
+  static std::shared_ptr<udt::UDT> createUDTSpecifiedFileFormat(
+      py::object& obj, const std::string& file_format,
+      uint32_t n_target_classes, uint32_t input_dim,
+      const std::optional<std::string>& model_config,
+      const py::dict& user_args);
+
   // These need to be here instead of inside UDTFactory because otherwise I was
   // getting weird linking errors
   static constexpr uint8_t UDT_GENERATOR_IDENTIFIER = 0;
-  static constexpr uint8_t UDT_CLASSIFIER_IDENTIFIER = 1;
+  static constexpr uint8_t UDT_IDENTIFIER = 1;
   static constexpr uint8_t UDT_TEXT_CLASSIFIER_IDENTIFIER = 2;
 
-  static void save_classifier(const UniversalDeepTransformer& classifier,
-                              const std::string& filename);
+  static void save_udt(const udt::UDT& classifier, const std::string& filename);
 
   static void save_generator(const QueryCandidateGenerator& generator,
                              const std::string& filename);

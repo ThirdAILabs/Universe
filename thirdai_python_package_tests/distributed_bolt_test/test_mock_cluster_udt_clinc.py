@@ -32,7 +32,6 @@ def get_clinc_udt_model(integer_target=False):
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
 def test_distributed_udt_clinc(ray_two_node_cluster_config):
-
     udt_model = get_clinc_udt_model(integer_target=True)
 
     udt_model.train_distributed(
@@ -58,15 +57,14 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
 def test_non_integer_target_throws(ray_two_node_cluster_config):
-
     udt_model = get_clinc_udt_model(integer_target=False)
 
     with pytest.raises(
         ValueError,
-        match="UDT with categorical target without integer_target=True cannot be "
-        "trained in distributed "
-        "setting. Please convert the categorical target column into "
-        "integer target to train UDT in distributed setting.",
+        match="UDT with a categorical target cannot be trained in distributed "
+        "setting without integer_target=True. Please convert the categorical "
+        "target column into an integer target to train UDT in a distributed "
+        "setting.",
     ):
         # should fail, hence cluster_config and filenames are None
         udt_model.train_distributed(

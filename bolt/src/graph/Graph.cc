@@ -207,6 +207,11 @@ MetricData BoltGraph::train(
       callbacks.onBatchEnd(*this, train_state);
     }
 
+    // We clear the batch processing state to force the model state to be
+    // reallocated if sparsity in a layer is changed before the next call to
+    // train, evaluate, predict, etc.
+    _batch_processing_state.clear();
+
     auto train_end = std::chrono::high_resolution_clock::now();
     int64_t epoch_time =
         std::chrono::ceil<std::chrono::seconds>(train_end - train_start)
@@ -433,6 +438,11 @@ BoltGraph::getInputGradientSingle(
                        label_vector, /*batch_size= */ 1);
   backpropagate(/*vec_index= */ 0);
 
+  // We clear the batch processing state to force the model state to be
+  // reallocated if sparsity in a layer is changed before the next call to
+  // train, evaluate, predict, etc.
+  _batch_processing_state.clear();
+
   // We reset the gradients to nullptr here to prevent the bolt vector
   // from freeing the memory which is owned by the std::vector we used to
   // store the gradients
@@ -510,6 +520,11 @@ InferenceResult BoltGraph::evaluate(
     outputTracker.saveOutputBatch(_output, batch_size);
   }
 
+  // We clear the batch processing state to force the model state to be
+  // reallocated if sparsity in a layer is changed before the next call to
+  // train, evaluate, predict, etc.
+  _batch_processing_state.clear();
+
   auto test_end = std::chrono::high_resolution_clock::now();
   int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                           test_end - test_start)
@@ -556,6 +571,11 @@ BoltVector BoltGraph::predictSingle(
         /* vec_index = */ 0);
   }
 
+  // We clear the batch processing state to force the model state to be
+  // reallocated if sparsity in a layer is changed before the next call to
+  // train, evaluate, predict, etc.
+  _batch_processing_state.clear();
+
   return output_copy;
 }
 
@@ -580,6 +600,11 @@ BoltBatch BoltGraph::predictSingleBatch(std::vector<BoltBatch>&& test_data,
     forward(vec_index, nullptr);
     outputs[vec_index] = _output->getOutputVector(vec_index);
   }
+
+  // We clear the batch processing state to force the model state to be
+  // reallocated if sparsity in a layer is changed before the next call to
+  // train, evaluate, predict, etc.
+  _batch_processing_state.clear();
 
   return BoltBatch(std::move(outputs));
 }
