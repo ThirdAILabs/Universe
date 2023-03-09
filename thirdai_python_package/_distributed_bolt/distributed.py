@@ -211,9 +211,12 @@ def add_distributed_to_udt():
                 communication_type="circular",
                 cluster_address="auto",
             )
-            udt_model.train_distributed(
+            
+            udt_model.cold_start_distributed(
                 cluster_config=cluster_config,
                 filenames=["train_file_1", "train_file_2",....],
+                strong_columns=[....],
+                weak_columns=[....],
             )
         """
         train_sources = [
