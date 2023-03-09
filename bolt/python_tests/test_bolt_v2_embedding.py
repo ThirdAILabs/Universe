@@ -5,7 +5,6 @@ from thirdai import dataset
 
 
 def get_sum_model(input_dim):
-
     input_1 = bolt.nn.Input(dim=input_dim)
 
     input_2 = bolt.nn.Input(dim=input_dim)
@@ -74,7 +73,6 @@ def generate_sum_datasets_and_labels(input_dim, num_examples, batch_size=64):
 # The real thing it tests is 1. multiple inputs and 2. numpy to token datasets
 @pytest.mark.unit
 def test_embedding_op():
-
     input_dim = 10
     num_train = 10000
     num_test = 100
@@ -90,17 +88,17 @@ def test_embedding_op():
             model.train_on_batch([x1, x2], [y])
             model.update_parameters(0.01)
 
-    test_1, test_2, _, test_labels = generate_sum_datasets_and_labels(
+    test_1, test_2, _, test_labels_np = generate_sum_datasets_and_labels(
         input_dim=input_dim,
         num_examples=num_test,
     )
 
     correct = 0
     total = 0
-    for x1, x2, y in zip(test_1, test_2, test_labels):
+    for x1, x2, y_np in zip(test_1, test_2, test_labels_np):
         output = model.forward([x1, x2], use_sparsity=False)
 
-        correct += np.sum(np.argmax(output[0].activations, axis=1) == y)
+        correct += np.sum(np.argmax(output[0].activations, axis=1) == y_np)
         total += len(y)
 
     assert correct / total > 0.8
