@@ -152,6 +152,70 @@ def add_distributed_to_udt():
         metrics: List[str] = [],
         verbose: bool = True,
     ):
+        """
+        This function does cold-start pretraining for UDT in the distributed setting. 
+        ThirdAI uses Ray Core(https://docs.ray.io/en/latest/ray-core/walkthrough.html) for its
+        distributed offering. This function assumes there is a ray cluster already
+        running on the machine where this function is called or the machine should
+        have an access to a ray cluster.
+
+        To start a ray cluster see here:(https://docs.ray.io/en/latest/ray-core/walkthrough.html)
+
+        Args:
+            cluster_config (thirdai.distributed_bolt.RayTrainingClusterConfig):
+                Here, you can describe the configuration for your cluster training,
+                It includes declaring the number of workers, communication you want to use and
+                the cluster address if a remote cluster is used.
+            filenames (List[str]): List of all the split files. The current design assumes all
+                the files are accessible by all the nodes.
+
+                The current design does not guarantee independent mapping from file_ids to node_ids.
+                Hence, program could be errorneous, if each node doesn't have access to all the files.
+                However, one way around is to save the individual file on all nodes, with same name.
+                This way we could train in distributed setting without need to have shared mount.
+            strong_column_names (List[str]): The strong column names indicate which 
+                text columns are most closely related to the output class. In this 
+                case closely related means that all of the words in the text are useful
+                in identifying the output class in that row. For example in the 
+                case of a product catalog then a strong column could be the full title 
+                of the product.
+            weak_column_names (List[str]): The weak column names indicate which text 
+                columns are either more loosely related to the output class. In 
+                this case loosely related means that parts of the text are useful in 
+                identifying the output class, but there may also be parts of the 
+                text that contain more generic words or phrases that don't have as high 
+                of a correlation. For example in a product catalog the description of
+                the product could be a weak column because while there is a correlation,
+                parts of the description may be fairly similar between products or be
+                too general to completly identify which products the correspond to.
+            max_in_memory_batches (Optional[int], optional): The maximum number of batches to load in
+                memory at a given time. If this is specified then the dataset will be processed
+                in a streaming fashion. Defaults to None, which causes the entire dataset to be loaded in memory.
+            batch_size (Optional[int], optional): Batch Size for distributed training. It is the
+                batch size for overall training, per node batch size is batch_size//num_nodes.
+                Defaults to 2048.
+            learning_rate (float, optional): Learning rate for distributed training. Cold
+                -start pretraining can be very sensitive to this. A good default value is 0.001.
+            epochs (int, optional): Number of epochs to train. Defaults to 3.
+            metrics (List[str], optional): Metrics to be logged during training. Defaults to [].
+            verbose (bool, optional): Prints info about training. Defaults to True.
+
+        Returns:
+            Dict: returns
+
+        Example:
+
+            import thirdai
+            cluster_config = thirdai.distributed_bolt.RayTrainingClusterConfig(
+                num_workers=2,
+                communication_type="circular",
+                cluster_address="auto",
+            )
+            udt_model.train_distributed(
+                cluster_config=cluster_config,
+                filenames=["train_file_1", "train_file_2",....],
+            )
+        """
         train_sources = [
             DistributedColdStartDatasetLoader(
                 train_file=file,
