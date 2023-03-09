@@ -62,6 +62,22 @@ dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
                                                   /* shuffle= */ shuffle);
 }
 
+std::vector<BoltBatch> TabularDatasetFactory::featurizeInputBatch(
+    const MapInputBatch& inputs) {
+  if (inputs.empty()) {
+    throw std::invalid_argument("Cannot featurize empty batch.");
+  }
+
+  dataset::MapBatchRef inputs_ref(inputs);
+
+  std::vector<BoltBatch> result;
+
+  result.emplace_back(
+      std::move(_inference_featurizer->featurize(inputs_ref).at(0)));
+
+  return result;
+}
+
 void TabularDatasetFactory::updateMetadata(const std::string& col_name,
                                            const MapInput& update) {
   verifyColumnMetadataExists(col_name);
@@ -198,5 +214,4 @@ void TabularDatasetFactory::serialize(Archive& archive) {
           _vectors_map, _temporal_context, _data_types, _label_col_names,
           _delimiter);
 }
-
 }  // namespace thirdai::automl::data

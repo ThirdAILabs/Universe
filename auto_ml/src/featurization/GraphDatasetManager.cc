@@ -1,4 +1,5 @@
 #include "GraphDatasetManager.h"
+#include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
@@ -7,6 +8,7 @@
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/blocks/GraphBlocks.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
+#include <stdexcept>
 
 namespace thirdai::automl::data {
 
@@ -38,29 +40,26 @@ GraphDatasetManager::GraphDatasetManager(data::ColumnDataTypes data_types,
       /* temporal_relationships = */ {},
       /* vectors_map = */ {},
       /* options = */ options);
-
   feature_blocks.push_back(graph_blocks.normalized_neighbors_block);
 
-  dataset::BlockPtr label_block = dataset::NumericalCategoricalBlock::make(
-      /* col = */ _target_col,
-      /* n_classes= */ _n_target_classes);
+  auto feature_blocklist =
+      dataset::BlockList(std::move(feature_blocks),
+                         /* hash_range = */ udt::defaults::FEATURE_HASH_RANGE);
+  auto neighbor_tokens_blocklist =
+      dataset::BlockList({graph_blocks.neighbor_tokens_block});
+  auto label_blocklist =
+      dataset::BlockList({dataset::NumericalCategoricalBlock::make(
+          /* col = */ _target_col,
+          /* n_classes= */ _n_target_classes)});
 
   _labeled_featurizer = dataset::TabularFeaturizer::make(
-      /* block_lists = */ {dataset::BlockList(std::move(feature_blocks),
-                                              /* hash_range = */ udt::defaults::
-                                                  FEATURE_HASH_RANGE),
-                           dataset::BlockList(
-                               {graph_blocks.neighbor_tokens_block}),
-                           dataset::BlockList({label_block})},
+      /* block_lists = */ {feature_blocklist, neighbor_tokens_blocklist,
+                           label_blocklist},
       /* has_header= */ true,
       /* delimiter= */ _delimiter, /* parallel= */ true);
 
   _inference_featurizer = dataset::TabularFeaturizer::make(
-      /* block_lists = */ {dataset::BlockList(std::move(feature_blocks),
-                                              /* hash_range = */ udt::defaults::
-                                                  FEATURE_HASH_RANGE),
-                           dataset::BlockList(
-                               {graph_blocks.neighbor_tokens_block})},
+      /* block_lists = */ {feature_blocklist, neighbor_tokens_blocklist},
       /* has_header= */ true,
       /* delimiter= */ _delimiter, /* parallel= */ true);
 
@@ -138,12 +137,22 @@ void GraphDatasetManager::serialize(Archive& archive) {
 
 std::vector<BoltBatch> GraphDatasetManager::featurizeInputBatch(
     const dataset::MapInputBatch& inputs) {
-  dataset::MapBatchRef inputs_ref(inputs);
+  if (inputs.empty()) {
+    throw std::invalid_argument("Cannot featurize empty batch.");
+  }
+  std::vector<std::vector<BoltVector>> raw_vectors(inputs.size());
+  for (size_t vec_id = 0; vec_id < inputs.size(); vec_id++) {
+    raw_vectors.at(vec_id) = featurizeInput(inputs.at(vec_id));
+  }
 
   std::vector<BoltBatch> result;
-
-  result.emplace_back(
-      std::move(_inference_featurizer->featurize(inputs_ref).at(0)));
+  for (size_t batch_id = 0; batch_id < raw_vectors.at(0).size(); batch_id++) {
+    std::vector<BoltVector> batch;
+    for (size_t vec_id = 0; vec_id < inputs.size(); vec_id++) {
+      batch.push_back(std::move(raw_vectors.at(vec_id).at(batch_id)));
+    }
+    result.emplace_back(std::move(batch));
+  }
 
   return result;
 }

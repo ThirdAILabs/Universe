@@ -31,16 +31,7 @@ class TabularDatasetFactory {
     return _inference_featurizer->featurize(input_ref);
   }
 
-  std::vector<BoltBatch> featurizeInputBatch(const MapInputBatch& inputs) {
-    dataset::MapBatchRef inputs_ref(inputs);
-
-    std::vector<BoltBatch> result;
-
-    result.emplace_back(
-        std::move(_inference_featurizer->featurize(inputs_ref).at(0)));
-
-    return result;
-  }
+  std::vector<BoltBatch> featurizeInputBatch(const MapInputBatch& inputs);
 
   void updateTemporalTrackers(const MapInput& input) {
     dataset::MapSampleRef input_ref(input);
