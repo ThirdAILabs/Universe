@@ -166,6 +166,12 @@ class UDTBackend {
     return nullptr;
   }
 
+  /**
+   * Returns metadata for ColdStart which are needed to be passed to
+   * ColdStartPreprocessing. Optional Method that is not supported by
+   * defaults for backends. This method is primarily used for distributed
+   * training.
+   */
   virtual cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
     throw notSupported("getColdStartMetaData");
   }
