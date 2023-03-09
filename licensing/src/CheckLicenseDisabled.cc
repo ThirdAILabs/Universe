@@ -35,6 +35,4 @@ void endHeartbeat() {}
 
 void setLicensePath(const std::string& license_path) { (void)license_path; }
 
-void disableForDemoLicenses() {}
-
 }  // namespace thirdai::licensing
