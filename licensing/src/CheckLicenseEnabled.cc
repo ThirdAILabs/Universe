@@ -1,7 +1,7 @@
 
 #include "CheckLicense.h"
-#include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/file/SignedLicense.h>
 #include <licensing/src/heartbeat/Heartbeat.h>
