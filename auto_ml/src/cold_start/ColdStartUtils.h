@@ -36,7 +36,7 @@ class ColdStartMetaData {
   static ColdStartMetaDataPtr load_stream(std::istream& input_stream);
 
  private:
-  //private constructor for cereal
+  // private constructor for cereal
   ColdStartMetaData(){};
 
   friend class cereal::access;

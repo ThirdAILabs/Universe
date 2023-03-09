@@ -7,7 +7,6 @@
 #include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 #include <new_dataset/src/featurization_pipeline/columns/VectorColumns.h>
 
-
 namespace thirdai::automl::cold_start {
 
 void ColdStartMetaData::save(const std::string& filename) const {

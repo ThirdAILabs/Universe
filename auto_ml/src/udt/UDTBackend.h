@@ -1,8 +1,8 @@
 #pragma once
 
 #include <bolt/src/callbacks/Callback.h>
-#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/DataSource.h>
