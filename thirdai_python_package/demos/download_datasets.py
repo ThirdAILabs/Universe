@@ -582,7 +582,10 @@ def download_yelp_chi_dataset(seed=42):
     # Create train and test splits
     train_length = all_data.shape[0] // 2
     test_length = all_data.shape[0] - train_length
-    train_data, test_data = all_data.head(train_length), all_data.tail(test_length)
+    train_data, test_data = (
+        all_data.head(train_length).copy(),
+        all_data.tail(test_length).copy(),
+    )
     train_data.to_csv(TRAIN_FILE, index=False)
 
     # Save the test data at first with the labels so that we can create inference samples
