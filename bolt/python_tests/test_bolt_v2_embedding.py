@@ -99,6 +99,6 @@ def test_embedding_op():
         output = model.forward([x1, x2], use_sparsity=False)
 
         correct += np.sum(np.argmax(output[0].activations, axis=1) == y_np)
-        total += len(y)
+        total += len(y_np)
 
     assert correct / total > 0.8
