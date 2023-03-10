@@ -346,6 +346,7 @@ set(THIRDAI_SOURCES
     bolt/src/graph/nodes/FullyConnected.cc
     bolt/src/graph/nodes/LayerNorm.cc
     bolt/src/graph/nodes/Input.cc
+    bolt/src/graph/nodes/Sparsification.cc
     bolt/src/graph/InferenceOutputTracker.cc
     bolt/src/layers/EmbeddingLayer.cc
     bolt/src/layers/FullyConnectedLayer.cc

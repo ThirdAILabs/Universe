@@ -94,8 +94,9 @@ class BoltVectorNorm {
     double norm = 0.0;
     switch (norm_order) {
       case LPNorm::L1: {
-        std::for_each(activations, activations + len,
-                      [&norm](float activation) { norm += fabs(activation); });
+        std::for_each(
+            activations, activations + len,
+            [&norm](float activation) { norm += std::abs(activation); });
 
         return norm;
       }
@@ -108,12 +109,12 @@ class BoltVectorNorm {
       }
       case LPNorm::LInfinity: {
         assert(activations != nullptr);
-        norm = static_cast<double>(abs(*activations));
-        std::for_each(
-            activations, activations + len, [&norm](float activation) {
-              norm =
-                  std::max<double>(norm, fabs(static_cast<double>(activation)));
-            });
+        norm = std::abs(*activations);
+        std::for_each(activations, activations + len,
+                      [&norm](float activation) {
+                        norm = std::max<double>(
+                            norm, std::abs(static_cast<double>(activation)));
+                      });
 
         return norm;
       }

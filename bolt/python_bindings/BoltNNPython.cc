@@ -12,6 +12,7 @@
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/LayerNorm.h>
+#include <bolt/src/graph/nodes/Sparsification.h>
 #include <bolt/src/graph/nodes/Switch.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/detail/common.h>
@@ -291,6 +292,11 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
           py::return_value_policy::reference_internal,
           "Returns a ParameterReference object to the weight gradients "
           "matrix.");
+
+  py::class_<SparsificationNode, SparsificationNodePtr, Node>(nn_submodule,
+                                                              "Sparsification")
+      .def(py::init(&SparsificationNode::make), py::arg("sparsity"))
+      .def("__call__", &SparsificationNode::addPredecessor, py::arg("input"));
 
   py::class_<DotProductNode, DotProductNodePtr, Node>(nn_submodule,
                                                       "DotProduct")

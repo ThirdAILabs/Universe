@@ -3,7 +3,7 @@ enable_testing()
 include(GoogleTest)
 
 set(DAG_MOCK_TESTS LayerNormNodeTest ConcatenatedNodeTest GraphTraversalTest
-                   NodeStateMachineTest)
+                   NodeStateMachineTest SparsificationTest)
 
 set(DAG_MAIN_TESTS
     FullyConnectedDagTest
