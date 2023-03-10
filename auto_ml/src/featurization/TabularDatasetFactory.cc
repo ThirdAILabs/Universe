@@ -11,8 +11,8 @@
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
-#include <utility>
 #include <optional>
+#include <utility>
 
 namespace thirdai::automl::data {
 
