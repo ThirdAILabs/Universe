@@ -27,7 +27,7 @@ class PrimaryWorker(Worker):
         train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
-        validation_source,
+        validation_context,
     ):
         super().__init__(
             num_workers=num_workers,
