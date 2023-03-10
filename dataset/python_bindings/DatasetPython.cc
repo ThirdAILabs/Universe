@@ -303,8 +303,9 @@ void createDatasetSubmodule(py::module_& module) {
       .def("restart", &DataSource::restart);
 
   py::class_<cold_start::ColdStartDataSource, dataset::DataSource,
-             cold_start::ColdStartDataSourcePtr>(dataset_submodule,
-                                                 "ColdStartDataSource"); // NOLINT
+             cold_start::ColdStartDataSourcePtr>(
+      dataset_submodule,
+      "ColdStartDataSource");  // NOLINT
 
   py::class_<FileDataSource, DataSource, std::shared_ptr<FileDataSource>>(
       dataset_submodule, "FileDataSource")
