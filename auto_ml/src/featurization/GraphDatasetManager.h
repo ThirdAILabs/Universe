@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/featurization/TabularOptions.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -12,15 +13,20 @@ class GraphDatasetManager {
   GraphDatasetManager(data::ColumnDataTypes data_types, std::string target_col,
                       uint32_t n_target_classes, const TabularOptions& options);
 
-  dataset::DatasetLoaderPtr indexAndGetDatasetLoader(
+  dataset::DatasetLoaderPtr indexAndGetLabeledDatasetLoader(
       const dataset::DataSourcePtr& data_source, bool shuffle);
 
   void index(const dataset::DataSourcePtr& data_source);
 
+  std::vector<BoltVector> featurizeInput(const dataset::MapInput& input);
+
+  std::vector<BoltBatch> featurizeInputBatch(
+      const dataset::MapInputBatch& inputs);
+
   void clearGraph() { _graph_info->clear(); }
 
   std::vector<uint32_t> getInputDims() const {
-    return _featurizer->getDimensions();
+    return _inference_featurizer->getDimensions();
   }
 
   uint32_t getLabelDim() const { return _n_target_classes; }
@@ -30,7 +36,8 @@ class GraphDatasetManager {
   std::string _target_col;
   uint32_t _n_target_classes;
   char _delimiter;
-  dataset::TabularFeaturizerPtr _graph_builder, _featurizer;
+  dataset::TabularFeaturizerPtr _graph_builder, _labeled_featurizer,
+      _inference_featurizer;
   GraphInfoPtr _graph_info;
 
   GraphDatasetManager() {}

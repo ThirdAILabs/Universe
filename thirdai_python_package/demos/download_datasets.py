@@ -18,6 +18,18 @@ def _download_dataset(url, zip_file, check_existence, output_dir):
             zip_ref.extractall(output_dir)
 
 
+def _create_inference_samples(filename, label_col):
+    df = pd.read_csv(filename)
+    inference_samples = []
+    for _, row in df.iterrows():
+        sample = dict(row)
+        label = sample[label_col]
+        del sample[label_col]
+        sample = {x: str(y) for x, y in sample.items()}
+        inference_samples.append((sample, label))
+    return inference_samples
+
+
 def to_udt_input_batch(dataframe):
     return [
         {col_name: str(col_value) for col_name, col_value in record.items()}
@@ -464,28 +476,25 @@ def download_brazilian_houses_dataset():
     TRAIN_FILE = "./brazilian_houses_train.csv"
     TEST_FILE = "./brazilian_houses_test.csv"
 
-    import datasets
+    if not os.path.exists(TRAIN_FILE) or not os.path.exists(TEST_FILE):
+        import datasets
 
-    dataset = datasets.load_dataset(
-        "inria-soda/tabular-benchmark", data_files="reg_num/Brazilian_houses.csv"
+        dataset = datasets.load_dataset(
+            "inria-soda/tabular-benchmark", data_files="reg_num/Brazilian_houses.csv"
+        )
+
+        df = pd.DataFrame(dataset["train"].shuffle())
+
+        # Split in to train/test, there are about 10,000 rows in entire dataset.
+        train_df = df.iloc[:8000, :]
+        test_df = df.iloc[8000:, :]
+
+        train_df.to_csv(TRAIN_FILE, index=False)
+        test_df.to_csv(TEST_FILE, index=False)
+
+    inference_samples = _create_inference_samples(
+        filename=TEST_FILE, label_col="totalBRL"
     )
-
-    df = pd.DataFrame(dataset["train"].shuffle())
-
-    # Split in to train/test, there are about 10,000 rows in entire dataset.
-    train_df = df.iloc[:8000, :]
-    test_df = df.iloc[8000:, :]
-
-    train_df.to_csv(TRAIN_FILE, index=False)
-    test_df.to_csv(TEST_FILE, index=False)
-
-    inference_samples = []
-    for _, row in test_df.iterrows():
-        sample = dict(row)
-        label = sample["totalBRL"]
-        del sample["totalBRL"]
-        sample = {x: str(y) for x, y in sample.items()}
-        inference_samples.append((sample, label))
 
     return TRAIN_FILE, TEST_FILE, inference_samples
 
@@ -529,16 +538,7 @@ def download_internet_ads_dataset(seed=42):
             test_file.write(header)
             test_file.writelines(lines[train_test_split:])
 
-    inference_samples = []
-    with open(TEST_FILE, "r") as test_file:
-        for line in test_file.readlines()[1:]:
-            column_vals = {
-                col_name: value
-                for col_name, value in zip(column_names, line.split(","))
-            }
-            label = column_vals["label"].strip()
-            del column_vals["label"]
-            inference_samples.append((column_vals, label))
+    inference_samples = _create_inference_samples(filename=TEST_FILE, label_col="label")
 
     return TRAIN_FILE, TEST_FILE, inference_samples
 
@@ -561,35 +561,42 @@ def download_mnist_dataset():
     return TRAIN_FILE, TEST_FILE
 
 
-def download_yelp_chi_dataset():
+def download_yelp_chi_dataset(seed=42):
     PATH = "yelp_all.csv"
     URL = "https://www.dropbox.com/s/ge2sr9iab16hc1x/yelp_all.csv"
     TRAIN_FILE = "yelp_train.csv"
-    EVAL_FILE = "yelp_test.csv"
+    TEST_FILE = "yelp_test.csv"
 
     if not os.path.exists(PATH):
         # -L will follow the redirects to correctly download the file from dropbox
         os.system(f"curl -L {URL} --output {PATH}")
 
     all_data = pd.read_csv("yelp_all.csv")
-    all_data = all_data.sample(frac=1, random_state=42)
+    all_data = all_data.sample(frac=1, random_state=seed)
 
-    # Create train and test splits
     numerical_col_names = ["col_" + str(i) for i in range(32)]
     numerical_col_ranges = (
         all_data[numerical_col_names].agg([min, max]).T.values.tolist()
     )
 
+    # Create train and test splits
     train_length = all_data.shape[0] // 2
     test_length = all_data.shape[0] - train_length
-    train_data, test_data = all_data.head(train_length), all_data.tail(test_length)
-
+    train_data, test_data = (
+        all_data.head(train_length).copy(),
+        all_data.tail(test_length).copy(),
+    )
     train_data.to_csv(TRAIN_FILE, index=False)
 
-    ground_truth = test_data["target"].to_numpy()
+    # Save the test data at first with the labels so that we can create inference samples
+    test_data.to_csv(TEST_FILE, index=False)
+    inference_samples = _create_inference_samples(
+        filename=TEST_FILE, label_col="target"
+    )
+
     # Zero the ground truth so the model doesn't have access to it during evaluation
-    test_data["target"] = np.zeros(len(ground_truth))
-    test_data.to_csv(EVAL_FILE, index=False)
+    test_data["target"] = np.zeros(test_length)
+    test_data.to_csv(TEST_FILE, index=False)
 
     udt_data_types = {
         "node_id": bolt.types.node_id(),
@@ -601,4 +608,4 @@ def download_yelp_chi_dataset():
         "neighbors": bolt.types.neighbors(),
     }
 
-    return TRAIN_FILE, EVAL_FILE, udt_data_types, ground_truth
+    return TRAIN_FILE, TEST_FILE, inference_samples, udt_data_types

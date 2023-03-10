@@ -37,16 +37,16 @@ py::object UDTGraphClassifier::train(
     const std::vector<std::string>& metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
-  auto train_dataset_loader =
-      _dataset_manager->indexAndGetDatasetLoader(data, /* shuffle = */ true);
+  auto train_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
+      data, /* shuffle = */ true);
 
   std::optional<ValidationDatasetLoader> validation_dataset_loader =
       std::nullopt;
   if (validation) {
-    validation_dataset_loader =
-        ValidationDatasetLoader(_dataset_manager->indexAndGetDatasetLoader(
-                                    validation->first, /* shuffle = */ false),
-                                validation->second);
+    validation_dataset_loader = ValidationDatasetLoader(
+        _dataset_manager->indexAndGetLabeledDatasetLoader(
+            validation->first, /* shuffle = */ false),
+        validation->second);
   }
 
   return _classifier->train(
@@ -60,8 +60,8 @@ py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
                                         bool sparse_inference,
                                         bool return_predicted_class,
                                         bool verbose, bool return_metrics) {
-  auto eval_dataset_loader =
-      _dataset_manager->indexAndGetDatasetLoader(data, /* shuffle = */ false);
+  auto eval_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
+      data, /* shuffle = */ false);
 
   return _classifier->evaluate(eval_dataset_loader, metrics, sparse_inference,
                                return_predicted_class, verbose, return_metrics);
