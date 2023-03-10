@@ -46,7 +46,7 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
                                             defaults::FREEZE_HASH_TABLES);
 }
 
-void UDTRegression::train(
+py::object UDTRegression::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
     const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
@@ -70,9 +70,11 @@ void UDTRegression::train(
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  utils::train(_model, train_dataset, train_config, batch_size,
-               max_in_memory_batches,
-               /* freeze_hash_tables= */ _freeze_hash_tables);
+  auto output = utils::train(_model, train_dataset, train_config, batch_size,
+                             max_in_memory_batches,
+                             /* freeze_hash_tables= */ _freeze_hash_tables);
+
+  return py::cast(output);
 }
 
 py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,

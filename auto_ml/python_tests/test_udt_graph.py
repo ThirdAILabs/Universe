@@ -9,6 +9,98 @@ from thirdai import bolt
 pytestmark = [pytest.mark.unit]
 
 
+@pytest.fixture(scope="module")
+def train_udt_on_yelp_chi(download_yelp_chi_dataset):
+    (
+        train_data_path,
+        eval_data_path,
+        inference_samples,
+        data_types,
+    ) = download_yelp_chi_dataset
+
+    ground_truth = [inference_sample[1] for inference_sample in inference_samples]
+
+    model = bolt.UniversalDeepTransformer(
+        data_types=data_types,
+        target="target",
+        n_target_classes=2,
+        integer_target=True,
+        # Turn off pairgrams to make the test fast (~1 min on my m1)
+        options={"contextual_columns": False},
+    )
+
+    # We need to index these nodes because the model needs to know about them
+    # for training: nodes in the train set have neighbors in the eval set, and
+    # the model uses neighbor features. The eval set has all labels set to 0,
+    # so this will not leak testing information.
+    model.index_nodes(eval_data_path)
+
+    auc = 0.5  # Silences warning about auc possibly being unset
+    for epoch in range(15):
+        train_metrics = model.train(
+            train_data_path,
+            learning_rate=0.001,
+            epochs=1,
+            metrics=["categorical_accuracy"],
+        )
+        assert train_metrics["categorical_accuracy"][-1] > 0
+
+        activations = model.evaluate("yelp_test.csv")
+        auc = metrics.roc_auc_score(ground_truth, activations[:, 1])
+        print("AUC: ", auc)
+
+    return model, auc
+
+
+def test_udt_yelp_chi_accuracy(train_udt_on_yelp_chi):
+    # Gets around 0.91
+    _, auc = train_udt_on_yelp_chi
+    assert auc > 0.89
+
+
+def test_udt_yelp_chi_save_load(train_udt_on_yelp_chi, download_yelp_chi_dataset):
+    _, _, inference_samples, _ = download_yelp_chi_dataset
+    model, auc = train_udt_on_yelp_chi
+
+    ground_truth = [inference_sample[1] for inference_sample in inference_samples]
+    model.save("udt_graph.serialized")
+    model = bolt.UniversalDeepTransformer.load("udt_graph.serialized")
+    activations = model.evaluate("yelp_test.csv")
+    new_auc = metrics.roc_auc_score(ground_truth, activations[:, 1])
+    assert new_auc == auc
+
+
+def test_udt_yelp_chi_predictions(train_udt_on_yelp_chi, download_yelp_chi_dataset):
+    _, _, inference_samples, _ = download_yelp_chi_dataset
+    model, auc = train_udt_on_yelp_chi
+
+    single_predictions = []
+    for sample, _ in inference_samples:
+        prediction = model.predict(sample)
+        single_predictions.append(prediction)
+    single_predictions = np.array(single_predictions)
+
+    batch_size = 64
+    batch_predictions = []
+    for batch_start in range(0, len(inference_samples), batch_size):
+        predictions = model.predict_batch(
+            [
+                sample[0]
+                for sample in inference_samples[batch_start : batch_start + batch_size]
+            ]
+        )
+        batch_predictions += list(predictions)
+    batch_predictions = np.array(batch_predictions)
+
+    assert np.array_equal(batch_predictions, single_predictions)
+
+    ground_truth = [inference_sample[1] for inference_sample in inference_samples]
+    single_prediction_auc = metrics.roc_auc_score(
+        ground_truth, single_predictions[:, 1]
+    )
+    assert auc == single_prediction_auc
+
+
 def get_no_features_gnn(num_classes):
     return bolt.UniversalDeepTransformer(
         data_types={
@@ -20,62 +112,6 @@ def get_no_features_gnn(num_classes):
         n_target_classes=num_classes,
         integer_target=True,
     )
-
-
-def test_udt_on_yelp_chi(download_yelp_chi_dataset):
-    all_data = pd.read_csv("yelp_all.csv")
-    numerical_col_names = ["col_" + str(i) for i in range(32)]
-    numerical_col_ranges = (
-        all_data[numerical_col_names].agg([min, max]).T.values.tolist()
-    )
-
-    train_data, test_data = train_test_split(all_data, test_size=0.5)
-
-    train_data = train_data.sample(frac=1)
-    train_data.to_csv("yelp_train.csv", index=False)
-
-    ground_truth = test_data["target"].to_numpy()
-    test_data["target"] = np.zeros(len(ground_truth))
-    test_data.to_csv("yelp_test.csv", index=False)
-
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "node_id": bolt.types.node_id(),
-            **{
-                col_name: bolt.types.numerical(col_range)
-                for col_range, col_name in zip(
-                    numerical_col_ranges, numerical_col_names
-                )
-            },
-            "target": bolt.types.categorical(),
-            "neighbors": bolt.types.neighbors(),
-        },
-        target="target",
-        n_target_classes=2,
-        integer_target=True,
-        # Turn off pairgrams to make the test fast (~1 min on my m1)
-        options={"contextual_columns": False},
-    )
-
-    # We need to index these nodes because the model needs to know about them
-    # for training: nodes in the train set have neighbors in the test set, and
-    # the model uses neighbor features.
-    model.index_nodes("yelp_test.csv")
-
-    for epoch in range(15):
-        model.train("yelp_train.csv", learning_rate=0.001, epochs=1)
-        activations = model.evaluate("yelp_test.csv")
-        auc = metrics.roc_auc_score(ground_truth, activations[:, 1])
-        print("AUC: ", auc)
-
-    # Gets around 0.91
-    assert auc > 0.89
-
-    model.save("udt_graph.serialized")
-    model = bolt.UniversalDeepTransformer.load("udt_graph.serialized")
-    activations = model.evaluate("yelp_test.csv")
-    new_auc = metrics.roc_auc_score(ground_truth, activations[:, 1])
-    assert new_auc == auc
 
 
 def test_graph_clearing_and_indexing():
