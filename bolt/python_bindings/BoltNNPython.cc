@@ -303,7 +303,9 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
 
   py::class_<Input, InputPtr, Node>(nn_submodule, "Input")
       .def(py::init(&Input::make), py::arg("dim"),
-           "Constructs an input layer node for the graph.");
+           "Constructs an input layer node for the graph.")
+      .def("clone_for_param_sharing", &Input::cloneForParamSharing)
+      .def("use_params", &Input::useParams, py::arg("other"));
 
   py::class_<NormalizationLayerConfig>(nn_submodule, "LayerNormConfig")
       .def_static("make", &NormalizationLayerConfig::makeConfig)

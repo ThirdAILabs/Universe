@@ -28,7 +28,6 @@ def generate_text_classification_dataset():
 @pytest.fixture(scope="session")
 def load_dataset(generate_text_classification_dataset):
     text_block = blocks.TextPairGram(col=1)
-    generate_text_classification_dataset(FILENAME, DELIM)
     featurizer = TabularFeaturizer(
         block_lists=[
             BlockList([text_block]),
@@ -67,7 +66,7 @@ def manually_defined_model(model_type, input_dim):
 
 
 def clone_without_sharing_params(model):
-    [input_node, hidden_node, output_node] = model.get_nodes()
+    [input_node, hidden_node, output_node] = model.nodes()
 
     input_layer = input_node.clone_for_param_sharing()
     hidden_layer = hidden_node.clone_for_param_sharing()(input_layer)
@@ -80,7 +79,7 @@ def clone_without_sharing_params(model):
 
 
 def share_params(original, clone):
-    for clone_node, original_node in zip(clone.get_nodes(), original.get_nodes()):
+    for clone_node, original_node in zip(clone.nodes(), original.nodes()):
         clone_node.use_params(original_node)
 
     return clone
