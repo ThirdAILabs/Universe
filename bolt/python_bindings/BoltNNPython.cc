@@ -164,6 +164,8 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            " * sampling_config (SamplingConfig) - Sampling config object to "
            "initialize hash tables/functions.")
 #endif
+      .def("uncompiled", &FullyConnectedNode::uncompiled)
+      .def("copy", &FullyConnectedNode::copy, py::arg("other"))
       .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),
            "Tells the graph which layer should act as input to this fully "
@@ -262,6 +264,8 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            "select as part of the embedding for each embedding lookup.\n"
            " * log_embedding_block_size: Int (positive) The log base 2 of the "
            "total size of the embedding block.\n")
+      .def("uncompiled", &EmbeddingNode::uncompiled)
+      .def("copy", &EmbeddingNode::copy, py::arg("other"))
       .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
            "Tells the graph which token input to use for this Embedding Node.")
       .def_property_readonly(
