@@ -18,6 +18,43 @@ EmbeddingNode::EmbeddingNode(uint64_t num_embedding_lookups,
       _outputs(std::nullopt),
       _token_input(nullptr) {}
 
+NodePtr EmbeddingNode::cloneForParamSharing() {
+  auto config = _config.value_or(_embedding_layer->getConfig());
+
+  return std::shared_ptr<EmbeddingNode>(
+      new EmbeddingNode(config.numEmbeddingLookups(), config.lookupSize(),
+                        config.logEmbeddingBlockSize(),
+                        config.reductionString(), config.numTokensPerInput()));
+}
+void EmbeddingNode::useParams(NodePtr& other) {
+  auto other_emb = std::dynamic_pointer_cast<EmbeddingNode>(other);
+  if (!other_emb) {
+    throw std::invalid_argument(
+        "Cannot share non-embedding node params with embedding node.");
+  }
+
+  NodeState node_state = getState();
+  if (node_state == NodeState::Constructed ||
+      node_state == NodeState::PredecessorsSet) {
+    throw std::invalid_argument("Called copy() before compiling.");
+  }
+
+  NodeState other_node_state = other_emb->getState();
+  if (other_node_state == NodeState::Constructed ||
+      other_node_state == NodeState::PredecessorsSet) {
+    throw std::invalid_argument("Tried to copy a precompiled layer.");
+  }
+
+  if (other_emb->outputDim() != outputDim()) {
+    std::stringstream invalid_size;
+    invalid_size << "incompatible embeddings sizes " << outputDim() << " vs. "
+                 << other_emb->outputDim() << ".";
+    throw std::invalid_argument(invalid_size.str());
+  }
+
+  _embedding_layer = other_emb->_embedding_layer;
+}
+
 uint32_t EmbeddingNode::outputDim() const {
   NodeState node_state = getState();
   if (node_state == NodeState::Constructed ||

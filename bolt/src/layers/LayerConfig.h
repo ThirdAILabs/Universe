@@ -113,6 +113,8 @@ class EmbeddingLayerConfig {
     return reductionTypeToString(_reduction);
   }
 
+  static std::string reductionTypeToString(EmbeddingReductionType reduction);
+
   uint64_t getOutputDim() const {
     uint64_t output_dim = _num_embedding_lookups * _lookup_size;
     if (_reduction == EmbeddingReductionType::CONCATENATION) {
@@ -140,8 +142,6 @@ class EmbeddingLayerConfig {
 
   static EmbeddingReductionType getReductionType(
       const std::string& reduction_name);
-
-  static std::string reductionTypeToString(EmbeddingReductionType reduction);
 };
 
 class NormalizationLayerConfig {

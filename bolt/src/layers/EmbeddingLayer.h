@@ -55,6 +55,16 @@ class EmbeddingLayer {
     return _optimizer->gradients;
   }
 
+  EmbeddingLayerConfig getConfig() const {
+    return EmbeddingLayerConfig(
+        /* num_embedding_lookups= */ _num_lookups_per_token,
+        /* lookup_size=*/_lookup_size,
+        /* log_embedding_block_size= */ _log_embedding_block_size,
+        /* reduction= */
+        EmbeddingLayerConfig::reductionTypeToString(_reduction),
+        /* num_tokens_per_input= */ _num_tokens_per_input);
+  }
+
   EmbeddingLayer(const EmbeddingLayer&) = delete;
   EmbeddingLayer(EmbeddingLayer&&) = delete;
   EmbeddingLayer& operator=(const EmbeddingLayer&) = delete;
