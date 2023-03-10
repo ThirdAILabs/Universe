@@ -101,10 +101,6 @@ std::vector<BoltVector> RecurrentDatasetFactory::featurizeInput(
 
 std::vector<BoltBatch> RecurrentDatasetFactory::featurizeInputBatch(
     const MapInputBatch& samples) {
-  if (samples.empty()) {
-    throw std::invalid_argument("Cannot featurize empty batch.");
-  }
-
   dataset::MapBatchRef batch_ref(samples);
   auto batches = _inference_featurizer->featurize(batch_ref);
 

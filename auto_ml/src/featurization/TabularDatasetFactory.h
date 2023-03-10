@@ -11,6 +11,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
+#include <optional>
 
 namespace thirdai::automl::data {
 
@@ -97,6 +98,12 @@ class TabularDatasetFactory {
       std::istream& input_stream);
 
  private:
+  dataset::TabularFeaturizerPtr makeFeaturizer(
+      const TemporalRelationships& temporal_relationships,
+      bool should_update_history, const TabularOptions& options,
+      std::optional<std::vector<dataset::BlockPtr>> label_blocks,
+      bool parallel);
+
   PreprocessedVectorsMap processAllMetadata(
       const ColumnDataTypes& input_data_types, const TabularOptions& options);
 

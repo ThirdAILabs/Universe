@@ -7,6 +7,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/blocks/GraphBlocks.h>
+#include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <stdexcept>
 
@@ -137,20 +138,13 @@ void GraphDatasetManager::serialize(Archive& archive) {
 
 std::vector<BoltBatch> GraphDatasetManager::featurizeInputBatch(
     const dataset::MapInputBatch& inputs) {
-  if (inputs.empty()) {
-    throw std::invalid_argument("Cannot featurize empty batch.");
-  }
-  std::vector<std::vector<BoltVector>> raw_vectors(inputs.size());
-  for (size_t vec_id = 0; vec_id < inputs.size(); vec_id++) {
-    raw_vectors.at(vec_id) = featurizeInput(inputs.at(vec_id));
-  }
+  dataset::MapBatchRef inputs_ref(inputs);
+  std::vector<std::vector<BoltVector>> batches =
+      _inference_featurizer->featurize(inputs_ref);
 
   std::vector<BoltBatch> result;
-  for (size_t batch_id = 0; batch_id < raw_vectors.at(0).size(); batch_id++) {
-    std::vector<BoltVector> batch;
-    for (size_t vec_id = 0; vec_id < inputs.size(); vec_id++) {
-      batch.push_back(std::move(raw_vectors.at(vec_id).at(batch_id)));
-    }
+  result.reserve(batches.size());
+  for (auto& batch : batches) {
     result.emplace_back(std::move(batch));
   }
 

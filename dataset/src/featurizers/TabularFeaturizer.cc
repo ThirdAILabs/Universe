@@ -29,6 +29,10 @@ std::vector<BoltVector> TabularFeaturizer::featurize(
 
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     ColumnarInputBatch& input_batch) {
+  if (input_batch.size() == 0) {
+    throw std::invalid_argument("Cannot featurize empty batch.");
+  }
+
   std::vector<std::vector<std::vector<BoltVector>>> featurized_batch(
       input_batch.size());
 
@@ -61,6 +65,10 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
 
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     const LineInputBatch& input_batch) {
+  if (input_batch.empty()) {
+    throw std::invalid_argument("Cannot featurize empty batch.");
+  }
+
   // If there isn't a header, we are forced to assume that every row will
   // have exactly as many columns as expected. Otherwise, we can assume that
   // every row will have the same number of columns as the header
