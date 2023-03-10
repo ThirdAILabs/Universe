@@ -69,12 +69,12 @@ class Node {
    */
   void compile(LayerNameManager& name_manager);
 
-  virtual NodePtr uncompiled() {
+  virtual NodePtr cloneForParamSharing() {
     throw std::runtime_error("getUncompiled() is not implemented for the " +
                              name() + " node.");
   }
 
-  virtual void copy(NodePtr& other) {
+  virtual void useParams(NodePtr& other) {
     (void)other;
     throw std::runtime_error("copy() is not implemented for the " + name() +
                              " node.");

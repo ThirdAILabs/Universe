@@ -29,6 +29,8 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
     )
 
     filename = "test_text_classification.csv"
+    text_block = blocks.TextPairGram(col=1)
+    delim = ","
     generate_text_classification_dataset(filename, delim)
     featurizer = TabularFeaturizer(
         block_lists=[
@@ -37,13 +39,10 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
         ],
         delimiter=delim,
     )
-    pipeline = DatasetLoader(
-        data_source=FileDataSource(filename),
-        featurizer=featurizer,
-        shuffle=True,
-    )
+    pipeline = DatasetLoader(data_source=FileDataSource(filename),featurizer=featurizer,shuffle=True)
     [data, labels] = pipeline.load_all(batch_size=256)
 
+def model():
     input_layer = bolt.nn.Input(dim=pipeline.get_input_dim())
     hidden_layer = bolt.nn.FullyConnected(dim=1000, sparsity=0.1, activation="relu")(
         input_layer
@@ -52,6 +51,7 @@ def helper_for_text_classification_data_pipeline(text_block, delim):
 
     model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
     model.compile(bolt.nn.losses.CategoricalCrossEntropy())
+    return model
 
     train_cfg = bolt.TrainConfig(learning_rate=0.001, epochs=1).silence()
     model.train(data, labels, train_cfg)

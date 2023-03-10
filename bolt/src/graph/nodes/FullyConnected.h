@@ -11,6 +11,7 @@
 #include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace thirdai::bolt {
@@ -47,15 +48,9 @@ class FullyConnectedNode final
       uint32_t dim, float sparsity, const std::string& activation,
       uint32_t num_tables, uint32_t hashes_per_table, uint32_t reservoir_size);
 
-  NodePtr uncompiled() final;
+  NodePtr cloneForParamSharing() final;
 
-  void copy(NodePtr& other) final {
-    auto other_fc = std::dynamic_pointer_cast<FullyConnectedNode>(other);
-    if (!other_fc) {
-      throw std::invalid_argument("Cannot copy a non-fc node to an fc node.");
-    }
-    _layer = other_fc->_layer;
-  }
+  void useParams(NodePtr& other) final;
 
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node);
 

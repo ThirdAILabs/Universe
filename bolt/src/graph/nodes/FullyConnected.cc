@@ -7,6 +7,7 @@
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <memory>
+#include <ostream>
 
 namespace thirdai::bolt {
 
@@ -40,11 +41,41 @@ FullyConnectedNode::makeExplicitSamplingConfig(uint32_t dim, float sparsity,
   return make(dim, sparsity, activation, sampling_config);
 }
 
-NodePtr FullyConnectedNode::uncompiled() {
-  return std::shared_ptr<FullyConnectedNode>(
-      new FullyConnectedNode(_config->getDim(), _config->getSparsity(),
-                             activationFunctionToStr(_config->getActFunc()),
-                             _config->getSamplingConfig()));
+NodePtr FullyConnectedNode::cloneForParamSharing() {
+  // It's ok to make a dense one since we'll use another node's layer anyway.
+  return FullyConnectedNode::makeDense(
+      outputDim(), activationFunctionToStr(getActivationFunction()));
+}
+
+void FullyConnectedNode::useParams(NodePtr& other) {
+  auto other_fc = std::dynamic_pointer_cast<FullyConnectedNode>(other);
+  if (!other_fc) {
+    throw std::invalid_argument("Cannot copy a non-fc node to an fc node.");
+  }
+
+  NodeState node_state = getState();
+  if (node_state == NodeState::Constructed ||
+      node_state == NodeState::PredecessorsSet) {
+    throw std::invalid_argument("Called copy() before compiling.");
+  }
+
+  NodeState other_node_state = other_fc->getState();
+  if (other_node_state == NodeState::Constructed ||
+      other_node_state == NodeState::PredecessorsSet) {
+    throw std::invalid_argument("Tried to copy a precompiled layer.");
+  }
+
+  if (other_fc->outputDim() != outputDim() ||
+      other_fc->_layer->getInputDim() != _layer->getInputDim()) {
+    std::stringstream invalid_size;
+    invalid_size << "incompatible fc layer sizes (" << _layer->getInputDim()
+                 << ", " << outputDim() << ") vs. ("
+                 << other_fc->_layer->getInputDim() << ", "
+                 << other_fc->outputDim() << ").";
+    throw std::invalid_argument(invalid_size.str());
+  }
+
+  _layer = other_fc->_layer;
 }
 
 FullyConnectedNode::FullyConnectedNode(uint64_t dim,
