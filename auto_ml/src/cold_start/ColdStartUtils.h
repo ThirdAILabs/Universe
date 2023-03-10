@@ -30,11 +30,11 @@ class ColdStartMetaData {
         _label_column_name(label_column_name),
         _integer_target(integer_target) {}
 
-  std::string getLabelColumn() { return _label_column_name; }
+  std::string getLabelColumn() const { return _label_column_name; }
 
   std::optional<char> getLabelDelimiter() { return _label_delimiter; }
 
-  bool integerTarget() { return _integer_target; }
+  bool integerTarget() const { return _integer_target; }
 
   void save(const std::string& filename) const;
 
@@ -73,5 +73,5 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
     data::TabularDatasetFactoryPtr& dataset_factory,
-    ColdStartMetaDataPtr metadata);
+    ColdStartMetaDataPtr &metadata);
 }  // namespace thirdai::automl::cold_start
