@@ -32,9 +32,9 @@ class EmbeddingNode final : public Node,
         num_tokens_per_input));
   }
 
-  NodePtr cloneForParamSharing() final;
+  NodePtr cloneForLayerSharing() final;
 
-  void useParams(NodePtr& other) final;
+  void shareLayer(NodePtr& other) final;
 
   uint32_t outputDim() const final;
 

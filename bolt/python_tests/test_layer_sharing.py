@@ -68,9 +68,9 @@ def manually_defined_model(model_type, input_dim):
 def clone_without_sharing_params(model):
     [input_node, hidden_node, output_node] = model.nodes()
 
-    input_layer = input_node.clone_for_param_sharing()
-    hidden_layer = hidden_node.clone_for_param_sharing()(input_layer)
-    output_layer = output_node.clone_for_param_sharing()(hidden_layer)
+    input_layer = input_node.clone_for_layer_sharing()
+    hidden_layer = hidden_node.clone_for_layer_sharing()(input_layer)
+    output_layer = output_node.clone_for_layer_sharing()(hidden_layer)
 
     clone = bolt.nn.Model(inputs=[input_layer], output=output_layer)
     clone.compile(bolt.nn.losses.CategoricalCrossEntropy())
@@ -80,7 +80,7 @@ def clone_without_sharing_params(model):
 
 def share_params(original, clone):
     for clone_node, original_node in zip(clone.nodes(), original.nodes()):
-        clone_node.use_params(original_node)
+        clone_node.share_layer(original_node)
 
     return clone
 

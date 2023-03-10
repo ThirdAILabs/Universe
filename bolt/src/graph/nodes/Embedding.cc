@@ -18,7 +18,7 @@ EmbeddingNode::EmbeddingNode(uint64_t num_embedding_lookups,
       _outputs(std::nullopt),
       _token_input(nullptr) {}
 
-NodePtr EmbeddingNode::cloneForParamSharing() {
+NodePtr EmbeddingNode::cloneForLayerSharing() {
   auto config = _config.value_or(_embedding_layer->getConfig());
 
   return std::shared_ptr<EmbeddingNode>(
@@ -26,7 +26,7 @@ NodePtr EmbeddingNode::cloneForParamSharing() {
                         config.logEmbeddingBlockSize(),
                         config.reductionString(), config.numTokensPerInput()));
 }
-void EmbeddingNode::useParams(NodePtr& other) {
+void EmbeddingNode::shareLayer(NodePtr& other) {
   auto other_emb = std::dynamic_pointer_cast<EmbeddingNode>(other);
   if (!other_emb) {
     throw std::invalid_argument(

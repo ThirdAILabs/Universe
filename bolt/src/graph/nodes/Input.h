@@ -37,12 +37,12 @@ class Input final : public Node {
     return std::shared_ptr<Input>(new Input(expected_dim, num_tokens_range));
   }
 
-  NodePtr cloneForParamSharing() final {
+  NodePtr cloneForLayerSharing() final {
     return std::shared_ptr<Input>(
         new Input(_expected_input_dim, _num_nonzeros_range));
   }
 
-  void useParams(NodePtr& other) final { (void)other; }
+  void shareLayer(NodePtr& other) final { (void)other; }
 
   // This class does not own this memory, but we pass it in as a pointer that
   // will be stored as a field so it can be used in future method calls. This

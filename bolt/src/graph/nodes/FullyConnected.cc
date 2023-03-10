@@ -41,13 +41,13 @@ FullyConnectedNode::makeExplicitSamplingConfig(uint32_t dim, float sparsity,
   return make(dim, sparsity, activation, sampling_config);
 }
 
-NodePtr FullyConnectedNode::cloneForParamSharing() {
+NodePtr FullyConnectedNode::cloneForLayerSharing() {
   // It's ok to make a dense one since we'll use another node's layer anyway.
   return FullyConnectedNode::makeDense(
       outputDim(), activationFunctionToStr(getActivationFunction()));
 }
 
-void FullyConnectedNode::useParams(NodePtr& other) {
+void FullyConnectedNode::shareLayer(NodePtr& other) {
   auto other_fc = std::dynamic_pointer_cast<FullyConnectedNode>(other);
   if (!other_fc) {
     throw std::invalid_argument("Cannot copy a non-fc node to an fc node.");

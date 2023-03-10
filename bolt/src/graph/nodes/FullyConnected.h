@@ -48,9 +48,9 @@ class FullyConnectedNode final
       uint32_t dim, float sparsity, const std::string& activation,
       uint32_t num_tables, uint32_t hashes_per_table, uint32_t reservoir_size);
 
-  NodePtr cloneForParamSharing() final;
+  NodePtr cloneForLayerSharing() final;
 
-  void useParams(NodePtr& other) final;
+  void shareLayer(NodePtr& other) final;
 
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node);
 

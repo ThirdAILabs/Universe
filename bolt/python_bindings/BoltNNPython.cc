@@ -164,8 +164,8 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            " * sampling_config (SamplingConfig) - Sampling config object to "
            "initialize hash tables/functions.")
 #endif
-      .def("clone_for_param_sharing", &FullyConnectedNode::cloneForParamSharing)
-      .def("use_params", &FullyConnectedNode::useParams, py::arg("other"))
+      .def("clone_for_layer_sharing", &FullyConnectedNode::cloneForLayerSharing)
+      .def("share_layer", &FullyConnectedNode::shareLayer, py::arg("other"))
       .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),
            "Tells the graph which layer should act as input to this fully "
@@ -264,8 +264,8 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            "select as part of the embedding for each embedding lookup.\n"
            " * log_embedding_block_size: Int (positive) The log base 2 of the "
            "total size of the embedding block.\n")
-      .def("clone_for_param_sharing", &EmbeddingNode::cloneForParamSharing)
-      .def("use_params", &EmbeddingNode::useParams, py::arg("other"))
+      .def("clone_for_layer_sharing", &EmbeddingNode::cloneForLayerSharing)
+      .def("share_layer", &EmbeddingNode::shareLayer, py::arg("other"))
       .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
            "Tells the graph which token input to use for this Embedding Node.")
       .def_property_readonly(
@@ -304,8 +304,8 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
   py::class_<Input, InputPtr, Node>(nn_submodule, "Input")
       .def(py::init(&Input::make), py::arg("dim"),
            "Constructs an input layer node for the graph.")
-      .def("clone_for_param_sharing", &Input::cloneForParamSharing)
-      .def("use_params", &Input::useParams, py::arg("other"));
+      .def("clone_for_layer_sharing", &Input::cloneForLayerSharing)
+      .def("share_layer", &Input::shareLayer, py::arg("other"));
 
   py::class_<NormalizationLayerConfig>(nn_submodule, "LayerNormConfig")
       .def_static("make", &NormalizationLayerConfig::makeConfig)
