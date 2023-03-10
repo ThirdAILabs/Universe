@@ -87,7 +87,7 @@ def share_params(original, clone):
 
 @pytest.mark.unit
 @pytest.mark.parametrize("model_type", ["fully_connected", "embedding"])
-def test_layer_sharing(load_dataset, model_type):
+def test_share_layer(load_dataset, model_type):
     [data, labels, input_dim] = load_dataset
     original = manually_defined_model(model_type, input_dim)
 
