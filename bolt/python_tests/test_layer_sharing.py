@@ -85,6 +85,7 @@ def share_params(original, clone):
     return clone
 
 
+@pytest.mark.unit
 @pytest.mark.parametrize("model_type", ["fully_connected", "embedding"])
 def test_layer_sharing(load_dataset, model_type):
     [data, labels, input_dim] = load_dataset
@@ -107,6 +108,9 @@ def test_layer_sharing(load_dataset, model_type):
     assert (original_results != initial_clone_results).any()
 
     share_params(original, clone)
+
+    assert original.summary(print=False) == clone.summary(print=False)
+
     clone_results_after_sharing = clone.evaluate(data, labels, eval_config)[1]
 
     assert (original_results == clone_results_after_sharing).all()
@@ -122,3 +126,6 @@ def test_layer_sharing(load_dataset, model_type):
 
     assert (original_results == loaded_original_results).all()
     assert (original_results == loaded_clone_results).all()
+
+    assert loaded_original.summary(print=False) == original.summary(print=False)
+    assert loaded_clone.summary(print=False) == original.summary(print=False)
