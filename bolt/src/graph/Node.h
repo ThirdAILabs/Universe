@@ -75,10 +75,21 @@ class Node {
                              name() + " node.");
   }
 
-  virtual void shareLayer(NodePtr& other) {
-    (void)other;
-    throw std::runtime_error("copy() is not implemented for the " + name() +
-                             " node.");
+  void shareLayer(NodePtr& other) {
+    NodeState node_state = getState();
+    if (node_state == NodeState::Constructed ||
+        node_state == NodeState::PredecessorsSet) {
+      throw std::invalid_argument("Called shareLayer() before compiling.");
+    }
+
+    NodeState other_node_state = other->getState();
+    if (other_node_state == NodeState::Constructed ||
+        other_node_state == NodeState::PredecessorsSet) {
+      throw std::invalid_argument(
+          "Tried to share the layer of an uncompiled node.");
+    }
+
+    shareLayerImpl(other);
   }
 
   /*
@@ -204,6 +215,12 @@ class Node {
 
  protected:
   virtual void compileImpl() = 0;
+
+  virtual void shareLayerImpl(NodePtr& other) {
+    (void)other;
+    throw std::runtime_error("shareLayer() is not implemented for the " +
+                             name() + " node.");
+  }
 
   virtual std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayersImpl() const = 0;

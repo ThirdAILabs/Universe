@@ -26,23 +26,11 @@ NodePtr EmbeddingNode::cloneForLayerSharing() {
                         config.logEmbeddingBlockSize(),
                         config.reductionString(), config.numTokensPerInput()));
 }
-void EmbeddingNode::shareLayer(NodePtr& other) {
+void EmbeddingNode::shareLayerImpl(NodePtr& other) {
   auto other_emb = std::dynamic_pointer_cast<EmbeddingNode>(other);
   if (!other_emb) {
     throw std::invalid_argument(
         "Cannot share non-embedding node params with embedding node.");
-  }
-
-  NodeState node_state = getState();
-  if (node_state == NodeState::Constructed ||
-      node_state == NodeState::PredecessorsSet) {
-    throw std::invalid_argument("Called copy() before compiling.");
-  }
-
-  NodeState other_node_state = other_emb->getState();
-  if (other_node_state == NodeState::Constructed ||
-      other_node_state == NodeState::PredecessorsSet) {
-    throw std::invalid_argument("Tried to copy a precompiled layer.");
   }
 
   if (other_emb->outputDim() != outputDim()) {

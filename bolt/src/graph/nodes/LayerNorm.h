@@ -50,7 +50,7 @@ class LayerNormNode final : public Node,
 
   NodePtr cloneForLayerSharing() final { return makeWithConfig(*_config); }
 
-  void shareLayer(NodePtr& other) final { (void)other; }
+  void shareLayerImpl(NodePtr& other) final { (void)other; }
 
   std::shared_ptr<LayerNormNode> addPredecessor(NodePtr node);
 

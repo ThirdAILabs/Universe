@@ -50,7 +50,7 @@ class FullyConnectedNode final
 
   NodePtr cloneForLayerSharing() final;
 
-  void shareLayer(NodePtr& other) final;
+  void shareLayerImpl(NodePtr& other) final;
 
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node);
 

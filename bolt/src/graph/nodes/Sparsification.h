@@ -23,7 +23,7 @@ class SparsificationNode final
 
   NodePtr cloneForLayerSharing() final { return make(_sparsity); }
 
-  void shareLayer(NodePtr& other) final { (void)other; }
+  void shareLayerImpl(NodePtr& other) final { (void)other; }
 
   auto addPredecessor(NodePtr input) {
     if (getState() != NodeState::Constructed) {

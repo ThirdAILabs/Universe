@@ -47,22 +47,10 @@ NodePtr FullyConnectedNode::cloneForLayerSharing() {
       outputDim(), activationFunctionToStr(getActivationFunction()));
 }
 
-void FullyConnectedNode::shareLayer(NodePtr& other) {
+void FullyConnectedNode::shareLayerImpl(NodePtr& other) {
   auto other_fc = std::dynamic_pointer_cast<FullyConnectedNode>(other);
   if (!other_fc) {
     throw std::invalid_argument("Cannot copy a non-fc node to an fc node.");
-  }
-
-  NodeState node_state = getState();
-  if (node_state == NodeState::Constructed ||
-      node_state == NodeState::PredecessorsSet) {
-    throw std::invalid_argument("Called copy() before compiling.");
-  }
-
-  NodeState other_node_state = other_fc->getState();
-  if (other_node_state == NodeState::Constructed ||
-      other_node_state == NodeState::PredecessorsSet) {
-    throw std::invalid_argument("Tried to copy a precompiled layer.");
   }
 
   if (other_fc->outputDim() != outputDim() ||

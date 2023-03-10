@@ -30,7 +30,7 @@ class ConcatenateNode final
 
   NodePtr cloneForLayerSharing() final { return make(); }
 
-  void shareLayer(NodePtr& other) final { (void)other; }
+  void shareLayerImpl(NodePtr& other) final { (void)other; }
 
   std::shared_ptr<ConcatenateNode> setConcatenatedNodes(
       const std::vector<NodePtr>& nodes);

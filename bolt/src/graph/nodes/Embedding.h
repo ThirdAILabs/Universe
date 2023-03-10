@@ -34,7 +34,7 @@ class EmbeddingNode final : public Node,
 
   NodePtr cloneForLayerSharing() final;
 
-  void shareLayer(NodePtr& other) final;
+  void shareLayerImpl(NodePtr& other) final;
 
   uint32_t outputDim() const final;
 

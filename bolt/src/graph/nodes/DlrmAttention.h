@@ -47,7 +47,7 @@ class DlrmAttentionNode final
     return std::make_shared<DlrmAttentionNode>();
   }
 
-  void shareLayer(NodePtr& other) final { (void)other; }
+  void shareLayerImpl(NodePtr& other) final { (void)other; }
 
   uint32_t outputDim() const final;
 
