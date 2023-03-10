@@ -23,33 +23,15 @@ def get_no_features_gnn(num_classes):
 
 
 def test_udt_on_yelp_chi(download_yelp_chi_dataset):
-    all_data = pd.read_csv("yelp_all.csv")
-    numerical_col_names = ["col_" + str(i) for i in range(32)]
-    numerical_col_ranges = (
-        all_data[numerical_col_names].agg([min, max]).T.values.tolist()
-    )
-
-    train_data, test_data = train_test_split(all_data, test_size=0.5)
-
-    train_data = train_data.sample(frac=1)
-    train_data.to_csv("yelp_train.csv", index=False)
-
-    ground_truth = test_data["target"].to_numpy()
-    test_data["target"] = np.zeros(len(ground_truth))
-    test_data.to_csv("yelp_test.csv", index=False)
+    (
+        train_data_path,
+        eval_data_path,
+        data_types,
+        ground_truth,
+    ) = download_yelp_chi_dataset
 
     model = bolt.UniversalDeepTransformer(
-        data_types={
-            "node_id": bolt.types.node_id(),
-            **{
-                col_name: bolt.types.numerical(col_range)
-                for col_range, col_name in zip(
-                    numerical_col_ranges, numerical_col_names
-                )
-            },
-            "target": bolt.types.categorical(),
-            "neighbors": bolt.types.neighbors(),
-        },
+        data_types=data_types,
         target="target",
         n_target_classes=2,
         integer_target=True,
@@ -58,13 +40,14 @@ def test_udt_on_yelp_chi(download_yelp_chi_dataset):
     )
 
     # We need to index these nodes because the model needs to know about them
-    # for training: nodes in the train set have neighbors in the test set, and
-    # the model uses neighbor features.
-    model.index_nodes("yelp_test.csv")
+    # for training: nodes in the train set have neighbors in the eval set, and
+    # the model uses neighbor features. The eval set has all labels set to 0,
+    # so this will not leak testing information.
+    model.index_nodes(eval_data_path)
 
     for epoch in range(15):
         train_metrics = model.train(
-            "yelp_train.csv",
+            train_data_path,
             learning_rate=0.001,
             epochs=1,
             metrics=["categorical_accuracy"],
