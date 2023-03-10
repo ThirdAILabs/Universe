@@ -4,6 +4,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
+#include <dataset/src/blocks/CategoricalMultiHashBlock.h>
 
 namespace thirdai::automl::udt {
 
@@ -16,18 +17,26 @@ UDTMachClassifier::UDTMachClassifier(
     const data::TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
-    : _classifier(utils::buildModel(
-                      /* input_dim= */ tabular_options.feature_hash_range,
-                      /* output_dim= */ autotuneMachOutputDim(n_target_classes),
-                      /* args= */ user_args, /* model_config= */ model_config,
-                      /* use_sigmoid_bce = */ true),
-                  user_args.get<bool>("freeze_hash_tables", "boolean",
-                                      defaults::FREEZE_HASH_TABLES)) {
+    : _classifier(
+          utils::buildModel(
+              /* input_dim= */ tabular_options.feature_hash_range,
+              /* output_dim= */
+              user_args.get<uint32_t>("mach_output_dim", "integer",
+                                      autotuneMachOutputDim(n_target_classes)),
+              /* args= */ user_args, /* model_config= */ model_config,
+              /* use_sigmoid_bce = */ true),
+          user_args.get<bool>("freeze_hash_tables", "boolean",
+                              defaults::FREEZE_HASH_TABLES)) {
   // TODO(david) should we freeze hash tables for mach? how does this work with
   // coldstart? is this why we're getting bad msmarco accuracy?
 
   // TODO(david) move things like label block and coldstart out of here and into
   // a classifier utils file?
+
+  uint32_t num_hashes
+
+  _mach_index = dataset::MachIndex();
+
   _multi_hash_label_block =
       labelBlock(target_name, target, n_target_classes, integer_target);
 
@@ -90,10 +99,6 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
       _dataset_factory->featurizeInputBatch(samples), sparse_inference,
       return_predicted_class);
 }
-
-std::vector<dataset::Explanation> UDTMachClassifier::explain(
-    const MapInput& sample,
-    const std::optional<std::variant<uint32_t, std::string>>& target_class) {}
 
 void UDTMachClassifier::coldstart(
     const dataset::DataSourcePtr& data,
