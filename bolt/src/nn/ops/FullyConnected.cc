@@ -44,6 +44,7 @@ std::shared_ptr<FullyConnected> FullyConnected::make(
 void FullyConnected::forward(const autograd::ComputationList& inputs,
                              tensor::TensorPtr& output, uint32_t index_in_batch,
                              bool training) {
+  assert(inputs.size() == 1 || inputs.size() == 2);
   // If the op is an output pass in labels during training to ensure labels are
   // in active neuron set.
   const BoltVector* labels = nullptr;
@@ -57,6 +58,8 @@ void FullyConnected::forward(const autograd::ComputationList& inputs,
 void FullyConnected::backpropagate(autograd::ComputationList& inputs,
                                    tensor::TensorPtr& output,
                                    uint32_t index_in_batch) {
+  assert(inputs.size() == 1 || inputs.size() == 2);
+
   BoltVector& input = inputs[0]->tensor()->getVector(index_in_batch);
 
   if (input.hasGradients()) {
