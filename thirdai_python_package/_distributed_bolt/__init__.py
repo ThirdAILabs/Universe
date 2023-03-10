@@ -1,6 +1,7 @@
 from .dataset_loaders import (
     DistributedSvmDatasetLoader,
     DistributedTabularDatasetLoader,
+    ValidationContext,
 )
 from .distributed import (
     DistributedDataParallel,

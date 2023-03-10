@@ -13,6 +13,7 @@ from thirdai._distributed_bolt.backend.train_state_manager import TrainStateMana
 from thirdai._distributed_bolt.dataset_loaders import (
     DistributedDatasetLoader,
     DistributedUDTDatasetLoader,
+    ValidationContext,
 )
 from thirdai._thirdai import bolt
 
@@ -251,6 +252,7 @@ class DistributedDataParallel:
         model: bolt.nn.Model,
         train_config: bolt.TrainConfig,
         train_sources: Union[List[DistributedDatasetLoader], List[str]],
+        validation_context: ValidationContext = None,
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -290,6 +292,7 @@ class DistributedDataParallel:
             train_config=train_config,
             communication_type=cluster_config.communication_type,
             log_dir=cluster_config.log_dir,
+            validation_context=validation_context,
         )
 
         self.replica_workers = []

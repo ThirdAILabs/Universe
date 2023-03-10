@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Callable, List, Optional, Tuple, Union
+from dataclasses import dataclass
 
-from thirdai import data, dataset
+from thirdai import data, dataset, bolt
 from thirdai.bolt.udt_modifications import _create_data_source
 
 # TODO(Josh/Pratik): Clean up this file and remove the unnecessary DatasetLoaders
@@ -39,6 +40,14 @@ class DistributedDatasetLoader(ABC):
         pass
 
 
+@dataclass
+class ValidationContext:
+    validation_source: DistributedDatasetLoader
+    eval_config: bolt.EvalConfig
+    validation_frequency: int
+    save_best_per_metric: List[str] = ["categorical_accuracy"]
+
+
 class DistributedUDTDatasetLoader(DistributedDatasetLoader):
     def __init__(
         self,
@@ -54,10 +63,10 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
 
-    def load(self):
+    def load(self, training=True):
         self.generator = self.data_processor.get_dataset_loader(
             _create_data_source(self.train_file),
-            training=True,
+            training=training,
         )
 
     def next(self):

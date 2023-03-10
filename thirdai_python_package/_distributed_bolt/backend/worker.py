@@ -40,6 +40,7 @@ class Worker:
         train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
+        validation_context=None,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
@@ -51,6 +52,26 @@ class Worker:
         logging.setup(
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
+
+        # Validation is just done on primary node
+        if self.id == 0 and validation_context != None:
+            validation_context.validation_source.load()
+            load = validation_context.validation_source.next()
+            if load == None:
+                raise ValueError("validation dataset shouldn't be empty")
+            if not validation_context.validation_source.dataset_finised:
+                raise ValueError(
+                    "Validation Dataset should not be loaded using streaming."
+                )
+
+            validation_data, validation_label = load
+            train_config.with_validation(
+                validation_data=validation_data,
+                validation_label=validation_label,
+                eval_config=validation_context.eval_config,
+                validation_frequency=validation_context.validation_frequency,
+                save_best_per_metric=validation_context.save_best_per_metric,
+            )
 
         start = time()
         self.model = bolt.DistributedTrainingWrapper(
