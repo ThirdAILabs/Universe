@@ -58,7 +58,6 @@ class EvalConfig {
 
   auto outputCallback() const { return _output_callback; }
 
-
   void save(const std::string& filename) const;
 
   void save_stream(std::ostream& output_stream) const;
@@ -74,7 +73,6 @@ class EvalConfig {
         _verbose(true),
         _return_activations(false),
         _output_callback(std::nullopt) {}
-
 
   friend class cereal::access;
   // We don't serialize the callbacks because they might be arbitrary functions

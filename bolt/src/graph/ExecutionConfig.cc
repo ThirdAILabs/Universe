@@ -77,5 +77,4 @@ void EvalConfig::serialize(Archive& archive) {
   archive(_metric_names, _use_sparse_inference, _verbose, _return_activations);
 }
 
-
 }  // namespace thirdai::bolt

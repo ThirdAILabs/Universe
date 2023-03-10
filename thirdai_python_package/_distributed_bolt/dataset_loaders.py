@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Callable, List, Optional, Tuple, Union
 from dataclasses import dataclass
+from typing import Callable, List, Optional, Tuple, Union
 
-from thirdai import data, dataset, bolt
+from thirdai import bolt, data, dataset
 from thirdai.bolt.udt_modifications import _create_data_source
 
 # TODO(Josh/Pratik): Clean up this file and remove the unnecessary DatasetLoaders
