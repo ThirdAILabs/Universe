@@ -42,7 +42,7 @@ class Input final : public Node {
         new Input(_expected_input_dim, _num_nonzeros_range));
   }
 
-  void shareLayer(NodePtr& other) final { (void)other; }
+  void shareLayerImpl(NodePtr& other) final { (void)other; }
 
   // This class does not own this memory, but we pass it in as a pointer that
   // will be stored as a field so it can be used in future method calls. This

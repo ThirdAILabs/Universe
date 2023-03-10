@@ -48,6 +48,10 @@ class LayerNormNode final : public Node,
     return std::shared_ptr<LayerNormNode>(new LayerNormNode(config));
   }
 
+  NodePtr cloneForLayerSharing() final { return makeWithConfig(*_config); }
+
+  void shareLayerImpl(NodePtr& other) final { (void)other; }
+
   std::shared_ptr<LayerNormNode> addPredecessor(NodePtr node);
 
   uint32_t outputDim() const final { return _node_to_normalize->outputDim(); }

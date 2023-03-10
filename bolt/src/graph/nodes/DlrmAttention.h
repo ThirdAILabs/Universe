@@ -43,6 +43,12 @@ class DlrmAttentionNode final
         _compiled(false),
         _outputs(std::nullopt) {}
 
+  NodePtr cloneForLayerSharing() final {
+    return std::make_shared<DlrmAttentionNode>();
+  }
+
+  void shareLayerImpl(NodePtr& other) final { (void)other; }
+
   uint32_t outputDim() const final;
 
   bool isInputNode() const final { return false; }
