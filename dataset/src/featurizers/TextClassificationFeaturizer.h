@@ -21,16 +21,15 @@
 
 namespace thirdai::dataset {
 
-enum class Tokens { UNI_ONLY, PAIR_ONLY, UNI_PAIR };
-
 class TextClassificationFeaturizer final : public Featurizer {
  public:
+  enum class Tokens { UNI_ONLY, PAIR_ONLY, UNI_PAIR };
+
   TextClassificationFeaturizer(const std::string& text_column,
                                const std::string& label_column, char delimiter,
-                               uint32_t n_labels, bool integer_labels,
-                               Tokens tokens,
+                               uint32_t n_labels, Tokens tokens,
                                std::optional<char> label_delimiter,
-                               bool normalize_categories)
+                               bool integer_labels, bool normalize_categories)
       : _text_column(text_column),
         _delimiter(delimiter),
         _tokens(tokens),
