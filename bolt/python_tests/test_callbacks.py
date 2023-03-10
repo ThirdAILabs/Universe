@@ -191,5 +191,5 @@ def test_overfitting_callback_invalid_metric_name():
 def test_overfitting_callback_metric_not_passed():
     callback = bolt.callbacks.Overfitting("categorical_accuracy", 0.97)
 
-    with pytest.raises(ValueError, match=r""):
+    with pytest.raises(ValueError, match=r"Metric: categorical_accuracy not found in training metrics."):
         train_simple_udt_with_callback(callback, [])
