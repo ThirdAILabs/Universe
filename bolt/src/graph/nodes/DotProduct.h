@@ -19,6 +19,10 @@ class DotProductNode final
     return std::shared_ptr<DotProductNode>(new DotProductNode());
   }
 
+  NodePtr cloneForLayerSharing() final { return make(); }
+
+  void shareLayer(NodePtr& other) final { (void)other; }
+
   uint32_t outputDim() const final { return 1; }
 
   bool isInputNode() const final { return false; }

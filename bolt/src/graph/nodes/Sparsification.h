@@ -21,6 +21,10 @@ class SparsificationNode final
         new SparsificationNode(sparsity));
   }
 
+  NodePtr cloneForLayerSharing() final { return make(_sparsity); }
+
+  void shareLayer(NodePtr& other) final { (void)other; }
+
   auto addPredecessor(NodePtr input) {
     if (getState() != NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
