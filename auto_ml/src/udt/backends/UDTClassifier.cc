@@ -47,7 +47,7 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
       std::set<std::string>{target_name}, tabular_options, force_parallel);
 }
 
-void UDTClassifier::train(
+py::object UDTClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
     const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
@@ -67,10 +67,10 @@ void UDTClassifier::train(
   auto train_dataset_loader =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  _classifier.train(train_dataset_loader, learning_rate, epochs,
-                    validation_dataset_loader, batch_size_opt,
-                    max_in_memory_batches, metrics, callbacks, verbose,
-                    logging_interval, licensing::TrainPermissionsToken(data));
+  return _classifier.train(
+      train_dataset_loader, learning_rate, epochs, validation_dataset_loader,
+      batch_size_opt, max_in_memory_batches, metrics, callbacks, verbose,
+      logging_interval, licensing::TrainPermissionsToken(data));
 }
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -117,7 +117,7 @@ std::vector<dataset::Explanation> UDTClassifier::explain(
   return explanation;
 }
 
-void UDTClassifier::coldstart(
+py::object UDTClassifier::coldstart(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names, float learning_rate,
@@ -137,11 +137,11 @@ void UDTClassifier::coldstart(
   // One idea here is to, for each product, generate a couple of fake user
   // queries which are just phrases of 3-4 consecutive words.
 
-  train(data_source, learning_rate, epochs, validation,
-        /* batch_size = */ std::nullopt,
-        /* max_in_memory_batches= */ std::nullopt, metrics,
-        /* callbacks= */ callbacks, /* verbose= */ verbose,
-        /* logging_interval= */ std::nullopt);
+  return train(data_source, learning_rate, epochs, validation,
+               /* batch_size = */ std::nullopt,
+               /* max_in_memory_batches= */ std::nullopt, metrics,
+               /* callbacks= */ callbacks, /* verbose= */ verbose,
+               /* logging_interval= */ std::nullopt);
 }
 
 py::object UDTClassifier::embedding(const MapInput& sample) {

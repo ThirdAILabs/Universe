@@ -37,7 +37,7 @@ class EmbeddingLayer {
     return BoltBatch(_total_embedding_dim, batch_size, true);
   }
 
-  void buildLayerSummary(std::stringstream& summary) const;
+  void buildLayerSummary(std::ostream& summary) const;
 
   void initOptimizer() {
     if (!_optimizer) {

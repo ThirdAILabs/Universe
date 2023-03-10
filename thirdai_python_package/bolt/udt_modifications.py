@@ -111,7 +111,7 @@ def modify_udt():
 
         validation = _convert_validation(validation)
 
-        original_cold_start(
+        return original_cold_start(
             self,
             data=data_source,
             strong_column_names=strong_column_names,

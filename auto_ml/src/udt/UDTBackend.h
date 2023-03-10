@@ -30,7 +30,7 @@ class UDTBackend {
   /**
    * Trains the model on the given dataset.
    */
-  virtual void train(
+  virtual py::object train(
       const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
       const std::optional<ValidationDataSource>& validation,
       std::optional<size_t> batch_size,
@@ -109,14 +109,13 @@ class UDTBackend {
    * Performs cold start pretraining. Optional method that is not supported by
    * default for backends.
    */
-  virtual void coldstart(const dataset::DataSourcePtr& data,
-                         const std::vector<std::string>& strong_column_names,
-                         const std::vector<std::string>& weak_column_names,
-                         float learning_rate, uint32_t epochs,
-                         const std::vector<std::string>& metrics,
-                         const std::optional<ValidationDataSource>& validation,
-                         const std::vector<bolt::CallbackPtr>& callbacks,
-                         bool verbose) {
+  virtual py::object coldstart(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      const std::optional<ValidationDataSource>& validation,
+      const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;

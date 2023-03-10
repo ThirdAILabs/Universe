@@ -7,9 +7,12 @@
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <utility>
+#include <optional>
 
 namespace thirdai::automl::data {
 
@@ -29,13 +32,14 @@ TabularDatasetFactory::TabularDatasetFactory(
           _data_types, provided_temporal_relationships, options.lookahead);
 
   bool parallel = force_parallel || temporal_relationships.empty();
+
   _labeled_featurizer = makeFeaturizer(temporal_relationships,
                                        /* should_update_history= */ true,
                                        options, label_blocks, parallel);
   _inference_featurizer =
       makeFeaturizer(temporal_relationships,
                      /* should_update_history= */ false, options,
-                     /* label_blocks= */ {}, parallel);
+                     /* label_blocks = */ std::nullopt, parallel);
 }
 
 dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
@@ -45,6 +49,18 @@ dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
                                                   /* shuffle= */ shuffle);
 }
 
+std::vector<BoltBatch> TabularDatasetFactory::featurizeInputBatch(
+    const MapInputBatch& inputs) {
+  dataset::MapBatchRef inputs_ref(inputs);
+
+  std::vector<BoltBatch> result;
+
+  result.emplace_back(
+      std::move(_inference_featurizer->featurize(inputs_ref).at(0)));
+
+  return result;
+}
+
 void TabularDatasetFactory::updateMetadata(const std::string& col_name,
                                            const MapInput& update) {
   verifyColumnMetadataExists(col_name);
@@ -52,7 +68,7 @@ void TabularDatasetFactory::updateMetadata(const std::string& col_name,
   auto metadata_config = getColumnMetadataConfig(col_name);
 
   dataset::MapSampleRef update_ref(update);
-  auto vec = _metadata_processors.at(col_name)->makeInputVector(update_ref);
+  auto vec = _metadata_processors.at(col_name)->featurize(update_ref).at(0);
 
   const auto& key = update.at(metadata_config->key);
   _vectors_map.at(col_name)->vectors[key] = vec;
@@ -76,16 +92,20 @@ void TabularDatasetFactory::updateMetadataBatch(const std::string& col_name,
 dataset::TabularFeaturizerPtr TabularDatasetFactory::makeFeaturizer(
     const TemporalRelationships& temporal_relationships,
     bool should_update_history, const TabularOptions& options,
-    std::vector<dataset::BlockPtr> label_blocks, bool parallel) {
+    std::optional<std::vector<dataset::BlockPtr>> label_blocks, bool parallel) {
   auto input_blocks = makeTabularInputBlocks(
       _data_types, _label_col_names, temporal_relationships, _vectors_map,
       _temporal_context, should_update_history, options);
 
+  std::vector<dataset::BlockList> block_lists = {
+      dataset::BlockList(std::move(input_blocks),
+                         /* hash_range= */ options.feature_hash_range)};
+  if (label_blocks.has_value()) {
+    block_lists.push_back(dataset::BlockList(std::move(*label_blocks)));
+  }
+
   return dataset::TabularFeaturizer::make(
-      /* block_lists = */ {dataset::BlockList(
-                               std::move(input_blocks),
-                               /* hash_range= */ options.feature_hash_range),
-                           dataset::BlockList(std::move(label_blocks))},
+      /* block_lists = */ block_lists,
       /* has_header= */ true,
       /* delimiter= */ options.delimiter, /* parallel= */ parallel);
 }
@@ -198,5 +218,4 @@ void TabularDatasetFactory::serialize(Archive& archive) {
           _vectors_map, _temporal_context, _data_types, _label_col_names,
           _delimiter);
 }
-
 }  // namespace thirdai::automl::data
