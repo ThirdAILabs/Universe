@@ -91,22 +91,24 @@ UDT::UDT(const std::string& file_format, uint32_t n_target_classes,
   }
 }
 
-void UDT::train(const dataset::DataSourcePtr& data, float learning_rate,
-                uint32_t epochs,
-                const std::optional<ValidationDataSource>& validation,
-                std::optional<size_t> batch_size,
-                std::optional<size_t> max_in_memory_batches,
-                const std::vector<std::string>& metrics,
-                const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-                bool verbose, std::optional<uint32_t> logging_interval) {
+py::object UDT::train(
+    const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+    const std::optional<ValidationDataSource>& validation,
+    std::optional<size_t> batch_size,
+    std::optional<size_t> max_in_memory_batches,
+    const std::vector<std::string>& metrics,
+    const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
+    std::optional<uint32_t> logging_interval) {
   bolt::utils::Timer timer;
 
-  _backend->train(data, learning_rate, epochs, validation, batch_size,
-                  max_in_memory_batches, metrics, callbacks, verbose,
-                  logging_interval);
+  auto output = _backend->train(data, learning_rate, epochs, validation,
+                                batch_size, max_in_memory_batches, metrics,
+                                callbacks, verbose, logging_interval);
 
   timer.stop();
   telemetry::client.trackTraining(/* training_time_seconds= */ timer.seconds());
+
+  return output;
 }
 
 py::object UDT::evaluate(const dataset::DataSourcePtr& data,

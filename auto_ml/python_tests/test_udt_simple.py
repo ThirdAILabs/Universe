@@ -361,12 +361,41 @@ def test_works_without_temporal_relationships():
     # No assertion as we just want to know that there is no error.
 
 
-def test_return_metrics():
+def test_return_eval_metrics():
     model = make_simple_trained_model()
+
     metrics = model.evaluate(
         TEST_FILE, metrics=["categorical_accuracy"], return_metrics=True
     )
     assert metrics["categorical_accuracy"] >= 0
+
+
+def test_return_train_metrics():
+    model = make_simple_trained_model()
+
+    metrics = model.train(TEST_FILE, epochs=1, metrics=["categorical_accuracy"])
+    assert metrics["categorical_accuracy"][-1] >= 0
+
+
+def test_return_train_metrics_streamed():
+    model = make_simple_trained_model()
+
+    batch_size = 1
+    max_in_memory_batches = 1
+
+    with open(TRAIN_FILE, "r") as f:
+        num_samples = len(f.readlines()) - 1
+
+    metrics = model.train(
+        TRAIN_FILE,
+        epochs=1,
+        metrics=["categorical_accuracy"],
+        max_in_memory_batches=batch_size,
+        batch_size=max_in_memory_batches,
+    )
+
+    assert metrics["categorical_accuracy"][-1] >= 0
+    assert len(metrics["categorical_accuracy"]) == num_samples / batch_size
 
 
 @pytest.mark.parametrize("encoding", ["none", "local", "global"])
