@@ -167,7 +167,10 @@ def train_simple_udt_with_callback(callback, metrics):
 
 
 def test_overfitting_callback_invalid_threshold():
-    with pytest.raises(ValueError, match=r"Invalid threshold -1.000000 for metric categorical_accuracy."):
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid threshold -1.000000 for metric categorical_accuracy.",
+    ):
         callback = bolt.callbacks.Overfitting("categorical_accuracy", -1)
 
 
