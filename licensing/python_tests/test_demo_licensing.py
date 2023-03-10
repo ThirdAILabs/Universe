@@ -34,16 +34,8 @@ def test_census_key_works_on_small_census():
                 output.write(f"{line}")
     model = get_udt_census_income_model()
     model.train(small_census_filename, epochs=3, learning_rate=0.01)
-    os.remove(small_census_filename)
-
-
-def test_census_demo_key_fails_save_load():
-    thirdai.licensing.activate(SMALL_CENSUS_KEY)
-    model = get_udt_census_income_model()
-    with pytest.raises(
-        RuntimeError, match=".*You must have a full license to perform this operation.*"
-    ):
-        model.save("test")
+    model.save("small_census_model.serialized")
+    model = bolt.UniversalDeepTransformer.load("small_census_model.serialized")
 
 
 def test_census_demo_key_fails_on_udt():

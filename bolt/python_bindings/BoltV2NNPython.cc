@@ -4,6 +4,8 @@
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Concatenate.h>
+#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -74,8 +76,9 @@ void createBoltV2NNSubmodule(py::module_& module) {
           py::return_value_policy::reference_internal);
 
   py::class_<autograd::Computation, autograd::ComputationPtr>(nn, "Computation")
-      .def("name", &autograd::Computation::name)
-      .def("tensor", &autograd::Computation::tensor);
+      .def("dim", &autograd::Computation::dim)
+      .def("tensor", &autograd::Computation::tensor)
+      .def("name", &autograd::Computation::name);
 
   py::class_<ops::Op, ops::OpPtr>(nn, "Op").def("name", &ops::Op::name);
 
@@ -94,6 +97,17 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def_property_readonly("biases", [](const ops::FullyConnected& op) {
         return toNumpy(op.biasesPtr(), {op.dimensions()[0]});
       });
+
+  py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
+      .def(py::init(&ops::Embedding::make), py::arg("num_embedding_lookups"),
+           py::arg("lookup_size"), py::arg("log_embedding_block_size"),
+           py::arg("update_chunk_size"), py::arg("reduction"),
+           py::arg("num_tokens_per_input") = std::nullopt)
+      .def("__call__", &ops::Embedding::apply);
+
+  py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
+      .def(py::init(&ops::Concatenate::make))
+      .def("__call__", &ops::Concatenate::apply);
 
   nn.def("Input", &ops::Input::make, py::arg("dim"));
 

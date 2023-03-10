@@ -89,12 +89,13 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("callbacks") = std::vector<bolt::CallbackPtr>{},
            py::arg("verbose") = true,
-           py::arg("logging_interval") = std::nullopt)
+           py::arg("logging_interval") = std::nullopt,
+           bolt::python::OutputRedirect())
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false, py::arg("verbose") = true,
-           py::arg("return_metrics") = false)
+           py::arg("return_metrics") = false, bolt::python::OutputRedirect())
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false)
@@ -104,7 +105,8 @@ void defineAutomlInModule(py::module_& module) {
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
-           py::arg("validation"), py::arg("callbacks"), py::arg("verbose"))
+           py::arg("validation"), py::arg("callbacks"), py::arg("verbose"),
+           bolt::python::OutputRedirect())
       .def("embedding_representation", &udt::UDT::embedding,
            py::arg("input_sample"))
       .def("get_entity_embedding", &udt::UDT::entityEmbedding,

@@ -2,6 +2,7 @@
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/callbacks/EarlyStopCheckpoint.h>
 #include <bolt/src/callbacks/LearningRateScheduler.h>
+#include <bolt/src/callbacks/Overfitting.h>
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
 
@@ -88,6 +89,16 @@ void createCallbacksSubmodule(py::module_& module) {
       callbacks_submodule, "KeyboardInterrupt")
       .def(py::init<>());
 #endif
+
+  py::class_<Overfitting, std::shared_ptr<Overfitting>, Callback>(
+      callbacks_submodule, "Overfitting")
+      .def(py::init<std::string, float>(), py::arg("monitored_metric"),
+           py::arg("threshold") = 0.97, R"pbdoc(
+This callback overfits the specified training metric to a threshold and
+stops once that threshold is reached. This is useful for things like
+cold-start where we attain the best results when overfitting the unsupervised
+data.
+)pbdoc");
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
