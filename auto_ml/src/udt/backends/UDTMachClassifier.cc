@@ -4,7 +4,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
-#include <dataset/src/blocks/CategoricalMultiHashBlock.h>
+#include <dataset/src/blocks/MachBlocks.h>
 
 namespace thirdai::automl::udt {
 
@@ -16,24 +16,26 @@ UDTMachClassifier::UDTMachClassifier(
     uint32_t n_target_classes, bool integer_target,
     const data::TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
-    const config::ArgumentMap& user_args)
-    : _classifier(
-          utils::buildModel(
-              /* input_dim= */ tabular_options.feature_hash_range,
-              /* output_dim= */
-              user_args.get<uint32_t>("mach_output_dim", "integer",
-                                      autotuneMachOutputDim(n_target_classes)),
-              /* args= */ user_args, /* model_config= */ model_config,
-              /* use_sigmoid_bce = */ true),
-          user_args.get<bool>("freeze_hash_tables", "boolean",
-                              defaults::FREEZE_HASH_TABLES)) {
-  // TODO(david) should we freeze hash tables for mach? how does this work with
-  // coldstart? is this why we're getting bad msmarco accuracy?
+    const config::ArgumentMap& user_args) {
+  uint32_t output_range = user_args.get<uint32_t>(
+      "mach_output_dim", "integer", autotuneMachOutputDim(n_target_classes));
+  uint32_t num_hashes = user_args.get<uint32_t>(
+      "mach_num_hashes", "integer",
+      autotuneMachNumHashes(n_target_classes, output_range));
 
-  // TODO(david) move things like label block and coldstart out of here and into
-  // a classifier utils file?
+  _classifier = utils::Classifier(
+      utils::buildModel(
+          /* input_dim= */ tabular_options.feature_hash_range,
+          /* output_dim= */ output_range,
+          /* args= */ user_args, /* model_config= */ model_config,
+          /* use_sigmoid_bce = */ true),
+      user_args.get<bool>("freeze_hash_tables", "boolean",
+                          defaults::FREEZE_HASH_TABLES));
+  // TODO(david) should we freeze hash tables for mach? how does this work
+  // with coldstart? is this why we're getting bad msmarco accuracy?
 
-  uint32_t num_hashes
+  // TODO(david) move things like label block and coldstart out of here and
+  // into a classifier utils file?
 
   _mach_index = dataset::MachIndex();
 
