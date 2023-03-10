@@ -7,6 +7,7 @@
 #include <exception>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::bolt {
 
@@ -108,6 +109,10 @@ class EmbeddingLayerConfig {
 
   EmbeddingReductionType reduction() const { return _reduction; }
 
+  std::string reductionString() const {
+    return reductionTypeToString(_reduction);
+  }
+
   uint64_t getOutputDim() const {
     uint64_t output_dim = _num_embedding_lookups * _lookup_size;
     if (_reduction == EmbeddingReductionType::CONCATENATION) {
@@ -135,6 +140,8 @@ class EmbeddingLayerConfig {
 
   static EmbeddingReductionType getReductionType(
       const std::string& reduction_name);
+
+  static std::string reductionTypeToString(EmbeddingReductionType reduction);
 };
 
 class NormalizationLayerConfig {

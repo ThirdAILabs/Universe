@@ -47,6 +47,16 @@ class FullyConnectedNode final
       uint32_t dim, float sparsity, const std::string& activation,
       uint32_t num_tables, uint32_t hashes_per_table, uint32_t reservoir_size);
 
+  NodePtr uncompiled() final;
+
+  void copy(NodePtr& other) final {
+    auto other_fc = std::dynamic_pointer_cast<FullyConnectedNode>(other);
+    if (!other_fc) {
+      throw std::invalid_argument("Cannot copy a non-fc node to an fc node.");
+    }
+    _layer = other_fc->_layer;
+  }
+
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node);
 
   uint32_t outputDim() const final;
@@ -72,6 +82,13 @@ class FullyConnectedNode final
   float* getWeightGradientsPtr();
 
   float* getBiasGradientsPtr();
+
+  void rebuildHashTables() final;
+
+  void reconstructHashFunctions() final;
+
+  void freezeHashTables(bool insert_labels_if_not_found) final;
+
   void disableSparseParameterUpdates() final;
 
   bool hasParameters() final { return true; }

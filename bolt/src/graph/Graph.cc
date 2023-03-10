@@ -49,12 +49,12 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
   }
 
   std::unordered_map<std::string, uint32_t> layer_type_name_to_count;
-  for (auto& node : _nodes) {
-    auto node_layers = node->getInternalFullyConnectedLayers();
-    _internal_fully_connected_layers.insert(
-        _internal_fully_connected_layers.end(), node_layers.begin(),
-        node_layers.end());
-  }
+  // for (auto& node : _nodes) {
+  //   auto node_layers = node->getInternalFullyConnectedLayers();
+  //   _internal_fully_connected_layers.insert(
+  //       _internal_fully_connected_layers.end(), node_layers.begin(),
+  //       node_layers.end());
+  // }
 
 #if THIRDAI_EXPOSE_ALL
   std::string model_summary =
@@ -848,26 +848,24 @@ void BoltGraph::verifyGraphProperties() {
 }
 
 void BoltGraph::rebuildHashTables() {
-  for (auto& layer : _internal_fully_connected_layers) {
-    layer->buildHashTables();
+  for (auto& node : _nodes) {
+    node->rebuildHashTables();
   }
 }
 
 void BoltGraph::reconstructHashFunctions() {
-  for (auto& layer : _internal_fully_connected_layers) {
-    layer->reBuildHashFunction();
+  for (auto& node : _nodes) {
+    node->reconstructHashFunctions();
   }
 }
 
 void BoltGraph::freezeHashTables(bool insert_labels_if_not_found) {
-  for (auto& layer : _internal_fully_connected_layers) {
-    layer->freezeHashTables(/* insert_labels_if_not_found= */ false);
+  for (auto& node : _nodes) {
+    node->freezeHashTables(/* insert_labels_if_not_found= */ false);
   }
 
   if (insert_labels_if_not_found) {
-    for (auto& layer : _output->getInternalFullyConnectedLayers()) {
-      layer->freezeHashTables(/* insert_labels_if_not_found= */ true);
-    }
+    _output->freezeHashTables(/* insert_labels_if_not_found= */ true);
   }
 }
 

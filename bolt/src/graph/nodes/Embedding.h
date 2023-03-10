@@ -32,6 +32,21 @@ class EmbeddingNode final : public Node,
         num_tokens_per_input));
   }
 
+  NodePtr uncompiled() final {
+    return std::shared_ptr<EmbeddingNode>(new EmbeddingNode(
+        _config->numEmbeddingLookups(), _config->lookupSize(),
+        _config->logEmbeddingBlockSize(), _config->reductionString(),
+        _config->numTokensPerInput()));
+  }
+
+  void copy(NodePtr& other) final {
+    auto other_fc = std::dynamic_pointer_cast<EmbeddingNode>(other);
+    if (!other_fc) {
+      throw std::invalid_argument("Cannot copy a non-fc node to an fc node.");
+    }
+    _embedding_layer = other_fc->_embedding_layer;
+  }
+
   uint32_t outputDim() const final;
 
   std::shared_ptr<EmbeddingNode> addInput(InputPtr input);

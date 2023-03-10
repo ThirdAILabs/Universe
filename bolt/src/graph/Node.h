@@ -69,6 +69,17 @@ class Node {
    */
   void compile(LayerNameManager& name_manager);
 
+  virtual NodePtr uncompiled() {
+    throw std::runtime_error("getUncompiled() is not implemented for the " +
+                             name() + " node.");
+  }
+
+  virtual void copy(NodePtr& other) {
+    (void)other;
+    throw std::runtime_error("copy() is not implemented for the " + name() +
+                             " node.");
+  }
+
   /*
    * Computes the forward pass for the node. The node will access its inputs
    * through the getOutput() method on is predecessor(s). The labels are an
@@ -146,6 +157,14 @@ class Node {
   virtual bool isInputNode() const = 0;
 
   virtual void initOptimizer() = 0;
+
+  virtual void rebuildHashTables(){};
+
+  virtual void reconstructHashFunctions(){};
+
+  virtual void freezeHashTables(bool insert_labels_if_not_found) {
+    (void)insert_labels_if_not_found;
+  }
 
   // Prints out a single line summary in the format
   // (pred_names) -> node_name (NodeType): parameter_1=1, parameter_2=0 ...

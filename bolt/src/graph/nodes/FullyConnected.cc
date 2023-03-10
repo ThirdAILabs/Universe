@@ -5,6 +5,8 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/layers/LayerUtils.h>
+#include <memory>
 
 namespace thirdai::bolt {
 
@@ -36,6 +38,13 @@ FullyConnectedNode::makeExplicitSamplingConfig(uint32_t dim, float sparsity,
   auto sampling_config = std::make_shared<DWTASamplingConfig>(
       num_tables, hashes_per_table, reservoir_size);
   return make(dim, sparsity, activation, sampling_config);
+}
+
+NodePtr FullyConnectedNode::uncompiled() {
+  return std::shared_ptr<FullyConnectedNode>(
+      new FullyConnectedNode(_config->getDim(), _config->getSparsity(),
+                             activationFunctionToStr(_config->getActFunc()),
+                             _config->getSamplingConfig()));
 }
 
 FullyConnectedNode::FullyConnectedNode(uint64_t dim,
@@ -199,6 +208,16 @@ float* FullyConnectedNode::getBiasGradientsPtr() {
         "getBiasGradientsPtr.");
   }
   return _layer->getBiasGradientsPtr();
+}
+
+void FullyConnectedNode::rebuildHashTables() { _layer->buildHashTables(); }
+
+void FullyConnectedNode::reconstructHashFunctions() {
+  _layer->reBuildHashFunction();
+}
+
+void FullyConnectedNode::freezeHashTables(bool insert_labels_if_not_found) {
+  _layer->freezeHashTables(insert_labels_if_not_found);
 }
 
 void FullyConnectedNode::disableSparseParameterUpdates() {
