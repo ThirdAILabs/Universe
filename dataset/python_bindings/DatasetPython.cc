@@ -302,6 +302,8 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("label_delimiter") = std::nullopt,
            py::arg("integer_labels") = false,
            py::arg("normalize_categories") = false)
+      .def("label_from_id", &TextClassificationFeaturizer::labelFromId,
+           py::arg("id"))
       .def(bolt::python::getPickleFunction<TextClassificationFeaturizer>());
 
 #endif

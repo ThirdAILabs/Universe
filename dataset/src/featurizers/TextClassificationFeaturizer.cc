@@ -1,4 +1,8 @@
 #include "TextClassificationFeaturizer.h"
+#include <cereal/archives/binary.hpp>
+#include <dataset/src/utils/SafeFileIO.h>
+#include <ostream>
+#include <string>
 
 namespace thirdai::dataset {
 
@@ -69,4 +73,35 @@ BoltVector TextClassificationFeaturizer::pairgramVector(
   std::fill_n(vector.activations, vector.len, 1.0);
   return vector;
 }
+
+void TextClassificationFeaturizer::save(const std::string& filename) const {
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  save_stream(filestream);
+}
+
+void TextClassificationFeaturizer::save_stream(
+    std::ostream& output_stream) const {
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
+
+TextClassificationFeaturizerPtr TextClassificationFeaturizer::load(
+    const std::string& filename) {
+  std::ifstream filestream =
+      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  return load_stream(filestream);
+}
+
+TextClassificationFeaturizerPtr TextClassificationFeaturizer::load_stream(
+    std::istream& input_stream) {
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<TextClassificationFeaturizer> deserialize_into(
+      new TextClassificationFeaturizer());
+  iarchive(*deserialize_into);
+  return deserialize_into;
+}
+
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::TextClassificationFeaturizer)

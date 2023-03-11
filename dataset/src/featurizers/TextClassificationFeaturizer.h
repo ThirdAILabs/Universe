@@ -14,12 +14,18 @@
 #include <dataset/src/utils/TokenEncoding.h>
 #include <utils/StringManipulation.h>
 #include <algorithm>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 
 namespace thirdai::dataset {
+
+class TextClassificationFeaturizer;
+
+using TextClassificationFeaturizerPtr =
+    std::shared_ptr<TextClassificationFeaturizer>;
 
 class TextClassificationFeaturizer final : public Featurizer {
  public:
@@ -33,8 +39,9 @@ class TextClassificationFeaturizer final : public Featurizer {
       : _text_column(text_column),
         _delimiter(delimiter),
         _tokens(tokens),
-        _label_block(labelBlock(label_column, n_labels, integer_labels,
-                                label_delimiter, normalize_categories)) {}
+        _vocab(integer_labels ? nullptr : ThreadSafeVocabulary::make(n_labels)),
+        _label_block(labelBlock(label_column, n_labels, _vocab, label_delimiter,
+                                normalize_categories)) {}
 
   bool expectsHeader() const final { return true; }
 
@@ -60,18 +67,33 @@ class TextClassificationFeaturizer final : public Featurizer {
     }
   }
 
+  std::string labelFromId(uint32_t id) {
+    if (!_vocab) {
+      return std::to_string(id);
+    }
+    return _vocab->getString(id);
+  }
+
+  void save(const std::string& filename) const;
+
+  void save_stream(std::ostream& output_stream) const;
+
+  static TextClassificationFeaturizerPtr load(const std::string& filename);
+
+  static TextClassificationFeaturizerPtr load_stream(
+      std::istream& input_stream);
+
  private:
   static BlockPtr labelBlock(const std::string& label_column, uint32_t n_labels,
-                             bool integer_labels,
+                             ThreadSafeVocabularyPtr vocab,
                              std::optional<char> label_delimiter,
                              bool normalize_categories) {
-    if (integer_labels) {
+    if (!vocab) {
       return NumericalCategoricalBlock::make(
           label_column, n_labels, label_delimiter, normalize_categories);
     }
     return StringLookupCategoricalBlock::make(
-        label_column, ThreadSafeVocabulary::make(n_labels), label_delimiter,
-        normalize_categories);
+        label_column, std::move(vocab), label_delimiter, normalize_categories);
   }
 
   static std::vector<uint32_t> tokens(std::string_view text_column);
@@ -83,6 +105,7 @@ class TextClassificationFeaturizer final : public Featurizer {
   ColumnIdentifier _text_column;
   char _delimiter;
   Tokens _tokens;
+  ThreadSafeVocabularyPtr _vocab;
   BlockPtr _label_block;
 
   // Default constructor for cereal
@@ -92,10 +115,8 @@ class TextClassificationFeaturizer final : public Featurizer {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<Featurizer>(this), _text_column, _delimiter,
-            _tokens, _label_block);
+            _tokens, _vocab, _label_block);
   }
 };
 
 }  // namespace thirdai::dataset
-
-CEREAL_REGISTER_TYPE(thirdai::dataset::TextClassificationFeaturizer)
