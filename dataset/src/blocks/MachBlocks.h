@@ -90,7 +90,10 @@ class NumericCategoricalMachIndex : public MachIndex {
   }
 
   std::unordered_map<uint32_t, std::vector<uint32_t>> _hash_to_entity_id;
-};  // namespace thirdai::dataset
+};
+
+using NumericCategoricalMachIndexPtr =
+    std::shared_ptr<NumericCategoricalMachIndex>;
 
 class StringCategoricalMachIndex : public MachIndex {
  public:
