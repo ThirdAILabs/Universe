@@ -9,6 +9,7 @@
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/MachBlocks.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <stdexcept>
 
@@ -20,20 +21,20 @@ class UDTMachClassifier final : public UDTBackend {
                     const data::UserProvidedTemporalRelationships&
                         temporal_tracking_relationships,
                     const std::string& target_name,
-                    data::CategoricalDataTypePtr target,
+                    const data::CategoricalDataTypePtr& target,
                     uint32_t n_target_classes, bool integer_target,
                     const data::TabularOptions& tabular_options,
                     const std::optional<std::string>& model_config,
                     const config::ArgumentMap& user_args);
 
-  void train(const dataset::DataSourcePtr& data, float learning_rate,
-             uint32_t epochs,
-             const std::optional<ValidationDataSource>& validation,
-             std::optional<size_t> batch_size_opt,
-             std::optional<size_t> max_in_memory_batches,
-             const std::vector<std::string>& metrics,
-             const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-             bool verbose, std::optional<uint32_t> logging_interval) final;
+  py::object train(
+      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+      const std::optional<ValidationDataSource>& validation,
+      std::optional<size_t> batch_size_opt,
+      std::optional<size_t> max_in_memory_batches,
+      const std::vector<std::string>& metrics,
+      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
+      bool verbose, std::optional<uint32_t> logging_interval) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -82,14 +83,16 @@ class UDTMachClassifier final : public UDTBackend {
   }
 
  private:
-  dataset::CategoricalBlockPtr labelBlock(
-      const std::string& target_name,
-      data::CategoricalDataTypePtr& target_config, uint32_t n_target_classes,
-      bool integer_target);
-
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this
     return n_target_classes / 25;
+  }
+
+  static uint32_t autotuneMachNumHashes(uint32_t n_target_classes,
+                                        uint32_t output_range) {
+    (void)n_target_classes;
+    (void)output_range;
+    return 7;
   }
 
   UDTMachClassifier() : _classifier(nullptr, false) {}
@@ -99,7 +102,8 @@ class UDTMachClassifier final : public UDTBackend {
   template <class Archive>
   void serialize(Archive& archive);
 
-  utils::Classifier _classifier;
+  std::shared_ptr<utils::Classifier> _classifier;
+  dataset::MachIndexPtr _mach_index;
   dataset::CategoricalBlockPtr _multi_hash_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
 };

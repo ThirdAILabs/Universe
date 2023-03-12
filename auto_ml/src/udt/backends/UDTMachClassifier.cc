@@ -12,7 +12,8 @@ UDTMachClassifier::UDTMachClassifier(
     const data::ColumnDataTypes& input_data_types,
     const data::UserProvidedTemporalRelationships&
         temporal_tracking_relationships,
-    const std::string& target_name, data::CategoricalDataTypePtr target,
+    const std::string& target_name,
+    const data::CategoricalDataTypePtr& target_config,
     uint32_t n_target_classes, bool integer_target,
     const data::TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
@@ -23,7 +24,7 @@ UDTMachClassifier::UDTMachClassifier(
       "mach_num_hashes", "integer",
       autotuneMachNumHashes(n_target_classes, output_range));
 
-  _classifier = utils::Classifier(
+  _classifier = utils::Classifier::make(
       utils::buildModel(
           /* input_dim= */ tabular_options.feature_hash_range,
           /* output_dim= */ output_range,
@@ -31,16 +32,24 @@ UDTMachClassifier::UDTMachClassifier(
           /* use_sigmoid_bce = */ true),
       user_args.get<bool>("freeze_hash_tables", "boolean",
                           defaults::FREEZE_HASH_TABLES));
+
   // TODO(david) should we freeze hash tables for mach? how does this work
   // with coldstart? is this why we're getting bad msmarco accuracy?
 
   // TODO(david) move things like label block and coldstart out of here and
   // into a classifier utils file?
 
-  _mach_index = dataset::MachIndex();
+  if (integer_target) {
+    _mach_index = dataset::NumericCategoricalMachIndex::make(
+        /* output_range = */ output_range, /* num_hashes = */ num_hashes);
+  } else {
+    _mach_index = dataset::StringCategoricalMachIndex::make(
+        /* output_range = */ output_range, /* num_hashes = */ num_hashes,
+        /* max_elements = */ n_target_classes);
+  }
 
-  _multi_hash_label_block =
-      labelBlock(target_name, target, n_target_classes, integer_target);
+  auto mach_label_block = dataset::MachBlock::make(target_name, _mach_index,
+                                                   target_config->delimiter);
 
   bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
 
@@ -50,7 +59,7 @@ UDTMachClassifier::UDTMachClassifier(
       std::set<std::string>{target_name}, tabular_options, force_parallel);
 }
 
-void UDTMachClassifier::train(
+py::object UDTMachClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
     const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
@@ -70,10 +79,10 @@ void UDTMachClassifier::train(
   auto train_dataset_loader =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  _classifier.train(train_dataset_loader, learning_rate, epochs,
-                    validation_dataset_loader, batch_size_opt,
-                    max_in_memory_batches, metrics, callbacks, verbose,
-                    logging_interval, licensing::TrainPermissionsToken(data));
+  return _classifier->train(
+      train_dataset_loader, learning_rate, epochs, validation_dataset_loader,
+      batch_size_opt, max_in_memory_batches, metrics, callbacks, verbose,
+      logging_interval, licensing::TrainPermissionsToken(data));
 }
 
 py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -83,21 +92,21 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        bool verbose, bool return_metrics) {
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
-  return _classifier.evaluate(dataset, metrics, sparse_inference,
-                              return_predicted_class, verbose, return_metrics);
+  return _classifier->evaluate(dataset, metrics, sparse_inference,
+                               return_predicted_class, verbose, return_metrics);
 }
 
 py::object UDTMachClassifier::predict(const MapInput& sample,
                                       bool sparse_inference,
                                       bool return_predicted_class) {
-  return _classifier.predict(_dataset_factory->featurizeInput(sample),
-                             sparse_inference, return_predicted_class);
+  return _classifier->predict(_dataset_factory->featurizeInput(sample),
+                              sparse_inference, return_predicted_class);
 }
 
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                            bool sparse_inference,
                                            bool return_predicted_class) {
-  return _classifier.predictBatch(
+  return _classifier->predictBatch(
       _dataset_factory->featurizeInputBatch(samples), sparse_inference,
       return_predicted_class);
 }
@@ -117,16 +126,12 @@ py::object UDTMachClassifier::entityEmbedding(
 
 std::string UDTMachClassifier::className(uint32_t class_id) const {}
 
-dataset::CategoricalBlockPtr UDTMachClassifier::labelBlock(
-    const std::string& target_name, data::CategoricalDataTypePtr& target_config,
-    uint32_t n_target_classes, bool integer_target) {}
-
 template <class Archive>
-void serialize(Archive& archive) {
+void UDTMachClassifier::serialize(Archive& archive) {
   archive(cereal::base_class<UDTBackend>(this), _classifier,
           _multi_hash_label_block, _dataset_factory);
 }
 
 }  // namespace thirdai::automl::udt
 
-CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTMachlassifier)
+CEREAL_REGISTER_TYPE(thirdai::automl::udt::UDTMachClassifier)

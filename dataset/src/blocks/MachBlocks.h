@@ -5,14 +5,20 @@
 
 namespace thirdai::dataset {
 
+namespace tests {
+class MachBlockTest;
+}  // namespace tests
+
 static std::vector<uint32_t> getHashes(const std::string& string,
-                                       uint32_t num_hashes) {
+                                       uint32_t num_hashes,
+                                       uint32_t output_range) {
   std::vector<uint32_t> hashes;
   uint32_t starting_hash_seed = 341;
   for (uint32_t hash_seed = starting_hash_seed;
        hash_seed < starting_hash_seed + num_hashes; hash_seed++) {
     hashes.push_back(
-        hashing::MurmurHash(string.data(), string.size(), hash_seed));
+        hashing::MurmurHash(string.data(), string.size(), hash_seed) %
+        output_range);
   }
 
   return hashes;
@@ -64,7 +70,7 @@ class NumericCategoricalMachIndex : public MachIndex {
       throw std::invalid_argument("Received label " + std::to_string(id) +
                                   " larger than or equal to n_target_classes");
     }
-    auto hashes = getHashes(string, _num_hashes);
+    auto hashes = getHashes(string, _num_hashes, _output_range);
 
 #pragma omp critical(streaming_map_update)
     {
@@ -108,10 +114,10 @@ class StringCategoricalMachIndex : public MachIndex {
             " totalling greater than the max number of expected categories: " +
             std::to_string(_max_elements) + ".");
       }
-      return getHashes(string, _num_hashes);
+      return getHashes(string, _num_hashes, _output_range);
     }
 
-    auto hashes = getHashes(string, _num_hashes);
+    auto hashes = getHashes(string, _num_hashes, _output_range);
 #pragma omp critical(streaming_string_lookup)
     {
       if (!_entity_to_id.count(string)) {
@@ -133,7 +139,7 @@ class StringCategoricalMachIndex : public MachIndex {
   }
 
  private:
-  bool indexIsFull() { return _entity_to_id.size() == _current_vocab_size; }
+  bool indexIsFull() { return _current_vocab_size == _max_elements; }
 
   friend class cereal::access;
   template <class Archive>
@@ -160,13 +166,6 @@ class MachBlock final : public CategoricalBlock {
                          /* dim= */ index->outputRange(), delimiter),
         _index(std::move(index)) {}
 
-  MachBlock(ColumnIdentifier col, uint32_t output_range, uint32_t num_hashes,
-            uint32_t max_elements, std::optional<char> delimiter = std::nullopt)
-      : MachBlock(std::move(col),
-                  StringCategoricalMachIndex::make(output_range, num_hashes,
-                                                   max_elements),
-                  delimiter) {}
-
   static auto make(ColumnIdentifier col, MachIndexPtr index,
                    std::optional<char> delimiter = std::nullopt) {
     return std::make_shared<MachBlock>(std::move(col), std::move(index),
@@ -181,6 +180,8 @@ class MachBlock final : public CategoricalBlock {
     (void)category_value;
     throw std::invalid_argument("Explainability not supported.");
   }
+
+  friend class tests::MachBlockTest;
 
  protected:
   void encodeCategory(std::string_view category,
