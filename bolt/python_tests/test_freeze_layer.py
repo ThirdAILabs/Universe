@@ -64,7 +64,7 @@ def original_model(input_dim):
     return model
 
 
-def model_with_shared_embedding_and_hidden_layers(original):
+def uncompiled_clone(original):
     input_layer = original.get_layer("input_1").clone_for_layer_sharing()
     embedding_layer = original.get_layer("embedding_1").clone_for_layer_sharing()(
         input_layer
@@ -75,9 +75,13 @@ def model_with_shared_embedding_and_hidden_layers(original):
     output_layer = bolt.nn.FullyConnected(dim=3, activation="softmax")(fc_hidden_layer)
 
     model = bolt.nn.Model(inputs=[input_layer], output=output_layer)
-    model.compile(bolt.nn.losses.CategoricalCrossEntropy())
 
-    return model
+    return model, embedding_layer, fc_hidden_layer
+
+
+def share_layers(original, clone):
+    clone.get_layer("embedding_1").share_layer(original.get_layer("embedding_1"))
+    clone.get_layer("fc_1").share_layer(original.get_layer("fc_1"))
 
 
 def freeze_shared_layers(model):
@@ -102,31 +106,41 @@ def eval_results(model, data, labels):
 
 @pytest.mark.unit
 @pytest.mark.parametrize(
-    "how_to_freeze",
-    ["freeze_original_before_cloning", "freeze_original_after_cloning", "freeze_clone"],
+    "when_to_freeze",
+    [
+        "freeze_before_compile_clone",
+        "freeze_after_compile_clone_before_share_layer",
+        "freeze_after_share_layer",
+    ],
 )
-def test_freeze_layer(load_dataset, how_to_freeze):
+def test_freeze_layer(load_dataset, when_to_freeze):
     data, labels, input_dim = load_dataset
 
     original = original_model(input_dim)
     original_results = eval_results(original, data, labels)
 
-    if how_to_freeze == "freeze_original_before_cloning":
-        freeze_shared_layers(original)
+    clone, embedding_layer, fc_hidden_layer = uncompiled_clone(original)
 
-    clone = model_with_shared_embedding_and_hidden_layers(original)
-    initial_clone_results = eval_results(clone, data, labels)
+    if when_to_freeze == "freeze_before_compile_clone":
+        embedding_layer.freeze()
+        fc_hidden_layer.freeze()
 
-    if how_to_freeze == "freeze_original_after_cloning":
-        freeze_shared_layers(original)
+    clone.compile(bolt.nn.losses.CategoricalCrossEntropy())
 
-    if how_to_freeze == "freeze_clone":
+    if when_to_freeze == "freeze_after_compile_clone_before_share_layer":
         freeze_shared_layers(clone)
+
+    share_layers(original, clone)
+
+    if when_to_freeze == "freeze_after_share_layer":
+        freeze_shared_layers(clone)
+
+    initial_clone_results = eval_results(clone, data, labels)
 
     train(clone, data, labels)
 
     clone_results_after_training = eval_results(clone, data, labels)
-    original_results_after_clone_traininig = eval_results(original, data, labels)
+    original_results_after_clone_training = eval_results(original, data, labels)
 
     # We expect clone eval results to change since the output layer, which is
     # not shared, is not frozen. However, we expect original eval results to stay
@@ -134,4 +148,4 @@ def test_freeze_layer(load_dataset, how_to_freeze):
     # These checks ensure that the frozen layers, and only the frozen layers, are
     # unchanged during training.
     assert (clone_results_after_training != initial_clone_results).any()
-    assert (original_results_after_clone_traininig == original_results).all()
+    assert (original_results_after_clone_training == original_results).all()
