@@ -29,11 +29,14 @@ thirdai::dataset::TextClassificationFeaturizer::featurize(
     switch (_tokens) {
       case Tokens::UNI_ONLY:
         feature_columns[0][row_id] = unigramVector(text_tokens);
+        break;
       case Tokens::PAIR_ONLY:
         feature_columns[0][row_id] = pairgramVector(text_tokens);
+        break;
       case Tokens::UNI_PAIR:
         feature_columns[0][row_id] = unigramVector(text_tokens);
         feature_columns[1][row_id] = pairgramVector(text_tokens);
+        break;
     }
 
     SegmentedSparseFeatureVector builder;
