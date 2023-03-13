@@ -82,7 +82,13 @@ class UDTMachClassifier final : public UDTBackend {
   bool integerTarget() const {
     return static_cast<bool>(
         std::dynamic_pointer_cast<dataset::NumericCategoricalMachIndex>(
-            _mach_index));
+            _mach_label_block->index()));
+  }
+
+  cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
+    return std::make_shared<cold_start::ColdStartMetaData>(
+        _mach_label_block->delimiter(), _mach_label_block->columnName(),
+        integerTarget());
   }
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {

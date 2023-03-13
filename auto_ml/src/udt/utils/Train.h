@@ -1,7 +1,6 @@
 #pragma once
 
 #include <bolt/src/graph/Graph.h>
-#include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <dataset/src/Datasets.h>
@@ -34,12 +33,5 @@ bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
 
 std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> splitDataLabels(
     dataset::BoltDatasetList&& datasets);
-
-std::shared_ptr<cold_start::ColdStartDataSource> augmentColdStartData(
-    const dataset::DataSourcePtr& data,
-    const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names,
-    const data::TabularDatasetFactoryPtr& dataset_factory, bool integer_target,
-    const std::string& label_column_name, std::optional<char> label_delimiter);
 
 }  // namespace thirdai::automl::udt::utils

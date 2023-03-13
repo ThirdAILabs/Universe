@@ -123,11 +123,10 @@ py::object UDTClassifier::coldstart(
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::optional<ValidationDataSource>& validation,
     const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
-  auto data_source = utils::augmentColdStartData(
-      data, strong_column_names, weak_column_names, _dataset_factory,
-      /* integer_target = */ integerTarget(),
-      /* label_column_name = */ _label_block->columnName(),
-      /* label_delimiter = */ _label_block->delimiter());
+  auto metadata = getColdStartMetaData();
+
+  auto data_source = cold_start::preprocessColdStartTrainSource(
+      data, strong_column_names, weak_column_names, _dataset_factory, metadata);
 
   return train(data_source, learning_rate, epochs, validation,
                /* batch_size = */ std::nullopt,

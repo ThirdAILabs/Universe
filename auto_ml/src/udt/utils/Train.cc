@@ -1,7 +1,6 @@
 #include "Train.h"
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/Datasets.h>
-#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 
 namespace thirdai::automl::udt::utils {
 
@@ -179,50 +178,6 @@ std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> splitDataLabels(
   auto labels = datasets.back();
   datasets.pop_back();
   return {datasets, labels};
-}
-
-std::shared_ptr<cold_start::ColdStartDataSource> augmentColdStartData(
-    const dataset::DataSourcePtr& data,
-    const std::vector<std::string>& strong_column_names,
-    const std::vector<std::string>& weak_column_names,
-    const data::TabularDatasetFactoryPtr& dataset_factory, bool integer_target,
-    const std::string& label_column_name, std::optional<char> label_delimiter) {
-  if (!integer_target) {
-    throw std::invalid_argument(
-        "Cold start pretraining currently only supports integer labels.");
-  }
-
-  if (dataset_factory->inputDataTypes().size() != 1 ||
-      !data::asText(dataset_factory->inputDataTypes().begin()->second)) {
-    throw std::invalid_argument(
-        "Cold start pretraining can only be used on datasets with a single "
-        "text input column and target column. The current model is configured "
-        "with " +
-        std::to_string(dataset_factory->inputDataTypes().size()) +
-        " input columns.");
-  }
-
-  std::string text_column_name =
-      dataset_factory->inputDataTypes().begin()->first;
-
-  auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
-      data, dataset_factory->delimiter());
-
-  thirdai::data::ColdStartTextAugmentation augmentation(
-      /* strong_column_names= */ strong_column_names,
-      /* weak_column_names= */ weak_column_names,
-      /* label_column_name= */ label_column_name,
-      /* output_column_name= */ text_column_name);
-
-  auto augmented_data = augmentation.apply(dataset);
-
-  return cold_start::ColdStartDataSource::make(
-      /* column_map= */ augmented_data,
-      /* text_column_name= */ text_column_name,
-      /* label_column_name= */ label_column_name,
-      /* column_delimiter= */ dataset_factory->delimiter(),
-      /* label_delimiter= */ label_delimiter,
-      /* resource_name = */ data->resourceName());
 }
 
 }  // namespace thirdai::automl::udt::utils
