@@ -149,9 +149,6 @@ class TabularDatasetFactory {
   ColumnDataTypes _data_types;
   std::set<std::string> _label_col_names;
   char _delimiter;
-  std::optional<char> _label_delimiter_name;
-  std::string _label_column_name;
-  bool _integer_target;
 };
 
 using TabularDatasetFactoryPtr = std::shared_ptr<TabularDatasetFactory>;
