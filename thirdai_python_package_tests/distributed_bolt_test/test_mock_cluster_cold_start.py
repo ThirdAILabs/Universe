@@ -4,7 +4,14 @@ import pandas as pd
 import pytest
 from distributed_utils import ray_two_node_cluster_config, split_into_2
 from thirdai import bolt
-from thirdai.demos import download_amazon_kaggle_product_catalog_sampled
+from thirdai.demos import (
+    download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
+)
+
+
+@pytest.fixture(scope="module")
+def download_amazon_kaggle_product_catalog_sampled():
+    return download_amazon_kaggle_product_catalog_sampled_wrapped()
 
 
 pytestmark = [pytest.mark.distributed]
@@ -44,8 +51,12 @@ def get_udt_cold_start_model(n_target_classes):
 
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
-def test_distributed_cold_start(ray_two_node_cluster_config):
-    n_target_classes = download_and_split_dataset()
+def test_distributed_cold_start(
+    ray_two_node_cluster_config, download_amazon_kaggle_product_catalog_sampled
+):
+    n_target_classes = download_and_split_dataset(
+        download_amazon_kaggle_product_catalog_sampled
+    )
 
     udt_model = get_udt_cold_start_model(n_target_classes)
 
