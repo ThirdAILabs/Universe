@@ -20,7 +20,7 @@ def kill_background_process():
     global background_process
     if background_process != None:
         poll = background_process.poll()
-        if poll is None:
+        if poll is not None:
             raise ValueError(
                 f"Telemetry process terminated early with exit code {poll}"
             )
@@ -39,7 +39,11 @@ wrapped_start_method = thirdai._thirdai.telemetry.start
 wrapped_stop_method = thirdai._thirdai.telemetry.stop
 
 
-def start(port: Optional[int] = None, write_dir: Optional[str] = None):
+def start(
+    port: Optional[int] = None,
+    write_dir: Optional[str] = None,
+    optional_endpoint_url: Optional[str] = None,
+):
     global background_process
     if background_process != None:
         raise RuntimeError(
@@ -56,7 +60,7 @@ def start(port: Optional[int] = None, write_dir: Optional[str] = None):
 
     # Could also try using os.fork
     python_executable = sys.executable
-    push_location = str(pathlib.Path(write_dir) / ("telemetry-" + UUID))
+    push_location = write_dir + f"/telemetry-" + UUID
     background_process = subprocess.Popen(
         [
             python_executable,
@@ -65,6 +69,8 @@ def start(port: Optional[int] = None, write_dir: Optional[str] = None):
             telemetry_url,
             "--push_location",
             push_location,
+            "--optional_endpoint_url",
+            str(optional_endpoint_url),
         ]
     )
 

@@ -187,7 +187,7 @@ setup(
             "pytest",
             "pytest-mock",
             "boto3",
-            "moto",
+            "moto[server]",
             "mlflow==1.23.1",
             "protobuf==3.19.6",
             "datasets",
