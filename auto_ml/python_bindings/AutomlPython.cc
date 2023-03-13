@@ -2,6 +2,7 @@
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
@@ -128,6 +129,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
+      .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &UDTFactory::save_udt, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"));
 }
@@ -197,6 +199,21 @@ void createModelsSubmodule(py::module_& module) {
            docs::TEXT_CLASSIFIER_PREDICT)
       .def("save", &UDTFactory::saveTextClassifier, py::arg("filename"),
            docs::TEXT_CLASSIFIER_SAVE);
+}
+
+void createDistributedPreprocessingWrapper(py::module_& module) {
+  auto distributed_preprocessing_submodule =
+      module.def_submodule("distributed_preprocessing");
+  distributed_preprocessing_submodule.def(
+      "preprocess_cold_start_train_source",
+      &cold_start::preprocessColdStartTrainSource, py::arg("data"),
+      py::arg("strong_column_names"), py::arg("weak_column_names"),
+      py::arg("dataset_factory"), py::arg("metadata"));
+
+  py::class_<cold_start::ColdStartMetaData, cold_start::ColdStartMetaDataPtr>(
+      distributed_preprocessing_submodule, "ColdStartMetaData")
+      .def(bolt::python::getPickleFunction<cold_start::ColdStartMetaData>());
+  ;
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

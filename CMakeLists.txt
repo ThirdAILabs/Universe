@@ -370,6 +370,7 @@ set(THIRDAI_SOURCES
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
+    dataset/src/cold_start/ColdStartDataSource.cc
     dataset/src/utils/TokenEncoding.cc
     dataset/src/utils/CsvParser.cc
     dataset/src/blocks/ColumnIdentifier.cc
@@ -400,7 +401,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/Parameter.cc
-    auto_ml/src/cold_start/ColdStartDataSource.cc
+    auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc
     utils/StringManipulation.cc)
 
