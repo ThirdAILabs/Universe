@@ -1,27 +1,23 @@
 
 #include "PrometheusClient.h"
 #include <deps/prometheus-cpp/3rdparty/civetweb/include/CivetServer.h>
+#include <exceptions/src/Exceptions.h>
 #include <utils/Logging.h>
 #include <stdexcept>
 
 namespace thirdai::telemetry {
 
-// If we want to start the telemetry server automatically from environment vars
-// in the future, we can uncomment this line of code. We can also then delete
-// the move and copy operators and constructors in PrometheusTelemetryClient to
-// make sure the telemetry object cannot be changed. For now, we will start
-// telemetry manually.
-// PrometheusTelemetryClient client =
-//  PrometheusTelemetryClient::startTelemetryFromEnvVars();
 PrometheusTelemetryClient client = PrometheusTelemetryClient::startNoop();
 
-void createGlobalTelemetryClient(uint32_t port) {
+std::string createGlobalTelemetryClient(uint32_t port) {
   if (!client.isNoop()) {
     throw std::runtime_error(
         "Trying to start telemetry client when one is already running. You "
         "should stop the current client before starting a new one.");
   }
-  client = PrometheusTelemetryClient::start(port);
+  std::string bind_address = "127.0.0.1:" + std::to_string(port);
+  client = PrometheusTelemetryClient::start(bind_address);
+  return bind_address;
 }
 
 void stopGlobalTelemetryClient() {
@@ -30,34 +26,14 @@ void stopGlobalTelemetryClient() {
   client = PrometheusTelemetryClient::startNoop();
 }
 
-PrometheusTelemetryClient PrometheusTelemetryClient::startFromEnvVars() {
-  // TODO(Josh): Add telemetry info to public docs
-
-  // I think it is safe to use std::getenv in static functions, see
-  // https://stackoverflow.com/questions/437279/is-it-safe-to-use-getenv-in-static-initializers-that-is-before-main
-  const char* env_dont_use_telemetry =
-      std::getenv("THIRDAI_DONT_USE_TELEMETRY");
-  if (env_dont_use_telemetry != NULL) {
-    return startNoop();
-  }
-
-  uint32_t port = THIRDAI_DEFAULT_TELEMETRY_PORT;
-  const char* env_license_port = std::getenv("THIRDAI_TELEMETRY_PORT");
-  if (env_license_port != NULL) {
-    port = std::stoi(env_license_port);
-  }
-
-  return start(port);
-}
-
-PrometheusTelemetryClient PrometheusTelemetryClient::start(uint32_t port) {
+PrometheusTelemetryClient PrometheusTelemetryClient::start(
+    const std::string& bind_address) {
   std::shared_ptr<prometheus::Exposer> exposer;
   try {
-    exposer = std::make_shared<prometheus::Exposer>(
-        /* bind_address = */ "127.0.0.1:" + std::to_string(port));
+    exposer = std::make_shared<prometheus::Exposer>(bind_address);
   } catch (const CivetException& e) {
     logging::error(
-        "Cannot start telemetry client on port " + std::to_string(port) +
+        "Cannot start telemetry client on " + bind_address +
         ", possibly there is already a telemetry instance on this port. Please "
         "choose a different port if you want to use telemetry. Continuing "
         "without telemetry.");

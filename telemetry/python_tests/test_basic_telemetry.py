@@ -16,25 +16,20 @@ from thirdai import telemetry
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 THIRDAI_TEST_TELEMETRY_PORT = 20730
-THIRDAI_TEST_TELEMETRY_URL = f"http://localhost:{20730}/metrics"
+THIRDAI_TEST_TELEMETRY_URL = f"http://localhost:{THIRDAI_TEST_TELEMETRY_PORT}/metrics"
+THIRDAI_TEST_TELEMETRY_FILE = "test_telemetry_file"
+THIRDAI_TEST_TELEMETRY_S3_PATH = "s3:/test_bucket/test_telemetry_file"
 
 
-# autouse=True means that every test in this file will require this fixture
-# and start and stop telemetry, ensuring that the test can check telemetry
-# independent of other tests.
-@pytest.fixture(autouse=True)
-def with_telemetry():
-    telemetry.start(THIRDAI_TEST_TELEMETRY_PORT)
-    # Yielding here means that telemetry.stop() will get called after the
-    # test finishes, see
-    # https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended
-    yield
-    telemetry.stop()
-
-
-def scrape_telemetry(url):
+def scrape_telemetry(method):
     telemetry = {}
-    raw_telemetry = requests.get(url).content.decode("utf-8")
+    if method == "normal":
+        raw_telemetry = requests.get(THIRDAI_TEST_TELEMETRY_URL).content.decode("utf-8")
+    elif method == "file":
+        with open(THIRDAI_TEST_TELEMETRY_FILE) as f:
+            raw_telemetry = f.read()
+    else:
+        raise ValueError(f"Unknown method {method}")
     for family in text_string_to_metric_families(raw_telemetry):
         for name, labels, value, _, _ in family.samples:
             if name not in telemetry:
@@ -107,7 +102,12 @@ def check_telemetry(
     )
 
 
-def test_udt_telemetry():
+# kill_telemetry_after_udt should be true if we are writing to a file or s3,
+# since we want to make sure the writing is flushed to the file so we do not
+# read a partial read. It should be false (and killed manually) if we are just
+# checking the port, since that will only be available as long as telemetry is
+# running.
+def run_udt_telemetry_test(method, kill_telemetry_after_udt):
     import time
 
     eval_count = 2
@@ -140,9 +140,12 @@ def test_udt_telemetry():
         udt_model.predict_batch(batch_sample())
     batch_predict_duration = time.time() - batch_predict_start
 
-    telemetry = scrape_telemetry(THIRDAI_TEST_TELEMETRY_URL)
+    if kill_telemetry_after_udt:
+        telemetry.stop()
+
+    scraped_telemetry = scrape_telemetry(method)
     check_telemetry(
-        telemetry,
+        scraped_telemetry,
         train_count=1,
         train_duration=train_duration,
         eval_count=eval_count,
@@ -158,14 +161,48 @@ def test_udt_telemetry():
     )
 
 
+def test_udt_telemetry_normal():
+    try:
+        telemetry.start(THIRDAI_TEST_TELEMETRY_PORT)
+        run_udt_telemetry_test(method="normal", kill_telemetry_after_udt=False)
+    finally:
+        telemetry.stop()
+
+
+def test_udt_telemetry_file():
+    try:
+        telemetry.start(file_write_location=THIRDAI_TEST_TELEMETRY_FILE)
+        run_udt_telemetry_test(method="file", kill_telemetry_after_udt=True)
+    finally:
+        telemetry.stop()
+
+
+# TODO(Josh): Implement s3 writing and this test with moto, then remove xfail
+@pytest.mark.xfail
+def test_udt_telemetry_s3():
+    try:
+        telemetry.start(file_write_location=THIRDAI_TEST_TELEMETRY_S3_PATH)
+        run_udt_telemetry_test(method="s3", kill_telemetry_after_udt=True)
+    finally:
+        telemetry.stop()
+
+
 def test_error_starting_two_telemetry_clients():
-    with pytest.raises(
-        RuntimeError,
-        match="Trying to start telemetry client when one is already running.*",
-    ):
-        telemetry.start()
+    try:
+        telemetry.start(THIRDAI_TEST_TELEMETRY_PORT)
+        with pytest.raises(
+            RuntimeError,
+            match="Trying to start telemetry client when one is already running.*",
+        ):
+            telemetry.start(THIRDAI_TEST_TELEMETRY_PORT + 1)
+    finally:
+        telemetry.stop()
 
 
 def test_stop_and_start_telemetry():
-    telemetry.stop()
-    telemetry.start(THIRDAI_TEST_TELEMETRY_PORT)
+    try:
+        telemetry.start(THIRDAI_TEST_TELEMETRY_PORT)
+        telemetry.stop()
+        telemetry.start(THIRDAI_TEST_TELEMETRY_PORT)
+    finally:
+        telemetry.stop()

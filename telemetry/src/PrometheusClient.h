@@ -4,6 +4,7 @@
 #include <prometheus/exposer.h>
 #include <prometheus/histogram.h>
 #include <prometheus/registry.h>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::telemetry {
@@ -21,7 +22,8 @@ const inline uint32_t THIRDAI_DEFAULT_TELEMETRY_PORT = 9929;
 // wants to track telemetry.
 extern PrometheusTelemetryClient client;
 
-void createGlobalTelemetryClient(
+// Returns the url of the Prometheus telemetry endpoint
+std::string createGlobalTelemetryClient(
     uint32_t port = THIRDAI_DEFAULT_TELEMETRY_PORT);
 
 void stopGlobalTelemetryClient();
@@ -32,9 +34,7 @@ void stopGlobalTelemetryClient();
  */
 class PrometheusTelemetryClient {
  public:
-  static PrometheusTelemetryClient startFromEnvVars();
-
-  static PrometheusTelemetryClient start(uint32_t port);
+  static PrometheusTelemetryClient start(const std::string& bind_address);
 
   static PrometheusTelemetryClient startNoop() {
     return PrometheusTelemetryClient();
