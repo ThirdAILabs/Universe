@@ -2,6 +2,7 @@
 
 #include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/DataSource.h>
@@ -162,6 +163,16 @@ class UDTBackend {
    */
   virtual data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return nullptr;
+  }
+
+  /**
+   * Returns metadata for ColdStart which are needed to be passed to
+   * ColdStartPreprocessing. Optional Method that is not supported by
+   * defaults for backends. This method is primarily used for distributed
+   * training.
+   */
+  virtual cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
+    throw notSupported("getColdStartMetaData");
   }
 
   virtual void indexNodes(const dataset::DataSourcePtr& source) {

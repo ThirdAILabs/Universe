@@ -269,5 +269,8 @@ class Worker:
     def freeze_hash_tables(self):
         self.model.freeze_hash_tables(True)
 
+    def get_updated_metrics(self):
+        return self.model.get_updated_metrics()
+
     def model(self):
         return self.model.model

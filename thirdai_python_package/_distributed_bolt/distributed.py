@@ -11,6 +11,7 @@ from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
 from thirdai._distributed_bolt.backend.train_state_manager import TrainStateManager
 from thirdai._distributed_bolt.dataset_loaders import (
+    DistributedColdStartDatasetLoader,
     DistributedDatasetLoader,
     DistributedUDTDatasetLoader,
     ValidationContext,
@@ -21,6 +22,45 @@ from .utils import get_num_cpus, init_logging
 
 
 def add_distributed_to_udt():
+    def batch_size_per_node(batch_size, cluster_config):
+        if batch_size is None:
+            batch_size = 2048
+
+        # calculating batch size per node
+        batch_size = batch_size // cluster_config.num_workers
+        return batch_size
+
+    def train_with_data_sources(
+        self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
+    ):
+        train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
+
+        if not verbose:
+            train_config.silence()
+        if metrics:
+            train_config.with_metrics(metrics)
+
+        model = self._get_model()
+
+        dist_model = DistributedDataParallel(
+            cluster_config=cluster_config,
+            model=model,
+            train_config=train_config,
+            train_sources=train_sources,
+        )
+
+        # We are freezing hashtables by default for distributed training after one epoch,
+        # Ideally we should read freezehashtables from UDTOptions and then pass
+        # it to distributed Wrapper. However, for the time being we are just
+        # initializing freeze-hash-tables=True by default.
+        metrics = dist_model.train(freeze_hash_tables=True)
+
+        model = dist_model.get_model()
+
+        self._set_model(trained_model=model)
+
+        return metrics
+
     def train_distributed(
         self,
         cluster_config: RayTrainingClusterConfig,
@@ -80,52 +120,127 @@ def add_distributed_to_udt():
                 filenames=["train_file_1", "train_file_2",....],
             )
         """
+
         # checks and raises an error if the given UDT is not supported in distributed context
         self.verify_can_distribute()
 
-        if batch_size is None:
-            batch_size = 2048
+        train_sources = [
+            DistributedUDTDatasetLoader(
+                train_file=file,
+                batch_size=batch_size_per_node(batch_size, cluster_config),
+                max_in_memory_batches=max_in_memory_batches,
+                data_processor=self.get_data_processor(),
+            )
+            for file in filenames
+        ]
 
-        # calculating batch size per node
-        batch_size = batch_size // cluster_config.num_workers
-
-        train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
-
-        if not verbose:
-            train_config.silence()
-        if metrics:
-            train_config.with_metrics(metrics)
-
-        model = self._get_model()
-
-        dist_model = DistributedDataParallel(
-            cluster_config=cluster_config,
-            model=model,
-            train_config=train_config,
-            train_sources=[
-                DistributedUDTDatasetLoader(
-                    train_file=file,
-                    batch_size=batch_size,
-                    max_in_memory_batches=max_in_memory_batches,
-                    data_processor=self.get_data_processor(),
-                )
-                for file in filenames
-            ],
+        return train_with_data_sources(
+            self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
         )
 
-        # We are freezing hashtables by default for distributed training after one epoch,
-        # Ideally we should read freezehashtables from UDTOptions and then pass
-        # it to distributed Wrapper. However, for the time being we are just
-        # initializing freeze-hash-tables=True by default.
-        metrics = dist_model.train(freeze_hash_tables=True)
-
-        model = dist_model.get_model()
-
-        self._set_model(trained_model=model)
-
-        return metrics
-
     setattr(bolt.UDT, "train_distributed", train_distributed)
+
+    def cold_start_distributed(
+        self,
+        cluster_config: RayTrainingClusterConfig,
+        filenames: List[str],
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+        max_in_memory_batches: Optional[int] = None,
+        batch_size: Optional[int] = None,
+        learning_rate: float = 0.001,
+        epochs: int = 5,
+        metrics: List[str] = [],
+        verbose: bool = True,
+    ):
+        """
+        This function does cold-start pretraining for UDT in the distributed setting.
+        ThirdAI uses Ray Core(https://docs.ray.io/en/latest/ray-core/walkthrough.html) for its
+        distributed offering. This function assumes there is a ray cluster already
+        running on the machine where this function is called or the machine should
+        have an access to a ray cluster.
+
+        To start a ray cluster see here:(https://docs.ray.io/en/latest/ray-core/walkthrough.html)
+
+        Args:
+            cluster_config (thirdai.distributed_bolt.RayTrainingClusterConfig):
+                Here, you can describe the configuration for your cluster training,
+                It includes declaring the number of workers, communication you want to use and
+                the cluster address if a remote cluster is used.
+            filenames (List[str]): List of all the split files. The current design assumes all
+                the files are accessible by all the nodes.
+
+                The current design does not guarantee independent mapping from file_ids to node_ids.
+                Hence, program could be errorneous, if each node doesn't have access to all the files.
+                However, one way around is to save the individual file on all nodes, with same name.
+                This way we could train in distributed setting without need to have shared mount.
+            strong_column_names (List[str]): The strong column names indicate which
+                text columns are most closely related to the output class. In this
+                case closely related means that all of the words in the text are useful
+                in identifying the output class in that row. For example in the
+                case of a product catalog then a strong column could be the full title
+                of the product.
+            weak_column_names (List[str]): The weak column names indicate which text
+                columns are either more loosely related to the output class. In
+                this case loosely related means that parts of the text are useful in
+                identifying the output class, but there may also be parts of the
+                text that contain more generic words or phrases that don't have as high
+                of a correlation. For example in a product catalog the description of
+                the product could be a weak column because while there is a correlation,
+                parts of the description may be fairly similar between products or be
+                too general to completly identify which products the correspond to.
+            max_in_memory_batches (Optional[int], optional): The maximum number of batches to load in
+                memory at a given time. If this is specified then the dataset will be processed
+                in a streaming fashion. Defaults to None, which causes the entire dataset to be loaded in memory.
+            batch_size (Optional[int], optional): Batch Size for distributed training. It is the
+                batch size for overall training, per node batch size is batch_size//num_nodes.
+                Defaults to 2048.
+            learning_rate (float, optional): Learning rate for distributed training. Cold
+                -start pretraining can be very sensitive to this. A good default value is 0.001.
+            epochs (int, optional): Number of epochs to train. Defaults to 3.
+            metrics (List[str], optional): Metrics to be logged during training. Defaults to [].
+            verbose (bool, optional): Prints info about training. Defaults to True.
+
+        Returns:
+            Dict: returns
+
+        Example:
+
+            import thirdai
+            cluster_config = thirdai.distributed_bolt.RayTrainingClusterConfig(
+                num_workers=2,
+                communication_type="circular",
+                cluster_address="auto",
+            )
+
+            udt_model.cold_start_distributed(
+                cluster_config=cluster_config,
+                filenames=["train_file_1", "train_file_2",....],
+                strong_columns=[....],
+                weak_columns=[....],
+            )
+        """
+        # checks and raises an error if the given UDT is not supported in distributed context
+        self.verify_can_distribute()
+
+        train_sources = [
+            DistributedColdStartDatasetLoader(
+                train_file=file,
+                batch_size=batch_size_per_node(batch_size, cluster_config),
+                max_in_memory_batches=max_in_memory_batches,
+                strong_column_names=strong_column_names,
+                weak_column_names=weak_column_names,
+                data_processor=self.get_data_processor(),
+                cold_start_meta_data=self.get_cold_start_meta_data(),
+            )
+            for file in filenames
+        ]
+
+        return train_with_data_sources(
+            self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
+        )
+
+    setattr(bolt.UDT, "cold_start_distributed", cold_start_distributed)
 
 
 class RayTrainingClusterConfig:
@@ -327,7 +442,7 @@ class DistributedDataParallel:
         while train_state_manager.train_batch(epoch=epoch):
             self.total_batches_trained += 1
         self.total_batches_trained += 1
-        train_state_manager.move_to_next_epoch()
+        return train_state_manager.move_to_next_epoch()
 
     def train(self, freeze_hash_tables=False) -> Dict[str, Union[int, str]]:
         """
@@ -352,8 +467,9 @@ class DistributedDataParallel:
         )
 
         starting_epoch = 0
+        train_metrics = {}
         if freeze_hash_tables:
-            self.train_on_epoch(
+            train_metrics = self.train_on_epoch(
                 train_state_manager=train_state_manager,
                 epoch=starting_epoch,
             )
@@ -363,12 +479,19 @@ class DistributedDataParallel:
             starting_epoch += 1
 
         for epoch in range(starting_epoch, self.train_config.num_epochs):
-            self.train_on_epoch(train_state_manager=train_state_manager, epoch=epoch)
+            train_metrics = self.train_on_epoch(
+                train_state_manager=train_state_manager, epoch=epoch
+            )
 
-        return {
+        # Here we are returning the whole train_metrics independently for each of
+        # the worker with the assumption that train_metrics for each of the worker
+        # would be aggregated by the user.
+        distributed_train_metrics = {
             "time": time.time() - train_start,
             "total_batches_trained": self.total_batches_trained,
+            "train_metrics": train_metrics,
         }
+        return distributed_train_metrics
 
     def get_model(self, worker_id=0):
         return ray.get(self.workers[worker_id].model.remote())

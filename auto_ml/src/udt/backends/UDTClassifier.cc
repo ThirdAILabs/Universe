@@ -4,7 +4,6 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt/src/graph/ExecutionConfig.h>
-#include <auto_ml/src/cold_start/ColdStartDataSource.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
@@ -125,42 +124,10 @@ py::object UDTClassifier::coldstart(
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::optional<ValidationDataSource>& validation,
     const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
-  if (!integerTarget()) {
-    throw std::invalid_argument(
-        "Cold start pretraining currently only supports integer labels.");
-  }
+  auto metadata = getColdStartMetaData();
 
-  if (_dataset_factory->inputDataTypes().size() != 1 ||
-      !data::asText(_dataset_factory->inputDataTypes().begin()->second)) {
-    throw std::invalid_argument(
-        "Cold start pretraining can only be used on datasets with a single "
-        "text input column and target column. The current model is configured "
-        "with " +
-        std::to_string(_dataset_factory->inputDataTypes().size()) +
-        " input columns.");
-  }
-
-  std::string text_column_name =
-      _dataset_factory->inputDataTypes().begin()->first;
-
-  auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
-      data, _dataset_factory->delimiter());
-
-  thirdai::data::ColdStartTextAugmentation augmentation(
-      /* strong_column_names= */ strong_column_names,
-      /* weak_column_names= */ weak_column_names,
-      /* label_column_name= */ _label_block->columnName(),
-      /* output_column_name= */ text_column_name);
-
-  auto augmented_data = augmentation.apply(dataset);
-
-  auto data_source = cold_start::ColdStartDataSource::make(
-      /* column_map= */ augmented_data,
-      /* text_column_name= */ text_column_name,
-      /* label_column_name= */ _label_block->columnName(),
-      /* column_delimiter= */ _dataset_factory->delimiter(),
-      /* label_delimiter= */ _label_block->delimiter(),
-      /* resource_name = */ data->resourceName());
+  auto data_source = cold_start::preprocessColdStartTrainSource(
+      data, strong_column_names, weak_column_names, _dataset_factory, metadata);
 
   // TODO(david): reconsider validation. Instead of forcing users to pass in a
   // supervised dataset of query product pairs, can we create a synthetic
