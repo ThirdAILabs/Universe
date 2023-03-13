@@ -1,6 +1,7 @@
 #include "Train.h"
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/Datasets.h>
+#include <new_dataset/src/featurization_pipeline/augmentations/ColdStartText.h>
 
 namespace thirdai::automl::udt::utils {
 
@@ -29,7 +30,7 @@ bolt::MetricData trainSingleEpochOnStream(
   while (auto datasets = dataset_loader->loadSome(
              batch_size, /* num_batches = */ max_in_memory_batches,
              /* verbose = */ train_config.verbose())) {
-    auto [data, labels] = split_data_labels(std::move(datasets.value()));
+    auto [data, labels] = splitDataLabels(std::move(datasets.value()));
 
     auto partial_metrics = model->train({data}, labels, train_config, token);
     aggregateMetrics(/* to = */ aggregated_metrics,
@@ -85,7 +86,7 @@ bolt::MetricData trainInMemory(bolt::BoltGraphPtr& model,
                                licensing::TrainPermissionsToken token) {
   auto loaded_data = dataset_loader->loadAll(
       /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
-  auto [train_data, train_labels] = split_data_labels(std::move(loaded_data));
+  auto [train_data, train_labels] = splitDataLabels(std::move(loaded_data));
 
   uint32_t epochs = train_config.epochs();
 
@@ -138,7 +139,7 @@ bolt::TrainConfig getTrainConfig(
   if (validation) {
     auto val_dataset = validation->first->loadAll(
         /* batch_size= */ defaults::BATCH_SIZE, verbose);
-    auto [val_data, val_labels] = split_data_labels(std::move(val_dataset));
+    auto [val_data, val_labels] = splitDataLabels(std::move(val_dataset));
 
     bolt::EvalConfig val_config =
         getEvalConfig(validation->second.metrics(),
@@ -173,11 +174,55 @@ bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
 
 // Splits a vector of datasets as returned by a dataset loader (where the labels
 // are the last dataset in the list)
-std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split_data_labels(
+std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> splitDataLabels(
     dataset::BoltDatasetList&& datasets) {
   auto labels = datasets.back();
   datasets.pop_back();
   return {datasets, labels};
+}
+
+std::shared_ptr<cold_start::ColdStartDataSource> augmentColdStartData(
+    const dataset::DataSourcePtr& data,
+    const std::vector<std::string>& strong_column_names,
+    const std::vector<std::string>& weak_column_names,
+    const data::TabularDatasetFactoryPtr& dataset_factory, bool integer_target,
+    const std::string& label_column_name, std::optional<char> label_delimiter) {
+  if (!integer_target) {
+    throw std::invalid_argument(
+        "Cold start pretraining currently only supports integer labels.");
+  }
+
+  if (dataset_factory->inputDataTypes().size() != 1 ||
+      !data::asText(dataset_factory->inputDataTypes().begin()->second)) {
+    throw std::invalid_argument(
+        "Cold start pretraining can only be used on datasets with a single "
+        "text input column and target column. The current model is configured "
+        "with " +
+        std::to_string(dataset_factory->inputDataTypes().size()) +
+        " input columns.");
+  }
+
+  std::string text_column_name =
+      dataset_factory->inputDataTypes().begin()->first;
+
+  auto dataset = thirdai::data::ColumnMap::createStringColumnMapFromFile(
+      data, dataset_factory->delimiter());
+
+  thirdai::data::ColdStartTextAugmentation augmentation(
+      /* strong_column_names= */ strong_column_names,
+      /* weak_column_names= */ weak_column_names,
+      /* label_column_name= */ label_column_name,
+      /* output_column_name= */ text_column_name);
+
+  auto augmented_data = augmentation.apply(dataset);
+
+  return cold_start::ColdStartDataSource::make(
+      /* column_map= */ augmented_data,
+      /* text_column_name= */ text_column_name,
+      /* label_column_name= */ label_column_name,
+      /* column_delimiter= */ dataset_factory->delimiter(),
+      /* label_delimiter= */ label_delimiter,
+      /* resource_name = */ data->resourceName());
 }
 
 }  // namespace thirdai::automl::udt::utils

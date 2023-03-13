@@ -47,42 +47,38 @@ class UDTMachClassifier final : public UDTBackend {
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class) final;
 
-  bolt::BoltGraphPtr model() const final { return _classifier.model(); }
+  bolt::BoltGraphPtr model() const final { return _classifier->model(); }
 
   void setModel(const bolt::BoltGraphPtr& model) final {
-    bolt::BoltGraphPtr& curr_model = _classifier.model();
+    bolt::BoltGraphPtr& curr_model = _classifier->model();
     if (curr_model->outputDim() != curr_model->outputDim()) {
       throw std::invalid_argument("Output dim mismatch in set_model.");
     }
     curr_model = model;
   }
 
-  std::vector<dataset::Explanation> explain(
-      const MapInput& sample,
-      const std::optional<std::variant<uint32_t, std::string>>& target_class)
-      final;
-
-  void coldstart(const dataset::DataSourcePtr& data,
-                 const std::vector<std::string>& strong_column_names,
-                 const std::vector<std::string>& weak_column_names,
-                 float learning_rate, uint32_t epochs,
-                 const std::vector<std::string>& metrics,
-                 const std::optional<ValidationDataSource>& validation,
-                 const std::vector<bolt::CallbackPtr>& callbacks,
-                 bool verbose) final;
+  py::object coldstart(const dataset::DataSourcePtr& data,
+                       const std::vector<std::string>& strong_column_names,
+                       const std::vector<std::string>& weak_column_names,
+                       float learning_rate, uint32_t epochs,
+                       const std::vector<std::string>& metrics,
+                       const std::optional<ValidationDataSource>& validation,
+                       const std::vector<bolt::CallbackPtr>& callbacks,
+                       bool verbose) final;
 
   py::object embedding(const MapInput& sample) final;
 
   py::object entityEmbedding(
       const std::variant<uint32_t, std::string>& label) final;
 
-  std::string className(uint32_t class_id) const final;
-
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
     return _dataset_factory;
   }
 
  private:
+  std::vector<std::variant<std::string, uint32_t>> machSingleDecode(
+      const BoltVector& output);
+
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this
     return n_target_classes / 25;
@@ -90,6 +86,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   static uint32_t autotuneMachNumHashes(uint32_t n_target_classes,
                                         uint32_t output_range) {
+    // TODO(david) update this
     (void)n_target_classes;
     (void)output_range;
     return 7;

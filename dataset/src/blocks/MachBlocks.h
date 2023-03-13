@@ -2,6 +2,7 @@
 
 #include "Categorical.h"
 #include <hashing/src/MurmurHash.h>
+#include <variant>
 
 namespace thirdai::dataset {
 
@@ -34,6 +35,9 @@ class MachIndex {
   uint32_t outputRange() const { return _output_range; }
 
   uint32_t numHashes() const { return _num_hashes; }
+
+  std::vector<std::variant<std::string, uint32_t>> entitiesByHash(
+      uint32_t hash_val);
 
   virtual ~MachIndex() = default;
 
@@ -82,6 +86,13 @@ class NumericCategoricalMachIndex : public MachIndex {
     return hashes;
   }
 
+  std::vector<uint32_t> entitiesByHash(uint32_t hash_val) {
+    if (!_hash_to_entity_id.count(hash_val)) {
+      throw std::invalid_argument("Invalid id to decode.");
+    }
+    return _hash_to_entity_id[hash_val];
+  }
+
  private:
   friend class cereal::access;
   template <class Archive>
@@ -112,10 +123,10 @@ class StringCategoricalMachIndex : public MachIndex {
   std::vector<uint32_t> hashEntity(const std::string& string) final {
     if (indexIsFull()) {
       if (!_entity_to_id.count(string)) {
-        throw std::invalid_argument(
-            "Received additional category " + string +
-            " totalling greater than the max number of expected categories: " +
-            std::to_string(_max_elements) + ".");
+        throw std::invalid_argument("Received additional category " + string +
+                                    " totalling greater than the max number "
+                                    "of expected categories: " +
+                                    std::to_string(_max_elements) + ".");
       }
       return getHashes(string, _num_hashes, _output_range);
     }
@@ -132,13 +143,19 @@ class StringCategoricalMachIndex : public MachIndex {
   }
 
   void update(const std::string& string, const std::vector<uint32_t>& hashes) {
-    uint32_t id = _id_to_entity.size();
-    _id_to_entity.push_back(string);
+    uint32_t id = _entity_to_id.size();
     _entity_to_id[string] = id;
     _current_vocab_size++;
     for (const auto& hash : hashes) {
-      _hash_to_entities_map[hash].push_back(id);
+      _hash_to_entities_map[hash].push_back(string);
     }
+  }
+
+  std::vector<std::string> entitiesByHash(uint32_t hash_val) {
+    if (!_hash_to_entities_map.count(hash_val)) {
+      throw std::invalid_argument("Invalid id to decode.");
+    }
+    return _hash_to_entities_map[hash_val];
   }
 
  private:
@@ -147,13 +164,13 @@ class StringCategoricalMachIndex : public MachIndex {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<MachIndex>(this), _id_to_entity, _entity_to_id,
-            _hash_to_entities_map, _max_elements, _current_vocab_size);
+    archive(cereal::base_class<MachIndex>(this), _hash_to_entities_map,
+            _max_elements, _current_vocab_size);
   }
 
-  std::vector<std::string> _id_to_entity;
   std::unordered_map<std::string, uint32_t> _entity_to_id;
-  std::unordered_map<uint32_t, std::vector<uint32_t>> _hash_to_entities_map;
+  // TODO(david) for saving memory we can store the ids in this map instead
+  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entities_map;
   uint32_t _max_elements;
   std::atomic_uint32_t _current_vocab_size;
 };
