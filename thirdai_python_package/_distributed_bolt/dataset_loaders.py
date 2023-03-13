@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable, List, Optional, Tuple, Union
 
-from thirdai import data, dataset
+from thirdai import bolt, data, dataset
 from thirdai.bolt.udt_modifications import _create_data_source
 
 # TODO(Josh/Pratik): Clean up this file and remove the unnecessary DatasetLoaders
@@ -77,6 +77,43 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
     def restart(self):
         self.dataset_finished = False
         self.generator.restart()
+
+
+class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
+    def __init__(
+        self,
+        train_file: str,
+        batch_size: int,
+        max_in_memory_batches: int,
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+        data_processor,
+        cold_start_meta_data,
+    ):
+        self.generator = None
+        self.train_file = train_file
+        self.strong_column_names = strong_column_names
+        self.weak_column_names = weak_column_names
+        self.batch_size = batch_size
+        self.max_in_memory_batches = max_in_memory_batches
+        self.dataset_finished = False
+        self.data_processor = data_processor
+        self.cold_start_meta_data = cold_start_meta_data
+
+    def load(self):
+        original_data_source = _create_data_source(self.train_file)
+        cold_start_data_source = (
+            bolt.distributed_preprocessing.preprocess_cold_start_train_source(
+                original_data_source,
+                self.strong_column_names,
+                self.weak_column_names,
+                self.data_processor,
+                self.cold_start_meta_data,
+            )
+        )
+        self.generator = self.data_processor.get_dataset_loader(
+            cold_start_data_source, training=True
+        )
 
 
 class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):

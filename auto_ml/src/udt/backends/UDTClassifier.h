@@ -98,6 +98,11 @@ class UDTClassifier final : public UDTBackend {
     _dataset_factory->verifyCanDistribute();
   }
 
+  cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
+    return std::make_shared<cold_start::ColdStartMetaData>(
+        _label_block->delimiter(), _label_block->columnName(), integerTarget());
+  }
+
  private:
   dataset::CategoricalBlockPtr labelBlock(
       const std::string& target_name,

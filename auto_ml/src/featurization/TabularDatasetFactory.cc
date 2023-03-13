@@ -12,6 +12,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
 #include <optional>
+#include <utility>
 
 namespace thirdai::automl::data {
 

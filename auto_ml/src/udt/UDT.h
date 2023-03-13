@@ -72,6 +72,10 @@ class UDT {
                                callbacks, verbose);
   }
 
+  cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
+    return _backend->getColdStartMetaData();
+  }
+
   py::object embedding(const MapInput& sample) {
     return _backend->embedding(sample);
   }
