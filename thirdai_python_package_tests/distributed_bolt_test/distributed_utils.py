@@ -11,13 +11,19 @@ def ray_two_node_cluster_config():
     import thirdai.distributed_bolt as db
     from ray.cluster_utils import Cluster
 
+    num_cpu_per_node = db.get_num_cpus() // 2
+
+    # case if multiprocessing import fails
+    if num_cpu_per_node == 0:
+        num_cpu_per_node = 1
+
     mini_cluster = Cluster(
         initialize_head=True,
         head_node_args={
-            "num_cpus": 1,
+            "num_cpus": num_cpu_per_node,
         },
     )
-    mini_cluster.add_node(num_cpus=1)
+    mini_cluster.add_node(num_cpus=num_cpu_per_node)
 
     # directly yielding mini_cluster returns a generator for cluster_config,
     # rather than cluster_config itself and those generators were just using
@@ -29,10 +35,11 @@ def ray_two_node_cluster_config():
         # so that pickle works. Otherwise, unpickling functions
         # defined in the test files would not work, since pickle needs to be
         # able to import the file the object/function was originally defined in.
+
         working_dir = os.path.dirname(os.path.realpath(__file__))
         cluster_config = db.RayTrainingClusterConfig(
             num_workers=2,
-            requested_cpus_per_node=1,
+            requested_cpus_per_node=num_cpu_per_node,
             communication_type=communication_type,
             cluster_address=mini_cluster.address,
             runtime_env={"working_dir": working_dir},
