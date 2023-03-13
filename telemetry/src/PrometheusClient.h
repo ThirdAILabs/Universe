@@ -22,7 +22,7 @@ const inline uint32_t THIRDAI_DEFAULT_TELEMETRY_PORT = 9929;
 // wants to track telemetry.
 extern PrometheusTelemetryClient client;
 
-// Returns the url of the Prometheus telemetry endpoint
+// Returns the url of the Prometheus metrics endpoint
 std::string createGlobalTelemetryClient(
     uint32_t port = THIRDAI_DEFAULT_TELEMETRY_PORT);
 

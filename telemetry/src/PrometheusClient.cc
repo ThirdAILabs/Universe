@@ -17,7 +17,7 @@ std::string createGlobalTelemetryClient(uint32_t port) {
   }
   std::string bind_address = "127.0.0.1:" + std::to_string(port);
   client = PrometheusTelemetryClient::start(bind_address);
-  return bind_address;
+  return "http://" + bind_address + "/metrics";
 }
 
 void stopGlobalTelemetryClient() {

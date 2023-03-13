@@ -1,6 +1,7 @@
 import argparse
 import signal
 import time
+from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
@@ -25,6 +26,7 @@ DEFAULT_UPLOAD_INTERVAL = 60 * 20
 
 
 def local_file_daemon(parsed_file_path, raw_telemetry):
+    Path(parsed_file_path.path).parent.mkdir(parents=True, exist_ok=True)
     with open(parsed_file_path.path, "wb") as f:
         f.write(raw_telemetry)
 
@@ -68,11 +70,14 @@ if __name__ == "__main__":
         description="Start a background daemon thread that pushes telemetry to a remote location."
     )
     parser.add_argument(
-        "--telemetry_url", help="The local telemetry server url to scrape from."
+        "--telemetry_url",
+        help="The local telemetry server url to scrape from.",
+        required=True,
     )
     parser.add_argument(
         "--push_location",
         help="The location (currently local or s3) to push telemetry to.",
+        required=True,
     )
     args = parser.parse_args()
 

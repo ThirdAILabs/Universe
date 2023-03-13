@@ -17,16 +17,16 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 THIRDAI_TEST_TELEMETRY_PORT = 20730
 THIRDAI_TEST_TELEMETRY_URL = f"http://localhost:{THIRDAI_TEST_TELEMETRY_PORT}/metrics"
-THIRDAI_TEST_TELEMETRY_FILE = "test_telemetry_file"
-THIRDAI_TEST_TELEMETRY_S3_PATH = "s3://test_bucket/test_telemetry_file"
+THIRDAI_TEST_TELEMETRY_DIR = "test_telemetry_dir"
+THIRDAI_TEST_TELEMETRY_S3_DIR = "s3://test_bucket/test_telemetry_dir"
 
 
 def scrape_telemetry(method):
     telemetry = {}
-    if method == "normal":
-        raw_telemetry = requests.get(THIRDAI_TEST_TELEMETRY_URL).content.decode("utf-8")
-    elif method == "file":
-        with open(THIRDAI_TEST_TELEMETRY_FILE) as f:
+    if method[0] == "port":
+        raw_telemetry = requests.get(method[1]).content.decode("utf-8")
+    elif method[0] == "file":
+        with open(method[1]) as f:
             raw_telemetry = f.read()
     else:
         raise ValueError(f"Unknown method {method}")
@@ -161,18 +161,20 @@ def run_udt_telemetry_test(method, kill_telemetry_after_udt):
     )
 
 
-def test_udt_telemetry_normal():
+def test_udt_telemetry_port():
     try:
-        telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
-        run_udt_telemetry_test(method="normal", kill_telemetry_after_udt=False)
+        telemetry_url = telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
+        run_udt_telemetry_test(
+            method=("port", telemetry_url), kill_telemetry_after_udt=False
+        )
     finally:
         telemetry.stop()
 
 
 def test_udt_telemetry_file():
     try:
-        telemetry.start(write_location=THIRDAI_TEST_TELEMETRY_FILE)
-        run_udt_telemetry_test(method="file", kill_telemetry_after_udt=True)
+        file = telemetry.start(write_dir=THIRDAI_TEST_TELEMETRY_DIR)
+        run_udt_telemetry_test(method=("file", file), kill_telemetry_after_udt=True)
     finally:
         telemetry.stop()
 
@@ -181,8 +183,8 @@ def test_udt_telemetry_file():
 @pytest.mark.xfail
 def test_udt_telemetry_s3():
     try:
-        telemetry.start(write_location=THIRDAI_TEST_TELEMETRY_S3_PATH)
-        run_udt_telemetry_test(method="s3", kill_telemetry_after_udt=True)
+        s3_path = telemetry.start(write_dir=THIRDAI_TEST_TELEMETRY_S3_DIR)
+        run_udt_telemetry_test(method=("s3", s3_path), kill_telemetry_after_udt=True)
     finally:
         telemetry.stop()
 
