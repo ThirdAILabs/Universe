@@ -248,8 +248,8 @@ class Worker:
     def freeze_hash_tables(self):
         self.model.freeze_hash_tables(True)
 
-    def post_training_epoch_updates(self):
-        return self.model.post_training_epoch_updates()
+    def get_updated_metrics(self):
+        return self.model.get_updated_metrics()
 
     def model(self):
         return self.model.model

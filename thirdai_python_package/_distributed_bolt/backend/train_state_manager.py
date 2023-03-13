@@ -125,7 +125,7 @@ class TrainStateManager:
     def move_to_next_epoch(self):
         self.batch_id_within_epoch = 0
         metrics = ray.get(
-            [worker.post_training_epoch_updates.remote() for worker in self.workers]
+            [worker.get_updated_metrics.remote() for worker in self.workers]
         )
         ray.get([worker.move_to_next_epoch.remote() for worker in self.workers])
         return metrics
