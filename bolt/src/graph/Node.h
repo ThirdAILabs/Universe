@@ -154,6 +154,8 @@ class Node {
 
   void freeze() { _frozen = true; }
 
+  void unfreeze() { _frozen = false; }
+
   bool isFrozen() const { return _frozen; }
 
   // Returns true if the node is an input node.
