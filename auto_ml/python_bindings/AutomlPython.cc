@@ -42,7 +42,10 @@ void defineAutomlInModule(py::module_& module) {
       .def("filename", &ValidationOptions::filename)
       .def("args", &ValidationOptions::args);
 
-  py::class_<udt::ValidationArgs>(module, "ValidationArgs");  // NOLINT
+  py::class_<udt::ValidationArgs>(module, "ValidationArgs")
+      .def("metrics", &udt::ValidationArgs::metrics)
+      .def("steps_per_validation", &udt::ValidationArgs::stepsPerValidation)
+      .def("sparse_inference", &udt::ValidationArgs::sparseInference);
 
   /**
    * This class definition overrides the __new__ method because we want to

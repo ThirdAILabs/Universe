@@ -71,6 +71,7 @@ def add_distributed_to_udt():
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         verbose: bool = True,
+        validation: Optional[bolt.Validation] = None,
     ):
         """
         This function trains UDT in the distributed setting. ThirdAI uses Ray
@@ -103,7 +104,8 @@ def add_distributed_to_udt():
                 in a streaming fashion. Defaults to None, which causes the entire dataset to be loaded in memory.
             metrics (List[str], optional): Metrics to be logged during training. Defaults to [].
             verbose (bool, optional): Prints info about training. Defaults to True.
-
+            validation (Optional[bolt.Validation]): This is an optional parameter that specifies
+                a validation dataset, metrics, and interval to use during training.
         Returns:
             Dict: returns
 
@@ -133,6 +135,18 @@ def add_distributed_to_udt():
             )
             for file in filenames
         ]
+
+        validation_source = [
+            DistributedUDTDatasetLoader(
+                train_file=validation.filename(),
+                batch_size=batch_size_per_node(batch_size, cluster_config),
+                data_processor=self.get_data_processor(),
+            )
+        ]
+
+        validation_args = validation.args()
+
+        validation_context = ValidationContext(validation_source, ,validation_args.steps_per_validation(), )
 
         return train_with_data_sources(
             self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
