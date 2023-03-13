@@ -4,6 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include <algorithm>
 #include <limits>
+#include <numeric>
 #include <random>
 
 namespace thirdai::hashing {
@@ -25,22 +26,50 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
           /* num_hashes= */ _num_hashes, /* binsize= */ _binsize,
           /* dim= */ _dim))) {
   std::mt19937 gen(seed);
-  uint32_t* n_array = new uint32_t[_dim];
   _bin_map = std::vector<uint32_t>(_dim * _permute);
   _positions = std::vector<uint32_t>(_dim * _permute);
 
-  for (uint32_t i = 0; i < _dim; i++) {
-    n_array[i] = i;
-  }
-  for (uint32_t p = 0; p < _permute; p++) {
-    std::shuffle(n_array, n_array + _dim, gen);
-    for (uint32_t j = 0; j < _dim; j++) {
-      _bin_map[p * _dim + n_array[j]] = (p * _dim + j) / _binsize;
-      _positions[p * _dim + n_array[j]] = (p * _dim + j) % _binsize;
+  if (permutations) {
+    /**
+     * The number of permutations is overriden to accomodate sparse vectors
+     * where the number of nonzeros is much less than the number of bins. In
+     * these cases not all of the bins contain values, and we get too many empty
+     * hashes. By increasing the number of permutations we essentially map each
+     * index to multiple bins so that more meaningful hashes are computed for
+     * sparse vectors. The original code for mapping indices to bins and
+     * positions within bins cannot generalize to this use of permutations.
+     * However there are some small differences between each way of generating
+     * the permutations so we leave the orignal code as the default until we can
+     * benchmark each.
+     */
+    std::uniform_int_distribution<uint32_t> bin_mapper(
+        0, _num_hashes * _binsize - 1);
+
+    for (uint32_t p = 0; p < _permute; p++) {
+      for (uint32_t j = 0; j < _dim; j++) {
+        uint32_t index = bin_mapper(gen);
+        _bin_map[p * _dim + j] = index / _binsize;
+        _positions[p * _dim + j] = index % _binsize;
+      }
+    }
+
+  } else {
+    /**
+     * This is the original code to map indices to bins and positions within
+     * bins.
+     * TODO(Nicholas): Benchmark this vs the generalized version above to make
+     * sure there is no difference and then remove this.
+     */
+    std::vector<uint32_t> all_indices(_dim);
+    std::iota(all_indices.begin(), all_indices.end(), 0);
+    for (uint32_t p = 0; p < _permute; p++) {
+      std::shuffle(all_indices.begin(), all_indices.end(), gen);
+      for (uint32_t j = 0; j < _dim; j++) {
+        _bin_map[p * _dim + all_indices[j]] = (p * _dim + j) / _binsize;
+        _positions[p * _dim + all_indices[j]] = (p * _dim + j) % _binsize;
+      }
     }
   }
-
-  delete[] n_array;
 
   std::uniform_int_distribution<uint32_t> dis(
       1, std::numeric_limits<uint32_t>::max() - 1);
