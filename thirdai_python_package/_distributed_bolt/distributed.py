@@ -198,8 +198,8 @@ def add_distributed_to_udt():
             learning_rate (float, optional): Learning rate for distributed training. Cold
                 -start pretraining can be very sensitive to this. A good default value is 0.001.
             epochs (int, optional): Number of epochs to train. Defaults to 3.
-            metrics (List[str], optional): Metrics to be logged during training. Defaults to [].
-            verbose (bool, optional): Prints info about training. Defaults to True.
+                metrics (List[str], optional): Metrics to be logged during training. Defaults to [].
+                verbose (bool, optional): Prints info about training. Defaults to True.
 
         Returns:
             Dict: returns
