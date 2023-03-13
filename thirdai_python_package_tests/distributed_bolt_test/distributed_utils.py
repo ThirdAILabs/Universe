@@ -10,9 +10,8 @@ def ray_two_node_cluster_config():
     import ray
     import thirdai.distributed_bolt as db
     from ray.cluster_utils import Cluster
-    from db.utils import get_num_cpus
 
-    num_cpu_per_node = get_num_cpus() // 2
+    num_cpu_per_node = db.get_num_cpus() // 2
     mini_cluster = Cluster(
         initialize_head=True,
         head_node_args={
