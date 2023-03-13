@@ -49,6 +49,11 @@ class Worker:
         self.train_source = train_source
         self.train_source.load()
 
+        self.num_workers = num_workers
+        self.id = id
+        self.primary_worker = primary_worker
+        self.communication_type = communication_type
+
         logging.setup(
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
@@ -82,11 +87,6 @@ class Worker:
         end = time()
 
         logging.info(f"func initializing_model | time {(end - start)*1000} ms")
-
-        self.num_workers = num_workers
-        self.id = id
-        self.primary_worker = primary_worker
-        self.communication_type = communication_type
 
         if self.communication_type == "circular":
             self.comm = comm.Circular(

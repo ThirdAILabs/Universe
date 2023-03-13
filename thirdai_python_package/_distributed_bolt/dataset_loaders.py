@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, List, Optional, Tuple, Union
 
 from thirdai import bolt, data, dataset
@@ -45,7 +45,9 @@ class ValidationContext:
     validation_source: DistributedDatasetLoader
     eval_config: bolt.EvalConfig
     validation_frequency: int
-    save_best_per_metric: List[str] = ["categorical_accuracy"]
+    save_best_per_metric: List[str] = field(
+        default_factory=lambda: ["categorical_accuracy"]
+    )
 
 
 class DistributedUDTDatasetLoader(DistributedDatasetLoader):
