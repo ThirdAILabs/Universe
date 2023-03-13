@@ -606,8 +606,8 @@ void BoltGraph::processEvaluationBatch(uint64_t batch_size,
   prepareToProcessBatch(batch_size, /* use_sparsity= */ use_sparsity,
                         /* force_reinitialization= */ false);
 
-  // #pragma omp parallel for default(none) shared(batch_size,
-  // batch_labels,metrics)
+  // #pragma omp parallel for default(none) shared(batch_size, batch_labels,
+  // metrics)
   for (uint64_t vec_id = 0; vec_id < batch_size; vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.

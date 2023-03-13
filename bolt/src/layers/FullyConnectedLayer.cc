@@ -467,6 +467,9 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
       _hash_table->queryBySet(hashes.data(), active_set);
   }
 
+  // std::cout << "Abrakadabra" << std::endl;
+  // std::cout << active_set.size() << " ";
+
   if (print_neurons == 1 && !active_set.empty()) {
     std::cout
         << "We have sampled the active neurons and printing the active set from"
@@ -487,6 +490,8 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
       rand_offset = rand_offset % _dim;
     }
   }
+
+  // std::cout << active_set.size() << std::endl;
 
   if (print_neurons == 1 && !active_set.empty()) {
     std::cout << "We have added more neurons to the active neurons set. The "
