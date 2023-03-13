@@ -12,7 +12,6 @@ pytestmark = [pytest.mark.unit]
 
 
 def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
-
     catalog_file, n_target_classes = download_amazon_kaggle_product_catalog_sampled
 
     model = bolt.UniversalDeepTransformer(

@@ -37,7 +37,6 @@ def download_and_split_dataset(download_amazon_kaggle_product_catalog_sampled):
 
 
 def get_udt_cold_start_model(n_target_classes):
-
     model = bolt.UniversalDeepTransformer(
         data_types={
             "QUERY": bolt.types.text(),

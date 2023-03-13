@@ -201,15 +201,17 @@ void createModelsSubmodule(py::module_& module) {
            docs::TEXT_CLASSIFIER_SAVE);
 }
 
-void createDistributedPreprocessingWrapper(py::module_& dataset_module) {
-  dataset_module.def("preprocess_cold_start_train_source",
-                     &cold_start::preprocessColdStartTrainSource,
-                     py::arg("data"), py::arg("strong_column_names"),
-                     py::arg("weak_column_names"), py::arg("dataset_factory"),
-                     py::arg("metadata"));
+void createDistributedPreprocessingWrapper(py::module_& module) {
+  auto distributed_preprocessing_submodule =
+      module.def_submodule("distributed_preprocessing");
+  distributed_preprocessing_submodule.def(
+      "preprocess_cold_start_train_source",
+      &cold_start::preprocessColdStartTrainSource, py::arg("data"),
+      py::arg("strong_column_names"), py::arg("weak_column_names"),
+      py::arg("dataset_factory"), py::arg("metadata"));
 
   py::class_<cold_start::ColdStartMetaData, cold_start::ColdStartMetaDataPtr>(
-      dataset_module, "ColdStartMetaData")
+      distributed_preprocessing_submodule, "ColdStartMetaData")
       .def(bolt::python::getPickleFunction<cold_start::ColdStartMetaData>());
   ;
 }

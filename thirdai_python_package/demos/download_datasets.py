@@ -612,7 +612,6 @@ def download_yelp_chi_dataset(seed=42):
 
 
 def download_amazon_kaggle_product_catalog_sampled():
-
     TRAIN_FILE = "amazon-kaggle-product-catalog.csv"
     if not os.path.exists(TRAIN_FILE):
         os.system(
