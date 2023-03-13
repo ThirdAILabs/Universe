@@ -11,6 +11,9 @@ from thirdai.demos import (
 )
 from thirdai.demos import download_mnist_dataset as download_mnist_dataset_wrapped
 from thirdai.demos import download_yelp_chi_dataset as download_yelp_chi_dataset_wrapped
+from thirdai.demos import (
+    download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
+)
 
 
 @pytest.fixture(scope="session")
@@ -43,3 +46,8 @@ def download_mnist_dataset():
 @pytest.fixture(scope="session")
 def download_yelp_chi_dataset():
     return download_yelp_chi_dataset_wrapped()
+
+
+@pytest.fixture(scope="session")
+def download_amazon_kaggle_product_catalog_sampled():
+    return download_amazon_kaggle_product_catalog_sampled_wrapped()

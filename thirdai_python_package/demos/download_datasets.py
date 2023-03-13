@@ -609,3 +609,17 @@ def download_yelp_chi_dataset(seed=42):
     }
 
     return TRAIN_FILE, TEST_FILE, inference_samples, udt_data_types
+
+
+def download_amazon_kaggle_product_catalog_sampled():
+
+    TRAIN_FILE = "amazon-kaggle-product-catalog.csv"
+    if not os.path.exists(TRAIN_FILE):
+        os.system(
+            "curl -L https://www.dropbox.com/s/tf7e5m0cikhcb95/amazon-kaggle-product-catalog-sampled-0.05.csv?dl=0 -o amazon-kaggle-product-catalog.csv"
+        )
+
+    df = pd.read_csv(f"{os.getcwd()}/{TRAIN_FILE}")
+    n_target_classes = df.shape[0]
+
+    return TRAIN_FILE, n_target_classes

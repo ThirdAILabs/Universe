@@ -4,34 +4,32 @@ import pandas as pd
 import pytest
 from distributed_utils import ray_two_node_cluster_config, split_into_2
 from thirdai import bolt
+from thirdai.demos import download_amazon_kaggle_product_catalog_sampled
 
-catalog_file = "amazon-kaggle-product-catalog.csv"
 
 pytestmark = [pytest.mark.distributed]
 
 
-def setup_module():
+def download_and_split_dataset(download_amazon_kaggle_product_catalog_sampled):
     import os
 
     path = "amazon_product_catalog"
     if not os.path.exists(path):
         os.makedirs(path)
 
-    if not os.path.exists("amazon-kaggle-product-catalog.csv"):
-        os.system(
-            "curl -L https://www.dropbox.com/s/tf7e5m0cikhcb95/amazon-kaggle-product-catalog-sampled-0.05.csv?dl=0 -o amazon-kaggle-product-catalog.csv"
-        )
+    catalog_file, n_target_classes = download_amazon_kaggle_product_catalog_sampled
+
     if not os.path.exists(f"{path}/part1") or not os.path.exists(f"{path}/part2"):
         split_into_2(
-            file_to_split="amazon-kaggle-product-catalog.csv",
+            file_to_split=catalog_file,
             destination_file_1=f"{path}/part1",
             destination_file_2=f"{path}/part2",
             with_header=True,
         )
+    return n_target_classes
 
 
-def get_udt_cold_start_model():
-    df = pd.read_csv(f"{os.getcwd()}/{catalog_file}")
+def get_udt_cold_start_model(n_target_classes):
 
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -39,7 +37,7 @@ def get_udt_cold_start_model():
             "PRODUCT_ID": bolt.types.categorical(),
         },
         target="PRODUCT_ID",
-        n_target_classes=df.shape[0],
+        n_target_classes=n_target_classes,
         integer_target=True,
     )
     return model
@@ -47,7 +45,9 @@ def get_udt_cold_start_model():
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
 def test_distributed_cold_start(ray_two_node_cluster_config):
-    udt_model = get_udt_cold_start_model()
+    n_target_classes = download_and_split_dataset()
+
+    udt_model = get_udt_cold_start_model(n_target_classes)
 
     metrics = udt_model.cold_start_distributed(
         cluster_config=ray_two_node_cluster_config("linear"),
