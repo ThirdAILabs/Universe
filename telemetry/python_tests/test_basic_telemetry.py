@@ -18,7 +18,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 THIRDAI_TEST_TELEMETRY_PORT = 20730
 THIRDAI_TEST_TELEMETRY_URL = f"http://localhost:{THIRDAI_TEST_TELEMETRY_PORT}/metrics"
 THIRDAI_TEST_TELEMETRY_FILE = "test_telemetry_file"
-THIRDAI_TEST_TELEMETRY_S3_PATH = "s3:/test_bucket/test_telemetry_file"
+THIRDAI_TEST_TELEMETRY_S3_PATH = "s3://test_bucket/test_telemetry_file"
 
 
 def scrape_telemetry(method):
@@ -163,7 +163,7 @@ def run_udt_telemetry_test(method, kill_telemetry_after_udt):
 
 def test_udt_telemetry_normal():
     try:
-        telemetry.start(THIRDAI_TEST_TELEMETRY_PORT)
+        telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
         run_udt_telemetry_test(method="normal", kill_telemetry_after_udt=False)
     finally:
         telemetry.stop()
@@ -171,7 +171,7 @@ def test_udt_telemetry_normal():
 
 def test_udt_telemetry_file():
     try:
-        telemetry.start(file_write_location=THIRDAI_TEST_TELEMETRY_FILE)
+        telemetry.start(write_location=THIRDAI_TEST_TELEMETRY_FILE)
         run_udt_telemetry_test(method="file", kill_telemetry_after_udt=True)
     finally:
         telemetry.stop()
@@ -181,7 +181,7 @@ def test_udt_telemetry_file():
 @pytest.mark.xfail
 def test_udt_telemetry_s3():
     try:
-        telemetry.start(file_write_location=THIRDAI_TEST_TELEMETRY_S3_PATH)
+        telemetry.start(write_location=THIRDAI_TEST_TELEMETRY_S3_PATH)
         run_udt_telemetry_test(method="s3", kill_telemetry_after_udt=True)
     finally:
         telemetry.stop()
@@ -189,20 +189,20 @@ def test_udt_telemetry_s3():
 
 def test_error_starting_two_telemetry_clients():
     try:
-        telemetry.start(THIRDAI_TEST_TELEMETRY_PORT)
+        telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
         with pytest.raises(
             RuntimeError,
             match="Trying to start telemetry client when one is already running.*",
         ):
-            telemetry.start(THIRDAI_TEST_TELEMETRY_PORT + 1)
+            telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT + 1)
     finally:
         telemetry.stop()
 
 
 def test_stop_and_start_telemetry():
     try:
-        telemetry.start(THIRDAI_TEST_TELEMETRY_PORT)
+        telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
         telemetry.stop()
-        telemetry.start(THIRDAI_TEST_TELEMETRY_PORT)
+        telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
     finally:
         telemetry.stop()

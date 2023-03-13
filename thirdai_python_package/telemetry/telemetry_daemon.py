@@ -25,15 +25,15 @@ DEFAULT_UPLOAD_INTERVAL = 60 * 20
 
 
 def local_file_daemon(parsed_file_path, raw_telemetry):
-    with open(parsed_file_path.path, "w") as f:
+    with open(parsed_file_path.path, "wb") as f:
         f.write(raw_telemetry)
 
 
 def s3_daemon(parsed_s3_path, raw_telemetry):
     import boto3
 
-    s3 = boto3.resource("s3")
-    s3.put_object(
+    client = boto3.client("s3")
+    client.put_object(
         Bucket=parsed_s3_path.netloc,
         Key=parsed_s3_path.path,
         Body=raw_telemetry,
@@ -45,7 +45,7 @@ def push_telemetry(push_location, telemetry_url):
     raw_telemetry = requests.get(telemetry_url).content
     parsed_push_location = urlparse(push_location)
     if parsed_push_location.scheme == "":
-        local_file_daemon(parsed_push_location, telemetry_url)
+        local_file_daemon(parsed_push_location, raw_telemetry)
     elif parsed_push_location.scheme == "s3":
         s3_daemon(parsed_push_location, raw_telemetry)
     else:
