@@ -1,5 +1,6 @@
 #include "Embedding.h"
 #include <cereal/archives/binary.hpp>
+#include <bolt/src/layers/LayerConfig.h>
 
 namespace thirdai::bolt {
 
@@ -26,6 +27,16 @@ NodePtr EmbeddingNode::cloneForLayerSharing() {
                         config.logEmbeddingBlockSize(),
                         config.reductionString(), config.numTokensPerInput()));
 }
+
+NodePtr EmbeddingNode::cloneForLayerSharingWithReduction(
+    const std::string& reduction) {
+  auto config = _config.value_or(_embedding_layer->getConfig());
+
+  return std::shared_ptr<EmbeddingNode>(new EmbeddingNode(
+      config.numEmbeddingLookups(), config.lookupSize(),
+      config.logEmbeddingBlockSize(), reduction, config.numTokensPerInput()));
+}
+
 void EmbeddingNode::shareLayerImpl(NodePtr& other) {
   auto other_emb = std::dynamic_pointer_cast<EmbeddingNode>(other);
   if (!other_emb) {
