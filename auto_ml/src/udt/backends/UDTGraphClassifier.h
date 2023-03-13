@@ -14,14 +14,14 @@ class UDTGraphClassifier final : public UDTBackend {
                      const std::string& target_col, uint32_t n_target_classes,
                      bool integer_target, const data::TabularOptions& options);
 
-  void train(const dataset::DataSourcePtr& data, float learning_rate,
-             uint32_t epochs,
-             const std::optional<ValidationDataSource>& validation,
-             std::optional<size_t> batch_size,
-             std::optional<size_t> max_in_memory_batches,
-             const std::vector<std::string>& metrics,
-             const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-             bool verbose, std::optional<uint32_t> logging_interval) final;
+  py::object train(
+      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+      const std::optional<ValidationDataSource>& validation,
+      std::optional<size_t> batch_size,
+      std::optional<size_t> max_in_memory_batches,
+      const std::vector<std::string>& metrics,
+      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
+      bool verbose, std::optional<uint32_t> logging_interval) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -30,20 +30,15 @@ class UDTGraphClassifier final : public UDTBackend {
 
   py::object predict(const MapInput& sample, bool sparse_inference,
                      bool return_predicted_class) final {
-    (void)sample;
-    (void)sparse_inference;
-    (void)return_predicted_class;
-    throw exceptions::NotImplemented(
-        "Predict is not yet implemented for graph neural networks");
+    return _classifier->predict(_dataset_manager->featurizeInput(sample),
+                                sparse_inference, return_predicted_class);
   }
 
-  py::object predictBatch(const MapInputBatch& sample, bool sparse_inference,
+  py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
                           bool return_predicted_class) final {
-    (void)sample;
-    (void)sparse_inference;
-    (void)return_predicted_class;
-    throw exceptions::NotImplemented(
-        "Predict is not yet implemented for graph neural networks");
+    return _classifier->predictBatch(
+        _dataset_manager->featurizeInputBatch(samples), sparse_inference,
+        return_predicted_class);
   }
 
   void indexNodes(const dataset::DataSourcePtr& source) final {

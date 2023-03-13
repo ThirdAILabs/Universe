@@ -10,6 +10,7 @@
 #include <dataset/src/blocks/Augmentation.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/BlockList.h>
+#include <dataset/src/blocks/InputTypes.h>
 #include <dataset/src/blocks/NoOpAugmentation.h>
 #include <iterator>
 #include <memory>
@@ -45,6 +46,8 @@ class TabularFeaturizer : public Featurizer {
     }
   }
 
+  std::vector<BoltVector> featurize(ColumnarInputSample& input_sample);
+
   std::vector<std::vector<BoltVector>> featurize(
       ColumnarInputBatch& input_batch);
 
@@ -67,9 +70,6 @@ class TabularFeaturizer : public Featurizer {
   size_t getNumDatasets() final { return _block_lists.size(); }
 
   void setParallelism(bool parallel) { _parallel = parallel; }
-
-  // TODO(Josh): Remove this function
-  BoltVector makeInputVector(ColumnarInputSample& sample);
 
   // TODO(Any): The next two explanation functions only will explain through
   // the first set of block lists

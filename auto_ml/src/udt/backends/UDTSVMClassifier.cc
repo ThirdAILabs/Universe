@@ -22,7 +22,7 @@ UDTSVMClassifier::UDTSVMClassifier(
                   user_args.get<bool>("freeze_hash_tables", "boolean",
                                       defaults::FREEZE_HASH_TABLES)) {}
 
-void UDTSVMClassifier::train(
+py::object UDTSVMClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
     const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
@@ -41,10 +41,10 @@ void UDTSVMClassifier::train(
         validation->second);
   }
 
-  _classifier.train(train_dataset_loader, learning_rate, epochs,
-                    validation_dataset_loader, batch_size_opt,
-                    max_in_memory_batches, metrics, callbacks, verbose,
-                    logging_interval);
+  return _classifier.train(train_dataset_loader, learning_rate, epochs,
+                           validation_dataset_loader, batch_size_opt,
+                           max_in_memory_batches, metrics, callbacks, verbose,
+                           logging_interval);
 }
 
 py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,

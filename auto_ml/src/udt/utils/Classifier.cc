@@ -6,7 +6,7 @@
 
 namespace thirdai::automl::udt::utils {
 
-void thirdai::automl::udt::utils::Classifier::train(
+py::object thirdai::automl::udt::utils::Classifier::train(
     dataset::DatasetLoaderPtr& dataset, float learning_rate, uint32_t epochs,
     const std::optional<ValidationDatasetLoader>& validation,
     std::optional<size_t> batch_size_opt,
@@ -21,8 +21,9 @@ void thirdai::automl::udt::utils::Classifier::train(
       getTrainConfig(epochs, learning_rate, validation, metrics, callbacks,
                      verbose, logging_interval);
 
-  utils::train(_model, dataset, train_config, batch_size, max_in_memory_batches,
-               /* freeze_hash_tables= */ _freeze_hash_tables, token);
+  auto output = utils::train(
+      _model, dataset, train_config, batch_size, max_in_memory_batches,
+      /* freeze_hash_tables= */ _freeze_hash_tables, token);
 
   /**
    * For binary classification we tune the prediction threshold to optimize
@@ -45,6 +46,8 @@ void thirdai::automl::udt::utils::Classifier::train(
               /* metric_name= */ train_config.metrics().at(0));
     }
   }
+
+  return py::cast(output);
 }
 
 py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
