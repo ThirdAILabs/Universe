@@ -12,7 +12,7 @@ def ray_two_node_cluster_config():
     from ray.cluster_utils import Cluster
 
     num_cpu_per_node = db.get_num_cpus() // 2
-    print(num_cpu_per_node)
+    print("num_cpus_per_node", num_cpu_per_node)
     mini_cluster = Cluster(
         initialize_head=True,
         head_node_args={
