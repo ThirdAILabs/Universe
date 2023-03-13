@@ -192,7 +192,7 @@ class MachBlock final : public CategoricalBlock {
                                        delimiter);
   }
 
-  MachIndexPtr getMachIndex() const { return _index; }
+  MachIndexPtr index() const { return _index; }
 
   std::string getResponsibleCategory(
       uint32_t index, const std::string_view& category_value) const final {
@@ -229,5 +229,7 @@ class MachBlock final : public CategoricalBlock {
     archive(cereal::base_class<CategoricalBlock>(this), _index);
   }
 };
+
+using MachBlockPtr = std::shared_ptr<MachBlock>;
 
 }  // namespace thirdai::dataset

@@ -79,6 +79,12 @@ class UDTMachClassifier final : public UDTBackend {
   std::vector<std::variant<std::string, uint32_t>> machSingleDecode(
       const BoltVector& output);
 
+  bool integerTarget() const {
+    return static_cast<bool>(
+        std::dynamic_pointer_cast<dataset::NumericCategoricalMachIndex>(
+            _mach_index));
+  }
+
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this
     return n_target_classes / 25;
@@ -100,7 +106,7 @@ class UDTMachClassifier final : public UDTBackend {
   void serialize(Archive& archive);
 
   std::shared_ptr<utils::Classifier> _classifier;
-  dataset::MachIndexPtr _mach_index;
+  dataset::MachBlockPtr _mach_label_block;
   dataset::CategoricalBlockPtr _multi_hash_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
 };

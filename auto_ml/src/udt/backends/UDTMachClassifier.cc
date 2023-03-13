@@ -39,17 +39,18 @@ UDTMachClassifier::UDTMachClassifier(
   // TODO(david) move things like label block and coldstart out of here and
   // into a classifier utils file?
 
+  dataset::MachIndexPtr mach_index;
   if (integer_target) {
-    _mach_index = dataset::NumericCategoricalMachIndex::make(
+    mach_index = dataset::NumericCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes);
   } else {
-    _mach_index = dataset::StringCategoricalMachIndex::make(
+    mach_index = dataset::StringCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
         /* max_elements = */ n_target_classes);
   }
 
-  auto mach_label_block = dataset::MachBlock::make(target_name, _mach_index,
-                                                   target_config->delimiter);
+  _mach_label_block = dataset::MachBlock::make(target_name, mach_index,
+                                               target_config->delimiter);
 
   bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
 
@@ -94,18 +95,6 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
   (void)return_predicted_class;
   (void)return_metrics;
 
-  // TODO(david) how should we process metrics? should we allow the user to pass
-  // in metrics? maybe we limit it to only precision and recall @ K? maybe we
-  // just ignore the user and give precision and recall @ K anyways? how should
-  // we calculate precision and recall? should we decode the raw activations
-  // then calculate precision and recall?
-
-  // I think what we should do is
-  // 1) evaluate with no metrics, get the activations
-  // 2) write a decode single method that given some activations and some
-  // parameters, like B and k, and using the _index we created, return the
-  // predicted original ids
-
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
   bolt::EvalConfig eval_config =
@@ -127,8 +116,8 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
     predicted_entities.push_back(predictions);
   }
 
-  // TODO(david) calculate precision and recall here based on the test_labels
-  // and the predicted entities
+  // TODO(david) eventually we should have calculated metrics specific to the
+  // backend and not passed directly into the boltgraph
 
   // TODO(david) return the predicted documents into numpy form
 }
@@ -140,6 +129,10 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
  */
 std::vector<std::variant<std::string, uint32_t>>
 UDTMachClassifier::machSingleDecode(const BoltVector& output) {
+  // TODO(david) accept this as input to predict, predictBatch, and evaluate?
+  //  alternatively we could make a separate method called "setBK()" so we don't
+  //  have to edit every UDT api call. then we could have good defaults while
+  //  also letting people play with it
   uint32_t B = 25;
   uint32_t K = 5;
 
@@ -149,7 +142,7 @@ UDTMachClassifier::machSingleDecode(const BoltVector& output) {
       entity_to_scores;
   while (!top_B.empty()) {
     auto [activation, active_neuron] = top_B.top();
-    auto entities = _mach_index->entitiesByHash(active_neuron);
+    auto entities = _mach_label_block->index()->entitiesByHash(active_neuron);
     for (const auto& entity : entities) {
       if (!entity_to_scores.count(entity)) {
         entity_to_scores[entity] = activation;
@@ -179,6 +172,7 @@ UDTMachClassifier::machSingleDecode(const BoltVector& output) {
 py::object UDTMachClassifier::predict(const MapInput& sample,
                                       bool sparse_inference,
                                       bool return_predicted_class) {
+  (void)return_predicted_class;
   BoltVector output = _classifier->model()->predictSingle(
       _dataset_factory->featurizeInput(sample), sparse_inference);
   auto decoded_output = machSingleDecode(output);
@@ -202,8 +196,8 @@ py::object UDTMachClassifier::coldstart(
   auto data_source = utils::augmentColdStartData(
       data, strong_column_names, weak_column_names, _dataset_factory,
       /* integer_target = */ integerTarget(),
-      /* label_column_name = */ _label_block->columnName(),
-      /* label_delimiter = */ _label_block->delimiter());
+      /* label_column_name = */ _mach_label_block->columnName(),
+      /* label_delimiter = */ _mach_label_block->delimiter());
 
   return train(data_source, learning_rate, epochs, validation,
                /* batch_size_opt = */ std::nullopt,
