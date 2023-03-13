@@ -14,9 +14,11 @@
 #include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/graph/nodes/Sparsification.h>
 #include <bolt/src/graph/nodes/Switch.h>
+#include <bolt/src/layers/LayerConfig.h>
 #include <dataset/src/Datasets.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/functional.h>
+#include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <optional>
 #include <string>
@@ -126,9 +128,13 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
   py::class_<Node, NodePtr>(nn_submodule, "Node")
       .def_property_readonly("name", [](Node& node) { return node.name(); })
       .def("freeze", &Node::freeze)
+      .def("is_frozen", &Node::isFrozen)
       .def("disable_sparse_parameter_updates",
            &Node::disableSparseParameterUpdates,
-           "Forces the node to use dense parameter updates.");
+           "Forces the node to use dense parameter updates.")
+      .def("clone_for_layer_sharing", &Node::cloneForLayerSharing)
+      .def("share_layer", &Node::shareLayer, py::arg("other"))
+      .def("predecessors", &Node::getPredecessors);
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(nn_submodule,
                                                               "FullyConnected")
@@ -166,8 +172,6 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            " * sampling_config (SamplingConfig) - Sampling config object to "
            "initialize hash tables/functions.")
 #endif
-      .def("clone_for_layer_sharing", &FullyConnectedNode::cloneForLayerSharing)
-      .def("share_layer", &FullyConnectedNode::shareLayer, py::arg("other"))
       .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),
            "Tells the graph which layer should act as input to this fully "
@@ -181,6 +185,8 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
       .def("set_sparsity", &FullyConnectedNode::setSparsity,
            py::arg("sparsity"))
       .def("get_dim", &FullyConnectedNode::outputDim)
+      .def_property_readonly("act_func",
+                             &FullyConnectedNode::getActivationFunctionString)
       .def_property_readonly(
           "weights",
           [](FullyConnectedNode& node) {
@@ -254,6 +260,11 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            py::arg("token_input"));
 #endif
 
+  py::enum_<EmbeddingReductionType>(nn_submodule, "EmbeddingReductions")
+      .value("SUM", EmbeddingReductionType::SUM)
+      .value("AVERAGE", EmbeddingReductionType::AVERAGE)
+      .value("CONCATENATION", EmbeddingReductionType::CONCATENATION);
+
   py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(nn_submodule, "Embedding")
       .def(py::init(&EmbeddingNode::make), py::arg("num_embedding_lookups"),
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
@@ -266,8 +277,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
            "select as part of the embedding for each embedding lookup.\n"
            " * log_embedding_block_size: Int (positive) The log base 2 of the "
            "total size of the embedding block.\n")
-      .def("clone_for_layer_sharing", &EmbeddingNode::cloneForLayerSharing)
-      .def("share_layer", &EmbeddingNode::shareLayer, py::arg("other"))
+      .def_property_readonly("reduction", &EmbeddingNode::reduction)
       .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
            "Tells the graph which token input to use for this Embedding Node.")
       .def_property_readonly(
@@ -311,8 +321,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
   py::class_<Input, InputPtr, Node>(nn_submodule, "Input")
       .def(py::init(&Input::make), py::arg("dim"),
            "Constructs an input layer node for the graph.")
-      .def("clone_for_layer_sharing", &Input::cloneForLayerSharing)
-      .def("share_layer", &Input::shareLayer, py::arg("other"));
+      .def("get_dim", &Input::outputDim);
 
   py::class_<NormalizationLayerConfig>(nn_submodule, "LayerNormConfig")
       .def_static("make", &NormalizationLayerConfig::makeConfig)
@@ -585,6 +594,7 @@ That's all for now, folks! More docs coming soon :)
            "Returns a list of all Nodes that make up the graph in traversal "
            "order. This list is guaranetted to be static after a model is "
            "compiled.")
+      .def("output_node", &BoltGraph::output)
 #endif
       .def(getPickleFunction<BoltGraph>());
 

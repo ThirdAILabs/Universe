@@ -78,9 +78,12 @@ def clone_without_sharing_params(model):
     return clone
 
 
-def share_params(original, clone):
+def share_params(original, clone, with_self=False):
     for clone_node, original_node in zip(clone.nodes(), original.nodes()):
-        clone_node.share_layer(original_node)
+        if not with_self:
+            clone_node.share_layer(original_node)
+        else:
+            pytest.raises(ValueError, lambda: clone_node.share_layer(clone_node))
 
     return clone
 
@@ -107,6 +110,7 @@ def test_share_layer(load_dataset, model_type):
 
     assert (original_results != initial_clone_results).any()
 
+    share_params(original, clone, with_self=True)
     share_params(original, clone)
 
     assert original.summary(print=False) == clone.summary(print=False)

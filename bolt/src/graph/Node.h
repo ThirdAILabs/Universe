@@ -75,22 +75,7 @@ class Node {
                              name() + " node.");
   }
 
-  void shareLayer(NodePtr& other) {
-    NodeState node_state = getState();
-    if (node_state == NodeState::Constructed ||
-        node_state == NodeState::PredecessorsSet) {
-      throw std::invalid_argument("Called shareLayer() before compiling.");
-    }
-
-    NodeState other_node_state = other->getState();
-    if (other_node_state == NodeState::Constructed ||
-        other_node_state == NodeState::PredecessorsSet) {
-      throw std::invalid_argument(
-          "Tried to share the layer of an uncompiled node.");
-    }
-
-    shareLayerImpl(other);
-  }
+  void shareLayer(NodePtr& other);
 
   /*
    * Computes the forward pass for the node. The node will access its inputs
@@ -168,6 +153,8 @@ class Node {
   getInternalFullyConnectedLayers();
 
   void freeze() { _frozen = true; }
+
+  bool isFrozen() const { return _frozen; }
 
   // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;

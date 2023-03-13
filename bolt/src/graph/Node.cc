@@ -20,6 +20,35 @@ void Node::compile(LayerNameManager& name_manager) {
   compileImpl();
 }
 
+void Node::shareLayer(NodePtr& other) {
+  NodeState node_state = getState();
+  if (node_state == NodeState::Constructed ||
+      node_state == NodeState::PredecessorsSet) {
+    throw std::invalid_argument("Called shareLayer() before compiling.");
+  }
+
+  NodeState other_node_state = other->getState();
+  if (other_node_state == NodeState::Constructed ||
+      other_node_state == NodeState::PredecessorsSet) {
+    throw std::invalid_argument(
+        "Tried to share the layer of an uncompiled node.");
+  }
+
+  if (other->outputDim() != outputDim()) {
+    throw std::invalid_argument(
+        "Tried to share the layer of a node with incompatible output "
+        "dimensions " +
+        std::to_string(outputDim()) + " vs. " +
+        std::to_string(other->outputDim()) + ".");
+  }
+
+  if (&*other == this) {
+    throw std::invalid_argument("Tried to share layer with self.");
+  }
+
+  shareLayerImpl(other);
+}
+
 uint32_t Node::numNonzerosInOutput() const {
   if (getState() != NodeState::PreparedForBatchProcessing) {
     throw exceptions::NodeStateMachineError(

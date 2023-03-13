@@ -33,13 +33,6 @@ void EmbeddingNode::shareLayerImpl(NodePtr& other) {
         "Cannot share non-embedding node params with embedding node.");
   }
 
-  if (other_emb->outputDim() != outputDim()) {
-    std::stringstream invalid_size;
-    invalid_size << "incompatible embeddings sizes " << outputDim() << " vs. "
-                 << other_emb->outputDim() << ".";
-    throw std::invalid_argument(invalid_size.str());
-  }
-
   _embedding_layer = other_emb->_embedding_layer;
 }
 

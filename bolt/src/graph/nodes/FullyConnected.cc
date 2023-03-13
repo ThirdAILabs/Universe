@@ -53,13 +53,10 @@ void FullyConnectedNode::shareLayerImpl(NodePtr& other) {
     throw std::invalid_argument("Cannot copy a non-fc node to an fc node.");
   }
 
-  if (other_fc->outputDim() != outputDim() ||
-      other_fc->_layer->getInputDim() != _layer->getInputDim()) {
+  if (other_fc->_layer->getInputDim() != _layer->getInputDim()) {
     std::stringstream invalid_size;
-    invalid_size << "incompatible fc layer sizes (" << _layer->getInputDim()
-                 << ", " << outputDim() << ") vs. ("
-                 << other_fc->_layer->getInputDim() << ", "
-                 << other_fc->outputDim() << ").";
+    invalid_size << "incompatible fc input sizes " << _layer->getInputDim()
+                 << " vs. " << other_fc->_layer->getInputDim() << ".";
     throw std::invalid_argument(invalid_size.str());
   }
 

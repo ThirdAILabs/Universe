@@ -121,6 +121,9 @@ def test_freeze_layer(load_dataset, when_to_freeze):
 
     clone, embedding_layer, fc_hidden_layer = uncompiled_clone(original)
 
+    assert not embedding_layer.is_frozen()
+    assert not fc_hidden_layer.is_frozen()
+
     if when_to_freeze == "freeze_before_compile_clone":
         embedding_layer.freeze()
         fc_hidden_layer.freeze()
@@ -134,6 +137,9 @@ def test_freeze_layer(load_dataset, when_to_freeze):
 
     if when_to_freeze == "freeze_after_share_layer":
         freeze_shared_layers(clone)
+
+    assert embedding_layer.is_frozen()
+    assert fc_hidden_layer.is_frozen()
 
     initial_clone_results = eval_results(clone, data, labels)
 

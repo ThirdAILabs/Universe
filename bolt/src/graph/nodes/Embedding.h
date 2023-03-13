@@ -60,6 +60,13 @@ class EmbeddingNode final : public Node,
 
   bool hasParameters() final { return true; }
 
+  EmbeddingReductionType reduction() const {
+    if (_config) {
+      return _config->reduction();
+    }
+    return _embedding_layer->getConfig().reduction();
+  }
+
  private:
   void compileImpl() final;
 

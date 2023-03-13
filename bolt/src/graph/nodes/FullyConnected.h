@@ -62,6 +62,10 @@ class FullyConnectedNode final
 
   ActivationFunction getActivationFunction() const;
 
+  std::string getActivationFunctionString() const {
+    return activationFunctionToStr(getActivationFunction());
+  }
+
   void saveParameters(const std::string& filename) const;
 
   void loadParameters(const std::string& filename);
