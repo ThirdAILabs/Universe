@@ -38,14 +38,14 @@ class UDTSVMClassifier final : public UDTBackend {
   static dataset::DatasetLoaderPtr svmDatasetLoader(
       dataset::DataSourcePtr data_source, bool shuffle);
 
-  UDTSVMClassifier() : _classifier(nullptr, false) {}
+  UDTSVMClassifier() {}
 
   friend cereal::access;
 
   template <class Archive>
   void serialize(Archive& archive);
 
-  utils::Classifier _classifier;
+  utils::ClassifierPtr _classifier;
 };
 
 }  // namespace thirdai::automl::udt

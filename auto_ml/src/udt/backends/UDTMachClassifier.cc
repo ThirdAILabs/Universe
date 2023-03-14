@@ -4,7 +4,7 @@
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <auto_ml/src/udt/utils/Train.h>
-#include <dataset/src/blocks/MachBlocks.h>
+#include <dataset/src/blocks/MachBlock.h>
 #include <pybind11/stl.h>
 
 namespace thirdai::automl::udt {
@@ -41,7 +41,7 @@ UDTMachClassifier::UDTMachClassifier(
   if (integer_target) {
     mach_index = dataset::NumericCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
-        n_target_classes);
+        /* n_target_classes = */ n_target_classes);
   } else {
     mach_index = dataset::StringCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
@@ -232,7 +232,7 @@ static std::string variantToString(
 py::object UDTMachClassifier::entityEmbedding(
     const std::variant<uint32_t, std::string>& label) {
   std::vector<uint32_t> hashed_neurons =
-      _mach_label_block->index()->hashEntity(variantToString(label));
+      _mach_label_block->index()->hashAndStoreEntity(variantToString(label));
 
   auto back_node = _classifier->model()->getNodes().back();
 

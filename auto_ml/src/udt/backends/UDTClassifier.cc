@@ -29,12 +29,13 @@ UDTClassifier::UDTClassifier(const data::ColumnDataTypes& input_data_types,
                              const data::TabularOptions& tabular_options,
                              const std::optional<std::string>& model_config,
                              const config::ArgumentMap& user_args)
-    : _classifier(utils::buildModel(
-                      /* input_dim= */ tabular_options.feature_hash_range,
-                      /* output_dim= */ n_target_classes,
-                      /* args= */ user_args, /* model_config= */ model_config),
-                  user_args.get<bool>("freeze_hash_tables", "boolean",
-                                      defaults::FREEZE_HASH_TABLES)) {
+    : _classifier(utils::Classifier::make(
+          utils::buildModel(
+              /* input_dim= */ tabular_options.feature_hash_range,
+              /* output_dim= */ n_target_classes,
+              /* args= */ user_args, /* model_config= */ model_config),
+          user_args.get<bool>("freeze_hash_tables", "boolean",
+                              defaults::FREEZE_HASH_TABLES))) {
   bool normalize_target_categories = utils::hasSoftmaxOutput(model());
   _label_block = labelBlock(target_name, target, n_target_classes,
                             integer_target, normalize_target_categories);
@@ -67,7 +68,7 @@ py::object UDTClassifier::train(
   auto train_dataset_loader =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  return _classifier.train(
+  return _classifier->train(
       train_dataset_loader, learning_rate, epochs, validation_dataset_loader,
       batch_size_opt, max_in_memory_batches, metrics, callbacks, verbose,
       logging_interval, licensing::TrainPermissionsToken(data));
@@ -80,20 +81,20 @@ py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
                                    bool return_metrics) {
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
-  return _classifier.evaluate(dataset, metrics, sparse_inference,
-                              return_predicted_class, verbose, return_metrics);
+  return _classifier->evaluate(dataset, metrics, sparse_inference,
+                               return_predicted_class, verbose, return_metrics);
 }
 
 py::object UDTClassifier::predict(const MapInput& sample, bool sparse_inference,
                                   bool return_predicted_class) {
-  return _classifier.predict(_dataset_factory->featurizeInput(sample),
-                             sparse_inference, return_predicted_class);
+  return _classifier->predict(_dataset_factory->featurizeInput(sample),
+                              sparse_inference, return_predicted_class);
 }
 
 py::object UDTClassifier::predictBatch(const MapInputBatch& samples,
                                        bool sparse_inference,
                                        bool return_predicted_class) {
-  return _classifier.predictBatch(
+  return _classifier->predictBatch(
       _dataset_factory->featurizeInputBatch(samples), sparse_inference,
       return_predicted_class);
 }
@@ -107,7 +108,7 @@ std::vector<dataset::Explanation> UDTClassifier::explain(
   }
 
   auto [gradients_indices, gradients_ratio] =
-      _classifier.model()->getInputGradientSingle(
+      _classifier->model()->getInputGradientSingle(
           /* input_data= */ {_dataset_factory->featurizeInput(sample)},
           /* explain_prediction_using_highest_activation= */ true,
           /* neuron_to_explain= */ target_neuron);
@@ -139,9 +140,9 @@ py::object UDTClassifier::coldstart(
 py::object UDTClassifier::embedding(const MapInput& sample) {
   auto input_vector = _dataset_factory->featurizeInput(sample);
   BoltVector emb =
-      _classifier.model()->predictSingle(std::move(input_vector),
-                                         /* use_sparse_inference= */ false,
-                                         /* output_node_name= */ "fc_1");
+      _classifier->model()->predictSingle(std::move(input_vector),
+                                          /* use_sparse_inference= */ false,
+                                          /* output_node_name= */ "fc_1");
   return utils::convertBoltVectorToNumpy(emb);
 }
 
@@ -149,8 +150,10 @@ py::object UDTClassifier::entityEmbedding(
     const std::variant<uint32_t, std::string>& label) {
   uint32_t neuron_id = labelToNeuronId(label);
 
-  auto fc_layers =
-      _classifier.model()->getNodes().back()->getInternalFullyConnectedLayers();
+  auto fc_layers = _classifier->model()
+                       ->getNodes()
+                       .back()
+                       ->getInternalFullyConnectedLayers();
 
   if (fc_layers.size() != 1) {
     throw std::invalid_argument(

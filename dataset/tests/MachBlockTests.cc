@@ -1,6 +1,7 @@
 
 #include <gtest/gtest.h>
-#include <dataset/src/blocks/MachBlocks.h>
+#include <dataset/src/blocks/MachBlock.h>
+#include <dataset/src/blocks/MachIndex.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <random>
 
@@ -19,7 +20,8 @@ class MachBlockTest : public testing::Test {
 
   static NumericCategoricalMachIndexPtr numericMachIndex() {
     return NumericCategoricalMachIndex::make(
-        /* output_range = */ output_range, /* num_hashes = */ num_hashes);
+        /* output_range = */ output_range, /* num_hashes = */ num_hashes,
+        /* n_target_classes = */ 10);
   }
 
   /**

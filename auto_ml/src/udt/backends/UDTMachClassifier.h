@@ -9,7 +9,7 @@
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/blocks/MachBlocks.h>
+#include <dataset/src/blocks/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <stdexcept>
 

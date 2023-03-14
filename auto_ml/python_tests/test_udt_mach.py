@@ -8,6 +8,32 @@ pytestmark = [pytest.mark.unit]
 SIMPLE_TEST_FILE = "mach_udt_test.csv"
 
 
+def make_simple_train_data(invalid=False):
+    with open(SIMPLE_TEST_FILE, "w") as f:
+        f.write("text,label\n")
+        f.write("haha,0\n")
+        f.write("haha,1\n")
+        if invalid:
+            f.write("haha,2\n")
+
+
+def train_simple_mach_udt(integer_target, embedding_dim=256):
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text": bolt.types.text(contextual_encoding="local"),
+            "label": bolt.types.categorical(),
+        },
+        target="label",
+        n_target_classes=2,
+        integer_target=integer_target,
+        options={"extreme_classification": True, "embedding_dimension": embedding_dim},
+    )
+
+    model.train(SIMPLE_TEST_FILE, epochs=1, learning_rate=0.001)
+
+    return model
+
+
 def calculate_precision(all_relevant_documents, all_recommended_documents, at=1):
     assert len(all_relevant_documents) == len(all_recommended_documents)
 
@@ -48,35 +74,7 @@ def evaluate_model(model, supervised_tst):
 
     precision = calculate_precision(all_relevant_documents, all_recommended_documents)
 
-    assert precision > 0.5
-
     return precision
-
-
-def make_simple_train_data(invalid=False):
-    with open(SIMPLE_TEST_FILE, "w") as f:
-        f.write("text,label\n")
-        f.write("haha,0\n")
-        f.write("haha,1\n")
-        if invalid:
-            f.write("haha,2\n")
-
-
-def train_simple_mach_udt(integer_target, embedding_dim=256):
-    model = bolt.UniversalDeepTransformer(
-        data_types={
-            "text": bolt.types.text(contextual_encoding="local"),
-            "label": bolt.types.categorical(),
-        },
-        target="label",
-        n_target_classes=2,
-        integer_target=integer_target,
-        options={"extreme_classification": True, "embedding_dimension": embedding_dim},
-    )
-
-    model.train(SIMPLE_TEST_FILE, epochs=1, learning_rate=0.001)
-
-    return model
 
 
 class SupervisedTrainCallback(bolt.callbacks.Callback):
@@ -128,7 +126,7 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
         metrics=["precision@1"],
     )
 
-    # assert metrics["precision@1"][-1] > 0.95
+    assert metrics["precision@1"][-1] > 0.95
 
     metrics = model.train(
         filename=supervised_trn,
@@ -142,9 +140,11 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
         callbacks=[SupervisedTrainCallback()],
     )
 
-    # assert metrics["precision@1"][-1] > 0.95
+    assert metrics["precision@1"][-1] > 0.5
 
     before_save_precision = evaluate_model(model, supervised_tst)
+
+    assert before_save_precision > 0.5
 
     save_loc = "model.bolt"
     model.save(save_loc)

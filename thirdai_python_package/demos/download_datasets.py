@@ -631,11 +631,6 @@ def download_beir_dataset(dataset):
     url = f"https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{dataset}.zip"
     data_path = util.download_and_unzip(url, ".")
 
-    if os.path.exists(data_path + "/qrels/train.tsv"):
-        corpus, queries_train, qrels_train = GenericDataLoader(
-            data_folder=data_path
-        ).load(split="train")
-
     corpus, queries_test, qrels_test = GenericDataLoader(data_folder=data_path).load(
         split="test"
     )
@@ -693,19 +688,36 @@ def download_beir_dataset(dataset):
                 doc_ids = ":".join(list(answers[key].keys()))
                 fw.write(query + "," + doc_ids + "\n")
 
+    # Not all of the beir datasets come with a train split, some only have a test
+    # split. Thus we won't write a new supervised train file.
     if os.path.exists(data_path + "/qrels/train.tsv"):
+        _, queries_train, qrels_train = GenericDataLoader(data_folder=data_path).load(
+            split="train"
+        )
+
         new_qrels_train = remap_query_answers(qrels_train, doc_ids_to_integers)
 
         write_supervised_file(
             queries_train, new_qrels_train, data_path, "trn_supervised.csv"
         )
+    else:
+        print(
+            f"BEIR Dataset {dataset} doesn't come with a train split, returning None for the trn_supervised path."
+        )
 
     new_qrels_test = remap_query_answers(qrels_test, doc_ids_to_integers)
+
     write_supervised_file(queries_test, new_qrels_test, data_path, "tst_supervised.csv")
+
+    trn_supervised = (
+        f"{dataset}/trn_supervised.csv"
+        if os.path.exists(data_path + "/qrels/train.tsv")
+        else None
+    )
 
     return (
         f"{dataset}/unsupervised.csv",
-        f"{dataset}/trn_supervised.csv",
+        trn_supervised,
         f"{dataset}/tst_supervised.csv",
         n_target_classes,
     )
