@@ -130,8 +130,6 @@ class StringCategoricalMachIndex : public MachIndex {
                                     "of expected categories: " +
                                     std::to_string(_max_elements) + ".");
       }
-      return hashing::hashNTimesToOutputRange(string, _num_hashes,
-                                              _output_range);
     }
 
     auto hashes =
@@ -139,20 +137,11 @@ class StringCategoricalMachIndex : public MachIndex {
 #pragma omp critical
     {
       if (!_entity_to_id.count(string)) {
-        update(string, hashes);
+        updateInternalIndex(string, hashes);
       }
     }
 
     return hashes;
-  }
-
-  void update(const std::string& string, const std::vector<uint32_t>& hashes) {
-    uint32_t id = _entity_to_id.size();
-    _entity_to_id[string] = id;
-    _current_vocab_size++;
-    for (const auto& hash : hashes) {
-      _hash_to_entities_map[hash].push_back(string);
-    }
   }
 
   std::vector<std::string> entitiesByHash(uint32_t hash_val) const final {
@@ -163,6 +152,15 @@ class StringCategoricalMachIndex : public MachIndex {
   }
 
  private:
+  void updateInternalIndex(const std::string& string, const std::vector<uint32_t>& hashes) {
+    uint32_t id = _entity_to_id.size();
+    _entity_to_id[string] = id;
+    _current_vocab_size++;
+    for (const auto& hash : hashes) {
+      _hash_to_entities_map[hash].push_back(string);
+    }
+  }
+
   bool indexIsFull() { return _current_vocab_size == _max_elements; }
 
   friend class cereal::access;
