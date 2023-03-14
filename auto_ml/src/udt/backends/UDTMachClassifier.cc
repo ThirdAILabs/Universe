@@ -39,7 +39,8 @@ UDTMachClassifier::UDTMachClassifier(
   dataset::MachIndexPtr mach_index;
   if (integer_target) {
     mach_index = dataset::NumericCategoricalMachIndex::make(
-        /* output_range = */ output_range, /* num_hashes = */ num_hashes);
+        /* output_range = */ output_range, /* num_hashes = */ num_hashes,
+        n_target_classes);
   } else {
     mach_index = dataset::StringCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
@@ -91,22 +92,31 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                                        bool sparse_inference,
                                        bool return_predicted_class,
                                        bool verbose, bool return_metrics) {
-  // TODO(david) should we throw an error if these flags are specified?
-  (void)return_predicted_class;
-  (void)return_metrics;
+  if (return_predicted_class) {
+    throw std::invalid_argument(
+        "UDT Extreme Classification does not support the "
+        "return_predicted_class flag.");
+  }
+  if (return_metrics) {
+    throw std::invalid_argument(
+        "UDT Extreme Classification does not support the "
+        "return_metrics flag.");
+  }
 
-  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
+  auto eval_dataset_loader =
+      _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
   bolt::EvalConfig eval_config =
       utils::getEvalConfig(metrics, sparse_inference, verbose);
 
-  auto loaded_data =
-      dataset->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
+  auto loaded_data = eval_dataset_loader->loadAll(
+      /* batch_size= */ defaults::BATCH_SIZE, verbose);
   auto [test_data, test_labels] =
       utils::splitDataLabels(std::move(loaded_data));
 
-  auto [output_metrics, output] =
-      _classifier->model()->evaluate(test_data, test_labels, eval_config);
+  auto output = _classifier->model()
+                    ->evaluate(test_data, test_labels, eval_config)
+                    .second;
 
   std::vector<std::vector<std::pair<std::string, double>>> predicted_entities;
   for (uint32_t i = 0; i < output.numSamples(); i++) {

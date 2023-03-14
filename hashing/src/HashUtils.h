@@ -1,12 +1,30 @@
 #pragma once
 
+#include "MurmurHash.h"
 #include <cstdint>
+#include <string>
+#include <vector>
 
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
 
 namespace thirdai::hashing {
+
+static std::vector<uint32_t> hashNTimesToOutputRange(const std::string& string,
+                                                     uint32_t num_hashes,
+                                                     uint32_t output_range) {
+  std::vector<uint32_t> hashes;
+  uint32_t starting_hash_seed = 341;
+  for (uint32_t hash_seed = starting_hash_seed;
+       hash_seed < starting_hash_seed + num_hashes; hash_seed++) {
+    hashes.push_back(
+        hashing::MurmurHash(string.data(), string.size(), hash_seed) %
+        output_range);
+  }
+
+  return hashes;
+}
 
 /*
  * Cheap hash of two numbers - n1 and n2 - given seed and

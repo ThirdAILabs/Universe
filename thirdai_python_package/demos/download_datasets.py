@@ -627,7 +627,7 @@ def download_amazon_kaggle_product_catalog_sampled():
 def download_beir_dataset(dataset):
     from beir import util
     from beir.datasets.data_loader import GenericDataLoader
-    
+
     url = f"https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{dataset}.zip"
     data_path = util.download_and_unzip(url, ".")
 
@@ -671,6 +671,7 @@ def download_beir_dataset(dataset):
     # we remap doc ids from 0 to N-1 so we can specify integer target in UDT
     # coldstart only works with integer target for now
     doc_ids_to_integers = remap_doc_ids(corpus)
+    n_target_classes = len(doc_ids_to_integers)
 
     def remap_query_answers(qrels, doc_ids_to_integers):
         new_qrels = {}
@@ -701,3 +702,10 @@ def download_beir_dataset(dataset):
 
     new_qrels_test = remap_query_answers(qrels_test, doc_ids_to_integers)
     write_supervised_file(queries_test, new_qrels_test, data_path, "tst_supervised.csv")
+
+    return (
+        f"{dataset}/unsupervised.csv",
+        f"{dataset}/trn_supervised.csv",
+        f"{dataset}/tst_supervised.csv",
+        n_target_classes,
+    )

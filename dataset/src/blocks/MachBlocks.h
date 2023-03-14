@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Categorical.h"
-#include <hashing/src/MurmurHash.h>
+#include <hashing/src/HashUtils.h>
 #include <exceptions/src/Exceptions.h>
 #include <variant>
 
@@ -11,32 +11,28 @@ namespace tests {
 class MachBlockTest;
 }  // namespace tests
 
-static std::vector<uint32_t> getHashes(const std::string& string,
-                                       uint32_t num_hashes,
-                                       uint32_t output_range) {
-  std::vector<uint32_t> hashes;
-  uint32_t starting_hash_seed = 341;
-  for (uint32_t hash_seed = starting_hash_seed;
-       hash_seed < starting_hash_seed + num_hashes; hash_seed++) {
-    hashes.push_back(
-        hashing::MurmurHash(string.data(), string.size(), hash_seed) %
-        output_range);
-  }
-
-  return hashes;
-}
-
+/**
+ * Interface for a MachIndex. Should support hashing string entities
+ * "num_hashes" times to "output_range" dimension. Should store an internal map
+ * to retrieve entities by their hash value.
+ */
 class MachIndex {
  public:
   MachIndex(uint32_t output_range, uint32_t num_hashes)
       : _output_range(output_range), _num_hashes(num_hashes) {}
 
+  /**
+   * Hashes the given string "num_hashes" times to "output_range" dimension.
+   */
   virtual std::vector<uint32_t> hashEntity(const std::string& string) = 0;
 
   uint32_t outputRange() const { return _output_range; }
 
   uint32_t numHashes() const { return _num_hashes; }
 
+  /**
+   * Returns all entities that have previously hashed to the input hash_val.
+   */
   virtual std::vector<std::string> entitiesByHash(uint32_t hash_val) const = 0;
 
   virtual ~MachIndex() = default;
@@ -59,22 +55,26 @@ using MachIndexPtr = std::shared_ptr<MachIndex>;
 
 class NumericCategoricalMachIndex : public MachIndex {
  public:
-  NumericCategoricalMachIndex(uint32_t output_range, uint32_t num_hashes)
-      : MachIndex(output_range, num_hashes) {}
+  NumericCategoricalMachIndex(uint32_t output_range, uint32_t num_hashes,
+                              uint32_t n_target_classes)
+      : MachIndex(output_range, num_hashes),
+        _n_target_classes(n_target_classes) {}
 
-  static auto make(uint32_t output_range, uint32_t num_hashes) {
-    return std::make_shared<NumericCategoricalMachIndex>(output_range,
-                                                         num_hashes);
+  static auto make(uint32_t output_range, uint32_t num_hashes,
+                   uint32_t n_target_classes) {
+    return std::make_shared<NumericCategoricalMachIndex>(
+        output_range, num_hashes, n_target_classes);
   }
 
   std::vector<uint32_t> hashEntity(const std::string& string) final {
     char* end;
     uint32_t id = std::strtoul(string.data(), &end, 10);
-    if (id >= _output_range) {
+    if (id >= _n_target_classes) {
       throw std::invalid_argument("Received label " + std::to_string(id) +
-                                  " larger than or equal to n_target_classes");
+                                  " larger than or equal to n_target_classes.");
     }
-    auto hashes = getHashes(string, _num_hashes, _output_range);
+    auto hashes =
+        hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
 
 #pragma omp critical
     {
@@ -97,9 +97,11 @@ class NumericCategoricalMachIndex : public MachIndex {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<MachIndex>(this), _hash_to_entity);
+    archive(cereal::base_class<MachIndex>(this), _hash_to_entity,
+            _n_target_classes);
   }
 
+  uint32_t _n_target_classes;
   std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entity;
 };
 
@@ -128,10 +130,12 @@ class StringCategoricalMachIndex : public MachIndex {
                                     "of expected categories: " +
                                     std::to_string(_max_elements) + ".");
       }
-      return getHashes(string, _num_hashes, _output_range);
+      return hashing::hashNTimesToOutputRange(string, _num_hashes,
+                                              _output_range);
     }
 
-    auto hashes = getHashes(string, _num_hashes, _output_range);
+    auto hashes =
+        hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
 #pragma omp critical
     {
       if (!_entity_to_id.count(string)) {
