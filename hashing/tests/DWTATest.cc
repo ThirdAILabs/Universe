@@ -14,18 +14,27 @@ std::vector<float> noisify_vector(std::vector<float> vec, float range,
 using SparseVec = std::pair<std::vector<float>, std::vector<uint32_t>>;
 using Matrix = std::vector<std::vector<float>>;
 
-SparseVec sparsify_vector(std::vector<float>& dense_vec, float sparsity_level) {
+SparseVec sparsify_vector(const std::vector<float>& dense_vec,
+                          float sparsity_level) {
+  std::vector<float> copy_dense_vec(dense_vec);
+
   uint32_t top_k = static_cast<uint32_t>(sparsity_level * dense_vec.size());
   float threshold = thirdai::compression::estimateTopKThreshold(
       dense_vec.data(), dense_vec.size(), sparsity_level, 0,
       /*sample_population_size=*/dense_vec.size());
+
+  std::nth_element(copy_dense_vec.begin(),
+                   copy_dense_vec.begin() + copy_dense_vec.size() - top_k - 1,
+                   copy_dense_vec.end());
+
+  float estimated_threshold = copy_dense_vec[copy_dense_vec.size() - top_k - 1];
 
   SparseVec vec;
   for (int i = 0; i < dense_vec.size(); i++) {
     if (vec.first.size() >= top_k) {
       break;
     }
-    if (std::abs(dense_vec[i]) > threshold) {
+    if ((dense_vec[i]) > estimated_threshold) {
       vec.first.push_back(dense_vec[i]);
       vec.second.push_back(i);
     }
@@ -122,10 +131,29 @@ Matrix generate_vectors_for_matrix(Matrix weights, float range, float div,
   }
   srand(0);
   for (auto& weight : weights) {
-    vecs.emplace_back(noisify_vector(weight, range, div, noise_level, rand()));
+    vecs.emplace_back(
+        noisify_vector(weight, range, div, noise_level, 100 * rand()));
   }
 
   return vecs;
+}
+
+Matrix convert_dense_matrix_to_sparse(const Matrix& mat, float sparsity_level,
+                                      bool one_hot) {
+  Matrix sparse_vectors;
+  for (const auto& x : mat) {
+    auto sparse_vec = sparsify_vector(x, sparsity_level);
+    std::vector<float> temp(x.size(), 0);
+    for (int i = 0; i < sparse_vec.first.size(); i++) {
+      if (one_hot) {
+        temp[sparse_vec.second[i]] = 1;
+      } else {
+        temp[sparse_vec.second[i]] = sparse_vec.first[i];
+      }
+    }
+    sparse_vectors.emplace_back(std::move(temp));
+  }
+  return sparse_vectors;
 }
 
 std::vector<float> noisify_vector(std::vector<float> vec, float range,
@@ -135,7 +163,9 @@ std::vector<float> noisify_vector(std::vector<float> vec, float range,
       makeDenseVec(vec.size(), range, normalised_div, seed);
 
   for (size_t i = 0; i < vec.size(); i++) {
-    noise[i] += vec[i] * (1 / (1 + 100 * noise_level));
+    if (noise_level < 1) {
+      noise[i] += vec[i] * (1 / (1 + 100 * noise_level));
+    }
   }
   return noise;
 }
@@ -201,6 +231,19 @@ Matrix innerproduct(const Matrix& mat1, const Matrix& mat2) {
   return prod;
 }
 
+void normalize(std::vector<float>& vec) {
+  float norm = std::sqrt(innerproduct(vec, vec));
+  for (auto& x : vec) {
+    x = x / norm;
+  }
+}
+
+void normalize(Matrix& mat) {
+  for (auto& x : mat) {
+    normalize(x);
+  }
+}
+
 float calculate_topk_overlap(const Matrix& mat, const std::vector<float>& vec,
                              DWTAHashFunction& hash, uint32_t topk) {
   auto collisions = get_collisions(mat, vec, hash);
@@ -241,13 +284,11 @@ float calculate_topk_overlap(const Matrix& weights, const Matrix& vectors,
   return overlap / vectors.size();
 }
 
-TEST(DWTATest, runner) {
-  uint32_t dim = 1000;
+void run_experiment(uint32_t dim, float topk, uint32_t num_vectors,
+                    float noise_level, bool use_sparse_vectors, bool one_hot,
+                    float sparsity_level) {
   float div = 32;
   float range = 128;
-
-  uint32_t num_vectors = 100;
-  float noise_level = 1;
 
   uint32_t num_tables = 51, hashes_per_table = 4;
   DWTAHashFunction hash(
@@ -257,6 +298,12 @@ TEST(DWTATest, runner) {
 
   auto weights = generate_weight_matrix(num_vectors, dim, range, div);
   auto vectors = generate_vectors_for_matrix(weights, range, div, noise_level);
+  normalize(weights);
+  normalize(vectors);
+
+  if (use_sparse_vectors && sparsity_level < 1) {
+    vectors = convert_dense_matrix_to_sparse(vectors, sparsity_level, one_hot);
+  }
 
   // print_mat(weights);
   // print_mat(vectors);
@@ -264,8 +311,52 @@ TEST(DWTATest, runner) {
   // print_mat(innerproduct(weights, vectors));
 
   // print_vecs(get_collisions(weights, vectors[0], hash));
+  // print_vecs(innerproduct(weights, vectors[0]));
   // print_pair_vec(sort_vec(get_collisions(weights, vectors[0], hash)));
-  std::cout << "overlap: " << calculate_topk_overlap(weights, vectors, hash, 50)
+  std::cout << "overlap: "
+            << calculate_topk_overlap(weights, vectors, hash, topk)
             << std::endl;
+}
+TEST(DWTATest, runner) {
+  run_experiment(
+      /*dim=*/1024,
+      /*topk=*/1,
+      /*num_vectors=*/500,
+      /*noise_level=*/0,
+      /*use_sparse_vectors=*/false,
+      /*one_hot=*/true,
+      /*sparsity_level=*/.2);
+  run_experiment(
+      /*dim=*/1024,
+      /*topk=*/50,
+      /*num_vectors=*/500,
+      /*noise_level=*/0.3,
+      /*use_sparse_vectors=*/false,
+      /*one_hot=*/true,
+      /*sparsity_level=*/.2);
+  run_experiment(
+      /*dim=*/1024,
+      /*topk=*/50,
+      /*num_vectors=*/500,
+      /*noise_level=*/0.3,
+      /*use_sparse_vectors=*/true,
+      /*one_hot=*/false,
+      /*sparsity_level=*/.2);
+  run_experiment(
+      /*dim=*/1024,
+      /*topk=*/50,
+      /*num_vectors=*/500,
+      /*noise_level=*/0.3,
+      /*use_sparse_vectors=*/true,
+      /*one_hot=*/true,
+      /*sparsity_level=*/.2);
+  run_experiment(
+      /*dim=*/1024,
+      /*topk=*/50,
+      /*num_vectors=*/500,
+      /*noise_level=*/0.3,
+      /*use_sparse_vectors=*/true,
+      /*one_hot=*/true,
+      /*sparsity_level=*/.3);
 }
 }  // namespace thirdai::hashing
