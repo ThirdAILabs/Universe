@@ -2,6 +2,7 @@
 
 #include "Categorical.h"
 #include <hashing/src/MurmurHash.h>
+#include <exceptions/src/Exceptions.h>
 #include <variant>
 
 namespace thirdai::dataset {
@@ -36,8 +37,7 @@ class MachIndex {
 
   uint32_t numHashes() const { return _num_hashes; }
 
-  std::vector<std::variant<std::string, uint32_t>> entitiesByHash(
-      uint32_t hash_val);
+  virtual std::vector<std::string> entitiesByHash(uint32_t hash_val) const = 0;
 
   virtual ~MachIndex() = default;
 
@@ -76,31 +76,31 @@ class NumericCategoricalMachIndex : public MachIndex {
     }
     auto hashes = getHashes(string, _num_hashes, _output_range);
 
-#pragma omp critical(streaming_map_update)
+#pragma omp critical
     {
       for (auto& hash : hashes) {
-        _hash_to_entity_id[hash].push_back(id);
+        _hash_to_entity[hash].push_back(string);
       }
     }
 
     return hashes;
   }
 
-  std::vector<uint32_t> entitiesByHash(uint32_t hash_val) {
-    if (!_hash_to_entity_id.count(hash_val)) {
+  std::vector<std::string> entitiesByHash(uint32_t hash_val) const final {
+    if (!_hash_to_entity.count(hash_val)) {
       throw std::invalid_argument("Invalid id to decode.");
     }
-    return _hash_to_entity_id[hash_val];
+    return _hash_to_entity.at(hash_val);
   }
 
  private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<MachIndex>(this), _hash_to_entity_id);
+    archive(cereal::base_class<MachIndex>(this), _hash_to_entity);
   }
 
-  std::unordered_map<uint32_t, std::vector<uint32_t>> _hash_to_entity_id;
+  std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entity;
 };
 
 using NumericCategoricalMachIndexPtr =
@@ -132,7 +132,7 @@ class StringCategoricalMachIndex : public MachIndex {
     }
 
     auto hashes = getHashes(string, _num_hashes, _output_range);
-#pragma omp critical(streaming_string_lookup)
+#pragma omp critical
     {
       if (!_entity_to_id.count(string)) {
         update(string, hashes);
@@ -151,11 +151,11 @@ class StringCategoricalMachIndex : public MachIndex {
     }
   }
 
-  std::vector<std::string> entitiesByHash(uint32_t hash_val) {
+  std::vector<std::string> entitiesByHash(uint32_t hash_val) const final {
     if (!_hash_to_entities_map.count(hash_val)) {
       throw std::invalid_argument("Invalid id to decode.");
     }
-    return _hash_to_entities_map[hash_val];
+    return _hash_to_entities_map.at(hash_val);
   }
 
  private:
@@ -178,6 +178,15 @@ class StringCategoricalMachIndex : public MachIndex {
 using StringCategoricalMachIndexPtr =
     std::shared_ptr<StringCategoricalMachIndex>;
 
+static StringCategoricalMachIndexPtr asStringIndex(const MachIndexPtr& index) {
+  return std::dynamic_pointer_cast<StringCategoricalMachIndex>(index);
+}
+
+static NumericCategoricalMachIndexPtr asNumericIndex(
+    const MachIndexPtr& index) {
+  return std::dynamic_pointer_cast<NumericCategoricalMachIndex>(index);
+}
+
 class MachBlock final : public CategoricalBlock {
  public:
   MachBlock(ColumnIdentifier col, MachIndexPtr index,
@@ -198,7 +207,7 @@ class MachBlock final : public CategoricalBlock {
       uint32_t index, const std::string_view& category_value) const final {
     (void)index;
     (void)category_value;
-    throw std::invalid_argument("Explainability not supported.");
+    throw exceptions::NotImplemented("Explainability not supported.");
   }
 
   friend class tests::MachBlockTest;
@@ -210,7 +219,7 @@ class MachBlock final : public CategoricalBlock {
     (void)num_categories_in_sample;
     auto id_str = std::string(category);
 
-    auto hashes = _index->hashEntity(id_str);
+    auto hashes = _index->hashEntity(std::string(category));
 
     for (const auto& hash : hashes) {
       vec.addSparseFeatureToSegment(hash, 1.0);

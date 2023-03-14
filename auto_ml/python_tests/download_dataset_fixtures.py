@@ -1,9 +1,8 @@
-import os
-
 import pytest
 from thirdai.demos import (
     download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
 )
+from thirdai.demos import download_beir_dataset as download_beir_dataset_wrapped
 from thirdai.demos import (
     download_brazilian_houses_dataset as download_brazilian_houses_dataset_wrapped,
 )
@@ -51,3 +50,8 @@ def download_yelp_chi_dataset():
 @pytest.fixture(scope="session")
 def download_amazon_kaggle_product_catalog_sampled():
     return download_amazon_kaggle_product_catalog_sampled_wrapped()
+
+
+@pytest.fixture(scope="session")
+def download_beir_dataset():
+    return download_beir_dataset_wrapped()

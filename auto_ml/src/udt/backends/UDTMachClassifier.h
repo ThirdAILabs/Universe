@@ -76,19 +76,20 @@ class UDTMachClassifier final : public UDTBackend {
   }
 
  private:
-  std::vector<std::variant<std::string, uint32_t>> machSingleDecode(
+  /**
+   * Given the output activations to a mach model, decode using the mach index
+   * back to the original documents. Documents may be strings or integers.
+   * TODO(david) implement the more efficient version.
+   */
+  std::vector<std::pair<std::string, double>> machSingleDecode(
       const BoltVector& output);
-
-  bool integerTarget() const {
-    return static_cast<bool>(
-        std::dynamic_pointer_cast<dataset::NumericCategoricalMachIndex>(
-            _mach_label_block->index()));
-  }
 
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
-        _mach_label_block->delimiter(), _mach_label_block->columnName(),
-        integerTarget());
+        /* label_delimiter = */ _mach_label_block->delimiter(),
+        /* label_column_name = */ _mach_label_block->columnName(),
+        /* integer_target = */
+        static_cast<bool>(dataset::asNumericIndex(_mach_label_block->index())));
   }
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
@@ -104,7 +105,7 @@ class UDTMachClassifier final : public UDTBackend {
     return 7;
   }
 
-  UDTMachClassifier() : _classifier(nullptr, false) {}
+  UDTMachClassifier() {}
 
   friend cereal::access;
 
@@ -113,7 +114,6 @@ class UDTMachClassifier final : public UDTBackend {
 
   std::shared_ptr<utils::Classifier> _classifier;
   dataset::MachBlockPtr _mach_label_block;
-  dataset::CategoricalBlockPtr _multi_hash_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
 };
 

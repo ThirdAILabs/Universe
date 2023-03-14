@@ -19,9 +19,9 @@ UDTMachClassifier::UDTMachClassifier(
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args) {
   uint32_t output_range = user_args.get<uint32_t>(
-      "mach_output_dim", "integer", autotuneMachOutputDim(n_target_classes));
+      "extreme_output_dim", "integer", autotuneMachOutputDim(n_target_classes));
   uint32_t num_hashes = user_args.get<uint32_t>(
-      "mach_num_hashes", "integer",
+      "extreme_num_hashes", "integer",
       autotuneMachNumHashes(n_target_classes, output_range));
 
   _classifier = utils::Classifier::make(
@@ -35,9 +35,6 @@ UDTMachClassifier::UDTMachClassifier(
 
   // TODO(david) should we freeze hash tables for mach? how does this work
   // with coldstart? is this why we're getting bad msmarco accuracy?
-
-  // TODO(david) move things like label block and coldstart out of here and
-  // into a classifier utils file?
 
   dataset::MachIndexPtr mach_index;
   if (integer_target) {
@@ -55,9 +52,12 @@ UDTMachClassifier::UDTMachClassifier(
   bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
 
   _dataset_factory = std::make_shared<data::TabularDatasetFactory>(
-      input_data_types, temporal_tracking_relationships,
-      std::vector<dataset::BlockPtr>{_multi_hash_label_block},
-      std::set<std::string>{target_name}, tabular_options, force_parallel);
+      /* input_data_types = */ input_data_types,
+      /* provided_temporal_relationships = */ temporal_tracking_relationships,
+      /* label_blocks = */
+      std::vector<dataset::BlockPtr>{_mach_label_block},
+      /* label_col_names = */ std::set<std::string>{target_name},
+      /* options = */ tabular_options, /* force_parallel = */ force_parallel);
 }
 
 py::object UDTMachClassifier::train(
@@ -108,8 +108,7 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
   auto [output_metrics, output] =
       _classifier->model()->evaluate(test_data, test_labels, eval_config);
 
-  std::vector<std::vector<std::variant<std::string, uint32_t>>>
-      predicted_entities;
+  std::vector<std::vector<std::pair<std::string, double>>> predicted_entities;
   for (uint32_t i = 0; i < output.numSamples(); i++) {
     BoltVector output_activations = output.getSampleAsNonOwningBoltVector(i);
     auto predictions = machSingleDecode(output_activations);
@@ -119,16 +118,11 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
   // TODO(david) eventually we should have calculated metrics specific to the
   // backend and not passed directly into the boltgraph
 
-  // TODO(david) return the predicted documents into numpy form
+  return py::cast(predicted_entities);
 }
 
-/**
- * Given the output activations to a mach model, decode using the mach index
- * back to the original documents. Documents may be strings or integers.
- * TODO(david) implement the more efficient version.
- */
-std::vector<std::variant<std::string, uint32_t>>
-UDTMachClassifier::machSingleDecode(const BoltVector& output) {
+std::vector<std::pair<std::string, double>> UDTMachClassifier::machSingleDecode(
+    const BoltVector& output) {
   // TODO(david) accept this as input to predict, predictBatch, and evaluate?
   //  alternatively we could make a separate method called "setBK()" so we don't
   //  have to edit every UDT api call. then we could have good defaults while
@@ -138,11 +132,11 @@ UDTMachClassifier::machSingleDecode(const BoltVector& output) {
 
   auto top_B = output.findKLargestActivations(B);
 
-  std::unordered_map<std::variant<std::string, uint32_t>, double>
-      entity_to_scores;
+  std::unordered_map<std::string, double> entity_to_scores;
   while (!top_B.empty()) {
     auto [activation, active_neuron] = top_B.top();
-    auto entities = _mach_label_block->index()->entitiesByHash(active_neuron);
+    std::vector<std::string> entities =
+        _mach_label_block->index()->entitiesByHash(active_neuron);
     for (const auto& entity : entities) {
       if (!entity_to_scores.count(entity)) {
         entity_to_scores[entity] = activation;
@@ -153,20 +147,17 @@ UDTMachClassifier::machSingleDecode(const BoltVector& output) {
     top_B.pop();
   }
 
-  std::vector<std::pair<std::variant<std::string, uint32_t>, double>>
-      entity_scores(entity_to_scores.begin(), entity_to_scores.end());
-
+  std::vector<std::pair<std::string, double>> entity_scores(
+      entity_to_scores.begin(), entity_to_scores.end());
   std::sort(entity_scores.begin(), entity_scores.end(),
             [](auto& left, auto& right) { return left.second < right.second; });
 
-  K = std::max<uint32_t>(K, entity_scores.size());
+  K = std::min<uint32_t>(K, entity_scores.size());
 
-  std::vector<std::variant<std::string, uint32_t>> top_K_scores;
-  std::transform(entity_scores.begin(), entity_scores.begin() + K,
-                 std::back_inserter(top_K_scores),
-                 [](const auto& pair) { return pair.first; });
+  entity_scores = std::vector<std::pair<std::string, double>>(
+      entity_scores.begin(), entity_scores.begin() + K);
 
-  return top_K_scores;
+  return entity_scores;
 }
 
 py::object UDTMachClassifier::predict(const MapInput& sample,
@@ -176,6 +167,8 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
   BoltVector output = _classifier->model()->predictSingle(
       _dataset_factory->featurizeInput(sample), sparse_inference);
   auto decoded_output = machSingleDecode(output);
+
+  return py::cast(decoded_output);
 }
 
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
@@ -205,15 +198,69 @@ py::object UDTMachClassifier::coldstart(
                /* logging_interval= */ std::nullopt);
 }
 
-py::object UDTMachClassifier::embedding(const MapInput& sample) {}
+py::object UDTMachClassifier::embedding(const MapInput& sample) {
+  auto input_vector = _dataset_factory->featurizeInput(sample);
+  BoltVector emb =
+      _classifier->model()->predictSingle(std::move(input_vector),
+                                          /* use_sparse_inference= */ false,
+                                          /* output_node_name= */ "fc_1");
+  return utils::convertBoltVectorToNumpy(emb);
+}
+
+static std::string variantToString(
+    const std::variant<uint32_t, std::string>& variant) {
+  if (std::holds_alternative<std::string>(variant)) {
+    return std::get<std::string>(variant);
+  }
+  if (std::holds_alternative<uint32_t>(variant)) {
+    return std::to_string(std::get<uint32_t>(variant));
+  }
+  throw std::invalid_argument("Invalid input type.");
+}
 
 py::object UDTMachClassifier::entityEmbedding(
-    const std::variant<uint32_t, std::string>& label) {}
+    const std::variant<uint32_t, std::string>& label) {
+  std::vector<uint32_t> hashed_neurons =
+      _mach_label_block->index()->hashEntity(variantToString(label));
+
+  auto back_node = _classifier->model()->getNodes().back();
+
+  auto fc_layers = back_node->getInternalFullyConnectedLayers();
+
+  if (fc_layers.size() != 1) {
+    throw std::invalid_argument(
+        "This UDT architecture currently doesn't support getting entity "
+        "embeddings.");
+  }
+
+  std::vector<float> averaged_embedding(back_node->outputDim());
+  for (uint32_t neuron_id : hashed_neurons) {
+    auto weights = fc_layers.front()->getWeightsByNeuron(neuron_id);
+    if (weights.size() != averaged_embedding.size()) {
+      throw std::invalid_argument("Output dim mismatch.");
+    }
+    for (uint32_t i = 0; i < weights.size(); i++) {
+      averaged_embedding[i] += weights[i];
+    }
+  }
+
+  // TODO(david) try averaging and summing
+  for (float& weight : averaged_embedding) {
+    weight /= averaged_embedding.size();
+  }
+
+  utils::NumpyArray<float> np_weights(averaged_embedding.size());
+
+  std::copy(averaged_embedding.begin(), averaged_embedding.end(),
+            np_weights.mutable_data());
+
+  return std::move(np_weights);
+}
 
 template <class Archive>
 void UDTMachClassifier::serialize(Archive& archive) {
-  archive(cereal::base_class<UDTBackend>(this), _classifier,
-          _multi_hash_label_block, _dataset_factory);
+  archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
+          _dataset_factory);
 }
 
 }  // namespace thirdai::automl::udt

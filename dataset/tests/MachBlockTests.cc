@@ -38,7 +38,7 @@ class MachBlockTest : public testing::Test {
     return categories;
   }
 
-  static std::vector<SegmentedSparseFeatureVector> makeSegmentedVecs(
+  static std::vector<SegmentedSparseFeatureVector> makeMachOutputVectors(
       const std::vector<std::string>& categories, const MachIndexPtr& index) {
     auto block = MachBlock::make(0, index);
     std::vector<SegmentedSparseFeatureVector> segmented_vecs;
@@ -53,7 +53,7 @@ class MachBlockTest : public testing::Test {
 
   static void numHashesTest(const MachIndexPtr& index) {
     auto categories = genRandomCategories();
-    auto vecs = makeSegmentedVecs(categories, index);
+    auto vecs = makeMachOutputVectors(categories, index);
     for (auto& vec : vecs) {
       ASSERT_EQ(vec.toBoltVector().len, index->numHashes());
     }
@@ -61,7 +61,7 @@ class MachBlockTest : public testing::Test {
 
   static void outputRangeTest(const MachIndexPtr& index) {
     auto categories = genRandomCategories();
-    auto vecs = makeSegmentedVecs(categories, index);
+    auto vecs = makeMachOutputVectors(categories, index);
     for (auto& vec : vecs) {
       auto bv = vec.toBoltVector();
       for (uint32_t i = 0; i < bv.len; i++) {
@@ -110,8 +110,8 @@ TEST(MachBlockTest, TestStringMachBlockOutputRange) {
 TEST(MachBlockTest, TestNumericMachBlockDeterminism) {
   auto categories = MachBlockTest::genRandomCategories();
   auto index = MachBlockTest::numericMachIndex();
-  auto vecs1 = MachBlockTest::makeSegmentedVecs(categories, index);
-  auto vecs2 = MachBlockTest::makeSegmentedVecs(categories, index);
+  auto vecs1 = MachBlockTest::makeMachOutputVectors(categories, index);
+  auto vecs2 = MachBlockTest::makeMachOutputVectors(categories, index);
 
   MachBlockTest::compareSegmentedVecs(vecs1, vecs2);
 }
@@ -119,8 +119,8 @@ TEST(MachBlockTest, TestNumericMachBlockDeterminism) {
 TEST(MachBlockTest, TestStringMachBlockDeterminism) {
   auto categories = MachBlockTest::genRandomCategories();
   auto index = MachBlockTest::stringMachIndex();
-  auto vecs1 = MachBlockTest::makeSegmentedVecs(categories, index);
-  auto vecs2 = MachBlockTest::makeSegmentedVecs(categories, index);
+  auto vecs1 = MachBlockTest::makeMachOutputVectors(categories, index);
+  auto vecs2 = MachBlockTest::makeMachOutputVectors(categories, index);
 
   MachBlockTest::compareSegmentedVecs(vecs1, vecs2);
 }
