@@ -19,22 +19,19 @@ SparseVec sparsify_vector(const std::vector<float>& dense_vec,
   std::vector<float> copy_dense_vec(dense_vec);
 
   uint32_t top_k = static_cast<uint32_t>(sparsity_level * dense_vec.size());
-  float threshold = thirdai::compression::estimateTopKThreshold(
-      dense_vec.data(), dense_vec.size(), sparsity_level, 0,
-      /*sample_population_size=*/dense_vec.size());
 
   std::nth_element(copy_dense_vec.begin(),
-                   copy_dense_vec.begin() + copy_dense_vec.size() - top_k - 1,
+                   copy_dense_vec.begin() + copy_dense_vec.size() - top_k,
                    copy_dense_vec.end());
 
-  float estimated_threshold = copy_dense_vec[copy_dense_vec.size() - top_k - 1];
+  float estimated_threshold = copy_dense_vec[copy_dense_vec.size() - top_k];
 
   SparseVec vec;
   for (int i = 0; i < dense_vec.size(); i++) {
     if (vec.first.size() >= top_k) {
       break;
     }
-    if ((dense_vec[i]) > estimated_threshold) {
+    if ((dense_vec[i]) >= estimated_threshold) {
       vec.first.push_back(dense_vec[i]);
       vec.second.push_back(i);
     }
@@ -147,6 +144,10 @@ Matrix convert_dense_matrix_to_sparse(const Matrix& mat, float sparsity_level,
     for (int i = 0; i < sparse_vec.first.size(); i++) {
       if (one_hot) {
         temp[sparse_vec.second[i]] = 1;
+        if (rand() % 3 != 0) {
+          continue;
+        }
+        temp[sparse_vec.second[i]] = 1 + sparse_vec.first[i] / 10000;
       } else {
         temp[sparse_vec.second[i]] = sparse_vec.first[i];
       }
@@ -164,7 +165,7 @@ std::vector<float> noisify_vector(std::vector<float> vec, float range,
 
   for (size_t i = 0; i < vec.size(); i++) {
     if (noise_level < 1) {
-      noise[i] += vec[i] * (1 / (1 + 100 * noise_level));
+      noise[i] += vec[i] * (1 / (1 + 2 * noise_level));
     }
   }
   return noise;
@@ -272,7 +273,9 @@ float calculate_topk_overlap(const Matrix& mat, const std::vector<float>& vec,
     }
   }
 
-  return static_cast<float>(intersection.size()) / topk;
+  return top_collisions.find(sorted_products[0].second) == top_collisions.end()
+             ? 0
+             : 1;
 }
 
 float calculate_topk_overlap(const Matrix& weights, const Matrix& vectors,
@@ -299,11 +302,11 @@ void run_experiment(uint32_t dim, float topk, uint32_t num_vectors,
   auto weights = generate_weight_matrix(num_vectors, dim, range, div);
   auto vectors = generate_vectors_for_matrix(weights, range, div, noise_level);
   normalize(weights);
-  normalize(vectors);
 
   if (use_sparse_vectors && sparsity_level < 1) {
     vectors = convert_dense_matrix_to_sparse(vectors, sparsity_level, one_hot);
   }
+  normalize(vectors);
 
   // print_mat(weights);
   // print_mat(vectors);
@@ -319,44 +322,61 @@ void run_experiment(uint32_t dim, float topk, uint32_t num_vectors,
 }
 TEST(DWTATest, runner) {
   run_experiment(
-      /*dim=*/1024,
-      /*topk=*/1,
-      /*num_vectors=*/500,
-      /*noise_level=*/0,
+      /*dim=*/1000,
+      /*topk=*/10,
+      /*num_vectors=*/100,
+      /*noise_level=*/0.1,
       /*use_sparse_vectors=*/false,
-      /*one_hot=*/true,
-      /*sparsity_level=*/.2);
-  run_experiment(
-      /*dim=*/1024,
-      /*topk=*/50,
-      /*num_vectors=*/500,
-      /*noise_level=*/0.3,
-      /*use_sparse_vectors=*/false,
-      /*one_hot=*/true,
-      /*sparsity_level=*/.2);
-  run_experiment(
-      /*dim=*/1024,
-      /*topk=*/50,
-      /*num_vectors=*/500,
-      /*noise_level=*/0.3,
-      /*use_sparse_vectors=*/true,
       /*one_hot=*/false,
-      /*sparsity_level=*/.2);
+      /*sparsity_level=*/.1);
   run_experiment(
-      /*dim=*/1024,
-      /*topk=*/50,
-      /*num_vectors=*/500,
-      /*noise_level=*/0.3,
+      /*dim=*/1000,
+      /*topk=*/10,
+      /*num_vectors=*/100,
+      /*noise_level=*/0.1,
+      /*use_sparse_vectors=*/true,
+      /*one_hot=*/true,
+      /*sparsity_level=*/.1);
+  run_experiment(
+      /*dim=*/1000,
+      /*topk=*/10,
+      /*num_vectors=*/100,
+      /*noise_level=*/0.1,
       /*use_sparse_vectors=*/true,
       /*one_hot=*/true,
       /*sparsity_level=*/.2);
-  run_experiment(
-      /*dim=*/1024,
-      /*topk=*/50,
-      /*num_vectors=*/500,
-      /*noise_level=*/0.3,
-      /*use_sparse_vectors=*/true,
-      /*one_hot=*/true,
-      /*sparsity_level=*/.3);
+
+  // run_experiment(
+  //     /*dim=*/1024,
+  //     /*topk=*/5,
+  //     /*num_vectors=*/500,
+  //     /*noise_level=*/0.1,
+  //     /*use_sparse_vectors=*/false,
+  //     /*one_hot=*/true,
+  //     /*sparsity_level=*/.2);
+  // run_experiment(
+  //     /*dim=*/1024,
+  //     /*topk=*/5,
+  //     /*num_vectors=*/500,
+  //     /*noise_level=*/0.1,
+  //     /*use_sparse_vectors=*/true,
+  //     /*one_hot=*/false,
+  //     /*sparsity_level=*/.2);
+  // run_experiment(
+  //     /*dim=*/1024,
+  //     /*topk=*/5,
+  //     /*num_vectors=*/500,
+  //     /*noise_level=*/0.3,
+  //     /*use_sparse_vectors=*/true,
+  //     /*one_hot=*/true,
+  //     /*sparsity_level=*/.2);
+  // run_experiment(
+  //     /*dim=*/1024,
+  //     /*topk=*/5,
+  //     /*num_vectors=*/500,
+  //     /*noise_level=*/0.3,
+  //     /*use_sparse_vectors=*/true,
+  //     /*one_hot=*/true,
+  // /*sparsity_level=*/.3);
 }
 }  // namespace thirdai::hashing

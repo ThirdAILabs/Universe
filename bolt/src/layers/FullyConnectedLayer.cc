@@ -65,17 +65,17 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
     }
   }
 
-  std::cout << "AbraKaDabra" << std::endl;
+  // std::cout << "AbraKaDabra" << std::endl;
 
-  std::vector<float> output_vector = output.vectorize(_dim);
-  assert(output_vector.size() == _dim);
+  // std::vector<float> output_vector = output.vectorize(_dim);
+  // assert(output_vector.size() == _dim);
 
-  std::cout << "Printing the activations for the layer" << std::endl;
-  for (auto x : output_vector) {
-    std::cout << x << " ";
-  }
-  std::cout << std::endl;
-  std::cout << "Oops" << std::endl;
+  // std::cout << "Printing the activations for the layer" << std::endl;
+  // for (auto x : output_vector) {
+  //   std::cout << x << " ";
+  // }
+  // std::cout << std::endl;
+  // std::cout << "Oops" << std::endl;
 }
 
 template <bool DENSE, bool PREV_DENSE>
@@ -470,16 +470,18 @@ void FullyConnectedLayer::lshNeuronSampling(const BoltVector& input,
   // std::cout << "Abrakadabra" << std::endl;
   // std::cout << active_set.size() << " ";
 
-  if (print_neurons == 1 && !active_set.empty()) {
-    std::cout
-        << "We have sampled the active neurons and printing the active set from"
-           "enquiring the hash tables. The number of active neurons is: "
-        << active_set.size() << std::endl;
-    for (auto x : active_set) {
-      std::cout << x << "\t";
-    }
-    std::cout << std::endl << "Finished printing the active set" << std::endl;
-  }
+  // if (print_neurons == 1 && !active_set.empty()) {
+  //   std::cout
+  //       << "We have sampled the active neurons and printing the active set
+  //       from"
+  //          "enquiring the hash tables. The number of active neurons is: "
+  //       << active_set.size() << std::endl;
+  //   for (auto x : active_set) {
+  //     std::cout << x << "\t";
+  //   }
+  //   std::cout << std::endl << "Finished printing the active set" <<
+  //   std::endl;
+  // }
 
   if (active_set.size() < _sparse_dim) {
     // here we use hashes[0] as our random number because rand() is not thread
