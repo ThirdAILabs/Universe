@@ -41,27 +41,35 @@ def s3_daemon(parsed_s3_path, raw_telemetry, optional_endpoint_url):
         Body=raw_telemetry,
     )
 
+def parse_uuid(raw_telemetry):
+    telemetry_string = raw_telemetry.decode("utf-8")
+    uuid_key_index = telemetry_string.index("thirdai_instance_uuid")
+    uuid = telemetry_string[uuid_key_index + 23: uuid_key_index + 23 + 31]
+    print("UUID:", uuid)
+    return uuid
 
-def push_telemetry(push_location, telemetry_url, optional_endpoint_url):
+def push_telemetry(push_dir, telemetry_url, optional_endpoint_url):
     raw_telemetry = requests.get(telemetry_url).content
-    parsed_push_location = urlparse(push_location)
+    uuid = parse_uuid(raw_telemetry)
+    parsed_push_location = urlparse(push_dir + "/telemetry-" + uuid)
+    print(parsed_push_location)
     if parsed_push_location.scheme == "":
         local_file_daemon(parsed_push_location, raw_telemetry)
     elif parsed_push_location.scheme == "s3":
         s3_daemon(parsed_push_location, raw_telemetry, optional_endpoint_url)
     else:
-        raise ValueError(f"Unknown location {push_location}")
+        raise ValueError(f"Unknown location {push_dir}")
 
 
-def launch_daemon(push_location, telemetry_url, optional_endpoint_url, killer):
+def launch_daemon(push_dir, telemetry_url, optional_endpoint_url, killer):
     last_update_time = 0
     while not killer.kill_now:
         if time.time() - last_update_time > DEFAULT_UPLOAD_INTERVAL:
-            push_telemetry(push_location, telemetry_url, optional_endpoint_url)
+            push_telemetry(push_dir, telemetry_url, optional_endpoint_url)
             last_update_time = time.time()
         time.sleep(DEFAULT_SLEEP_INTERVAL)
 
-    push_telemetry(push_location, telemetry_url, optional_endpoint_url)
+    push_telemetry(push_dir, telemetry_url, optional_endpoint_url)
 
 
 if __name__ == "__main__":
@@ -74,7 +82,7 @@ if __name__ == "__main__":
         required=True,
     )
     parser.add_argument(
-        "--push_location",
+        "--push_dir",
         help="The location (currently local or s3) to push telemetry to.",
         required=True,
     )
@@ -88,5 +96,5 @@ if __name__ == "__main__":
     killer = GracefulKiller()
 
     launch_daemon(
-        args.push_location, args.telemetry_url, args.optional_endpoint_url, killer
+        args.push_dir, args.telemetry_url, args.optional_endpoint_url, killer
     )

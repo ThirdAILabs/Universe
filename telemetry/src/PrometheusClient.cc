@@ -3,6 +3,7 @@
 #include <deps/prometheus-cpp/3rdparty/civetweb/include/CivetServer.h>
 #include <exceptions/src/Exceptions.h>
 #include <utils/Logging.h>
+#include <utils/UUID.h>
 #include <stdexcept>
 
 namespace thirdai::telemetry {
@@ -51,6 +52,8 @@ PrometheusTelemetryClient::PrometheusTelemetryClient(
   // See https://prometheus.io/docs/practices/histograms/ for metric naming
   // conventions
 
+  std::map<std::string, std::string> labels = {
+      {"thirdai_instance_uuid", utils::uuid::THIRDAI_UUID}};
   // Approximate geometric distribution with factor sqrt(10). Bins go from
   // <0.1 ms to >=1 second. Used for inference and explanations.
   prometheus::Histogram::BucketBoundaries fast_running_boundaries_seconds = {
@@ -60,7 +63,7 @@ PrometheusTelemetryClient::PrometheusTelemetryClient(
            .Name("thirdai_udt_prediction_duration_seconds")
            .Help("Inference end to end latency.")
            .Register(*_registry)
-           .Add(/* labels = */ {},
+           .Add(/* labels = */ labels,
                 /* buckets = */ fast_running_boundaries_seconds);
   _batch_prediction_histogram =
       &prometheus::BuildHistogram()
@@ -71,14 +74,14 @@ PrometheusTelemetryClient::PrometheusTelemetryClient(
                "considered to have the same end to end latency as the entire "
                "batch.")
            .Register(*_registry)
-           .Add(/* labels = */ {},
+           .Add(/* labels = */ labels,
                 /* buckets = */ fast_running_boundaries_seconds);
   _explanation_histogram =
       &prometheus::BuildHistogram()
            .Name("thirdai_udt_explanation_duration_seconds")
            .Help("Explanation end to end latency.")
            .Register(*_registry)
-           .Add(/* labels = */ {},
+           .Add(/* labels = */ labels,
                 /* buckets = */ fast_running_boundaries_seconds);
 
   // Approximate geometric distribution with factor sqrt(10). Bins go from
@@ -90,13 +93,13 @@ PrometheusTelemetryClient::PrometheusTelemetryClient(
            .Name("thirdai_udt_evaluation_duration_seconds")
            .Help("Evaluation end to end latency.")
            .Register(*_registry)
-           .Add(/* labels = */ {},
+           .Add(/* labels = */ labels,
                 /* buckets = */ slow_running_boundaries_seconds);
   _train_histogram = &prometheus::BuildHistogram()
                           .Name("thirdai_udt_training_duration_seconds")
                           .Help("Training end to end latency.")
                           .Register(*_registry)
-                          .Add(/* labels = */ {},
+                          .Add(/* labels = */ labels,
                                /* buckets = */ slow_running_boundaries_seconds);
 
   if (_prediction_histogram == nullptr ||

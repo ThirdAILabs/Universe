@@ -1,6 +1,7 @@
 #include "TelemetryDocs.h"
 #include <pybind11/stl.h>
 #include <telemetry/src/PrometheusClient.h>
+#include <utils/UUID.h>
 #include <optional>
 #include <string>
 
@@ -16,6 +17,8 @@ void createTelemetrySubmodule(py::module_& thirdai_module) {
                 docs::START_TELEMETRY);
 
   submodule.def("stop", &stopGlobalTelemetryClient, docs::STOP_TELEMETRY);
+
+  submodule.def("uuid", []() { return utils::uuid::THIRDAI_UUID; });
 }
 
 }  // namespace thirdai::telemetry::python
