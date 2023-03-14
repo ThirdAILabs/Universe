@@ -38,6 +38,8 @@ class EmbeddingNode final : public Node,
 
   void shareLayerImpl(NodePtr& other) final;
 
+  void copyEmbeddingParams(const EmbeddingNode& other);
+
   uint32_t outputDim() const final;
 
   std::shared_ptr<EmbeddingNode> addInput(InputPtr input);

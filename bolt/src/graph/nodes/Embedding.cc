@@ -47,6 +47,10 @@ void EmbeddingNode::shareLayerImpl(NodePtr& other) {
   _embedding_layer = other_emb->_embedding_layer;
 }
 
+void EmbeddingNode::copyEmbeddingParams(const EmbeddingNode& other) {
+  _embedding_layer->copyParams(*other._embedding_layer);
+}
+
 uint32_t EmbeddingNode::outputDim() const {
   NodeState node_state = getState();
   if (node_state == NodeState::Constructed ||

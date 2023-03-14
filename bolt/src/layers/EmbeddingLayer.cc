@@ -51,6 +51,18 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
                 [&]() { return dist(gen); });
 }
 
+void EmbeddingLayer::copyParams(const EmbeddingLayer& other) {
+  if (other._embedding_block_size != _embedding_block_size) {
+    throw std::runtime_error(
+        "Tried to copy params from embedding layer with different embedding "
+        "block size.");
+  }
+
+  _hash_fn = other._hash_fn;
+  _optimizer = other._optimizer;
+  _embedding_block = other._embedding_block;
+}
+
 void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
   assert(output.len == _total_embedding_dim);
   assert(_reduction == EmbeddingReductionType::SUM ||

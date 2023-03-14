@@ -25,6 +25,8 @@ class EmbeddingLayer {
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
                           uint32_t seed = time(nullptr));
 
+  void copyParams(const EmbeddingLayer& other);
+
   void forward(const BoltVector& tokens, BoltVector& output);
 
   void backpropagate(const BoltVector& tokens, const BoltVector& output);

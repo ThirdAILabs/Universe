@@ -281,6 +281,8 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
       .def("clone_for_layer_sharing_with_reduction",
            &EmbeddingNode::cloneForLayerSharingWithReduction,
            py::arg("reduction"))
+      .def("copy_embedding_params", &EmbeddingNode::copyEmbeddingParams,
+           py::arg("other"))
       .def_property_readonly("reduction", &EmbeddingNode::reduction)
       .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
            "Tells the graph which token input to use for this Embedding Node.")
