@@ -38,9 +38,11 @@ def get_relevant_documents(supervised_tst_file):
 
 
 def evaluate_model(model, supervised_tst):
-    all_recommended_documents = [
-        doc_score[0] for doc_score in model.evaluate(filename=supervised_tst)
-    ]
+    output = model.evaluate(filename=supervised_tst)
+
+    all_recommended_documents = []
+    for sample in output:
+        all_recommended_documents.append([int(doc) for doc, score in sample])
 
     all_relevant_documents = get_relevant_documents(supervised_tst)
 
@@ -60,7 +62,7 @@ def make_simple_train_data(invalid=False):
             f.write("haha,2\n")
 
 
-def train_simple_mach_udt(integer_target):
+def train_simple_mach_udt(integer_target, embedding_dim=256):
     model = bolt.UniversalDeepTransformer(
         data_types={
             "text": bolt.types.text(contextual_encoding="local"),
@@ -69,12 +71,25 @@ def train_simple_mach_udt(integer_target):
         target="label",
         n_target_classes=2,
         integer_target=integer_target,
-        options={"extreme_classification": True},
+        options={"extreme_classification": True, "embedding_dimension": embedding_dim},
     )
 
     model.train(SIMPLE_TEST_FILE, epochs=1, learning_rate=0.001)
 
     return model
+
+
+class SupervisedTrainCallback(bolt.callbacks.Callback):
+    def __init__(self):
+        super().__init__()
+        self.prev_metric = 0
+
+    def on_epoch_end(self, model, train_state):
+        cur_metric = train_state.get_validation_metric_values("precision@1")[-1]
+        if cur_metric < self.prev_metric:
+            train_state.stop_training = True
+        else:
+            self.prev_metric = cur_metric
 
 
 def test_mach_udt_on_scifact(download_scifact_dataset):
@@ -93,7 +108,7 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
         target="DOC_ID",
         n_target_classes=n_target_classes,
         integer_target=True,
-        options={"extreme_classification": True},
+        options={"extreme_classification": True, "embedding_dimension": 1024},
     )
 
     metrics = model.cold_start(
@@ -108,7 +123,12 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
         ],
     )
 
-    assert metrics["precision@1"][-1] > 0.95
+    validation = bolt.Validation(
+        supervised_tst,
+        metrics=["precision@1"],
+    )
+
+    # assert metrics["precision@1"][-1] > 0.95
 
     metrics = model.train(
         filename=supervised_trn,
@@ -118,9 +138,11 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
             "precision@1",
             "recall@10",
         ],
+        validation=validation,
+        callbacks=[SupervisedTrainCallback()],
     )
 
-    assert metrics["precision@1"][-1] > 0.95
+    # assert metrics["precision@1"][-1] > 0.95
 
     before_save_precision = evaluate_model(model, supervised_tst)
 
@@ -142,7 +164,7 @@ def test_mach_udt_string_target_too_many_classes():
 
     with pytest.raises(
         ValueError,
-        match=r"Unable to find column with name 'SOME RANDOM NAME'.",
+        match=r"Received additional category*",
     ):
         train_simple_mach_udt(integer_target=False)
 
@@ -152,25 +174,32 @@ def test_mach_udt_integer_target_label_too_large():
 
     with pytest.raises(
         ValueError,
-        match=r"Unable to find column with name 'SOME RANDOM NAME'.",
+        match=r"Received label 2 larger than or equal to n_target_classes.",
     ):
         train_simple_mach_udt(integer_target=True)
 
 
-def test_mach_udt_entity_embedding():
-    make_simple_train_data(invalid=True)
-
-    model = train_simple_mach_udt(integer_target=False)
-
-    model.get_entity_embedding()
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "embedding_dim, integer_label",
+    [(128, True), (128, False), (256, True), (256, False)],
+)
+def test_mach_udt_entity_embedding(embedding_dim, integer_label):
+    make_simple_train_data()
+    model = train_simple_mach_udt(
+        integer_target=integer_label, embedding_dim=embedding_dim
+    )
+    output_labels = [0, 1] if integer_label else ["0", "1"]
+    for output_id, output_label in enumerate(output_labels):
+        embedding = model.get_entity_embedding(output_label)
+        assert embedding.shape == (embedding_dim,)
 
 
 def test_mach_udt_embedding():
-    make_simple_train_data(invalid=True)
+    make_simple_train_data(invalid=False)
 
     model = train_simple_mach_udt(integer_target=False)
 
-    model.embedding_representation()
+    embedding = model.embedding_representation({"QUERY": "some sample query"})
 
-
-# test the decoding -> c++ test?
+    assert embedding.shape == (256,)

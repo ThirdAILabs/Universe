@@ -161,7 +161,7 @@ std::vector<std::pair<std::string, double>> UDTMachClassifier::machSingleDecode(
   std::vector<std::pair<std::string, double>> entity_scores(
       entity_to_scores.begin(), entity_to_scores.end());
   std::sort(entity_scores.begin(), entity_scores.end(),
-            [](auto& left, auto& right) { return left.second < right.second; });
+            [](auto& left, auto& right) { return left.second > right.second; });
 
   K = std::min<uint32_t>(K, entity_scores.size());
 
@@ -244,7 +244,7 @@ py::object UDTMachClassifier::entityEmbedding(
         "embeddings.");
   }
 
-  std::vector<float> averaged_embedding(back_node->outputDim());
+  std::vector<float> averaged_embedding(fc_layers.front()->getInputDim());
   for (uint32_t neuron_id : hashed_neurons) {
     auto weights = fc_layers.front()->getWeightsByNeuron(neuron_id);
     if (weights.size() != averaged_embedding.size()) {
