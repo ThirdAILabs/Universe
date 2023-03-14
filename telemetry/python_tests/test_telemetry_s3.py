@@ -1,3 +1,4 @@
+import boto3
 import pytest
 from moto import mock_s3
 from moto.server import ThreadedMotoServer
@@ -7,16 +8,21 @@ from thirdai import telemetry
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 THIRDAI_TEST_TELEMETRY_S3_DIR = "s3://test_bucket/test_telemetry_dir"
+THIRDAI_TEST_TELEMETRY_BUCKET = "test_bucket"
+
+MOTO_SERVER_PORT = 20732
 
 
 @mock_s3
 def test_udt_telemetry_s3():
-    server = ThreadedMotoServer(port=20731)
+    server = ThreadedMotoServer(port=MOTO_SERVER_PORT)
     try:
         server.start()
+        s3 = boto3.client("s3")
+        s3.create_bucket(Bucket=THIRDAI_TEST_TELEMETRY_BUCKET)
         s3_path = telemetry.start(
             write_dir=THIRDAI_TEST_TELEMETRY_S3_DIR,
-            optional_endpoint_url="http://127.0.0.1:5000",
+            optional_endpoint_url=f"http://127.0.0.1:{MOTO_SERVER_PORT}",
         )
         run_udt_telemetry_test(method=("s3", s3_path), kill_telemetry_after_udt=True)
     finally:

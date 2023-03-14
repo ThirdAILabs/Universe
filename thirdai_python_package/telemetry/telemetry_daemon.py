@@ -61,7 +61,7 @@ def launch_daemon(push_location, telemetry_url, optional_endpoint_url, killer):
             last_update_time = time.time()
         time.sleep(DEFAULT_SLEEP_INTERVAL)
 
-    push_telemetry(push_location, telemetry_url)
+    push_telemetry(push_location, telemetry_url, optional_endpoint_url)
 
 
 if __name__ == "__main__":

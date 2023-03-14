@@ -1,3 +1,6 @@
+from urllib.parse import urlparse
+
+import boto3
 import requests
 from prometheus_client.parser import text_string_to_metric_families
 
@@ -21,6 +24,16 @@ def scrape_telemetry(method):
     elif method[0] == "file":
         with open(method[1]) as f:
             raw_telemetry = f.read()
+    elif method[0] == "s3":
+        client = boto3.client("s3")
+        parsed_s3_path = urlparse(method[1])
+        raw_telemetry = (
+            client.get_object(Bucket=parsed_s3_path.netloc, Key=parsed_s3_path.path)[
+                "Body"
+            ]
+            .read()
+            .decode("utf-8")
+        )
     else:
         raise ValueError(f"Unknown method {method}")
     for family in text_string_to_metric_families(raw_telemetry):
