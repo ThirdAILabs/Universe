@@ -31,7 +31,14 @@ def add_distributed_to_udt():
         return batch_size
 
     def train_with_data_sources(
-        self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
+        self,
+        learning_rate,
+        epochs,
+        verbose,
+        cluster_config,
+        train_sources,
+        metrics,
+        validation_context,
     ):
         train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
 
@@ -47,6 +54,7 @@ def add_distributed_to_udt():
             model=model,
             train_config=train_config,
             train_sources=train_sources,
+            validation_context=validation_context,
         )
 
         # We are freezing hashtables by default for distributed training after one epoch,
@@ -146,10 +154,22 @@ def add_distributed_to_udt():
 
         validation_args = validation.args()
 
-        validation_context = ValidationContext(validation_source, ,validation_args.steps_per_validation(), )
+        validation_context = ValidationContext(
+            validation_source,
+            validation_args.metrics(),
+            validation_args.sparse_inference(),
+            validation_args.steps_per_validation(),
+        )
 
         return train_with_data_sources(
-            self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
+            self,
+            learning_rate,
+            epochs,
+            verbose,
+            cluster_config,
+            train_sources,
+            metrics,
+            validation_context,
         )
 
     setattr(bolt.UDT, "train_distributed", train_distributed)

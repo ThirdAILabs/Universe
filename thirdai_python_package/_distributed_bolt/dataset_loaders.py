@@ -43,11 +43,9 @@ class DistributedDatasetLoader(ABC):
 @dataclass
 class ValidationContext:
     validation_source: DistributedDatasetLoader
-    eval_config: bolt.EvalConfig
+    metrics: List[str]
+    sparse_inference: bool
     validation_frequency: int
-    save_best_per_metric: List[str] = field(
-        default_factory=lambda: ["categorical_accuracy"]
-    )
 
 
 class DistributedUDTDatasetLoader(DistributedDatasetLoader):

@@ -69,13 +69,20 @@ class Worker:
                     "Validation Dataset should not be loaded using streaming."
                 )
 
+            validation_eval_config = bolt.EvalConfig().with_metrics(
+                validation_context.metrics
+            )
+
+            if validation_context.sparse_inference:
+                validation_eval_config.enable_sparse_inference()
+
             validation_data, validation_label = load
             train_config.with_validation(
                 validation_data=validation_data,
                 validation_label=validation_label,
-                eval_config=validation_context.eval_config,
+                eval_config=validation_eval_config,
                 validation_frequency=validation_context.validation_frequency,
-                save_best_per_metric=validation_context.save_best_per_metric,
+                save_best_per_metric=validation_context.metrics[0],
             )
 
         start = time()

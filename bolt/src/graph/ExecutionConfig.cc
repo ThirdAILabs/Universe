@@ -44,37 +44,5 @@ void TrainConfig::serialize(Archive& archive) {
           _rebuild_hash_tables, _reconstruct_hash_functions, _save_context);
 }
 
-void EvalConfig::save(const std::string& filename) const {
-  std::ofstream filestream =
-      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  save_stream(filestream);
-}
-
-void EvalConfig::save_stream(std::ostream& output_stream) const {
-  if (_output_callback.has_value() != 0) {
-    throw std::runtime_error(
-        "Cannot serialize a training config that has callbacks.");
-  }
-  cereal::BinaryOutputArchive oarchive(output_stream);
-  oarchive(*this);
-}
-
-EvalConfigPtr EvalConfig::load(const std::string& filename) {
-  std::ifstream filestream =
-      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  return load_stream(filestream);
-}
-
-EvalConfigPtr EvalConfig::load_stream(std::istream& input_stream) {
-  cereal::BinaryInputArchive iarchive(input_stream);
-  std::shared_ptr<EvalConfig> deserialize_into(new EvalConfig());
-  iarchive(*deserialize_into);
-  return deserialize_into;
-}
-
-template <class Archive>
-void EvalConfig::serialize(Archive& archive) {
-  archive(_metric_names, _use_sparse_inference, _verbose, _return_activations);
-}
 
 }  // namespace thirdai::bolt

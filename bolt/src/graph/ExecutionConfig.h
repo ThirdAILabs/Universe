@@ -58,14 +58,6 @@ class EvalConfig {
 
   auto outputCallback() const { return _output_callback; }
 
-  void save(const std::string& filename) const;
-
-  void save_stream(std::ostream& output_stream) const;
-
-  static EvalConfigPtr load(const std::string& filename);
-
-  static EvalConfigPtr load_stream(std::istream& input_stream);
-
  private:
   EvalConfig()
       : _metric_names({}),
@@ -74,12 +66,6 @@ class EvalConfig {
         _return_activations(false),
         _output_callback(std::nullopt) {}
 
-  friend class cereal::access;
-  // We don't serialize the callbacks because they might be arbitrary functions
-  // from python. Instead, we throw an error in the save method if the callbacks
-  // are nonempty.
-  template <class Archive>
-  void serialize(Archive& archive);
 
   std::vector<std::string> _metric_names;
   bool _use_sparse_inference, _verbose, _return_activations;
