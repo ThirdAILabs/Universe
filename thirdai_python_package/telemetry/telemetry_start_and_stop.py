@@ -39,6 +39,10 @@ BACKGROUND_THREAD_TIMEOUT_SECONDS = 0.5
 # it is still running.
 BACKGROUND_THREAD_HEALTH_CHECK_WAIT = 0.5
 
+# We will upload data to the push dir at this interval (and before the script
+# finishes when the GracefulKiller catches that exception)
+DEFAULT_UPLOAD_INTERVAL_SECONDS = 60 * 20
+
 
 # See https://stackoverflow.com/q/320232/ensuring-subprocesses-are-dead-on-exiting-python-program
 # If a background telemetry push process (as started by a call to start) exists,
@@ -80,6 +84,7 @@ wrapped_stop_method = telemetry.stop
 def start(
     port: Optional[int] = None,
     write_dir: Optional[str] = None,
+    write_period_seconds: int = DEFAULT_UPLOAD_INTERVAL_SECONDS,
     optional_endpoint_url: Optional[str] = None,
 ):
     """
@@ -90,7 +95,8 @@ def start(
     If a write_dir is passed in, this function will additionally start a
     background daemon that will push the Prometheus telemetry to write_dir at
     the path write_dir/telemetry-<instance_uuid>. Currently, write_dir can be a
-    local path or an s3 path.
+    local path or an s3 path. Writes to this write_dir will happen every
+    write_period_seconds, which has a default of 20 minutes.
     """
     global background_telemetry_push_process
     if background_telemetry_push_process != None:
@@ -115,6 +121,8 @@ def start(
         telemetry_url,
         "--push_dir",
         write_dir,
+        "--upload_interval_seconds",
+        str(write_period_seconds),
         "--optional_endpoint_url",
         str(optional_endpoint_url),
     ]

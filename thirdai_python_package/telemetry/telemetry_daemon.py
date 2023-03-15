@@ -27,10 +27,6 @@ class GracefulKiller:
 # We will respond to interrupt signals (via the GracefulKiller) at this interval
 DEFAULT_SLEEP_INTERVAL_SECONDS = 0.1
 
-# We will upload data to the push dir at this interval (and before the script
-# finishes when the GracefulKiller catches that exception)
-DEFAULT_UPLOAD_INTERVAL_SECONDS = 60 * 20
-
 
 def push_to_local_file(parsed_file_path, raw_telemetry):
     Path(parsed_file_path.path).parent.mkdir(parents=True, exist_ok=True)
@@ -83,10 +79,12 @@ def push_telemetry(push_dir, telemetry_url, optional_endpoint_url):
         raise ValueError(f"Unknown location {push_dir}")
 
 
-def launch_daemon(push_dir, telemetry_url, optional_endpoint_url, killer):
+def launch_daemon(
+    push_dir, telemetry_url, optional_endpoint_url, upload_interval_seconds, killer
+):
     last_update_time = 0
     while not killer.kill_now:
-        if time.time() - last_update_time > DEFAULT_UPLOAD_INTERVAL_SECONDS:
+        if time.time() - last_update_time > upload_interval_seconds:
             push_telemetry(push_dir, telemetry_url, optional_endpoint_url)
             last_update_time = time.time()
         # Sleeping for this shorter amount of time instead of
@@ -114,6 +112,12 @@ if __name__ == "__main__":
         required=True,
     )
     parser.add_argument(
+        "--upload_interval_seconds",
+        help="How often to upload telemetry.",
+        type=int,
+        required=True,
+    )
+    parser.add_argument(
         "--optional_endpoint_url",
         help="Optional endpoint url to pass to boto3. Usually not needed (currently used for testing).",
         required=True,
@@ -122,4 +126,10 @@ if __name__ == "__main__":
 
     killer = GracefulKiller()
 
-    launch_daemon(args.push_dir, args.telemetry_url, args.optional_endpoint_url, killer)
+    launch_daemon(
+        args.push_dir,
+        args.telemetry_url,
+        args.optional_endpoint_url,
+        args.upload_interval_seconds,
+        killer,
+    )
