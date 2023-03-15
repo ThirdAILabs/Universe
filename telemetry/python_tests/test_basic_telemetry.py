@@ -36,4 +36,7 @@ def test_stop_and_start_telemetry():
 
 
 def test_bad_udt_telemetry_file():
-    telemetry.start(write_dir="this_should://def/not/work")
+    with pytest.raises(
+        ValueError, match="Telemetry process terminated early with exit code 1"
+    ):
+        telemetry.start(write_dir="this://should/not/work")

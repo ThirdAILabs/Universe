@@ -21,13 +21,6 @@ BACKGROUND_THREAD_TIMEOUT_SECONDS = 0.5
 BACKGROUND_THREAD_HEALTH_CHECK_WAIT = 0.5
 
 
-def _assert_background_telemetry_push_process_running():
-    poll = background_telemetry_push_process.poll()
-
-    if poll is not None:
-        raise ValueError(f"Telemetry process terminated early with exit code {poll}")
-
-
 # See https://stackoverflow.com/q/320232/ensuring-subprocesses-are-dead-on-exiting-python-program
 # If a background telemetry push process (as started by a call to start) exists,
 # this function tries to gracefully kill that process by sending a sigkill.
@@ -35,8 +28,10 @@ def _assert_background_telemetry_push_process_running():
 # which will force kill it.
 def _kill_background_telemetry_push_process():
     global background_telemetry_push_process
-    if background_telemetry_push_process != None:
-        _assert_background_telemetry_push_process_running()
+    if (
+        background_telemetry_push_process != None
+        and background_telemetry_push_process.poll() is None
+    ):
         background_telemetry_push_process.terminate()
         try:
             background_telemetry_push_process.wait(
@@ -94,7 +89,9 @@ def start(
     background_telemetry_push_process = subprocess.Popen(args)
 
     time.sleep(BACKGROUND_THREAD_HEALTH_CHECK_WAIT)
-    _assert_background_telemetry_push_process_running()
+    poll = background_telemetry_push_process.poll()
+    if poll != None:
+        raise ValueError(f"Telemetry process terminated early with exit code {poll}")
 
     push_location = write_dir + f"/telemetry-" + telemetry.uuid()
     return push_location
