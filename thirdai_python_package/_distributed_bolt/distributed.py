@@ -144,13 +144,12 @@ def add_distributed_to_udt():
             for file in filenames
         ]
 
-        validation_source = [
-            DistributedUDTDatasetLoader(
+        validation_source = DistributedUDTDatasetLoader(
                 train_file=validation.filename(),
                 batch_size=batch_size_per_node(batch_size, cluster_config),
                 data_processor=self.get_data_processor(),
             )
-        ]
+        
 
         validation_args = validation.args()
 
@@ -271,13 +270,12 @@ def add_distributed_to_udt():
             for file in filenames
         ]
 
-        validation_source = [
-            DistributedUDTDatasetLoader(
+        validation_source = DistributedUDTDatasetLoader(
                 train_file=validation.filename(),
                 batch_size=batch_size_per_node(batch_size, cluster_config),
                 data_processor=self.get_data_processor(),
             )
-        ]
+        
 
         validation_args = validation.args()
 

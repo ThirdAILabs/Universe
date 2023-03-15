@@ -64,7 +64,7 @@ class Worker:
             load = validation_context.validation_source.next()
             if load == None:
                 raise ValueError("validation dataset shouldn't be empty")
-            if not validation_context.validation_source.dataset_finised:
+            if not validation_context.validation_source.dataset_finished:
                 raise ValueError(
                     "Validation Dataset should not be loaded using streaming."
                 )
@@ -78,10 +78,11 @@ class Worker:
 
             validation_data, validation_label = load
             train_config.with_validation(
-                validation_data=validation_data,
-                validation_label=validation_label,
+                validation_data=[validation_data],
+                validation_labels=validation_label,
                 eval_config=validation_eval_config,
                 validation_frequency=validation_context.validation_frequency,
+                # We are just using the first metrics for save best model
                 save_best_per_metric=validation_context.metrics[0],
             )
 

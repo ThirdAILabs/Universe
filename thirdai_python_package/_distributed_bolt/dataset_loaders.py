@@ -53,8 +53,8 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self,
         train_file: str,
         batch_size: int,
-        max_in_memory_batches: int,
         data_processor,
+        max_in_memory_batches: int = None,
     ):
         self.generator = None
         self.data_processor = data_processor
