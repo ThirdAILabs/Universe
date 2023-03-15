@@ -275,10 +275,14 @@ def add_distributed_to_udt():
 
         validation_context = None
         if validation != None:
-            validation_source = DistributedUDTDatasetLoader(
+            validation_source = DistributedColdStartDatasetLoader(
                 train_file=validation.filename(),
                 batch_size=batch_size_per_node(batch_size, cluster_config),
+                max_in_memory_batches=max_in_memory_batches,
+                strong_column_names=strong_column_names,
+                weak_column_names=weak_column_names,
                 data_processor=self.get_data_processor(),
+                cold_start_meta_data=self.get_cold_start_meta_data(),
             )
 
             validation_args = validation.args()
