@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from download_dataset_fixtures import download_scifact_dataset
 from thirdai import bolt
@@ -132,7 +134,7 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
     metrics = model.train(
         filename=supervised_trn,
         learning_rate=0.001,
-        epochs=7,
+        epochs=10,
         metrics=[
             "precision@1",
             "recall@10",
@@ -141,21 +143,21 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
         callbacks=[SupervisedTrainCallback()],
     )
 
-    # model = bolt.UniversalDeepTransformer.load("SCIFACT_model.bolt")
-
-    # assert metrics["precision@1"][-1] > 0.5
+    assert metrics["precision@1"][-1] > 0.45
 
     before_save_precision = evaluate_model(model, supervised_tst)
 
-    # assert before_save_precision > 0.5
+    assert before_save_precision > 0.45
 
-    save_loc = "SCIFACT_model.bolt"
+    save_loc = "model.bolt"
     model.save(save_loc)
     model = bolt.UniversalDeepTransformer.load(save_loc)
 
     after_save_precision = evaluate_model(model, supervised_tst)
 
     assert before_save_precision == after_save_precision
+
+    os.remove(save_loc)
 
 
 def test_mach_udt_string_target():

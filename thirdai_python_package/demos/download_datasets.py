@@ -6,13 +6,14 @@ import zipfile
 
 import numpy as np
 import pandas as pd
+from thirdai._thirdai import bolt
+
 from .beir_download_utils import (
     remap_doc_ids,
     remap_query_answers,
     write_supervised_file,
     write_unsupervised_file,
 )
-from thirdai._thirdai import bolt
 
 
 def _download_dataset(url, zip_file, check_existence, output_dir):

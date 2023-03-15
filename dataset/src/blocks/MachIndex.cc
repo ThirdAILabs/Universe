@@ -26,8 +26,8 @@ std::vector<uint32_t> NumericCategoricalMachIndex::hashAndStoreEntity(
 
   // Only update the map if we've not seen this id before
   // TODO(david) should we use a set instead of a vector for storing entities?
-  if (!_seen_ids.count(id)) {
 #pragma omp critical(numeric_mach_index_update)
+  if (!_seen_ids.count(id)) {
     {
       _seen_ids.insert(id);
       for (auto& hash : hashes) {
