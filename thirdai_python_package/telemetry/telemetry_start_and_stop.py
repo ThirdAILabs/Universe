@@ -2,8 +2,8 @@ import atexit
 import pathlib
 import subprocess
 import sys
-import uuid
 from typing import Optional
+
 from thirdai._thirdai import telemetry
 
 daemon_path = pathlib.Path(__file__).parent.resolve() / "telemetry_daemon.py"
@@ -12,15 +12,12 @@ background_process = None
 
 BACKGROUND_THREAD_TIMEOUT_SECONDS = 0.5
 
-UUID = uuid.uuid4().hex
-
 
 def kill_background_process():
     global background_process
     if background_process != None:
         poll = background_process.poll()
-        background_process = None
-        
+
         if poll is not None:
             raise ValueError(
                 f"Telemetry process terminated early with exit code {poll}"
@@ -30,6 +27,8 @@ def kill_background_process():
             background_process.wait(timeout=BACKGROUND_THREAD_TIMEOUT_SECONDS)
         except subprocess.TimeoutExpired:
             background_process.kill()
+
+    background_process = None
 
 
 atexit.register(kill_background_process)
@@ -60,18 +59,17 @@ def start(
 
     # Could also try using os.fork
     python_executable = sys.executable
-    background_process = subprocess.Popen(
-        [
-            python_executable,
-            str(daemon_path.resolve()),
-            "--telemetry_url",
-            telemetry_url,
-            "--push_location",
-            write_dir,
-            "--optional_endpoint_url",
-            str(optional_endpoint_url),
-        ]
-    )
+    args = [
+        python_executable,
+        str(daemon_path.resolve()),
+        "--telemetry_url",
+        telemetry_url,
+        "--push_dir",
+        write_dir,
+        "--optional_endpoint_url",
+        str(optional_endpoint_url),
+    ]
+    background_process = subprocess.Popen(args)
 
     push_location = write_dir + f"/telemetry-" + telemetry.uuid()
     return push_location

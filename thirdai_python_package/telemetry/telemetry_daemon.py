@@ -41,18 +41,18 @@ def s3_daemon(parsed_s3_path, raw_telemetry, optional_endpoint_url):
         Body=raw_telemetry,
     )
 
+
 def parse_uuid(raw_telemetry):
     telemetry_string = raw_telemetry.decode("utf-8")
     uuid_key_index = telemetry_string.index("thirdai_instance_uuid")
-    uuid = telemetry_string[uuid_key_index + 23: uuid_key_index + 23 + 31]
-    print("UUID:", uuid)
+    uuid = telemetry_string[uuid_key_index + 23 : uuid_key_index + 23 + 32]
     return uuid
+
 
 def push_telemetry(push_dir, telemetry_url, optional_endpoint_url):
     raw_telemetry = requests.get(telemetry_url).content
     uuid = parse_uuid(raw_telemetry)
     parsed_push_location = urlparse(push_dir + "/telemetry-" + uuid)
-    print(parsed_push_location)
     if parsed_push_location.scheme == "":
         local_file_daemon(parsed_push_location, raw_telemetry)
     elif parsed_push_location.scheme == "s3":
@@ -95,6 +95,4 @@ if __name__ == "__main__":
 
     killer = GracefulKiller()
 
-    launch_daemon(
-        args.push_dir, args.telemetry_url, args.optional_endpoint_url, killer
-    )
+    launch_daemon(args.push_dir, args.telemetry_url, args.optional_endpoint_url, killer)
