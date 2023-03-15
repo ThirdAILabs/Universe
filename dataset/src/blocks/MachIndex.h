@@ -6,6 +6,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <hashing/src/HashUtils.h>
+#include <atomic>
 #include <string>
 #include <unordered_map>
 #include <vector>

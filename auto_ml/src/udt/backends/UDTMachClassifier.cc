@@ -25,6 +25,9 @@ UDTMachClassifier::UDTMachClassifier(
       "extreme_num_hashes", "integer",
       autotuneMachNumHashes(n_target_classes, output_range));
 
+  setDecodeParams(defaults::MACH_MIN_NUM_EVAL_RESULTS,
+                  defaults::MACH_TOP_K_PER_EVAL_AGGREGATION);
+
   _classifier = utils::Classifier::make(
       utils::buildModel(
           /* input_dim= */ tabular_options.feature_hash_range,
@@ -134,18 +137,11 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
 
 std::vector<std::pair<std::string, double>> UDTMachClassifier::machSingleDecode(
     const BoltVector& output) {
-  // TODO(david) accept this as input to predict, predictBatch, and evaluate?
-  //  alternatively we could make a separate method called "setBK()" so we don't
-  //  have to edit every UDT api call. then we could have good defaults while
-  //  also letting people play with it
-  uint32_t B = 25;
-  uint32_t K = 5;
-
-  auto top_B = output.findKLargestActivations(B);
+  auto top_K = output.findKLargestActivations(_top_k_per_eval_aggregation);
 
   std::unordered_map<std::string, double> entity_to_scores;
-  while (!top_B.empty()) {
-    auto [activation, active_neuron] = top_B.top();
+  while (!top_K.empty()) {
+    auto [activation, active_neuron] = top_K.top();
     std::vector<std::string> entities =
         _mach_label_block->index()->entitiesByHash(active_neuron);
     for (const auto& entity : entities) {
@@ -155,7 +151,7 @@ std::vector<std::pair<std::string, double>> UDTMachClassifier::machSingleDecode(
         entity_to_scores[entity] += activation;
       }
     }
-    top_B.pop();
+    top_K.pop();
   }
 
   std::vector<std::pair<std::string, double>> entity_scores(
@@ -163,10 +159,11 @@ std::vector<std::pair<std::string, double>> UDTMachClassifier::machSingleDecode(
   std::sort(entity_scores.begin(), entity_scores.end(),
             [](auto& left, auto& right) { return left.second > right.second; });
 
-  K = std::min<uint32_t>(K, entity_scores.size());
+  uint32_t num_to_return =
+      std::min<uint32_t>(_min_num_eval_results, entity_scores.size());
 
   entity_scores = std::vector<std::pair<std::string, double>>(
-      entity_scores.begin(), entity_scores.begin() + K);
+      entity_scores.begin(), entity_scores.begin() + num_to_return);
 
   return entity_scores;
 }
@@ -269,7 +266,7 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
   if (min_num_eval_results == 0 || top_k_per_eval_aggregation == 0) {
     throw std::invalid_argument("Params must not be 0.");
   }
-  
+
   if (min_num_eval_results > top_k_per_eval_aggregation) {
     throw std::invalid_argument(
         "min_num_eval_results must be <= top_k_per_eval_aggregation.");
