@@ -66,7 +66,6 @@ class EvalConfig {
         _return_activations(false),
         _output_callback(std::nullopt) {}
 
-
   std::vector<std::string> _metric_names;
   bool _use_sparse_inference, _verbose, _return_activations;
   std::optional<std::function<void(const BoltVector&)>> _output_callback;

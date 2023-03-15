@@ -44,5 +44,4 @@ void TrainConfig::serialize(Archive& archive) {
           _rebuild_hash_tables, _reconstruct_hash_functions, _save_context);
 }
 
-
 }  // namespace thirdai::bolt

@@ -186,6 +186,7 @@ def add_distributed_to_udt():
         epochs: int = 5,
         metrics: List[str] = [],
         verbose: bool = True,
+        validation: Optional[bolt.Validation] = None,
     ):
         """
         This function does cold-start pretraining for UDT in the distributed setting.
@@ -270,8 +271,32 @@ def add_distributed_to_udt():
             for file in filenames
         ]
 
+        validation_source = [
+            DistributedUDTDatasetLoader(
+                train_file=validation.filename(),
+                batch_size=batch_size_per_node(batch_size, cluster_config),
+                data_processor=self.get_data_processor(),
+            )
+        ]
+
+        validation_args = validation.args()
+
+        validation_context = ValidationContext(
+            validation_source,
+            validation_args.metrics(),
+            validation_args.sparse_inference(),
+            validation_args.steps_per_validation(),
+        )
+
         return train_with_data_sources(
-            self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
+            self,
+            learning_rate,
+            epochs,
+            verbose,
+            cluster_config,
+            train_sources,
+            metrics,
+            validation_context,
         )
 
     setattr(bolt.UDT, "cold_start_distributed", cold_start_distributed)

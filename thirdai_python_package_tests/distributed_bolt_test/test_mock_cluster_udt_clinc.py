@@ -34,6 +34,12 @@ def get_clinc_udt_model(integer_target=False):
 def test_distributed_udt_clinc(ray_two_node_cluster_config):
     udt_model = get_clinc_udt_model(integer_target=True)
 
+    validation = bolt.Validation(
+        filename=f"{os.getcwd()}/{TEST_FILE}",
+        metrics=["categorical_accuracy"],
+        interval=10,
+    )
+
     udt_model.train_distributed(
         cluster_config=ray_two_node_cluster_config("linear"),
         filenames=[f"{os.getcwd()}/{TRAIN_FILE_1}", f"{os.getcwd()}/{TRAIN_FILE_2}"],
@@ -43,6 +49,7 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
         metrics=["mean_squared_error"],
         verbose=True,
         max_in_memory_batches=10,
+        validation=validation,
     )
 
     assert (
