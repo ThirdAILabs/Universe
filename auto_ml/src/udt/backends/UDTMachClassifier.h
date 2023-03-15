@@ -75,6 +75,9 @@ class UDTMachClassifier final : public UDTBackend {
     return _dataset_factory;
   }
 
+  void setDecodeParams(uint32_t min_num_eval_results,
+                       uint32_t top_k_per_eval_aggregation) final;
+
  private:
   /**
    * Given the output activations to a mach model, decode using the mach index
@@ -97,7 +100,7 @@ class UDTMachClassifier final : public UDTBackend {
     if (n_target_classes < 5000) {
       return n_target_classes;
     }
-    return n_target_classes / 25;
+    return n_target_classes / defaults::MACH_DEFAULT_OUTPUT_RANGE_SCALEDOWN;
   }
 
   static uint32_t autotuneMachNumHashes(uint32_t n_target_classes,
@@ -105,7 +108,7 @@ class UDTMachClassifier final : public UDTBackend {
     // TODO(david) update this
     (void)n_target_classes;
     (void)output_range;
-    return 7;
+    return defaults::MACH_DEFAULT_NUM_REPETITIONS;
   }
 
   UDTMachClassifier() {}
@@ -118,6 +121,8 @@ class UDTMachClassifier final : public UDTBackend {
   std::shared_ptr<utils::Classifier> _classifier;
   dataset::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
+  uint32_t _min_num_eval_results;
+  uint32_t _top_k_per_eval_aggregation;
 };
 
 }  // namespace thirdai::automl::udt

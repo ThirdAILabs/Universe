@@ -13,8 +13,9 @@ def make_simple_train_data(invalid=False):
         f.write("text,label\n")
         f.write("haha,0\n")
         f.write("haha,1\n")
+        f.write("haha,2\n")
         if invalid:
-            f.write("haha,2\n")
+            f.write("haha,3\n")
 
 
 def train_simple_mach_udt(integer_target, embedding_dim=256):
@@ -24,7 +25,7 @@ def train_simple_mach_udt(integer_target, embedding_dim=256):
             "label": bolt.types.categorical(),
         },
         target="label",
-        n_target_classes=2,
+        n_target_classes=3,
         integer_target=integer_target,
         options={"extreme_classification": True, "embedding_dimension": embedding_dim},
     )
@@ -174,7 +175,7 @@ def test_mach_udt_integer_target_label_too_large():
 
     with pytest.raises(
         ValueError,
-        match=r"Received label 2 larger than or equal to n_target_classes.",
+        match=r"Received label 3 larger than or equal to n_target_classes.",
     ):
         train_simple_mach_udt(integer_target=True)
 
@@ -203,3 +204,27 @@ def test_mach_udt_embedding():
     embedding = model.embedding_representation({"QUERY": "some sample query"})
 
     assert embedding.shape == (256,)
+
+
+def test_mach_udt_decode_params():
+    make_simple_train_data(invalid=False)
+
+    model = train_simple_mach_udt(integer_target=False)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Params must not be 0.",
+    ):
+        model.set_decode_params(0, 0)
+
+    with pytest.raises(
+        ValueError,
+        match=r"min_num_eval_results must be <= top_k_per_eval_aggregation.",
+    ):
+        model.set_decode_params(2, 1)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Both min_num_eval_results and top_k_per_eval_aggregation must be less than n_target_classes = 3.",
+    ):
+        model.set_decode_params(5, 10)

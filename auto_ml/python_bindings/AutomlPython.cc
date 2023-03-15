@@ -117,6 +117,9 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("input_samples"))
       .def("index_nodes", &udt::UDT::indexNodes, py::arg("data_source"))
       .def("clear_graph", &udt::UDT::clearGraph)
+      .def("set_decode_params", &udt::UDT::setDecodeParams,
+           py::arg("min_num_eval_results"),
+           py::arg("top_k_per_eval_aggregation"))
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))

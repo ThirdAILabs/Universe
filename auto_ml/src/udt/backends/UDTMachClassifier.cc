@@ -41,7 +41,7 @@ UDTMachClassifier::UDTMachClassifier(
   if (integer_target) {
     mach_index = dataset::NumericCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
-        /* n_target_classes = */ n_target_classes);
+        /* max_elements = */ n_target_classes);
   } else {
     mach_index = dataset::StringCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
@@ -238,11 +238,7 @@ py::object UDTMachClassifier::entityEmbedding(
 
   auto fc_layers = back_node->getInternalFullyConnectedLayers();
 
-  if (fc_layers.size() != 1) {
-    throw std::invalid_argument(
-        "This UDT architecture currently doesn't support getting entity "
-        "embeddings.");
-  }
+  assert(fc_layers.size() == 1);
 
   std::vector<float> averaged_embedding(fc_layers.front()->getInputDim());
   for (uint32_t neuron_id : hashed_neurons) {
@@ -268,10 +264,34 @@ py::object UDTMachClassifier::entityEmbedding(
   return std::move(np_weights);
 }
 
+void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
+                                        uint32_t top_k_per_eval_aggregation) {
+  if (min_num_eval_results == 0 || top_k_per_eval_aggregation == 0) {
+    throw std::invalid_argument("Params must not be 0.");
+  }
+  
+  if (min_num_eval_results > top_k_per_eval_aggregation) {
+    throw std::invalid_argument(
+        "min_num_eval_results must be <= top_k_per_eval_aggregation.");
+  }
+
+  uint32_t n_target_classes = _mach_label_block->index()->maxElements();
+  if (min_num_eval_results > n_target_classes ||
+      top_k_per_eval_aggregation > n_target_classes) {
+    throw std::invalid_argument(
+        "Both min_num_eval_results and top_k_per_eval_aggregation must be less "
+        "than n_target_classes = " +
+        std::to_string(n_target_classes) + ".");
+  }
+
+  _min_num_eval_results = min_num_eval_results;
+  _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
+}
+
 template <class Archive>
 void UDTMachClassifier::serialize(Archive& archive) {
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
-          _dataset_factory);
+          _dataset_factory, _min_num_eval_results, _top_k_per_eval_aggregation);
 }
 
 }  // namespace thirdai::automl::udt
