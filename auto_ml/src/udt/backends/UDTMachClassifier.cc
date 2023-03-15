@@ -18,15 +18,21 @@ UDTMachClassifier::UDTMachClassifier(
     uint32_t n_target_classes, bool integer_target,
     const data::TabularOptions& tabular_options,
     const std::optional<std::string>& model_config,
-    const config::ArgumentMap& user_args) {
+    const config::ArgumentMap& user_args)
+    : _min_num_eval_results(defaults::MACH_MIN_NUM_EVAL_RESULTS),
+      _top_k_per_eval_aggregation(defaults::MACH_TOP_K_PER_EVAL_AGGREGATION) {
+  if (n_target_classes < _top_k_per_eval_aggregation) {
+    throw std::invalid_argument(
+        "UDT Extreme Classification should not be used with n_target_classes "
+        "< " +
+        std::to_string(_top_k_per_eval_aggregation) + ".");
+  }
+
   uint32_t output_range = user_args.get<uint32_t>(
       "extreme_output_dim", "integer", autotuneMachOutputDim(n_target_classes));
   uint32_t num_hashes = user_args.get<uint32_t>(
       "extreme_num_hashes", "integer",
       autotuneMachNumHashes(n_target_classes, output_range));
-
-  setDecodeParams(defaults::MACH_MIN_NUM_EVAL_RESULTS,
-                  defaults::MACH_TOP_K_PER_EVAL_AGGREGATION);
 
   _classifier = utils::Classifier::make(
       utils::buildModel(
@@ -171,7 +177,12 @@ std::vector<std::pair<std::string, double>> UDTMachClassifier::machSingleDecode(
 py::object UDTMachClassifier::predict(const MapInput& sample,
                                       bool sparse_inference,
                                       bool return_predicted_class) {
-  (void)return_predicted_class;
+  if (return_predicted_class) {
+    throw std::invalid_argument(
+        "UDT Extreme Classification does not support the "
+        "return_predicted_class flag.");
+  }
+
   BoltVector output = _classifier->model()->predictSingle(
       _dataset_factory->featurizeInput(sample), sparse_inference);
   auto decoded_output = machSingleDecode(output);
@@ -182,9 +193,22 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
 py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
                                            bool sparse_inference,
                                            bool return_predicted_class) {
-  return _classifier->predictBatch(
-      _dataset_factory->featurizeInputBatch(samples), sparse_inference,
-      return_predicted_class);
+  if (return_predicted_class) {
+    throw std::invalid_argument(
+        "UDT Extreme Classification does not support the "
+        "return_predicted_class flag.");
+  }
+
+  BoltBatch outputs = _classifier->model()->predictSingleBatch(
+      _dataset_factory->featurizeInputBatch(samples), sparse_inference);
+
+  std::vector<std::vector<std::pair<std::string, double>>> predicted_entities;
+  for (const auto& vector : outputs) {
+    auto predictions = machSingleDecode(vector);
+    predicted_entities.push_back(predictions);
+  }
+
+  return py::cast(predicted_entities);
 }
 
 py::object UDTMachClassifier::coldstart(

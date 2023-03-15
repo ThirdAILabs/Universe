@@ -21,7 +21,7 @@ class MachBlockTest : public testing::Test {
   static NumericCategoricalMachIndexPtr numericMachIndex() {
     return NumericCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
-        /* max_elements = */ 10);
+        /* max_elements = */ 20);
   }
 
   /**
