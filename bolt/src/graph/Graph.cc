@@ -88,6 +88,7 @@ void BoltGraph::logValidateAndSave(const TrainConfig& train_config,
       (_updates % validation->frequency() == 0)) {
     auto [validation_metrics, _] = evaluate(
         validation->data(), validation->labels(), validation->config());
+
     if (save_context && _tracked_metric != nullptr) {
       auto query = validation_metrics.find(_tracked_metric->name());
       if (query != validation_metrics.end()) {

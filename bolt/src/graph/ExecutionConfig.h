@@ -11,9 +11,6 @@
 
 namespace thirdai::bolt {
 
-class EvalConfig;
-using EvalConfigPtr = std::shared_ptr<EvalConfig>;
-
 class EvalConfig {
  public:
   static EvalConfig makeConfig() { return EvalConfig(); }

@@ -144,20 +144,22 @@ def add_distributed_to_udt():
             for file in filenames
         ]
 
-        validation_source = DistributedUDTDatasetLoader(
-            train_file=validation.filename(),
-            batch_size=batch_size_per_node(batch_size, cluster_config),
-            data_processor=self.get_data_processor(),
-        )
+        validation_context = None
+        if validation != None:
+            validation_source = DistributedUDTDatasetLoader(
+                train_file=validation.filename(),
+                batch_size=batch_size_per_node(batch_size, cluster_config),
+                data_processor=self.get_data_processor(),
+            )
 
-        validation_args = validation.args()
+            validation_args = validation.args()
 
-        validation_context = ValidationContext(
-            validation_source,
-            validation_args.metrics(),
-            validation_args.sparse_inference(),
-            validation_args.steps_per_validation(),
-        )
+            validation_context = ValidationContext(
+                validation_source,
+                validation_args.metrics(),
+                validation_args.sparse_inference(),
+                validation_args.steps_per_validation(),
+            )
 
         return train_with_data_sources(
             self,
@@ -269,20 +271,22 @@ def add_distributed_to_udt():
             for file in filenames
         ]
 
-        validation_source = DistributedUDTDatasetLoader(
-            train_file=validation.filename(),
-            batch_size=batch_size_per_node(batch_size, cluster_config),
-            data_processor=self.get_data_processor(),
-        )
+        validation_context = None
+        if validation != None:
+            validation_source = DistributedUDTDatasetLoader(
+                train_file=validation.filename(),
+                batch_size=batch_size_per_node(batch_size, cluster_config),
+                data_processor=self.get_data_processor(),
+            )
 
-        validation_args = validation.args()
+            validation_args = validation.args()
 
-        validation_context = ValidationContext(
-            validation_source,
-            validation_args.metrics(),
-            validation_args.sparse_inference(),
-            validation_args.steps_per_validation(),
-        )
+            validation_context = ValidationContext(
+                validation_source,
+                validation_args.metrics(),
+                validation_args.sparse_inference(),
+                validation_args.steps_per_validation(),
+            )
 
         return train_with_data_sources(
             self,
