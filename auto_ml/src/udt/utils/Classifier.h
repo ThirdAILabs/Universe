@@ -17,7 +17,7 @@ class Classifier {
   Classifier(bolt::BoltGraphPtr model, bool freeze_hash_tables)
       : _model(std::move(model)), _freeze_hash_tables(freeze_hash_tables) {}
 
-  static std::shared_ptr<Classifier> make(bolt::BoltGraphPtr model,
+  static std::shared_ptr<Classifier> make(const bolt::BoltGraphPtr& model,
                                           bool freeze_hash_tables) {
     return std::make_shared<Classifier>(model, freeze_hash_tables);
   }
