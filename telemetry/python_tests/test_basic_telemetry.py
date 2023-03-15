@@ -33,3 +33,7 @@ def test_stop_and_start_telemetry():
     telemetry.stop()
     telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
     telemetry.stop()
+
+
+def test_bad_udt_telemetry_file():
+    telemetry.start(write_dir="this_should://def/not/work")

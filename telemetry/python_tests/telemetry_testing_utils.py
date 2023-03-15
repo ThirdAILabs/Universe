@@ -45,7 +45,14 @@ def scrape_telemetry(telemetry_start_method):
     return telemetry
 
 
-def get_count(telemetry_dict, key):
+# The telemetry dictionary is a map from telemetry names to a list of
+# "metric recordings", where each metric recording is a tuple of 1. a
+# dictionary of labels and 2. a metric value. This function works on count or
+# sum metrics, which will have just one metric recording, and returns the scalar
+# metric value.
+def get_metric_value(telemetry_dict, key):
+    # We assert that the passed in key corresponds to a metric name with just a
+    # single set of valid labels,  as specified in the function comment.
     assert len(telemetry_dict[key]) == 1
     return telemetry_dict[key][0][1]
 
@@ -100,44 +107,59 @@ def run_udt_telemetry_test(telemetry_start_method: Tuple[str, str]):
     scraped_telemetry = scrape_telemetry(telemetry_start_method)
 
     assert (
-        get_count(scraped_telemetry, "thirdai_udt_training_duration_seconds_count") == 1
+        get_metric_value(
+            scraped_telemetry, "thirdai_udt_training_duration_seconds_count"
+        )
+        == 1
     )
     assert (
-        get_count(scraped_telemetry, "thirdai_udt_training_duration_seconds_sum")
+        get_metric_value(scraped_telemetry, "thirdai_udt_training_duration_seconds_sum")
         <= train_duration
     )
 
     assert (
-        get_count(scraped_telemetry, "thirdai_udt_explanation_duration_seconds_count")
+        get_metric_value(
+            scraped_telemetry, "thirdai_udt_explanation_duration_seconds_count"
+        )
         == explain_count
     )
     assert (
-        get_count(scraped_telemetry, "thirdai_udt_explanation_duration_seconds_sum")
+        get_metric_value(
+            scraped_telemetry, "thirdai_udt_explanation_duration_seconds_sum"
+        )
         <= explain_duration
     )
 
     assert (
-        get_count(scraped_telemetry, "thirdai_udt_evaluation_duration_seconds_count")
+        get_metric_value(
+            scraped_telemetry, "thirdai_udt_evaluation_duration_seconds_count"
+        )
         == eval_count
     )
     assert (
-        get_count(scraped_telemetry, "thirdai_udt_evaluation_duration_seconds_sum")
+        get_metric_value(
+            scraped_telemetry, "thirdai_udt_evaluation_duration_seconds_sum"
+        )
         <= eval_duration
     )
 
     assert (
-        get_count(scraped_telemetry, "thirdai_udt_prediction_duration_seconds_count")
+        get_metric_value(
+            scraped_telemetry, "thirdai_udt_prediction_duration_seconds_count"
+        )
         == predict_count
     )
     assert (
-        get_count(scraped_telemetry, "thirdai_udt_prediction_duration_seconds_sum")
+        get_metric_value(
+            scraped_telemetry, "thirdai_udt_prediction_duration_seconds_sum"
+        )
         <= predict_duration
     )
 
     # We need to multiply by batch_sample_size because we add one entry
     # to the Prometheus histogram for every item in the batch
     assert (
-        get_count(
+        get_metric_value(
             scraped_telemetry, "thirdai_udt_batch_prediction_duration_seconds_count"
         )
         == batch_predict_count * batch_sample_size
@@ -146,7 +168,7 @@ def run_udt_telemetry_test(telemetry_start_method: Tuple[str, str]):
     # We need to multiply by batch_sample_size because we add one entry
     # to the Prometheus histogram for every item in the batch
     assert (
-        get_count(
+        get_metric_value(
             scraped_telemetry, "thirdai_udt_batch_prediction_duration_seconds_sum"
         )
         <= batch_predict_duration * batch_sample_size

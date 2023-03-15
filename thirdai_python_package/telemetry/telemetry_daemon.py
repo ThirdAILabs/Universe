@@ -6,6 +6,11 @@ from urllib.parse import urlparse
 
 import requests
 
+# This daemon gets run whenever a write_dir (which can be local or cloud (for
+# now just s3)) is specified when starting metrics. It reads from the local
+# port where the thirdai prometheus metrics are hosted, and writes those metrics
+# to write_dir/telemetry-<uuid> every DEFAULT_UPLOAD_INTERVAL_SECONDS.
+
 
 # See https://stackoverflow.com/questions/18499497/how-to-process-sigterm-signal-gracefully
 class GracefulKiller:
@@ -19,19 +24,21 @@ class GracefulKiller:
         self.kill_now = True
 
 
+# We will respond to interrupt signals (via the GracefulKiller) at this interval
 DEFAULT_SLEEP_INTERVAL_SECONDS = 0.1
+
+# We will upload data to the push dir at this interval (and before the script
+# finishes when the GracefulKiller catches that exception)
 DEFAULT_UPLOAD_INTERVAL_SECONDS = 60 * 20
 
-# TODO(Check for parent process id to gracefully shut down)
 
-
-def local_file_daemon(parsed_file_path, raw_telemetry):
+def push_to_local_file(parsed_file_path, raw_telemetry):
     Path(parsed_file_path.path).parent.mkdir(parents=True, exist_ok=True)
     with open(parsed_file_path.path, "wb") as f:
         f.write(raw_telemetry)
 
 
-def s3_daemon(parsed_s3_path, raw_telemetry, optional_endpoint_url):
+def push_to_s3(parsed_s3_path, raw_telemetry, optional_endpoint_url):
     import boto3
 
     client = boto3.client("s3", endpoint_url=optional_endpoint_url)
@@ -44,19 +51,34 @@ def s3_daemon(parsed_s3_path, raw_telemetry, optional_endpoint_url):
 
 def parse_uuid(raw_telemetry):
     telemetry_string = raw_telemetry.decode("utf-8")
-    uuid_key_index = telemetry_string.index("thirdai_instance_uuid")
-    uuid = telemetry_string[uuid_key_index + 23 : uuid_key_index + 23 + 32]
+    key = "thirdai_instance_uuid"
+    uuid_key_offset = telemetry_string.index(key)
+    # The format of the key value pair is key="<UUID>", so we need to add the
+    # length of the key + 2 to go from the offset of the key to the offset of
+    # the uuid
+    uuid_value_offset = uuid_key_offset + len(key) + 2
+    uuid_length = 32  # 32 hex chars in a UUID
+    uuid = telemetry_string[uuid_value_offset : uuid_value_offset + uuid_length]
     return uuid
 
 
 def push_telemetry(push_dir, telemetry_url, optional_endpoint_url):
     raw_telemetry = requests.get(telemetry_url).content
+    # Parsing the UUID from the raw telemetry instead of having it passed in
+    # at program creation ensures that we are much less likely to push a
+    # corrupted or wrong telemetry file to the remote location. If the parent
+    # process is dead, we won't get any telemetry, so either the raw_telemetry
+    # call above will fail or it will be an empty string and the parse_uuid
+    # call will fail. If the parent process has died and a new process has
+    # started in the meantime, we might have missed some of the parent processes
+    # final updates, but we won't overwrite the parent's telemetry file with a
+    # new telemetry file because the parsed uuid will be different.
     uuid = parse_uuid(raw_telemetry)
     parsed_push_location = urlparse(push_dir + "/telemetry-" + uuid)
     if parsed_push_location.scheme == "":
-        local_file_daemon(parsed_push_location, raw_telemetry)
+        push_to_local_file(parsed_push_location, raw_telemetry)
     elif parsed_push_location.scheme == "s3":
-        s3_daemon(parsed_push_location, raw_telemetry, optional_endpoint_url)
+        push_to_s3(parsed_push_location, raw_telemetry, optional_endpoint_url)
     else:
         raise ValueError(f"Unknown location {push_dir}")
 
@@ -67,8 +89,13 @@ def launch_daemon(push_dir, telemetry_url, optional_endpoint_url, killer):
         if time.time() - last_update_time > DEFAULT_UPLOAD_INTERVAL_SECONDS:
             push_telemetry(push_dir, telemetry_url, optional_endpoint_url)
             last_update_time = time.time()
+        # Sleeping for this shorter amount of time instead of
+        # DEFAULT_UPLOAD_INTERVAL_SECONDS ensures we can respond to interrupts
+        # quickly
         time.sleep(DEFAULT_SLEEP_INTERVAL_SECONDS)
 
+    # We push at the end to make sure the telemetry is flushed (if the parent
+    # thirdai process has been killed this will just throw an error)
     push_telemetry(push_dir, telemetry_url, optional_endpoint_url)
 
 
