@@ -24,10 +24,15 @@ std::vector<uint32_t> NumericCategoricalMachIndex::hashAndStoreEntity(
   auto hashes =
       hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
 
-#pragma omp critical
-  {
-    for (auto& hash : hashes) {
-      _hash_to_entity[hash].push_back(string);
+  // Only update the map if we've not seen this id before
+  // TODO(david) should we use a set instead of a vector for storing entities?
+  if (!_seen_ids.count(id)) {
+#pragma omp critical(numeric_mach_index_update)
+    {
+      _seen_ids.insert(id);
+      for (auto& hash : hashes) {
+        _hash_to_entity[hash].push_back(string);
+      }
     }
   }
 
@@ -69,7 +74,7 @@ std::vector<uint32_t> StringCategoricalMachIndex::hashAndStoreEntity(
       hashing::hashNTimesToOutputRange(string, _num_hashes, _output_range);
 
   uint32_t id;
-#pragma omp critical(mach_index_update)
+#pragma omp critical(string_mach_index_update)
   {
     if (!_entity_to_id.count(string)) {
       id = updateInternalIndex(string, hashes);
@@ -108,3 +113,6 @@ uint32_t StringCategoricalMachIndex::updateInternalIndex(
 }
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::StringCategoricalMachIndex)
+CEREAL_REGISTER_TYPE(thirdai::dataset::NumericCategoricalMachIndex)

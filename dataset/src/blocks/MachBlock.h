@@ -11,6 +11,13 @@ namespace tests {
 class MachBlockTest;
 }  // namespace tests
 
+/**
+ * A MachBlock applies to a a single column with potentially more than one
+ * category (as specified by the delimiter). For each category found, we will
+ * update the given MachIndex by calls to hashAndStoreEntity. This will hash the
+ * given category some number of times and return those hashes. It will also
+ * store an inverted index from hashes to entities.
+ */
 class MachBlock final : public CategoricalBlock {
  public:
   MachBlock(ColumnIdentifier col, MachIndexPtr index,

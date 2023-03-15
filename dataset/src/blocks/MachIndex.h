@@ -1,10 +1,14 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/atomic.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
-#include <cereal/types/optional.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/unordered_set.hpp>
+#include <cereal/types/vector.hpp>
 #include <hashing/src/HashUtils.h>
 #include <atomic>
 #include <string>
@@ -15,8 +19,8 @@ namespace thirdai::dataset {
 
 /**
  * Interface for a MachIndex. Should support hashing string entities
- * "num_hashes" times to "output_range" dimension. Should store an internal map
- * to retrieve entities by their hash value.
+ * "num_hashes" times to "output_range" dimension, and stores an inverted index
+ * in preparation for later calls to entitesByHash.
  */
 class MachIndex {
  public:
@@ -35,7 +39,8 @@ class MachIndex {
   uint32_t maxElements() const { return _max_elements; }
 
   /**
-   * Returns all entities that have previously hashed to the input hash_val.
+   * Returns all entities that have previously hashed to the input hash_val in a
+   * previous call to hashAndStoreEntity
    */
   virtual std::vector<std::string> entitiesByHash(uint32_t hash_val) const = 0;
 
@@ -46,13 +51,13 @@ class MachIndex {
   uint32_t _num_hashes;
   uint32_t _max_elements;
 
- private:
   MachIndex() {}
 
+ private:
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_output_range, _num_hashes);
+    archive(_output_range, _num_hashes, _max_elements);
   }
 };
 
@@ -74,12 +79,15 @@ class NumericCategoricalMachIndex : public MachIndex {
   std::vector<std::string> entitiesByHash(uint32_t hash_val) const final;
 
  private:
+  NumericCategoricalMachIndex() {}
+
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<MachIndex>(this), _hash_to_entity);
+    archive(cereal::base_class<MachIndex>(this), _seen_ids, _hash_to_entity);
   }
 
+  std::unordered_set<uint32_t> _seen_ids;
   std::unordered_map<uint32_t, std::vector<std::string>> _hash_to_entity;
 };
 
@@ -107,11 +115,13 @@ class StringCategoricalMachIndex : public MachIndex {
 
   bool indexIsFull() { return _current_vocab_size == _max_elements; }
 
+  StringCategoricalMachIndex() {}
+
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<MachIndex>(this), _hash_to_entities_map,
-            _current_vocab_size);
+    archive(cereal::base_class<MachIndex>(this), _entity_to_id,
+            _hash_to_entities_map, _current_vocab_size);
   }
 
   std::unordered_map<std::string, uint32_t> _entity_to_id;

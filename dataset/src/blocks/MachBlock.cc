@@ -28,3 +28,5 @@ void MachBlock::encodeCategory(std::string_view category,
 }
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::MachBlock)

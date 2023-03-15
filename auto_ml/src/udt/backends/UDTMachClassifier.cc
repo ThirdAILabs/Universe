@@ -301,7 +301,7 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
       top_k_per_eval_aggregation > n_target_classes) {
     throw std::invalid_argument(
         "Both min_num_eval_results and top_k_per_eval_aggregation must be less "
-        "than n_target_classes = " +
+        "than or equal to n_target_classes = " +
         std::to_string(n_target_classes) + ".");
   }
 

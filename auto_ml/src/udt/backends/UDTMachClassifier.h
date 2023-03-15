@@ -68,6 +68,11 @@ class UDTMachClassifier final : public UDTBackend {
 
   py::object embedding(const MapInput& sample) final;
 
+  /**
+   * This method is still experimental, we should test to see when these
+   * embeddings are useful and which tweaks like summing vs averaging and tanh
+   * vs reul make a difference.
+   */
   py::object entityEmbedding(
       const std::variant<uint32_t, std::string>& label) final;
 
