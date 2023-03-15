@@ -311,7 +311,7 @@ void run_experiment(uint32_t dim, float topk, uint32_t num_vectors,
   // print_mat(weights);
   // print_mat(vectors);
 
-  // print_mat(innerproduct(weights, vectors));
+  print_mat(innerproduct(weights, vectors));
 
   // print_vecs(get_collisions(weights, vectors[0], hash));
   // print_vecs(innerproduct(weights, vectors[0]));
@@ -322,29 +322,29 @@ void run_experiment(uint32_t dim, float topk, uint32_t num_vectors,
 }
 TEST(DWTATest, runner) {
   run_experiment(
-      /*dim=*/1000,
-      /*topk=*/10,
-      /*num_vectors=*/100,
+      /*dim=*/100'000,
+      /*topk=*/1,
+      /*num_vectors=*/10,
       /*noise_level=*/0.1,
       /*use_sparse_vectors=*/false,
       /*one_hot=*/false,
-      /*sparsity_level=*/.1);
+      /*sparsity_level=*/.01);
   run_experiment(
-      /*dim=*/1000,
-      /*topk=*/10,
-      /*num_vectors=*/100,
+      /*dim=*/100'000,
+      /*topk=*/1,
+      /*num_vectors=*/10,
       /*noise_level=*/0.1,
       /*use_sparse_vectors=*/true,
       /*one_hot=*/true,
-      /*sparsity_level=*/.1);
+      /*sparsity_level=*/.001);
   run_experiment(
-      /*dim=*/1000,
+      /*dim=*/100'000,
       /*topk=*/10,
-      /*num_vectors=*/100,
+      /*num_vectors=*/10,
       /*noise_level=*/0.1,
       /*use_sparse_vectors=*/true,
       /*one_hot=*/true,
-      /*sparsity_level=*/.2);
+      /*sparsity_level=*/.002);
 
   // run_experiment(
   //     /*dim=*/1024,
