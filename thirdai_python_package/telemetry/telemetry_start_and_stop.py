@@ -7,7 +7,26 @@ from typing import Optional
 
 from thirdai._thirdai import telemetry
 
-daemon_path = pathlib.Path(__file__).parent.resolve() / "telemetry_daemon.py"
+# This file defines methods start and stop, which get added to the
+# thirdai.telemetry module in __init__.py. They wrap the corresponding start and
+# stop methods in thirdai._thirdai.telemetry, which start serving the prometheus
+# metrics on the passed in port. The reason we need to wrap these methods is so
+# that we can additionally start and stop a background thread that *pushes*
+# prometheus metrics from the local Prometheus endpoint (localhost:port) to a
+# file/remote endpoint. See telemetry_daemon.py for the background daemon that
+# gets started. The push location can be an s3 path or a file path, and the
+# daemon will handle pushing to the correct location.
+#
+# telemetry.start() should be called by the user at the top of a script that
+# they want to track telemetry in. telemetry.stop() mostly should never need to
+# be called by the user.
+#
+# We cannot use a python thread for the background push daemon because of the
+# GIL. We cannot easily use a C++ background thread because of the complexity
+# of writing e.g. S3 adapters in C++.
+
+
+daemon_script_path = pathlib.Path(__file__).parent.resolve() / "telemetry_daemon.py"
 
 background_telemetry_push_process = None
 
@@ -44,10 +63,13 @@ def _kill_background_telemetry_push_process():
 
 
 # This will cause _kill_background_telemetry_push_process to get called when
-# the current interpreter session finishes. According to
+# the current interpreter session finishes, which will kill the background
+# process and cause it to do one last push. According to
 # https://docs.python.org/3/library/atexit.html, this is not called when the
 # program is killed by a signal not handled by Python, when a Python fatal
-# internal error is detected, or when os._exit() is called.
+# internal error is detected, or when os._exit() is called. Since this is
+# defined after we define _thirdai, it should get called before the destructors
+# that take down the metrics server.
 atexit.register(_kill_background_telemetry_push_process)
 
 
@@ -60,6 +82,16 @@ def start(
     write_dir: Optional[str] = None,
     optional_endpoint_url: Optional[str] = None,
 ):
+    """
+    Start a Prometheus telemetry client on the passed in port. If a port is not
+    specified this method will use the default ThirdAI port of 9929. This
+    function is not thread safe with other ThirdAI code, so you should make sure
+    that no other code is running when this method is called.
+    If a write_dir is passed in, this function will additionally start a
+    background daemon that will push the Prometheus telemetry to write_dir at
+    the path write_dir/telemetry-<instance_uuid>. Currently, write_dir can be a
+    local path or an s3 path.
+    """
     global background_telemetry_push_process
     if background_telemetry_push_process != None:
         raise RuntimeError(
@@ -78,7 +110,7 @@ def start(
     python_executable = sys.executable
     args = [
         python_executable,
-        str(daemon_path.resolve()),
+        str(daemon_script_path.resolve()),
         "--telemetry_url",
         telemetry_url,
         "--push_dir",
@@ -98,5 +130,10 @@ def start(
 
 
 def stop():
+    """
+    Stops the current Prometheus telemetry client if one is running. This
+    function is not thread safe with other ThirdAI code, so you should make sure
+    that no other code is running when this method is called.
+    """
     _kill_background_telemetry_push_process()
     wrapped_stop_method()
