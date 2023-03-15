@@ -30,7 +30,7 @@ class DistributedDatasetLoader(ABC):
         pass
 
     @abstractmethod
-    def load() -> None:
+    def load(training) -> None:
         """
         This function is called only once before the first epoch. As this function is called
         independently inside each worker, it can be used for multiple purposes which includes
@@ -109,7 +109,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         self.data_processor = data_processor
         self.cold_start_meta_data = cold_start_meta_data
 
-    def load(self):
+    def load(self, training=True):
         original_data_source = _create_data_source(self.train_file)
         cold_start_data_source = (
             bolt.distributed_preprocessing.preprocess_cold_start_train_source(
@@ -121,7 +121,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
             )
         )
         self.generator = self.data_processor.get_dataset_loader(
-            cold_start_data_source, training=True
+            cold_start_data_source, training=training
         )
 
 
@@ -147,7 +147,7 @@ class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
         self.current_labels = None
         self.generated_for_this_epoch = False
 
-    def load(self):
+    def load(self, training):
         pass
 
     def next(self):
@@ -201,7 +201,7 @@ class DistributedTabularDatasetLoader(DistributedDatasetLoader):
         self.y_col = y_col
         self.batch_size = batch_size
 
-    def load(self):
+    def load(self, training):
         pass
 
     def next(self):
