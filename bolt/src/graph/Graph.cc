@@ -691,6 +691,12 @@ void BoltGraph::disableSparseParameterUpdates() {
   }
 }
 
+void BoltGraph::saveWithOptimizer(bool should_save_optimizer) {
+  for (NodePtr& node : _nodes) {
+    node->saveWithOptimizer(should_save_optimizer);
+  }
+}
+
 void BoltGraph::traverseGraph() {
   std::queue<NodePtr> queue;
   std::unordered_set<NodePtr> visited;

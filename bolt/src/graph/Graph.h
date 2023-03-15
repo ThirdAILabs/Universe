@@ -186,6 +186,8 @@ class BoltGraph {
   // beneficial.
   void disableSparseParameterUpdates();
 
+  void saveWithOptimizer(bool should_save_optimizer);
+
   constexpr bool checkBatchInterval(uint32_t num_batches) const {
     return (_updates % num_batches) == (num_batches - 1);
   }
