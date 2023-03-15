@@ -30,7 +30,7 @@ class DistributedDatasetLoader(ABC):
         pass
 
     @abstractmethod
-    def load(training) -> None:
+    def load(shuffle: bool) -> None:
         """
         This function is called only once before the first epoch. As this function is called
         independently inside each worker, it can be used for multiple purposes which includes
@@ -63,10 +63,10 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
 
-    def load(self, training=True):
+    def load(self, shuffle: bool = True):
         self.generator = self.data_processor.get_dataset_loader(
             _create_data_source(self.train_file),
-            training=training,
+            training=shuffle,
         )
 
     def next(self):
@@ -109,7 +109,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         self.data_processor = data_processor
         self.cold_start_meta_data = cold_start_meta_data
 
-    def load(self, training=True):
+    def load(self, shuffle: bool = True):
         original_data_source = _create_data_source(self.train_file)
         cold_start_data_source = (
             bolt.distributed_preprocessing.preprocess_cold_start_train_source(
@@ -121,7 +121,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
             )
         )
         self.generator = self.data_processor.get_dataset_loader(
-            cold_start_data_source, training=training
+            cold_start_data_source, training=shuffle
         )
 
 
@@ -147,7 +147,7 @@ class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
         self.current_labels = None
         self.generated_for_this_epoch = False
 
-    def load(self, training):
+    def load(self, shuffle: bool = True):
         pass
 
     def next(self):
@@ -201,7 +201,7 @@ class DistributedTabularDatasetLoader(DistributedDatasetLoader):
         self.y_col = y_col
         self.batch_size = batch_size
 
-    def load(self, training):
+    def load(self, shuffle: bool = True):
         pass
 
     def next(self):

@@ -60,7 +60,7 @@ class Worker:
 
         # Validation is just done on primary node
         if self.id == 0 and validation_context != None:
-            validation_context.validation_source.load(training=False)
+            validation_context.validation_source.load(shuffle=False)
             load = validation_context.validation_source.next()
             if load == None:
                 raise ValueError("validation dataset shouldn't be empty")
