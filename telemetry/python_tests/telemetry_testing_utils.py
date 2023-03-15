@@ -1,3 +1,4 @@
+from typing import Tuple
 from urllib.parse import urlparse
 
 import boto3
@@ -17,16 +18,16 @@ from test_udt_simple import (
 from thirdai import telemetry
 
 
-def scrape_telemetry(method):
+def scrape_telemetry(telemetry_start_method):
     telemetry = {}
-    if method[0] == "port":
-        raw_telemetry = requests.get(method[1]).content.decode("utf-8")
-    elif method[0] == "file":
-        with open(method[1]) as f:
+    if telemetry_start_method[0] == "port":
+        raw_telemetry = requests.get(telemetry_start_method[1]).content.decode("utf-8")
+    elif telemetry_start_method[0] == "file":
+        with open(telemetry_start_method[1]) as f:
             raw_telemetry = f.read()
-    elif method[0] == "s3":
+    elif telemetry_start_method[0] == "s3":
         client = boto3.client("s3")
-        parsed_s3_path = urlparse(method[1])
+        parsed_s3_path = urlparse(telemetry_start_method[1])
         raw_telemetry = (
             client.get_object(Bucket=parsed_s3_path.netloc, Key=parsed_s3_path.path)[
                 "Body"
@@ -35,7 +36,7 @@ def scrape_telemetry(method):
             .decode("utf-8")
         )
     else:
-        raise ValueError(f"Unknown method {method}")
+        raise ValueError(f"Unknown method {telemetry_start_method}")
     for family in text_string_to_metric_families(raw_telemetry):
         for name, labels, value, _, _ in family.samples:
             if name not in telemetry:
@@ -49,72 +50,19 @@ def get_count(telemetry_dict, key):
     return telemetry_dict[key][0][1]
 
 
-def check_telemetry(
-    telemetry,
-    train_count,
-    train_duration,
-    eval_count,
-    eval_duration,
-    explain_count,
-    explain_duration,
-    predict_count,
-    predict_duration,
-    batch_predict_count,
-    batch_predict_duration,
-):
-    assert (
-        get_count(telemetry, "thirdai_udt_training_duration_seconds_count")
-        == train_count
-    )
-    assert (
-        get_count(telemetry, "thirdai_udt_training_duration_seconds_sum")
-        <= train_duration
-    )
-
-    assert (
-        get_count(telemetry, "thirdai_udt_explanation_duration_seconds_count")
-        == explain_count
-    )
-    assert (
-        get_count(telemetry, "thirdai_udt_explanation_duration_seconds_sum")
-        <= explain_duration
-    )
-
-    assert (
-        get_count(telemetry, "thirdai_udt_evaluation_duration_seconds_count")
-        == eval_count
-    )
-    assert (
-        get_count(telemetry, "thirdai_udt_evaluation_duration_seconds_sum")
-        <= eval_duration
-    )
-
-    assert (
-        get_count(telemetry, "thirdai_udt_prediction_duration_seconds_count")
-        == predict_count
-    )
-    assert (
-        get_count(telemetry, "thirdai_udt_prediction_duration_seconds_sum")
-        <= predict_duration
-    )
-
-    assert (
-        get_count(telemetry, "thirdai_udt_batch_prediction_duration_seconds_count")
-        == batch_predict_count
-    )
-    assert (
-        get_count(telemetry, "thirdai_udt_batch_prediction_duration_seconds_sum")
-        <= batch_predict_duration
-    )
-
-
-# kill_telemetry_after_udt should be true if we are writing to a file or s3,
-# since we want to make sure the writing is flushed to the file so we do not
-# read a partial read. It should be false (and killed manually) if we are just
-# checking the port, since that will only be available as long as telemetry is
-# running.
-def run_udt_telemetry_test(method, kill_telemetry_after_udt):
+# This will also stop telemetry by the end of the method
+# telemetry_start_method should be a tuple of the telemetry destination we are
+# testing (that it must have been started with) and the identifier
+# returned from telemetry.start(). Valid method names are port, file, and s3.
+def run_udt_telemetry_test(telemetry_start_method: Tuple[str, str]):
     import time
+
+    # For push based tests (files and s3), we need to call telemetry.stop()
+    # after we finish the udt calls to make sure the writing is flushed. For
+    # the port check test, we instead want to wait until the end of the method
+    # to kill telemetry, since the prometheus client will only host telemetry
+    # on the port until stop is called.
+    kill_telemetry_after_udt = telemetry_start_method[0] != "port"
 
     eval_count = 2
     explain_count = 10
@@ -149,19 +97,59 @@ def run_udt_telemetry_test(method, kill_telemetry_after_udt):
     if kill_telemetry_after_udt:
         telemetry.stop()
 
-    scraped_telemetry = scrape_telemetry(method)
-    check_telemetry(
-        scraped_telemetry,
-        train_count=1,
-        train_duration=train_duration,
-        eval_count=eval_count,
-        eval_duration=eval_duration,
-        explain_count=explain_count,
-        explain_duration=explain_duration,
-        predict_count=predict_count,
-        predict_duration=predict_duration,
-        # We need to multiply by batch_sample_size because we add one entry
-        # to the Prometheus histogram for every item in the batch
-        batch_predict_count=batch_predict_count * batch_sample_size,
-        batch_predict_duration=batch_predict_duration * batch_sample_size,
+    scraped_telemetry = scrape_telemetry(telemetry_start_method)
+
+    assert (
+        get_count(scraped_telemetry, "thirdai_udt_training_duration_seconds_count") == 1
     )
+    assert (
+        get_count(scraped_telemetry, "thirdai_udt_training_duration_seconds_sum")
+        <= train_duration
+    )
+
+    assert (
+        get_count(scraped_telemetry, "thirdai_udt_explanation_duration_seconds_count")
+        == explain_count
+    )
+    assert (
+        get_count(scraped_telemetry, "thirdai_udt_explanation_duration_seconds_sum")
+        <= explain_duration
+    )
+
+    assert (
+        get_count(scraped_telemetry, "thirdai_udt_evaluation_duration_seconds_count")
+        == eval_count
+    )
+    assert (
+        get_count(scraped_telemetry, "thirdai_udt_evaluation_duration_seconds_sum")
+        <= eval_duration
+    )
+
+    assert (
+        get_count(scraped_telemetry, "thirdai_udt_prediction_duration_seconds_count")
+        == predict_count
+    )
+    assert (
+        get_count(scraped_telemetry, "thirdai_udt_prediction_duration_seconds_sum")
+        <= predict_duration
+    )
+
+    # We need to multiply by batch_sample_size because we add one entry
+    # to the Prometheus histogram for every item in the batch
+    assert (
+        get_count(
+            scraped_telemetry, "thirdai_udt_batch_prediction_duration_seconds_count"
+        )
+        == batch_predict_count * batch_sample_size
+    )
+
+    # We need to multiply by batch_sample_size because we add one entry
+    # to the Prometheus histogram for every item in the batch
+    assert (
+        get_count(
+            scraped_telemetry, "thirdai_udt_batch_prediction_duration_seconds_sum"
+        )
+        <= batch_predict_duration * batch_sample_size
+    )
+
+    telemetry.stop()

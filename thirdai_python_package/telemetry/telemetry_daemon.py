@@ -19,8 +19,8 @@ class GracefulKiller:
         self.kill_now = True
 
 
-DEFAULT_SLEEP_INTERVAL = 0.1
-DEFAULT_UPLOAD_INTERVAL = 60 * 20
+DEFAULT_SLEEP_INTERVAL_SECONDS = 0.1
+DEFAULT_UPLOAD_INTERVAL_SECONDS = 60 * 20
 
 # TODO(Check for parent process id to gracefully shut down)
 
@@ -64,10 +64,10 @@ def push_telemetry(push_dir, telemetry_url, optional_endpoint_url):
 def launch_daemon(push_dir, telemetry_url, optional_endpoint_url, killer):
     last_update_time = 0
     while not killer.kill_now:
-        if time.time() - last_update_time > DEFAULT_UPLOAD_INTERVAL:
+        if time.time() - last_update_time > DEFAULT_UPLOAD_INTERVAL_SECONDS:
             push_telemetry(push_dir, telemetry_url, optional_endpoint_url)
             last_update_time = time.time()
-        time.sleep(DEFAULT_SLEEP_INTERVAL)
+        time.sleep(DEFAULT_SLEEP_INTERVAL_SECONDS)
 
     push_telemetry(push_dir, telemetry_url, optional_endpoint_url)
 

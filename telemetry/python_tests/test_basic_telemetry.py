@@ -9,39 +9,27 @@ THIRDAI_TEST_TELEMETRY_DIR = "test_telemetry_dir"
 
 
 def test_udt_telemetry_port():
-    try:
-        telemetry_url = telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
-        run_udt_telemetry_test(
-            method=("port", telemetry_url), kill_telemetry_after_udt=False
-        )
-    finally:
-        telemetry.stop()
+    telemetry_url = telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
+    run_udt_telemetry_test(telemetry_start_method=("port", telemetry_url))
 
 
 def test_udt_telemetry_file():
-    try:
-        file = telemetry.start(write_dir=THIRDAI_TEST_TELEMETRY_DIR)
-        run_udt_telemetry_test(method=("file", file), kill_telemetry_after_udt=True)
-    finally:
-        telemetry.stop()
+    file = telemetry.start(write_dir=THIRDAI_TEST_TELEMETRY_DIR)
+    run_udt_telemetry_test(telemetry_start_method=("file", file))
 
 
 def test_error_starting_two_telemetry_clients():
-    try:
-        telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
-        with pytest.raises(
-            RuntimeError,
-            match="Trying to start telemetry client when one is already running.*",
-        ):
-            telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT + 1)
-    finally:
-        telemetry.stop()
+    telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
+    with pytest.raises(
+        RuntimeError,
+        match="Trying to start telemetry client when one is already running.*",
+    ):
+        telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT + 1)
+    telemetry.stop()
 
 
 def test_stop_and_start_telemetry():
-    try:
-        telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
-        telemetry.stop()
-        telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
-    finally:
-        telemetry.stop()
+    telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
+    telemetry.stop()
+    telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
+    telemetry.stop()

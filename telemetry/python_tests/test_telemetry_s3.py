@@ -24,7 +24,6 @@ def test_udt_telemetry_s3():
             write_dir=THIRDAI_TEST_TELEMETRY_S3_DIR,
             optional_endpoint_url=f"http://127.0.0.1:{MOTO_SERVER_PORT}",
         )
-        run_udt_telemetry_test(method=("s3", s3_path), kill_telemetry_after_udt=True)
+        run_udt_telemetry_test(telemetry_start_method=("s3", s3_path))
     finally:
-        telemetry.stop()
         server.stop()
