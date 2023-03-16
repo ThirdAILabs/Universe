@@ -8,6 +8,7 @@ set(DATASET_TESTS
     CategoricalBlockTests
     DateBlockTests
     TextBlockTests
+    MachBlockTests
     QuantityHistoryTrackerTest
     ThreadSafeVocabularyTests
     UserItemHistoryBlockTests

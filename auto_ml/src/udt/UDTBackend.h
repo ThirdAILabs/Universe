@@ -182,6 +182,16 @@ class UDTBackend {
 
   virtual void clearGraph() { throw notSupported("clear_graph"); }
 
+  /**
+   * Used for UDTMachClassifier.
+   */
+  virtual void setDecodeParams(uint32_t min_num_eval_results,
+                               uint32_t top_k_per_eval_aggregation) {
+    (void)min_num_eval_results;
+    (void)top_k_per_eval_aggregation;
+    throw notSupported("set_decode_params");
+  }
+
   virtual ~UDTBackend() = default;
 
  protected:

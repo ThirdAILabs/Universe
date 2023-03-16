@@ -72,10 +72,10 @@ class UDTClassifier final : public UDTBackend {
     return std::to_string(class_id);
   }
 
-  bolt::BoltGraphPtr model() const final { return _classifier.model(); }
+  bolt::BoltGraphPtr model() const final { return _classifier->model(); }
 
   void setModel(const bolt::BoltGraphPtr& model) final {
-    bolt::BoltGraphPtr& curr_model = _classifier.model();
+    bolt::BoltGraphPtr& curr_model = _classifier->model();
     if (curr_model->outputDim() != curr_model->outputDim()) {
       throw std::invalid_argument("Output dim mismatch in set_model.");
     }
@@ -114,7 +114,7 @@ class UDTClassifier final : public UDTBackend {
 
   bool integerTarget() const { return !_class_name_to_neuron; }
 
-  UDTClassifier() : _classifier(nullptr, false) {}
+  UDTClassifier() {}
 
   friend cereal::access;
 
@@ -124,7 +124,7 @@ class UDTClassifier final : public UDTBackend {
   dataset::ThreadSafeVocabularyPtr _class_name_to_neuron;
   dataset::CategoricalBlockPtr _label_block;
 
-  utils::Classifier _classifier;
+  utils::ClassifierPtr _classifier;
 
   data::TabularDatasetFactoryPtr _dataset_factory;
 };
