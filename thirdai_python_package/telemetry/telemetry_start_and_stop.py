@@ -128,6 +128,9 @@ def start(
     ]
     background_telemetry_push_process = subprocess.Popen(args)
 
+    # TODO(Josh): This checks that the background process is still running
+    # soon after it starts, but we currently do not have a check that handles
+    # if the background thread fails at some time in the far future.
     time.sleep(BACKGROUND_THREAD_HEALTH_CHECK_WAIT)
     poll = background_telemetry_push_process.poll()
     if poll != None:

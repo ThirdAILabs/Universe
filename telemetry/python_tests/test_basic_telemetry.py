@@ -1,10 +1,9 @@
 import pytest
-from telemetry_testing_utils import run_udt_telemetry_test
+from telemetry_testing_utils import THIRDAI_TEST_TELEMETRY_PORT, run_udt_telemetry_test
 from thirdai import telemetry
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
-THIRDAI_TEST_TELEMETRY_PORT = 20730
 THIRDAI_TEST_TELEMETRY_DIR = "test_telemetry_dir"
 
 
@@ -14,7 +13,9 @@ def test_udt_telemetry_port():
 
 
 def test_udt_telemetry_file():
-    file = telemetry.start(write_dir=THIRDAI_TEST_TELEMETRY_DIR)
+    file = telemetry.start(
+        port=THIRDAI_TEST_TELEMETRY_PORT, write_dir=THIRDAI_TEST_TELEMETRY_DIR
+    )
     run_udt_telemetry_test(telemetry_start_method=("file", file))
 
 
@@ -29,10 +30,18 @@ def test_error_starting_two_telemetry_clients():
 
 
 def test_stop_and_start_telemetry():
-    telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
-    telemetry.stop()
-    telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
-    telemetry.stop()
+    """
+    This ensures that we can start and stop multiple times without messing
+    up the telemetry state and throwing an error
+    """
+    for _ in range(2):
+        telemetry.start(port=THIRDAI_TEST_TELEMETRY_PORT)
+        telemetry.stop()
+    for _ in range(2):
+        telemetry.start(
+            port=THIRDAI_TEST_TELEMETRY_PORT, write_dir=THIRDAI_TEST_TELEMETRY_DIR
+        )
+        telemetry.stop()
 
 
 def test_bad_udt_telemetry_file():

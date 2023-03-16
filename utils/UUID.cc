@@ -2,7 +2,7 @@
 
 namespace thirdai::utils::uuid {
 
-inline std::string getRandomHexString(uint32_t numBytesRandomness) {
+std::string getRandomHexString(uint32_t numBytesRandomness) {
   static std::random_device dev;
   static std::mt19937 rng(dev());
 
@@ -16,6 +16,9 @@ inline std::string getRandomHexString(uint32_t numBytesRandomness) {
   return res;
 }
 
+// Since this uses randomness, it will be evaluated as a runtime constant, not
+// a compile time constant, and will be different for every python interpreter
+// session.
 const std::string THIRDAI_UUID =
     getRandomHexString(/* numBytesRandomness = */ 16);
 }  // namespace thirdai::utils::uuid

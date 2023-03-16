@@ -2,7 +2,7 @@ import boto3
 import pytest
 from moto import mock_s3
 from moto.server import ThreadedMotoServer
-from telemetry_testing_utils import run_udt_telemetry_test
+from telemetry_testing_utils import THIRDAI_TEST_TELEMETRY_PORT, run_udt_telemetry_test
 from thirdai import telemetry
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
@@ -26,6 +26,7 @@ def test_udt_telemetry_s3():
     s3 = boto3.client("s3")
     s3.create_bucket(Bucket=THIRDAI_TEST_TELEMETRY_BUCKET)
     s3_path = telemetry.start(
+        port=THIRDAI_TEST_TELEMETRY_PORT,
         write_dir=THIRDAI_TEST_TELEMETRY_S3_DIR,
         optional_endpoint_url=f"http://127.0.0.1:{MOTO_SERVER_PORT}",
     )
@@ -38,6 +39,7 @@ def test_telemetry_bad_s3_file():
         ValueError, match="Telemetry process terminated early with exit code 1"
     ):
         telemetry.start(
+            port=THIRDAI_TEST_TELEMETRY_PORT,
             write_dir="s3://this/does/not/exist",
             optional_endpoint_url=f"http://127.0.0.1:{MOTO_SERVER_PORT}",
         )

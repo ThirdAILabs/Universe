@@ -52,8 +52,12 @@ PrometheusTelemetryClient::PrometheusTelemetryClient(
   // See https://prometheus.io/docs/practices/histograms/ for metric naming
   // conventions
 
+  // We add this label to each metric so that metrics can be filtered by the
+  // thirdai uuid they came from. It also helps us push telemetry to a remote
+  // location or local file and put the uuid in the file name.
   std::map<std::string, std::string> labels = {
       {"thirdai_instance_uuid", utils::uuid::THIRDAI_UUID}};
+
   // Approximate geometric distribution with factor sqrt(10). Bins go from
   // <0.1 ms to >=1 second. Used for inference and explanations.
   prometheus::Histogram::BucketBoundaries fast_running_boundaries_seconds = {

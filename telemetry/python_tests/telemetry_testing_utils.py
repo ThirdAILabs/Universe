@@ -17,6 +17,8 @@ from test_udt_simple import (
 )
 from thirdai import telemetry
 
+THIRDAI_TEST_TELEMETRY_PORT = 20730
+
 
 def scrape_telemetry(telemetry_start_method):
     telemetry = {}
