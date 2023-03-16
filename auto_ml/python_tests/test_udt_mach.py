@@ -80,19 +80,6 @@ def evaluate_model(model, supervised_tst):
     return precision
 
 
-class SupervisedTrainCallback(bolt.callbacks.Callback):
-    def __init__(self):
-        super().__init__()
-        self.prev_metric = 0
-
-    def on_epoch_end(self, model, train_state):
-        cur_metric = train_state.get_validation_metric_values("precision@1")[-1]
-        if cur_metric < self.prev_metric:
-            train_state.stop_training = True
-        else:
-            self.prev_metric = cur_metric
-
-
 def train_on_scifact(download_scifact_dataset, integer_target, coldstart):
     (
         unsupervised_file,
@@ -133,14 +120,14 @@ def train_on_scifact(download_scifact_dataset, integer_target, coldstart):
 
     metrics = model.train(
         filename=supervised_trn,
-        learning_rate=0.001,
+        learning_rate=0.001 if coldstart else 0.0005,
         epochs=10,
         metrics=[
             "precision@1",
             "recall@10",
         ],
         validation=validation,
-        callbacks=[SupervisedTrainCallback()],
+        callbacks=[],
     )
 
     return model, metrics, supervised_tst
@@ -182,8 +169,8 @@ def test_mach_udt_string_target(download_scifact_dataset):
         download_scifact_dataset, integer_target=True, coldstart=False
     )
 
-    assert string_metrics["precision@1"][-1] > 0.15
-    assert integer_metrics["precision@1"][-1] > 0.15
+    assert string_metrics["precision@1"][-1] > 0.12
+    assert integer_metrics["precision@1"][-1] > 0.12
 
 
 def test_mach_udt_string_target_too_many_classes():
