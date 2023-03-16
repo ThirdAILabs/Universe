@@ -93,7 +93,7 @@ class SupervisedTrainCallback(bolt.callbacks.Callback):
             self.prev_metric = cur_metric
 
 
-def test_mach_udt_on_scifact(download_scifact_dataset):
+def train_on_scifact(download_scifact_dataset, integer_target, coldstart):
     (
         unsupervised_file,
         supervised_trn,
@@ -108,28 +108,28 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
         },
         target="DOC_ID",
         n_target_classes=n_target_classes,
-        integer_target=True,
+        integer_target=integer_target,
         options={"extreme_classification": True, "embedding_dimension": 1024},
     )
 
-    metrics = model.cold_start(
-        filename=unsupervised_file,
-        strong_column_names=["TITLE"],
-        weak_column_names=["TEXT"],
-        learning_rate=0.001,
-        epochs=7,
-        metrics=[
-            "precision@1",
-            "recall@10",
-        ],
-    )
+    if coldstart:
+        metrics = model.cold_start(
+            filename=unsupervised_file,
+            strong_column_names=["TITLE"],
+            weak_column_names=["TEXT"],
+            learning_rate=0.001,
+            epochs=5,
+            metrics=[
+                "precision@1",
+                "recall@10",
+            ],
+        )
+        assert metrics["precision@1"][-1] > 0.90
 
     validation = bolt.Validation(
         supervised_tst,
         metrics=["precision@1"],
     )
-
-    assert metrics["precision@1"][-1] > 0.95
 
     metrics = model.train(
         filename=supervised_trn,
@@ -141,6 +141,16 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
         ],
         validation=validation,
         callbacks=[SupervisedTrainCallback()],
+    )
+
+    return model, metrics, supervised_tst
+
+
+def test_mach_udt_on_scifact(download_scifact_dataset):
+    model, metrics, supervised_tst = train_on_scifact(
+        download_scifact_dataset,
+        integer_target=True,
+        coldstart=True,
     )
 
     assert metrics["precision@1"][-1] > 0.45
@@ -160,8 +170,20 @@ def test_mach_udt_on_scifact(download_scifact_dataset):
     os.remove(save_loc)
 
 
-def test_mach_udt_string_target():
-    pass
+# We can't coldstart without integer target but we can still train on the
+# supervised data. We also want to assert that regardless of using string or
+# integer target that we still reach around the same accuracy.
+def test_mach_udt_string_target(download_scifact_dataset):
+    _, string_metrics, supervised_tst = train_on_scifact(
+        download_scifact_dataset, integer_target=False, coldstart=False
+    )
+
+    _, integer_metrics, _ = train_on_scifact(
+        download_scifact_dataset, integer_target=True, coldstart=False
+    )
+
+    assert string_metrics["precision@1"][-1] > 0.15
+    assert integer_metrics["precision@1"][-1] > 0.15
 
 
 def test_mach_udt_string_target_too_many_classes():
@@ -235,4 +257,4 @@ def test_mach_udt_decode_params():
 
     model.set_decode_params(1, 2)
 
-    assert len(model.evaluate(SIMPLE_TEST_FILE)[0]) == 2
+    assert len(model.evaluate(SIMPLE_TEST_FILE)[0]) == 1

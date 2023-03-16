@@ -21,13 +21,6 @@ UDTMachClassifier::UDTMachClassifier(
     const config::ArgumentMap& user_args)
     : _min_num_eval_results(defaults::MACH_MIN_NUM_EVAL_RESULTS),
       _top_k_per_eval_aggregation(defaults::MACH_TOP_K_PER_EVAL_AGGREGATION) {
-  if (n_target_classes < _top_k_per_eval_aggregation) {
-    throw std::invalid_argument(
-        "UDT Extreme Classification should not be used with n_target_classes "
-        "< " +
-        std::to_string(_top_k_per_eval_aggregation) + ".");
-  }
-
   uint32_t output_range = user_args.get<uint32_t>(
       "extreme_output_dim", "integer", autotuneMachOutputDim(n_target_classes));
   uint32_t num_hashes = user_args.get<uint32_t>(
@@ -44,7 +37,7 @@ UDTMachClassifier::UDTMachClassifier(
                           defaults::FREEZE_HASH_TABLES));
 
   // TODO(david) should we freeze hash tables for mach? how does this work
-  // with coldstart? is this why we're getting bad msmarco accuracy?
+  // with coldstart?
 
   dataset::MachIndexPtr mach_index;
   if (integer_target) {
@@ -135,8 +128,7 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
     predicted_entities.push_back(predictions);
   }
 
-  // TODO(david) eventually we should have calculated metrics specific to the
-  // backend and not passed directly into the boltgraph
+  // TODO(david) eventually we should use backend specific metrics
 
   return py::cast(predicted_entities);
 }

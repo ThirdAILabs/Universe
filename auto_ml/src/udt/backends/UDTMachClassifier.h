@@ -102,7 +102,7 @@ class UDTMachClassifier final : public UDTBackend {
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
     // TODO(david) update this
-    if (n_target_classes < 5000) {
+    if (n_target_classes < defaults::MACH_MIN_TARGET_CLASSES) {
       return n_target_classes;
     }
     return n_target_classes / defaults::MACH_DEFAULT_OUTPUT_RANGE_SCALEDOWN;

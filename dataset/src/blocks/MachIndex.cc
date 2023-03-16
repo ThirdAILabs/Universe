@@ -53,12 +53,6 @@ StringCategoricalMachIndex::StringCategoricalMachIndex(uint32_t output_range,
     : MachIndex(output_range, num_hashes, max_elements),
       _current_vocab_size(0) {}
 
-static auto make(uint32_t output_range, uint32_t num_hashes,
-                 uint32_t max_elements) {
-  return std::make_shared<StringCategoricalMachIndex>(output_range, num_hashes,
-                                                      max_elements);
-}
-
 std::vector<uint32_t> StringCategoricalMachIndex::hashAndStoreEntity(
     const std::string& string) {
   if (indexIsFull()) {
