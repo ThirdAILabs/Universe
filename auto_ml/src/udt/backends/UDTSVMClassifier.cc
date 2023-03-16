@@ -15,12 +15,13 @@ UDTSVMClassifier::UDTSVMClassifier(
     uint32_t n_target_classes, uint32_t input_dim,
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
-    : _classifier(utils::buildModel(
-                      /* input_dim= */ input_dim,
-                      /* output_dim= */ n_target_classes,
-                      /* args= */ user_args, /* model_config= */ model_config),
-                  user_args.get<bool>("freeze_hash_tables", "boolean",
-                                      defaults::FREEZE_HASH_TABLES)) {}
+    : _classifier(utils::Classifier::make(
+          utils::buildModel(
+              /* input_dim= */ input_dim,
+              /* output_dim= */ n_target_classes,
+              /* args= */ user_args, /* model_config= */ model_config),
+          user_args.get<bool>("freeze_hash_tables", "boolean",
+                              defaults::FREEZE_HASH_TABLES))) {}
 
 py::object UDTSVMClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
@@ -41,10 +42,10 @@ py::object UDTSVMClassifier::train(
         validation->second);
   }
 
-  return _classifier.train(train_dataset_loader, learning_rate, epochs,
-                           validation_dataset_loader, batch_size_opt,
-                           max_in_memory_batches, metrics, callbacks, verbose,
-                           logging_interval);
+  return _classifier->train(train_dataset_loader, learning_rate, epochs,
+                            validation_dataset_loader, batch_size_opt,
+                            max_in_memory_batches, metrics, callbacks, verbose,
+                            logging_interval);
 }
 
 py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
@@ -54,14 +55,14 @@ py::object UDTSVMClassifier::evaluate(const dataset::DataSourcePtr& data,
                                       bool return_metrics) {
   auto dataset = svmDatasetLoader(data, /* shuffle= */ false);
 
-  return _classifier.evaluate(dataset, metrics, sparse_inference,
-                              return_predicted_class, verbose, return_metrics);
+  return _classifier->evaluate(dataset, metrics, sparse_inference,
+                               return_predicted_class, verbose, return_metrics);
 }
 
 py::object UDTSVMClassifier::predict(const MapInput& sample,
                                      bool sparse_inference,
                                      bool return_predicted_class) {
-  return _classifier.predict(
+  return _classifier->predict(
       {dataset::SvmDatasetLoader::toSparseVector(sample)}, sparse_inference,
       return_predicted_class);
 }
@@ -69,7 +70,7 @@ py::object UDTSVMClassifier::predict(const MapInput& sample,
 py::object UDTSVMClassifier::predictBatch(const MapInputBatch& samples,
                                           bool sparse_inference,
                                           bool return_predicted_class) {
-  return _classifier.predictBatch(
+  return _classifier->predictBatch(
       {dataset::SvmDatasetLoader::toSparseVectors(samples)}, sparse_inference,
       return_predicted_class);
 }

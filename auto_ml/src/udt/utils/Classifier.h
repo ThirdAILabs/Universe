@@ -17,6 +17,11 @@ class Classifier {
   Classifier(bolt::BoltGraphPtr model, bool freeze_hash_tables)
       : _model(std::move(model)), _freeze_hash_tables(freeze_hash_tables) {}
 
+  static std::shared_ptr<Classifier> make(const bolt::BoltGraphPtr& model,
+                                          bool freeze_hash_tables) {
+    return std::make_shared<Classifier>(model, freeze_hash_tables);
+  }
+
   py::object train(
       dataset::DatasetLoaderPtr& dataset, float learning_rate, uint32_t epochs,
       const std::optional<ValidationDatasetLoader>& validation,

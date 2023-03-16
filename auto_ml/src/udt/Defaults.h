@@ -45,4 +45,23 @@ constexpr uint32_t REGRESSION_BINS = 100;
 // regression as classification.
 constexpr uint32_t REGRESSION_CORRECT_LABEL_RADIUS = 2;
 
+// Whether to use the Mach Extreme Classification Backend.
+constexpr bool USE_MACH = false;
+
+// How many times we hash each entity in UDT Mach Classifier.
+constexpr uint32_t MACH_DEFAULT_NUM_REPETITIONS = 7;
+
+// Scaledown factor for output range in UDT Mach Classifier.
+constexpr uint32_t MACH_DEFAULT_OUTPUT_RANGE_SCALEDOWN = 25;
+
+// How many output buckets we restrict decoding to for UDT Mach Classifier.
+constexpr uint32_t MACH_TOP_K_PER_EVAL_AGGREGATION = 25;
+
+// How many results we're required to decode from the above num buckets for UDT
+// Mach Classifier.
+constexpr uint32_t MACH_MIN_NUM_EVAL_RESULTS = 5;
+
+// Any less than this number of target classes should cause no scaledown in Mach
+constexpr uint32_t MACH_MIN_TARGET_CLASSES = 5000;
+
 }  // namespace thirdai::automl::udt::defaults

@@ -204,6 +204,7 @@ setup(
             "s3fs",
             "mock",
             "scikit-learn",
+            "beir",
         ],
         "benchmark": [
             "toml",
