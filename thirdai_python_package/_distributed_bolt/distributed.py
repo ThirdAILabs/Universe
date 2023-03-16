@@ -156,9 +156,9 @@ def add_distributed_to_udt():
 
             validation_context = ValidationContext(
                 validation_source,
-                validation_args.metrics(),
-                validation_args.sparse_inference(),
-                validation_args.steps_per_validation(),
+                validation_args.metrics,
+                validation_args.sparse_inference,
+                validation_args.steps_per_validation,
             )
 
         return train_with_data_sources(
@@ -289,9 +289,9 @@ def add_distributed_to_udt():
 
             validation_context = ValidationContext(
                 validation_source,
-                validation_args.metrics(),
-                validation_args.sparse_inference(),
-                validation_args.steps_per_validation(),
+                validation_args.metrics,
+                validation_args.sparse_inference,
+                validation_args.steps_per_validation,
             )
 
         return train_with_data_sources(
