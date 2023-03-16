@@ -121,11 +121,13 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
                     ->evaluate(test_data, test_labels, eval_config)
                     .second;
 
-  std::vector<std::vector<std::pair<std::string, double>>> predicted_entities;
+  std::vector<std::vector<std::pair<std::string, double>>> predicted_entities(
+      output.numSamples());
+#pragma omp parallel for default(none) shared(output, predicted_entities)
   for (uint32_t i = 0; i < output.numSamples(); i++) {
     BoltVector output_activations = output.getSampleAsNonOwningBoltVector(i);
     auto predictions = machSingleDecode(output_activations);
-    predicted_entities.push_back(predictions);
+    predicted_entities[i] = predictions;
   }
 
   // TODO(david) eventually we should use backend specific metrics
@@ -194,10 +196,13 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   BoltBatch outputs = _classifier->model()->predictSingleBatch(
       _dataset_factory->featurizeInputBatch(samples), sparse_inference);
 
-  std::vector<std::vector<std::pair<std::string, double>>> predicted_entities;
-  for (const auto& vector : outputs) {
+  std::vector<std::vector<std::pair<std::string, double>>> predicted_entities(
+      outputs.getBatchSize());
+#pragma omp parallel for default(none) shared(outputs, predicted_entities)
+  for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
+    auto vector = outputs[i];
     auto predictions = machSingleDecode(vector);
-    predicted_entities.push_back(predictions);
+    predicted_entities[i] = predictions;
   }
 
   return py::cast(predicted_entities);
