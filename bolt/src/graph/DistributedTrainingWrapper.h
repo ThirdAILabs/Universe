@@ -45,8 +45,12 @@ class DistributedTrainingWrapper {
         _train_config.getReconstructHashFunctionsBatchInterval(
             _train_context->batchSize(), _train_context->len()));
     if (_worker_id == 0) {
-      _bolt_graph->logValidateAndSave(_train_config, _metric_aggregator);
+      _bolt_graph->logAndSaveLast(_train_config, _metric_aggregator);
     }
+  }
+
+  std::optional<MetricData> validationAndSaveBest() {
+    return _bolt_graph->validateAndSaveBest(_train_config);
   }
 
   BoltGraphPtr getModel() { return _bolt_graph; }
