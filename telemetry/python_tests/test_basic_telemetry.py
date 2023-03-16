@@ -40,3 +40,4 @@ def test_bad_udt_telemetry_file():
         ValueError, match="Telemetry process terminated early with exit code 1"
     ):
         telemetry.start(write_dir="this://should/not/work")
+    telemetry.stop()
