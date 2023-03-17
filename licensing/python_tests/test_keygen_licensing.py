@@ -1,6 +1,6 @@
 import pytest
 import thirdai
-from licensing_utils import this_should_require_a_license_bolt
+from licensing_utils import this_should_require_a_full_license_udt
 
 pytestmark = [pytest.mark.release]
 
@@ -27,7 +27,7 @@ NONEXISTENT_KEY = "THIS-IS-A-VERY-NONEXISTENT-KEY"
 
 def test_keygen_good_key():
     thirdai.licensing.activate(GOOD_KEY)
-    this_should_require_a_license_bolt()
+    this_should_require_a_full_license_udt()
 
 
 def test_expired_key():
@@ -36,7 +36,7 @@ def test_expired_key():
         RuntimeError,
         match=r".*returned the following message: is expired",
     ):
-        this_should_require_a_license_bolt()
+        this_should_require_a_full_license_udt()
 
 
 def test_suspended_key():
@@ -45,7 +45,7 @@ def test_suspended_key():
         RuntimeError,
         match=r".*returned the following message: is suspended",
     ):
-        this_should_require_a_license_bolt()
+        this_should_require_a_full_license_udt()
 
 
 def test_nonexistent_key():
@@ -54,7 +54,7 @@ def test_nonexistent_key():
         RuntimeError,
         match=r".*returned the following message: does not exist",
     ):
-        this_should_require_a_license_bolt()
+        this_should_require_a_full_license_udt()
 
 
 # This fixture removes the stored access key after each test finishes, ensuring

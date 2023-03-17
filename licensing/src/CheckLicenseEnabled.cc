@@ -63,6 +63,8 @@ void checkLicense() {
 #pragma message( \
     "THIRDAI_CHECK_LICENSE is defined, adding license checking code")  // NOLINT
 
+  _entitlements.clear();
+
   if (_api_key.has_value()) {
     _entitlements = verifyWithKeygen(*_api_key);
     return;
@@ -70,6 +72,7 @@ void checkLicense() {
 
   if (_heartbeat_thread != nullptr) {
     _heartbeat_thread->verify();
+    _entitlements.insert(FULL_ACCESS_ENTITLEMENT);
     return;
   }
 

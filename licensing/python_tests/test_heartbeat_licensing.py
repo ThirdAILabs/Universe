@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import requests
 import thirdai
-from licensing_utils import LOCAL_HEARTBEAT_SERVER, this_should_require_a_license_bolt
+from licensing_utils import LOCAL_HEARTBEAT_SERVER, this_should_require_a_full_license_udt
 
 pytestmark = [pytest.mark.release]
 
@@ -134,7 +134,7 @@ def test_heartbeat_fails_with_no_signature(no_signing_license_server):
 
 def test_valid_heartbeat(normal_license_server):
     thirdai.licensing.start_heartbeat(LOCAL_HEARTBEAT_SERVER)
-    this_should_require_a_license_bolt()
+    this_should_require_a_full_license_udt()
     thirdai.licensing.end_heartbeat()
 
 
@@ -167,7 +167,7 @@ def test_more_machines_after_server_timeout(fast_timeout_license_server):
 
 def test_client_side_timeout_after_heartbeat_fail(normal_license_server):
     thirdai.licensing.start_heartbeat(LOCAL_HEARTBEAT_SERVER, heartbeat_timeout=1)
-    this_should_require_a_license_bolt()
+    this_should_require_a_full_license_udt()
     normal_license_server.kill()
     wait_for_server_end()
     # Sleep for 3 seconds to ensure that the heartbeat (which is once a second)
@@ -177,7 +177,7 @@ def test_client_side_timeout_after_heartbeat_fail(normal_license_server):
         RuntimeError,
         match=f"The heartbeat thread could not verify with the server because there has not been a successful heartbeat in 1 seconds.*",
     ):
-        this_should_require_a_license_bolt()
+        this_should_require_a_full_license_udt()
     thirdai.licensing.end_heartbeat()
 
     # TODO(Josh): Check that we are adding these failures to our Prometheus metrics
@@ -193,5 +193,5 @@ def test_maintenance_of_valid_heartbeat(normal_license_server):
     """
     thirdai.licensing.start_heartbeat(LOCAL_HEARTBEAT_SERVER, heartbeat_timeout=0)
     time.sleep(1)
-    this_should_require_a_license_bolt()
+    this_should_require_a_full_license_udt()
     thirdai.licensing.end_heartbeat()

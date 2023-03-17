@@ -3,7 +3,7 @@
 import platform
 
 import pytest
-from licensing_utils import this_should_require_a_license_bolt
+from licensing_utils import this_should_require_a_full_license_udt
 
 pytestmark = [pytest.mark.release]
 
@@ -40,7 +40,7 @@ def test_with_valid_license():
 
     thirdai.licensing.set_path(str(valid_license_path))
     this_should_require_a_license_search()
-    this_should_require_a_license_bolt()
+    this_should_require_a_full_license_udt()
     this_should_require_a_license_query_reformulation()
 
 
@@ -55,7 +55,7 @@ def test_with_expired_license():
     with pytest.raises(Exception, match=r".*license file is expired.*"):
         this_should_require_a_license_search()
     with pytest.raises(Exception, match=r".*license file is expired.*"):
-        this_should_require_a_license_bolt()
+        this_should_require_a_full_license_udt()
     with pytest.raises(Exception, match=r".*license file is expired.*"):
         this_should_require_a_license_query_reformulation()
 
@@ -71,7 +71,7 @@ def test_with_invalid_license():
     with pytest.raises(Exception, match=r".*license verification failure.*"):
         this_should_require_a_license_search()
     with pytest.raises(Exception, match=r".*license verification failure.*"):
-        this_should_require_a_license_bolt()
+        this_should_require_a_full_license_udt()
     with pytest.raises(Exception, match=r".*license verification failure.*"):
         this_should_require_a_license_query_reformulation()
 

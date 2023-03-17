@@ -17,11 +17,11 @@ using std::chrono::system_clock;
 
 class License {
  public:
-  License(std::map<std::string, std::string> metadata,
+  License(std::map<std::string, std::string> entitlements,
           int64_t expire_time_epoch_millis)
       : _expire_time_epoch_millis(expire_time_epoch_millis),
         _start_time_epoch_millis(getCurrentEpochMillis()),
-        _metadata(std::move(metadata)) {}
+        _entitlements(std::move(entitlements)) {}
 
   static License createLicenseWithNDaysLeft(
       std::map<std::string, std::string> metadata, int64_t num_days) {
@@ -36,8 +36,8 @@ class License {
            _expire_time_epoch_millis < getCurrentEpochMillis();
   }
 
-  std::string getMetadataValue(const std::string& key) const {
-    return _metadata.at(key);
+  const std::map<std::string, std::string>& getEntitlements() const {
+    return _entitlements;
   }
 
   int64_t getExpireTimeMillis() const { return _expire_time_epoch_millis; }
@@ -48,7 +48,7 @@ class License {
     std::string to_verify;
     to_verify += std::to_string(_expire_time_epoch_millis);
     to_verify += "|";
-    for (auto const& [key, val] : _metadata) {
+    for (auto const& [key, val] : _entitlements) {
       to_verify += key;
       to_verify += ":";
       to_verify += val;
@@ -62,7 +62,7 @@ class License {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_start_time_epoch_millis, _expire_time_epoch_millis, _metadata);
+    archive(_start_time_epoch_millis, _expire_time_epoch_millis, _entitlements);
   }
 
   License();
@@ -77,7 +77,7 @@ class License {
   // This is a map rather than an unordered map because when creating
   // the string to verify, we want to be easily able to generate a deterministic
   // string from the map (and unordered maps have non deterministic orders)
-  std::map<std::string, std::string> _metadata;
+  std::map<std::string, std::string> _entitlements;
 };
 
 }  // namespace thirdai::licensing
