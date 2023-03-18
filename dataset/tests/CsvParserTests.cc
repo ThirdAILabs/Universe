@@ -132,4 +132,13 @@ TEST(CsvParserTests, NoEndQuote) {
                 {"\"I wish there was no delimiter", " but there is.\\"});
 }
 
+TEST(CsvParserTests, TrimsReturnAndNewlineCharacters) {
+  testCsvParser("Hello\r", ',', {"Hello"});
+  testCsvParser("Hello\r\n", ',', {"Hello"});
+  testCsvParser("Hello\n", ',', {"Hello"});
+  testCsvParser("\r", ',', {""});
+  testCsvParser("\r\n", ',', {""});
+  testCsvParser("\n", ',', {""});
+}
+
 }  // namespace thirdai::dataset::tests

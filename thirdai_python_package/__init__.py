@@ -7,6 +7,8 @@ __all__ = [
     "hashing",
     "distributed_bolt",
     "licensing",
+    "demos",
+    "telemetry",
     "set_global_num_threads",
     "logging",
     "bolt_v2",
@@ -17,9 +19,11 @@ import thirdai.bolt as bolt
 import thirdai.bolt_v2 as bolt_v2
 import thirdai.data as data
 import thirdai.dataset as dataset
+import thirdai.demos as demos
 import thirdai.hashing as hashing
 import thirdai.licensing as licensing
 import thirdai.search as search
+import thirdai.telemetry as telemetry
 
 # Relay __version__ from C++
 from thirdai._thirdai import __version__, logging

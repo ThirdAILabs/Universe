@@ -19,6 +19,8 @@ void createModelsSubmodule(py::module_& module);
 
 void createUDTTypesSubmodule(py::module_& module);
 
+void createDistributedPreprocessingWrapper(py::module_& module);
+
 void createUDTTemporalSubmodule(py::module_& module);
 
 void createDeploymentSubmodule(py::module_& module);

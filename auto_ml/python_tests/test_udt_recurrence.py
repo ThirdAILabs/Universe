@@ -73,6 +73,22 @@ def test_udt_recurrence_predict_batch():
     os.remove(TRAIN_FILE)
 
 
+def test_udt_recurrence_return_metrics():
+    model = recursive_model()
+    metrics = model.train(
+        TRAIN_FILE, learning_rate=0.01, epochs=10, metrics=["categorical_accuracy"]
+    )
+
+    assert metrics["categorical_accuracy"][-1] > 0
+
+    metrics = model.evaluate(
+        TRAIN_FILE, metrics=["categorical_accuracy"], return_metrics=True
+    )
+    assert metrics["categorical_accuracy"] > 0
+
+    os.remove(TRAIN_FILE)
+
+
 def test_udt_recurrence_long_output_does_not_break():
     model = recursive_model(
         inputs=["1 2 3 4", "3 4 5"],

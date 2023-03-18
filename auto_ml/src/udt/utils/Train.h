@@ -12,11 +12,13 @@ namespace thirdai::automl::udt::utils {
 using DataSourceToDatasetLoader = std::function<dataset::DatasetLoaderPtr(
     const dataset::DataSourcePtr&, bool)>;
 
-void train(bolt::BoltGraphPtr& model, dataset::DatasetLoaderPtr& dataset_loader,
-           const bolt::TrainConfig& train_config, size_t batch_size,
-           std::optional<size_t> max_in_memory_batches, bool freeze_hash_tables,
-           licensing::TrainPermissionsToken token =
-               licensing::TrainPermissionsToken());
+bolt::MetricData train(bolt::BoltGraphPtr& model,
+                       dataset::DatasetLoaderPtr& dataset_loader,
+                       const bolt::TrainConfig& train_config, size_t batch_size,
+                       std::optional<size_t> max_in_memory_batches,
+                       bool freeze_hash_tables,
+                       licensing::TrainPermissionsToken token =
+                           licensing::TrainPermissionsToken());
 
 bolt::TrainConfig getTrainConfig(
     uint32_t epochs, float learning_rate,
@@ -29,7 +31,7 @@ bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
                                bool sparse_inference, bool verbose,
                                bool validation = false);
 
-std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> split_data_labels(
+std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> splitDataLabels(
     dataset::BoltDatasetList&& datasets);
 
 }  // namespace thirdai::automl::udt::utils

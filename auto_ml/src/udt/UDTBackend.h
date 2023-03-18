@@ -2,6 +2,7 @@
 
 #include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/DataSource.h>
@@ -29,7 +30,7 @@ class UDTBackend {
   /**
    * Trains the model on the given dataset.
    */
-  virtual void train(
+  virtual py::object train(
       const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
       const std::optional<ValidationDataSource>& validation,
       std::optional<size_t> batch_size,
@@ -112,14 +113,13 @@ class UDTBackend {
    * Performs cold start pretraining. Optional method that is not supported by
    * default for backends.
    */
-  virtual void coldstart(const dataset::DataSourcePtr& data,
-                         const std::vector<std::string>& strong_column_names,
-                         const std::vector<std::string>& weak_column_names,
-                         float learning_rate, uint32_t epochs,
-                         const std::vector<std::string>& metrics,
-                         const std::optional<ValidationDataSource>& validation,
-                         const std::vector<bolt::CallbackPtr>& callbacks,
-                         bool verbose) {
+  virtual py::object coldstart(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      const std::optional<ValidationDataSource>& validation,
+      const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
@@ -167,6 +167,33 @@ class UDTBackend {
    */
   virtual data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return nullptr;
+  }
+
+  /**
+   * Returns metadata for ColdStart which are needed to be passed to
+   * ColdStartPreprocessing. Optional Method that is not supported by
+   * defaults for backends. This method is primarily used for distributed
+   * training.
+   */
+  virtual cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
+    throw notSupported("getColdStartMetaData");
+  }
+
+  virtual void indexNodes(const dataset::DataSourcePtr& source) {
+    (void)source;
+    throw notSupported("index_nodes");
+  }
+
+  virtual void clearGraph() { throw notSupported("clear_graph"); }
+
+  /**
+   * Used for UDTMachClassifier.
+   */
+  virtual void setDecodeParams(uint32_t min_num_eval_results,
+                               uint32_t top_k_per_eval_aggregation) {
+    (void)min_num_eval_results;
+    (void)top_k_per_eval_aggregation;
+    throw notSupported("set_decode_params");
   }
 
   virtual ~UDTBackend() = default;

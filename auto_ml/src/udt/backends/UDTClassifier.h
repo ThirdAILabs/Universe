@@ -26,14 +26,14 @@ class UDTClassifier final : public UDTBackend {
                 const std::optional<std::string>& model_config,
                 const config::ArgumentMap& user_args);
 
-  void train(const dataset::DataSourcePtr& data, float learning_rate,
-             uint32_t epochs,
-             const std::optional<ValidationDataSource>& validation,
-             std::optional<size_t> batch_size,
-             std::optional<size_t> max_in_memory_batches,
-             const std::vector<std::string>& metrics,
-             const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-             bool verbose, std::optional<uint32_t> logging_interval) final;
+  py::object train(
+      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+      const std::optional<ValidationDataSource>& validation,
+      std::optional<size_t> batch_size,
+      std::optional<size_t> max_in_memory_batches,
+      const std::vector<std::string>& metrics,
+      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
+      bool verbose, std::optional<uint32_t> logging_interval) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -54,14 +54,14 @@ class UDTClassifier final : public UDTBackend {
       const std::optional<std::variant<uint32_t, std::string>>& target_class)
       final;
 
-  void coldstart(const dataset::DataSourcePtr& data,
-                 const std::vector<std::string>& strong_column_names,
-                 const std::vector<std::string>& weak_column_names,
-                 float learning_rate, uint32_t epochs,
-                 const std::vector<std::string>& metrics,
-                 const std::optional<ValidationDataSource>& validation,
-                 const std::vector<bolt::CallbackPtr>& callbacks,
-                 bool verbose) final;
+  py::object coldstart(const dataset::DataSourcePtr& data,
+                       const std::vector<std::string>& strong_column_names,
+                       const std::vector<std::string>& weak_column_names,
+                       float learning_rate, uint32_t epochs,
+                       const std::vector<std::string>& metrics,
+                       const std::optional<ValidationDataSource>& validation,
+                       const std::vector<bolt::CallbackPtr>& callbacks,
+                       bool verbose) final;
 
   py::object embedding(const MapInput& sample) final;
 
@@ -75,10 +75,10 @@ class UDTClassifier final : public UDTBackend {
     return std::to_string(class_id);
   }
 
-  bolt::BoltGraphPtr model() const final { return _classifier.model(); }
+  bolt::BoltGraphPtr model() const final { return _classifier->model(); }
 
   void setModel(const bolt::BoltGraphPtr& model) final {
-    bolt::BoltGraphPtr& curr_model = _classifier.model();
+    bolt::BoltGraphPtr& curr_model = _classifier->model();
     if (curr_model->outputDim() != curr_model->outputDim()) {
       throw std::invalid_argument("Output dim mismatch in set_model.");
     }
@@ -101,6 +101,11 @@ class UDTClassifier final : public UDTBackend {
     _dataset_factory->verifyCanDistribute();
   }
 
+  cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
+    return std::make_shared<cold_start::ColdStartMetaData>(
+        _label_block->delimiter(), _label_block->columnName(), integerTarget());
+  }
+
  private:
   dataset::CategoricalBlockPtr labelBlock(
       const std::string& target_name,
@@ -112,7 +117,7 @@ class UDTClassifier final : public UDTBackend {
 
   bool integerTarget() const { return !_class_name_to_neuron; }
 
-  UDTClassifier() : _classifier(nullptr, false) {}
+  UDTClassifier() {}
 
   friend cereal::access;
 
@@ -122,7 +127,7 @@ class UDTClassifier final : public UDTBackend {
   dataset::ThreadSafeVocabularyPtr _class_name_to_neuron;
   dataset::CategoricalBlockPtr _label_block;
 
-  utils::Classifier _classifier;
+  utils::ClassifierPtr _classifier;
 
   data::TabularDatasetFactoryPtr _dataset_factory;
 };
