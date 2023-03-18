@@ -51,6 +51,28 @@ def test_census_demo_key_fails_on_udt():
         make_simple_trained_model()
 
 
+def test_census_demo_key_fails_on_query_reformulation():
+    thirdai.licensing.activate(SMALL_CENSUS_KEY)
+
+    temp_filename = "temp_query_reformulation.txt"
+    with open(temp_filename, "w") as file:
+        file.writelines(["query,label\n", "input1,output1\n", "input2,output2\n"])
+
+    model = bolt.UniversalDeepTransformer(
+        source_column="query",
+        target_column="label",
+        dataset_size="small",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="This dataset is not authorized under this license.",
+    ):
+        model.train(temp_filename)
+
+    os.remove(temp_filename)
+
+
 # This fixture removes the stored access key after each test finishes, ensuring
 # that other tests that run in this pytest environment will get a clean
 # licensing slate

@@ -11,6 +11,7 @@ from thirdai import bolt
 def recall(predictions, labels):
     correct = 0
     for preds, label in zip(predictions, labels):
+        # There is exactly one label for each sample since there is one correct phrase.
         if label in preds:
             correct += 1
     return correct / len(labels)
@@ -22,7 +23,7 @@ def shuffle_chars(word: str) -> str:
     return "".join(chars)
 
 
-def remove_char(word: str) -> str:
+def remove_random_char(word: str) -> str:
     chars = list(word)
     chars.pop(random.randint(0, len(chars) - 1))
     return "".join(chars)
@@ -36,7 +37,7 @@ def perturb_sentence(sentence: str) -> str:
     words_to_modify = words_to_modify[: len(words) // 2]  # Modify half the words
 
     transformations = random.choices(
-        [shuffle_chars, remove_char], k=len(words_to_modify)
+        [shuffle_chars, remove_random_char], k=len(words_to_modify)
     )
 
     for idx, func in zip(words_to_modify, transformations):
@@ -51,10 +52,10 @@ def query_reformulation_dataset():
     df = df.drop("label", axis=1)
     df = df.rename(columns={"text": "correct_query"})
 
-    train_df = pd.DataFrame.copy(df)
+    train_df = df.copy()
     train_df["incorrect_query"] = train_df["correct_query"].apply(perturb_sentence)
 
-    test_df = pd.DataFrame.copy(df)
+    test_df = df.copy()
     test_df["incorrect_query"] = test_df["correct_query"].apply(perturb_sentence)
 
     inference_samples = []
@@ -68,16 +69,14 @@ def query_reformulation_dataset():
 
 @pytest.fixture
 def train_test_data(request, query_reformulation_dataset):
-    # request.params is a pair in which the first elmement is the columns to have
-    # in the train dataset, and the second element is the columns to have in the
-    # test dataset.
+    train_columns, test_columns = request.param
     train_df, test_df, inference_samples = query_reformulation_dataset
 
     train_filename = "query_reformulation_train.csv"
     test_filename = "query_reformulation_test.csv"
 
-    train_df.to_csv(train_filename, columns=request.param[0], index=False)
-    test_df.to_csv(test_filename, columns=request.param[1], index=False)
+    train_df.to_csv(train_filename, columns=train_columns, index=False)
+    test_df.to_csv(test_filename, columns=test_columns, index=False)
 
     yield train_filename, test_filename, inference_samples
 

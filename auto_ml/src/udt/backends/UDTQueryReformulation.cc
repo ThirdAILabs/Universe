@@ -47,7 +47,7 @@ UDTQueryReformulation::UDTQueryReformulation(
   _phrase_id_map = dataset::ThreadSafeVocabulary::make();
 
   _inference_featurizer =
-      dataset::TabularFeaturizer::make({ngramBlocks("phrase")});
+      dataset::TabularFeaturizer::make({ngramBlockList("phrase")});
 }
 
 void UDTQueryReformulation::train(
@@ -80,13 +80,16 @@ void UDTQueryReformulation::train(
       loadData(data, /* col_to_hash= */ _correct_column_name,
                /* include_labels= */ true, batch_size, verbose);
 
-  uint32_t progress_bar_size = is_supervised
-                                   ? unsupervised_data->numBatches() * 2
-                                   : unsupervised_data->numBatches();
+  // If we are using supervised training then we have twice as much data to
+  // insert because index each sample once using itself as the input, and once
+  // using the incorrect query as the input.
+  uint32_t progress_bar_steps = is_supervised
+                                    ? unsupervised_data->numBatches() * 2
+                                    : unsupervised_data->numBatches();
   std::optional<ProgressBar> bar = ProgressBar::makeOptional(
       /* verbose = */ verbose,
       /* description = */ fmt::format("train"),
-      /* max_steps = */ progress_bar_size);
+      /* max_steps = */ progress_bar_steps);
 
   bolt::utils::Timer timer;
 
@@ -126,12 +129,14 @@ py::object UDTQueryReformulation::evaluate(
   /**
    * There are 3 possible combinations of columns we could have:
    *    1. Both correct and incorrect queries are present. In this case we hash
-   *       the incorredt queries, return the results and compute the recall
+   *       the incorrect queries, return the results and compute the recall
    *       against the correct queries.
    *    2. Only the incorrect queries are present. In this case we hash the
-   *       incorrect queries and return the results.
+   *       incorrect queries and return the results. No metrics are computed
+   *       since there are no labels.
    *    3. Only the correct queries are present. In this case we hash the given
-   *       queries and return the results.
+   *       queries and return the results. No metrics are computed since there
+   *       are no labels.
    */
   bool hash_incorrect =
       _incorrect_column_name && containsColumn(data, *_incorrect_column_name);
@@ -148,7 +153,7 @@ py::object UDTQueryReformulation::evaluate(
       /* description = */ fmt::format("evaluate"),
       /* max_steps = */ inputs->numBatches());
 
-  uint32_t correctly_retreived = 0;
+  uint32_t correctly_retrieved = 0;
   uint32_t total_samples = 0;
 
   bolt::utils::Timer timer;
@@ -163,7 +168,7 @@ py::object UDTQueryReformulation::evaluate(
     bar->increment();
 
     if (labeled) {
-      correctly_retreived += recall(phrase_ids, labels->at(batch_id));
+      correctly_retrieved += recall(phrase_ids, labels->at(batch_id));
       total_samples += phrase_ids.size();
     }
 
@@ -180,7 +185,7 @@ py::object UDTQueryReformulation::evaluate(
     if (labeled) {
       bar->close(
           fmt::format("evaluate | recall={} | time {}s | complete",
-                      static_cast<double>(correctly_retreived) / total_samples,
+                      static_cast<double>(correctly_retrieved) / total_samples,
                       timer.seconds()));
     } else {
       bar->close(
@@ -200,7 +205,8 @@ py::object UDTQueryReformulation::predict(const MapInput& sample,
   (void)return_predicted_class;
   (void)top_k;
   throw exceptions::NotImplemented(
-      "predict is not yet supported for query reformulation.");
+      "predict is not yet supported for query reformulation, please use "
+      "predict_batch.");
 }
 
 py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
@@ -216,17 +222,19 @@ py::object UDTQueryReformulation::predictBatch(const MapInputBatch& sample,
 
   auto featurized_samples = _inference_featurizer->featurize(sample_ref).at(0);
 
-  auto [phrase_ids, phrase_scores] = _flash_index->queryBatch(
+  auto results = _flash_index->queryBatch(
       /* batch = */ BoltBatch(std::move(featurized_samples)),
-      /* top_k = */ top_k.value(),
-      /* pad_zeros = */ false);
+      /* top_k = */ top_k.value());
+  // We do this instead of directly asigning the elements of the tuple to avoid
+  // a omp error.
+  auto phrase_ids = std::move(results.first);
+  auto phrase_scores = std::move(results.second);
 
-  std::vector<std::vector<std::string>> phrases;
-  phrases.reserve(phrase_ids.size());
-  for (auto& ids : phrase_ids) {
-    auto top_k_candidates = idsToPhrase(ids);
+  std::vector<std::vector<std::string>> phrases(phrase_ids.size());
 
-    phrases.emplace_back(std::move(top_k_candidates));
+#pragma omp parallel for default(none) shared(phrase_ids, phrases)
+  for (uint32_t sample_idx = 0; sample_idx < phrase_ids.size(); sample_idx++) {
+    phrases[sample_idx] = idsToPhrase(phrase_ids[sample_idx]);
   }
 
   return py::make_tuple(py::cast(phrases), py::cast(phrase_scores));
@@ -260,7 +268,8 @@ UDTQueryReformulation::loadData(const dataset::DataSourcePtr& data,
   }
 
   auto featurizer = dataset::TabularFeaturizer::make(
-      {ngramBlocks(col_to_hash), dataset::BlockList(std::move(label_blocks))},
+      {ngramBlockList(col_to_hash),
+       dataset::BlockList(std::move(label_blocks))},
       /* has_header= */ true,
       /* delimiter= */ _delimiter);
 
@@ -336,7 +345,7 @@ UDTQueryReformulation::defaultFlashIndex(const std::string& dataset_size) {
   return std::make_unique<search::Flash<uint32_t>>(hash_fn, reservoir_size);
 }
 
-dataset::BlockList UDTQueryReformulation::ngramBlocks(
+dataset::BlockList UDTQueryReformulation::ngramBlockList(
     const std::string& column_name) {
   std::vector<uint32_t> n_grams = {3, 4};
 
@@ -356,14 +365,14 @@ dataset::BlockList UDTQueryReformulation::ngramBlocks(
 }
 
 uint32_t UDTQueryReformulation::recall(
-    const std::vector<std::vector<uint32_t>>& retreived_ids,
+    const std::vector<std::vector<uint32_t>>& retrieved_ids,
     const BoltBatch& labels) {
   uint32_t correct = 0;
 
-#pragma omp parallel for default(none) shared(retreived_ids, labels) reduction(+:correct)
-  for (uint32_t i = 0; i < retreived_ids.size(); i++) {
-    if (std::find(retreived_ids[i].begin(), retreived_ids[i].end(),
-                  labels[i].active_neurons[0]) != retreived_ids[i].end()) {
+#pragma omp parallel for default(none) shared(retrieved_ids, labels) reduction(+:correct)
+  for (uint32_t i = 0; i < retrieved_ids.size(); i++) {
+    if (std::find(retrieved_ids[i].begin(), retrieved_ids[i].end(),
+                  labels[i].active_neurons[0]) != retrieved_ids[i].end()) {
       correct++;
     }
   }

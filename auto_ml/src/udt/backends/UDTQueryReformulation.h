@@ -66,13 +66,15 @@ class UDTQueryReformulation final : public UDTBackend {
       const dataset::BoltDatasetPtr& labels,
       const std::vector<std::string>& metrics);
 
+  // Returns the default flash instance to use for the given dataset size if no
+  // model_config is specified.
   static std::unique_ptr<search::Flash<uint32_t>> defaultFlashIndex(
       const std::string& dataset_size);
 
-  static dataset::BlockList ngramBlocks(const std::string& column_name);
+  static dataset::BlockList ngramBlockList(const std::string& column_name);
 
   static uint32_t recall(
-      const std::vector<std::vector<uint32_t>>& retreived_ids,
+      const std::vector<std::vector<uint32_t>>& retrieved_ids,
       const BoltBatch& labels);
 
   static void requireTopK(const std::optional<uint32_t>& top_k) {
