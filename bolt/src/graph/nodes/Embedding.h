@@ -71,6 +71,10 @@ class EmbeddingNode final : public Node,
     return _embedding_layer->getConfig().reduction();
   }
 
+  std::optional<uint64_t> numTokensPerInput() const {
+    return _config->numTokensPerInput();
+  }
+
  private:
   void compileImpl() final;
 
