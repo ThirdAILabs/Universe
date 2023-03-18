@@ -93,10 +93,7 @@ ParserState StateMachine::fromNewColumn(char current_char) const {
 }
 
 ParserState StateMachine::fromEscapeInQuotes(char current_char) const {
-  if (current_char == _delimiter) {
-    return ParserState::DelimiterInQuotes;
-  }
-  return ParserState::RegularInQuotes;
+  return fromRegularInQuotes(current_char);
 }
 
 ParserState StateMachine::fromRegularInQuotes(char current_char) const {
