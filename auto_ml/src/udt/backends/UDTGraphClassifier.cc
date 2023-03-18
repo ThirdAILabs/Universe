@@ -59,7 +59,9 @@ py::object UDTGraphClassifier::evaluate(const dataset::DataSourcePtr& data,
                                         const std::vector<std::string>& metrics,
                                         bool sparse_inference,
                                         bool return_predicted_class,
-                                        bool verbose, bool return_metrics) {
+                                        bool verbose, bool return_metrics,
+                                        std::optional<uint32_t> top_k) {
+  (void)top_k;
   auto eval_dataset_loader = _dataset_manager->indexAndGetLabeledDatasetLoader(
       data, /* shuffle = */ false);
 

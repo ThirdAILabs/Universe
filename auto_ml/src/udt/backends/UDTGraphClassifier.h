@@ -26,16 +26,21 @@ class UDTGraphClassifier final : public UDTBackend {
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool return_predicted_class,
-                      bool verbose, bool return_metrics) final;
+                      bool verbose, bool return_metrics,
+                      std::optional<uint32_t> top_k) final;
 
   py::object predict(const MapInput& sample, bool sparse_inference,
-                     bool return_predicted_class) final {
+                     bool return_predicted_class,
+                     std::optional<uint32_t> top_k) final {
+    (void)top_k;
     return _classifier->predict(_dataset_manager->featurizeInput(sample),
                                 sparse_inference, return_predicted_class);
   }
 
   py::object predictBatch(const MapInputBatch& samples, bool sparse_inference,
-                          bool return_predicted_class) final {
+                          bool return_predicted_class,
+                          std::optional<uint32_t> top_k) final {
+    (void)top_k;
     return _classifier->predictBatch(
         _dataset_manager->featurizeInputBatch(samples), sparse_inference,
         return_predicted_class);

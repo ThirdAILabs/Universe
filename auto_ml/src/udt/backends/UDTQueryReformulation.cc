@@ -50,7 +50,7 @@ UDTQueryReformulation::UDTQueryReformulation(
       dataset::TabularFeaturizer::make({ngramBlockList("phrase")});
 }
 
-void UDTQueryReformulation::train(
+py::object UDTQueryReformulation::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
     const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
@@ -113,6 +113,8 @@ void UDTQueryReformulation::train(
         /* comment = */ fmt::format("train | time {}s | complete",
                                     timer.seconds()));
   }
+
+  return py::none();
 }
 
 py::object UDTQueryReformulation::evaluate(
