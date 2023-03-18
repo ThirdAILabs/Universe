@@ -189,7 +189,8 @@ def test_text_classification_featurizer_tokens_no_limit():
         label_column=LABELS_COLUMN,
         delimiter=DELIM,
         n_labels=N_LABELS,
-        # No lrc, irc, or src len
+        # No lrc_len or irc_len
+        src_len=4,
         label_delimiter=LABEL_DELIM,
         integer_labels=False,
         normalize_categories=False,
@@ -209,10 +210,10 @@ def test_text_classification_featurizer_tokens_no_limit():
 
     for sample_id in range(3):
         # LRC vector
-        assert len(dataset[0][0][sample_id].to_numpy()[0]) == 4
+        assert len(datasets[0][0][sample_id].to_numpy()[0]) == 4
         # IRC vector
-        assert len(dataset[1][0][sample_id].to_numpy()[0]) == 10
+        assert len(datasets[1][0][sample_id].to_numpy()[0]) == 10
         # SRC vector
-        assert len(dataset[2][0][sample_id].to_numpy()[0]) == 4
+        assert len(datasets[2][0][sample_id].to_numpy()[0]) == 4
         # Label
-        assert len(dataset[4][0][sample_id].to_numpy()[0]) == 2
+        assert len(datasets[3][0][sample_id].to_numpy()[0]) == 2

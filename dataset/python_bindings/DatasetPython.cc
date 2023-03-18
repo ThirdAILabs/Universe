@@ -294,8 +294,7 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("delimiter"), py::arg("n_labels"),
            py::arg("lrc_len") = std::numeric_limits<uint32_t>::max(),
            py::arg("irc_len") = std::numeric_limits<uint32_t>::max(),
-           py::arg("src_len") = std::numeric_limits<uint32_t>::max(),
-           py::arg("label_delimiter") = std::nullopt,
+           py::arg("src_len"), py::arg("label_delimiter") = std::nullopt,
            py::arg("integer_labels") = false,
            py::arg("normalize_categories") = false)
       .def("label_from_id", &TextClassificationFeaturizer::labelFromId,
