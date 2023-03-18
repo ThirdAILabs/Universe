@@ -285,20 +285,16 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("tokens"))
       .def(bolt::python::getPickleFunction<TextGenerationFeaturizer>());
 
-  py::enum_<TextClassificationFeaturizer::Tokens>(dataset_submodule,
-                                                  "TextTokens")
-      .value("UNI_ONLY", TextClassificationFeaturizer::Tokens::UNI_ONLY)
-      .value("PAIR_ONLY", TextClassificationFeaturizer::Tokens::PAIR_ONLY)
-      .value("UNI_PAIR", TextClassificationFeaturizer::Tokens::UNI_PAIR);
-
   py::class_<TextClassificationFeaturizer, Featurizer,
              std::shared_ptr<TextClassificationFeaturizer>>(
       dataset_submodule, "TextClassificationFeaturizer")
       .def(py::init<const std::string&, const std::string&, char, uint32_t,
-                    TextClassificationFeaturizer::Tokens, std::optional<char>,
-                    bool, bool>(),
+                    size_t, size_t, size_t, std::optional<char>, bool, bool>(),
            py::arg("text_column"), py::arg("label_column"),
-           py::arg("delimiter"), py::arg("n_labels"), py::arg("tokens"),
+           py::arg("delimiter"), py::arg("n_labels"),
+           py::arg("lrc_len") = std::numeric_limits<uint32_t>::max(),
+           py::arg("irc_len") = std::numeric_limits<uint32_t>::max(),
+           py::arg("src_len") = std::numeric_limits<uint32_t>::max(),
            py::arg("label_delimiter") = std::nullopt,
            py::arg("integer_labels") = false,
            py::arg("normalize_categories") = false)

@@ -1,6 +1,7 @@
 #include "TextClassificationFeaturizer.h"
 #include <cereal/archives/binary.hpp>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <algorithm>
 #include <ostream>
 #include <string>
 
@@ -9,8 +10,7 @@ namespace thirdai::dataset {
 std::vector<std::vector<BoltVector>>
 thirdai::dataset::TextClassificationFeaturizer::featurize(
     const std::vector<std::string>& rows) {
-  std::vector<std::vector<BoltVector>> feature_columns(getNumDatasets());
-  uint32_t label_idx = getNumDatasets() - 1;
+  std::vector<std::vector<BoltVector>> feature_columns(N_DATASETS);
 
   for (auto& column : feature_columns) {
     column.resize(rows.size());
@@ -26,22 +26,13 @@ thirdai::dataset::TextClassificationFeaturizer::featurize(
 
     std::vector<uint32_t> text_tokens = tokens(text_column);
 
-    switch (_tokens) {
-      case Tokens::UNI_ONLY:
-        feature_columns[0][row_id] = unigramVector(text_tokens);
-        break;
-      case Tokens::PAIR_ONLY:
-        feature_columns[0][row_id] = pairgramVector(text_tokens);
-        break;
-      case Tokens::UNI_PAIR:
-        feature_columns[0][row_id] = unigramVector(text_tokens);
-        feature_columns[1][row_id] = pairgramVector(text_tokens);
-        break;
-    }
+    feature_columns[LRC_DATASET_ID][row_id] = lrcVector(text_tokens);
+    feature_columns[IRC_DATASET_ID][row_id] = ircVector(text_tokens);
+    feature_columns[SRC_DATASET_ID][row_id] = srcVector(text_tokens);
 
     SegmentedSparseFeatureVector builder;
     _label_block->addVectorSegment(sample, builder);
-    feature_columns[label_idx][row_id] = builder.toBoltVector();
+    feature_columns[LABEL_DATASET_ID][row_id] = builder.toBoltVector();
   }
 
   return feature_columns;
@@ -57,22 +48,42 @@ std::vector<uint32_t> TextClassificationFeaturizer::tokens(
   }
   return token_ints;
 }
-BoltVector TextClassificationFeaturizer::unigramVector(
-    const std::vector<uint32_t>& tokens) {
-  BoltVector vector(/* l= */ tokens.size(), /* is_dense= */ false,
+
+BoltVector TextClassificationFeaturizer::lrcVector(
+    const std::vector<uint32_t>& tokens) const {
+  size_t n_lrc_tokens = std::min(tokens.size(), _lrc_len);
+  BoltVector vector(/* l= */ n_lrc_tokens, /* is_dense= */ false,
                     /* has_gradient= */ false);
-  std::copy(tokens.begin(), tokens.end(), vector.active_neurons);
+  std::copy(tokens.end() - n_lrc_tokens, tokens.end(), vector.active_neurons);
   std::fill_n(vector.activations, vector.len, 1.0);
   return vector;
 }
-BoltVector TextClassificationFeaturizer::pairgramVector(
-    const std::vector<uint32_t>& tokens) {
+
+BoltVector TextClassificationFeaturizer::ircVector(
+    const std::vector<uint32_t>& tokens) const {
+  size_t n_irc_tokens = std::min(tokens.size(), _irc_len);
+  size_t start_idx = tokens.size() - n_irc_tokens;
   std::vector<uint32_t> irc_tokens =
-      token_encoding::pairgrams(tokens.data(), tokens.size());
+      token_encoding::pairgrams(tokens.data() + start_idx, n_irc_tokens);
 
   BoltVector vector(/* l= */ irc_tokens.size(), /* is_dense= */ false,
                     /* has_gradient= */ false);
   std::copy(irc_tokens.begin(), irc_tokens.end(), vector.active_neurons);
+  std::fill_n(vector.activations, vector.len, 1.0);
+  return vector;
+}
+
+BoltVector TextClassificationFeaturizer::srcVector(
+    const std::vector<uint32_t>& tokens) const {
+  BoltVector vector(/* l= */ _src_len, /* is_dense= */ false,
+                    /* has_gradient= */ false);
+
+  size_t n_src_tokens = std::min(tokens.size(), _src_len);
+  uint32_t n_padding = _src_len - n_src_tokens;
+
+  std::fill_n(vector.active_neurons, n_padding, 0);
+  std::copy(tokens.end() - n_src_tokens, tokens.end(),
+            vector.active_neurons + n_padding);
   std::fill_n(vector.activations, vector.len, 1.0);
   return vector;
 }

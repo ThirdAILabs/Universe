@@ -28,17 +28,24 @@ using TextClassificationFeaturizerPtr =
     std::shared_ptr<TextClassificationFeaturizer>;
 
 class TextClassificationFeaturizer final : public Featurizer {
- public:
-  enum class Tokens { UNI_ONLY, PAIR_ONLY, UNI_PAIR };
+  static constexpr const uint32_t LRC_DATASET_ID = 0;
+  static constexpr const uint32_t IRC_DATASET_ID = 1;
+  static constexpr const uint32_t SRC_DATASET_ID = 2;
+  static constexpr const uint32_t LABEL_DATASET_ID = 3;
+  static constexpr const uint32_t N_DATASETS = 4;
 
+ public:
   TextClassificationFeaturizer(const std::string& text_column,
                                const std::string& label_column, char delimiter,
-                               uint32_t n_labels, Tokens tokens,
+                               uint32_t n_labels, size_t lrc_len,
+                               size_t irc_len, size_t src_len,
                                std::optional<char> label_delimiter,
                                bool integer_labels, bool normalize_categories)
       : _text_column(text_column),
         _delimiter(delimiter),
-        _tokens(tokens),
+        _lrc_len(lrc_len),
+        _irc_len(irc_len),
+        _src_len(src_len),
         _vocab(integer_labels ? nullptr : ThreadSafeVocabulary::make(n_labels)),
         _label_block(labelBlock(label_column, n_labels, _vocab, label_delimiter,
                                 normalize_categories)) {}
@@ -54,18 +61,7 @@ class TextClassificationFeaturizer final : public Featurizer {
   std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& rows) final;
 
-  size_t getNumDatasets() final {
-    switch (_tokens) {
-      case Tokens::UNI_ONLY:
-      case Tokens::PAIR_ONLY:
-        return 2;
-      case Tokens::UNI_PAIR:
-        return 3;
-      default:
-        throw std::invalid_argument(
-            "Invalid PretrainedEmbeddingsFeaturizer context.");
-    }
-  }
+  size_t getNumDatasets() final { return N_DATASETS; }
 
   std::string labelFromId(uint32_t id) {
     if (!_vocab) {
@@ -98,13 +94,15 @@ class TextClassificationFeaturizer final : public Featurizer {
 
   static std::vector<uint32_t> tokens(std::string_view text_column);
 
-  static BoltVector unigramVector(const std::vector<uint32_t>& tokens);
+  BoltVector lrcVector(const std::vector<uint32_t>& tokens) const;
 
-  static BoltVector pairgramVector(const std::vector<uint32_t>& tokens);
+  BoltVector ircVector(const std::vector<uint32_t>& tokens) const;
+
+  BoltVector srcVector(const std::vector<uint32_t>& tokens) const;
 
   ColumnIdentifier _text_column;
   char _delimiter;
-  Tokens _tokens;
+  size_t _lrc_len, _irc_len, _src_len;
   ThreadSafeVocabularyPtr _vocab;
   BlockPtr _label_block;
 
@@ -115,7 +113,7 @@ class TextClassificationFeaturizer final : public Featurizer {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<Featurizer>(this), _text_column, _delimiter,
-            _tokens, _vocab, _label_block);
+            _lrc_len, _irc_len, _src_len, _vocab, _label_block);
   }
 };
 
