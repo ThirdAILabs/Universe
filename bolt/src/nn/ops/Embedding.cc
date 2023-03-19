@@ -1,4 +1,7 @@
 #include "Embedding.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 
@@ -87,4 +90,22 @@ autograd::ComputationPtr Embedding::apply(autograd::ComputationPtr input) {
   return autograd::Computation::make(shared_from_this(), {std::move(input)});
 }
 
+template void Embedding::save(cereal::BinaryOutputArchive&) const;
+
+template <class Archive>
+void Embedding::save(Archive& archive) const {
+  archive(cereal::base_class<Op>(this), _kernel);
+}
+
+template void Embedding::load(cereal::BinaryInputArchive&);
+
+template <class Archive>
+void Embedding::load(Archive& archive) {
+  archive(cereal::base_class<Op>(this), _kernel);
+
+  _kernel->initOptimizer();
+}
+
 }  // namespace thirdai::bolt::nn::ops
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Embedding)

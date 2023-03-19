@@ -111,6 +111,12 @@ class Computation {
   tensor::TensorPtr _output;
 
   std::string _name;
+
+  Computation() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::bolt::nn::autograd

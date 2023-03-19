@@ -1,4 +1,6 @@
 #include "BinaryCrossEntropy.h"
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <algorithm>
 #include <cmath>
 #include <optional>
@@ -26,4 +28,11 @@ float BinaryCrossEntropy::singleGradient(float activation, float label,
   return (label - activation) / batch_size;
 }
 
+template <class Archive>
+void BinaryCrossEntropy::serialize(Archive& archive) {
+  archive(cereal::base_class<ComparativeLoss>(this));
+}
+
 }  // namespace thirdai::bolt::nn::loss
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::loss::BinaryCrossEntropy)

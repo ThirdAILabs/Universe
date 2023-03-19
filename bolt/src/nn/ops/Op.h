@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <memory>
 
@@ -110,8 +111,17 @@ class Op {
 
   virtual ~Op() = default;
 
+ protected:
+  Op() : Op("unnamed-op") {}
+
  private:
   std::string _name;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_name);
+  }
 };
 
 using OpPtr = std::shared_ptr<Op>;

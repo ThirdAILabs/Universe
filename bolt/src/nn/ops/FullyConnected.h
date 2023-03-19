@@ -83,6 +83,16 @@ class FullyConnected final
   uint32_t _reconstruct_hash_functions;
   uint32_t _updates_since_rebuild_hash_tables;
   uint32_t _updates_since_reconstruct_hash_functions;
+
+  FullyConnected() {}
+
+  friend class cereal::access;
+
+  template <class Archive>
+  void save(Archive& archive) const;
+
+  template <class Archive>
+  void load(Archive& archive);
 };
 
 using FullyConnectedPtr = std::shared_ptr<FullyConnected>;

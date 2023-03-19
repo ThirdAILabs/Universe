@@ -1,4 +1,7 @@
 #include "Computation.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/nn/ops/Op.h>
 #include <stdexcept>
 #include <string>
@@ -77,5 +80,13 @@ void Computation::summary(std::ostream& summary) {
 }
 
 const std::string& Computation::name() const { return _name; }
+
+template void Computation::serialize(cereal::BinaryInputArchive&);
+template void Computation::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void Computation::serialize(Archive& archive) {
+  archive(_op, _inputs, _name);
+}
 
 }  // namespace thirdai::bolt::nn::autograd

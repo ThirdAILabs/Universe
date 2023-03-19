@@ -1,8 +1,12 @@
 #include "Model.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/nn/autograd/ComputationGraph.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
 #include <algorithm>
 #include <memory>
@@ -19,7 +23,6 @@ Model::Model(autograd::ComputationList inputs,
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
-      _allocation_manager({}),
       _train_steps(0) {
   licensing::checkLicense();
 
@@ -160,6 +163,30 @@ std::string Model::summary(bool print) const {
 
 uint32_t Model::trainSteps() const { return _train_steps; }
 
+void Model::save(const std::string& filename) {
+  auto output_stream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  save_stream(output_stream);
+}
+
+void Model::save_stream(std::ostream& output_stream) {
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
+
+std::shared_ptr<Model> Model::load(const std::string& filename) {
+  auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  return load_stream(input_stream);
+}
+
+std::shared_ptr<Model> Model::load_stream(std::istream& input_stream) {
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<Model> deserialize_into(new Model());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
+}
+
 tensor::TensorList Model::forward(uint32_t input_batch_size,
                                   bool use_sparsity) {
   _allocation_manager.reallocateIfNeeded(input_batch_size, use_sparsity);
@@ -279,6 +306,15 @@ void Model::matchOutputFullyConnectedLayersWithLabels() {
       }
     }
   }
+}
+
+template void Model::serialize(cereal::BinaryInputArchive&);
+template void Model::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void Model::serialize(Archive& archive) {
+  archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
+          _allocation_manager, _train_steps);
 }
 
 }  // namespace thirdai::bolt::nn::model

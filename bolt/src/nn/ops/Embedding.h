@@ -43,6 +43,16 @@ class Embedding final : public Op,
             std::optional<uint64_t> num_tokens_per_input);
 
   std::unique_ptr<EmbeddingLayer> _kernel;
+
+  Embedding() {}
+
+  friend class cereal::access;
+
+  template <class Archive>
+  void save(Archive& archive) const;
+
+  template <class Archive>
+  void load(Archive& archive);
 };
 
 using EmbeddingPtr = std::shared_ptr<Embedding>;

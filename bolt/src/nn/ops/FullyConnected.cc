@@ -1,4 +1,7 @@
 #include "FullyConnected.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -145,4 +148,26 @@ const float* FullyConnected::biasesPtr() const {
   return _kernel->getBiasesPtr();
 }
 
+template void FullyConnected::save(cereal::BinaryOutputArchive&) const;
+
+template <class Archive>
+void FullyConnected::save(Archive& archive) const {
+  archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
+          _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
+          _updates_since_reconstruct_hash_functions);
+}
+
+template void FullyConnected::load(cereal::BinaryInputArchive&);
+
+template <class Archive>
+void FullyConnected::load(Archive& archive) {
+  archive(cereal::base_class<Op>(this), _kernel, _rebuild_hash_tables,
+          _reconstruct_hash_functions, _updates_since_rebuild_hash_tables,
+          _updates_since_reconstruct_hash_functions);
+
+  _kernel->initOptimizer();
+}
+
 }  // namespace thirdai::bolt::nn::ops
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::FullyConnected)
