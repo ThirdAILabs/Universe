@@ -40,22 +40,25 @@ class Trainer {
    *        at the end of each epoch.
    *    - callbacks: The callbacks to use during training.
    */
-  metrics::History train(const LabeledDataset& train_data, uint32_t epochs,
-                         float learning_rate,
-                         const metrics::InputMetrics& train_metrics,
-                         const std::optional<LabeledDataset>& validation_data,
-                         const metrics::InputMetrics& validation_metrics,
-                         std::optional<uint32_t> steps_per_validation,
-                         const std::vector<callbacks::CallbackPtr>& callbacks);
+  metrics::History train(
+      const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
+      const metrics::InputMetrics& train_metrics = {},
+      const std::optional<LabeledDataset>& validation_data = std::nullopt,
+      const metrics::InputMetrics& validation_metrics = {},
+      std::optional<uint32_t> steps_per_validation = std::nullopt,
+      bool use_sparsity_in_validation = false,
+      const std::vector<callbacks::CallbackPtr>& callbacks = {});
 
- private:
   /**
    * Performs evaluation on the model using the given validation data and
    * metrics.
    */
-  void validate(const LabeledDataset& validation_data,
-                const metrics::InputMetrics& validation_metrics);
+  metrics::History validate(
+      const LabeledDataset& validation_data,
+      const metrics::InputMetrics& validation_metrics = {},
+      bool use_sparsity = false);
 
+ private:
   static void verifyNumBatchesMatch(const LabeledDataset& data);
 
   /**

@@ -1,4 +1,5 @@
 #include "Trainer.h"
+#include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt/src/utils/Timer.h>
 #include <utils/Logging.h>
@@ -12,11 +13,12 @@ Trainer::Trainer(nn::model::ModelPtr model)
 }
 
 metrics::History Trainer::train(
-    const LabeledDataset& train_data, uint32_t epochs, float learning_rate,
+    const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
     const metrics::InputMetrics& train_metrics_in,
     const std::optional<LabeledDataset>& validation_data,
     const metrics::InputMetrics& validation_metrics,
     std::optional<uint32_t> steps_per_validation,
+    bool use_sparsity_in_validation,
     const std::vector<callbacks::CallbackPtr>& callbacks_in) {
   verifyNumBatchesMatch(train_data);
   if (validation_data) {
@@ -60,7 +62,8 @@ metrics::History Trainer::train(
       ++steps_since_validation;
       if (steps_per_validation &&
           steps_since_validation == *steps_per_validation) {
-        validate(*validation_data, validation_metrics);
+        validate(*validation_data, validation_metrics,
+                 use_sparsity_in_validation);
         steps_since_validation = 0;
       }
 
@@ -89,7 +92,8 @@ metrics::History Trainer::train(
     // end of the epoch that we don't validate twice: once above when we reach
     // the validation interval and once when we reach the end of the epoch.
     if (validation_data && steps_since_validation != 0) {
-      validate(*validation_data, validation_metrics);
+      validate(*validation_data, validation_metrics,
+               use_sparsity_in_validation);
       steps_since_validation = 0;
     }
   }
@@ -99,8 +103,9 @@ metrics::History Trainer::train(
   return *_history;
 }
 
-void Trainer::validate(const LabeledDataset& validation_data,
-                       const metrics::InputMetrics& validation_metrics_in) {
+metrics::History Trainer::validate(
+    const LabeledDataset& validation_data,
+    const metrics::InputMetrics& validation_metrics_in, bool use_sparsity) {
   metrics::MetricCollection validation_metrics(validation_metrics_in);
 
   uint32_t num_batches = validation_data.first.size();
@@ -112,7 +117,7 @@ void Trainer::validate(const LabeledDataset& validation_data,
     // TODO(Nicholas): Add option to use sparsity for validation.
     _model->forward(validation_data.first.at(batch_idx),
                     validation_data.second.at(batch_idx),
-                    /* use_sparsity= */ false);
+                    /* use_sparsity= */ use_sparsity);
 
     validation_metrics.recordBatch(
         validation_data.first.at(batch_idx)->batchSize());
@@ -132,6 +137,8 @@ void Trainer::validate(const LabeledDataset& validation_data,
   logging::info(log_line);
 
   validation_metrics.reset();
+
+  return *_history;
 }
 
 void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {

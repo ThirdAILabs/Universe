@@ -164,7 +164,8 @@ tensor::TensorList Model::forward(uint32_t input_batch_size,
                                   bool use_sparsity) {
   _allocation_manager.reallocateIfNeeded(input_batch_size, use_sparsity);
 
-#pragma omp parallel for default(none) shared(input_batch_size)
+#pragma omp parallel for default(none) \
+    shared(input_batch_size) if (input_batch_size > 1)
   for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
        index_in_batch++) {
     forwardVector(index_in_batch, /* training= */ false);

@@ -76,10 +76,11 @@ TEST(TrainerTest, Training) {
 
   auto tracking_callback = std::make_shared<InvocationTrackingCallback>();
 
-  auto metrics =
-      trainer.train(train_data, /* epochs= */ 3, /* learning_rate= */ 0.001,
-                    train_metrics, {std::move(val_data)}, val_metrics,
-                    /* steps_per_validation= */ 25, {tracking_callback});
+  auto metrics = trainer.train(
+      train_data, /* learning_rate= */ 0.001, /* epochs= */ 3, train_metrics,
+      {std::move(val_data)}, val_metrics,
+      /* steps_per_validation= */ 25, /* use_sparsity_in_validation= */ false,
+      {tracking_callback});
 
   ASSERT_EQ(metrics.size(), 4);
 
