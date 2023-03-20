@@ -18,6 +18,7 @@ on:
 jobs:
   benchmarks:
     runs-on: self-hosted
+    timeout-minutes: 1200
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
@@ -39,8 +40,9 @@ jobs:
           USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
           PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
         run: >- 
-          bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && 
-          cd /Universe && python3 -m benchmarks-v2.main --runner bolt_fc"
+          bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD &&
+          python3 -m Universe.benchmarks-v2.main --runner bolt_fc &&
+          python3 -m Universe.benchmarks-v2.main--runner dlrm"
 
       - name: Delete Container
         run: sudo docker system prune -a -f
