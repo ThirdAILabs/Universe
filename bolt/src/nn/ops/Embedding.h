@@ -43,6 +43,18 @@ class Embedding final : public Op,
             uint64_t update_chunk_size);
 
   std::unique_ptr<EmbeddingLayer> _kernel;
+
+  Embedding() {}
+
+  friend class cereal::access;
+
+  // We use save/load instead of serialize so we can ensure the optimizer is
+  // initialized when the model is loaded.
+  template <class Archive>
+  void save(Archive& archive) const;
+
+  template <class Archive>
+  void load(Archive& archive);
 };
 
 using EmbeddingPtr = std::shared_ptr<Embedding>;

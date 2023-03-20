@@ -37,6 +37,12 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
 
   uint32_t _dim;
   std::optional<uint32_t> _nonzeros;
+
+  Input() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using InputPtr = std::shared_ptr<Input>;

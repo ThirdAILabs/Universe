@@ -135,7 +135,9 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("update_parameters", &model::Model::updateParameters,
            py::arg("learning_rate"))
       .def("__getitem__", &model::Model::getOp, py::arg("name"))
-      .def("summary", &model::Model::summary, py::arg("print") = true);
+      .def("summary", &model::Model::summary, py::arg("print") = true)
+      .def("save", &model::Model::save, py::arg("filename"))
+      .def_static("load", &model::Model::load, py::arg("filename"));
 
   auto loss = nn.def_submodule("losses");
 
