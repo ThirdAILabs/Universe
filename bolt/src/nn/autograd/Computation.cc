@@ -53,10 +53,15 @@ std::optional<uint32_t> Computation::nonzeros(bool use_sparsity) const {
 
 void Computation::allocate(uint32_t batch_size, bool use_sparsity) {
   uint32_t dim = _op->dim();
-  uint32_t nonzeros = _op->nonzeros(_inputs, use_sparsity).value();
+  auto nonzeros = _op->nonzeros(_inputs, use_sparsity);
+  if (!nonzeros) {
+    throw std::runtime_error(
+        "Cannot allocate tensor for computation with unknown number of "
+        "nonzeros.");
+  }
 
-  if (nonzeros < dim && use_sparsity) {
-    _output = tensor::Tensor::sparse(batch_size, dim, nonzeros);
+  if (*nonzeros < dim && use_sparsity) {
+    _output = tensor::Tensor::sparse(batch_size, dim, *nonzeros);
   } else {
     _output = tensor::Tensor::dense(batch_size, dim);
   }
@@ -86,7 +91,10 @@ template void Computation::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void Computation::serialize(Archive& archive) {
-  archive(_op, _name);
+  // Because inputs are also computations clang-tidy things this is an infinite
+  // recursive loop because eventually the serialize function for the input
+  // computations are called within the serialize function for this computation.
+  archive(_op, _inputs, _name);  // NOLINT
 }
 
 }  // namespace thirdai::bolt::nn::autograd

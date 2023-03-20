@@ -115,8 +115,11 @@ class Computation {
   Computation() {}
 
   friend class cereal::access;
+  // Because inputs are also computations clang-tidy things this is an infinite
+  // recursive loop because eventually the serialize function for the input
+  // computations are called within the serialize function for this computation.
   template <class Archive>
-  void serialize(Archive& archive);
+  void serialize(Archive& archive);  // NOLINT
 };
 
 }  // namespace thirdai::bolt::nn::autograd
