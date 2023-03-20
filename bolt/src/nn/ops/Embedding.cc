@@ -1,5 +1,6 @@
 #include "Embedding.h"
 #include <cereal/archives/binary.hpp>
+#include <cereal/specialize.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
@@ -107,5 +108,18 @@ void Embedding::load(Archive& archive) {
 }
 
 }  // namespace thirdai::bolt::nn::ops
+
+namespace cereal {
+
+/**
+ * This is because the Op base class only uses a serialize function, whereas
+ * this Op uses a load/save pair. This tells cereal to use the load save pair
+ * instead of the serialize method of the parent class.
+ */
+template <class Archive>
+struct specialize<Archive, thirdai::bolt::nn::ops::Embedding,
+                  cereal::specialization::member_load_save> {};
+
+}  // namespace cereal
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Embedding)

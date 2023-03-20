@@ -1,4 +1,5 @@
 #include "BinaryCrossEntropy.h"
+#include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <algorithm>
@@ -27,6 +28,9 @@ float BinaryCrossEntropy::singleGradient(float activation, float label,
                                          uint32_t batch_size) const {
   return (label - activation) / batch_size;
 }
+
+template void BinaryCrossEntropy::serialize(cereal::BinaryInputArchive&);
+template void BinaryCrossEntropy::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void BinaryCrossEntropy::serialize(Archive& archive) {

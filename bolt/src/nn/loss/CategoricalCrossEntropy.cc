@@ -1,4 +1,6 @@
 #include "CategoricalCrossEntropy.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/details/helpers.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cmath>
@@ -35,6 +37,9 @@ float CategoricalCrossEntropy::singleGradient(float activation, float label,
                                               uint32_t batch_size) const {
   return (label - activation) / batch_size;
 }
+
+template void CategoricalCrossEntropy::serialize(cereal::BinaryInputArchive&);
+template void CategoricalCrossEntropy::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void CategoricalCrossEntropy::serialize(Archive& archive) {
