@@ -1,4 +1,8 @@
 #include "Concatenate.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -147,4 +151,14 @@ autograd::ComputationPtr Concatenate::apply(
   return autograd::Computation::make(shared_from_this(), inputs);
 }
 
+template void Concatenate::serialize(cereal::BinaryInputArchive&);
+template void Concatenate::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void Concatenate::serialize(Archive& archive) {
+  archive(cereal::base_class<Op>(this), _input_dims, _neuron_offsets);
+}
+
 }  // namespace thirdai::bolt::nn::ops
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Concatenate)

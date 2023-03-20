@@ -13,7 +13,6 @@ def get_sum_model(input_dim):
         num_embedding_lookups=4,
         lookup_size=8,
         log_embedding_block_size=10,
-        update_chunk_size=8,
         reduction="sum",
     )(input_1)
 
@@ -21,7 +20,6 @@ def get_sum_model(input_dim):
         num_embedding_lookups=4,
         lookup_size=8,
         log_embedding_block_size=10,
-        update_chunk_size=8,
         reduction="sum",
     )(input_2)
 

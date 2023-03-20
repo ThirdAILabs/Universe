@@ -17,6 +17,8 @@ class AllocationManager {
  public:
   explicit AllocationManager(autograd::ComputationList computations);
 
+  AllocationManager() : _allocated_batch_size(0), _using_sparsity(false) {}
+
   /**
    * This method will call the allocate(...) method of each computation if the
    * provided batch size is greater than the currently allocated batch size or
@@ -37,6 +39,10 @@ class AllocationManager {
   uint32_t _allocated_batch_size;
 
   bool _using_sparsity;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::bolt::nn::model
