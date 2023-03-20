@@ -49,8 +49,8 @@ class DistributedTrainingWrapper {
     }
   }
 
-  std::optional<MetricData> validationAndSaveBest() {
-    return _bolt_graph->validateAndSaveBest(_train_config);
+  std::optional<InferenceMetricData> validationAndSaveBest() {
+      return _bolt_graph->validateAndSaveBest(_train_config, _train_config.getValidationContext().value());
   }
 
   BoltGraphPtr getModel() { return _bolt_graph; }

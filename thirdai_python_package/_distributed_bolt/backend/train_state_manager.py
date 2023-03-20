@@ -187,4 +187,4 @@ class TrainStateManager:
         )
 
     def _validate_and_save_best(self):
-        return ray.get(self.workers[0].validate_and_save_best())
+        return ray.get(self.workers[0].validate_and_save_best.remote())

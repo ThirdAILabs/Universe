@@ -40,7 +40,7 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
         interval=10,
     )
 
-    udt_model.train_distributed(
+    training_and_validation_metrics = udt_model.train_distributed(
         cluster_config=ray_two_node_cluster_config("linear"),
         filenames=[f"{os.getcwd()}/{TRAIN_FILE_1}", f"{os.getcwd()}/{TRAIN_FILE_2}"],
         batch_size=256,
@@ -51,6 +51,12 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
         max_in_memory_batches=10,
         validation=validation,
     )
+    validation_metrics = training_and_validation_metrics["validation_metrics"]
+
+    for metrics_next, metrics_prev in zip(validation_metrics[1:], validation_metrics):
+        assert (
+            metrics_next["categorical_accuracy"] > metrics_prev["categorical_accuracy"]
+        )
 
     assert (
         udt_model.evaluate(

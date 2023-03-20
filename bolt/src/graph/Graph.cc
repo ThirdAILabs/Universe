@@ -66,14 +66,11 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 #endif
 }
 
-std::optional<MetricData> BoltGraph::validateAndSaveBest(
-    const TrainConfig& train_config) {
-  const std::optional<ValidationContext>& validation =
-      train_config.getValidationContext();
-  if (validation && validation->frequency() != 0 &&
-      (_updates % validation->frequency() == 0)) {
+
+std::optional<InferenceMetricData> BoltGraph::validateAndSaveBest(
+const TrainConfig& train_config, const ValidationContext& validation) {
     auto [validation_metrics, _] = evaluate(
-        validation->data(), validation->labels(), validation->config());
+        validation.data(), validation.labels(), validation.config());
     const std::optional<SaveContext>& save_context = train_config.saveContext();
 
     if (save_context && _tracked_metric != nullptr) {
@@ -95,7 +92,17 @@ std::optional<MetricData> BoltGraph::validateAndSaveBest(
       }
     }
     return validation_metrics;
-  }
+
+}
+
+std::optional<InferenceMetricData> BoltGraph::checkUpdatesCountAndValidate(const TrainConfig& train_config){
+
+  const std::optional<ValidationContext>& validation =
+      train_config.getValidationContext();
+  if (validation && validation->frequency() != 0 &&
+      (_updates % validation->frequency() == 0)) {
+        return validateAndSaveBest(train_config, validation.value());
+        }
   return std::nullopt;
 }
 
@@ -210,7 +217,7 @@ MetricData BoltGraph::train(
       }
 
       logAndSaveLast(train_config, train_metrics);
-      auto validation_metrics = validateAndSaveBest(train_config);
+      auto validation_metrics = checkUpdatesCountAndValidate(train_config);
 
       callbacks.onBatchEnd(*this, train_state);
     }

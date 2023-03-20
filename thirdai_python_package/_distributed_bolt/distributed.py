@@ -61,13 +61,13 @@ def add_distributed_to_udt():
         # Ideally we should read freezehashtables from UDTOptions and then pass
         # it to distributed Wrapper. However, for the time being we are just
         # initializing freeze-hash-tables=True by default.
-        metrics = dist_model.train(freeze_hash_tables=True)
+        training_metrics = dist_model.train(freeze_hash_tables=True)
 
         model = dist_model.get_model()
 
         self._set_model(trained_model=model)
 
-        return metrics
+        return training_metrics
 
     def train_distributed(
         self,
@@ -446,6 +446,7 @@ class DistributedDataParallel:
         self.communication_type = cluster_config.communication_type
         self.logging = cluster_config.logging
         self.train_config = train_config
+        self.validation_context = validation_context
 
         if len(train_sources) != cluster_config.num_workers:
             raise ValueError(
@@ -472,7 +473,7 @@ class DistributedDataParallel:
             train_config=train_config,
             communication_type=cluster_config.communication_type,
             log_dir=cluster_config.log_dir,
-            validation_context=validation_context,
+            validation_context=self.validation_context,
         )
 
         self.replica_workers = []
@@ -502,10 +503,21 @@ class DistributedDataParallel:
             f"Data loaded on all nodes, minimmum num batches is {self.num_of_batches}."
         )
         self.total_batches_trained = 0
+        self.validation_metrics = []
 
     def train_on_epoch(self, train_state_manager, epoch):
         while train_state_manager.train_batch(epoch=epoch):
             self.total_batches_trained += 1
+            # need to validation
+            if self.validation_context != None:
+                if (
+                    train_state_manager.updates
+                    % self.validation_context.validation_frequency
+                    == 0
+                ):
+                    self.validation_metrics.append(
+                        train_state_manager._validate_and_save_best()
+                    )
         self.total_batches_trained += 1
         return train_state_manager.move_to_next_epoch()
 
@@ -555,6 +567,7 @@ class DistributedDataParallel:
             "time": time.time() - train_start,
             "total_batches_trained": self.total_batches_trained,
             "train_metrics": train_metrics,
+            "validation_metrics": self.validation_metrics,
         }
         return distributed_train_metrics
 
