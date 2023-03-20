@@ -1,3 +1,4 @@
+import botocore
 import pytest
 from telemetry_testing_utils import THIRDAI_TEST_TELEMETRY_PORT, run_udt_telemetry_test
 from thirdai import telemetry
@@ -45,8 +46,6 @@ def test_stop_and_start_telemetry():
 
 
 def test_bad_udt_telemetry_file():
-    with pytest.raises(
-        ValueError, match="Telemetry process terminated early with exit code 1"
-    ):
+    with pytest.raises(ValueError, match="this://should/not/work"):
         telemetry.start(write_dir="this://should/not/work")
     telemetry.stop()
