@@ -505,20 +505,24 @@ class DistributedDataParallel:
         self.total_batches_trained = 0
         self.validation_metrics = []
 
+    def post_batch_training_updates(self, train_state_manager):
+        self.total_batches_trained += 1
+        # whether we need to validate
+        if self.validation_context != None:
+            if (
+                train_state_manager.updates
+                % self.validation_context.validation_frequency
+                == 0
+            ):
+                self.validation_metrics.append(
+                    train_state_manager._validate_and_save_best()
+                )
+
     def train_on_epoch(self, train_state_manager, epoch):
         while train_state_manager.train_batch(epoch=epoch):
-            self.total_batches_trained += 1
-            # need to validation
-            if self.validation_context != None:
-                if (
-                    train_state_manager.updates
-                    % self.validation_context.validation_frequency
-                    == 0
-                ):
-                    self.validation_metrics.append(
-                        train_state_manager._validate_and_save_best()
-                    )
-        self.total_batches_trained += 1
+            self.post_batch_training_updates(train_state_manager)
+
+        self.post_batch_training_updates(train_state_manager)
         return train_state_manager.move_to_next_epoch()
 
     def train(self, freeze_hash_tables=False) -> Dict[str, Union[int, str]]:

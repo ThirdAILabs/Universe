@@ -53,6 +53,7 @@ def test_distributed_udt_clinc(ray_two_node_cluster_config):
     )
     validation_metrics = training_and_validation_metrics["validation_metrics"]
 
+    # check whether validation accuracy is increasing each time
     for metrics_next, metrics_prev in zip(validation_metrics[1:], validation_metrics):
         assert (
             metrics_next["categorical_accuracy"] > metrics_prev["categorical_accuracy"]

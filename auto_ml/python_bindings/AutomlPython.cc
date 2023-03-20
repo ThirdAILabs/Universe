@@ -305,6 +305,7 @@ void createUDTTemporalSubmodule(py::module_& module) {
 
 void createDeploymentSubmodule(py::module_& module) {
 #if THIRDAI_EXPOSE_ALL
+
   auto deployment = module.def_submodule("deployment");
 
   deployment.def("load_config", &config::loadConfig, py::arg("filename"));
