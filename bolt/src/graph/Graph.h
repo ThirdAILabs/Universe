@@ -127,7 +127,8 @@ class BoltGraph {
   std::optional<InferenceMetricData> validateAndSaveBest(
       const TrainConfig& train_config, const ValidationContext& validation);
 
-  std::optional<InferenceMetricData> checkUpdatesCountAndValidate(const TrainConfig& train_config);
+  std::optional<InferenceMetricData> checkUpdatesCountAndValidate(
+      const TrainConfig& train_config);
 
   void logAndSaveLast(const TrainConfig& train_config,
                       MetricAggregator& train_metrics);

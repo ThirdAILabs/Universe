@@ -66,43 +66,41 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 #endif
 }
 
-
 std::optional<InferenceMetricData> BoltGraph::validateAndSaveBest(
-const TrainConfig& train_config, const ValidationContext& validation) {
-    auto [validation_metrics, _] = evaluate(
-        validation.data(), validation.labels(), validation.config());
-    const std::optional<SaveContext>& save_context = train_config.saveContext();
+    const TrainConfig& train_config, const ValidationContext& validation) {
+  auto [validation_metrics, _] =
+      evaluate(validation.data(), validation.labels(), validation.config());
+  const std::optional<SaveContext>& save_context = train_config.saveContext();
 
-    if (save_context && _tracked_metric != nullptr) {
-      auto query = validation_metrics.find(_tracked_metric->name());
-      if (query != validation_metrics.end()) {
-        double candidate = query->second;
-        if (_tracked_metric->betterThan(candidate, _best_validation_metric)) {
-          _best_validation_metric = candidate;
-          const std::string checkpoint_path =
-              save_context->prefix() + ".best.bolt";
-          logging::info("Saving best model to {}", checkpoint_path);
-          save(checkpoint_path);
-        }
-      } else {
-        logging::error(
-            "Metric {} to be used for save-per-best not found in tracked "
-            "metrics. ",
-            _tracked_metric->name());
+  if (save_context && _tracked_metric != nullptr) {
+    auto query = validation_metrics.find(_tracked_metric->name());
+    if (query != validation_metrics.end()) {
+      double candidate = query->second;
+      if (_tracked_metric->betterThan(candidate, _best_validation_metric)) {
+        _best_validation_metric = candidate;
+        const std::string checkpoint_path =
+            save_context->prefix() + ".best.bolt";
+        logging::info("Saving best model to {}", checkpoint_path);
+        save(checkpoint_path);
       }
+    } else {
+      logging::error(
+          "Metric {} to be used for save-per-best not found in tracked "
+          "metrics. ",
+          _tracked_metric->name());
     }
-    return validation_metrics;
-
+  }
+  return validation_metrics;
 }
 
-std::optional<InferenceMetricData> BoltGraph::checkUpdatesCountAndValidate(const TrainConfig& train_config){
-
+std::optional<InferenceMetricData> BoltGraph::checkUpdatesCountAndValidate(
+    const TrainConfig& train_config) {
   const std::optional<ValidationContext>& validation =
       train_config.getValidationContext();
   if (validation && validation->frequency() != 0 &&
       (_updates % validation->frequency() == 0)) {
-        return validateAndSaveBest(train_config, validation.value());
-        }
+    return validateAndSaveBest(train_config, validation.value());
+  }
   return std::nullopt;
 }
 
