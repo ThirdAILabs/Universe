@@ -44,3 +44,4 @@ def test_telemetry_bad_s3_file():
             write_dir="s3://this/does/not/exist",
             optional_endpoint_url=f"http://127.0.0.1:{MOTO_SERVER_PORT}",
         )
+    telemetry.stop()

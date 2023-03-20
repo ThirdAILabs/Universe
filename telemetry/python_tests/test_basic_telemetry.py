@@ -46,8 +46,6 @@ def test_stop_and_start_telemetry():
 
 
 def test_bad_udt_telemetry_file():
-    with pytest.raises(
-        botocore.exceptions.ClientError, match="The specified bucket does not exist"
-    ):
+    with pytest.raises(ValueError, match="this://should/not/work"):
         telemetry.start(write_dir="this://should/not/work")
     telemetry.stop()
