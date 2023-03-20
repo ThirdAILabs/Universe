@@ -11,8 +11,9 @@ std::string nextEmbeddingOpName() {
 
 Embedding::Embedding(uint64_t num_embedding_lookups, uint64_t lookup_size,
                      uint64_t log_embedding_block_size,
-                     uint64_t update_chunk_size, const std::string& reduction,
-                     std::optional<uint64_t> num_tokens_per_input)
+                     const std::string& reduction,
+                     std::optional<uint64_t> num_tokens_per_input,
+                     uint64_t update_chunk_size)
     : Op(nextEmbeddingOpName()) {
   EmbeddingLayerConfig config(
       /* num_embedding_lookups= */ num_embedding_lookups,
@@ -26,15 +27,15 @@ Embedding::Embedding(uint64_t num_embedding_lookups, uint64_t lookup_size,
 
 std::shared_ptr<Embedding> Embedding::make(
     uint64_t num_embedding_lookups, uint64_t lookup_size,
-    uint64_t log_embedding_block_size, uint64_t update_chunk_size,
-    const std::string& reduction,
-    std::optional<uint64_t> num_tokens_per_input) {
+    uint64_t log_embedding_block_size, const std::string& reduction,
+    std::optional<uint64_t> num_tokens_per_input, uint64_t update_chunk_size) {
   return std::shared_ptr<Embedding>(new Embedding(
       /* num_embedding_lookups= */ num_embedding_lookups,
       /* lookup_size= */ lookup_size,
       /* log_embedding_block_size= */ log_embedding_block_size,
-      /* update_chunk_size= */ update_chunk_size, /* reduction= */ reduction,
-      /* num_tokens_per_input= */ num_tokens_per_input));
+      /* reduction= */ reduction,
+      /* num_tokens_per_input= */ num_tokens_per_input,
+      /* update_chunk_size= */ update_chunk_size));
 }
 
 void Embedding::forward(const autograd::ComputationList& inputs,

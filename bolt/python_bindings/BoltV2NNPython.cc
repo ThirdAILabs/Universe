@@ -101,8 +101,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
   py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
       .def(py::init(&ops::Embedding::make), py::arg("num_embedding_lookups"),
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
-           py::arg("update_chunk_size"), py::arg("reduction"),
-           py::arg("num_tokens_per_input") = std::nullopt)
+           py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
+           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
       .def("__call__", &ops::Embedding::apply);
 
   py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
