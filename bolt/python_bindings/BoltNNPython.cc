@@ -533,7 +533,11 @@ That's all for now, folks! More docs coming soon :)
           "The third element, the active neuron matrix, is only present if "
           "we are returning activations AND the ouptut is sparse.",
           bolt::python::OutputRedirect())
-      .def("save", &BoltGraph::save, py::arg("filename"))
+      .def("save",  
+            [](BoltGraph& model, const std::string &filename){
+                model.saveWithOptimizer(false);
+                model.save(filename);
+                }, py::arg("filename"))
       .def_static("load", &BoltGraph::load, py::arg("filename"))
       .def("__str__",
            [](const BoltGraph& model) {
@@ -572,6 +576,11 @@ That's all for now, folks! More docs coming soon :)
            "Returns a list of all Nodes that make up the graph in traversal "
            "order. This list is guaranetted to be static after a model is "
            "compiled.")
+       .def("checkpoint",  
+            [](BoltGraph& model, const std::string &filename){
+                model.saveWithOptimizer(true);
+                model.save(filename);
+                }, py::arg("filename"))
 #endif
       .def(getPickleFunction<BoltGraph>());
 

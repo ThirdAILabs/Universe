@@ -124,11 +124,6 @@ BoltVector& SwitchNode::getOutputVectorImpl(uint32_t vec_index) {
   return _layers.at(active_layer)->getOutputVector(vec_index);
 }
 
-void SwitchNode::saveWithOptimizer(bool should_save_optimizer) {
-  for (auto& layer : _layers) {
-    layer->saveWithOptimizer(should_save_optimizer);
-  }
-}
 
 void SwitchNode::summarizeImpl(std::stringstream& summary,
                                bool detailed) const {

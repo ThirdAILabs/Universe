@@ -49,12 +49,7 @@ class DistributedTrainingWrapper {
     }
   }
 
-  BoltGraphPtr getModelWithOptimizer() {
-    _bolt_graph->saveWithOptimizer(true);
-    return _bolt_graph;
-  }
   BoltGraphPtr getModel() {
-    _bolt_graph->saveWithOptimizer(false);
     return _bolt_graph;
   }
 
