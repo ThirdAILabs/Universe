@@ -33,7 +33,7 @@ def parse_arguments():
     parser.add_argument(
         "--mlflow_uri",
         type=str,
-        default=None,
+        default="http://ec2-184-73-150-35.compute-1.amazonaws.com",
         help="MLflow URI to log metrics and artifacts.",
     )
     parser.add_argument(

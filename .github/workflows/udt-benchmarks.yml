@@ -40,7 +40,7 @@ jobs:
           USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
           PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
         run: >- 
-          bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && cd /Universe && python3 -m benchmarks-v2.main --runner udt"
+          bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && cd /Universe && python3 -m benchmarks-v2.main --runner udt --run_name udt_benchmark --official_benchmark"
 
       - name: Delete Container
         run: sudo docker system prune -a -f
