@@ -159,7 +159,7 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
         }
 
     learning_rate = 0.001
-    num_epochs = 5
+    num_epochs = 1
     metrics = ["categorical_accuracy", "f_measure(0.95)"]
 
     # Learning rate scheduler that decreases the learning rate by a factor of 10
