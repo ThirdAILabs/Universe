@@ -114,7 +114,8 @@ namespace cereal {
 /**
  * This is because the Op base class only uses a serialize function, whereas
  * this Op uses a load/save pair. This tells cereal to use the load save pair
- * instead of the serialize method of the parent class.
+ * instead of the serialize method of the parent class. See docs here:
+ * https://uscilab.github.io/cereal/serialization_functions.html#inheritance
  */
 template <class Archive>
 struct specialize<Archive, thirdai::bolt::nn::ops::Embedding,
