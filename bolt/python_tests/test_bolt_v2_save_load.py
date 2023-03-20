@@ -1,8 +1,9 @@
-from thirdai import bolt_v2 as bolt
-import pytest
-from utils import gen_numpy_training_data
-from thirdai import dataset
 import numpy as np
+import pytest
+from thirdai import bolt_v2 as bolt
+from thirdai import dataset
+
+from utils import gen_numpy_training_data
 
 
 def build_model(n_classes):

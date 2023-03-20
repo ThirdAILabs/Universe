@@ -86,7 +86,7 @@ template void Computation::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void Computation::serialize(Archive& archive) {
-  archive(_op, _inputs, _name);
+  archive(_op, _name);
 }
 
 }  // namespace thirdai::bolt::nn::autograd
