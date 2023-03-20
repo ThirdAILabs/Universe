@@ -1,4 +1,5 @@
 import boto3
+import botocore
 import pytest
 from moto import mock_s3
 from moto.server import ThreadedMotoServer
@@ -36,7 +37,7 @@ def test_udt_telemetry_s3():
 @mock_s3
 def test_telemetry_bad_s3_file():
     with pytest.raises(
-        ValueError, match="Telemetry process terminated early with exit code 1"
+        botocore.exceptions.ClientError, match="The specified bucket does not exist"
     ):
         telemetry.start(
             port=THIRDAI_TEST_TELEMETRY_PORT,
