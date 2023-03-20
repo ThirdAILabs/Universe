@@ -11,9 +11,9 @@ class Embedding final : public Op,
  public:
   static std::shared_ptr<Embedding> make(
       uint64_t num_embedding_lookups, uint64_t lookup_size,
-      uint64_t log_embedding_block_size, uint64_t update_chunk_size,
-      const std::string& reduction,
-      std::optional<uint64_t> num_tokens_per_input = std::nullopt);
+      uint64_t log_embedding_block_size, const std::string& reduction,
+      std::optional<uint64_t> num_tokens_per_input = std::nullopt,
+      uint64_t update_chunk_size = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE);
 
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
@@ -38,9 +38,9 @@ class Embedding final : public Op,
 
  private:
   Embedding(uint64_t num_embedding_lookups, uint64_t lookup_size,
-            uint64_t log_embedding_block_size, uint64_t update_chunk_size,
-            const std::string& reduction,
-            std::optional<uint64_t> num_tokens_per_input);
+            uint64_t log_embedding_block_size, const std::string& reduction,
+            std::optional<uint64_t> num_tokens_per_input,
+            uint64_t update_chunk_size);
 
   std::unique_ptr<EmbeddingLayer> _kernel;
 
