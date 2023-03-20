@@ -9,9 +9,9 @@ from utils import gen_numpy_training_data
 def build_model(n_classes):
     vector_input = bolt.nn.Input(dim=n_classes)
 
-    hidden = bolt.nn.FullyConnected(dim=150, input_dim=n_classes, activation="relu")(
-        vector_input
-    )
+    hidden = bolt.nn.FullyConnected(
+        dim=200, sparsity=0.3, input_dim=n_classes, activation="relu"
+    )(vector_input)
 
     token_input = bolt.nn.Input(dim=n_classes)
 
@@ -26,11 +26,11 @@ def build_model(n_classes):
     concat = bolt.nn.Concatenate()([hidden, embedding])
 
     output1 = bolt.nn.FullyConnected(
-        dim=n_classes, input_dim=150, activation="softmax"
+        dim=n_classes, input_dim=200, activation="softmax"
     )(hidden)
 
     output2 = bolt.nn.FullyConnected(
-        dim=n_classes, input_dim=214, activation="sigmoid"
+        dim=n_classes, input_dim=264, activation="sigmoid"
     )(concat)
 
     output3 = bolt.nn.FullyConnected(dim=n_classes, input_dim=64, activation="softmax")(
@@ -52,6 +52,25 @@ def build_model(n_classes):
     return model
 
 
+def train_model(model, train_data, train_labels):
+    for x, y in zip(train_data, train_labels):
+        model.train_on_batch([x, y], [y, y, y])
+        model.update_parameters(learning_rate=0.1)
+
+
+def evaluate_model(model, test_data, test_labels, test_labels_np):
+    accs = []
+    outputs = model.forward([test_data[0], test_labels[0]], use_sparsity=False)
+    for output in outputs:
+        predictions = np.argmax(output.activations, axis=1)
+        acc = np.mean(predictions == test_labels_np)
+        assert acc >= 0.8
+
+        accs.append(acc)
+
+    return accs
+
+
 @pytest.mark.unit
 def test_bolt_save_load():
     N_CLASSES = 100
@@ -64,11 +83,6 @@ def test_bolt_save_load():
     train_data = bolt.train.convert_dataset(train_data, dim=N_CLASSES)
     train_labels = bolt.train.convert_dataset(train_labels, dim=N_CLASSES)
 
-    def train_model():
-        for x, y in zip(train_data, train_labels):
-            model.train_on_batch([x, y], [y, y, y])
-            model.update_parameters(learning_rate=0.1)
-
     test_data, test_labels_np = gen_numpy_training_data(
         n_classes=N_CLASSES, n_samples=1000, convert_to_bolt_dataset=False
     )
@@ -78,25 +92,18 @@ def test_bolt_save_load():
     test_data = bolt.train.convert_dataset(test_data, dim=N_CLASSES)
     test_labels = bolt.train.convert_dataset(test_labels, dim=N_CLASSES)
 
-    def test_model():
-        outputs = model.forward([test_data[0], test_labels[0]], use_sparsity=False)
-        for output in outputs:
-            predictions = np.argmax(output.activations, axis=1)
-            acc = np.mean(predictions == test_labels_np)
+    # Initial training/evaluation of the model.
+    train_model(model, train_data, train_labels)
+    initial_accs = evaluate_model(model, test_data, test_labels, test_labels_np)
 
-            assert acc >= 0.8
-
-    train_model()
-
-    test_model()
-
+    # Save and reload model
     temp_save_path = "./temp_save_model"
     model.save(temp_save_path)
-
     model = bolt.nn.Model.load(temp_save_path)
 
-    test_model()
+    # Check that the accuracies match
+    assert initial_accs == evaluate_model(model, test_data, test_labels, test_labels_np)
 
-    train_model()
-
-    test_model()
+    # Check that the model can continue to be trained after save/load.
+    train_model(model, train_data, train_labels)
+    evaluate_model(model, test_data, test_labels, test_labels_np)
