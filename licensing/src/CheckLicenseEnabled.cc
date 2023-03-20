@@ -3,10 +3,10 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <exceptions/src/Exceptions.h>
+#include <licensing/src/Utils.h>
 #include <licensing/src/file/SignedLicense.h>
 #include <licensing/src/heartbeat/Heartbeat.h>
 #include <licensing/src/keygen/KeygenCommunication.h>
-#include <licensing/src/utils.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>

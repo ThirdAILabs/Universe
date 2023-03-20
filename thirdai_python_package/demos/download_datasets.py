@@ -8,6 +8,13 @@ import numpy as np
 import pandas as pd
 from thirdai._thirdai import bolt
 
+from .beir_download_utils import (
+    remap_doc_ids,
+    remap_query_answers,
+    write_supervised_file,
+    write_unsupervised_file,
+)
+
 
 def _download_dataset(url, zip_file, check_existence, output_dir):
     if not os.path.exists(zip_file):
@@ -622,3 +629,56 @@ def download_amazon_kaggle_product_catalog_sampled():
     n_target_classes = df.shape[0]
 
     return TRAIN_FILE, n_target_classes
+
+
+def download_beir_dataset(dataset):
+    from beir import util
+    from beir.datasets.data_loader import GenericDataLoader
+
+    url = f"https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{dataset}.zip"
+    data_path = util.download_and_unzip(url, ".")
+
+    corpus, queries_test, qrels_test = GenericDataLoader(data_folder=data_path).load(
+        split="test"
+    )
+
+    write_unsupervised_file(corpus, data_path)
+
+    # we remap doc ids from 0 to N-1 so we can specify integer target in UDT
+    # coldstart only works with integer target for now
+    doc_ids_to_integers = remap_doc_ids(corpus)
+    n_target_classes = len(doc_ids_to_integers)
+
+    # Not all of the beir datasets come with a train split, some only have a test
+    # split. In cases without a train split, we won't write a new supervised train file.
+    if os.path.exists(data_path + "/qrels/train.tsv"):
+        _, queries_train, qrels_train = GenericDataLoader(data_folder=data_path).load(
+            split="train"
+        )
+
+        new_qrels_train = remap_query_answers(qrels_train, doc_ids_to_integers)
+
+        write_supervised_file(
+            queries_train, new_qrels_train, data_path, "trn_supervised.csv"
+        )
+    else:
+        print(
+            f"BEIR Dataset {dataset} doesn't come with a train split, returning None for the trn_supervised path."
+        )
+
+    new_qrels_test = remap_query_answers(qrels_test, doc_ids_to_integers)
+
+    write_supervised_file(queries_test, new_qrels_test, data_path, "tst_supervised.csv")
+
+    trn_supervised = (
+        f"{dataset}/trn_supervised.csv"
+        if os.path.exists(data_path + "/qrels/train.tsv")
+        else None
+    )
+
+    return (
+        f"{dataset}/unsupervised.csv",
+        trn_supervised,
+        f"{dataset}/tst_supervised.csv",
+        n_target_classes,
+    )

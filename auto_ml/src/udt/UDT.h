@@ -125,6 +125,12 @@ class UDT {
 
   void clearGraph() { return _backend->clearGraph(); }
 
+  void setDecodeParams(uint32_t min_num_eval_results,
+                       uint32_t top_k_per_eval_aggregation) {
+    return _backend->setDecodeParams(min_num_eval_results,
+                                     top_k_per_eval_aggregation);
+  }
+
   bolt::BoltGraphPtr model() const { return _backend->model(); }
 
   void setModel(const bolt::BoltGraphPtr& model) { _backend->setModel(model); }
