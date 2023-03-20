@@ -75,7 +75,7 @@ metrics::History Trainer::train(
 
     epoch_timer.stop();
 
-    train_metrics.updateHistory(_history, /*prefix= */ "train_");
+    train_metrics.updateHistory(_history);
 
     (*_history)["epoch_times"].push_back(epoch_timer.seconds());
 
@@ -100,7 +100,7 @@ metrics::History Trainer::train(
 
   callbacks.onTrainEnd();
 
-  return *_history;
+  return *_history;  // Copies the history in case users modify it.
 }
 
 metrics::History Trainer::validate(
@@ -127,7 +127,7 @@ metrics::History Trainer::validate(
 
   val_timer.stop();
 
-  validation_metrics.updateHistory(_history, /* prefix= */ "val_");
+  validation_metrics.updateHistory(_history);
 
   (*_history)["val_times"].push_back(val_timer.seconds());
 
@@ -138,7 +138,7 @@ metrics::History Trainer::validate(
 
   validation_metrics.reset();
 
-  return *_history;
+  return *_history;  // Copies the history in case users modify it.
 }
 
 void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {
