@@ -52,7 +52,7 @@ std::vector<float> makeDenseVec(uint32_t size, int range, float div,
 }
 
 TEST(DWTATest, TestSparseDenseOverlap) {
-  uint32_t size = 1000;
+  uint32_t size = 100000;
 
   float div = 64;
   float range = 1024;
@@ -144,10 +144,10 @@ Matrix convert_dense_matrix_to_sparse(const Matrix& mat, float sparsity_level,
     for (int i = 0; i < sparse_vec.first.size(); i++) {
       if (one_hot) {
         temp[sparse_vec.second[i]] = 1;
-        if (rand() % 3 != 0) {
-          continue;
-        }
-        temp[sparse_vec.second[i]] = 1 + sparse_vec.first[i] / 10000;
+        // if (rand() % 3 != 0) {
+        //   continue;
+        // }
+        // temp[sparse_vec.second[i]] = 1 + sparse_vec.first[i] / 10000;
       } else {
         temp[sparse_vec.second[i]] = sparse_vec.first[i];
       }
@@ -189,7 +189,7 @@ std::vector<uint32_t> get_collisions(const Matrix& mat,
                                      DWTAHashFunction& hash) {
   std::vector<uint32_t> collisions;
 
-  std::vector<uint32_t> vec_hashes(hash.numTables());
+  std::vector<uint32_t> vec_hashes(hash.numTables(), 0);
   hash.hashSingleDense(vec.data(), vec.size(), vec_hashes.data());
 
   for (const auto& x : mat) {
@@ -293,7 +293,7 @@ void run_experiment(uint32_t dim, float topk, uint32_t num_vectors,
   float div = 32;
   float range = 128;
 
-  uint32_t num_tables = 51, hashes_per_table = 4;
+  uint32_t num_tables = 205, hashes_per_table = 4;
   DWTAHashFunction hash(
       /* input_dim= */ dim, /* _hashes_per_table= */ hashes_per_table,
       /* _num_tables= */ num_tables, /* range_pow= */ 3 * hashes_per_table,
@@ -311,7 +311,7 @@ void run_experiment(uint32_t dim, float topk, uint32_t num_vectors,
   // print_mat(weights);
   // print_mat(vectors);
 
-  print_mat(innerproduct(weights, vectors));
+  // print_mat(innerproduct(weights, vectors));
 
   // print_vecs(get_collisions(weights, vectors[0], hash));
   // print_vecs(innerproduct(weights, vectors[0]));
@@ -322,29 +322,29 @@ void run_experiment(uint32_t dim, float topk, uint32_t num_vectors,
 }
 TEST(DWTATest, runner) {
   run_experiment(
-      /*dim=*/100'000,
-      /*topk=*/1,
-      /*num_vectors=*/10,
+      /*dim=*/1024,
+      /*topk=*/10,
+      /*num_vectors=*/1000,
       /*noise_level=*/0.1,
       /*use_sparse_vectors=*/false,
       /*one_hot=*/false,
-      /*sparsity_level=*/.01);
+      /*sparsity_level=*/.2);
   run_experiment(
-      /*dim=*/100'000,
-      /*topk=*/1,
-      /*num_vectors=*/10,
-      /*noise_level=*/0.1,
-      /*use_sparse_vectors=*/true,
-      /*one_hot=*/true,
-      /*sparsity_level=*/.001);
-  run_experiment(
-      /*dim=*/100'000,
+      /*dim=*/1024,
       /*topk=*/10,
-      /*num_vectors=*/10,
+      /*num_vectors=*/1000,
       /*noise_level=*/0.1,
       /*use_sparse_vectors=*/true,
-      /*one_hot=*/true,
-      /*sparsity_level=*/.002);
+      /*one_hot=*/false,
+      /*sparsity_level=*/.2);
+  run_experiment(
+      /*dim=*/1024,
+      /*topk=*/10,
+      /*num_vectors=*/1000,
+      /*noise_level=*/0.1,
+      /*use_sparse_vectors=*/true,
+      /*one_hot=*/false,
+      /*sparsity_level=*/.1);
 
   // run_experiment(
   //     /*dim=*/1024,
