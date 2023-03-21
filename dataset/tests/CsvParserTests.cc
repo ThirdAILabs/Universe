@@ -136,4 +136,9 @@ TEST(CsvParserTests, TrimsReturnAndNewlineCharacters) {
   testCsvParser("\n", ',', {""});
 }
 
+TEST(CsvParserTests, QuotesInQuotes) {
+  testCsvParser(R"("Hey there"", Delilah")", ',', {R"(Hey there"", Delilah)"});
+  testCsvParser(R"("Hey, ""Delilah""")", ',', {R"(Hey, ""Delilah"")"});
+}
+
 }  // namespace thirdai::dataset::tests
