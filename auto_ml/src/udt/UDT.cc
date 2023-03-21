@@ -125,6 +125,12 @@ py::object UDT::evaluate(const dataset::DataSourcePtr& data,
                          const std::vector<std::string>& metrics,
                          bool sparse_inference, bool return_predicted_class,
                          bool verbose, bool return_metrics) {
+  if (return_predicted_class && return_metrics) {
+    throw std::invalid_argument(
+        "At most one of return_predicted_class and return_metrics should be "
+        "true.");
+  }
+
   bolt::utils::Timer timer;
 
   auto result =
