@@ -55,8 +55,12 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
                                 bool sparse_inference,
                                 bool return_predicted_class, bool verbose,
                                 bool return_metrics) {
+  if (return_metrics && return_predicted_class) {
+  }
+
   bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose);
+      utils::getEvalConfig(metrics, sparse_inference, verbose,
+                           /* return_activations = */ !return_metrics);
 
   auto loaded_data =
       dataset->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);

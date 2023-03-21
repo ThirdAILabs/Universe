@@ -110,7 +110,8 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ false);
 
   bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose);
+      utils::getEvalConfig(metrics, sparse_inference, verbose,
+                           /* return_activations = */ !return_metrics);
 
   auto loaded_data = eval_dataset_loader->loadAll(
       /* batch_size= */ defaults::BATCH_SIZE, verbose);
