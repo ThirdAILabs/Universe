@@ -45,12 +45,12 @@ class DistributedTrainingWrapper {
         _train_config.getReconstructHashFunctionsBatchInterval(
             _train_context->batchSize(), _train_context->len()));
     if (_worker_id == 0) {
-      _bolt_graph->logAndSaveLast(_train_config, _metric_aggregator);
+      _bolt_graph->logAndSaveIfNeeded(_train_config, _metric_aggregator);
     }
   }
 
   std::optional<InferenceMetricData> validationAndSaveBest() {
-    return _bolt_graph->validateAndSaveBest(
+    return _bolt_graph->validateAndSaveIfBest(
         _train_config, _train_config.getValidationContext().value());
   }
 

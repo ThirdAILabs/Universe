@@ -66,7 +66,7 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 #endif
 }
 
-std::optional<InferenceMetricData> BoltGraph::validateAndSaveBest(
+std::optional<InferenceMetricData> BoltGraph::validateAndSaveIfBest(
     const TrainConfig& train_config, const ValidationContext& validation) {
   auto [validation_metrics, _] =
       evaluate(validation.data(), validation.labels(), validation.config());
@@ -99,7 +99,7 @@ std::optional<InferenceMetricData> BoltGraph::validateIfNeeded(
       train_config.getValidationContext();
   if (validation && validation->frequency() != 0 &&
       (_updates % validation->frequency() == 0)) {
-    return validateAndSaveBest(train_config, validation.value());
+    return validateAndSaveIfBest(train_config, validation.value());
   }
   return std::nullopt;
 }
