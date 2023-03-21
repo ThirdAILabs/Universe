@@ -123,8 +123,8 @@ def test_distributed_mach_cold_start(
     metrics = model.cold_start_distributed(
         cluster_config=ray_two_node_cluster_config("linear"),
         filenames=[
-            f"{os.getcwd()}/scifact_dataset/unsupervised_part1",
-            f"{os.getcwd()}/scifact_dataset/unsupervised_part2",
+            f"{os.getcwd()}/scifact/unsupervised_part1",
+            f"{os.getcwd()}/scifact/unsupervised_part2",
         ],
         strong_column_names=["TITLE"],
         weak_column_names=["TEXT"],
@@ -150,8 +150,8 @@ def test_distributed_mach_cold_start(
     metrics = model.train_distributed(
         cluster_config=ray_two_node_cluster_config("linear"),
         filenames=[
-            f"{os.getcwd()}/scifact_dataset/supervised_trn_part1",
-            f"{os.getcwd()}/scifact_dataset/supervised_trn_part2",
+            f"{os.getcwd()}/scifact/supervised_trn_part1",
+            f"{os.getcwd()}/scifact/supervised_trn_part2",
         ],
         learning_rate=0.001,
         epochs=10,
