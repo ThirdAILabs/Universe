@@ -412,8 +412,9 @@ set(THIRDAI_SOURCES
 # corresponding flag is set
 if(${LICENSE_CHECK_FLAG_FOUND})
   set(THIRDAI_SOURCES
-      ${THIRDAI_SOURCES} licensing/src/keygen/KeygenCommunication.cc
-      licensing/src/heartbeat/Heartbeat.cc licensing/src/CheckLicenseEnabled.cc)
+      ${THIRDAI_SOURCES} licensing/src/methods/keygen/KeygenCommunication.cc
+      licensing/src/methods/heartbeat/Heartbeat.cc
+      licensing/src/CheckLicenseEnabled.cc)
 else()
   set(THIRDAI_SOURCES ${THIRDAI_SOURCES} licensing/src/CheckLicenseDisabled.cc)
 endif()

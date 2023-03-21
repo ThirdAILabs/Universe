@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include <cryptopp/osrng.h>
 #include <cryptopp/rsa.h>
-#include <licensing/src/file/License.h>
-#include <licensing/src/file/SignedLicense.h>
+#include <licensing/src/methods/file/License.h>
+#include <licensing/src/methods/file/SignedLicense.h>
 #include <fstream>
 #include <map>
 
