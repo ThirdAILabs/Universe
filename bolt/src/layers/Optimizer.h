@@ -22,7 +22,7 @@ struct AdamOptimizer {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(gradients, momentum, velocity);
+    archive(momentum, velocity);
   }
 };
 

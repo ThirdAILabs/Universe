@@ -19,13 +19,13 @@ class ModelWithLayers:
     def __init__(self, n_classes):
         self.input_layer = bolt.nn.Input(dim=n_classes)
 
-        self.hidden1 = bolt.nn.FullyConnected(
-            dim=2000, sparsity=0.15, activation="relu"
-        )(self.input_layer)
+        self.hidden1 = bolt.nn.FullyConnected(dim=2000, activation="relu")(
+            self.input_layer
+        )
 
-        self.hidden2 = bolt.nn.FullyConnected(
-            dim=2000, sparsity=0.15, activation="relu"
-        )(self.input_layer)
+        self.hidden2 = bolt.nn.FullyConnected(dim=2000, activation="relu")(
+            self.input_layer
+        )
 
         self.concat = bolt.nn.Concatenate()([self.hidden1, self.hidden2])
 
