@@ -9,9 +9,9 @@ concurrency:
 # Controls when the workflow will run
 on:
   schedule:
-      # Sets the workflow to run at 1900 UTC every Sunday
+      # Sets the workflow to run at 1900 UTC every day
       # Ref: https://jasonet.co/posts/scheduled-actions/
-      - cron: "0 19 * * 0" 
+      - cron: "0 19 * * *" 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -40,7 +40,7 @@ jobs:
           USERNAME: ${{secrets.MLFLOW_TRACKING_USERNAME}}
           PASSWORD: ${{secrets.MLFLOW_TRACKING_PASSWORD}}
         run: >- 
-          bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && cd /Universe && python3 -m benchmarks-v2.main --runner udt --run_name udt_benchmark --official_benchmark --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com"
+          bin/docker-benchmarking-run.sh "export MLFLOW_TRACKING_USERNAME=$USERNAME && export MLFLOW_TRACKING_PASSWORD=$PASSWORD && python3 -m Universe.benchmarks-v2.main --runner udt --run_name udt_benchmark --official_benchmark --mlflow_uri http://ec2-184-73-150-35.compute-1.amazonaws.com"
 
       - name: Delete Container
         run: sudo docker system prune -a -f

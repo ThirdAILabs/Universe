@@ -10,7 +10,7 @@ concurrency:
 on:
   schedule:
       # Ref: https://jasonet.co/posts/scheduled-actions/
-      - cron: "0 0 * * *" 
+      - cron: "0 4 * * *" 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
