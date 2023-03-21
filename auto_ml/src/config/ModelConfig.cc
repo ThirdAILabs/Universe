@@ -38,9 +38,9 @@ bolt::SamplingConfigPtr getSamplingConfig(const json& config,
           integerParameter(sampling_json, "hashes_per_table", args);
       uint32_t reservoir_size =
           integerParameter(sampling_json, "reservoir_size", args);
-
+      uint32_t permutes = integerParameter(sampling_json, "permutes", args);
       return std::make_shared<bolt::DWTASamplingConfig>(
-          num_tables, hashes_per_table, reservoir_size);
+          num_tables, hashes_per_table, reservoir_size, permutes);
     }
     throw std::invalid_argument(
         "Parameter 'sampling_config' must be a string 'random' indicating "

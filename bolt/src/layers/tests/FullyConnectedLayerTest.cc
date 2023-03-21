@@ -40,7 +40,8 @@ class FullyConnectedLayerTestFixture : public testing::Test {
                                          std::make_unique<DWTASamplingConfig>(
                                              /* num_tables= */ 64,
                                              /* hashes_per_table= */ 1,
-                                             /* reservoir_size= */ 10)},
+                                             /* reservoir_size= */ 10,
+                                             /* permutes=*/8)},
                INPUT_DIM) {}
 
   void SetUp() override {

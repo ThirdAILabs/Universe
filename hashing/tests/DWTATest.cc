@@ -9,6 +9,12 @@
 
 namespace thirdai::hashing {
 
+struct hashparams {
+  uint32_t num_tables;
+  uint32_t permutations;
+  uint32_t hashes_per_table;
+};
+
 std::vector<float> noisify_vector(std::vector<float> vec, float range,
                                   float div, float noise_level, uint32_t seed);
 using SparseVec = std::pair<std::vector<float>, std::vector<uint32_t>>;
@@ -66,6 +72,7 @@ TEST(DWTATest, TestSparseDenseOverlap) {
   DWTAHashFunction hash(
       /* input_dim= */ size, /* _hashes_per_table= */ hashes_per_table,
       /* _num_tables= */ num_tables, /* range_pow= */ 3 * hashes_per_table,
+      /*permutes=*/8,
       /* seed= */ 59302);
 
   std::vector<uint32_t> dense_output_hashes(num_tables),
@@ -289,14 +296,16 @@ float calculate_topk_overlap(const Matrix& weights, const Matrix& vectors,
 
 void run_experiment(uint32_t dim, float topk, uint32_t num_vectors,
                     float noise_level, bool use_sparse_vectors, bool one_hot,
-                    float sparsity_level) {
+                    float sparsity_level, hashparams params) {
   float div = 32;
   float range = 128;
 
-  uint32_t num_tables = 205, hashes_per_table = 4;
+  uint32_t num_tables = params.num_tables,
+           hashes_per_table = params.hashes_per_table;
   DWTAHashFunction hash(
       /* input_dim= */ dim, /* _hashes_per_table= */ hashes_per_table,
       /* _num_tables= */ num_tables, /* range_pow= */ 3 * hashes_per_table,
+      /*permutes=*/params.permutations,
       /* seed= */ 59302);
 
   auto weights = generate_weight_matrix(num_vectors, dim, range, div);
@@ -321,62 +330,92 @@ void run_experiment(uint32_t dim, float topk, uint32_t num_vectors,
             << std::endl;
 }
 TEST(DWTATest, runner) {
-  run_experiment(
-      /*dim=*/1024,
-      /*topk=*/10,
-      /*num_vectors=*/1000,
-      /*noise_level=*/0.1,
-      /*use_sparse_vectors=*/false,
-      /*one_hot=*/false,
-      /*sparsity_level=*/.2);
-  run_experiment(
-      /*dim=*/1024,
-      /*topk=*/10,
-      /*num_vectors=*/1000,
-      /*noise_level=*/0.1,
-      /*use_sparse_vectors=*/true,
-      /*one_hot=*/false,
-      /*sparsity_level=*/.2);
-  run_experiment(
-      /*dim=*/1024,
-      /*topk=*/10,
-      /*num_vectors=*/1000,
-      /*noise_level=*/0.1,
-      /*use_sparse_vectors=*/true,
-      /*one_hot=*/false,
-      /*sparsity_level=*/.1);
+  uint32_t dim = 100'000;
+  uint32_t topk = 10;
+  uint32_t num_vectors = 100;
+  float noise_level = 0.1;
 
-  // run_experiment(
-  //     /*dim=*/1024,
-  //     /*topk=*/5,
-  //     /*num_vectors=*/500,
-  //     /*noise_level=*/0.1,
-  //     /*use_sparse_vectors=*/false,
-  //     /*one_hot=*/true,
-  //     /*sparsity_level=*/.2);
-  // run_experiment(
-  //     /*dim=*/1024,
-  //     /*topk=*/5,
-  //     /*num_vectors=*/500,
-  //     /*noise_level=*/0.1,
-  //     /*use_sparse_vectors=*/true,
-  //     /*one_hot=*/false,
-  //     /*sparsity_level=*/.2);
-  // run_experiment(
-  //     /*dim=*/1024,
-  //     /*topk=*/5,
-  //     /*num_vectors=*/500,
-  //     /*noise_level=*/0.3,
-  //     /*use_sparse_vectors=*/true,
-  //     /*one_hot=*/true,
-  //     /*sparsity_level=*/.2);
-  // run_experiment(
-  //     /*dim=*/1024,
-  //     /*topk=*/5,
-  //     /*num_vectors=*/500,
-  //     /*noise_level=*/0.3,
-  //     /*use_sparse_vectors=*/true,
-  //     /*one_hot=*/true,
-  // /*sparsity_level=*/.3);
+  std::vector<float> sparsity_levels({0.0001, 0.0002, 0.0005, 0.001});
+
+  //   for (auto x : sparsity_levels) {
+  //     std::vector<hashparams> params;
+  //     std::vector<uint32_t> num_tables({51, 101, 151, 201, 251});
+  //     std::vector<uint32_t> permutations({1, 2, 3, 5, 8, 12});
+  //     std::vector<uint32_t> hashes_per_table({1, 2, 4, 8, 16});
+
+  //     for (auto a : num_tables) {
+  //       for (auto b : permutations) {
+  //         for (auto c : hashes_per_table) {
+  //           params.emplace_back(hashparams({a, b, c}));
+  //         }
+  //       }
+  //     }
+  //     for (auto param : params) {
+  //       std::cout << "Params: "
+  //                 << "sparsity: " << x << " num_tables: " << param.num_tables
+  //                 << " permutations: " << param.permutations
+  //                 << " hashes_per_table: " << param.hashes_per_table << "
+  //                 \n";
+  //       std::cout << "Dense" << std::endl;
+  //       run_experiment(
+  //           /*dim=*/dim,
+  //           /*topk=*/topk,
+  //           /*num_vectors=*/num_vectors,
+  //           /*noise_level=*/noise_level,
+  //           /*use_sparse_vectors=*/false,
+  //           /*one_hot=*/false,
+  //           /*sparsity_level=*/x, param);
+  //       std::cout << "Sparse" << std::endl;
+  //       run_experiment(
+  //           /*dim=*/dim,
+  //           /*topk=*/topk,
+  //           /*num_vectors=*/num_vectors,
+  //           /*noise_level=*/noise_level,
+  //           /*use_sparse_vectors=*/true,
+  //           /*one_hot=*/false,
+  //           /*sparsity_level=*/x, param);
+  //       std::cout << "Sparse One-hot" << std::endl;
+  //       run_experiment(
+  //           /*dim=*/dim,
+  //           /*topk=*/topk,
+  //           /*num_vectors=*/num_vectors,
+  //           /*noise_level=*/noise_level,
+  //           /*use_sparse_vectors=*/true,
+  //           /*one_hot=*/true,
+  //           /*sparsity_level=*/x, param);
+  //     }
+  //   }
+  //   // run_experiment(
+  //   //     /*dim=*/1024,
+  //   //     /*topk=*/5,
+  //   //     /*num_vectors=*/500,
+  //   //     /*noise_level=*/0.1,
+  //   //     /*use_sparse_vectors=*/false,
+  //   //     /*one_hot=*/true,
+  //   //     /*sparsity_level=*/.2);
+  //   // run_experiment(
+  //   //     /*dim=*/1024,
+  //   //     /*topk=*/5,
+  //   //     /*num_vectors=*/500,
+  //   //     /*noise_level=*/0.1,
+  //   //     /*use_sparse_vectors=*/true,
+  //   //     /*one_hot=*/false,
+  //   //     /*sparsity_level=*/.2);
+  //   // run_experiment(
+  //   //     /*dim=*/1024,
+  //   //     /*topk=*/5,
+  //   //     /*num_vectors=*/500,
+  //   //     /*noise_level=*/0.3,
+  //   //     /*use_sparse_vectors=*/true,
+  //   //     /*one_hot=*/true,
+  //   //     /*sparsity_level=*/.2);
+  //   // run_experiment(
+  //   //     /*dim=*/1024,
+  //   //     /*topk=*/5,
+  //   //     /*num_vectors=*/500,
+  //   //     /*noise_level=*/0.3,
+  //   //     /*use_sparse_vectors=*/true,
+  //   //     /*one_hot=*/true,
+  //   // /*sparsity_level=*/.3);
 }
 }  // namespace thirdai::hashing

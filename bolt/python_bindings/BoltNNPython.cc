@@ -108,8 +108,9 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
   py::class_<thirdai::bolt::DWTASamplingConfig,
              std::shared_ptr<DWTASamplingConfig>, SamplingConfig>(
       nn_submodule, "DWTASamplingConfig")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
-           py::arg("hashes_per_table"), py::arg("reservoir_size"));
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+           py::arg("num_tables"), py::arg("hashes_per_table"),
+           py::arg("reservoir_size"), py::arg("permutations"));
 
   py::class_<thirdai::bolt::FastSRPSamplingConfig,
              std::shared_ptr<FastSRPSamplingConfig>, SamplingConfig>(

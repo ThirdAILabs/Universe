@@ -13,7 +13,8 @@ std::unique_ptr<hashing::HashFunction> DWTASamplingConfig::getHashFunction(
       /* input_dim= */ input_dim,
       /* hashes_per_table= */ _hashes_per_table,
       /* num_tables= */ _num_tables,
-      /* range_pow= */ 3 * _num_tables);
+      /* range_pow= */ 6 * _hashes_per_table,
+      /*permutations=*/_permutes);
 }
 
 std::unique_ptr<hashtable::SampledHashTable<uint32_t>>
@@ -21,7 +22,7 @@ DWTASamplingConfig::getHashTable() const {
   return std::make_unique<hashtable::SampledHashTable<uint32_t>>(
       /* num_tables= */ _num_tables,
       /* reservoir_size= */ _reservoir_size,
-      /* range= */ 1 << (3 * _hashes_per_table));
+      /* range= */ 1 << (6 * _hashes_per_table));
 }
 
 SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,
@@ -81,7 +82,8 @@ SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,
   return std::make_shared<DWTASamplingConfig>(
       /* num_tables= */ num_tables,
       /* hashes_per_table= */ hashes_per_table,
-      /* reservoir_size= */ reservoir_size);
+      /* reservoir_size= */ reservoir_size,
+      /*permutations=*/8);
 }
 
 std::unique_ptr<hashing::HashFunction> FastSRPSamplingConfig::getHashFunction(
@@ -107,7 +109,7 @@ void SamplingConfig::serialize(Archive& archive) {
 template <class Archive>
 void DWTASamplingConfig::serialize(Archive& archive) {
   archive(cereal::base_class<SamplingConfig>(this), _num_tables,
-          _hashes_per_table, _reservoir_size);
+          _hashes_per_table, _reservoir_size, _permutes);
 }
 
 template <class Archive>

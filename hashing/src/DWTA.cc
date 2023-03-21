@@ -8,12 +8,12 @@
 
 namespace thirdai::hashing {
 
-constexpr uint32_t DEFAULT_BINSIZE = 8;
+constexpr uint32_t DEFAULT_BINSIZE = 512;
 
 DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
                                    uint32_t hashes_per_table,
                                    uint32_t num_tables, uint32_t range_pow,
-                                   uint32_t seed)
+                                   uint32_t permutes, uint32_t seed)
     : HashFunction(num_tables, 1 << range_pow),
       _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
@@ -21,7 +21,7 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
       _binsize(DEFAULT_BINSIZE),
       _log_binsize(floor(log2(_binsize))),
       _permute(ceil((static_cast<double>(_num_hashes) * _binsize) / _dim)) {
-  _permute = 8;  // NOLINT
+  _permute = permutes;  // NOLINT
 
   std::mt19937 gen(seed);
 

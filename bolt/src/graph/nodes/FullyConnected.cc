@@ -32,9 +32,10 @@ FullyConnectedNode::makeExplicitSamplingConfig(uint32_t dim, float sparsity,
                                                const std::string& activation,
                                                uint32_t num_tables,
                                                uint32_t hashes_per_table,
-                                               uint32_t reservoir_size) {
+                                               uint32_t reservoir_size,
+                                               uint32_t permutes) {
   auto sampling_config = std::make_shared<DWTASamplingConfig>(
-      num_tables, hashes_per_table, reservoir_size);
+      num_tables, hashes_per_table, reservoir_size, permutes);
   return make(dim, sparsity, activation, sampling_config);
 }
 

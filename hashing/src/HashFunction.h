@@ -3,6 +3,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include "HashUtils.h"
 #include <bolt_vector/src/BoltVector.h>
+#include <stdexcept>
 
 namespace thirdai::hashing {
 
@@ -89,6 +90,10 @@ class HashFunction {
   virtual std::unique_ptr<HashFunction> copyWithNewSeeds() const = 0;
 
   virtual std::string getName() const = 0;
+
+  virtual uint32_t getPermutes() const {  // NOLINT
+    throw std::logic_error("Invalid call");
+  };
 
   virtual ~HashFunction() = default;
 

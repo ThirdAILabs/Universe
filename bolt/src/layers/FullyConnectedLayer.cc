@@ -896,6 +896,10 @@ void FullyConnectedLayer::buildSamplingSummary(std::ostream& summary) const {
       summary << "random";
     } else {
       summary << "hash_function=" << _hasher->getName() << ", ";
+
+      if (_hasher->getName() == "DWTA") {
+        summary << "permutations: " << _hasher->getPermutes() << ", ";
+      }
       _hash_table->summarize(summary);
     }
   }
