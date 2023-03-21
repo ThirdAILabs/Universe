@@ -8,7 +8,7 @@
 
 namespace thirdai::hashing {
 
-constexpr uint32_t DEFAULT_BINSIZE = 512;
+constexpr uint32_t DEFAULT_BINSIZE = 128;
 
 DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
                                    uint32_t hashes_per_table,

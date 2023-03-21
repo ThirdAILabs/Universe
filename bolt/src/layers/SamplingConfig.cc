@@ -13,7 +13,7 @@ std::unique_ptr<hashing::HashFunction> DWTASamplingConfig::getHashFunction(
       /* input_dim= */ input_dim,
       /* hashes_per_table= */ _hashes_per_table,
       /* num_tables= */ _num_tables,
-      /* range_pow= */ 6 * _hashes_per_table,
+      /* range_pow= */ 7 * _hashes_per_table,
       /*permutations=*/_permutes);
 }
 
@@ -22,8 +22,17 @@ DWTASamplingConfig::getHashTable() const {
   return std::make_unique<hashtable::SampledHashTable<uint32_t>>(
       /* num_tables= */ _num_tables,
       /* reservoir_size= */ _reservoir_size,
-      /* range= */ 1 << (6 * _hashes_per_table));
+      /* range= */ 1 << (7 * _hashes_per_table));
 }
+
+// uint32_t getNumberHashTables(uint32_t input_dim, uint32_t layer_dim){
+//   return 51;
+// }
+
+// SamplingConfigPtr betterAutotune(uint32_t input_dim, uint32_t layer_dim,
+// float sparsity){
+//   uint32_t expected_number_of_neurons = layer_dim * sparsity;
+// }
 
 SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,
                                                float sparsity) {
