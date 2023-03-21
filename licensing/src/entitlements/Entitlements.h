@@ -1,6 +1,9 @@
 #pragma once
 
+#include <dataset/src/DataSource.h>
+#include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <exceptions/src/Exceptions.h>
+#include <licensing/src/Utils.h>
 #include <unordered_set>
 #include <utility>
 
@@ -19,8 +22,15 @@ class Entitlements {
 
   bool fullAccess() { return _entitlements.count(FULL_ACCESS_ENTITLEMENT); }
 
+  void assertFullAccess() {
+    if (!fullAccess()) {
+      throw exceptions::LicenseCheckException(
+          "You must have a full license to perform this operation.");
+    }
+  }
+
   void verifySaveLoad() {
-    if (hasFullModelAccess() || _entitlements.count("SAVE_LOAD")) {
+    if (fullModelAccess() || _entitlements.count("SAVE_LOAD")) {
       return;
     }
 
@@ -30,22 +40,48 @@ class Entitlements {
 
   void verifyAllowedNumberOfTrainingSamples(
       uint64_t total_num_training_samples) {
-    if (hasFullModelAccess()) {
+    if (fullModelAccess()) {
       return;
     }
 
     (void)total_num_training_samples;
   }
 
- private:
-  bool hasFullModelAccess() {
-    return _entitlements.count(FULL_ACCESS_ENTITLEMENT) ||
-           _entitlements.count(FULL_MODEL_ENTITLEMENT);
+  bool contains(const std::string& key) { return _entitlements.count(key); }
+
+  void verifyDataSource(const dataset::DataSourcePtr& source) {
+    if (fullDatasetAccess()) {
+      return;
+    }
+
+    // If the user just has a demo license and we are going to read in the
+    // dataset from the resourceName, we require FileDataSources or
+    // ColdStartDataSources. This prevents a user from extending the DataSource
+    // class in python and making resourceName() point to a valid file, while
+    // the actual nextLine call returns lines from some other file they want to
+    // train on.
+    if (!dynamic_cast<dataset::FileDataSource*>(source.get()) &&
+        !dynamic_cast<dataset::cold_start::ColdStartDataSource*>(
+            source.get())) {
+      throw exceptions::LicenseCheckException(
+          "Can only train on file data sources with this license");
+    }
+
+    std::string file_path = source->resourceName();
+
+    if (!_entitlements.count(sha256File(file_path))) {
+      throw exceptions::LicenseCheckException(
+          "This dataset is not authorized under this license.");
+    }
   }
 
-  bool hasFullDatasetAccess() {
-    return _entitlements.count(FULL_ACCESS_ENTITLEMENT) ||
-           _entitlements.count(FULL_DATASET_ENTITLEMENT);
+ private:
+  bool fullModelAccess() {
+    return fullAccess() || _entitlements.count(FULL_MODEL_ENTITLEMENT);
+  }
+
+  bool fullDatasetAccess() {
+    return fullAccess() || _entitlements.count(FULL_DATASET_ENTITLEMENT);
   }
 
   std::unordered_set<std::string> _entitlements;

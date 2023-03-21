@@ -9,6 +9,7 @@
 #include <hashtable/src/VectorHashTable.h>
 #include <dataset/src/Datasets.h>
 #include <licensing/src/CheckLicense.h>
+#include <licensing/src/entitlements/TrainPermissionsToken.h>
 
 namespace thirdai::search {
 

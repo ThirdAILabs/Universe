@@ -6,7 +6,10 @@ from pathlib import Path
 import pytest
 import requests
 import thirdai
-from licensing_utils import LOCAL_HEARTBEAT_SERVER, this_should_require_a_full_license_udt
+from licensing_utils import (
+    LOCAL_HEARTBEAT_SERVER,
+    this_should_require_a_full_license_udt,
+)
 
 pytestmark = [pytest.mark.release]
 
@@ -72,6 +75,7 @@ def license_server_helper(max_workers, do_not_sign_responses=False):
                 python_test_dir_path
                 / ".."
                 / "src"
+                / "methods"
                 / "server"
                 / f"license-server-max-{max_workers}"
             ).resolve()

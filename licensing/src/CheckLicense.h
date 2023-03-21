@@ -17,8 +17,6 @@ void checkLicense();
 // Get the entitlements object for the current license
 Entitlements entitlements();
 
-
-
 // ------ Methods to activate and deactivate licenses:
 
 // License verification method 1: Keygen api key

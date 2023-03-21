@@ -43,9 +43,7 @@ void checkLicense() {
   _entitlements = Entitlements({FULL_ACCESS_ENTITLEMENT});
 }
 
-Entitlements entitlements() {
-  return _entitlements;
-}
+Entitlements entitlements() { return _entitlements; }
 
 void activate(const std::string& api_key) { _api_key = api_key; }
 

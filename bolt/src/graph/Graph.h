@@ -15,6 +15,7 @@
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <licensing/src/CheckLicense.h>
+#include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>

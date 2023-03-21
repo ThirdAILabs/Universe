@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dataset/src/DataSource.h>
+#include <licensing/src/CheckLicense.h>
 
 namespace thirdai::licensing {
 
@@ -19,7 +20,7 @@ class TrainPermissionsToken {
    * if the user does not have a full access entitlement. If licensing is
    * disabled, this will always succeed.
    */
-  TrainPermissionsToken();
+  TrainPermissionsToken() { entitlements().assertFullAccess(); }
 
   /**
    * Creates a TrainPermissionsToken corresponding to a passed in training
@@ -29,7 +30,9 @@ class TrainPermissionsToken {
    * should only use this access token to train models with the passed in
    * training file.
    */
-  explicit TrainPermissionsToken(const dataset::DataSourcePtr& source);
+  explicit TrainPermissionsToken(const dataset::DataSourcePtr& source) {
+    entitlements().verifyDataSource(source);
+  }
 };
 
 }  // namespace thirdai::licensing

@@ -1,5 +1,7 @@
-import pandas as pd
 import os
+
+import pandas as pd
+
 
 def this_should_require_a_full_license_udt():
     from thirdai import bolt
@@ -13,7 +15,7 @@ def this_should_require_a_full_license_udt():
         n_target_classes=2,
     )
 
-    df = pd.DataFrame({'col_1': [0.0, 1.0], 'col_2': [0, 1]})
+    df = pd.DataFrame({"col_1": [0.0, 1.0], "col_2": [0, 1]})
     df.to_csv("temp_training.csv")
 
     model.train("temp_training.csv")
