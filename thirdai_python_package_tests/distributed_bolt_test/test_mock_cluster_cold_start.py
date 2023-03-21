@@ -3,15 +3,15 @@ import os
 import pandas as pd
 import pytest
 from distributed_utils import (
+    metrics_aggregation_from_workers,
     ray_two_node_cluster_config,
     split_into_2,
-    metrics_aggregation_from_workers,
 )
 from thirdai import bolt
 from thirdai.demos import (
     download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
-    download_beir_dataset,
 )
+from thirdai.demos import download_beir_dataset
 
 
 @pytest.fixture(scope="module")
