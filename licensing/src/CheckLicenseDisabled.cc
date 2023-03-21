@@ -1,5 +1,6 @@
 #include "CheckLicense.h"
 #include <dataset/src/DataSource.h>
+#include <licensing/src/entitlements/Entitlements.h>
 #include <optional>
 #include <stdexcept>
 #include <unordered_set>
@@ -8,17 +9,11 @@
 
 namespace thirdai::licensing {
 
-TrainPermissionsToken::TrainPermissionsToken(
-    const dataset::DataSourcePtr& training_source) {
-  (void)training_source;
-}
-
-TrainPermissionsToken::TrainPermissionsToken() {}
-
 void checkLicense() {}
 
-void verifyAllowedDataset(const std::optional<std::string>& filename) {
-  (void)filename;
+Entitlements entitlements() {
+  // TODO(Josh): Fix this
+  return Entitlements({"FULL_ACCESS"});
 }
 
 void activate(const std::string& api_key) { (void)api_key; }

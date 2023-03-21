@@ -4,87 +4,54 @@
 #include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <exceptions/src/Exceptions.h>
 #include <licensing/src/Utils.h>
-#include <licensing/src/file/SignedLicense.h>
-#include <licensing/src/heartbeat/Heartbeat.h>
-#include <licensing/src/keygen/KeygenCommunication.h>
+#include <licensing/src/entitlements/Entitlements.h>
+#include <licensing/src/methods/file/SignedLicense.h>
+#include <licensing/src/methods/heartbeat/Heartbeat.h>
+#include <licensing/src/methods/keygen/KeygenCommunication.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <unordered_set>
+#include <vector>
 
 // This file is only linked when the feature flag THIRDAI_CHECK_LICENSE is True
 
 namespace thirdai::licensing {
 
-static const std::string FULL_ACCESS_ENTITLEMENT = "FULL_ACCESS";
+std::optional<std::string> _license_path = {};
+std::optional<std::string> _api_key = {};
+Entitlements _entitlements;
 
-static std::optional<std::string> _license_path = {};
-static std::optional<std::string> _api_key = {};
-static std::unordered_set<std::string> _entitlements = {};
-
-static std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
-
-void assertUserHasFullAccess() {
-  if (!_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
-    throw exceptions::LicenseCheckException(
-        "You must have a full license to perform this operation.");
-  }
-}
-
-TrainPermissionsToken::TrainPermissionsToken(
-    const dataset::DataSourcePtr& training_source) {
-  if (_entitlements.count(FULL_ACCESS_ENTITLEMENT)) {
-    return;
-  }
-
-  // If the user just has a demo license and we are going to read in the dataset
-  // from the resourceName, we require FileDataSources or ColdStartDataSources.
-  // This prevents a user from extending the DataSource class in python and
-  // making resourceName() point to a valid file, while the actual nextLine call
-  // returns lines from some other file they want to train on.
-  if (!dynamic_cast<dataset::FileDataSource*>(training_source.get()) &&
-      !dynamic_cast<dataset::cold_start::ColdStartDataSource*>(
-          training_source.get())) {
-    throw exceptions::LicenseCheckException(
-        "Can only train on file data sources with a demo license");
-  }
-
-  std::string file_path = training_source->resourceName();
-
-  if (!_entitlements.count(sha256File(file_path))) {
-    throw exceptions::LicenseCheckException(
-        "This dataset is not authorized under this license.");
-  }
-}
-
-TrainPermissionsToken::TrainPermissionsToken() { assertUserHasFullAccess(); }
+std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
 
 void checkLicense() {
 #pragma message( \
     "THIRDAI_CHECK_LICENSE is defined, adding license checking code")  // NOLINT
 
-  _entitlements.clear();
-
   if (_api_key.has_value()) {
-    _entitlements = verifyWithKeygen(*_api_key);
+    _entitlements = Entitlements(verifyWithKeygen(*_api_key));
     return;
   }
 
   if (_heartbeat_thread != nullptr) {
     _heartbeat_thread->verify();
-    _entitlements.insert(FULL_ACCESS_ENTITLEMENT);
+    _entitlements = Entitlements({FULL_ACCESS_ENTITLEMENT});
     return;
   }
 
   SignedLicense::findVerifyAndCheckLicense(_license_path);
-  _entitlements.insert(FULL_ACCESS_ENTITLEMENT);
+  _entitlements = Entitlements({FULL_ACCESS_ENTITLEMENT});
+}
+
+Entitlements entitlements() {
+  return _entitlements;
 }
 
 void activate(const std::string& api_key) { _api_key = api_key; }
 
 void deactivate() {
   _api_key = std::nullopt;
-  _entitlements.clear();
+  _entitlements = Entitlements();
 }
 
 void startHeartbeat(const std::string& heartbeat_url,
