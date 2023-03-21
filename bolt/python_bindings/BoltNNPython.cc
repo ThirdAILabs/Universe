@@ -619,7 +619,7 @@ That's all for now, folks! More docs coming soon :)
       .def("get_updated_metrics",
            &thirdai::bolt::DistributedTrainingWrapper::getUpdatedMetrics,
            bolt::python::OutputRedirect())
-      .def("validate_and_save_best",
+      .def("validate_and_save_if_best",
            &thirdai::bolt::DistributedTrainingWrapper::validationAndSaveBest,
            bolt::python::OutputRedirect());
 

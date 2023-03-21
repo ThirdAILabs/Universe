@@ -515,7 +515,7 @@ class DistributedDataParallel:
                 == 0
             ):
                 self.validation_metrics.append(
-                    train_state_manager._validate_and_save_best()
+                    train_state_manager.validate_and_save_if_best()
                 )
 
     def train_on_epoch(self, train_state_manager, epoch):

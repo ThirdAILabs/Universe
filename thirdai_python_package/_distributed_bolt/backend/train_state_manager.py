@@ -186,5 +186,5 @@ class TrainStateManager:
             f"Epoch No: {epoch}, Batch Count: {self.batch_id_within_epoch}, Bolt Computation Time: {self.bolt_computation_time}, Averaging and Communcation Time: {self.averaging_and_communication_time}"
         )
 
-    def _validate_and_save_best(self):
-        return ray.get(self.workers[0].validate_and_save_best.remote())
+    def validate_and_save_if_best(self):
+        return ray.get(self.workers[0].validate_and_save_if_best.remote())

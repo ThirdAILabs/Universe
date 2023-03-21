@@ -91,5 +91,5 @@ class PrimaryWorker(Worker):
         self.weights_biases = self.return_params()
         return self.weights_biases
 
-    def validate_and_save_best(self):
-        return self.model.validate_and_save_best()
+    def validate_and_save_if_best(self):
+        return self.model.validate_and_save_if_best()

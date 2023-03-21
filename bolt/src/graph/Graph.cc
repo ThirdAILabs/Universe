@@ -93,7 +93,7 @@ std::optional<InferenceMetricData> BoltGraph::validateAndSaveBest(
   return validation_metrics;
 }
 
-std::optional<InferenceMetricData> BoltGraph::checkUpdatesCountAndValidate(
+std::optional<InferenceMetricData> BoltGraph::validateIfNeeded(
     const TrainConfig& train_config) {
   const std::optional<ValidationContext>& validation =
       train_config.getValidationContext();
@@ -104,7 +104,7 @@ std::optional<InferenceMetricData> BoltGraph::checkUpdatesCountAndValidate(
   return std::nullopt;
 }
 
-void BoltGraph::logAndSaveLast(const TrainConfig& train_config,
+void BoltGraph::logAndSaveIfNeeded(const TrainConfig& train_config,
                                MetricAggregator& train_metrics) {
   if (train_config.logLossFrequency() != 0 &&
       _updates % train_config.logLossFrequency() == 0) {
@@ -214,8 +214,8 @@ MetricData BoltGraph::train(
         bar->increment();
       }
 
-      logAndSaveLast(train_config, train_metrics);
-      auto validation_metrics = checkUpdatesCountAndValidate(train_config);
+      logAndSaveIfNeeded(train_config, train_metrics);
+      auto validation_metrics = validateIfNeeded(train_config);
 
       callbacks.onBatchEnd(*this, train_state);
     }
