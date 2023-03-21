@@ -46,7 +46,6 @@ class PrimaryWorker(Worker):
         )
 
     def add_validation_to_train_config(self, validation_context, train_config):
-
         validation_context.validation_source.load(shuffle=False)
         load = validation_context.validation_source.next()
         if load == None:

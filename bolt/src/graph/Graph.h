@@ -131,7 +131,7 @@ class BoltGraph {
       const TrainConfig& train_config);
 
   void logAndSaveIfNeeded(const TrainConfig& train_config,
-                      MetricAggregator& train_metrics);
+                          MetricAggregator& train_metrics);
 
   void processEvaluationBatch(uint64_t batch_size,
                               const BoltBatch* batch_labels,

@@ -105,7 +105,7 @@ std::optional<InferenceMetricData> BoltGraph::validateIfNeeded(
 }
 
 void BoltGraph::logAndSaveIfNeeded(const TrainConfig& train_config,
-                               MetricAggregator& train_metrics) {
+                                   MetricAggregator& train_metrics) {
   if (train_config.logLossFrequency() != 0 &&
       _updates % train_config.logLossFrequency() == 0) {
     logging::info("train | epoch {} | train_steps {} | {}", (_epoch), _updates,
