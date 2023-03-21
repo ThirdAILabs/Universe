@@ -166,6 +166,8 @@ def test_distributed_mach_cold_start(
     # metrics_aggregation_from_workers just returns metrics for last update
     assert overall_metrics["precision@1"] > 0.45
 
+    assert metrics["validation_metrics"][-1]["precision@1"] > 0.45
+
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
 def test_distributed_cold_start(
