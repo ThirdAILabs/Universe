@@ -280,6 +280,7 @@ class FullyConnectedLayer final {
 
   template <class Archive>
   void save(Archive& archive) const {
+    std::cout << "Should Save Optimizer " << _should_save_optimizer << std::endl;
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
             _disable_sparse_parameter_updates, _sampling_mode,
@@ -306,6 +307,7 @@ class FullyConnectedLayer final {
    */
   template <class Archive>
   void load(Archive& archive) {
+    std::cout << "Should Save Optimizer " << _should_save_optimizer << std::endl;
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
             _disable_sparse_parameter_updates, _sampling_mode,

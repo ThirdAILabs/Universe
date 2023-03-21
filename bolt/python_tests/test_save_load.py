@@ -1,5 +1,6 @@
 import pytest
 from thirdai import bolt
+import numpy as np
 
 from utils import gen_numpy_training_data
 
@@ -43,6 +44,47 @@ class ModelWithLayers:
 
     def evaluate(self, data, labels):
         return self.model.evaluate(data, labels, eval_config=get_eval_config())[0]
+
+
+def test_checkpoint_load_dag():
+
+    n_classes = 100
+    data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
+    model = ModelWithLayers(n_classes=n_classes)
+
+    # Train model and get accuracy.
+    model.train(data, labels, epochs=1)
+
+    # Save and load as new model.
+    checkpoint_loc = "./checkpointed_dag_pymodel"
+    model.model.checkpoint(filename=checkpoint_loc)
+
+    new_model = bolt.nn.Model.load(filename=checkpoint_loc)
+    nodes_1 = model.model.nodes()
+    nodes_2 = new_model.nodes()
+    for layer_1, layer_2 in zip(nodes_1, nodes_2):
+        if hasattr(layer_1, "weights"):
+            assert np.allclose(layer_1.weights.get(), layer_2.weights.get())
+        if hasattr(layer_1, "biases"):
+            assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
+
+    # Verify we can train the new model. Ideally we could check accuracy can
+    # improve, but that is a bit flaky.
+    new_model.train(
+        data, labels, train_config=get_train_config(epochs=2, batch_size=100)
+    )
+    model.model.train(
+        data, labels, train_config=get_train_config(epochs=2, batch_size=100)
+    )
+
+    nodes_1 = model.model.nodes()
+    nodes_2 = new_model.nodes()
+    for layer_1, layer_2 in zip(nodes_1, nodes_2):
+        if hasattr(layer_1, "weights"):
+            print(layer_1.weights.get(), layer_2.weights.get())
+            assert np.allclose(layer_1.weights.get(), layer_2.weights.get())
+        if hasattr(layer_1, "biases"):
+            assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
 
 
 def test_save_load_dag():
