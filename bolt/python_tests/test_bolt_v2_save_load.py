@@ -54,13 +54,13 @@ def build_model(n_classes):
 
 def train_model(model, train_data, train_labels):
     for x, y in zip(train_data, train_labels):
-        model.train_on_batch([x, y], [y, y, y])
+        model.train_on_batch(x, y)
         model.update_parameters(learning_rate=0.1)
 
 
-def evaluate_model(model, test_data, test_labels, test_labels_np):
+def evaluate_model(model, test_data, test_labels_np):
     accs = []
-    outputs = model.forward([test_data[0], test_labels[0]], use_sparsity=False)
+    outputs = model.forward(test_data[0], use_sparsity=False)
     for output in outputs:
         predictions = np.argmax(output.activations, axis=1)
         acc = np.mean(predictions == test_labels_np)
@@ -80,21 +80,29 @@ def test_bolt_save_load():
         n_classes=N_CLASSES, n_samples=2000
     )
 
-    train_data = bolt.train.convert_dataset(train_data, dim=N_CLASSES)
-    train_labels = bolt.train.convert_dataset(train_labels, dim=N_CLASSES)
+    train_data = bolt.train.convert_datasets(
+        [train_data, train_labels], dims=[N_CLASSES, N_CLASSES]
+    )
+    train_labels = bolt.train.convert_datasets(
+        [train_labels, train_labels, train_labels],
+        dims=[N_CLASSES, N_CLASSES, N_CLASSES],
+    )
 
-    test_data, test_labels_np = gen_numpy_training_data(
+    test_data_np, test_labels_np = gen_numpy_training_data(
         n_classes=N_CLASSES, n_samples=1000, convert_to_bolt_dataset=False
     )
 
-    test_data = dataset.from_numpy(test_data, len(test_data))
-    test_labels = dataset.from_numpy(test_labels_np, len(test_labels_np))
-    test_data = bolt.train.convert_dataset(test_data, dim=N_CLASSES)
-    test_labels = bolt.train.convert_dataset(test_labels, dim=N_CLASSES)
+    test_data = bolt.train.convert_datasets(
+        [
+            dataset.from_numpy(test_data_np, len(test_data_np)),
+            dataset.from_numpy(test_labels_np, len(test_labels_np)),
+        ],
+        dims=[N_CLASSES, N_CLASSES],
+    )
 
     # Initial training/evaluation of the model.
     train_model(model, train_data, train_labels)
-    initial_accs = evaluate_model(model, test_data, test_labels, test_labels_np)
+    initial_accs = evaluate_model(model, test_data, test_labels_np)
 
     # Save and reload model
     temp_save_path = "./temp_save_model"
@@ -102,8 +110,8 @@ def test_bolt_save_load():
     model = bolt.nn.Model.load(temp_save_path)
 
     # Check that the accuracies match
-    assert initial_accs == evaluate_model(model, test_data, test_labels, test_labels_np)
+    assert initial_accs == evaluate_model(model, test_data, test_labels_np)
 
     # Check that the model can continue to be trained after save/load.
     train_model(model, train_data, train_labels)
-    evaluate_model(model, test_data, test_labels, test_labels_np)
+    evaluate_model(model, test_data, test_labels_np)

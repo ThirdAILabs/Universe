@@ -65,8 +65,8 @@ void trainModel(model::ModelPtr& model, const train::LabeledDataset& data,
       if (single_input) {
         model->trainOnBatch(data.first.at(i), data.second.at(i));
       } else {
-        model->trainOnBatch({data.first.at(i)},
-                            {data.second.at(i), data.second.at(i)});
+        model->trainOnBatch(data.first.at(i),
+                            {data.second.at(i).at(0), data.second.at(i).at(0)});
       }
       model->updateParameters(learning_rate);
     }
@@ -85,12 +85,14 @@ std::vector<float> computeAccuracy(model::ModelPtr& model,
 
     for (uint32_t output_idx = 0; output_idx < outputs.size(); output_idx++) {
       for (uint32_t sample_idx = 0;
-           sample_idx < data.first.at(batch_idx)->batchSize(); sample_idx++) {
+           sample_idx < data.first.at(batch_idx).at(0)->batchSize();
+           sample_idx++) {
         uint32_t prediction = outputs.at(output_idx)
                                   ->getVector(sample_idx)
                                   .getHighestActivationId();
 
         uint32_t label = data.second.at(batch_idx)
+                             .at(0)
                              ->getVector(sample_idx)
                              .getHighestActivationId();
 

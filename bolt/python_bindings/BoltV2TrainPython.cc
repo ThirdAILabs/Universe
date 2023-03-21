@@ -19,12 +19,11 @@ void createBoltV2TrainSubmodule(py::module_& module) {
 
   // TODO(Nicholas): Add methods to return tensors in data pipeline and remove
   // this.
-  train.def(
-      "convert_dataset",
-      [](const dataset::BoltDatasetPtr& dataset, uint32_t dim) {
-        return convertDataset(std::move(*dataset), dim);
-      },
-      py::arg("dataset"), py::arg("dim"));
+  train.def("convert_dataset", convertDataset, py::arg("dataset"),
+            py::arg("dim"));
+
+  train.def("convert_datasets", convertDatasets, py::arg("datasets"),
+            py::arg("dims"));
 
   py::class_<Trainer>(train, "Trainer")
       .def(py::init<nn::model::ModelPtr>(), py::arg("model"))

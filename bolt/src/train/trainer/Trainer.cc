@@ -53,7 +53,8 @@ metrics::History Trainer::train(
 
       _model->updateParameters(train_state->learningRate());
 
-      train_metrics.recordBatch(train_data.first.at(batch_idx)->batchSize());
+      train_metrics.recordBatch(
+          train_data.first.at(batch_idx).at(0)->batchSize());
 
       callbacks.onBatchEnd();
 
@@ -120,7 +121,7 @@ metrics::History Trainer::validate(
                     /* use_sparsity= */ use_sparsity);
 
     validation_metrics.recordBatch(
-        validation_data.first.at(batch_idx)->batchSize());
+        validation_data.first.at(batch_idx).at(0)->batchSize());
 
     bar.increment();
   }
