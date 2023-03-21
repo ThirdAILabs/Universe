@@ -45,8 +45,12 @@ using TextGenerationFeaturizerPtr = std::shared_ptr<TextGenerationFeaturizer>;
 
 class TextGenerationFeaturizer final : public Featurizer {
  public:
-  TextGenerationFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len)
-      : _lrc_len(lrc_len), _irc_len(irc_len), _src_len(src_len) {}
+  TextGenerationFeaturizer(uint32_t lrc_len, uint32_t irc_len, uint32_t src_len,
+                           uint32_t vocab_size)
+      : _lrc_len(lrc_len),
+        _irc_len(irc_len),
+        _src_len(src_len),
+        _vocab_size(vocab_size) {}
 
   std::vector<std::vector<BoltVector>> featurize(
       const std::vector<std::string>& lines) final;
@@ -86,6 +90,16 @@ class TextGenerationFeaturizer final : public Featurizer {
   BoltVector srcContext(const std::vector<uint32_t>& tokens,
                         uint32_t label_index) const;
 
+  /**
+   * This function differs from our regular pairgram utility because of how it
+   * handles unigrams. Our regular pairgram utility will include hash(t_i, t_i)
+   * for i = [0...seq_len). However we want the unigrams to be consistent
+   * between the lrc and irc contexts. This uses the token itself for the
+   * unigrams representation of each token that is included in the pairgrams.
+   */
+  std::vector<uint32_t> unigram_preserving_pairgrams(const uint32_t* tokens,
+                                                     uint32_t len) const;
+
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
@@ -103,6 +117,7 @@ class TextGenerationFeaturizer final : public Featurizer {
   uint32_t _lrc_len;
   uint32_t _irc_len;
   uint32_t _src_len;
+  uint32_t _vocab_size;
 };
 
 }  // namespace thirdai::dataset
