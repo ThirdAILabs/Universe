@@ -114,6 +114,20 @@ class Model {
    */
   uint32_t trainSteps() const;
 
+  /**
+   * Saves the model without optimizer state.
+   */
+  void save(const std::string& filename);
+
+  void save_stream(std::ostream& output_stream);
+
+  /**
+   * Loads the model and automatically initializes the optimizer state.
+   */
+  static std::shared_ptr<Model> load(const std::string& filename);
+
+  static std::shared_ptr<Model> load_stream(std::istream& input_stream);
+
  private:
   /**
    * Helper function for forward and forwardSingleInput. Handles all of
@@ -173,6 +187,12 @@ class Model {
   AllocationManager _allocation_manager;
 
   uint32_t _train_steps;
+
+  Model() : _allocation_manager() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using ModelPtr = std::shared_ptr<Model>;

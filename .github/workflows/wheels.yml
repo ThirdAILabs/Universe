@@ -27,7 +27,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
+        # See https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#expanding-or-adding-matrix-configurations
+        # for the semantics of using the matrix and the includes.
+        os: [ubuntu-20.04, windows-2022]
         include:
           - name: macos-x86_64
             os: macos-12
@@ -122,6 +124,10 @@ jobs:
           CIBW_TEST_EXTRAS: "test"
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
           CIBW_TEST_COMMAND_WINDOWS: rem
+
+          # Skip tests on windows
+          # TODO(Jerin): Get tests working on windows wheels
+          CIBW_TEST_SKIP: "*win*"
 
           # Build both x86_64 and arm64 (apple silicon)
           CIBW_ARCHS_MACOS: ${{ matrix.archs }}

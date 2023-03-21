@@ -14,6 +14,7 @@ from thirdai._distributed_bolt.dataset_loaders import (
     DistributedColdStartDatasetLoader,
     DistributedDatasetLoader,
     DistributedUDTDatasetLoader,
+    ValidationContext,
 )
 from thirdai._thirdai import bolt
 
@@ -30,7 +31,14 @@ def add_distributed_to_udt():
         return batch_size
 
     def train_with_data_sources(
-        self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
+        self,
+        learning_rate,
+        epochs,
+        verbose,
+        cluster_config,
+        train_sources,
+        metrics,
+        validation_context,
     ):
         train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
 
@@ -46,19 +54,20 @@ def add_distributed_to_udt():
             model=model,
             train_config=train_config,
             train_sources=train_sources,
+            validation_context=validation_context,
         )
 
         # We are freezing hashtables by default for distributed training after one epoch,
         # Ideally we should read freezehashtables from UDTOptions and then pass
         # it to distributed Wrapper. However, for the time being we are just
         # initializing freeze-hash-tables=True by default.
-        metrics = dist_model.train(freeze_hash_tables=True)
+        training_metrics = dist_model.train(freeze_hash_tables=True)
 
         model = dist_model.get_model()
 
         self._set_model(trained_model=model)
 
-        return metrics
+        return training_metrics
 
     def train_distributed(
         self,
@@ -70,6 +79,7 @@ def add_distributed_to_udt():
         max_in_memory_batches: Optional[int] = None,
         metrics: List[str] = [],
         verbose: bool = True,
+        validation: Optional[bolt.Validation] = None,
     ):
         """
         This function trains UDT in the distributed setting. ThirdAI uses Ray
@@ -102,7 +112,8 @@ def add_distributed_to_udt():
                 in a streaming fashion. Defaults to None, which causes the entire dataset to be loaded in memory.
             metrics (List[str], optional): Metrics to be logged during training. Defaults to [].
             verbose (bool, optional): Prints info about training. Defaults to True.
-
+            validation (Optional[bolt.Validation]): This is an optional parameter that specifies
+                a validation dataset, metrics, and interval to use during training.
         Returns:
             Dict: returns
 
@@ -133,8 +144,32 @@ def add_distributed_to_udt():
             for file in filenames
         ]
 
+        validation_context = None
+        if validation != None:
+            validation_source = DistributedUDTDatasetLoader(
+                train_file=validation.filename(),
+                batch_size=batch_size_per_node(batch_size, cluster_config),
+                data_processor=self.get_data_processor(),
+            )
+
+            validation_args = validation.args()
+
+            validation_context = ValidationContext(
+                validation_source,
+                validation_args.metrics,
+                validation_args.sparse_inference,
+                validation_args.steps_per_validation,
+            )
+
         return train_with_data_sources(
-            self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
+            self,
+            learning_rate,
+            epochs,
+            verbose,
+            cluster_config,
+            train_sources,
+            metrics,
+            validation_context,
         )
 
     setattr(bolt.UDT, "train_distributed", train_distributed)
@@ -151,6 +186,7 @@ def add_distributed_to_udt():
         epochs: int = 5,
         metrics: List[str] = [],
         verbose: bool = True,
+        validation: Optional[bolt.Validation] = None,
     ):
         """
         This function does cold-start pretraining for UDT in the distributed setting.
@@ -197,8 +233,10 @@ def add_distributed_to_udt():
             learning_rate (float, optional): Learning rate for distributed training. Cold
                 -start pretraining can be very sensitive to this. A good default value is 0.001.
             epochs (int, optional): Number of epochs to train. Defaults to 3.
-            metrics (List[str], optional): Metrics to be logged during training. Defaults to [].
+                metrics (List[str], optional): Metrics to be logged during training. Defaults to [].
             verbose (bool, optional): Prints info about training. Defaults to True.
+            validation (Optional[bolt.Validation]): This is an optional parameter that specifies
+                a validation dataset, metrics, and interval to use during training.
 
         Returns:
             Dict: returns
@@ -235,8 +273,36 @@ def add_distributed_to_udt():
             for file in filenames
         ]
 
+        validation_context = None
+        if validation != None:
+            validation_source = DistributedColdStartDatasetLoader(
+                train_file=validation.filename(),
+                batch_size=batch_size_per_node(batch_size, cluster_config),
+                max_in_memory_batches=max_in_memory_batches,
+                strong_column_names=strong_column_names,
+                weak_column_names=weak_column_names,
+                data_processor=self.get_data_processor(),
+                cold_start_meta_data=self.get_cold_start_meta_data(),
+            )
+
+            validation_args = validation.args()
+
+            validation_context = ValidationContext(
+                validation_source,
+                validation_args.metrics,
+                validation_args.sparse_inference,
+                validation_args.steps_per_validation,
+            )
+
         return train_with_data_sources(
-            self, learning_rate, epochs, verbose, cluster_config, train_sources, metrics
+            self,
+            learning_rate,
+            epochs,
+            verbose,
+            cluster_config,
+            train_sources,
+            metrics,
+            validation_context,
         )
 
     setattr(bolt.UDT, "cold_start_distributed", cold_start_distributed)
@@ -366,6 +432,7 @@ class DistributedDataParallel:
         model: bolt.nn.Model,
         train_config: bolt.TrainConfig,
         train_sources: Union[List[DistributedDatasetLoader], List[str]],
+        validation_context: ValidationContext = None,
     ):
         """
         This constructor returns a new DistributedDataParallel object that can
@@ -379,6 +446,7 @@ class DistributedDataParallel:
         self.communication_type = cluster_config.communication_type
         self.logging = cluster_config.logging
         self.train_config = train_config
+        self.validation_context = validation_context
 
         if len(train_sources) != cluster_config.num_workers:
             raise ValueError(
@@ -405,6 +473,7 @@ class DistributedDataParallel:
             train_config=train_config,
             communication_type=cluster_config.communication_type,
             log_dir=cluster_config.log_dir,
+            validation_context=self.validation_context,
         )
 
         self.replica_workers = []
@@ -434,11 +503,26 @@ class DistributedDataParallel:
             f"Data loaded on all nodes, minimmum num batches is {self.num_of_batches}."
         )
         self.total_batches_trained = 0
+        self.validation_metrics = []
+
+    def post_batch_training_updates(self, train_state_manager):
+        self.total_batches_trained += 1
+        # whether we need to validate
+        if self.validation_context != None:
+            if (
+                train_state_manager.updates
+                % self.validation_context.validation_frequency
+                == 0
+            ):
+                self.validation_metrics.append(
+                    train_state_manager.validate_and_save_if_best()
+                )
 
     def train_on_epoch(self, train_state_manager, epoch):
         while train_state_manager.train_batch(epoch=epoch):
-            self.total_batches_trained += 1
-        self.total_batches_trained += 1
+            self.post_batch_training_updates(train_state_manager)
+
+        self.post_batch_training_updates(train_state_manager)
         return train_state_manager.move_to_next_epoch()
 
     def train(self, freeze_hash_tables=False) -> Dict[str, Union[int, str]]:
@@ -487,6 +571,7 @@ class DistributedDataParallel:
             "time": time.time() - train_start,
             "total_batches_trained": self.total_batches_trained,
             "train_metrics": train_metrics,
+            "validation_metrics": self.validation_metrics,
         }
         return distributed_train_metrics
 

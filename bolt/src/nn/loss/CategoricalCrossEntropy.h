@@ -1,7 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt/src/nn/loss/ComparativeLoss.h>
-#include <bolt/src/nn/ops/Op.h>
 
 namespace thirdai::bolt::nn::loss {
 
@@ -24,6 +24,12 @@ class CategoricalCrossEntropy final : public ComparativeLoss {
                        uint32_t batch_size) const final;
 
   float singleLoss(float activation, float label) const final;
+
+  CategoricalCrossEntropy() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using CategoricalCrossEntropyPtr = std::shared_ptr<CategoricalCrossEntropy>;
