@@ -114,20 +114,11 @@ void createBoltV2NNSubmodule(py::module_& module) {
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
            py::arg("losses"))
-      .def(
-          "train_on_batch",
-          py::overload_cast<const tensor::TensorPtr&, const tensor::TensorPtr&>(
-              &model::Model::trainOnBatch),
-          py::arg("inputs"), py::arg("labels"))
       .def("train_on_batch",
            py::overload_cast<const tensor::TensorList&,
                              const tensor::TensorList&>(
                &model::Model::trainOnBatch),
            py::arg("inputs"), py::arg("labels"))
-      .def("forward",
-           py::overload_cast<const tensor::TensorPtr&, bool>(
-               &model::Model::forward),
-           py::arg("inputs"), py::arg("use_sparsity"))
       .def("forward",
            py::overload_cast<const tensor::TensorList&, bool>(
                &model::Model::forward),
