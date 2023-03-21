@@ -24,12 +24,10 @@ void StateMachine::transition(char current_char) {
     case ParserState::NewColumn:
       _state = fromNewColumn(current_char);
       break;
+    // EscapeInQuotes and DelimiterInQutoes and are special cases of
+    // RegularInQuotes with the same out-transitions.
     case ParserState::EscapeInQuotes:
-      _state = fromEscapeInQuotes(current_char);
-      break;
     case ParserState::DelimiterInQuotes:
-      // DelimiterInQutoes is a special case of InQuotes with the same
-      // out-transitions.
     case ParserState::RegularInQuotes:
       _state = fromRegularInQuotes(current_char);
       break;
@@ -90,10 +88,6 @@ ParserState StateMachine::fromNewColumn(char current_char) const {
     default:
       return ParserState::RegularOutsideQuotes;
   }
-}
-
-ParserState StateMachine::fromEscapeInQuotes(char current_char) const {
-  return fromRegularInQuotes(current_char);
 }
 
 ParserState StateMachine::fromRegularInQuotes(char current_char) const {
