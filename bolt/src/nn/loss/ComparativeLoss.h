@@ -26,6 +26,9 @@ class ComparativeLoss : public Loss {
 
   autograd::ComputationList labels() const final;
 
+ protected:
+  ComparativeLoss() {}
+
  private:
   /**
    * Helper functions to iterate over the activations and labels depending on
@@ -53,6 +56,10 @@ class ComparativeLoss : public Loss {
 
   autograd::ComputationPtr _output;
   autograd::ComputationPtr _labels;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 }  // namespace thirdai::bolt::nn::loss

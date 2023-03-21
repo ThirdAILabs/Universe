@@ -384,6 +384,8 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
+    dataset/src/blocks/MachIndex.cc
+    dataset/src/blocks/MachBlock.cc
     dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
@@ -403,7 +405,8 @@ set(THIRDAI_SOURCES
     auto_ml/src/config/Parameter.cc
     auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc
-    utils/StringManipulation.cc)
+    utils/StringManipulation.cc
+    utils/UUID.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set
@@ -454,6 +457,7 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Train.cc
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
+  auto_ml/src/udt/backends/UDTMachClassifier.cc
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
   auto_ml/src/udt/backends/UDTSVMClassifier.cc

@@ -1,5 +1,6 @@
 #include "Heartbeat.h"
 #include <exceptions/src/Exceptions.h>
+#include <utils/UUID.h>
 #include <stdexcept>
 #include <string>
 #define CPPHTTPLIB_OPENSSL_SUPPORT
@@ -7,7 +8,7 @@
 #include <cryptopp/base64.h>  // Base64 decoder
 #include <cryptopp/xed25519.h>
 #include <json/include/nlohmann/json.hpp>
-#include <licensing/src/utils.h>
+#include <licensing/src/Utils.h>
 #include <chrono>
 
 namespace thirdai::licensing {
@@ -19,7 +20,7 @@ const std::string THIRDAI_PUBLIC_KEY_BASE64_DER =
 
 HeartbeatThread::HeartbeatThread(
     const std::string& url, const std::optional<uint32_t>& heartbeat_timeout)
-    : _machine_id(getRandomIdentifier(/* numBytesRandomness = */ 32)),
+    : _machine_id(utils::uuid::THIRDAI_UUID),
       _verified(true),
       _should_terminate(false) {
   if (!heartbeat_timeout.has_value()) {

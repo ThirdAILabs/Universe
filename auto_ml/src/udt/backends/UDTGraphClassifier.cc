@@ -25,8 +25,8 @@ UDTGraphClassifier::UDTGraphClassifier(const data::ColumnDataTypes& data_types,
       /* input_dims = */ _dataset_manager->getInputDims(),
       /* output_dim = */ _dataset_manager->getLabelDim());
 
-  _classifier = std::make_shared<utils::Classifier>(
-      model, /* freeze_hash_tables = */ false);
+  _classifier =
+      utils::Classifier::make(model, /* freeze_hash_tables = */ false);
 }
 
 py::object UDTGraphClassifier::train(

@@ -39,6 +39,10 @@ class Concatenate final : public Op,
 
   std::vector<uint32_t> _input_dims;
   std::vector<uint32_t> _neuron_offsets;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using ConcatenatePtr = std::shared_ptr<Concatenate>;

@@ -41,20 +41,6 @@ inline std::string sha256File(const std::string& filename) {
   return digest;
 }
 
-inline std::string getRandomIdentifier(uint32_t numBytesRandomness) {
-  static std::random_device dev;
-  static std::mt19937 rng(dev());
-
-  const char* v = "0123456789abcdef";
-  std::uniform_int_distribution<uint32_t> dist(0, strlen(v));
-
-  std::string res;
-  for (uint32_t i = 0; i < numBytesRandomness * 2; i++) {
-    res += v[dist(rng)];
-  }
-  return res;
-}
-
 /*
  * Creates an ed25519Verifier from the passed in public key string. The string
  * should be a DER format file encoded in base64.
