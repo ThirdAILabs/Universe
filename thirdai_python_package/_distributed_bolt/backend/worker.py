@@ -58,12 +58,6 @@ class Worker:
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
 
-        # Validation is just done on primary node
-        if self.id == 0 and validation_context != None:
-            train_config = self.add_validation_to_train_config(
-                validation_context, train_config
-            )
-
         start = time()
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
@@ -98,32 +92,6 @@ class Worker:
             raise ValueError(
                 "There must be at least one loadable dataset in the passed in data source."
             )
-
-    def add_validation_to_train_config(self, validation_context, train_config):
-        validation_context.validation_source.load(shuffle=False)
-        load = validation_context.validation_source.next()
-        if load == None:
-            raise ValueError("validation dataset shouldn't be empty")
-        if not validation_context.validation_source.dataset_finished:
-            raise ValueError("Validation Dataset should not be loaded using streaming.")
-
-        validation_eval_config = bolt.EvalConfig().with_metrics(
-            validation_context.metrics
-        )
-
-        if validation_context.sparse_inference:
-            validation_eval_config.enable_sparse_inference()
-
-        validation_data, validation_label = load
-        train_config.with_validation(
-            validation_data=[validation_data],
-            validation_labels=validation_label,
-            eval_config=validation_eval_config,
-            validation_frequency=validation_context.validation_frequency,
-            # We are just using the first metrics for save best model
-            save_best_per_metric=validation_context.metrics[0],
-        )
-        return train_config
 
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.
