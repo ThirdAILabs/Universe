@@ -124,7 +124,13 @@ class BoltGraph {
   void processTrainingBatch(const BoltBatch& batch_labels,
                             MetricAggregator& metrics);
 
-  void logValidateAndSave(const TrainConfig& train_config,
+  std::optional<InferenceMetricData> validateAndSaveIfBest(
+      const TrainConfig& train_config, const ValidationContext& validation);
+
+  std::optional<InferenceMetricData> validateIfNeeded(
+      const TrainConfig& train_config);
+
+  void logAndSaveIfNeeded(const TrainConfig& train_config,
                           MetricAggregator& train_metrics);
 
   void processEvaluationBatch(uint64_t batch_size,
