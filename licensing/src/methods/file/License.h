@@ -7,6 +7,7 @@
 #include <chrono>
 #include <map>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 namespace thirdai::licensing {
@@ -24,11 +25,11 @@ class License {
         _entitlements(std::move(entitlements)) {}
 
   static License createLicenseWithNDaysLeft(
-      std::map<std::string, std::string> metadata, int64_t num_days) {
+      std::map<std::string, std::string> entitlements, int64_t num_days) {
     int64_t current_millis = getCurrentEpochMillis();
     int64_t millis_offset = num_days * 24 * 3600 * 1000;
     int64_t expire_time = current_millis + millis_offset;
-    return {std::move(metadata), expire_time};
+    return {std::move(entitlements), expire_time};
   }
 
   bool isExpired() const {
@@ -55,6 +56,14 @@ class License {
       to_verify += ",";
     }
     return to_verify;
+  }
+
+  std::unordered_set<std::string> entitlements() const {
+    std::unordered_set<std::string> entitlements;
+    for (const auto& key : _entitlements) {
+      entitlements.insert(_entitlements.at(key.second));
+    }
+    return entitlements;
   }
 
  private:

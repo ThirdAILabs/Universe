@@ -12,10 +12,10 @@ using thirdai::licensing::SignedLicense;
 
 int main(int32_t argc, const char** argv) {
   if (argc < 5 || argc % 2 == 0) {
-    std::cerr
-        << "Invalid args, usage: ./create_signed_license "
-           "private_key_file public_key_file output_file num_days [key value]*"
-        << std::endl;
+    std::cerr << "Invalid args, usage: ./create_signed_license "
+                 "private_key_file public_key_file output_file num_days "
+                 "[entitlement_key entitlement_value]*"
+              << std::endl;
     return 1;
   }
   try {
@@ -25,11 +25,11 @@ int main(int32_t argc, const char** argv) {
     std::string public_key_file(argv[2]);
     std::string output_file(argv[3]);
     int64_t num_days = std::stoi(argv[4]);
-    std::map<std::string, std::string> metadata;
+    std::map<std::string, std::string> entitlements;
     for (uint32_t i = 5; i < num_args; i += 2) {
       std::string key(argv[i]);
       std::string val(argv[i + 1]);
-      metadata.at(key) = val;
+      entitlements[key] = val;
     }
 
     // Read keys from file
@@ -45,7 +45,8 @@ int main(int32_t argc, const char** argv) {
     }
 
     // Create and sign license
-    License license = License::createLicenseWithNDaysLeft(metadata, num_days);
+    License license =
+        License::createLicenseWithNDaysLeft(entitlements, num_days);
     SignedLicense license_with_signature(license, private_key);
 
     // Write license with signature to file
@@ -77,7 +78,7 @@ int main(int32_t argc, const char** argv) {
     }
     std::cout << "Was able to verify license with the public key!" << std::endl;
 
-    std::cout << "Saved license " << read_from_file.get_license().toString()
+    std::cout << "Saved license " << read_from_file.getLicense().toString()
               << std::endl;
   } catch (const std::exception& e) {
     std::cerr << "Create license failed with: " << e.what() << std::endl;

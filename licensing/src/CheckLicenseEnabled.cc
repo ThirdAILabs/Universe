@@ -18,8 +18,8 @@
 
 namespace thirdai::licensing {
 
-std::optional<std::string> _license_path = {};
-std::optional<std::string> _api_key = {};
+std::optional<std::string> _license_path = std::nullopt;
+std::optional<std::string> _api_key = std::nullopt;
 Entitlements _entitlements;
 
 std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
@@ -39,8 +39,15 @@ void checkLicense() {
     return;
   }
 
-  SignedLicense::findVerifyAndCheckLicense(_license_path);
-  _entitlements = Entitlements({FULL_ACCESS_ENTITLEMENT});
+  if (_license_path.has_value()) {
+    _entitlements =
+        Entitlements({SignedLicense::verifyLicenseFile(_license_path.value())});
+    return;
+  }
+
+  throw exceptions::LicenseCheckException(
+      "Please first call either licensing.set_license_path, "
+      "licensing.start_heartbeat, or licensing.activate.");
 }
 
 Entitlements entitlements() { return _entitlements; }
