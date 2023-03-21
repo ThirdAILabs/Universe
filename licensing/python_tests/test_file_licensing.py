@@ -28,11 +28,12 @@ def this_should_require_a_license_query_reformulation():
 
 from pathlib import Path
 
-dir_path = Path(__file__).resolve().parent
-valid_license_path = dir_path / "license.serialized"
-nonexisting_license_path = dir_path / "nonexisting_license.serialized"
-expired_license_path = dir_path / "expired_license.serialized"
-invalid_license_path = dir_path / "invalid_license.serialized"
+dir_path = Path(__file__).resolve().parent.parent / "licenses"
+valid_license_path = dir_path / "full_license_expires_mar_2024"
+nonexisting_license_path = dir_path / "nonexisting_license"
+expired_license_path = dir_path / "full_expired_license"
+invalid_license_1_path = dir_path / "invalid_license_1"
+invalid_license_2_path = dir_path / "invalid_license_2"
 
 
 def test_with_valid_license():
@@ -67,13 +68,14 @@ def test_with_expired_license():
 def test_with_invalid_license():
     import thirdai
 
-    thirdai.licensing.set_path(str(invalid_license_path))
-    with pytest.raises(Exception, match=r".*license verification failure.*"):
-        this_should_require_a_license_search()
-    with pytest.raises(Exception, match=r".*license verification failure.*"):
-        this_should_require_a_full_license_udt()
-    with pytest.raises(Exception, match=r".*license verification failure.*"):
-        this_should_require_a_license_query_reformulation()
+    for invalid_license_path in invalid_license_1_path, invalid_license_2_path:
+        thirdai.licensing.set_path(str(invalid_license_path))
+        with pytest.raises(Exception, match=r".*license verification failure.*"):
+            this_should_require_a_license_search()
+        with pytest.raises(Exception, match=r".*license verification failure.*"):
+            this_should_require_a_full_license_udt()
+        with pytest.raises(Exception, match=r".*license verification failure.*"):
+            this_should_require_a_license_query_reformulation()
 
 
 # See e.g. https://stackoverflow.com/questions/34931263/how-to-run-specific-code-after-all-tests-are-executed
