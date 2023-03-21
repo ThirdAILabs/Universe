@@ -1,8 +1,10 @@
 #include "BoltV2TrainPython.h"
+#include "PybindUtils.h"
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
 #include <bolt/src/train/metrics/LossMetric.h>
+#include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <pybind11/stl.h>
@@ -26,10 +28,18 @@ void createBoltV2TrainSubmodule(py::module_& module) {
 
   py::class_<Trainer>(train, "Trainer")
       .def(py::init<nn::model::ModelPtr>(), py::arg("model"))
-      .def("train", &Trainer::train, py::arg("train_data"), py::arg("epochs"),
-           py::arg("learning_rate"), py::arg("train_metrics"),
-           py::arg("validation_data"), py::arg("validation_metrics"),
-           py::arg("steps_per_validation"), py::arg("callbacks"));
+      .def("train", &Trainer::train, py::arg("train_data"),
+           py::arg("learning_rate"), py::arg("epochs") = 1,
+           py::arg("train_metrics") = metrics::InputMetrics(),
+           py::arg("validation_data") = std::nullopt,
+           py::arg("validation_metrics") = metrics::InputMetrics(),
+           py::arg("steps_per_validation") = std::nullopt,
+           py::arg("use_sparsity_in_validation") = false,
+           py::arg("callbacks") = std::vector<callbacks::CallbackPtr>(),
+           bolt::python::OutputRedirect())
+      .def("validate", &Trainer::validate, py::arg("validation_data"),
+           py::arg("validation_metrics") = metrics::InputMetrics(),
+           py::arg("use_sparsity") = false, bolt::python::OutputRedirect());
 
   auto metrics = train.def_submodule("metrics");
 
