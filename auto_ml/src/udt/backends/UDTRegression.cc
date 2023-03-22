@@ -85,7 +85,8 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
   (void)return_predicted_class;  // No classes to return in regression;
 
   bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose);
+      utils::getEvalConfig(metrics, sparse_inference, verbose,
+                           /* return_activations = */ !return_metrics);
 
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
                      ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
