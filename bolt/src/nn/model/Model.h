@@ -5,6 +5,7 @@
 #include <bolt/src/nn/model/AllocationManager.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <licensing/src/CheckLicense.h>
 #include <vector>
 
 namespace thirdai::bolt::nn::model {
@@ -162,7 +163,7 @@ class Model {
 
   uint32_t _train_steps;
 
-  Model() : _allocation_manager() {}
+  Model() : _allocation_manager() { licensing::checkLicense(); }
 
   friend class cereal::access;
   template <class Archive>
