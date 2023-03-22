@@ -15,6 +15,7 @@
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
+#include <licensing/src/CheckLicense.h>
 #include <utils/Logging.h>
 #include <algorithm>
 #include <chrono>
@@ -105,7 +106,7 @@ std::optional<InferenceMetricData> BoltGraph::validateIfNeeded(
 }
 
 void BoltGraph::logAndSaveIfNeeded(const TrainConfig& train_config,
-                                   MetricAggregator& train_metrics) {
+                                   MetricAggregator& train_metrics) const {
   if (train_config.logLossFrequency() != 0 &&
       _updates % train_config.logLossFrequency() == 0) {
     logging::info("train | epoch {} | train_steps {} | {}", (_epoch), _updates,
@@ -310,6 +311,10 @@ void BoltGraph::trainOnBatch(std::vector<BoltBatch>&& inputs,
 
 void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
                                      MetricAggregator& metrics) {
+  _total_samples_trained_on += batch_labels.getBatchSize();
+  licensing::entitlements().verifyAllowedNumberOfTrainingSamples(
+      _total_samples_trained_on);
+
   assert(graphCompiled());
   batch_labels.verifyExpectedDimension(
       /* expected_dimension = */ _output->outputDim(),
@@ -889,8 +894,10 @@ template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
+  licensing::entitlements().verifySaveLoad();
   archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
-          _epoch, _updates);
+          _epoch, _updates, _total_samples_trained_on);
+  licensing::entitlements().verifyAllowedOutputDim(_output->outputDim());
 }
 
 void BoltGraph::save(const std::string& filename) const {

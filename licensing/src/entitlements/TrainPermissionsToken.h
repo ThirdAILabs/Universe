@@ -20,7 +20,7 @@ class TrainPermissionsToken {
    * if the user does not have a full access entitlement. If licensing is
    * disabled, this will always succeed.
    */
-  TrainPermissionsToken() { entitlements().assertFullAccess(); }
+  TrainPermissionsToken() { entitlements().verifyFullAccess(); }
 
   /**
    * Creates a TrainPermissionsToken corresponding to a passed in training

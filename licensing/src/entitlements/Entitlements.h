@@ -20,10 +20,10 @@ class Entitlements {
 
   Entitlements(){};
 
-  bool fullAccess() { return _entitlements.count(FULL_ACCESS_ENTITLEMENT); }
+  bool hasFullAccess() { return _entitlements.count(FULL_ACCESS_ENTITLEMENT); }
 
-  void assertFullAccess() {
-    if (!fullAccess()) {
+  void verifyFullAccess() {
+    if (!hasFullAccess()) {
       throw exceptions::LicenseCheckException(
           "You must have a full license to perform this operation.");
     }
@@ -45,6 +45,14 @@ class Entitlements {
     }
 
     (void)total_num_training_samples;
+  }
+
+  void verifyAllowedOutputDim(uint64_t output_dim) {
+    if (fullModelAccess()) {
+      return;
+    }
+
+    (void)output_dim;
   }
 
   bool contains(const std::string& key) { return _entitlements.count(key); }
@@ -77,11 +85,11 @@ class Entitlements {
 
  private:
   bool fullModelAccess() {
-    return fullAccess() || _entitlements.count(FULL_MODEL_ENTITLEMENT);
+    return hasFullAccess() || _entitlements.count(FULL_MODEL_ENTITLEMENT);
   }
 
   bool fullDatasetAccess() {
-    return fullAccess() || _entitlements.count(FULL_DATASET_ENTITLEMENT);
+    return hasFullAccess() || _entitlements.count(FULL_DATASET_ENTITLEMENT);
   }
 
   std::unordered_set<std::string> _entitlements;

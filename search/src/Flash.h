@@ -89,6 +89,8 @@ class Flash {
   uint32_t _num_tables;
   uint32_t _range;
 
+  uint64_t _total_samples_indexed;
+
   std::shared_ptr<hashtable::HashTable<LABEL_T>> _hashtable;
 
   friend class cereal::access;

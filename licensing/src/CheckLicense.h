@@ -11,7 +11,8 @@ namespace thirdai::licensing {
 
 // If license checking is enabled, verifies the license is valid and throws an
 // exception otherwise. If licensing checking is disabled, this is a NOOP.
-// This also updates the current entitlements object.
+// This also updates the current entitlements object. This should be called in
+// all model constructors.
 void checkLicense();
 
 // Get the entitlements object for the current license
