@@ -101,8 +101,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
   py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
       .def(py::init(&ops::Embedding::make), py::arg("num_embedding_lookups"),
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
-           py::arg("update_chunk_size"), py::arg("reduction"),
-           py::arg("num_tokens_per_input") = std::nullopt)
+           py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
+           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
       .def("__call__", &ops::Embedding::apply);
 
   py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
@@ -114,20 +114,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
            py::arg("losses"))
-      .def(
-          "train_on_batch",
-          py::overload_cast<const tensor::TensorPtr&, const tensor::TensorPtr&>(
-              &model::Model::trainOnBatch),
-          py::arg("inputs"), py::arg("labels"))
-      .def("train_on_batch",
-           py::overload_cast<const tensor::TensorList&,
-                             const tensor::TensorList&>(
-               &model::Model::trainOnBatch),
-           py::arg("inputs"), py::arg("labels"))
-      .def("forward",
-           py::overload_cast<const tensor::TensorPtr&, bool>(
-               &model::Model::forward),
-           py::arg("inputs"), py::arg("use_sparsity"))
+      .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
+           py::arg("labels"))
       .def("forward",
            py::overload_cast<const tensor::TensorList&, bool>(
                &model::Model::forward),
@@ -135,7 +123,9 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("update_parameters", &model::Model::updateParameters,
            py::arg("learning_rate"))
       .def("__getitem__", &model::Model::getOp, py::arg("name"))
-      .def("summary", &model::Model::summary, py::arg("print") = true);
+      .def("summary", &model::Model::summary, py::arg("print") = true)
+      .def("save", &model::Model::save, py::arg("filename"))
+      .def_static("load", &model::Model::load, py::arg("filename"));
 
   auto loss = nn.def_submodule("losses");
 

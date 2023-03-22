@@ -56,12 +56,13 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
                                 bool return_predicted_class, bool verbose,
                                 bool return_metrics) {
   bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose);
+      utils::getEvalConfig(metrics, sparse_inference, verbose,
+                           /* return_activations = */ !return_metrics);
 
   auto loaded_data =
       dataset->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
   auto [test_data, test_labels] =
-      utils::split_data_labels(std::move(loaded_data));
+      utils::splitDataLabels(std::move(loaded_data));
 
   auto [output_metrics, output] =
       _model->evaluate(test_data, test_labels, eval_config);
@@ -143,7 +144,7 @@ std::optional<float> Classifier::tuneBinaryClassificationPredictionThreshold(
   // Did this instead of structured binding auto [data, labels] = ...
   // since Clang-Tidy would throw this error around pragma omp parallel:
   // "reference to local binding 'labels' declared in enclosing function"
-  auto split_data = utils::split_data_labels(std::move(*loaded_data_opt));
+  auto split_data = utils::splitDataLabels(std::move(*loaded_data_opt));
   auto data = std::move(split_data.first);
   auto labels = std::move(split_data.second);
 

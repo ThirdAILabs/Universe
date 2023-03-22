@@ -13,7 +13,7 @@
 #include <cryptopp/sha.h>       // SHA256
 #include <cryptopp/xed25519.h>  // Ed25519
 #include <json/include/nlohmann/json.hpp>
-#include <licensing/src/utils.h>
+#include <licensing/src/Utils.h>
 #include <iostream>
 #include <stdexcept>
 

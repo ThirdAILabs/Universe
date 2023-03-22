@@ -87,7 +87,7 @@ TEST(TensorTests, DenseBoltBatchToTensor) {
   auto vectors_copy = vectors;
   BoltBatch batch(std::move(vectors_copy));
 
-  auto tensor = tensor::Tensor::convert(std::move(batch), 4);
+  auto tensor = tensor::Tensor::convert(batch, 4);
 
   EXPECT_EQ(tensor->batchSize(), 3);
   EXPECT_EQ(tensor->dim(), 4);
@@ -112,7 +112,7 @@ TEST(TensorTests, SparseBoltBatchToTensor) {
   auto vectors_copy = vectors;
   BoltBatch batch(std::move(vectors_copy));
 
-  auto tensor = tensor::Tensor::convert(std::move(batch), 8);
+  auto tensor = tensor::Tensor::convert(batch, 8);
 
   EXPECT_EQ(tensor->batchSize(), 3);
   EXPECT_EQ(tensor->dim(), 8);

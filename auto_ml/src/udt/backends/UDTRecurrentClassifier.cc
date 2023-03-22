@@ -85,11 +85,12 @@ py::object UDTRecurrentClassifier::evaluate(
   throwIfSparseInference(sparse_inference);
 
   bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose);
+      utils::getEvalConfig(metrics, sparse_inference, verbose,
+                           /* return_activations = */ !return_metrics);
 
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
                      ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
-  auto [test_data, test_labels] = utils::split_data_labels(std::move(dataset));
+  auto [test_data, test_labels] = utils::splitDataLabels(std::move(dataset));
 
   auto [output_metrics, output] =
       _model->evaluate(test_data, test_labels, eval_config);

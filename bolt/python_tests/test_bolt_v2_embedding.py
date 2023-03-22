@@ -13,7 +13,6 @@ def get_sum_model(input_dim):
         num_embedding_lookups=4,
         lookup_size=8,
         log_embedding_block_size=10,
-        update_chunk_size=8,
         reduction="sum",
     )(input_1)
 
@@ -21,7 +20,6 @@ def get_sum_model(input_dim):
         num_embedding_lookups=4,
         lookup_size=8,
         log_embedding_block_size=10,
-        update_chunk_size=8,
         reduction="sum",
     )(input_2)
 
@@ -60,13 +58,15 @@ def generate_sum_datasets_and_labels(input_dim, num_examples, batch_size=64):
     labels = bolt.train.convert_dataset(
         dataset.from_numpy(labels_np, batch_size=batch_size), dim=input_dim * 2
     )
-    data_1 = bolt.train.convert_dataset(
-        dataset.from_numpy(data_1, batch_size=batch_size), dim=input_dim
+    data = bolt.train.convert_datasets(
+        datasets=[
+            dataset.from_numpy(data_1, batch_size=batch_size),
+            dataset.from_numpy(data_2, batch_size=batch_size),
+        ],
+        dims=[input_dim, input_dim],
     )
-    data_2 = bolt.train.convert_dataset(
-        dataset.from_numpy(data_2, batch_size=batch_size), dim=input_dim
-    )
-    return data_1, data_2, labels, chunk(labels_np, batch_size)
+
+    return data, labels, chunk(labels_np, batch_size)
 
 
 # This test ensures we can learn how to add (almost certainly by memorizing)
@@ -79,24 +79,24 @@ def test_embedding_op():
 
     model = get_sum_model(input_dim)
 
-    train_1, train_2, train_labels, _ = generate_sum_datasets_and_labels(
+    train_data, train_labels, _ = generate_sum_datasets_and_labels(
         input_dim=input_dim, num_examples=num_train
     )
 
     for _ in range(5):
-        for x1, x2, y in zip(train_1, train_2, train_labels):
-            model.train_on_batch([x1, x2], [y])
+        for x, y in zip(train_data, train_labels):
+            model.train_on_batch(x, y)
             model.update_parameters(0.01)
 
-    test_1, test_2, _, test_labels_np = generate_sum_datasets_and_labels(
+    test_data, _, test_labels_np = generate_sum_datasets_and_labels(
         input_dim=input_dim,
         num_examples=num_test,
     )
 
     correct = 0
     total = 0
-    for x1, x2, y_np in zip(test_1, test_2, test_labels_np):
-        output = model.forward([x1, x2], use_sparsity=False)
+    for x, y_np in zip(test_data, test_labels_np):
+        output = model.forward(x, use_sparsity=False)
 
         correct += np.sum(np.argmax(output[0].activations, axis=1) == y_np)
         total += len(y_np)

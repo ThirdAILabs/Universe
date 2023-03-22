@@ -6,6 +6,7 @@
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/backends/UDTClassifier.h>
 #include <auto_ml/src/udt/backends/UDTGraphClassifier.h>
+#include <auto_ml/src/udt/backends/UDTMachClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRecurrentClassifier.h>
 #include <auto_ml/src/udt/backends/UDTRegression.h>
 #include <auto_ml/src/udt/backends/UDTSVMClassifier.h>
@@ -61,10 +62,19 @@ UDT::UDT(data::ColumnDataTypes data_types,
         data_types, target_col, n_target_classes.value(), integer_target,
         tabular_options);
   } else if (as_categorical && !has_graph_inputs) {
-    _backend = std::make_unique<UDTClassifier>(
-        data_types, temporal_tracking_relationships, target_col, as_categorical,
-        n_target_classes.value(), integer_target, tabular_options, model_config,
-        user_args);
+    bool use_mach = user_args.get<bool>("extreme_classification", "boolean",
+                                        defaults::USE_MACH);
+    if (use_mach) {
+      _backend = std::make_unique<UDTMachClassifier>(
+          data_types, temporal_tracking_relationships, target_col,
+          as_categorical, n_target_classes.value(), integer_target,
+          tabular_options, model_config, user_args);
+    } else {
+      _backend = std::make_unique<UDTClassifier>(
+          data_types, temporal_tracking_relationships, target_col,
+          as_categorical, n_target_classes.value(), integer_target,
+          tabular_options, model_config, user_args);
+    }
   } else if (as_numerical && !has_graph_inputs) {
     _backend = std::make_unique<UDTRegression>(
         data_types, temporal_tracking_relationships, target_col, as_numerical,
@@ -115,6 +125,12 @@ py::object UDT::evaluate(const dataset::DataSourcePtr& data,
                          const std::vector<std::string>& metrics,
                          bool sparse_inference, bool return_predicted_class,
                          bool verbose, bool return_metrics) {
+  if (return_predicted_class && return_metrics) {
+    throw std::invalid_argument(
+        "At most one of return_predicted_class and return_metrics should be "
+        "true.");
+  }
+
   bolt::utils::Timer timer;
 
   auto result =

@@ -42,7 +42,15 @@ void defineAutomlInModule(py::module_& module) {
       .def("filename", &ValidationOptions::filename)
       .def("args", &ValidationOptions::args);
 
-  py::class_<udt::ValidationArgs>(module, "ValidationArgs");  // NOLINT
+  py::class_<udt::ValidationArgs>(module, "ValidationArgs")
+      .def_property_readonly(
+          "metrics", [](udt::ValidationArgs const& v) { return v.metrics(); })
+      .def_property_readonly(
+          "steps_per_validation",
+          [](udt::ValidationArgs const& v) { return v.stepsPerValidation(); })
+      .def_property_readonly(
+          "sparse_inference",
+          [](udt::ValidationArgs const& v) { return v.sparseInference(); });
 
   /**
    * This class definition overrides the __new__ method because we want to
@@ -117,6 +125,9 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("input_samples"))
       .def("index_nodes", &udt::UDT::indexNodes, py::arg("data_source"))
       .def("clear_graph", &udt::UDT::clearGraph)
+      .def("set_decode_params", &udt::UDT::setDecodeParams,
+           py::arg("min_num_eval_results"),
+           py::arg("top_k_per_eval_aggregation"))
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))

@@ -22,7 +22,7 @@ if args.machine_timeout_ms != None:
     compile_time_assignments += f"-X main.ActiveTimeoutMillisString={args.machine_timeout_ms} "
 
 licensing_bin_directory = parent_dir = pathlib.Path(__file__).parent
-go_src_directory = licensing_bin_directory.parent / "src" / "server"
+go_src_directory = licensing_bin_directory.parent / "src" / "methods" / "server" 
 os.chdir(go_src_directory)
 
 os.system(f"go build -ldflags \"{compile_time_assignments}\" -o license-server-max-{args.max_num_machines}")
