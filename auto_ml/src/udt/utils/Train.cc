@@ -140,9 +140,9 @@ bolt::TrainConfig getTrainConfig(
         /* batch_size= */ defaults::BATCH_SIZE, verbose);
     auto [val_data, val_labels] = splitDataLabels(std::move(val_dataset));
 
-    bolt::EvalConfig val_config =
-        getEvalConfig(validation->second.metrics(),
-                      validation->second.sparseInference(), verbose);
+    bolt::EvalConfig val_config = getEvalConfig(
+        validation->second.metrics(), validation->second.sparseInference(),
+        verbose, /* return_activations = */ false);
 
     train_config.withValidation(
         val_data, val_labels, val_config,
@@ -155,7 +155,7 @@ bolt::TrainConfig getTrainConfig(
 
 bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
                                bool sparse_inference, bool verbose,
-                               bool validation) {
+                               bool return_activations) {
   bolt::EvalConfig eval_config =
       bolt::EvalConfig::makeConfig().withMetrics(metrics);
   if (sparse_inference) {
@@ -164,7 +164,7 @@ bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
   if (!verbose) {
     eval_config.silence();
   }
-  if (!validation) {
+  if (return_activations) {
     eval_config.returnActivations();
   }
 

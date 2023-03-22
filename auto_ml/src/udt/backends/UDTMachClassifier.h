@@ -83,6 +83,10 @@ class UDTMachClassifier final : public UDTBackend {
   void setDecodeParams(uint32_t min_num_eval_results,
                        uint32_t top_k_per_eval_aggregation) final;
 
+  void verifyCanDistribute() const final {
+    _dataset_factory->verifyCanDistribute();
+  }
+
  private:
   /**
    * Given the output activations to a mach model, decode using the mach index

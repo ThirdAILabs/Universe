@@ -29,7 +29,7 @@ bolt::TrainConfig getTrainConfig(
 
 bolt::EvalConfig getEvalConfig(const std::vector<std::string>& metrics,
                                bool sparse_inference, bool verbose,
-                               bool validation = false);
+                               bool return_activations);
 
 std::pair<dataset::BoltDatasetList, dataset::BoltDatasetPtr> splitDataLabels(
     dataset::BoltDatasetList&& datasets);
