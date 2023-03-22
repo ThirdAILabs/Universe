@@ -56,14 +56,20 @@ tensor::TensorList Model::forward(const tensor::TensorList& inputs,
                                   bool use_sparsity) {
   uint32_t input_batch_size = setInput(inputs);
 
-  return forward(input_batch_size, use_sparsity);
-}
+  _allocation_manager.reallocateIfNeeded(input_batch_size, use_sparsity);
 
-tensor::TensorList Model::forward(const tensor::TensorPtr& inputs,
-                                  bool use_sparsity) {
-  setInput(inputs);
+#pragma omp parallel for default(none) \
+    shared(input_batch_size) if (input_batch_size > 1)
+  for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
+       index_in_batch++) {
+    forwardVector(index_in_batch, /* training= */ false);
+  }
 
-  return forward(inputs->batchSize(), use_sparsity);
+  tensor::TensorList outputs;
+  for (auto& output : _outputs) {
+    outputs.push_back(output->tensor());
+  }
+  return outputs;
 }
 
 void Model::trainOnBatch(const tensor::TensorList& inputs,
@@ -71,26 +77,23 @@ void Model::trainOnBatch(const tensor::TensorList& inputs,
   uint32_t input_batch_size = setInput(inputs);
   uint32_t label_batch_size = setLabels(labels);
 
-  trainOnBatch(input_batch_size, label_batch_size);
-}
+  if (input_batch_size != label_batch_size) {
+    throw std::invalid_argument(
+        "Input batch size and label batch size do not match.");
+  }
+  _allocation_manager.reallocateIfNeeded(input_batch_size,
+                                         /* use_sparsity= */ true);
 
-void Model::trainOnBatch(const tensor::TensorPtr& inputs,
-                         const tensor::TensorPtr& labels) {
-  setInput(inputs);
-  setLabels(labels);
-
-  trainOnBatch(inputs->batchSize(), labels->batchSize());
+#pragma omp parallel for default(none) shared(input_batch_size)
+  for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
+       index_in_batch++) {
+    forwardVector(index_in_batch, /* training= */ true);
+    backpropagateVector(index_in_batch, input_batch_size);
+  }
 }
 
 tensor::TensorList Model::forward(const tensor::TensorList& inputs,
                                   const tensor::TensorList& labels,
-                                  bool use_sparsity) {
-  setLabels(labels);
-  return forward(inputs, use_sparsity);
-}
-
-tensor::TensorList Model::forward(const tensor::TensorPtr& inputs,
-                                  const tensor::TensorPtr& labels,
                                   bool use_sparsity) {
   setLabels(labels);
   return forward(inputs, use_sparsity);
@@ -187,40 +190,6 @@ std::shared_ptr<Model> Model::load_stream(std::istream& input_stream) {
   return deserialize_into;
 }
 
-tensor::TensorList Model::forward(uint32_t input_batch_size,
-                                  bool use_sparsity) {
-  _allocation_manager.reallocateIfNeeded(input_batch_size, use_sparsity);
-
-#pragma omp parallel for default(none) \
-    shared(input_batch_size) if (input_batch_size > 1)
-  for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
-       index_in_batch++) {
-    forwardVector(index_in_batch, /* training= */ false);
-  }
-
-  tensor::TensorList outputs;
-  for (auto& output : _outputs) {
-    outputs.push_back(output->tensor());
-  }
-  return outputs;
-}
-
-void Model::trainOnBatch(uint32_t input_batch_size, uint32_t label_batch_size) {
-  if (input_batch_size != label_batch_size) {
-    throw std::invalid_argument(
-        "Input batch size and label batch size do not match.");
-  }
-  _allocation_manager.reallocateIfNeeded(input_batch_size,
-                                         /* use_sparsity= */ true);
-
-#pragma omp parallel for default(none) shared(input_batch_size)
-  for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
-       index_in_batch++) {
-    forwardVector(index_in_batch, /* training= */ true);
-    backpropagateVector(index_in_batch, input_batch_size);
-  }
-}
-
 void Model::forwardVector(uint32_t index_in_batch, bool training) {
   for (auto& tensor : _computation_order) {
     tensor->forward(index_in_batch, training);
@@ -273,24 +242,8 @@ uint32_t Model::setInput(const tensor::TensorList& input_batches) {
   return setBatchHelper(_inputs, input_batches, "inputs");
 }
 
-void Model::setInput(const tensor::TensorPtr& input) {
-  if (_inputs.size() != 1) {
-    throw std::invalid_argument("Expected " + std::to_string(_inputs.size()) +
-                                " input batches but received 1.");
-  }
-  _inputs[0]->setTensor(input);
-}
-
 uint32_t Model::setLabels(const tensor::TensorList& label_batches) {
   return setBatchHelper(_labels, label_batches, "labels");
-}
-
-void Model::setLabels(const tensor::TensorPtr& labels) {
-  if (_labels.size() != 1) {
-    throw std::invalid_argument("Expected " + std::to_string(_labels.size()) +
-                                " label batches but received 1.");
-  }
-  _labels[0]->setTensor(labels);
 }
 
 void Model::matchOutputFullyConnectedLayersWithLabels() {
