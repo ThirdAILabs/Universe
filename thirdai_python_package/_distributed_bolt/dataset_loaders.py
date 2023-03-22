@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple, Union
 
-from thirdai import data, dataset
+from thirdai import bolt, data, dataset
 from thirdai.bolt.udt_modifications import _create_data_source
 
 # TODO(Josh/Pratik): Clean up this file and remove the unnecessary DatasetLoaders
@@ -29,7 +30,7 @@ class DistributedDatasetLoader(ABC):
         pass
 
     @abstractmethod
-    def load() -> None:
+    def load(shuffle: bool) -> None:
         """
         This function is called only once before the first epoch. As this function is called
         independently inside each worker, it can be used for multiple purposes which includes
@@ -85,13 +86,21 @@ class DistributedMultiDatasourceloader(DistributedDatasetLoader):
         self.generator.restart()
 
 
+@dataclass
+class ValidationContext:
+    validation_source: DistributedDatasetLoader
+    metrics: List[str]
+    sparse_inference: bool
+    validation_frequency: int
+
+
 class DistributedUDTDatasetLoader(DistributedDatasetLoader):
     def __init__(
         self,
         train_file: str,
         batch_size: int,
-        max_in_memory_batches: int,
         data_processor,
+        max_in_memory_batches: int = None,
     ):
         self.generator = None
         self.data_processor = data_processor
@@ -100,10 +109,10 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
 
-    def load(self):
+    def load(self, shuffle: bool = True):
         self.generator = self.data_processor.get_dataset_loader(
             _create_data_source(self.train_file),
-            training=True,
+            training=shuffle,
         )
 
     def next(self):
@@ -123,6 +132,43 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
     def restart(self):
         self.dataset_finished = False
         self.generator.restart()
+
+
+class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
+    def __init__(
+        self,
+        train_file: str,
+        batch_size: int,
+        max_in_memory_batches: int,
+        strong_column_names: List[str],
+        weak_column_names: List[str],
+        data_processor,
+        cold_start_meta_data,
+    ):
+        self.generator = None
+        self.train_file = train_file
+        self.strong_column_names = strong_column_names
+        self.weak_column_names = weak_column_names
+        self.batch_size = batch_size
+        self.max_in_memory_batches = max_in_memory_batches
+        self.dataset_finished = False
+        self.data_processor = data_processor
+        self.cold_start_meta_data = cold_start_meta_data
+
+    def load(self, shuffle: bool = True):
+        original_data_source = _create_data_source(self.train_file)
+        cold_start_data_source = (
+            bolt.distributed_preprocessing.preprocess_cold_start_train_source(
+                original_data_source,
+                self.strong_column_names,
+                self.weak_column_names,
+                self.data_processor,
+                self.cold_start_meta_data,
+            )
+        )
+        self.generator = self.data_processor.get_dataset_loader(
+            cold_start_data_source, training=shuffle
+        )
 
 
 class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
@@ -147,7 +193,7 @@ class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
         self.current_labels = None
         self.generated_for_this_epoch = False
 
-    def load(self):
+    def load(self, shuffle: bool = True):
         pass
 
     def next(self):
@@ -201,7 +247,7 @@ class DistributedTabularDatasetLoader(DistributedDatasetLoader):
         self.y_col = y_col
         self.batch_size = batch_size
 
-    def load(self):
+    def load(self, shuffle: bool = True):
         pass
 
     def next(self):

@@ -50,8 +50,4 @@ void endHeartbeat();
 // License verification method 3: license file
 void setLicensePath(const std::string& license_path);
 
-// This throws an exception if licensing is enabled and the user only has a
-// demo license (or no license).
-void disableForDemoLicenses();
-
 }  // namespace thirdai::licensing

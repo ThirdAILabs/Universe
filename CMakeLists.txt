@@ -320,6 +320,8 @@ set(THIRDAI_SOURCES
     bolt/src/nn/model/AllocationManager.cc
     bolt/src/nn/model/Model.cc
     bolt/src/nn/ops/FullyConnected.cc
+    bolt/src/nn/ops/Embedding.cc
+    bolt/src/nn/ops/Concatenate.cc
     bolt/src/nn/ops/Input.cc
     bolt/src/nn/tensor/Tensor.cc
     bolt/src/nn/loss/ComparativeLoss.cc
@@ -368,6 +370,7 @@ set(THIRDAI_SOURCES
     dataset/src/InMemoryDataset.cc
     dataset/src/VectorBuffer.cc
     dataset/src/dataset_loaders/DatasetLoader.cc
+    dataset/src/cold_start/ColdStartDataSource.cc
     dataset/src/utils/TokenEncoding.cc
     dataset/src/featurizers/TextGenerationFeaturizer.cc
     dataset/src/utils/CsvParser.cc
@@ -377,10 +380,14 @@ set(THIRDAI_SOURCES
     dataset/src/featurizers/ProcessorUtils.cc
     dataset/src/featurizers/SvmFeaturizer.cc
     dataset/src/featurizers/TabularFeaturizer.cc
-    dataset/src/blocks/ColumnIdentifier.cc
+    dataset/src/blocks/GraphBlocks.cc
     dataset/src/blocks/BlockList.cc
+    dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
+    dataset/src/blocks/MachIndex.cc
+    dataset/src/blocks/MachBlock.cc
+    dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
     new_dataset/src/featurization_pipeline/transformations/StringHash.cc
@@ -394,18 +401,21 @@ set(THIRDAI_SOURCES
     auto_ml/src/featurization/TabularBlockComposer.cc
     auto_ml/src/featurization/TabularDatasetFactory.cc
     auto_ml/src/featurization/RecurrentDatasetFactory.cc
+    auto_ml/src/featurization/GraphDatasetManager.cc
     auto_ml/src/config/ModelConfig.cc
     auto_ml/src/config/Parameter.cc
-    auto_ml/src/cold_start/ColdStartDataSource.cc
+    auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc
-    utils/StringManipulation.cc)
+    utils/StringManipulation.cc
+    utils/UUID.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set
 if(${LICENSE_CHECK_FLAG_FOUND})
   set(THIRDAI_SOURCES
-      ${THIRDAI_SOURCES} licensing/src/keygen/KeygenCommunication.cc
-      licensing/src/heartbeat/Heartbeat.cc licensing/src/CheckLicenseEnabled.cc)
+      ${THIRDAI_SOURCES} licensing/src/methods/keygen/KeygenCommunication.cc
+      licensing/src/methods/heartbeat/Heartbeat.cc
+      licensing/src/CheckLicenseEnabled.cc)
 else()
   set(THIRDAI_SOURCES ${THIRDAI_SOURCES} licensing/src/CheckLicenseDisabled.cc)
 endif()
@@ -447,10 +457,13 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Conversion.cc
   auto_ml/src/udt/utils/Models.cc
   auto_ml/src/udt/utils/Train.cc
+  auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/backends/UDTClassifier.cc
+  auto_ml/src/udt/backends/UDTMachClassifier.cc
   auto_ml/src/udt/backends/UDTRecurrentClassifier.cc
   auto_ml/src/udt/backends/UDTRegression.cc
   auto_ml/src/udt/backends/UDTSVMClassifier.cc
+  auto_ml/src/udt/backends/UDTGraphClassifier.cc
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/models/TextClassifier.cc
   telemetry/python_bindings/TelemetryPython.cc

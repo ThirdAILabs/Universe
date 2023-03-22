@@ -76,23 +76,24 @@ TEST(TrainerTest, Training) {
 
   auto tracking_callback = std::make_shared<InvocationTrackingCallback>();
 
-  auto metrics =
-      trainer.train(train_data, /* epochs= */ 3, /* learning_rate= */ 0.001,
-                    train_metrics, {std::move(val_data)}, val_metrics,
-                    /* steps_per_validation= */ 25, {tracking_callback});
+  auto metrics = trainer.train(
+      train_data, /* learning_rate= */ 0.001, /* epochs= */ 3, train_metrics,
+      {std::move(val_data)}, val_metrics,
+      /* steps_per_validation= */ 25, /* use_sparsity_in_validation= */ false,
+      {tracking_callback});
 
   ASSERT_EQ(metrics.size(), 4);
 
-  ASSERT_EQ(metrics.at("train_loss").size(), 3);
+  ASSERT_EQ(metrics.at("loss").size(), 3);
   // 3 epochs, validation twice per epoch.
-  ASSERT_EQ(metrics.at("val_acc").size(), 3 * 2);
+  ASSERT_EQ(metrics.at("acc").size(), 3 * 2);
 
   ASSERT_EQ(metrics.at("epoch_times").size(), 3);
 
   ASSERT_EQ(metrics.at("val_times").size(), 3 * 2);
 
   // Accuracy should be around 0.96-0.97
-  ASSERT_GE(metrics.at("val_acc").back(), 0.9);
+  ASSERT_GE(metrics.at("acc").back(), 0.9);
 
   std::map<std::string, uint32_t> expected_invocation_counts = {
       {"on_train_begin", 1},      {"on_train_end", 1},

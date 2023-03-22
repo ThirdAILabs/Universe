@@ -19,6 +19,8 @@ thirdai.egg-info
 # in 90 days).
 !docker/product/slim/license.serialized
 !licensing/python_tests/*.serialized
+# Ignore this binary server file. TODO(Josh): prevent it from being generated
+licensing/src/methods/server/data.pqt 
 
 # Ignore zipped files
 *.bz2
@@ -62,8 +64,8 @@ mnist_data
 clang_tidy_logs
 
 # Licensing server binaries
-licensing/src/server/license-server
-licensing/src/server/license-server-max-*
+licensing/src/methods/server/license-server
+licensing/src/methods/server/license-server-max-*
 
 # -- Begin vim .gitignore
 # Swap

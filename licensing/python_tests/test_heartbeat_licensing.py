@@ -72,6 +72,7 @@ def license_server_helper(max_workers, do_not_sign_responses=False):
                 python_test_dir_path
                 / ".."
                 / "src"
+                / "methods"
                 / "server"
                 / f"license-server-max-{max_workers}"
             ).resolve()

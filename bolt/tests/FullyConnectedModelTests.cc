@@ -59,14 +59,18 @@ model::ModelPtr createModel(uint32_t n_classes, bool with_hidden_layer) {
 
 void trainModel(model::ModelPtr& model, const train::LabeledDataset& data,
                 float learning_rate, uint32_t epochs,
-                bool single_input = false) {
+                bool single_output = false) {
   for (uint32_t e = 0; e < epochs; e++) {
     for (uint32_t i = 0; i < data.first.size(); i++) {
-      if (single_input) {
+      if (single_output) {
         model->trainOnBatch(data.first.at(i), data.second.at(i));
       } else {
-        model->trainOnBatch({data.first.at(i)},
-                            {data.second.at(i), data.second.at(i)});
+        // In one of the tests the model has two outputs, both for the same
+        // labels. Thus we need to pass in 2 label tensors for the batch, these
+        // will be the same tensor.
+        tensor::TensorList labels = {data.second.at(i).at(0),
+                                     data.second.at(i).at(0)};
+        model->trainOnBatch(data.first.at(i), labels);
       }
       model->updateParameters(learning_rate);
     }
@@ -85,12 +89,14 @@ std::vector<float> computeAccuracy(model::ModelPtr& model,
 
     for (uint32_t output_idx = 0; output_idx < outputs.size(); output_idx++) {
       for (uint32_t sample_idx = 0;
-           sample_idx < data.first.at(batch_idx)->batchSize(); sample_idx++) {
+           sample_idx < data.first.at(batch_idx).at(0)->batchSize();
+           sample_idx++) {
         uint32_t prediction = outputs.at(output_idx)
                                   ->getVector(sample_idx)
                                   .getHighestActivationId();
 
         uint32_t label = data.second.at(batch_idx)
+                             .at(0)
                              ->getVector(sample_idx)
                              .getHighestActivationId();
 
@@ -200,7 +206,7 @@ TEST(FullyConnectedModelTests, SparseOutput) {
 
   trainModel(model, train_data, /* learning_rate= */ 0.001,
              /* epochs= */ 3,
-             /* single_input= */ true);
+             /* single_output= */ true);
 
   auto test_data =
       getLabeledDataset(N_CLASSES, /* n_batches= */ 100, /* batch_size= */ 20);
