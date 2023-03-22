@@ -48,13 +48,14 @@ metrics::History Trainer::train(
     for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
       callbacks.onBatchBegin();
 
-      _model->trainOnBatch(train_data.first.at(batch_idx),
-                           train_data.second.at(batch_idx));
+      const nn::tensor::TensorList& inputs = train_data.first.at(batch_idx);
+      const nn::tensor::TensorList& labels = train_data.second.at(batch_idx);
+
+      _model->trainOnBatch(inputs, labels);
 
       _model->updateParameters(train_state->learningRate());
 
-      train_metrics.recordBatch(
-          train_data.first.at(batch_idx).at(0)->batchSize());
+      train_metrics.recordBatch(inputs.at(0)->batchSize());
 
       callbacks.onBatchEnd();
 
@@ -115,13 +116,12 @@ metrics::History Trainer::validate(
   utils::Timer val_timer;
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; batch_idx++) {
-    // TODO(Nicholas): Add option to use sparsity for validation.
-    _model->forward(validation_data.first.at(batch_idx),
-                    validation_data.second.at(batch_idx),
-                    /* use_sparsity= */ use_sparsity);
+    const nn::tensor::TensorList& inputs = validation_data.first.at(batch_idx);
+    const nn::tensor::TensorList& labels = validation_data.second.at(batch_idx);
 
-    validation_metrics.recordBatch(
-        validation_data.first.at(batch_idx).at(0)->batchSize());
+    _model->forward(inputs, labels, /* use_sparsity= */ use_sparsity);
+
+    validation_metrics.recordBatch(inputs.at(0)->batchSize());
 
     bar.increment();
   }

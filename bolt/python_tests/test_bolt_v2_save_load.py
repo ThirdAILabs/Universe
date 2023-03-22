@@ -59,7 +59,10 @@ def train_model(model, train_data, train_labels):
 
 
 def evaluate_model(model, test_data, test_labels_np):
+    assert len(test_data) == 1
+
     accs = []
+    # We constructed the test data to only contain 1 batch.
     outputs = model.forward(test_data[0], use_sparsity=False)
     for output in outputs:
         predictions = np.argmax(output.activations, axis=1)
@@ -80,6 +83,8 @@ def test_bolt_save_load():
         n_classes=N_CLASSES, n_samples=2000
     )
 
+    # We use the labels as tokens to be embedded by the embedding table so they
+    # are included as part of the inputs.
     train_data = bolt.train.convert_datasets(
         [train_data, train_labels], dims=[N_CLASSES, N_CLASSES]
     )
@@ -92,6 +97,8 @@ def test_bolt_save_load():
         n_classes=N_CLASSES, n_samples=1000, convert_to_bolt_dataset=False
     )
 
+    # We use the labels as tokens to be embedded by the embedding table so they
+    # are included as part of the inputs.
     test_data = bolt.train.convert_datasets(
         [
             dataset.from_numpy(test_data_np, len(test_data_np)),
