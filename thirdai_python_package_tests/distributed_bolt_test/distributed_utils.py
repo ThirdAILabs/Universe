@@ -88,3 +88,17 @@ def remove_files(file_names):
     for file in file_names:
         if os.path.exists(file):
             os.remove(file)
+
+
+def metrics_aggregation_from_workers(train_metrics):
+    overall_metrics = {}
+    for metrics_per_node in train_metrics:
+        for key, value in metrics_per_node.items():
+            if key not in overall_metrics:
+                overall_metrics[key] = 0
+            # Here we are averaging the metrics, hence divding the
+            # metric "categorical_accuracy" by 2(we use only two
+            # workers for testing purpose).
+            overall_metrics[key] += value[-1] / 2
+
+    return overall_metrics
