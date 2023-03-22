@@ -80,7 +80,7 @@ def download_and_split_scifact_dataset(download_scifact_dataset):
             with_header=True,
         )
 
-    return supervised_tst, n_target_classes
+    return os.path.join(os.getcwd(), supervised_tst), n_target_classes
 
 
 def get_udt_scifact_mach_model(n_target_classes):
@@ -142,7 +142,7 @@ def test_distributed_mach_cold_start(
     assert overall_metrics["precision@1"] > 0.90
 
     validation = bolt.Validation(
-        os.path.join(os.getcwd(), supervised_tst),
+        supervised_tst,
         metrics=["precision@1"],
         interval=2,
     )
