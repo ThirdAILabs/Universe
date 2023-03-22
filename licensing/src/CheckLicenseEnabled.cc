@@ -20,7 +20,7 @@ namespace thirdai::licensing {
 
 std::optional<std::string> _license_path = std::nullopt;
 std::optional<std::string> _api_key = std::nullopt;
-Entitlements _entitlements;
+std::optional<Entitlements> _entitlements;
 
 std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
 
@@ -50,13 +50,19 @@ void checkLicense() {
       "licensing.start_heartbeat, or licensing.activate.");
 }
 
-Entitlements entitlements() { return _entitlements; }
+Entitlements entitlements() {
+  if (!_entitlements.has_value()) {
+    throw std::runtime_error(
+        "Cannot get entitlements if we have not yet found a license.");
+  }
+  return _entitlements.value();
+}
 
 void activate(const std::string& api_key) { _api_key = api_key; }
 
 void deactivate() {
   _api_key = std::nullopt;
-  _entitlements = Entitlements();
+  _entitlements = std::nullopt;
 }
 
 void startHeartbeat(const std::string& heartbeat_url,

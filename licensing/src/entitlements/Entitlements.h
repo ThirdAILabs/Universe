@@ -1,5 +1,6 @@
 #pragma once
 
+#include "EntitlementTree.h"
 #include <dataset/src/DataSource.h>
 #include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <exceptions/src/Exceptions.h>
@@ -9,20 +10,16 @@
 
 namespace thirdai::licensing {
 
-const std::string FULL_ACCESS_ENTITLEMENT = "FULL_ACCESS";
-const std::string FULL_MODEL_ENTITLEMENT = "FULL_MODEL";
-const std::string FULL_DATASET_ENTITLEMENT = "FULL_DATASET";
-
 class Entitlements {
  public:
-  explicit Entitlements(std::unordered_set<std::string> entitlements)
-      : _entitlements(std::move(entitlements)){};
+  explicit Entitlements(const std::unordered_set<std::string>& entitlements)
+      : _entitlements(EntitlementTree(entitlements)){};
 
-  Entitlements(){};
+  bool hasFullAccess() const {
+    return std::holds_alternative<FullAccess>(_entitlements.access);
+  }
 
-  bool hasFullAccess() { return _entitlements.count(FULL_ACCESS_ENTITLEMENT); }
-
-  void verifyFullAccess() {
+  void verifyFullAccess() const {
     if (!hasFullAccess()) {
       throw exceptions::LicenseCheckException(
           "You must have a full license to perform this operation.");
@@ -30,7 +27,13 @@ class Entitlements {
   }
 
   void verifySaveLoad() {
-    if (fullModelAccess() || _entitlements.count("SAVE_LOAD")) {
+    if (hasFullModelAccess()) {
+      return;
+    }
+
+    FinegrainedModelAccess model_access = getFinegrainedModelAccess();
+
+    if (model_access.load_save) {
       return;
     }
 
@@ -40,27 +43,45 @@ class Entitlements {
 
   void verifyAllowedNumberOfTrainingSamples(
       uint64_t total_num_training_samples) {
-    if (fullModelAccess()) {
+    if (hasFullModelAccess()) {
       return;
     }
 
-    (void)total_num_training_samples;
+    FinegrainedModelAccess model_access = getFinegrainedModelAccess();
+
+    if (total_num_training_samples < model_access.max_train_samples) {
+      return;
+    }
+
+    throw exceptions::LicenseCheckException(
+        "This model has exceeded the number of training examples allowed for "
+        "this license.");
   }
 
   void verifyAllowedOutputDim(uint64_t output_dim) {
-    if (fullModelAccess()) {
+    if (hasFullModelAccess()) {
       return;
     }
+
+    FinegrainedModelAccess model_access = getFinegrainedModelAccess();
+
+    if (output_dim < model_access.max_output_dim) {
+      return;
+    }
+
+    throw exceptions::LicenseCheckException(
+        "This model's output dim is too large to be allowed under this "
+        "license.");
 
     (void)output_dim;
   }
 
-  bool contains(const std::string& key) { return _entitlements.count(key); }
-
   void verifyDataSource(const dataset::DataSourcePtr& source) {
-    if (fullDatasetAccess()) {
+    if (hasFullDatasetAccess()) {
       return;
     }
+
+    FinegrainedDatasetAccess dataset_access = getFinegrainedDatasetAccess();
 
     // If the user just has a demo license and we are going to read in the
     // dataset from the resourceName, we require FileDataSources or
@@ -77,22 +98,40 @@ class Entitlements {
 
     std::string file_path = source->resourceName();
 
-    if (!_entitlements.count(sha256File(file_path))) {
+    if (!dataset_access.dataset_hashes.count(sha256File(file_path))) {
       throw exceptions::LicenseCheckException(
           "This dataset is not authorized under this license.");
     }
   }
 
  private:
-  bool fullModelAccess() {
-    return hasFullAccess() || _entitlements.count(FULL_MODEL_ENTITLEMENT);
+  bool hasFullModelAccess() {
+    return hasFullAccess() ||
+           std::holds_alternative<FullModelAccess>(
+               std::get<FinegrainedFullAccess>(_entitlements.access)
+                   .model_access);
   }
 
-  bool fullDatasetAccess() {
-    return hasFullAccess() || _entitlements.count(FULL_DATASET_ENTITLEMENT);
+  bool hasFullDatasetAccess() {
+    return hasFullAccess() ||
+           std::holds_alternative<FullDatasetAccess>(
+               std::get<FinegrainedFullAccess>(_entitlements.access)
+                   .dataset_access);
   }
 
-  std::unordered_set<std::string> _entitlements;
+  // This will throw an exception if hasFullModelAccess() is true
+  FinegrainedModelAccess getFinegrainedModelAccess() {
+    return std::get<FinegrainedModelAccess>(
+        std::get<FinegrainedFullAccess>(_entitlements.access).model_access);
+  }
+
+  // This will throw an exception if hasFullDatasetAccess() is true
+  FinegrainedDatasetAccess getFinegrainedDatasetAccess() {
+    return std::get<FinegrainedDatasetAccess>(
+        std::get<FinegrainedFullAccess>(_entitlements.access).dataset_access);
+  }
+
+  EntitlementTree _entitlements;
 };
 
 }  // namespace thirdai::licensing

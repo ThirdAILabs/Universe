@@ -1,5 +1,6 @@
 #include "CheckLicense.h"
 #include <dataset/src/DataSource.h>
+#include <licensing/src/entitlements/EntitlementTree.h>
 #include <licensing/src/entitlements/Entitlements.h>
 #include <optional>
 #include <stdexcept>
@@ -11,10 +12,7 @@ namespace thirdai::licensing {
 
 void checkLicense() {}
 
-Entitlements entitlements() {
-  // TODO(Josh): Fix this
-  return Entitlements({"FULL_ACCESS"});
-}
+Entitlements entitlements() { return Entitlements({FULL_ACCESS_ENTITLEMENT}); }
 
 void activate(const std::string& api_key) { (void)api_key; }
 
