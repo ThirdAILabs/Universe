@@ -423,3 +423,33 @@ def test_udt_override_input_dim():
     """
 
     assert textwrap.dedent(summary).strip() == textwrap.dedent(expected_summary).strip()
+
+
+@pytest.mark.unit
+def test_udt_train_batch():
+    import numpy as np
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "query": bolt.types.text(),
+            "target": bolt.types.categorical(),
+        },
+        target="target",
+        n_target_classes=3,
+        integer_target=True,
+    )
+
+    samples = [
+        {"query": "this is zero", "target": "0"},
+        {"query": "this is one", "target": "1"},
+        {"query": "this is two", "target": "2"},
+    ] * 1000
+
+    for _ in range(3):
+        model.train_batch(samples, learning_rate=0.1)
+
+    scores = model.predict_batch(samples)
+
+    predictions = np.argmax(scores, axis=0)
+
+    assert (predictions == np.array([0, 1, 2])).all()

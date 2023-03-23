@@ -121,6 +121,23 @@ py::object UDT::train(
   return output;
 }
 
+py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
+                           const std::vector<std::string>& metrics) {
+  bolt::utils::Timer timer;
+
+  auto output = _backend->trainBatch(batch, learning_rate, metrics);
+
+  timer.stop();
+
+  // TODO(Josh/Geordie): It's highly likely that this is less than a second, so
+  // the telemetry won't have meaningful information. Should use milliseconds
+  // for everything in telemetry?
+  telemetry::client.trackTraining(
+      /* training_time_seconds= */ timer.seconds());
+
+  return output;
+}
+
 py::object UDT::evaluate(const dataset::DataSourcePtr& data,
                          const std::vector<std::string>& metrics,
                          bool sparse_inference, bool return_predicted_class,

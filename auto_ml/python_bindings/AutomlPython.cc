@@ -100,6 +100,10 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("verbose") = true,
            py::arg("logging_interval") = std::nullopt,
            bolt::python::OutputRedirect())
+      .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
+           py::arg("learning_rate") = 0.001,
+           py::arg("metrics") = std::vector<std::string>{},
+           bolt::python::OutputRedirect())
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false,
@@ -142,7 +146,8 @@ void defineAutomlInModule(py::module_& module) {
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &UDTFactory::save_udt, py::arg("filename"))
-      .def_static("load", &udt::UDT::load, py::arg("filename"));
+      .def_static("load", &udt::UDT::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<udt::UDT>());
 }
 
 void createModelsSubmodule(py::module_& module) {
