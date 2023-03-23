@@ -142,7 +142,8 @@ void defineAutomlInModule(py::module_& module) {
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &UDTFactory::save_udt, py::arg("filename"))
-      .def_static("load", &udt::UDT::load, py::arg("filename"));
+      .def_static("load", &udt::UDT::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<data::TabularDatasetFactory>());
 }
 
 void createModelsSubmodule(py::module_& module) {
