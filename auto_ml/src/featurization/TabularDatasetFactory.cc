@@ -70,14 +70,12 @@ TabularDatasetFactory::featurizeTrainingBatch(const MapInputBatch& batch) {
   dataset::MapBatchRef inputs_ref(batch);
 
   auto featurized = _labeled_featurizer->featurize(inputs_ref);
+
   BoltBatch labels(std::move(featurized.back()));
-  featurized.resize(featurized.size() - 1);
-
-  std::vector<BoltBatch> data(featurized.size());
-  for (auto& batch : featurized) {
-    data.emplace_back(std::move(batch));
-  }
-
+  
+  std::vector<BoltBatch> data;
+  data.emplace_back(std::move(featurized.front()));
+  
   return {std::move(data), std::move(labels)};
 }
 
