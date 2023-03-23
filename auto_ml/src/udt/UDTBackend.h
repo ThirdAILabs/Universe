@@ -47,7 +47,7 @@ class UDTBackend {
     (void)batch;
     (void)learning_rate;
     (void)metrics;
-    throw notSupported("trainBatch");
+    throw notSupported("train_batch");
   }
 
   /**
