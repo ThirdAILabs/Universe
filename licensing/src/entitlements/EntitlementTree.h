@@ -1,3 +1,4 @@
+#pragma once
 
 #include <exceptions/src/Exceptions.h>
 #include <utils/StringManipulation.h>
