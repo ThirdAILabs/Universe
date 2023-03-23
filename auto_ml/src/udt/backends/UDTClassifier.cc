@@ -77,12 +77,8 @@ py::object UDTClassifier::train(
 
 py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
                                      float learning_rate,
-                                     const std::vector<std::string>& metrics,
-                                     bool verbose) {
+                                     const std::vector<std::string>& metrics) {
   auto& model = _classifier->model();
-  bolt::TrainConfig train_config = utils::getTrainConfig(
-      /* epochs= */ 1, learning_rate, /* validation= */ std::nullopt, metrics,
-      /* callbacks= */ {}, verbose, /* logging_interval= */ std::nullopt);
 
   auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
 

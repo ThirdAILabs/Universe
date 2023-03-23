@@ -43,12 +43,10 @@ class UDTBackend {
    * Trains the model on a batch of samples.
    */
   virtual py::object trainBatch(const MapInputBatch& batch, float learning_rate,
-                                const std::vector<std::string>& metrics,
-                                bool verbose) {
+                                const std::vector<std::string>& metrics) {
     (void)batch;
     (void)learning_rate;
     (void)metrics;
-    (void)verbose;
     throw notSupported("trainBatch");
   }
 

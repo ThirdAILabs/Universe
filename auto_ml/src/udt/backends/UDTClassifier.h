@@ -36,8 +36,7 @@ class UDTClassifier final : public UDTBackend {
       bool verbose, std::optional<uint32_t> logging_interval) final;
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
-                        const std::vector<std::string>& metrics,
-                        bool verbose) final;
+                        const std::vector<std::string>& metrics) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
