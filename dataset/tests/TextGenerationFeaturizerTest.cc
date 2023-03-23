@@ -4,25 +4,46 @@
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/featurizers/TextGenerationFeaturizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <unordered_set>
 
 namespace thirdai::dataset::tests {
 
+constexpr uint32_t VOCAB_SIZE = 8;
+
+// Helper function to represent how pairgrams are encoded in the
+// TextGenerationFeaturizer.
+uint32_t pairgramHash(uint32_t lhs, uint32_t rhs) {
+  uint32_t hash = hashing::combineHashes(lhs, rhs);
+  hash = hash % (std::numeric_limits<uint32_t>::max() - VOCAB_SIZE);
+  return hash + VOCAB_SIZE;
+}
+
 TEST(TextGenerationFeaturizerTest, Featurization) {
   std::vector<std::string> phrases = {"1 2 3 4 5 6"};
 
   std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
-      {{1}, token_encoding::pairgrams({1}), {0, 1}, {2}},
-      {{1, 2}, token_encoding::pairgrams({1, 2}), {1, 2}, {3}},
-      {{1, 2, 3}, token_encoding::pairgrams({1, 2, 3}), {2, 3}, {4}},
-      {{1, 2, 3, 4}, token_encoding::pairgrams({2, 3, 4}), {3, 4}, {5}},
-      {{2, 3, 4, 5}, token_encoding::pairgrams({3, 4, 5}), {4, 5}, {6}},
+      {{1}, {1}, {0, 1}, {2}},
+      {{1, 2}, {1, 2, pairgramHash(1, 2)}, {1, 2}, {3}},
+      {{1, 2, 3},
+       {1, 2, 3, pairgramHash(1, 2), pairgramHash(1, 3), pairgramHash(2, 3)},
+       {2, 3},
+       {4}},
+      {{1, 2, 3, 4},
+       {2, 3, 4, pairgramHash(2, 3), pairgramHash(2, 4), pairgramHash(3, 4)},
+       {3, 4},
+       {5}},
+      {{2, 3, 4, 5},
+       {3, 4, 5, pairgramHash(3, 4), pairgramHash(3, 5), pairgramHash(4, 5)},
+       {4, 5},
+       {6}},
   };
 
   TextGenerationFeaturizer processor(/* lrc_len= */ 4, /* irc_len= */ 3,
-                                     /* src_len= */ 2);
+                                     /* src_len= */ 2,
+                                     /* vocab_size= */ VOCAB_SIZE);
 
   auto data = processor.featurize(phrases);
   ASSERT_EQ(data.size(), 4);
