@@ -53,4 +53,18 @@ std::string join(const std::vector<std::string>& strings,
   return joined_stream.str();
 }
 
+bool startsWith(const std::string& to_search_in, const std::string& prefix) {
+  if (prefix.size() > to_search_in.size()) {
+    return false;
+  }
+
+  for (size_t i = 0; i < prefix.size(); i++) {
+    if (prefix.at(i) != to_search_in.at(i)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 }  // namespace thirdai::text
