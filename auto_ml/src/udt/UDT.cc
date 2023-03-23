@@ -122,7 +122,6 @@ py::object UDT::train(
 }
 
 py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
-                           uint32_t epochs,
                            const std::vector<std::string>& metrics,
                            bool verbose) {
   bolt::utils::Timer timer;

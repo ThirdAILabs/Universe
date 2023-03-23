@@ -45,7 +45,6 @@ class UDT {
       bool verbose, std::optional<uint32_t> logging_interval);
 
   py::object trainBatch(const MapInputBatch& batch, float learning_rate,
-                        uint32_t epochs,
                         const std::vector<std::string>& metrics, bool verbose);
 
   py::object evaluate(const dataset::DataSourcePtr& data,

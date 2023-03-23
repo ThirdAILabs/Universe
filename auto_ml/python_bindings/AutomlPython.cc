@@ -101,8 +101,9 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("logging_interval") = std::nullopt,
            bolt::python::OutputRedirect())
       .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
-           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
-           py::arg("verbose"), bolt::python::OutputRedirect())
+           py::arg("learning_rate") = 0.001,
+           py::arg("metrics") = std::vector<std::string>{},
+           py::arg("verbose") = true, bolt::python::OutputRedirect())
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false,
