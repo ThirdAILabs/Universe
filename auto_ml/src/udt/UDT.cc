@@ -121,6 +121,22 @@ py::object UDT::train(
   return output;
 }
 
+py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
+                           uint32_t epochs,
+                           const std::vector<std::string>& metrics,
+                           bool verbose) {
+  bolt::utils::Timer timer;
+
+  auto output =
+      _backend->trainBatch(batch, learning_rate, epochs, metrics, verbose);
+
+  timer.stop();
+  telemetry::client.trackTraining(
+      /* training_time_seconds= */ timer.seconds());
+
+  return output;
+}
+
 py::object UDT::evaluate(const dataset::DataSourcePtr& data,
                          const std::vector<std::string>& metrics,
                          bool sparse_inference, bool return_predicted_class,

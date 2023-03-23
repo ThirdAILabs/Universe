@@ -44,6 +44,10 @@ class UDT {
       const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
       bool verbose, std::optional<uint32_t> logging_interval);
 
+  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
+                        uint32_t epochs,
+                        const std::vector<std::string>& metrics, bool verbose);
+
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
                       bool sparse_inference, bool return_predicted_class,

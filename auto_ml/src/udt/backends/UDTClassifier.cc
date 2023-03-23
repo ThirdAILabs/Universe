@@ -4,6 +4,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt/src/graph/ExecutionConfig.h>
+#include <bolt/src/metrics/MetricAggregator.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
@@ -72,6 +73,26 @@ py::object UDTClassifier::train(
       train_dataset_loader, learning_rate, epochs, validation_dataset_loader,
       batch_size_opt, max_in_memory_batches, metrics, callbacks, verbose,
       logging_interval, licensing::TrainPermissionsToken(data));
+}
+
+py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
+                                     float learning_rate,
+                                     const std::vector<std::string>& metrics,
+                                     bool verbose) {
+  auto& model = _classifier->model();
+  bolt::TrainConfig train_config = utils::getTrainConfig(
+      /* epochs= */ 1, learning_rate, /* validation= */ std::nullopt, metrics,
+      /* callbacks= */ {}, verbose, /* logging_interval= */ std::nullopt);
+
+  auto [inputs, labels] = _dataset_factory->featurizeTrainingBatch(batch);
+
+  bolt::MetricAggregator metric_aggregator(metrics);
+
+  model->trainOnBatch(std::move(inputs), labels, learning_rate,
+                      metric_aggregator, /* rebuild_hash_tables_interval= */ 25,
+                      /* reconstruct_hash_functions_interval= */ 100);
+
+  return py::cast(metric_aggregator.getOutput());
 }
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
