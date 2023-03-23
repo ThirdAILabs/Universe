@@ -1,5 +1,9 @@
 #include "Entitlements.h"
 
+#ifdef THIRDAI_CHECK_LICENSE
+#include <licensing/src/Utils.h>
+#endif
+
 namespace thirdai::licensing {
 
 void Entitlements::verifySaveLoad() {
@@ -78,10 +82,15 @@ void Entitlements::verifyDataSource(const dataset::DataSourcePtr& source) {
 
   std::string file_path = source->resourceName();
 
+  // We need this ifdef here because sha256File is only defined when
+  // THIRDAI_CHECK_LICENSE is true (and when it is false we should never get to
+  // this line anyways, since we should always have a FULL_ACCESS license)
+#ifdef THIRDAI_CHECK_LICENSE
   if (!dataset_access.dataset_hashes.count(sha256File(file_path))) {
     throw exceptions::LicenseCheckException(
         "This dataset is not authorized under this license.");
   }
+#endif
 }
 
 bool Entitlements::hasFullModelAccess() {

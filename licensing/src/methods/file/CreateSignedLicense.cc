@@ -32,16 +32,6 @@ std::map<std::string, std::string> getEntitlementsFromUser() {
   // (at least for now)
   entitlements[FULL_DATASET_ENTITLEMENT] = FULL_DATASET_ENTITLEMENT;
 
-  std::cout << "Next, do you want the user to have full access to the model? "
-               "Please answer y or n."
-            << std::endl;
-  std::cin >> input;
-
-  if (input == "y") {
-    entitlements[FULL_MODEL_ENTITLEMENT] = FULL_MODEL_ENTITLEMENT;
-    return entitlements;
-  }
-
   std::cout << "Should the user be able to save and load models?" << std::endl;
   std::cin >> input;
 

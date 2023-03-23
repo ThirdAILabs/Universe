@@ -24,9 +24,9 @@ class LicenseTest : public testing::Test {
   }
 
   static License createLicense(int64_t num_days = 30) {
-    std::map<std::string, std::string> metadata{
-        {"company", "abc"}, {"person", "def"}, {"machine type", "ghi"}};
-    return License::createLicenseWithNDaysLeft(metadata, num_days);
+    std::map<std::string, std::string> entitlements{
+        {"Entitlement 1", "Entitlement 1"}, {"Entitlement 2", "Entitlement 2"}};
+    return License::createLicenseWithNDaysLeft(entitlements, num_days);
   }
 };
 
