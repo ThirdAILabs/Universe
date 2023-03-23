@@ -121,7 +121,10 @@ std::vector<uint32_t> TextGenerationFeaturizer::unigram_preserving_pairgrams(
   std::vector<uint32_t> pairgrams(tokens, tokens + len);
   for (uint32_t i = 0; i < len; i++) {
     for (uint32_t j = 0; j < i; j++) {
-      uint32_t pairgram = hashing::combineHashes(tokens[i], tokens[j]);
+      uint32_t pairgram = hashing::combineHashes(tokens[j], tokens[i]);
+      // Shift the pairgrams so that the unigrams and pairgrams are in a
+      // disjoint range. In the output unigrams are in the range [0, vocab_size)
+      // and pairgrams are in teh range [vocab_size, UINT_MAX)
       pairgram =
           pairgram % (std::numeric_limits<uint32_t>::max() - _vocab_size);
       pairgrams.push_back(pairgram + _vocab_size);
