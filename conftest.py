@@ -22,4 +22,8 @@ def set_working_license():
 # Automatically sets a working license file before we run any tests
 @pytest.fixture(scope="session", autouse=True)
 def enable_full_access_licensing(request):
-    set_working_license()
+    try:
+        set_working_license()
+    except AttributeError as e:
+        # Ignore this, since it just means our package was not build with licensing
+        pass
