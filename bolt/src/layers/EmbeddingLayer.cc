@@ -68,6 +68,7 @@ void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
 
   std::fill_n(output.gradients, _total_embedding_dim, 0);
 
+  // Preform outer dereferencing once here to avoid repeating it later.
   auto& embedding_block = *_embedding_block;
 
   for (uint64_t lookup_index = 0; lookup_index < _num_lookups_per_token;
@@ -161,6 +162,7 @@ void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
+  // Preform outer dereferencing once here to avoid repeating it later.
   auto& embedding_block = *_embedding_block;
 
 #pragma omp parallel for default(none) shared( \
@@ -206,6 +208,7 @@ void EmbeddingLayer::updateParametersDense(float lr, uint32_t iter, float B1,
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
+  // Preform outer dereferencing once here to avoid repeating it later.
   auto& embedding_block = *_embedding_block;
 
 #pragma omp parallel for default(none) shared( \

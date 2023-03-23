@@ -114,7 +114,7 @@ std::shared_ptr<Embedding> Embedding::duplicateWithNewReduction(
   auto new_kernel =
       _kernel->duplicateWithNewReduction(reduction, num_tokens_per_input);
 
-  std::string new_name = name() + "_shared_params";
+  std::string new_name = nextEmbeddingOpName() + "_shared_" + name();
   return std::shared_ptr<Embedding>(
       new Embedding(std::move(new_kernel), new_name));
 }
