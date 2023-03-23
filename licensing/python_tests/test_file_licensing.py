@@ -34,6 +34,9 @@ nonexisting_license_path = dir_path / "nonexisting_license"
 expired_license_path = dir_path / "full_expired_license"
 invalid_license_1_path = dir_path / "invalid_license_1"
 invalid_license_2_path = dir_path / "invalid_license_2"
+no_save_load_license_path = dir_path / "no_save_load_license"
+max_output_dim_license_path = dir_path / "max_output_dim_100_license"
+max_train_samples_license_path = dir_path / "max_train_samples_100_license"
 
 
 def test_with_valid_license():
@@ -76,6 +79,12 @@ def test_with_invalid_license():
             this_should_require_a_full_license_udt()
         with pytest.raises(Exception, match=r".*license verification failure.*"):
             this_should_require_a_license_query_reformulation()
+
+def test_no_save_load_license():
+    import thirdai
+
+    thirdai.licensing.set_path(str(no_save_load_license_path))
+    this_should_require_a_full_license_udt()
 
 
 # See e.g. https://stackoverflow.com/questions/34931263/how-to-run-specific-code-after-all-tests-are-executed

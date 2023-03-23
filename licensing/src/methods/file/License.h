@@ -61,7 +61,7 @@ class License {
   std::unordered_set<std::string> entitlements() const {
     std::unordered_set<std::string> entitlements;
     for (const auto& key : _entitlements) {
-      entitlements.insert(_entitlements.at(key.second));
+      entitlements.insert(key.second);
     }
     return entitlements;
   }
