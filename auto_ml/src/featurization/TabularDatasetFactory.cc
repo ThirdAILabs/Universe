@@ -4,15 +4,19 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/set.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
+#include <memory>
 #include <optional>
 #include <utility>
+#include <vector>
 
 namespace thirdai::automl::data {
 
@@ -59,6 +63,20 @@ std::vector<BoltBatch> TabularDatasetFactory::featurizeInputBatch(
       std::move(_inference_featurizer->featurize(inputs_ref).at(0)));
 
   return result;
+}
+
+std::pair<std::vector<BoltBatch>, BoltBatch>
+TabularDatasetFactory::featurizeTrainingBatch(const MapInputBatch& batch) {
+  dataset::MapBatchRef inputs_ref(batch);
+
+  auto featurized = _labeled_featurizer->featurize(inputs_ref);
+
+  BoltBatch labels(std::move(featurized.back()));
+
+  std::vector<BoltBatch> data;
+  data.emplace_back(std::move(featurized.front()));
+
+  return {std::move(data), std::move(labels)};
 }
 
 void TabularDatasetFactory::updateMetadata(const std::string& col_name,

@@ -40,6 +40,17 @@ class UDTBackend {
       bool verbose, std::optional<uint32_t> logging_interval) = 0;
 
   /**
+   * Trains the model on a batch of samples.
+   */
+  virtual py::object trainBatch(const MapInputBatch& batch, float learning_rate,
+                                const std::vector<std::string>& metrics) {
+    (void)batch;
+    (void)learning_rate;
+    (void)metrics;
+    throw notSupported("train_batch");
+  }
+
+  /**
    * Performs evaluate of the model on the given dataset and returns the
    * activations produced by the model by default. If return_predicted_class is
    * specified it should return the predicted classes if its a classification
