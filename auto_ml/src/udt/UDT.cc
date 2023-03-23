@@ -127,8 +127,7 @@ py::object UDT::trainBatch(const MapInputBatch& batch, float learning_rate,
                            bool verbose) {
   bolt::utils::Timer timer;
 
-  auto output =
-      _backend->trainBatch(batch, learning_rate, epochs, metrics, verbose);
+  auto output = _backend->trainBatch(batch, learning_rate, metrics, verbose);
 
   timer.stop();
   telemetry::client.trackTraining(
