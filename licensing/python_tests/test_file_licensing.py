@@ -35,8 +35,8 @@ expired_license_path = dir_path / "full_expired_license"
 invalid_license_1_path = dir_path / "invalid_license_1"
 invalid_license_2_path = dir_path / "invalid_license_2"
 no_save_load_license_path = dir_path / "no_save_load_license"
-max_output_dim_license_path = dir_path / "max_output_dim_100_license"
-max_train_samples_license_path = dir_path / "max_train_samples_100_license"
+max_output_dim_100_license_path = dir_path / "max_output_dim_100_license"
+max_train_samples_100_license_path = dir_path / "max_train_samples_100_license"
 
 
 def test_with_valid_license():
@@ -80,11 +80,44 @@ def test_with_invalid_license():
         with pytest.raises(Exception, match=r".*license verification failure.*"):
             this_should_require_a_license_query_reformulation()
 
+
 def test_no_save_load_license():
     import thirdai
 
     thirdai.licensing.set_path(str(no_save_load_license_path))
-    this_should_require_a_full_license_udt()
+    this_should_require_a_full_license_udt(test_load_save=False)
+
+    with pytest.raises(
+        Exception,
+        match=r"Saving and loading of models is not authorized under this license",
+    ):
+        this_should_require_a_full_license_udt()
+
+
+def test_no_save_load_license():
+    import thirdai
+
+    thirdai.licensing.set_path(str(max_output_dim_100_license_path))
+    this_should_require_a_full_license_udt(n_target_classes=2)
+
+    with pytest.raises(
+        Exception,
+        match=r"This model's output dim is too large to be allowed under this license",
+    ):
+        this_should_require_a_full_license_udt(n_target_classes=102)
+
+
+def test_no_save_load_license():
+    import thirdai
+
+    thirdai.licensing.set_path(str(max_train_samples_100_license_path))
+    this_should_require_a_full_license_udt(num_data_points=2)
+
+    with pytest.raises(
+        Exception,
+        match=r"This model has exceeded the number of training examples allowed for this license",
+    ):
+        this_should_require_a_full_license_udt(num_data_points=102)
 
 
 # See e.g. https://stackoverflow.com/questions/34931263/how-to-run-specific-code-after-all-tests-are-executed
