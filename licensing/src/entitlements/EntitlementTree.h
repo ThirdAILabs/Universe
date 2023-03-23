@@ -10,8 +10,8 @@ namespace thirdai::licensing {
 
 const std::string FULL_ACCESS_ENTITLEMENT = "FULL_ACCESS";
 
-const std::string FULL_MODEL_ENTITLEMENT = "FULL_MODEL";
-const std::string FULL_DATASET_ENTITLEMENT = "FULL_DATASET";
+const std::string FULL_MODEL_ENTITLEMENT = "FULL_MODEL_ACCESS";
+const std::string FULL_DATASET_ENTITLEMENT = "FULL_DATASET_ACCESS";
 
 const std::string LOAD_SAVE_ENTITLEMENT = "LOAD_SAVE";
 const std::string MAX_TRAIN_SAMPLES_ENTITLEMENT_START = "MAX_TRAIN_SAMPLES";
