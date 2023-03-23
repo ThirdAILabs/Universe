@@ -49,7 +49,7 @@ class UDTBackend {
     (void)learning_rate;
     (void)metrics;
     (void)verbose;
-    throw notSupported("trainBatch");
+    throw notSupported("train_batch");
   }
 
   /**
