@@ -108,6 +108,17 @@ void Embedding::load(Archive& archive) {
   _kernel->initOptimizer();
 }
 
+std::shared_ptr<Embedding> Embedding::duplicateWithNewReduction(
+    const std::string& reduction,
+    std::optional<uint64_t> num_tokens_per_input) {
+  auto new_kernel =
+      _kernel->duplicateWithNewReduction(reduction, num_tokens_per_input);
+
+  std::string new_name = name() + "_shared_params";
+  return std::shared_ptr<Embedding>(
+      new Embedding(std::move(new_kernel), new_name));
+}
+
 }  // namespace thirdai::bolt::nn::ops
 
 namespace cereal {
