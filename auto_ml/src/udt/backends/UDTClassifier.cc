@@ -92,7 +92,9 @@ py::object UDTClassifier::trainBatch(const MapInputBatch& batch,
                       metric_aggregator, /* rebuild_hash_tables_interval= */ 25,
                       /* reconstruct_hash_functions_interval= */ 100);
 
-  return py::cast(metric_aggregator.getOutput());
+  metric_aggregator.logAndReset();
+
+  return py::cast(metric_aggregator.getOutputFromInference());
 }
 
 py::object UDTClassifier::evaluate(const dataset::DataSourcePtr& data,
