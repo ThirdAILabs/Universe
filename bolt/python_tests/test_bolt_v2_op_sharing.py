@@ -1,6 +1,7 @@
-from thirdai import bolt_v2 as bolt
-from utils import gen_numpy_training_data
 import pytest
+from thirdai import bolt_v2 as bolt
+
+from utils import gen_numpy_training_data
 
 N_CLASSES = 100
 
