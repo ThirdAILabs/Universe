@@ -458,7 +458,7 @@ def test_udt_train_batch():
 
 def test_char_k_contextual_text_encoding():
     # We want to check if UDT is actually using the character 3 gram block.
-    # We do this by memorizing 3 character words then using those words as part 
+    # We do this by memorizing 3 character words then using those words as part
     # of unseen 4 character words in the test data.
 
     train_filename = "train.csv"

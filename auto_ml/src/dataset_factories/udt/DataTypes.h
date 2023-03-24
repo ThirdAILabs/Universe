@@ -93,7 +93,8 @@ getTextEncodingFromString(const std::string& encoding) {
   if (contextual_encodings.count(encoding) == 0) {
     throw std::invalid_argument(
         "Created text column with invalid contextual_encoding '" + encoding +
-        "' please choose one of 'none', 'local', 'char-k' (k is a number, e.g. 'char-5'), or 'global'.");
+        "' please choose one of 'none', 'local', 'char-k' (k is a number, e.g. "
+        "'char-5'), or 'global'.");
   };
   return std::make_pair(contextual_encodings[encoding], std::nullopt);
 }
