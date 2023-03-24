@@ -102,7 +102,7 @@ jobs:
 
 
           # Mac and windows will use this path, since they do not run in docker
-          THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
+          THIRDAI_LICENSE_PATH: ${{ github.workspace }}/licensing/python_tests/license.serialized 
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
@@ -119,7 +119,7 @@ jobs:
 
           # On linux we copy a valid license to the home directory within the docker
           CIBW_BEFORE_TEST_LINUX: >
-            cp docker/product/slim/license.serialized ~/license.serialized &&
+            cp licensing/python_tests/license.serialized ~/license.serialized &&
             yum install golang -y
           CIBW_TEST_EXTRAS: "test"
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
