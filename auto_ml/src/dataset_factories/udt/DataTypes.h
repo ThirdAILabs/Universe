@@ -18,6 +18,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -73,9 +74,16 @@ enum class TextEncodingType {
   Unigrams,
   Bigrams,
   Pairgrams,
+  CharacterKGram,
 };
 
-inline TextEncodingType getTextEncodingFromString(const std::string& encoding) {
+inline std::pair<TextEncodingType, std::optional<uint32_t>>
+getTextEncodingFromString(const std::string& encoding) {
+  if (std::regex_match(encoding, std::regex("char-[1-9]\\d*"))) {
+    uint32_t k = std::strtol(encoding.data() + 5, nullptr, 10);
+    return std::make_pair(TextEncodingType::CharacterKGram, k);
+  }
+
   std::unordered_map<std::string, TextEncodingType> contextual_encodings = {
       {"none", TextEncodingType::Unigrams},
       {"local", TextEncodingType::Bigrams},
@@ -85,9 +93,10 @@ inline TextEncodingType getTextEncodingFromString(const std::string& encoding) {
   if (contextual_encodings.count(encoding) == 0) {
     throw std::invalid_argument(
         "Created text column with invalid contextual_encoding '" + encoding +
-        "' please choose one of 'none', 'local', or 'global'.");
+        "' please choose one of 'none', 'local', 'char-k' (k is a number, e.g. "
+        "'char-5'), or 'global'.");
   };
-  return contextual_encodings[encoding];
+  return std::make_pair(contextual_encodings[encoding], std::nullopt);
 }
 
 struct TextDataType final : public DataType {
@@ -97,7 +106,7 @@ struct TextDataType final : public DataType {
         contextual_encoding(getTextEncodingFromString(contextual_encoding)) {}
 
   std::optional<double> average_n_words;
-  TextEncodingType contextual_encoding;
+  std::pair<TextEncodingType, std::optional<uint32_t>> contextual_encoding;
 
   std::string toString() const final { return R"({"type": "text"})"; }
 

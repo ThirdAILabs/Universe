@@ -1,3 +1,4 @@
+import os
 import platform
 import textwrap
 
@@ -453,3 +454,45 @@ def test_udt_train_batch():
     predictions = np.argmax(scores, axis=0)
 
     assert (predictions == np.array([0, 1, 2])).all()
+
+
+def test_char_k_contextual_text_encoding():
+    # We want to check if UDT is actually using the character 3 gram block.
+    # We do this by memorizing 3 character words then using those words as part
+    # of unseen 4 character words in the test data.
+
+    train_filename = "train.csv"
+    with open(train_filename, "w") as f:
+        f.write("text,category\n")
+        f.write("lol,1\n")
+        f.write("lol,1\n")
+        f.write("aya,0\n")
+        f.write("aya,0\n")
+
+    test_filename = "test.csv"
+    with open(test_filename, "w") as f:
+        f.write("text,category\n")
+        f.write("lol9,1\n")
+        f.write("lol9,1\n")
+        f.write("aya9,0\n")
+        f.write("aya9,0\n")
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text": bolt.types.text(contextual_encoding="char-3"),
+            "category": bolt.types.categorical(),
+        },
+        target="category",
+        n_target_classes=2,
+    )
+
+    model.train(train_filename, epochs=10, learning_rate=0.001)
+
+    metrics = model.evaluate(
+        test_filename, return_metrics=True, metrics=["categorical_accuracy"]
+    )
+
+    assert metrics["categorical_accuracy"] == 1
+
+    os.remove(train_filename)
+    os.remove(test_filename)
