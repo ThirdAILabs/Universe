@@ -55,6 +55,8 @@ class Noop final : public ops::Op, public std::enable_shared_from_this<Noop> {
 
   void disableSparseParameterUpdates() final {}
 
+  std::vector<ArrayReference> gradients() const final { return {}; }
+
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final {
     (void)inputs;

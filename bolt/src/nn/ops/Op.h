@@ -94,6 +94,17 @@ class Op {
    */
   virtual void disableSparseParameterUpdates() = 0;
 
+  struct ArrayReference {
+    float* data;
+    uint64_t flattened_dim;
+  };
+
+  /**
+   * Returns references to all of the gradients of the op. Used for distributed
+   * training.
+   */
+  virtual std::vector<ArrayReference> gradients() const = 0;
+
   /**
    * Appends a line to the summary to describe the op when applied to the given
    * inputs and yielding the given output. Ideally this should be in the form:

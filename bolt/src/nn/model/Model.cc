@@ -173,6 +173,17 @@ std::vector<uint32_t> Model::inputDims() const {
   return dims;
 }
 
+std::vector<ops::Op::ArrayReference> Model::gradients() const {
+  std::vector<ops::Op::ArrayReference> grads;
+
+  for (const auto& op : _ops) {
+    auto op_grads = op->gradients();
+    grads.insert(grads.end(), op_grads.begin(), op_grads.end());
+  }
+
+  return grads;
+}
+
 void Model::save(const std::string& filename) {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);

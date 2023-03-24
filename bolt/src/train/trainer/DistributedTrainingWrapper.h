@@ -6,6 +6,7 @@
 #include <bolt/src/train/trainer/Trainer.h>
 #include <dataset/src/Datasets.h>
 #include <exceptions/src/Exceptions.h>
+#include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -99,6 +100,43 @@ class DistributedTrainingWrapper {
     return _train_metric_history;
   }
 
+  nn::ops::Op::ArrayReference getGradients() const {
+    auto grads = _model->gradients();
+
+    uint64_t total_dim = sumFlattenedDims(grads);
+
+    float* combined_grads = new float[total_dim];
+    uint64_t offset = 0;
+    for (const auto& grad : grads) {
+      std::copy(grad.data, grad.data + grad.flattened_dim,
+                combined_grads + offset);
+      offset += grad.flattened_dim;
+    }
+
+    return {combined_grads, total_dim};
+  }
+
+  void setGradents(const nn::ops::Op::ArrayReference& new_grads) {
+    auto grads = _model->gradients();
+
+    uint64_t total_dim = sumFlattenedDims(grads);
+
+    if (total_dim != new_grads.flattened_dim) {
+      std::stringstream error;
+      error << "Expected " << total_dim
+            << " parameters in setGradients, but received "
+            << new_grads.flattened_dim << " parameters.";
+      throw std::invalid_argument(error.str());
+    }
+
+    uint64_t offset = 0;
+    for (const auto& grad : grads) {
+      std::copy(new_grads.data + offset,
+                new_grads.data + offset + grad.flattened_dim, grad.data);
+      offset += grad.flattened_dim;
+    }
+  }
+
  private:
   std::optional<LabeledDataset> convertLabeldData(
       const dataset::BoltDatasetList& data,
@@ -108,6 +146,15 @@ class DistributedTrainingWrapper {
 
     return std::make_optional<LabeledDataset>(std::move(data_tensors),
                                               std::move(label_tensors));
+  }
+
+  static uint64_t sumFlattenedDims(
+      const std::vector<nn::ops::Op::ArrayReference>& grads) {
+    uint64_t total_dim = 0;
+    for (const auto& grad : grads) {
+      total_dim += grad.flattened_dim;
+    }
+    return total_dim;
   }
 
   nn::model::ModelPtr _model;

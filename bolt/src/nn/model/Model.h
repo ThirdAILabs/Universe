@@ -112,6 +112,11 @@ class Model {
   std::vector<uint32_t> inputDims() const;
 
   /**
+   * Returns a list of references to gradients of all parameters in the model.
+   */
+  std::vector<ops::Op::ArrayReference> gradients() const;
+
+  /**
    * Saves the model without optimizer state.
    */
   void save(const std::string& filename);

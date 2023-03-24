@@ -108,6 +108,16 @@ void FullyConnected::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
 
+std::vector<Op::ArrayReference> FullyConnected::gradients() const {
+  float* w_grad = _kernel->getBiasGradientsPtr();
+  float* b_grad = _kernel->getBiasGradientsPtr();
+
+  uint64_t dim = _kernel->getDim();
+  uint64_t input_dim = _kernel->getInputDim();
+
+  return {{w_grad, dim * input_dim}, {b_grad, input_dim}};
+}
+
 void FullyConnected::summary(std::ostream& summary,
                              const autograd::ComputationList& inputs,
                              const autograd::Computation* output) const {

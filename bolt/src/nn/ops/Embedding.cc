@@ -79,6 +79,11 @@ void Embedding::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
 
+std::vector<Op::ArrayReference> Embedding::gradients() const {
+  std::vector<float>& grad = _kernel->getRawEmbeddingBlockGradient();
+  return {{grad.data(), grad.size()}};
+}
+
 void Embedding::summary(std::ostream& summary,
                         const autograd::ComputationList& inputs,
                         const autograd::Computation* output) const {
