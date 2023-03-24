@@ -107,16 +107,26 @@ std::vector<dataset::BlockPtr> makeNonTemporalInputBlocks(
     }
 
     if (auto text_meta = asText(data_type)) {
-      if (text_meta->contextual_encoding == TextEncodingType::Pairgrams ||
+      if (text_meta->contextual_encoding.first == TextEncodingType::Pairgrams ||
           (text_meta->average_n_words &&
            text_meta->average_n_words <= options.text_pairgrams_word_limit)) {
         // text hash range of MAXINT is fine since features are later
         // hashed into a range. In fact it may reduce hash collisions.
         blocks.push_back(dataset::PairGramTextBlock::make(
             col_name, /* dim= */ std::numeric_limits<uint32_t>::max()));
-      } else if (text_meta->contextual_encoding == TextEncodingType::Bigrams) {
+      } else if (text_meta->contextual_encoding.first ==
+                 TextEncodingType::Bigrams) {
         blocks.push_back(dataset::NGramTextBlock::make(
             col_name, /* n= */ 2,
+            /* dim= */ std::numeric_limits<uint32_t>::max()));
+      } else if (text_meta->contextual_encoding.first ==
+                 TextEncodingType::CharacterKGram) {
+        if (!text_meta->contextual_encoding.second.has_value()) {
+          throw std::invalid_argument("No k provided.");
+        }
+        uint32_t k = *text_meta->contextual_encoding.second;
+        blocks.push_back(dataset::CharKGramTextBlock::make(
+            col_name, /* k = */ k,
             /* dim= */ std::numeric_limits<uint32_t>::max()));
       } else {
         blocks.push_back(dataset::NGramTextBlock::make(

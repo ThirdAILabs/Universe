@@ -114,7 +114,25 @@ def test_contextual_text_encodings():
     invalid_encoding = "INVALID"
     with pytest.raises(
         ValueError,
-        match=f"Created text column with invalid contextual_encoding '{invalid_encoding}' please choose one of 'none', 'local', or 'global'.",
+        match=f"Created text column with invalid contextual_encoding '{invalid_encoding}' please choose one of 'none', 'local', 'char-k', or 'global'.",
+    ):
+        bolt.UniversalDeepTransformer(
+            data_types={
+                "text_col": bolt.types.text(contextual_encoding=invalid_encoding),
+                "some_random_name": bolt.types.categorical(),
+            },
+            target="target",
+            n_target_classes=2,
+        )
+
+
+@pytest.mark.parametrize(
+    "invalid_encoding", ["char-3p", "char-0", "char-10-0", "char0"]
+)
+def test_invalid_char_k_contextual_text_encoding(invalid_encoding):
+    with pytest.raises(
+        ValueError,
+        match=f"Created text column with invalid contextual_encoding '{invalid_encoding}' please choose one of 'none', 'local', 'char-k', or 'global'.",
     ):
         bolt.UniversalDeepTransformer(
             data_types={
