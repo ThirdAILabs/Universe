@@ -9,6 +9,7 @@
 #include <iterator>
 #include <limits>
 #include <stdexcept>
+#include <string>
 
 using json = nlohmann::json;
 
@@ -37,32 +38,46 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
   return data;
 }
 
+std::string getStringField(const json& json_object, const std::string& name) {
+  if (!json_object["name"].is_string()) {
+    throw std::invalid_argument("Expected field '" + name +
+                                "' to be a string.");
+  }
+  return json_object.get<std::string>();
+}
+
 std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
     const std::string& line) const {
   auto line_content = json::parse(line);
+  if (!line_content.is_object()) {
+    throw std::invalid_argument("Expected line to be a json object.");
+  }
 
-  auto target = line_content["target"].get<std::string>();
+  if (!line_content.contains("target")) {
+    throw std::invalid_argument("Expected field 'target' in json object'");
+  }
+  auto target = getStringField(line_content, "target");
 
   std::vector<uint32_t> target_tokens = parseTokens(target);
 
   std::vector<uint32_t> tokens;
   uint32_t predict_start;
   if (line_content.contains("context")) {
-    tokens = parseTokens(line_content["context"].get<std::string>());
+    tokens = parseTokens(getStringField(line_content, "context"));
     // The predict start is 1 after the end of the context because there will be
-    // a [cls] token.
+    // a [CLS] token.
     predict_start = tokens.size() + 1;
     tokens.insert(tokens.end(), target_tokens.begin(), target_tokens.end());
   } else {
     tokens = std::move(target_tokens);
-    // The predict start is 1 instead of 0 because there will be a [cls] token.
+    // The predict start is 1 instead of 0 because there will be a [CLS] token.
     predict_start = 1;
   }
 
   BoltVector prompt;
   if (line_content.contains("prompt")) {
     std::vector<uint32_t> prompt_tokens =
-        parseTokens(line_content["prompt"].get<std::string>());
+        parseTokens(getStringField(line_content, "prompt"));
 
     prompt = BoltVector(/* l= */ prompt_tokens.size(), /* is_dense= */ false,
                         /* has_gradient= */ false);
