@@ -80,8 +80,7 @@ enum class TextEncodingType {
 inline std::pair<TextEncodingType, std::optional<uint32_t>>
 getTextEncodingFromString(const std::string& encoding) {
   if (std::regex_match(encoding, std::regex("char-[1-9]\\d*"))) {
-    char* end_ptr;
-    uint32_t k = std::strtol(encoding.data() + 5, &end_ptr, 10);
+    uint32_t k = std::strtol(encoding.data() + 5, nullptr, 10);
     return std::make_pair(TextEncodingType::CharacterKGram, k);
   }
 
@@ -94,7 +93,7 @@ getTextEncodingFromString(const std::string& encoding) {
   if (contextual_encodings.count(encoding) == 0) {
     throw std::invalid_argument(
         "Created text column with invalid contextual_encoding '" + encoding +
-        "' please choose one of 'none', 'local', 'char-k', or 'global'.");
+        "' please choose one of 'none', 'local', 'char-k' (k is a number, e.g. 'char-5'), or 'global'.");
   };
   return std::make_pair(contextual_encodings[encoding], std::nullopt);
 }
