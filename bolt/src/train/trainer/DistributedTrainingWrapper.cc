@@ -1,0 +1,137 @@
+#include "DistributedTrainingWrapper.h"
+#include <bolt/src/train/metrics/Metric.h>
+
+namespace thirdai::bolt::train {
+
+DistributedTrainingWrapper::DistributedTrainingWrapper(
+    const nn::model::ModelPtr& model, const TrainConfig& train_config,
+    uint32_t worker_id)
+    : _model(model),
+      _learning_rate(train_config.learningRate()),
+      _train_metrics(createMetrics(model, train_config.metrics())),
+      _use_sparsity_in_validation(false) {
+  (void)worker_id;
+  if (_model->outputs().size() != 1) {
+    throw std::invalid_argument(
+        "Distributed training is currently only supported for models with a "
+        "single output.");
+  }
+
+  if (auto validation = train_config.getValidationContext()) {
+    _validation_data =
+        convertLabeldData(validation->data(), validation->labels());
+    _validation_metrics =
+        createMetrics(model, validation->config().getMetricNames());
+    _use_sparsity_in_validation =
+        validation->config().shouldReturnActivations();
+  }
+}
+
+void DistributedTrainingWrapper::computeAndStoreBatchGradients(
+    uint32_t batch_idx) {
+  if (numBatches() <= batch_idx) {
+    throw std::invalid_argument(
+        "Cannot compute gradients for invalid batch index: " +
+        std::to_string(batch_idx) + ".");
+  }
+
+  const nn::tensor::TensorList& inputs = _train_data->first.at(batch_idx);
+  const nn::tensor::TensorList& labels = _train_data->second.at(batch_idx);
+
+  _model->trainOnBatch(inputs, labels);
+
+  _train_metrics.recordBatch(inputs.at(0)->batchSize());
+}
+
+std::unordered_map<std::string, float>
+DistributedTrainingWrapper::validationAndSaveBest() {
+  if (!_validation_data) {
+    return {};
+  }
+
+  Trainer trainer(_model);
+  auto history = trainer.validate(*_validation_data, _validation_metrics,
+                                  _use_sparsity_in_validation);
+
+  std::unordered_map<std::string, float> last_metrics;
+  for (const auto& [metric_name, metric_vals] : history) {
+    last_metrics[metric_name] = metric_vals.back();
+  }
+
+  // TODO(Nicholas): add saving and best metric tracking.
+
+  return last_metrics;
+}
+
+uint64_t DistributedTrainingWrapper::numBatches() {
+  if (!_train_data) {
+    return 0;
+  }
+  return _train_data->first.size();
+}
+
+nn::ops::Op::ArrayReference DistributedTrainingWrapper::getGradients() const {
+  auto grads = _model->gradients();
+
+  uint64_t total_dim = sumFlattenedDims(grads);
+
+  float* combined_grads = new float[total_dim];
+  uint64_t offset = 0;
+  for (const auto& grad : grads) {
+    std::copy(grad.data, grad.data + grad.flattened_dim,
+              combined_grads + offset);
+    offset += grad.flattened_dim;
+  }
+
+  return {combined_grads, total_dim};
+}
+
+void DistributedTrainingWrapper::setGradents(
+    const nn::ops::Op::ArrayReference& new_grads) {
+  auto grads = _model->gradients();
+
+  uint64_t total_dim = sumFlattenedDims(grads);
+
+  if (total_dim != new_grads.flattened_dim) {
+    std::stringstream error;
+    error << "Expected " << total_dim
+          << " parameters in setGradients, but received "
+          << new_grads.flattened_dim << " parameters.";
+    throw std::invalid_argument(error.str());
+  }
+
+  uint64_t offset = 0;
+  for (const auto& grad : grads) {
+    std::copy(new_grads.data + offset,
+              new_grads.data + offset + grad.flattened_dim, grad.data);
+    offset += grad.flattened_dim;
+  }
+}
+
+std::optional<LabeledDataset> DistributedTrainingWrapper::convertLabeldData(
+    const dataset::BoltDatasetList& data,
+    const dataset::BoltDatasetPtr& labels) {
+  auto data_tensors = convertDatasets(data, _model->inputDims());
+  auto label_tensors = convertDataset(labels, _model->outputs().at(0)->dim());
+
+  return std::make_optional<LabeledDataset>(std::move(data_tensors),
+                                            std::move(label_tensors));
+}
+
+uint64_t DistributedTrainingWrapper::sumFlattenedDims(
+    const std::vector<nn::ops::Op::ArrayReference>& grads) {
+  uint64_t total_dim = 0;
+  for (const auto& grad : grads) {
+    total_dim += grad.flattened_dim;
+  }
+  return total_dim;
+}
+
+metrics::InputMetrics DistributedTrainingWrapper::createMetrics(
+    const nn::model::ModelPtr& model, const std::vector<std::string>& metrics) {
+  auto [output, labels] = model->outputLabelPairs().front();
+  // TODO(Nicholas): add support for loss metric.
+  return metrics::metricsForSingleOutputModel(metrics, output, labels);
+}
+
+}  // namespace thirdai::bolt::train

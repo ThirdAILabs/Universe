@@ -1,4 +1,5 @@
 #include "BoltV2NNPython.h"
+#include "PybindUtils.h"
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
@@ -125,7 +126,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("__getitem__", &model::Model::getOp, py::arg("name"))
       .def("summary", &model::Model::summary, py::arg("print") = true)
       .def("save", &model::Model::save, py::arg("filename"))
-      .def_static("load", &model::Model::load, py::arg("filename"));
+      .def_static("load", &model::Model::load, py::arg("filename"))
+      .def(thirdai::bolt::python::getPickleFunction<model::Model>());
 
   auto loss = nn.def_submodule("losses");
 

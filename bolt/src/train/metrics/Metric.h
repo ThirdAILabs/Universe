@@ -107,4 +107,9 @@ class MetricCollection {
   std::vector<MetricPtr> _metrics;
 };
 
+InputMetrics metricsForSingleOutputModel(
+    const std::vector<std::string>& metric_names,
+    const nn::autograd::ComputationPtr& output,
+    const nn::autograd::ComputationPtr& labels);
+
 }  // namespace thirdai::bolt::train::metrics

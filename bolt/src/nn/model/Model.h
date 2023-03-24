@@ -117,11 +117,19 @@ class Model {
   std::vector<ops::Op::ArrayReference> gradients() const;
 
   /**
+   * Returns a list of pairs of matching outputs and labels. A label and output
+   * match if they are both used in a loss function with no other labels or
+   * outputs.
+   */
+  std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
+  outputLabelPairs() const;
+
+  /**
    * Saves the model without optimizer state.
    */
-  void save(const std::string& filename);
+  void save(const std::string& filename) const;
 
-  void save_stream(std::ostream& output_stream);
+  void save_stream(std::ostream& output_stream) const;
 
   /**
    * Loads the model and automatically initializes the optimizer state.
@@ -160,7 +168,7 @@ class Model {
    * the loss function so that the labels can be selected as active neurons when
    * the layer is sparse.
    */
-  void matchOutputFullyConnectedLayersWithLabels();
+  void matchOutputFullyConnectedLayersWithLabels() const;
 
   autograd::ComputationList _inputs;
   autograd::ComputationList _outputs;

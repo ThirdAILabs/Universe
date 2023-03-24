@@ -1,4 +1,5 @@
 #include "Metric.h"
+#include <bolt/src/train/metrics/CategoricalAccuracy.h>
 #include <atomic>
 #include <stdexcept>
 
@@ -49,6 +50,24 @@ void MetricCollection::reset() {
   for (auto& metric : _metrics) {
     metric->reset();
   }
+}
+
+InputMetrics metricsForSingleOutputModel(
+    const std::vector<std::string>& metric_names,
+    const nn::autograd::ComputationPtr& output,
+    const nn::autograd::ComputationPtr& labels) {
+  InputMetrics metrics;
+
+  for (const auto& name : metric_names) {
+    if (name == "categorical_accuracy") {
+      metrics[name] = std::make_shared<CategoricalAccuracy>(output, labels);
+    } else {
+      throw std::invalid_argument("Metric '" + name +
+                                  "' is not yet supported.");
+    }
+  }
+
+  return metrics;
 }
 
 }  // namespace thirdai::bolt::train::metrics
