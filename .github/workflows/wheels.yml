@@ -188,22 +188,33 @@ jobs:
 
   notify_slack_success:
     name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
-    if: success()
-    env:
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-    uses: voxmedia/github-action-slack-notify-build@v1
-    with:
-      channel_id: pypi_package_releases
-      status: SUCCESS
-      color: good
+    needs: [upload_to_test_pypi, upload_to_real_pypi]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published' && success()
+
+    steps:
+      - name: Notify slack success
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: pypi_package_releases
+          status: SUCCESS
+          color: good
 
   notify_slack_failure:
     name: Notify slack fail
-    if: failure()
-    env:
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-    uses: voxmedia/github-action-slack-notify-build@v1
-    with:
-      channel_id: pypi_package_releases
-      status: FAILED
-      color: danger
+    if: ${{ always() }} # Ref: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-not-requiring-successful-dependent-jobs
+    needs: [upload_to_test_pypi, upload_to_real_pypi]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published' && failure()
+
+    steps:
+      - name: Notify slack fail
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: pypi_package_releases
+          status: FAILED
+          color: danger
