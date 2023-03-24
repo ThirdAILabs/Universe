@@ -91,7 +91,7 @@ class MetricCollection {
    * there values in the history under the key <prefix>_<metric_name>. This is
    * used to distinguish train vs validation metrics.
    */
-  void updateHistory(HistoryPtr& history);
+  void updateHistory(History& history);
 
   /**
    * Creates a string summary of the current values of the metrics.

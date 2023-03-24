@@ -106,6 +106,12 @@ class Model {
   uint32_t trainSteps() const;
 
   /**
+   * Returns the dimensions of the inputs the model is expecting, in the order
+   * they are expected.
+   */
+  std::vector<uint32_t> inputDims() const;
+
+  /**
    * Saves the model without optimizer state.
    */
   void save(const std::string& filename);

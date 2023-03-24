@@ -29,9 +29,9 @@ void MetricCollection::recordBatch(uint32_t batch_size) {
   }
 }
 
-void MetricCollection::updateHistory(std::shared_ptr<History>& history) {
+void MetricCollection::updateHistory(History& history) {
   for (const auto& metric : _metrics) {
-    (*history)[metric->name()].push_back(metric->value());
+    history[metric->name()].push_back(metric->value());
   }
 }
 

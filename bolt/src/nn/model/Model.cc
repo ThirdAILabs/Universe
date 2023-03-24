@@ -165,6 +165,14 @@ std::string Model::summary(bool print) const {
 
 uint32_t Model::trainSteps() const { return _train_steps; }
 
+std::vector<uint32_t> Model::inputDims() const {
+  std::vector<uint32_t> dims;
+  for (const auto& input : _inputs) {
+    dims.push_back(input->dim());
+  }
+  return dims;
+}
+
 void Model::save(const std::string& filename) {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
