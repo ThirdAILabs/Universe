@@ -24,7 +24,7 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
     featurized_samples[i] = featurizeText(lines[i]);
   }
 
-  std::vector<std::vector<BoltVector>> data(4);
+  std::vector<std::vector<BoltVector>> data(5);
 
   for (auto& vectors : featurized_samples) {
     for (auto& sample : vectors) {
@@ -59,12 +59,26 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
     predict_start = 1;
   }
 
+  BoltVector prompt;
+  if (line_content.contains("prompt")) {
+    std::vector<uint32_t> prompt_tokens =
+        parseTokens(line_content["prompt"].get<std::string>());
+
+    prompt = BoltVector(/* l= */ prompt_tokens.size(), /* is_dense= */ false,
+                        /* has_gradient= */ false);
+    std::copy(prompt_tokens.begin(), prompt_tokens.end(),
+              prompt.active_neurons);
+    std::fill_n(prompt.activations, prompt.len, 1.0);
+  } else {
+    prompt = BoltVector::singleElementSparseVector(0);
+  }
+
   std::vector<std::vector<BoltVector>> vectors;
 
   for (uint32_t i = predict_start; i < tokens.size(); i++) {
     BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
 
-    vectors.push_back({lrcContext(tokens, i), ircContext(tokens, i),
+    vectors.push_back({prompt, lrcContext(tokens, i), ircContext(tokens, i),
                        srcContext(tokens, i), std::move(label)});
   }
 
