@@ -39,11 +39,11 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
 }
 
 std::string getStringField(const json& json_object, const std::string& name) {
-  if (!json_object["name"].is_string()) {
+  if (!json_object[name].is_string()) {
     throw std::invalid_argument("Expected field '" + name +
                                 "' to be a string.");
   }
-  return json_object.get<std::string>();
+  return json_object[name].get<std::string>();
 }
 
 std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
