@@ -3,11 +3,14 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <json/include/nlohmann/json.hpp>
 #include <algorithm>
 #include <cctype>
 #include <iterator>
 #include <limits>
 #include <stdexcept>
+
+using json = nlohmann::json;
 
 namespace thirdai::dataset {
 
@@ -36,11 +39,29 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
 
 std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
     const std::string& line) const {
-  std::vector<uint32_t> tokens = parseTokens(line);
+  auto line_content = json::parse(line);
+
+  auto target = line_content["target"].get<std::string>();
+
+  std::vector<uint32_t> target_tokens = parseTokens(target);
+
+  std::vector<uint32_t> tokens;
+  uint32_t predict_start;
+  if (line_content.contains("context")) {
+    tokens = parseTokens(line_content["context"].get<std::string>());
+    // The predict start is 1 after the end of the context because there will be
+    // a [cls] token.
+    predict_start = tokens.size() + 1;
+    tokens.insert(tokens.end(), target_tokens.begin(), target_tokens.end());
+  } else {
+    tokens = std::move(target_tokens);
+    // The predict start is 1 instead of 0 because there will be a [cls] token.
+    predict_start = 1;
+  }
 
   std::vector<std::vector<BoltVector>> vectors;
 
-  for (uint32_t i = 1; i < tokens.size(); i++) {
+  for (uint32_t i = predict_start; i < tokens.size(); i++) {
     BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
 
     vectors.push_back({lrcContext(tokens, i), ircContext(tokens, i),
