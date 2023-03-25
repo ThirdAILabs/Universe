@@ -73,7 +73,7 @@ class TextGenerationFeaturizer final : public Featurizer {
 
   void processHeader(const std::string& header) final { (void)header; }
 
-  size_t getNumDatasets() final { return 4; }
+  size_t getNumDatasets() final { return 5; }
 
   std::vector<uint32_t> getDimensions() final {
     throw std::runtime_error(
