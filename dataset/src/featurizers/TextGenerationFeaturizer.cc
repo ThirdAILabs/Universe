@@ -3,11 +3,15 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <json/include/nlohmann/json.hpp>
 #include <algorithm>
 #include <cctype>
 #include <iterator>
 #include <limits>
 #include <stdexcept>
+#include <string>
+
+using json = nlohmann::json;
 
 namespace thirdai::dataset {
 
@@ -21,7 +25,7 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
     featurized_samples[i] = featurizeText(lines[i]);
   }
 
-  std::vector<std::vector<BoltVector>> data(4);
+  std::vector<std::vector<BoltVector>> data(5);
 
   for (auto& vectors : featurized_samples) {
     for (auto& sample : vectors) {
@@ -34,16 +38,62 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurize(
   return data;
 }
 
+std::string getStringField(const json& json_object, const std::string& name) {
+  if (!json_object[name].is_string()) {
+    throw std::invalid_argument("Expected field '" + name +
+                                "' to be a string.");
+  }
+  return json_object[name].get<std::string>();
+}
+
 std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
     const std::string& line) const {
-  std::vector<uint32_t> tokens = parseTokens(line);
+  auto line_content = json::parse(line);
+  if (!line_content.is_object()) {
+    throw std::invalid_argument("Expected line to be a json object.");
+  }
+
+  if (!line_content.contains("target")) {
+    throw std::invalid_argument("Expected field 'target' in json object'");
+  }
+  auto target = getStringField(line_content, "target");
+
+  std::vector<uint32_t> target_tokens = parseTokens(target);
+
+  std::vector<uint32_t> tokens;
+  uint32_t predict_start;
+  if (line_content.contains("context")) {
+    tokens = parseTokens(getStringField(line_content, "context"));
+    // The predict start is 1 after the end of the context because there will be
+    // a [CLS] token.
+    predict_start = tokens.size() + 1;
+    tokens.insert(tokens.end(), target_tokens.begin(), target_tokens.end());
+  } else {
+    tokens = std::move(target_tokens);
+    // The predict start is 1 instead of 0 because there will be a [CLS] token.
+    predict_start = 1;
+  }
+
+  BoltVector prompt;
+  if (line_content.contains("prompt")) {
+    std::vector<uint32_t> prompt_tokens =
+        parseTokens(getStringField(line_content, "prompt"));
+
+    prompt = BoltVector(/* l= */ prompt_tokens.size(), /* is_dense= */ false,
+                        /* has_gradient= */ false);
+    std::copy(prompt_tokens.begin(), prompt_tokens.end(),
+              prompt.active_neurons);
+    std::fill_n(prompt.activations, prompt.len, 1.0);
+  } else {
+    prompt = BoltVector::singleElementSparseVector(0);
+  }
 
   std::vector<std::vector<BoltVector>> vectors;
 
-  for (uint32_t i = 1; i < tokens.size(); i++) {
+  for (uint32_t i = predict_start; i < tokens.size(); i++) {
     BoltVector label = BoltVector::singleElementSparseVector(tokens[i]);
 
-    vectors.push_back({lrcContext(tokens, i), ircContext(tokens, i),
+    vectors.push_back({prompt, lrcContext(tokens, i), ircContext(tokens, i),
                        srcContext(tokens, i), std::move(label)});
   }
 

@@ -21,32 +21,15 @@ uint32_t pairgramHash(uint32_t lhs, uint32_t rhs) {
   return hash + VOCAB_SIZE;
 }
 
-TEST(TextGenerationFeaturizerTest, Featurization) {
-  std::vector<std::string> phrases = {"1 2 3 4 5 6"};
-
-  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
-      {{1}, {1}, {0, 1}, {2}},
-      {{1, 2}, {1, 2, pairgramHash(1, 2)}, {1, 2}, {3}},
-      {{1, 2, 3},
-       {1, 2, 3, pairgramHash(1, 2), pairgramHash(1, 3), pairgramHash(2, 3)},
-       {2, 3},
-       {4}},
-      {{1, 2, 3, 4},
-       {2, 3, 4, pairgramHash(2, 3), pairgramHash(2, 4), pairgramHash(3, 4)},
-       {3, 4},
-       {5}},
-      {{2, 3, 4, 5},
-       {3, 4, 5, pairgramHash(3, 4), pairgramHash(3, 5), pairgramHash(4, 5)},
-       {4, 5},
-       {6}},
-  };
-
+void verifyGeneratedSamples(
+    const std::vector<std::string>& phrases,
+    const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices) {
   TextGenerationFeaturizer processor(/* lrc_len= */ 4, /* irc_len= */ 3,
                                      /* src_len= */ 2,
                                      /* vocab_size= */ VOCAB_SIZE);
 
   auto data = processor.featurize(phrases);
-  ASSERT_EQ(data.size(), 4);
+  ASSERT_EQ(data.size(), 5);
 
   for (uint32_t sample_id = 0; sample_id < expected_indices.size();
        sample_id++) {
@@ -65,6 +48,77 @@ TEST(TextGenerationFeaturizerTest, Featurization) {
       }
     }
   }
+}
+
+TEST(TextGenerationFeaturizerTest, Featurization) {
+  std::vector<std::string> phrases = {R"({"target": "1 2 3 4 5 6"})"};
+
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      {{0}, {1}, {1}, {0, 1}, {2}},
+      {{0}, {1, 2}, {1, 2, pairgramHash(1, 2)}, {1, 2}, {3}},
+      {{0},
+       {1, 2, 3},
+       {1, 2, 3, pairgramHash(1, 2), pairgramHash(1, 3), pairgramHash(2, 3)},
+       {2, 3},
+       {4}},
+      {{0},
+       {1, 2, 3, 4},
+       {2, 3, 4, pairgramHash(2, 3), pairgramHash(2, 4), pairgramHash(3, 4)},
+       {3, 4},
+       {5}},
+      {{0},
+       {2, 3, 4, 5},
+       {3, 4, 5, pairgramHash(3, 4), pairgramHash(3, 5), pairgramHash(4, 5)},
+       {4, 5},
+       {6}},
+  };
+
+  verifyGeneratedSamples(phrases, expected_indices);
+}
+
+TEST(TextGenerationFeaturizerTest, FeaturizationWithContext) {
+  std::vector<std::string> phrases = {
+      R"({"context": "1 2", "target": "3 4 5 6"})"};
+
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      {{0},
+       {1, 2, 3},
+       {1, 2, 3, pairgramHash(1, 2), pairgramHash(1, 3), pairgramHash(2, 3)},
+       {2, 3},
+       {4}},
+      {{0},
+       {1, 2, 3, 4},
+       {2, 3, 4, pairgramHash(2, 3), pairgramHash(2, 4), pairgramHash(3, 4)},
+       {3, 4},
+       {5}},
+      {{0},
+       {2, 3, 4, 5},
+       {3, 4, 5, pairgramHash(3, 4), pairgramHash(3, 5), pairgramHash(4, 5)},
+       {4, 5},
+       {6}},
+  };
+
+  verifyGeneratedSamples(phrases, expected_indices);
+}
+
+TEST(TextGenerationFeaturizerTest, FeaturizationWithPrompt) {
+  std::vector<std::string> phrases = {
+      R"({"prompt": "1 2", "context": "3 4", "target": "5 6 7"})"};
+
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      {{1, 2},
+       {3, 4, 5},
+       {3, 4, 5, pairgramHash(3, 4), pairgramHash(3, 5), pairgramHash(4, 5)},
+       {4, 5},
+       {6}},
+      {{1, 2},
+       {3, 4, 5, 6},
+       {4, 5, 6, pairgramHash(4, 5), pairgramHash(4, 6), pairgramHash(5, 6)},
+       {5, 6},
+       {7}},
+  };
+
+  verifyGeneratedSamples(phrases, expected_indices);
 }
 
 }  // namespace thirdai::dataset::tests
