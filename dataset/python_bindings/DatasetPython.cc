@@ -20,6 +20,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/MaskedSentenceFeaturizer.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
+#include <dataset/src/featurizers/TextClassifierFeaturizer.h>
 #include <dataset/src/featurizers/TextGenerationFeaturizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
@@ -285,6 +286,35 @@ void createDatasetSubmodule(py::module_& module) {
            &TextGenerationFeaturizer::featurizeInferenceSample,
            py::arg("tokens"))
       .def(bolt::python::getPickleFunction<TextGenerationFeaturizer>());
+
+  /*
+  const std::string& text_column,
+  const std::string& label_column, char delimiter,
+  uint32_t n_labels, size_t unigram_vocab_size,
+  size_t lrc_len, size_t irc_len, size_t src_len,
+  std::optional<char> label_delimiter,
+  bool integer_labels, bool normalize_categories
+  */
+
+  py::class_<TextClassifierFeaturizer, Featurizer, TextClassifierFeaturizerPtr>(
+      dataset_submodule, "TextClassifierFeaturizer")
+      .def(py::init<const std::string&, const std::string&, uint32_t, size_t,
+                    size_t, size_t, size_t, char, std::optional<char>, bool,
+                    bool>(),
+           py::arg("text_column"), py::arg("label_column"), py::arg("n_labels"),
+           py::arg("unigram_vocab_size"), py::arg("src_len"),
+           py::arg("irc_len") = std::numeric_limits<uint32_t>::max(),
+           py::arg("lrc_len") = std::numeric_limits<uint32_t>::max(),
+           py::arg("delimiter") = ',',
+           py::arg("label_delimiter") = std::nullopt,
+           py::arg("integer_labels") = false,
+           py::arg("normalize_categories") = true)
+      .def_static("src_dataset_id", &TextClassifierFeaturizer::srcDatasetId)
+      .def_static("irc_dataset_id", &TextClassifierFeaturizer::ircDatasetId)
+      .def_static("lrc_dataset_id", &TextClassifierFeaturizer::lrcDatasetId)
+      .def_static("label_dataset_id", &TextClassifierFeaturizer::labelDatasetId)
+      .def("get_num_datasets", &TextClassifierFeaturizer::getNumDatasets)
+      .def(bolt::python::getPickleFunction<TextClassifierFeaturizer>());
 
 #endif
 

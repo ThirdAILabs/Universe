@@ -3,6 +3,7 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <json/include/nlohmann/json.hpp>
 #include <algorithm>
 #include <cctype>
@@ -134,8 +135,9 @@ BoltVector TextGenerationFeaturizer::ircContext(
     const std::vector<uint32_t>& tokens, uint32_t label_index) const {
   uint32_t irc_len = std::min(label_index, _irc_len);
 
-  std::vector<uint32_t> irc_context = unigram_preserving_pairgrams(
-      tokens.data() + label_index - irc_len, irc_len);
+  std::vector<uint32_t> irc_context =
+      token_encoding::unigramPreservingPairgrams(
+          tokens.data() + label_index - irc_len, irc_len, _vocab_size);
 
   BoltVector vector(/* l= */ irc_context.size(), /* is_dense= */ false,
                     /* has_gradient= */ false);
@@ -164,24 +166,6 @@ BoltVector TextGenerationFeaturizer::srcContext(
   std::fill_n(vector.activations, vector.len, 1.0);
 
   return vector;
-}
-
-std::vector<uint32_t> TextGenerationFeaturizer::unigram_preserving_pairgrams(
-    const uint32_t* tokens, uint32_t len) const {
-  std::vector<uint32_t> pairgrams(tokens, tokens + len);
-  for (uint32_t i = 0; i < len; i++) {
-    for (uint32_t j = 0; j < i; j++) {
-      uint32_t pairgram = hashing::combineHashes(tokens[j], tokens[i]);
-      // Shift the pairgrams so that the unigrams and pairgrams are in a
-      // disjoint range. In the output unigrams are in the range [0, vocab_size)
-      // and pairgrams are in teh range [vocab_size, UINT_MAX)
-      pairgram =
-          pairgram % (std::numeric_limits<uint32_t>::max() - _vocab_size);
-      pairgrams.push_back(pairgram + _vocab_size);
-    }
-  }
-
-  return pairgrams;
 }
 
 std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(

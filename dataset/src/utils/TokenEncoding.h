@@ -44,6 +44,18 @@ inline std::vector<uint32_t> ngrams(std::string_view sentence, uint32_t n,
  */
 std::vector<uint32_t> pairgrams(const uint32_t* tokens, uint32_t len);
 
+/**
+ * This function differs from our regular pairgram utility because of how it
+ * handles unigrams. Our regular pairgram utility will include hash(t_i, t_i)
+ * for i = [0...seq_len). However we want the unigrams to be consistent
+ * between the lrc and irc contexts. This uses the token itself for the
+ * unigrams representation of each token that is included in the pairgrams
+ * rather than the hash of the token with itself.
+ */
+std::vector<uint32_t> unigramPreservingPairgrams(const uint32_t* tokens,
+                                                 uint32_t len,
+                                                 uint32_t unigram_vocab_size);
+
 inline std::vector<uint32_t> pairgrams(const std::vector<uint32_t>& unigrams) {
   return pairgrams(unigrams.data(), unigrams.size());
 }

@@ -104,17 +104,6 @@ class TextGenerationFeaturizer final : public Featurizer {
   BoltVector srcContext(const std::vector<uint32_t>& tokens,
                         uint32_t label_index) const;
 
-  /**
-   * This function differs from our regular pairgram utility because of how it
-   * handles unigrams. Our regular pairgram utility will include hash(t_i, t_i)
-   * for i = [0...seq_len). However we want the unigrams to be consistent
-   * between the lrc and irc contexts. This uses the token itself for the
-   * unigrams representation of each token that is included in the pairgrams
-   * rather than the hash of the token with itself.
-   */
-  std::vector<uint32_t> unigram_preserving_pairgrams(const uint32_t* tokens,
-                                                     uint32_t len) const;
-
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
