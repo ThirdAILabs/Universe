@@ -18,7 +18,7 @@ thirdai::dataset::TextClassifierFeaturizer::featurize(
   }
 
 #pragma omp parallel for default(none) shared( \
-    rows, feature_columns, label_idx, _delimiter, _tokens, _label_block)
+    rows, feature_columns, _delimiter, _text_column, _label_block)
   for (uint32_t row_id = 0; row_id < rows.size(); row_id++) {
     const std::string& row = rows[row_id];
 
