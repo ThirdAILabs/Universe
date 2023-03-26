@@ -16,7 +16,7 @@ class Embedding final : public Op,
       std::optional<uint64_t> num_tokens_per_input = std::nullopt,
       uint64_t update_chunk_size = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE);
 
-  std::shared_ptr<Op> cloneFromScratch() final {
+  std::shared_ptr<Op> fromScratch() final {
     auto config = _kernel->getConfig();
     auto reduction =
         EmbeddingLayerConfig::getReductionString(config.reduction());

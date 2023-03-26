@@ -10,6 +10,9 @@ namespace thirdai::bolt::nn::ops {
 
 class Input final : public Op, public std::enable_shared_from_this<Input> {
  public:
+  void freeze() final {}
+  void unfreeze() final {}
+
   // TODO(Nicholas) add nonzeros as option.
   static autograd::ComputationPtr make(uint32_t dim);
 

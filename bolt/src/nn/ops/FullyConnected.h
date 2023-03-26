@@ -25,7 +25,7 @@ class FullyConnected final
       uint32_t reconstruct_hash_functions =
           std::numeric_limits<uint32_t>::max());
 
-  std::shared_ptr<Op> cloneFromScratch() final {
+  std::shared_ptr<Op> fromScratch() final {
     auto act_func_str =
         activationFunctionToStr(_kernel->getActivationFunction());
     return make(

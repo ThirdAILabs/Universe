@@ -10,8 +10,6 @@ class Concatenate final : public Op,
  public:
   static std::shared_ptr<Concatenate> make();
 
-  std::shared_ptr<Op> cloneFromScratch() final { return make(); }
-
   void freeze() final {}
 
   void unfreeze() final {}
