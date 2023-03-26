@@ -129,6 +129,8 @@ class EmbeddingLayerConfig {
     return _num_tokens_per_input;
   }
 
+  static std::string getReductionString(EmbeddingReductionType reduction_type);
+
  private:
   uint64_t _num_embedding_lookups;
   uint64_t _lookup_size;

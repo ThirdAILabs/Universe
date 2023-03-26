@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -23,6 +24,20 @@ class FullyConnected final
       uint32_t rebuild_hash_tables = std::numeric_limits<uint32_t>::max(),
       uint32_t reconstruct_hash_functions =
           std::numeric_limits<uint32_t>::max());
+
+  std::shared_ptr<Op> cloneFromScratch() final {
+    auto act_func_str =
+        activationFunctionToStr(_kernel->getActivationFunction());
+    return make(
+        /* dim= */ _kernel->getDim(), /* input_dim= */ _kernel->getInputDim(),
+        /* sparsity= */ _kernel->getSparsity(),
+        /* activation= */ act_func_str,
+        // Default to autotuned sampling for now since it's hard to get the
+        // actual sampling config.
+        /* sampling= */ nullptr,
+        /* rebuild_hash_tables= */ _rebuild_hash_tables,
+        /* reconstruct_hash_functions= */ _reconstruct_hash_functions);
+  }
 
   void freeze() final { _freeze = true; }
 

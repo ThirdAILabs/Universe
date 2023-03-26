@@ -27,6 +27,16 @@ class EmbeddingLayer {
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
                           uint32_t seed = time(nullptr));
 
+  EmbeddingLayerConfig getConfig() const {
+    return EmbeddingLayerConfig(
+        /* num_embedding_lookups= */ _num_lookups_per_token,
+        /* lookup_size= */ _lookup_size,
+        /* log_embedding_block_size= */ _log_embedding_block_size,
+        /* update_chunk_size= */ _update_chunk_size,
+        /* reduction= */ EmbeddingLayerConfig::getReductionString(_reduction),
+        /* num_tokens_per_input= */ _num_tokens_per_input);
+  }
+
   void forward(const BoltVector& tokens, BoltVector& output);
 
   void backpropagate(const BoltVector& tokens, const BoltVector& output);
