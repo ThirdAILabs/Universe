@@ -80,7 +80,10 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("tensor", &autograd::Computation::tensor)
       .def("name", &autograd::Computation::name);
 
-  py::class_<ops::Op, ops::OpPtr>(nn, "Op").def("name", &ops::Op::name);
+  py::class_<ops::Op, ops::OpPtr>(nn, "Op")
+      .def("name", &ops::Op::name)
+      .def("freeze", &ops::Op::freeze)
+      .def("unfreeze", &ops::Op::unfreeze);
 
   py::class_<ops::FullyConnected, ops::FullyConnectedPtr, ops::Op>(
       nn, "FullyConnected")

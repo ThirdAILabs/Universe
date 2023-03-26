@@ -31,6 +31,10 @@ class Op {
  public:
   explicit Op(std::string name) : _name(std::move(name)) {}
 
+  virtual void freeze() = 0;
+
+  virtual void unfreeze() = 0;
+
   /**
    * Computes the forward computation of the op. This should use the inputs in
    * the given set of input tensors and store the result in the given output

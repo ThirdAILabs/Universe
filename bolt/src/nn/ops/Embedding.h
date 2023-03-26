@@ -15,6 +15,10 @@ class Embedding final : public Op,
       std::optional<uint64_t> num_tokens_per_input = std::nullopt,
       uint64_t update_chunk_size = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE);
 
+  void freeze() final { _freeze = true; }
+
+  void unfreeze() final { _freeze = false; }
+
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final;
@@ -47,9 +51,11 @@ class Embedding final : public Op,
             uint64_t update_chunk_size);
 
   Embedding(std::unique_ptr<EmbeddingLayer>&& kernel, const std::string& name)
-      : Op(name), _kernel(std::move(kernel)) {}
+      : Op(name), _kernel(std::move(kernel)), _freeze(false) {}
 
   std::unique_ptr<EmbeddingLayer> _kernel;
+
+  bool _freeze;
 
   Embedding() {}
 

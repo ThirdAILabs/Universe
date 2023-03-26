@@ -24,6 +24,10 @@ class FullyConnected final
       uint32_t reconstruct_hash_functions =
           std::numeric_limits<uint32_t>::max());
 
+  void freeze() final { _freeze = true; }
+
+  void unfreeze() final { _freeze = false; }
+
   /**
    * Inputs will always have size=1, except if the op yields an output, in which
    * case the labels will be passed in as a second input so that the layer can
@@ -84,6 +88,8 @@ class FullyConnected final
   uint32_t _reconstruct_hash_functions;
   uint32_t _updates_since_rebuild_hash_tables;
   uint32_t _updates_since_reconstruct_hash_functions;
+
+  bool _freeze;
 
   FullyConnected() {}
 
