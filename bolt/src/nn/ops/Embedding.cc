@@ -18,7 +18,7 @@ Embedding::Embedding(uint64_t num_embedding_lookups, uint64_t lookup_size,
                      const std::string& reduction,
                      std::optional<uint64_t> num_tokens_per_input,
                      uint64_t update_chunk_size)
-    : Op(nextEmbeddingOpName()) {
+    : Op(nextEmbeddingOpName()), _freeze(false) {
   EmbeddingLayerConfig config(
       /* num_embedding_lookups= */ num_embedding_lookups,
       /* lookup_size= */ lookup_size,
@@ -62,6 +62,9 @@ void Embedding::backpropagate(autograd::ComputationList& inputs,
 }
 
 void Embedding::updateParameters(float learning_rate, uint32_t train_steps) {
+  if (_freeze) {
+    return;
+  }
   _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
 }
 

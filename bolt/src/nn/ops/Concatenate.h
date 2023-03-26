@@ -10,6 +10,10 @@ class Concatenate final : public Op,
  public:
   static std::shared_ptr<Concatenate> make();
 
+  void freeze() final {}
+
+  void unfreeze() final {}
+
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final;

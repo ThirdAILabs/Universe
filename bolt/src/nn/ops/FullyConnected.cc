@@ -27,7 +27,8 @@ FullyConnected::FullyConnected(uint32_t dim, uint32_t input_dim, float sparsity,
       _rebuild_hash_tables(rebuild_hash_tables),
       _reconstruct_hash_functions(reconstruct_hash_functions),
       _updates_since_rebuild_hash_tables(0),
-      _updates_since_reconstruct_hash_functions(0) {
+      _updates_since_reconstruct_hash_functions(0),
+      _freeze(false) {
   if (!sampling) {
     sampling = DWTASamplingConfig::autotune(dim, sparsity);
   }
@@ -76,6 +77,9 @@ void FullyConnected::backpropagate(autograd::ComputationList& inputs,
 
 void FullyConnected::updateParameters(float learning_rate,
                                       uint32_t train_steps) {
+  if (_freeze) {
+    return;
+  }
   _kernel->updateParameters(learning_rate, train_steps, BETA1, BETA2, EPS);
 
   if (++_updates_since_reconstruct_hash_functions ==
