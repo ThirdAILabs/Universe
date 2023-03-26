@@ -81,6 +81,7 @@ class TextGenerationFeaturizer final : public Featurizer {
   }
 
   std::vector<BoltVector> featurizeInferenceSample(
+      const std::vector<uint32_t>& prompt,
       const std::vector<uint32_t>& tokens) const;
 
   void save(const std::string& filename) const;
@@ -104,6 +105,7 @@ class TextGenerationFeaturizer final : public Featurizer {
   BoltVector srcContext(const std::vector<uint32_t>& tokens,
                         uint32_t label_index) const;
 
+  static BoltVector promptContext(const std::vector<uint32_t>& prompt_tokens);
   /**
    * This function differs from our regular pairgram utility because of how it
    * handles unigrams. Our regular pairgram utility will include hash(t_i, t_i)

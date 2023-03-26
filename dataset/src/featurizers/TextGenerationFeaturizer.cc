@@ -74,19 +74,12 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
     predict_start = 1;
   }
 
-  BoltVector prompt;
+  std::vector<uint32_t> prompt_tokens;
   if (line_content.contains("prompt")) {
-    std::vector<uint32_t> prompt_tokens =
-        parseTokens(getStringField(line_content, "prompt"));
-
-    prompt = BoltVector(/* l= */ prompt_tokens.size(), /* is_dense= */ false,
-                        /* has_gradient= */ false);
-    std::copy(prompt_tokens.begin(), prompt_tokens.end(),
-              prompt.active_neurons);
-    std::fill_n(prompt.activations, prompt.len, 1.0);
-  } else {
-    prompt = BoltVector::singleElementSparseVector(0);
+    prompt_tokens = parseTokens(getStringField(line_content, "prompt"));
   }
+
+  BoltVector prompt = promptContext(prompt_tokens);
 
   std::vector<std::vector<BoltVector>> vectors;
 
@@ -166,6 +159,18 @@ BoltVector TextGenerationFeaturizer::srcContext(
   return vector;
 }
 
+BoltVector TextGenerationFeaturizer::promptContext(
+    const std::vector<uint32_t>& prompt_tokens) {
+  if (prompt_tokens.empty()) {
+    return BoltVector::singleElementSparseVector(0);
+  }
+  BoltVector prompt(/* l= */ prompt_tokens.size(), /* is_dense= */ false,
+                    /* has_gradient= */ false);
+  std::copy(prompt_tokens.begin(), prompt_tokens.end(), prompt.active_neurons);
+  std::fill_n(prompt.activations, prompt.len, 1.0);
+  return prompt;
+}
+
 std::vector<uint32_t> TextGenerationFeaturizer::unigram_preserving_pairgrams(
     const uint32_t* tokens, uint32_t len) const {
   std::vector<uint32_t> pairgrams(tokens, tokens + len);
@@ -185,9 +190,10 @@ std::vector<uint32_t> TextGenerationFeaturizer::unigram_preserving_pairgrams(
 }
 
 std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
+    const std::vector<uint32_t>& prompt,
     const std::vector<uint32_t>& tokens) const {
   uint32_t prediction_index = tokens.size();
-  return {lrcContext(tokens, prediction_index),
+  return {promptContext(prompt), lrcContext(tokens, prediction_index),
           ircContext(tokens, prediction_index),
           srcContext(tokens, prediction_index)};
 }
