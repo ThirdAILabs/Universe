@@ -35,6 +35,8 @@ class Op {
 
   virtual void unfreeze() = 0;
 
+  virtual std::shared_ptr<Op> cloneFromScratch() = 0;
+
   /**
    * Computes the forward computation of the op. This should use the inputs in
    * the given set of input tensors and store the result in the given output

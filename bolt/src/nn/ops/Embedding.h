@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/layers/EmbeddingLayer.h>
+#include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
 
@@ -14,6 +15,18 @@ class Embedding final : public Op,
       uint64_t log_embedding_block_size, const std::string& reduction,
       std::optional<uint64_t> num_tokens_per_input = std::nullopt,
       uint64_t update_chunk_size = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE);
+
+  std::shared_ptr<Op> cloneFromScratch() final {
+    auto config = _kernel->getConfig();
+    auto reduction =
+        EmbeddingLayerConfig::getReductionString(config.reduction());
+    return make(/* num_embedding_lookups= */ config.numEmbeddingLookups(),
+                /* lookup_size= */ config.lookupSize(),
+                /* log_embedding_block_size= */ config.logEmbeddingBlockSize(),
+                /* reduction= */ reduction,
+                /* num_tokens_per_input= */ config.numTokensPerInput(),
+                /* update_chunk_size= */ config.updateChunkSize());
+  }
 
   void freeze() final { _freeze = true; }
 

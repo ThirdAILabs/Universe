@@ -2,6 +2,7 @@
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -128,6 +129,20 @@ EmbeddingReductionType EmbeddingLayerConfig::getReductionType(
                               reduction_name +
                               "', supported options are 'sum', "
                               "'average'/'avg', or 'concat'/'concatenation'");
+}
+
+std::string EmbeddingLayerConfig::getReductionString(
+    EmbeddingReductionType reduction_type) {
+  switch (reduction_type) {
+    case EmbeddingReductionType::SUM:
+      return "sum";
+    case EmbeddingReductionType::AVERAGE:
+      return "avg";
+    case EmbeddingReductionType::CONCATENATION:
+      return "concat";
+    default:
+      throw std::invalid_argument("Unexpected reduction type.");
+  }
 }
 
 template <class Archive>
