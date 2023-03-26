@@ -3,6 +3,7 @@
 #include <cereal/access.hpp>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <memory>
+#include <stdexcept>
 
 namespace thirdai::bolt::nn::autograd {
 
@@ -35,7 +36,11 @@ class Op {
 
   virtual void unfreeze() = 0;
 
-  virtual std::shared_ptr<Op> cloneFromScratch() = 0;
+  virtual std::shared_ptr<Op> fromScratch() {
+    throw std::invalid_argument(
+        name() +
+        " does not implement from_scratch since it is not a parameterized op.");
+  }
 
   /**
    * Computes the forward computation of the op. This should use the inputs in

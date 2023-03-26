@@ -82,7 +82,7 @@ void createBoltV2NNSubmodule(py::module_& module) {
 
   py::class_<ops::Op, ops::OpPtr>(nn, "Op")
       .def("name", &ops::Op::name)
-      .def("clone_from_scratch", &ops::Op::cloneFromScratch)
+      .def("from_scratch", &ops::Op::fromScratch)
       .def("freeze", &ops::Op::freeze)
       .def("unfreeze", &ops::Op::unfreeze);
 
