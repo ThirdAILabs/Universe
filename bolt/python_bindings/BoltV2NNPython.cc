@@ -110,7 +110,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("__call__", &ops::Embedding::apply)
       .def("duplicate_with_new_reduction",
            &ops::Embedding::duplicateWithNewReduction, py::arg("reduction"),
-           py::arg("num_tokens_per_input"));
+           py::arg("num_tokens_per_input"))
+      .def("num_tokens_per_input", &ops::Embedding::numTokensPerInput);
 
   py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
       .def(py::init(&ops::Concatenate::make))
