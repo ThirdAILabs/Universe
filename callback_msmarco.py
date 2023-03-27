@@ -18,19 +18,24 @@ class ColdStartCallback(bolt.callbacks.Callback):
         cur_metric = train_state.get_all_train_batch_metrics()[self.metric][-1]
 
         if cur_metric > self.best_metric:
+            print("Found best metric, saving model")
             self.model.save(self.save_loc)
             self.best_metric = cur_metric
 
         if cur_metric < self.last_metric:
+            print("Worse than last, incrementing n bad batches")
             self.n_bad_batches += 1
         else:
+            print("Resetting n bad batches")
             self.n_bad_batches = 0
         
         if self.n_bad_batches > self.total_bad_batches_before_update:
             if self.n_lr_updates > self.total_n_lr_updates:
+                print("Reached n lr updates, stopping training")
                 train_state.stop_training = True
             else:
                 train_state.learning_rate /= self.scaledown
+                print("Scaling down learning rate to ", train_state.learning_rate)
                 self.n_lr_updates += 1
 
         self.last_metric = cur_metric
