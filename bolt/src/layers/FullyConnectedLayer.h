@@ -98,6 +98,10 @@ class FullyConnectedLayer final {
 
   float* getBiasGradientsPtr() { return _bias_optimizer->gradients.data(); }
 
+  std::vector<float>& weightsGradient() { return _weight_optimizer->gradients; }
+
+  std::vector<float>& biasGradient() { return _bias_optimizer->gradients; }
+
   float* getWeights() const;
 
   float* getBiases() const;

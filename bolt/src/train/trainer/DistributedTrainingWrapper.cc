@@ -70,41 +70,42 @@ uint64_t DistributedTrainingWrapper::numBatches() {
   return _train_data->first.size();
 }
 
-nn::ops::Op::ArrayReference DistributedTrainingWrapper::getGradients() const {
+std::pair<const float*, uint64_t> DistributedTrainingWrapper::getGradients()
+    const {
   auto grads = _model->gradients();
 
   uint64_t total_dim = sumFlattenedDims(grads);
 
   float* combined_grads = new float[total_dim];
   uint64_t offset = 0;
-  for (const auto& grad : grads) {
-    std::copy(grad.data, grad.data + grad.flattened_dim,
+  for (const auto* grad : grads) {
+    std::copy(grad->data(), grad->data() + grad->size(),
               combined_grads + offset);
-    offset += grad.flattened_dim;
+    offset += grad->size();
   }
 
   return {combined_grads, total_dim};
 }
 
-void DistributedTrainingWrapper::setGradents(
-    const nn::ops::Op::ArrayReference& new_grads) {
+void DistributedTrainingWrapper::setGradents(const float* new_grad,
+                                             uint64_t flattened_dim) {
   auto grads = _model->gradients();
 
   uint64_t total_dim = sumFlattenedDims(grads);
 
-  if (total_dim != new_grads.flattened_dim) {
+  if (total_dim != flattened_dim) {
     std::stringstream error;
     error << "Expected " << total_dim
-          << " parameters in setGradients, but received "
-          << new_grads.flattened_dim << " parameters.";
+          << " parameters in setGradients, but received " << flattened_dim
+          << " parameters.";
     throw std::invalid_argument(error.str());
   }
 
   uint64_t offset = 0;
-  for (const auto& grad : grads) {
-    std::copy(new_grads.data + offset,
-              new_grads.data + offset + grad.flattened_dim, grad.data);
-    offset += grad.flattened_dim;
+  for (auto* grad : grads) {
+    std::copy(new_grad + offset, new_grad + offset + grad->size(),
+              grad->data());
+    offset += grad->size();
   }
 }
 
@@ -119,10 +120,10 @@ std::optional<LabeledDataset> DistributedTrainingWrapper::convertLabeldData(
 }
 
 uint64_t DistributedTrainingWrapper::sumFlattenedDims(
-    const std::vector<nn::ops::Op::ArrayReference>& grads) {
+    const std::vector<std::vector<float>*>& grads) {
   uint64_t total_dim = 0;
-  for (const auto& grad : grads) {
-    total_dim += grad.flattened_dim;
+  for (const auto* grad : grads) {
+    total_dim += grad->size();
   }
   return total_dim;
 }

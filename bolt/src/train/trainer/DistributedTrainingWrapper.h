@@ -52,9 +52,9 @@ class DistributedTrainingWrapper {
     return _train_metric_history;
   }
 
-  nn::ops::Op::ArrayReference getGradients() const;
+  std::pair<const float*, uint64_t> getGradients() const;
 
-  void setGradents(const nn::ops::Op::ArrayReference& new_grads);
+  void setGradents(const float* new_grad, uint64_t flattened_dim);
 
  private:
   std::optional<LabeledDataset> convertLabeldData(
@@ -62,7 +62,7 @@ class DistributedTrainingWrapper {
       const dataset::BoltDatasetPtr& labels);
 
   static uint64_t sumFlattenedDims(
-      const std::vector<nn::ops::Op::ArrayReference>& grads);
+      const std::vector<std::vector<float>*>& grads);
 
   static metrics::InputMetrics createMetrics(
       const nn::model::ModelPtr& model,

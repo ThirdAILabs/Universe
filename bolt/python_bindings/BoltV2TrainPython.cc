@@ -27,12 +27,12 @@ class GradientReference {
       py::array_t<float, py::array::c_style | py::array::forcecast>;
 
   NumpyArray getGradients() const {
-    auto grad_ref = _model->getGradients();
+    auto [grads, flattened_dim] = _model->getGradients();
 
     py::capsule free_when_done(
-        grad_ref.data, [](void* ptr) { delete static_cast<float*>(ptr); });
+        grads, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-    return NumpyArray(grad_ref.flattened_dim, grad_ref.data, free_when_done);
+    return NumpyArray(flattened_dim, grads, free_when_done);
   }
 
   void setGradients(NumpyArray& new_grads) {
@@ -41,7 +41,7 @@ class GradientReference {
     }
 
     uint64_t flattened_dim = new_grads.shape(0);
-    _model->setGradents({new_grads.mutable_data(), flattened_dim});
+    _model->setGradents(new_grads.data(), flattened_dim);
   }
 
  private:

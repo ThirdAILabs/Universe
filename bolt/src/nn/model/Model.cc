@@ -173,8 +173,8 @@ std::vector<uint32_t> Model::inputDims() const {
   return dims;
 }
 
-std::vector<ops::Op::ArrayReference> Model::gradients() const {
-  std::vector<ops::Op::ArrayReference> grads;
+std::vector<std::vector<float>*> Model::gradients() const {
+  std::vector<std::vector<float>*> grads;
 
   for (const auto& op : _ops) {
     auto op_grads = op->gradients();

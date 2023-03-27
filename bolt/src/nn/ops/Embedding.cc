@@ -79,9 +79,8 @@ void Embedding::disableSparseParameterUpdates() {
   _kernel->disableSparseParameterUpdates();
 }
 
-std::vector<Op::ArrayReference> Embedding::gradients() const {
-  std::vector<float>& grad = _kernel->getRawEmbeddingBlockGradient();
-  return {{grad.data(), grad.size()}};
+std::vector<std::vector<float>*> Embedding::gradients() const {
+  return {&_kernel->getRawEmbeddingBlockGradient()};
 }
 
 void Embedding::summary(std::ostream& summary,

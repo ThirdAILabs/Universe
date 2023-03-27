@@ -114,7 +114,7 @@ class Model {
   /**
    * Returns a list of references to gradients of all parameters in the model.
    */
-  std::vector<ops::Op::ArrayReference> gradients() const;
+  std::vector<std::vector<float>*> gradients() const;
 
   /**
    * Returns a list of pairs of matching outputs and labels. A label and output
