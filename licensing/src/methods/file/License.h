@@ -4,9 +4,11 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/map.hpp>
 #include <cereal/types/string.hpp>
+#include <licensing/src/entitlements/Entitlements.h>
 #include <chrono>
 #include <map>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 namespace thirdai::licensing {
@@ -17,27 +19,23 @@ using std::chrono::system_clock;
 
 class License {
  public:
-  License(std::map<std::string, std::string> metadata,
+  License(std::map<std::string, std::string> entitlements,
           int64_t expire_time_epoch_millis)
       : _expire_time_epoch_millis(expire_time_epoch_millis),
         _start_time_epoch_millis(getCurrentEpochMillis()),
-        _metadata(std::move(metadata)) {}
+        _entitlements(std::move(entitlements)) {}
 
   static License createLicenseWithNDaysLeft(
-      std::map<std::string, std::string> metadata, int64_t num_days) {
+      std::map<std::string, std::string> entitlements, int64_t num_days) {
     int64_t current_millis = getCurrentEpochMillis();
     int64_t millis_offset = num_days * 24 * 3600 * 1000;
     int64_t expire_time = current_millis + millis_offset;
-    return {std::move(metadata), expire_time};
+    return {std::move(entitlements), expire_time};
   }
 
   bool isExpired() const {
     return _start_time_epoch_millis > getCurrentEpochMillis() ||
            _expire_time_epoch_millis < getCurrentEpochMillis();
-  }
-
-  std::string getMetadataValue(const std::string& key) const {
-    return _metadata.at(key);
   }
 
   int64_t getExpireTimeMillis() const { return _expire_time_epoch_millis; }
@@ -48,7 +46,7 @@ class License {
     std::string to_verify;
     to_verify += std::to_string(_expire_time_epoch_millis);
     to_verify += "|";
-    for (auto const& [key, val] : _metadata) {
+    for (auto const& [key, val] : _entitlements) {
       to_verify += key;
       to_verify += ":";
       to_verify += val;
@@ -57,12 +55,20 @@ class License {
     return to_verify;
   }
 
+  Entitlements entitlements() const {
+    std::unordered_set<std::string> entitlements;
+    for (const auto& key : _entitlements) {
+      entitlements.insert(key.second);
+    }
+    return Entitlements(entitlements);
+  }
+
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_start_time_epoch_millis, _expire_time_epoch_millis, _metadata);
+    archive(_start_time_epoch_millis, _expire_time_epoch_millis, _entitlements);
   }
 
   License();
@@ -77,7 +83,9 @@ class License {
   // This is a map rather than an unordered map because when creating
   // the string to verify, we want to be easily able to generate a deterministic
   // string from the map (and unordered maps have non deterministic orders)
-  std::map<std::string, std::string> _metadata;
+  // TODO(Josh): Consider making this an Entitlements object instead of this
+  // map, since only the keys are ever used anyways.
+  std::map<std::string, std::string> _entitlements;
 };
 
 }  // namespace thirdai::licensing
