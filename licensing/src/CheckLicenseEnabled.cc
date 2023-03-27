@@ -18,6 +18,8 @@
 
 namespace thirdai::licensing {
 
+// TODO(Josh): Refactor these into a single std::unique_ptr<LicensingMethod>
+// with a getEntitlements call
 std::optional<std::string> _license_path = std::nullopt;
 std::optional<std::string> _api_key = std::nullopt;
 std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
@@ -35,6 +37,8 @@ void checkLicense() {
 
   if (_heartbeat_thread != nullptr) {
     _heartbeat_thread->verify();
+    // For now heartbeat licenses are always full access because adding
+    // entitlement support to our on prem license server is complicated.
     _entitlements = Entitlements({FULL_ACCESS_ENTITLEMENT});
     return;
   }
