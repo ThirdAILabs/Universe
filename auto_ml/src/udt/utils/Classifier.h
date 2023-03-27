@@ -48,6 +48,8 @@ class Classifier {
 
   const bolt::BoltGraphPtr& model() const { return _model; }
 
+  bool freezeHashTables() const { return _freeze_hash_tables; }
+
  private:
   uint32_t predictedClass(const BoltVector& activation_vec);
 

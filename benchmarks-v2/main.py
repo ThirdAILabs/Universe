@@ -33,7 +33,6 @@ def parse_arguments():
     parser.add_argument(
         "--mlflow_uri",
         type=str,
-        default=None,
         help="MLflow URI to log metrics and artifacts.",
     )
     parser.add_argument(
