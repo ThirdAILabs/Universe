@@ -1,7 +1,7 @@
 #include "Entitlements.h"
 #include <licensing/src/entitlements/RestrictionTree.h>
 
-#ifdef THIRDAI_CHECK_LICENSE
+#ifdef THIRDAI_BUILD_LICENSE
 #include <licensing/src/Utils.h>
 #endif
 
@@ -82,9 +82,9 @@ void Entitlements::verifyDataSource(
   std::string file_path = source->resourceName();
 
   // We need this ifdef here because sha256File is only defined when
-  // THIRDAI_CHECK_LICENSE is true (and when it is false we should never get to
+  // THIRDAI_BUILD_LICENSE is true (and when it is false we should never get to
   // this line anyways, since we should always have a FULL_ACCESS license)
-#ifdef THIRDAI_CHECK_LICENSE
+#ifdef THIRDAI_BUILD_LICENSE
   if (!dataset_restrictions->datasetAllowed(
           /* dataset_hash = */ sha256File(file_path))) {
     throw exceptions::LicenseCheckException(
