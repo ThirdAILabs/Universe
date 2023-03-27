@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EntitlementTree.h"
+#include "RestrictionTree.h"
 #include <dataset/src/DataSource.h>
 #include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <exceptions/src/Exceptions.h>
@@ -12,11 +12,9 @@ namespace thirdai::licensing {
 class Entitlements {
  public:
   explicit Entitlements(const std::unordered_set<std::string>& entitlements)
-      : _entitlements(EntitlementTree(entitlements)){};
+      : _entitlements(RestrictionTree(entitlements)){};
 
-  bool hasFullAccess() const {
-    return std::holds_alternative<FullAccess>(_entitlements.access);
-  }
+  bool hasFullAccess() const { return !_entitlements.restrictions.has_value(); }
 
   void verifyFullAccess() const;
 
@@ -30,17 +28,11 @@ class Entitlements {
   void verifyDataSource(const dataset::DataSourcePtr& source) const;
 
  private:
-  bool hasFullModelAccess() const;
+  std::optional<ModelRestrictions> getModelRestrictions() const;
 
-  bool hasFullDatasetAccess() const;
+  std::optional<DatasetRestrictions> getDatasetRestrictions() const;
 
-  // This will throw an exception if hasFullModelAccess() is true
-  FinegrainedModelAccess getFinegrainedModelAccess() const;
-
-  // This will throw an exception if hasFullDatasetAccess() is true
-  FinegrainedDatasetAccess getFinegrainedDatasetAccess() const;
-
-  EntitlementTree _entitlements;
+  RestrictionTree _entitlements;
 };
 
 }  // namespace thirdai::licensing

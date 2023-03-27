@@ -1,4 +1,5 @@
 #include "Entitlements.h"
+#include <licensing/src/entitlements/RestrictionTree.h>
 
 #ifdef THIRDAI_CHECK_LICENSE
 #include <licensing/src/Utils.h>
@@ -7,13 +8,12 @@
 namespace thirdai::licensing {
 
 void Entitlements::verifySaveLoad() const {
-  if (hasFullModelAccess()) {
+  std::optional<ModelRestrictions> model_restrictions = getModelRestrictions();
+  if (!model_restrictions) {
     return;
   }
 
-  FinegrainedModelAccess model_access = getFinegrainedModelAccess();
-
-  if (model_access.load_save) {
+  if (model_restrictions->can_load_save) {
     return;
   }
 
@@ -30,13 +30,12 @@ void Entitlements::verifyFullAccess() const {
 
 void Entitlements::verifyAllowedNumberOfTrainingSamples(
     uint64_t total_num_training_samples) const {
-  if (hasFullModelAccess()) {
+  std::optional<ModelRestrictions> model_restrictions = getModelRestrictions();
+  if (!model_restrictions) {
     return;
   }
 
-  FinegrainedModelAccess model_access = getFinegrainedModelAccess();
-
-  if (total_num_training_samples < model_access.max_train_samples) {
+  if (total_num_training_samples < model_restrictions->max_train_samples) {
     return;
   }
 
@@ -46,13 +45,12 @@ void Entitlements::verifyAllowedNumberOfTrainingSamples(
 }
 
 void Entitlements::verifyAllowedOutputDim(uint64_t output_dim) const {
-  if (hasFullModelAccess()) {
+  std::optional<ModelRestrictions> model_restrictions = getModelRestrictions();
+  if (!model_restrictions) {
     return;
   }
 
-  FinegrainedModelAccess model_access = getFinegrainedModelAccess();
-
-  if (output_dim < model_access.max_output_dim) {
+  if (output_dim < model_restrictions->max_output_dim) {
     return;
   }
 
@@ -63,11 +61,11 @@ void Entitlements::verifyAllowedOutputDim(uint64_t output_dim) const {
 
 void Entitlements::verifyDataSource(
     const dataset::DataSourcePtr& source) const {
-  if (hasFullDatasetAccess()) {
+  std::optional<DatasetRestrictions> dataset_restrictions =
+      getDatasetRestrictions();
+  if (!dataset_restrictions) {
     return;
   }
-
-  FinegrainedDatasetAccess dataset_access = getFinegrainedDatasetAccess();
 
   // If the user just has a demo license and we are going to read in the
   // dataset from the resourceName, we require FileDataSources or
@@ -87,35 +85,29 @@ void Entitlements::verifyDataSource(
   // THIRDAI_CHECK_LICENSE is true (and when it is false we should never get to
   // this line anyways, since we should always have a FULL_ACCESS license)
 #ifdef THIRDAI_CHECK_LICENSE
-  if (!dataset_access.dataset_hashes.count(sha256File(file_path))) {
+  if (!dataset_restrictions->datasetAllowed(
+          /* dataset_hash = */ sha256File(file_path))) {
     throw exceptions::LicenseCheckException(
         "This dataset is not authorized under this license.");
   }
 #endif
 }
 
-bool Entitlements::hasFullModelAccess() const {
-  return hasFullAccess() ||
-         std::holds_alternative<FullModelAccess>(
-             std::get<FinegrainedFullAccess>(_entitlements.access)
-                 .model_access);
+std::optional<ModelRestrictions> Entitlements::getModelRestrictions() const {
+  if (!_entitlements.restrictions) {
+    return std::nullopt;
+  }
+
+  return _entitlements.restrictions->model_restrictions;
 }
 
-bool Entitlements::hasFullDatasetAccess() const {
-  return hasFullAccess() ||
-         std::holds_alternative<FullDatasetAccess>(
-             std::get<FinegrainedFullAccess>(_entitlements.access)
-                 .dataset_access);
-}
+std::optional<DatasetRestrictions> Entitlements::getDatasetRestrictions()
+    const {
+  if (!_entitlements.restrictions) {
+    return std::nullopt;
+  }
 
-FinegrainedModelAccess Entitlements::getFinegrainedModelAccess() const {
-  return std::get<FinegrainedModelAccess>(
-      std::get<FinegrainedFullAccess>(_entitlements.access).model_access);
-}
-
-FinegrainedDatasetAccess Entitlements::getFinegrainedDatasetAccess() const {
-  return std::get<FinegrainedDatasetAccess>(
-      std::get<FinegrainedFullAccess>(_entitlements.access).dataset_access);
+  return _entitlements.restrictions->dataset_restrictions;
 }
 
 }  // namespace thirdai::licensing

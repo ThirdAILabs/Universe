@@ -1,7 +1,7 @@
 #include "CheckLicense.h"
 #include <dataset/src/DataSource.h>
-#include <licensing/src/entitlements/EntitlementTree.h>
 #include <licensing/src/entitlements/Entitlements.h>
+#include <licensing/src/entitlements/RestrictionTree.h>
 #include <optional>
 #include <stdexcept>
 #include <unordered_set>

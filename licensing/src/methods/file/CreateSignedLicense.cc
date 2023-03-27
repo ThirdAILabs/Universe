@@ -1,7 +1,7 @@
 #include "License.h"
 #include "SignedLicense.h"
 #include <cryptopp/files.h>
-#include <licensing/src/entitlements/EntitlementTree.h>
+#include <licensing/src/entitlements/RestrictionTree.h>
 #include <exception>
 #include <filesystem>
 #include <iostream>
