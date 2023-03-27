@@ -94,13 +94,6 @@ jobs:
             OPENSSL_ROOT_DIR=/usr/local/opt/openssl 
             OPENSSL_LIBRARIES=/usr/local/opt/openssl/lib
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
-<<<<<<< HEAD
-=======
-
-
-          # Mac and windows will use this path, since they do not run in docker
-          THIRDAI_LICENSE_PATH: ${{ github.workspace }}/licensing/python_tests/license.serialized 
->>>>>>> main
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
