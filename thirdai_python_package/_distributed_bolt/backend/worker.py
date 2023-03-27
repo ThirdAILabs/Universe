@@ -4,7 +4,7 @@ from functools import wraps
 from time import time
 
 import thirdai._distributed_bolt.backend.communication as comm
-from thirdai._thirdai import bolt, logging
+from thirdai._thirdai import bolt, bolt_v2, logging
 
 
 def timed(f):
@@ -59,11 +59,18 @@ class Worker:
         )
 
         start = time()
-        self.model = bolt.DistributedTrainingWrapper(
-            model=model_to_wrap,
-            train_config=train_config,
-            worker_id=id,
-        )
+        if isinstance(model_to_wrap, bolt_v2.nn.Model):
+            self.model = bolt_v2.train.DistributedTrainingWrapper(
+                model=model_to_wrap,
+                train_config=train_config,
+                worker_id=id,
+            )
+        else:
+            self.model = bolt.DistributedTrainingWrapper(
+                model=model_to_wrap,
+                train_config=train_config,
+                worker_id=id,
+            )
         end = time()
 
         logging.info(f"func initializing_model | time {(end - start)*1000} ms")

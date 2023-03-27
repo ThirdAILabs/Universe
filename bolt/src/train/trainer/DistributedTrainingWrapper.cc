@@ -1,5 +1,6 @@
 #include "DistributedTrainingWrapper.h"
 #include <bolt/src/train/metrics/Metric.h>
+#include <exceptions/src/Exceptions.h>
 
 namespace thirdai::bolt::train {
 
@@ -24,6 +25,13 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
         createMetrics(model, validation->config().getMetricNames());
     _use_sparsity_in_validation =
         validation->config().shouldReturnActivations();
+  }
+
+  // TODO(Nicholas): add saving and best metric tracking.
+  if (train_config.saveContext()) {
+    throw exceptions::NotImplemented(
+        "Training with a save context is not yet supported for bolt v2 "
+        "distributed.");
   }
 }
 
@@ -57,8 +65,6 @@ DistributedTrainingWrapper::validationAndSaveBest() {
   for (const auto& [metric_name, metric_vals] : history) {
     last_metrics[metric_name] = metric_vals.back();
   }
-
-  // TODO(Nicholas): add saving and best metric tracking.
 
   return last_metrics;
 }
