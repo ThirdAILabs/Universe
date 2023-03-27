@@ -3,6 +3,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <utils/StringManipulation.h>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <variant>
