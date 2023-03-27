@@ -1,3 +1,5 @@
+import random
+
 def write_unsupervised_file(corpus, data_path):
     unsup_file = data_path + "/unsupervised.csv"
     with open(unsup_file, "w") as fw:
@@ -41,7 +43,7 @@ def write_supervised_file(queries, answers, data_path, filename):
     with open(sup_train_file, "w") as fw:
         fw.write("QUERY,DOC_ID\n")
 
-        for key in queries:
+        for key in random.shuffle(queries):
             query = queries[key].replace(",", " ")
             query = query.lower()
             doc_ids = ":".join(list(answers[key].keys()))

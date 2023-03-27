@@ -352,6 +352,10 @@ class TrainState {
     return train_metric_aggregator.getOutput();
   }
 
+  MetricData getAllTrainBatchMetrics() {
+    return train_metric_aggregator.getBatchOutput();
+  }
+
   const std::vector<double>& getValidationMetricValues(
       const std::string& metric_name) {
     if (validation_metrics.empty()) {

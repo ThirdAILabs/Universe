@@ -39,6 +39,7 @@ void createCallbacksSubmodule(py::module_& module) {
       .def("get_train_metric_values", &TrainState::getTrainMetricValues,
            py::arg("metric_name"))
       .def("get_all_train_metrics", &TrainState::getAllTrainMetrics)
+      .def("get_all_train_batch_metrics", &TrainState::getAllTrainBatchMetrics)
       .def("get_validation_metric_values",
            &TrainState::getValidationMetricValues, py::arg("metric_name"))
       .def("get_all_validation_metrics", &TrainState::getAllValidationMetrics);
