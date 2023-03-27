@@ -13,7 +13,7 @@ Restrictions::Restrictions(
     fields_parsed++;
   } else {
     model_restrictions = ModelRestrictions(entitlement_strings);
-    fields_parsed += 3;
+    fields_parsed += model_restrictions->num_fields_parsed;
   }
 
   if (entitlement_strings.count(FULL_DATASET_ENTITLEMENT)) {
@@ -26,9 +26,9 @@ Restrictions::Restrictions(
 
   // If there are more fields than we parsed, then this is potentially a new
   // license with restriction we don't handle, so we throw an exception to be
-  // safe. This check may miss a few edge cases, since it's possible that we
+  // safe. This check does miss a few edge cases, since it's possible that we
   // will have counted a string of length 64 that is not a dataset hash, and
-  // so our fields_parsed variable will be larger than it should e.
+  // so our fields_parsed variable will be larger than it should be.
   if (entitlement_strings.size() > fields_parsed) {
     throw exceptions::LicenseCheckException(
         "License could not be parsed because it contained unknown restrictions "
@@ -54,9 +54,13 @@ DatasetRestrictions::DatasetRestrictions(
 
 ModelRestrictions::ModelRestrictions(
     const std::unordered_set<std::string>& entitlement_strings)
-    : can_load_save(false), max_train_samples(0), max_output_dim(0) {
+    : can_load_save(false),
+      max_train_samples(0),
+      max_output_dim(0),
+      num_fields_parsed(0) {
   if (entitlement_strings.count(LOAD_SAVE_ENTITLEMENT)) {
     can_load_save = true;
+    num_fields_parsed++;
   }
 
   for (const auto& entitlement : entitlement_strings) {
@@ -67,6 +71,7 @@ ModelRestrictions::ModelRestrictions(
             "Invalid format of entitlement " + entitlement);
       }
       max_train_samples = std::stoul(std::string(split_entitlement.at(1)));
+      num_fields_parsed++;
     }
     if (text::startsWith(entitlement, MAX_OUTPUT_DIM_ENTITLEMENT_START)) {
       if (split_entitlement.size() != 2) {
@@ -74,6 +79,7 @@ ModelRestrictions::ModelRestrictions(
             "Invalid format of entitlement " + entitlement);
       }
       max_output_dim = std::stoul(std::string(split_entitlement.at(1)));
+      num_fields_parsed++;
     }
   }
 }

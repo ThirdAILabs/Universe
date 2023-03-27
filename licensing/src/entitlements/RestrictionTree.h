@@ -26,6 +26,10 @@ struct ModelRestrictions {
   bool can_load_save;
   uint64_t max_train_samples;
   uint64_t max_output_dim;
+
+  // Util variable representing how many fields from entitlement_strings were
+  // parsed in the creation of the struct
+  uint32_t num_fields_parsed;
 };
 
 struct DatasetRestrictions {
@@ -61,7 +65,9 @@ struct Restrictions {
  * overall cleaner. Unlike the original entitlements, the RestrictionTree is a
  * "negative" licensing system. Instead of users having entitlements that give
  * them additional access to the system, users have optional restrictions that
- * remove access.
+ * remove access. When doing the parsing, we ensure that if an entitlement is
+ * not present that it gets transformed into the corresponding maximum
+ * restriction.
  */
 struct RestrictionTree {
   std::optional<Restrictions> restrictions;
