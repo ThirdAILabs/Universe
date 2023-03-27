@@ -6,15 +6,12 @@
 
 
 import os
-import sys
 
-import numpy as np
 import pytest
 from distributed_utils import mnist_distributed_split, ray_two_node_cluster_config
 from download_dataset_fixtures import download_mnist_dataset
 from thirdai import bolt as old_bolt
 from thirdai import bolt_v2 as bolt
-from thirdai import dataset
 
 pytestmark = [pytest.mark.distributed]
 
