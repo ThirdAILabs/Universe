@@ -46,7 +46,7 @@ class FullyConnected final
 
   void disableSparseParameterUpdates() final;
 
-  std::vector<std::vector<float>*>  gradients() const final;
+  std::vector<std::vector<float>*> gradients() const final;
 
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
