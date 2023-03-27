@@ -58,13 +58,7 @@ bool startsWith(const std::string& to_search_in, const std::string& prefix) {
     return false;
   }
 
-  for (size_t i = 0; i < prefix.size(); i++) {
-    if (prefix.at(i) != to_search_in.at(i)) {
-      return false;
-    }
-  }
-
-  return true;
+  return std::string_view(to_search_in.data(), prefix.size()) == prefix;
 }
 
 }  // namespace thirdai::text

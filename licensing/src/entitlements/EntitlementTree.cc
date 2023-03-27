@@ -26,11 +26,15 @@ FinegrainedFullAccess::FinegrainedFullAccess(
 
   // If there are more fields than we parsed, then this is potentially a new
   // license with restriction we don't handle, so we throw an exception to be
-  // safe
+  // safe. This check may miss a few edge cases, since it's possible that we
+  // will have counted a string of length 64 that is not a dataset hash, and
+  // so our fields_parsed variable will be larger than it should e.
   if (entitlement_strings.size() > fields_parsed) {
     throw exceptions::LicenseCheckException(
-        "License could not be parsed because it contained unknown fields. "
-        "Try upgrading your thirdai version.");
+        "License could not be parsed because it contained unknown restrictions "
+        "or contained known restrictions in an unsupported configuration. "
+        "Try upgrading your thirdai version and make sure that your license is "
+        "correct.");
   }
 }
 
@@ -38,7 +42,9 @@ FinegrainedDatasetAccess::FinegrainedDatasetAccess(
     const std::unordered_set<std::string>& entitlement_strings) {
   // For now, we just add all strings of length 64 (this will add all
   // sha256 hashes in the entitlements, as well as any other strings of
-  // length 64).
+  // length 64). This is not a problem because it's fine if we add strings to
+  // the set that are not valid hashes because we only care that the dataset
+  // hash is a part of the set.
   for (const auto& entitlement : entitlement_strings) {
     if (entitlement.size() == 64) {
       dataset_hashes.insert(entitlement);

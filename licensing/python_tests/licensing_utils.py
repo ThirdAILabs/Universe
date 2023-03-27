@@ -3,9 +3,10 @@ import os
 import pandas as pd
 
 
-def this_should_require_a_full_license_udt(
-    test_load_save=True, n_target_classes=2, num_data_points=2
-):
+# This function builds a UDT model, trains the model, saves it, and run a
+# prediction on it. It is primarily used for testing licenses, and the arguments
+# allow the training to be tweaked to fit within more restrictive licenses.
+def run_udt_training_routine(do_save_load=True, n_target_classes=2, num_data_points=2):
     from thirdai import bolt
 
     model = bolt.UniversalDeepTransformer(
@@ -27,12 +28,14 @@ def this_should_require_a_full_license_udt(
 
     model.train("temp_training.csv")
 
-    if test_load_save:
+    if do_save_load:
         model.save("temp_save_loc")
 
-        bolt.UniversalDeepTransformer.load("temp_save_loc")
+        model = bolt.UniversalDeepTransformer.load("temp_save_loc")
 
         os.remove("temp_save_loc")
+
+    model.predict({"col_2": "0"})
 
     os.remove("temp_training.csv")
 

@@ -20,16 +20,16 @@ namespace thirdai::licensing {
 
 std::optional<std::string> _license_path = std::nullopt;
 std::optional<std::string> _api_key = std::nullopt;
-std::optional<Entitlements> _entitlements;
-
 std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
+
+std::optional<Entitlements> _entitlements;
 
 void checkLicense() {
 #pragma message( \
     "THIRDAI_CHECK_LICENSE is defined, adding license checking code")  // NOLINT
 
   if (_api_key.has_value()) {
-    _entitlements = Entitlements(verifyWithKeygen(*_api_key));
+    _entitlements = keygen::entitlementsFromKeygen(*_api_key);
     return;
   }
 
@@ -41,7 +41,7 @@ void checkLicense() {
 
   if (_license_path.has_value()) {
     _entitlements =
-        Entitlements({SignedLicense::verifyLicenseFile(_license_path.value())});
+        SignedLicense::entitlementsFromLicenseFile(_license_path.value());
     return;
   }
 

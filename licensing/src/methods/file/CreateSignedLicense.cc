@@ -11,7 +11,7 @@
 
 namespace thirdai::licensing {
 
-std::map<std::string, std::string> getEntitlementsFromUser() {
+std::map<std::string, std::string> entitlementsFromUserInput() {
   std::map<std::string, std::string> entitlements;
   std::string input;
 
@@ -72,10 +72,11 @@ using thirdai::licensing::License;
 using thirdai::licensing::SignedLicense;
 
 int main(int32_t argc, const char** argv) {
-  if (argc < 5 || argc % 2 == 0) {
-    std::cerr << "Invalid args, usage: ./create_signed_license "
-                 "private_key_file public_key_file output_file num_days "
-              << std::endl;
+  if (argc != 5) {
+    std::cerr
+        << "Invalid args, usage: ./create_signed_license private_key_file "
+           "public_key_file output_license_filename num_days "
+        << std::endl;
     return 1;
   }
   try {
@@ -98,7 +99,7 @@ int main(int32_t argc, const char** argv) {
       public_key.BERDecode(input);
     }
 
-    auto entitlements = thirdai::licensing::getEntitlementsFromUser();
+    auto entitlements = thirdai::licensing::entitlementsFromUserInput();
 
     // Create and sign license
     License license =

@@ -894,6 +894,8 @@ template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
+  // We don't need to have these verify calls anywhere else because all model
+  // saves defer to this function
   licensing::entitlements().verifySaveLoad();
   archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
           _epoch, _updates, _total_samples_trained_on);

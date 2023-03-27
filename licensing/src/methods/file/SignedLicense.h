@@ -10,6 +10,7 @@
 #include <cryptopp/osrng.h>
 #include <cryptopp/rsa.h>
 #include <exceptions/src/Exceptions.h>
+#include <licensing/src/entitlements/Entitlements.h>
 #include <sys/types.h>
 #include <exception>
 #include <filesystem>
@@ -31,7 +32,7 @@ class SignedLicense {
    * then checks whether it has expired. If either fails we throw an error.
    * Otherwise we return the entitlements found in the license file.
    */
-  static std::unordered_set<std::string> verifyLicenseFile(
+  static Entitlements entitlementsFromLicenseFile(
       const std::string& license_path) {
     SignedLicense license = getLicenseFromFile(license_path);
 

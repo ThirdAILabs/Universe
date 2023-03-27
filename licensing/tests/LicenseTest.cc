@@ -76,7 +76,7 @@ TEST(LicenseTest, SignModifyVerifyTest) {
   ASSERT_FALSE(signed_license.verify(public_key_2));
 
   // Modifying the license and then verifying with the original key should fail
-  signed_license.setLicense(LicenseTest::createLicense(1000));
+  signed_license.setLicense(LicenseTest::createLicense(/* num_days = */ 1000));
   ASSERT_FALSE(signed_license.verify(public_key));
 }
 

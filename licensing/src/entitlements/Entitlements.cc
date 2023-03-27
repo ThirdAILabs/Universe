@@ -6,7 +6,7 @@
 
 namespace thirdai::licensing {
 
-void Entitlements::verifySaveLoad() {
+void Entitlements::verifySaveLoad() const {
   if (hasFullModelAccess()) {
     return;
   }
@@ -29,7 +29,7 @@ void Entitlements::verifyFullAccess() const {
 }
 
 void Entitlements::verifyAllowedNumberOfTrainingSamples(
-    uint64_t total_num_training_samples) {
+    uint64_t total_num_training_samples) const {
   if (hasFullModelAccess()) {
     return;
   }
@@ -45,7 +45,7 @@ void Entitlements::verifyAllowedNumberOfTrainingSamples(
       "this license.");
 }
 
-void Entitlements::verifyAllowedOutputDim(uint64_t output_dim) {
+void Entitlements::verifyAllowedOutputDim(uint64_t output_dim) const {
   if (hasFullModelAccess()) {
     return;
   }
@@ -61,7 +61,8 @@ void Entitlements::verifyAllowedOutputDim(uint64_t output_dim) {
       "license.");
 }
 
-void Entitlements::verifyDataSource(const dataset::DataSourcePtr& source) {
+void Entitlements::verifyDataSource(
+    const dataset::DataSourcePtr& source) const {
   if (hasFullDatasetAccess()) {
     return;
   }
@@ -93,26 +94,26 @@ void Entitlements::verifyDataSource(const dataset::DataSourcePtr& source) {
 #endif
 }
 
-bool Entitlements::hasFullModelAccess() {
+bool Entitlements::hasFullModelAccess() const {
   return hasFullAccess() ||
          std::holds_alternative<FullModelAccess>(
              std::get<FinegrainedFullAccess>(_entitlements.access)
                  .model_access);
 }
 
-bool Entitlements::hasFullDatasetAccess() {
+bool Entitlements::hasFullDatasetAccess() const {
   return hasFullAccess() ||
          std::holds_alternative<FullDatasetAccess>(
              std::get<FinegrainedFullAccess>(_entitlements.access)
                  .dataset_access);
 }
 
-FinegrainedModelAccess Entitlements::getFinegrainedModelAccess() {
+FinegrainedModelAccess Entitlements::getFinegrainedModelAccess() const {
   return std::get<FinegrainedModelAccess>(
       std::get<FinegrainedFullAccess>(_entitlements.access).model_access);
 }
 
-FinegrainedDatasetAccess Entitlements::getFinegrainedDatasetAccess() {
+FinegrainedDatasetAccess Entitlements::getFinegrainedDatasetAccess() const {
   return std::get<FinegrainedDatasetAccess>(
       std::get<FinegrainedFullAccess>(_entitlements.access).dataset_access);
 }

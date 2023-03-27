@@ -20,25 +20,25 @@ class Entitlements {
 
   void verifyFullAccess() const;
 
-  void verifySaveLoad();
+  void verifySaveLoad() const;
 
   void verifyAllowedNumberOfTrainingSamples(
-      uint64_t total_num_training_samples);
+      uint64_t total_num_training_samples) const;
 
-  void verifyAllowedOutputDim(uint64_t output_dim);
+  void verifyAllowedOutputDim(uint64_t output_dim) const;
 
-  void verifyDataSource(const dataset::DataSourcePtr& source);
+  void verifyDataSource(const dataset::DataSourcePtr& source) const;
 
  private:
-  bool hasFullModelAccess();
+  bool hasFullModelAccess() const;
 
-  bool hasFullDatasetAccess();
+  bool hasFullDatasetAccess() const;
 
   // This will throw an exception if hasFullModelAccess() is true
-  FinegrainedModelAccess getFinegrainedModelAccess();
+  FinegrainedModelAccess getFinegrainedModelAccess() const;
 
   // This will throw an exception if hasFullDatasetAccess() is true
-  FinegrainedDatasetAccess getFinegrainedDatasetAccess();
+  FinegrainedDatasetAccess getFinegrainedDatasetAccess() const;
 
   EntitlementTree _entitlements;
 };

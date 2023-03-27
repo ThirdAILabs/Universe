@@ -25,5 +25,5 @@ def enable_full_access_licensing(request):
     try:
         set_working_license()
     except AttributeError as e:
-        # Ignore this, since it just means our package was not build with licensing
+        # Ignore this, since it just means our package was not built with licensing
         pass

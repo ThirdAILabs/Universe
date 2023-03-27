@@ -17,7 +17,7 @@
 #include <iostream>
 #include <stdexcept>
 
-namespace thirdai::licensing {
+namespace thirdai::licensing::keygen {
 
 using json = nlohmann::json;
 
@@ -200,8 +200,7 @@ std::unordered_set<std::string> getKeygenEntitlements(
   return result;
 }
 
-std::unordered_set<std::string> verifyWithKeygen(
-    const std::string& access_key) {
+Entitlements entitlementsFromKeygen(const std::string& access_key) {
   httplib::Client client("https://api.keygen.sh");
   // We need this because for some strange reason building a wheel on github
   // actions and then installing locally makes ssl server certificate
@@ -238,6 +237,6 @@ std::unordered_set<std::string> verifyWithKeygen(
   verifyKeygenResponse(response, /* request_type = */ "post",
                        /* api_path = */ VALIDATE_ENDPOINT);
 
-  return getKeygenEntitlements(response_body, access_key);
+  return Entitlements(getKeygenEntitlements(response_body, access_key));
 }
-}  // namespace thirdai::licensing
+}  // namespace thirdai::licensing::keygen

@@ -4,6 +4,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/map.hpp>
 #include <cereal/types/string.hpp>
+#include <licensing/src/entitlements/Entitlements.h>
 #include <chrono>
 #include <map>
 #include <string>
@@ -37,10 +38,6 @@ class License {
            _expire_time_epoch_millis < getCurrentEpochMillis();
   }
 
-  const std::map<std::string, std::string>& getEntitlements() const {
-    return _entitlements;
-  }
-
   int64_t getExpireTimeMillis() const { return _expire_time_epoch_millis; }
 
   // Gets a string that represents the state of the license. This is the state
@@ -58,12 +55,12 @@ class License {
     return to_verify;
   }
 
-  std::unordered_set<std::string> entitlements() const {
+  Entitlements entitlements() const {
     std::unordered_set<std::string> entitlements;
     for (const auto& key : _entitlements) {
       entitlements.insert(key.second);
     }
-    return entitlements;
+    return Entitlements(entitlements);
   }
 
  private:
