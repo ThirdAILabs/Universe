@@ -7,7 +7,6 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <dataset/src/utils/SafeFileIO.h>
-#include <licensing/src/CheckLicense.h>
 #include <algorithm>
 #include <memory>
 #include <optional>
@@ -147,13 +146,14 @@ autograd::ComputationPtr Model::getComputation(const std::string& name) const {
 std::string Model::summary(bool print) const {
   std::stringstream summary;
 
-  summary << "===================== Model =====================\n";
-  for (uint32_t i = 0; i < _computation_order.size(); i++) {
-    _computation_order[i]->summary(summary);
+  summary << "\n===================== Model =====================\n";
+  for (const auto& input : _inputs) {
+    input->summary(summary);
     summary << "\n";
-    if (i < _computation_order.size() - 1) {
-      summary << "-------------------------------------------------\n";
-    }
+  }
+  for (const auto& comp : _computation_order) {
+    comp->summary(summary);
+    summary << "\n";
   }
   summary << "=================================================\n";
 
