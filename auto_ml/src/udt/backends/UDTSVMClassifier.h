@@ -14,14 +14,14 @@ class UDTSVMClassifier final : public UDTBackend {
                    const std::optional<std::string>& model_config,
                    const config::ArgumentMap& user_args);
 
-  void train(const dataset::DataSourcePtr& data, float learning_rate,
-             uint32_t epochs,
-             const std::optional<ValidationDataSource>& validation,
-             std::optional<size_t> batch_size,
-             std::optional<size_t> max_in_memory_batches,
-             const std::vector<std::string>& metrics,
-             const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-             bool verbose, std::optional<uint32_t> logging_interval) final;
+  py::object train(
+      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+      const std::optional<ValidationDataSource>& validation,
+      std::optional<size_t> batch_size,
+      std::optional<size_t> max_in_memory_batches,
+      const std::vector<std::string>& metrics,
+      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
+      bool verbose, std::optional<uint32_t> logging_interval) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -38,14 +38,14 @@ class UDTSVMClassifier final : public UDTBackend {
   static dataset::DatasetLoaderPtr svmDatasetLoader(
       dataset::DataSourcePtr data_source, bool shuffle);
 
-  UDTSVMClassifier() : _classifier(nullptr, false) {}
+  UDTSVMClassifier() {}
 
   friend cereal::access;
 
   template <class Archive>
   void serialize(Archive& archive);
 
-  utils::Classifier _classifier;
+  utils::ClassifierPtr _classifier;
 };
 
 }  // namespace thirdai::automl::udt

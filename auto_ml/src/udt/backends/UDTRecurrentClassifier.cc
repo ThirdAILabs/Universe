@@ -6,6 +6,7 @@
 #include <dataset/src/blocks/RecurrenceAugmentation.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/pytypes.h>
+#include <pybind11/stl.h>
 #include <utils/StringManipulation.h>
 #include <stdexcept>
 
@@ -45,7 +46,7 @@ UDTRecurrentClassifier::UDTRecurrentClassifier(
                                             defaults::FREEZE_HASH_TABLES);
 }
 
-void UDTRecurrentClassifier::train(
+py::object UDTRecurrentClassifier::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
     const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
@@ -71,10 +72,10 @@ void UDTRecurrentClassifier::train(
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  utils::train(_model, train_dataset, train_config, batch_size,
-               max_in_memory_batches,
-               /* freeze_hash_tables= */ _freeze_hash_tables,
-               licensing::TrainPermissionsToken(data));
+  return py::cast(utils::train(_model, train_dataset, train_config, batch_size,
+                               max_in_memory_batches,
+                               /* freeze_hash_tables= */ _freeze_hash_tables,
+                               licensing::TrainPermissionsToken(data)));
 }
 
 py::object UDTRecurrentClassifier::evaluate(
@@ -84,11 +85,12 @@ py::object UDTRecurrentClassifier::evaluate(
   throwIfSparseInference(sparse_inference);
 
   bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose);
+      utils::getEvalConfig(metrics, sparse_inference, verbose,
+                           /* return_activations = */ !return_metrics);
 
   auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
                      ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
-  auto [test_data, test_labels] = utils::split_data_labels(std::move(dataset));
+  auto [test_data, test_labels] = utils::splitDataLabels(std::move(dataset));
 
   auto [output_metrics, output] =
       _model->evaluate(test_data, test_labels, eval_config);

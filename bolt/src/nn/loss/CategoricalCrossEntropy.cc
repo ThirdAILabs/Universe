@@ -1,4 +1,8 @@
 #include "CategoricalCrossEntropy.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/details/helpers.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <cmath>
 #include <optional>
 
@@ -34,4 +38,14 @@ float CategoricalCrossEntropy::singleGradient(float activation, float label,
   return (label - activation) / batch_size;
 }
 
+template void CategoricalCrossEntropy::serialize(cereal::BinaryInputArchive&);
+template void CategoricalCrossEntropy::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void CategoricalCrossEntropy::serialize(Archive& archive) {
+  archive(cereal::base_class<ComparativeLoss>(this));
+}
+
 }  // namespace thirdai::bolt::nn::loss
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::loss::CategoricalCrossEntropy)

@@ -40,6 +40,7 @@ class Worker:
         train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
+        validation_context=None,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
@@ -47,6 +48,11 @@ class Worker:
         """
         self.train_source = train_source
         self.train_source.load()
+
+        self.num_workers = num_workers
+        self.id = id
+        self.primary_worker = primary_worker
+        self.communication_type = communication_type
 
         logging.setup(
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
@@ -61,11 +67,6 @@ class Worker:
         end = time()
 
         logging.info(f"func initializing_model | time {(end - start)*1000} ms")
-
-        self.num_workers = num_workers
-        self.id = id
-        self.primary_worker = primary_worker
-        self.communication_type = communication_type
 
         if self.communication_type == "circular":
             self.comm = comm.Circular(
@@ -247,6 +248,9 @@ class Worker:
 
     def freeze_hash_tables(self):
         self.model.freeze_hash_tables(True)
+
+    def get_updated_metrics(self):
+        return self.model.get_updated_metrics()
 
     def model(self):
         return self.model.model

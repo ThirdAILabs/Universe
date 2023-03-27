@@ -27,7 +27,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
+        # See https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#expanding-or-adding-matrix-configurations
+        # for the semantics of using the matrix and the includes.
+        os: [ubuntu-20.04, windows-2022]
         include:
           - name: macos-x86_64
             os: macos-12
@@ -54,8 +56,6 @@ jobs:
         shell: bash
         run: |-
           echo "THIRDAI_BUILD_IDENTIFIER=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-
-
       - name: Install dependencies with vcpkg
         if: ${{ startsWith(runner.os, 'windows') }}
         working-directory: C:\vcpkg
@@ -76,8 +76,6 @@ jobs:
           CIBW_ENVIRONMENT_LINUX: >
             CMAKE_ARGS="-DOPENSSL_ROOT_DIR:PATH=/usr/lib64/openssl11;/usr/include/openssl11"
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
-
-
           # The following is to relax the discovery timeout (from a default 5) so that
           # cibuildwheel GitHub workflow does not timeout on test-discovery.
           # 
@@ -90,7 +88,6 @@ jobs:
               CMAKE_ARGS='-DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30 -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake'
               KMP_DUPLICATE_LIB_OK=TRUE
               THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
-
           CIBW_ENVIRONMENT_MACOS:
             CMAKE_ARGS='${{ matrix.cmake_additional_args }}'
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
@@ -100,7 +97,7 @@ jobs:
 
 
           # Mac and windows will use this path, since they do not run in docker
-          THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
+          THIRDAI_LICENSE_PATH: ${{ github.workspace }}/licensing/python_tests/license.serialized 
          
           CIBW_BEFORE_BUILD_LINUX: >
             yum update -y && yum clean all &&
@@ -117,11 +114,15 @@ jobs:
 
           # On linux we copy a valid license to the home directory within the docker
           CIBW_BEFORE_TEST_LINUX: >
-            cp docker/product/slim/license.serialized ~/license.serialized &&
+            cp licensing/python_tests/license.serialized ~/license.serialized &&
             yum install golang -y
           CIBW_TEST_EXTRAS: "test"
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
           CIBW_TEST_COMMAND_WINDOWS: rem
+
+          # Skip tests on windows
+          # TODO(Jerin): Get tests working on windows wheels
+          CIBW_TEST_SKIP: "*win*"
 
           # Build both x86_64 and arm64 (apple silicon)
           CIBW_ARCHS_MACOS: ${{ matrix.archs }}
@@ -139,6 +140,16 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           path: ./wheelhouse/*.whl
+      
+      - name: Notify slack fail
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: pypi_package_releases
+          status: FAILED
+          color: danger
 
 
   upload_to_test_pypi:
@@ -160,6 +171,16 @@ jobs:
         user: __token__
         password: ${{ secrets.TEST_PYPI_TOKEN }}
         repository_url: https://test.pypi.org/legacy/
+    
+    - name: Notify slack fail
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel_id: pypi_package_releases
+        status: FAILED
+        color: danger
 
   upload_to_real_pypi:
     name: Upload to real pypi

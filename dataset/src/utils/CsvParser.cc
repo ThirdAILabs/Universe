@@ -24,12 +24,10 @@ void StateMachine::transition(char current_char) {
     case ParserState::NewColumn:
       _state = fromNewColumn(current_char);
       break;
+    // EscapeInQuotes and DelimiterInQutoes and are special cases of
+    // RegularInQuotes with the same out-transitions.
     case ParserState::EscapeInQuotes:
-      _state = fromEscapeInQuotes(current_char);
-      break;
     case ParserState::DelimiterInQuotes:
-      // DelimiterInQutoes is a special case of InQuotes with the same
-      // out-transitions.
     case ParserState::RegularInQuotes:
       _state = fromRegularInQuotes(current_char);
       break;
@@ -90,13 +88,6 @@ ParserState StateMachine::fromNewColumn(char current_char) const {
     default:
       return ParserState::RegularOutsideQuotes;
   }
-}
-
-ParserState StateMachine::fromEscapeInQuotes(char current_char) const {
-  if (current_char == _delimiter) {
-    return ParserState::DelimiterInQuotes;
-  }
-  return ParserState::RegularInQuotes;
 }
 
 ParserState StateMachine::fromRegularInQuotes(char current_char) const {
@@ -187,6 +178,12 @@ static bool quotesAreMalformed(StateMachine& state_machine, bool is_last_char) {
 }
 
 static std::string_view trimNewlineAtEndOfLine(const std::string& line) {
+  if (line.size() >= 2 && line.substr(line.size() - 2) == "\r\n") {
+    return {line.data(), line.size() - 2};
+  }
+  if (!line.empty() && line.back() == '\r') {
+    return {line.data(), line.size() - 1};
+  }
   if (!line.empty() && line.back() == '\n') {
     return {line.data(), line.size() - 1};
   }
