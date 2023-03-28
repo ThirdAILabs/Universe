@@ -15,6 +15,7 @@ from .beir_download_utils import (
     write_unsupervised_file,
 )
 
+
 def _download_dataset(url, zip_file, check_existence, output_dir):
     if not os.path.exists(zip_file):
         os.system(f"curl {url} --output {zip_file}")
@@ -389,8 +390,7 @@ def prepare_query_reformulation_data(seed=42):
     )
 
     test_data_with_noise = perturb_query_reformulation_data(
-        dataframe=pd.DataFrame(sampled_train_data),
-        noise_level=TEST_NOISE_LEVEL,
+        dataframe=pd.DataFrame(sampled_train_data), noise_level=TEST_NOISE_LEVEL
     )
 
     # TODO(Geordie): Fix this when the new CSV parser is in
@@ -401,11 +401,7 @@ def prepare_query_reformulation_data(seed=42):
     train_data_with_noise.to_csv(TRAIN_FILE_PATH, index=False)
     test_data_with_noise.to_csv(TEST_FILE_PATH, index=False)
 
-    return (
-        TRAIN_FILE_PATH,
-        TEST_FILE_PATH,
-        inference_batch,
-    )
+    return (TRAIN_FILE_PATH, TEST_FILE_PATH, inference_batch)
 
 
 def download_clinc_dataset(
@@ -629,18 +625,21 @@ def download_amazon_kaggle_product_catalog_sampled():
 
     return TRAIN_FILE, n_target_classes
 
+
 def download_agnews_dataset(corpus_file):
     from datasets import load_dataset
-    corpus = load_dataset("ag_news")['train']['text']
-    with open(corpus_file, 'w') as fw:
-        nothing = fw.write('id,text\n')
+
+    corpus = load_dataset("ag_news")["train"]["text"]
+    with open(corpus_file, "w") as fw:
+        nothing = fw.write("id,text\n")
         count = 0
         for line in corpus:
-            nothing = fw.write(str(count)+','+line.replace(',',' ').lower()+'\n')
+            nothing = fw.write(str(count) + "," + line.replace(",", " ").lower() + "\n")
             count += 1
 
     fw.close()
     return len(corpus)
+
 
 def download_beir_dataset(dataset):
     from beir import util
