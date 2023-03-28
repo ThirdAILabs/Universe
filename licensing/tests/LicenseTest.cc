@@ -24,9 +24,9 @@ class LicenseTest : public testing::Test {
   }
 
   static License createLicense(int64_t num_days = 30) {
-    std::map<std::string, std::string> metadata{
-        {"company", "abc"}, {"person", "def"}, {"machine type", "ghi"}};
-    return License::createLicenseWithNDaysLeft(metadata, num_days);
+    std::map<std::string, std::string> entitlements{
+        {"Entitlement 1", "Entitlement 1"}, {"Entitlement 2", "Entitlement 2"}};
+    return License::createLicenseWithNDaysLeft(entitlements, num_days);
   }
 };
 
@@ -76,7 +76,7 @@ TEST(LicenseTest, SignModifyVerifyTest) {
   ASSERT_FALSE(signed_license.verify(public_key_2));
 
   // Modifying the license and then verifying with the original key should fail
-  signed_license.set_license(LicenseTest::createLicense(1000));
+  signed_license.setLicense(LicenseTest::createLicense(/* num_days = */ 1000));
   ASSERT_FALSE(signed_license.verify(public_key));
 }
 

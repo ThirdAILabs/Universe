@@ -8,6 +8,7 @@
 #include <auto_ml/src/dataset_factories/udt/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
@@ -33,6 +34,9 @@ class TabularDatasetFactory {
   }
 
   std::vector<BoltBatch> featurizeInputBatch(const MapInputBatch& inputs);
+
+  std::pair<std::vector<BoltBatch>, BoltBatch> featurizeTrainingBatch(
+      const MapInputBatch& batch);
 
   void updateTemporalTrackers(const MapInput& input) {
     dataset::MapSampleRef input_ref(input);

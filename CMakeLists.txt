@@ -407,7 +407,9 @@ set(THIRDAI_SOURCES
     auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc
     utils/StringManipulation.cc
-    utils/UUID.cc)
+    utils/UUID.cc
+    licensing/src/entitlements/RestrictionTree.cc
+    licensing/src/entitlements/Entitlements.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set
