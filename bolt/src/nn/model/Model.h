@@ -88,6 +88,11 @@ class Model {
   const autograd::ComputationList& outputs() const;
 
   /**
+   * Returns the inputs storing the labels of the model.
+   */
+  const autograd::ComputationList& labels() const;
+
+  /**
    * Retrieves on op by name. Throws if not found.
    */
   ops::OpPtr getOp(const std::string& name) const;
