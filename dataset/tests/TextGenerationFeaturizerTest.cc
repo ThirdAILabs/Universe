@@ -22,17 +22,11 @@ uint32_t pairgramHash(uint32_t lhs, uint32_t rhs) {
 }
 
 void verifyGeneratedSamples(
-    const std::vector<std::string>& phrases,
+    const std::vector<std::vector<thirdai::BoltVector>>& data,
     const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices) {
-  TextGenerationFeaturizer processor(/* lrc_len= */ 4, /* irc_len= */ 3,
-                                     /* src_len= */ 2,
-                                     /* vocab_size= */ VOCAB_SIZE);
-
-  auto data = processor.featurize(phrases);
-  ASSERT_EQ(data.size(), 5);
-
   for (uint32_t sample_id = 0; sample_id < expected_indices.size();
        sample_id++) {
+    ASSERT_EQ(expected_indices.at(sample_id).size(), data.size());
     for (uint32_t input_id = 0;
          input_id < expected_indices.at(sample_id).size(); input_id++) {
       ASSERT_EQ(data.at(input_id).size(), expected_indices.size());
@@ -48,6 +42,36 @@ void verifyGeneratedSamples(
       }
     }
   }
+}
+
+void checkDataFeaturization(
+    const std::vector<std::string>& phrases,
+    const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices) {
+  TextGenerationFeaturizer processor(/* lrc_len= */ 4, /* irc_len= */ 3,
+                                     /* src_len= */ 2,
+                                     /* vocab_size= */ VOCAB_SIZE);
+
+  auto data = processor.featurize(phrases);
+
+  verifyGeneratedSamples(data, expected_indices);
+}
+
+void checkInferenceFeaturization(
+    const std::vector<uint32_t>& prompt, const std::vector<uint32_t>& tokens,
+    const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices) {
+  TextGenerationFeaturizer processor(/* lrc_len= */ 4, /* irc_len= */ 3,
+                                     /* src_len= */ 2,
+                                     /* vocab_size= */ VOCAB_SIZE);
+
+  auto vectors = processor.featurizeInferenceSample(prompt, tokens);
+
+  std::vector<std::vector<BoltVector>> data;
+  data.reserve(vectors.size());
+  for (const auto& vector : vectors) {
+    data.push_back({vector});
+  }
+
+  verifyGeneratedSamples(data, expected_indices);
 }
 
 TEST(TextGenerationFeaturizerTest, Featurization) {
@@ -73,7 +97,7 @@ TEST(TextGenerationFeaturizerTest, Featurization) {
        {6}},
   };
 
-  verifyGeneratedSamples(phrases, expected_indices);
+  checkDataFeaturization(phrases, expected_indices);
 }
 
 TEST(TextGenerationFeaturizerTest, FeaturizationWithContext) {
@@ -98,7 +122,7 @@ TEST(TextGenerationFeaturizerTest, FeaturizationWithContext) {
        {6}},
   };
 
-  verifyGeneratedSamples(phrases, expected_indices);
+  checkDataFeaturization(phrases, expected_indices);
 }
 
 TEST(TextGenerationFeaturizerTest, FeaturizationWithPrompt) {
@@ -118,7 +142,26 @@ TEST(TextGenerationFeaturizerTest, FeaturizationWithPrompt) {
        {7}},
   };
 
-  verifyGeneratedSamples(phrases, expected_indices);
+  checkDataFeaturization(phrases, expected_indices);
+}
+
+TEST(TextGenerationFeaturizerTest, InferenceFeaturization) {
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      {{0},
+       {2, 3, 4, 5},
+       {3, 4, 5, pairgramHash(3, 4), pairgramHash(3, 5), pairgramHash(4, 5)},
+       {4, 5}},
+  };
+
+  checkInferenceFeaturization({}, {1, 2, 3, 4, 5}, expected_indices);
+}
+
+TEST(TextGenerationFeaturizerTest, InferenceFeaturizationWithPrompt) {
+  std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
+      {{7, 8, 9}, {1, 2}, {1, 2, pairgramHash(1, 2)}, {1, 2}},
+  };
+
+  checkInferenceFeaturization({7, 8, 9}, {1, 2}, expected_indices);
 }
 
 }  // namespace thirdai::dataset::tests
