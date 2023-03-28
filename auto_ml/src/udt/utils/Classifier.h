@@ -5,6 +5,7 @@
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
+#include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <pybind11/pybind11.h>
 #include <memory>
 
@@ -47,6 +48,8 @@ class Classifier {
   bolt::BoltGraphPtr& model() { return _model; }
 
   const bolt::BoltGraphPtr& model() const { return _model; }
+
+  bool freezeHashTables() const { return _freeze_hash_tables; }
 
  private:
   uint32_t predictedClass(const BoltVector& activation_vec);

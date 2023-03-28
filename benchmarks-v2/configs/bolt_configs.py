@@ -120,11 +120,17 @@ class WayfairConfig(BoltBenchmarkConfig):
 
     def _load_wayfair_dataset(filename, batch_size, output_dim, shuffle=True):
         featurizer = dataset.TabularFeaturizer(
-            input_blocks=[dataset.blocks.TextPairGram(col=1)],
-            label_blocks=[
-                dataset.blocks.NumericalId(col=0, n_classes=output_dim, delimiter=",")
+            block_lists=[
+                dataset.BlockList([dataset.blocks.TextPairGram(col=1)]),
+                dataset.BlockList(
+                    [
+                        dataset.blocks.NumericalId(
+                            col=0, n_classes=output_dim, delimiter=","
+                        )
+                    ]
+                ),
             ],
-            has_header=False,
+            has_header=True,
             delimiter="\t",
         )
 

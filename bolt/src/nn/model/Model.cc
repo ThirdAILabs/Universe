@@ -123,6 +123,8 @@ autograd::ComputationList Model::computationOrder() const {
 
 const autograd::ComputationList& Model::outputs() const { return _outputs; }
 
+const autograd::ComputationList& Model::labels() const { return _labels; }
+
 ops::OpPtr Model::getOp(const std::string& name) const {
   for (const auto& op : _ops) {
     if (op->name() == name) {
@@ -146,13 +148,14 @@ autograd::ComputationPtr Model::getComputation(const std::string& name) const {
 std::string Model::summary(bool print) const {
   std::stringstream summary;
 
-  summary << "===================== Model =====================\n";
-  for (uint32_t i = 0; i < _computation_order.size(); i++) {
-    _computation_order[i]->summary(summary);
+  summary << "\n===================== Model =====================\n";
+  for (const auto& input : _inputs) {
+    input->summary(summary);
     summary << "\n";
-    if (i < _computation_order.size() - 1) {
-      summary << "-------------------------------------------------\n";
-    }
+  }
+  for (const auto& comp : _computation_order) {
+    comp->summary(summary);
+    summary << "\n";
   }
   summary << "=================================================\n";
 

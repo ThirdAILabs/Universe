@@ -250,7 +250,6 @@ void EmbeddingLayer::buildLayerSummary(std::ostream& summary) const {
   if (_num_tokens_per_input) {
     summary << ", num_tokens_per_input=" << _num_tokens_per_input.value();
   }
-  summary << "\n";
 }
 
 std::unique_ptr<EmbeddingLayer> EmbeddingLayer::duplicateWithNewReduction(
