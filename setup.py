@@ -170,7 +170,7 @@ setup(
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
     install_requires=[
-        "numpy<=1.23.5",
+        "numpy",
         "typing_extensions",
         "pandas>=1.2.0",
     ],
