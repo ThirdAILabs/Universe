@@ -642,7 +642,6 @@ def download_agnews_dataset(corpus_file):
             nothing = fw.write(str(count) + "," + line.replace(",", " ").lower() + "\n")
             count += 1
 
-    fw.close()
     return len(corpus)
 
 
