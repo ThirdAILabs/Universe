@@ -630,6 +630,7 @@ def download_amazon_kaggle_product_catalog_sampled():
 
     return TRAIN_FILE, n_target_classes
 
+
 def download_agnews_dataset(corpus_file):
     from datasets import load_dataset
 
