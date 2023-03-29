@@ -1,4 +1,5 @@
 #include "CallbacksPython.h"
+#include <bolt/src/callbacks/BatchedLRScheduler.h>
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/callbacks/EarlyStopCheckpoint.h>
 #include <bolt/src/callbacks/LearningRateScheduler.h>
@@ -100,6 +101,13 @@ stops once that threshold is reached. This is useful for things like
 cold-start where we attain the best results when overfitting the unsupervised
 data.
 )pbdoc");
+
+  py::class_<BatchedLRScheduler, std::shared_ptr<BatchedLRScheduler>, Callback>(
+      callbacks_submodule, "BatchedLRScheduler")
+      .def(py::init<std::string, std::string, uint32_t, uint32_t, double>(),
+           py::arg("save_loc"), py::arg("monitored_metric"),
+           py::arg("n_bad_batches_before_update"),
+           py::arg("n_total_lr_updates"), py::arg("scaledown"));
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
