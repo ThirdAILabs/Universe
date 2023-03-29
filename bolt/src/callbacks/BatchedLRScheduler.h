@@ -25,10 +25,30 @@ class BatchedLRScheduler : public Callback {
         train_state.getAllTrainBatchMetrics()[_metric->name()].back();
 
     if (cur_metric > _best_metric) {
-      train_state.stop_training = true;
-      std::cout << "Reached threshold " << _threshold << " for training metric "
-                << _metric->name() << ", stopping training. " << std::endl;
+      // Save model
+      _best_metric = cur_metric;
     }
+
+    if (cur_metric < _last_metric) {
+      _n_bad_batches++;
+    } else {
+      _n_bad_batches = 0;
+    }
+
+    if (_n_bad_batches > _n_bad_batches_before_update) {
+      if (_n_lr_updates > _n_total_lr_updates) {
+        train_state.stop_training = true;
+      } else {
+        std::cout << "Scaling down LR from " << train_state.learning_rate
+                  << " to ";
+        train_state.learning_rate /= _scaledown;
+        std::cout << train_state.learning_rate
+                  << ". Num Updates = " << _n_lr_updates << std::endl;
+        _n_lr_updates++;
+      }
+    }
+
+    _last_metric = cur_metric;
   }
 
  private:
