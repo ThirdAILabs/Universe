@@ -96,6 +96,7 @@ class UDTBackend {
     (void)model;
     throw notSupported("modifying underlying model");
   }
+  
   /**
    * Determines if the model can support distributed training. By default
    * backends do not support distributed training.

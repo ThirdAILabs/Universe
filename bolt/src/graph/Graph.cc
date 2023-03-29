@@ -71,6 +71,7 @@ std::optional<InferenceMetricData> BoltGraph::validateAndSaveIfBest(
     const TrainConfig& train_config, const ValidationContext& validation) {
   auto [validation_metrics, _] =
       evaluate(validation.data(), validation.labels(), validation.config());
+
   const std::optional<SaveContext>& save_context = train_config.saveContext();
 
   if (save_context && _tracked_metric != nullptr) {
@@ -250,8 +251,29 @@ MetricData BoltGraph::train(
     const std::optional<ValidationContext>& validation =
         train_config.getValidationContext();
     if (validation) {
+      std::cout << "IN VALIDATE AND SAVE" << std::endl;
+      std::cout << "validation data size"
+                << validation->data().at(0)->batchSize() << std::endl;
+      std::cout << "validation data example highest activation id "
+                << validation->labels()->at(0)[3].getHighestActivationId()
+                << std::endl;
+      std::cout << "validation data example highest activation id "
+                << validation->labels()->at(0)[4].getHighestActivationId()
+                << std::endl;
+      std::cout << "should return activations "
+                << validation->config().shouldReturnActivations() << std::endl;
+      std::cout << "get metric agg "
+                << validation->config()
+                       .getMetricAggregator()
+                       .getMetrics()
+                       .at(0)
+                       ->name()
+                << std::endl;
+      std::cout << "sparse inference"
+                << validation->config().sparseInferenceEnabled() << std::endl;
       auto [val_metrics, _] = evaluate(validation->data(), validation->labels(),
                                        validation->config());
+      std::cout << "CATEGORICAL ACCY " << val_metrics["categorical_accuracy"] << std::endl;
       train_state.updateValidationMetrics(val_metrics);
     }
 
