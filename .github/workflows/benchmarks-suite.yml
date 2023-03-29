@@ -54,7 +54,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         uses: voxmedia/github-action-slack-notify-build@v1
         with:
-          channel_id: weekly_benchmarks
+          channel_id: daily_bolt_benchmarks
           status: SUCCESS
           color: good
 
@@ -64,6 +64,6 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         uses: voxmedia/github-action-slack-notify-build@v1
         with:
-          channel_id: weekly_benchmarks
+          channel_id: daily_bolt_benchmarks
           status: FAILED
           color: danger
