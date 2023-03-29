@@ -104,10 +104,12 @@ data.
 
   py::class_<BatchedLRScheduler, std::shared_ptr<BatchedLRScheduler>, Callback>(
       callbacks_submodule, "BatchedLRScheduler")
-      .def(py::init<std::string, std::string, uint32_t, uint32_t, double>(),
+      .def(py::init<std::string, std::string, uint32_t, uint32_t, double,
+                    uint32_t>(),
            py::arg("save_loc"), py::arg("monitored_metric"),
            py::arg("n_bad_batches_before_update"),
-           py::arg("n_total_lr_updates"), py::arg("scaledown"));
+           py::arg("n_total_lr_updates"), py::arg("scaledown"),
+           py::arg("warmup_batches"));
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")

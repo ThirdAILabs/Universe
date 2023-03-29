@@ -12,15 +12,22 @@ class BatchedLRScheduler : public Callback {
   explicit BatchedLRScheduler(std::string save_loc,
                               const std::string& monitored_metric,
                               uint32_t n_bad_batches_before_update,
-                              uint32_t n_total_lr_updates, double scaledown)
+                              uint32_t n_total_lr_updates, double scaledown,
+                              uint32_t warmup_batches)
       : _save_loc(std::move(save_loc)),
         _metric(makeMetric(monitored_metric)),
         _n_bad_batches_before_update(n_bad_batches_before_update),
         _n_total_lr_updates(n_total_lr_updates),
-        _scaledown(scaledown) {}
+        _scaledown(scaledown),
+        _warmup_batches(warmup_batches) {}
 
   void onBatchEnd(BoltGraph& model, TrainState& train_state) final {
     (void)model;
+    if (_num_batches < _warmup_batches) {
+      _num_batches++;
+      return;
+    }
+
     double cur_metric =
         train_state.getAllTrainBatchMetrics()[_metric->name()].back();
 
@@ -61,6 +68,8 @@ class BatchedLRScheduler : public Callback {
   double _scaledown;
   double _best_metric = 0;
   double _last_metric = 0;
+  uint32_t _warmup_batches;
+  uint32_t _num_batches = 0;
 };
 
 }  // namespace thirdai::bolt
