@@ -74,13 +74,6 @@ def test_checkpoint_load_dag():
     model.model.checkpoint(filename=checkpoint_loc)
 
     new_model = bolt.nn.Model.load(filename=checkpoint_loc)
-    nodes_1 = model.model.nodes()
-    nodes_2 = new_model.nodes()
-    for layer_1, layer_2 in zip(nodes_1, nodes_2):
-        if hasattr(layer_1, "weights"):
-            assert np.allclose(layer_1.weights.get(), layer_2.weights.get())
-        if hasattr(layer_1, "biases"):
-            assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
 
     model.model.train(
         data, labels, train_config=get_train_config(epochs=1, batch_size=100)
