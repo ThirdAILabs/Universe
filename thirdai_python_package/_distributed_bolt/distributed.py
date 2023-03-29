@@ -16,7 +16,7 @@ from thirdai._distributed_bolt.dataset_loaders import (
     DistributedUDTDatasetLoader,
     ValidationContext,
 )
-from thirdai._thirdai import bolt
+from thirdai._thirdai import bolt, dataset
 
 from .utils import get_num_cpus, init_logging
 
@@ -187,6 +187,7 @@ def add_distributed_to_udt():
         metrics: List[str] = [],
         verbose: bool = True,
         validation: Optional[bolt.Validation] = None,
+        shuffle_config: dataset.ShuffleConfig = dataset.ShuffleConfig(),
     ):
         """
         This function does cold-start pretraining for UDT in the distributed setting.

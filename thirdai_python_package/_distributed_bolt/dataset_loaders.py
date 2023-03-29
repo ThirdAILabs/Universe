@@ -54,6 +54,7 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         train_file: str,
         batch_size: int,
         data_processor,
+        shuffle_config,
         max_in_memory_batches: int = None,
     ):
         self.generator = None
@@ -62,6 +63,7 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.batch_size = batch_size
         self.max_in_memory_batches = max_in_memory_batches
         self.dataset_finished = False
+        self.shuffle_config = shuffle_config
 
     def load(self, shuffle: bool = True):
         self.generator = self.data_processor.get_dataset_loader(
@@ -98,6 +100,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         weak_column_names: List[str],
         data_processor,
         cold_start_meta_data,
+        shuffle_config,
     ):
         self.generator = None
         self.train_file = train_file
@@ -108,6 +111,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         self.dataset_finished = False
         self.data_processor = data_processor
         self.cold_start_meta_data = cold_start_meta_data
+        self.shuffle_config = shuffle_config
 
     def load(self, shuffle: bool = True):
         original_data_source = _create_data_source(self.train_file)
