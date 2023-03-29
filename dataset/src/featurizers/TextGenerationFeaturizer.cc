@@ -3,15 +3,13 @@
 #include <bolt_vector/src/BoltVector.h>
 #include <hashing/src/HashUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
-#include <json/include/nlohmann/json.hpp>
+#include <dataset/src/utils/TokenEncoding.h>
 #include <algorithm>
 #include <cctype>
 #include <iterator>
 #include <limits>
 #include <stdexcept>
 #include <string>
-
-using json = nlohmann::json;
 
 namespace thirdai::dataset {
 
@@ -53,33 +51,9 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
     throw std::invalid_argument("Expected line to be a json object.");
   }
 
-  if (!line_content.contains("target")) {
-    throw std::invalid_argument("Expected field 'target' in json object'");
-  }
-  auto target = getStringField(line_content, "target");
+  auto [tokens, predict_start] = getContext(line_content);
 
-  std::vector<uint32_t> target_tokens = parseTokens(target);
-
-  std::vector<uint32_t> tokens;
-  uint32_t predict_start;
-  if (line_content.contains("context")) {
-    tokens = parseTokens(getStringField(line_content, "context"));
-    // The predict start is 1 after the end of the context because there will be
-    // a [CLS] token.
-    predict_start = tokens.size() + 1;
-    tokens.insert(tokens.end(), target_tokens.begin(), target_tokens.end());
-  } else {
-    tokens = std::move(target_tokens);
-    // The predict start is 1 instead of 0 because there will be a [CLS] token.
-    predict_start = 1;
-  }
-
-  std::vector<uint32_t> prompt_tokens;
-  if (line_content.contains("prompt")) {
-    prompt_tokens = parseTokens(getStringField(line_content, "prompt"));
-  }
-
-  BoltVector prompt = promptContext(prompt_tokens);
+  BoltVector prompt = promptContext(getPrompt(line_content));
 
   std::vector<std::vector<BoltVector>> vectors;
 
@@ -91,22 +65,6 @@ std::vector<std::vector<BoltVector>> TextGenerationFeaturizer::featurizeText(
   }
 
   return vectors;
-}
-
-std::vector<uint32_t> TextGenerationFeaturizer::parseTokens(
-    const std::string& line) {
-  std::vector<uint32_t> tokens;
-
-  const char* start = line.data();
-  const char* line_end = line.data() + line.size();
-
-  while (start != line_end) {
-    char* end;
-    tokens.push_back(std::strtoul(start, &end, /* base= */ 10));
-    start = end;
-  }
-
-  return tokens;
 }
 
 BoltVector TextGenerationFeaturizer::lrcContext(
@@ -127,8 +85,9 @@ BoltVector TextGenerationFeaturizer::ircContext(
     const std::vector<uint32_t>& tokens, uint32_t label_index) const {
   uint32_t irc_len = std::min(label_index, _irc_len);
 
-  std::vector<uint32_t> irc_context = unigram_preserving_pairgrams(
-      tokens.data() + label_index - irc_len, irc_len);
+  std::vector<uint32_t> irc_context =
+      token_encoding::unigramPreservingPairgrams(
+          tokens.data() + label_index - irc_len, irc_len, _vocab_size);
 
   BoltVector vector(/* l= */ irc_context.size(), /* is_dense= */ false,
                     /* has_gradient= */ false);
@@ -162,6 +121,8 @@ BoltVector TextGenerationFeaturizer::srcContext(
 BoltVector TextGenerationFeaturizer::promptContext(
     const std::vector<uint32_t>& prompt_tokens) {
   if (prompt_tokens.empty()) {
+    // We use a single padding token if the prompt is empty to avoid passing
+    // empty vectors into bolt.
     return BoltVector::singleElementSparseVector(0);
   }
   BoltVector prompt(/* l= */ prompt_tokens.size(), /* is_dense= */ false,
@@ -171,24 +132,6 @@ BoltVector TextGenerationFeaturizer::promptContext(
   return prompt;
 }
 
-std::vector<uint32_t> TextGenerationFeaturizer::unigram_preserving_pairgrams(
-    const uint32_t* tokens, uint32_t len) const {
-  std::vector<uint32_t> pairgrams(tokens, tokens + len);
-  for (uint32_t i = 0; i < len; i++) {
-    for (uint32_t j = 0; j < i; j++) {
-      uint32_t pairgram = hashing::combineHashes(tokens[j], tokens[i]);
-      // Shift the pairgrams so that the unigrams and pairgrams are in a
-      // disjoint range. In the output unigrams are in the range [0, vocab_size)
-      // and pairgrams are in teh range [vocab_size, UINT_MAX)
-      pairgram =
-          pairgram % (std::numeric_limits<uint32_t>::max() - _vocab_size);
-      pairgrams.push_back(pairgram + _vocab_size);
-    }
-  }
-
-  return pairgrams;
-}
-
 std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
     const std::vector<uint32_t>& prompt,
     const std::vector<uint32_t>& tokens) const {
@@ -196,6 +139,57 @@ std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
   return {promptContext(prompt), lrcContext(tokens, prediction_index),
           ircContext(tokens, prediction_index),
           srcContext(tokens, prediction_index)};
+}
+
+std::pair<std::vector<uint32_t>, uint32_t> TextGenerationFeaturizer::getContext(
+    const json& line_content) {
+  if (!line_content.contains("target")) {
+    throw std::invalid_argument("Expected field 'target' in json object'");
+  }
+
+  std::vector<uint32_t> target_tokens =
+      parseTokens(getStringField(line_content, "target"));
+
+  if (line_content.contains("context")) {
+    std::vector<uint32_t> context_tokens =
+        parseTokens(getStringField(line_content, "context"));
+
+    // The predict start is 1 after the end of the context because there will be
+    // a [CLS] token.
+    uint32_t predict_start = context_tokens.size() + 1;
+
+    context_tokens.insert(context_tokens.end(), target_tokens.begin(),
+                          target_tokens.end());
+
+    return {std::move(context_tokens), predict_start};
+  }
+
+  return {std::move(target_tokens), 1};
+}
+
+std::vector<uint32_t> TextGenerationFeaturizer::getPrompt(
+    const json& line_content) {
+  if (line_content.contains("prompt")) {
+    return parseTokens(getStringField(line_content, "prompt"));
+  }
+  return {};
+}
+
+std::vector<uint32_t> TextGenerationFeaturizer::parseTokens(
+    const std::string& line) {
+  // TODO(Nicholas): consolidate integer/float parsing functions into utility.
+  std::vector<uint32_t> tokens;
+
+  const char* start = line.data();
+  const char* line_end = line.data() + line.size();
+
+  while (start != line_end) {
+    char* end;
+    tokens.push_back(std::strtoul(start, &end, /* base= */ 10));
+    start = end;
+  }
+
+  return tokens;
 }
 
 void TextGenerationFeaturizer::save(const std::string& filename) const {

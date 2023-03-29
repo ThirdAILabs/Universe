@@ -49,6 +49,17 @@ inline std::vector<uint32_t> pairgrams(const std::vector<uint32_t>& unigrams) {
 }
 
 /**
+ * This function differs from our regular pairgram utility because of how it
+ * handles unigrams. Our regular pairgram utility will include hash(t_i, t_i)
+ * for i = [0...seq_len). However there are places where we want the unigram
+ * representation of tokens within the pairgrams to be consistent with the raw
+ * unigrams themselves.
+ */
+std::vector<uint32_t> unigramPreservingPairgrams(const uint32_t* tokens,
+                                                   uint32_t len,
+                                                   uint32_t unigram_range);
+
+/**
  * Mods each of the given tokens by dim.
  */
 void mod(std::vector<uint32_t>& tokens, uint32_t dim);

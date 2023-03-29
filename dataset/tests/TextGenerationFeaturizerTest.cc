@@ -13,32 +13,29 @@ namespace thirdai::dataset::tests {
 
 constexpr uint32_t VOCAB_SIZE = 8;
 
-// Helper function to represent how pairgrams are encoded in the
-// TextGenerationFeaturizer.
-uint32_t pairgramHash(uint32_t lhs, uint32_t rhs) {
-  uint32_t hash = hashing::combineHashes(lhs, rhs);
-  hash = hash % (std::numeric_limits<uint32_t>::max() - VOCAB_SIZE);
-  return hash + VOCAB_SIZE;
-}
-
 void verifyGeneratedSamples(
     const std::vector<std::vector<thirdai::BoltVector>>& data,
     const std::vector<std::vector<std::vector<uint32_t>>>& expected_indices) {
-  for (uint32_t sample_id = 0; sample_id < expected_indices.size();
-       sample_id++) {
-    ASSERT_EQ(expected_indices.at(sample_id).size(), data.size());
-    for (uint32_t input_id = 0;
-         input_id < expected_indices.at(sample_id).size(); input_id++) {
-      ASSERT_EQ(data.at(input_id).size(), expected_indices.size());
+  ASSERT_EQ(expected_indices.size(), data.size());
 
-      ASSERT_EQ(data.at(input_id).at(sample_id).len,
-                expected_indices.at(sample_id).at(input_id).size());
+  uint32_t num_inputs = expected_indices.size();
+  uint32_t num_samples = expected_indices.at(0).size();
 
-      for (uint32_t i = 0;
-           i < expected_indices.at(sample_id).at(input_id).size(); i++) {
-        ASSERT_EQ(data.at(input_id).at(sample_id).active_neurons[i],
-                  expected_indices.at(sample_id).at(input_id).at(i));
-        ASSERT_EQ(data.at(input_id).at(sample_id).activations[i], 1.0);
+  for (uint32_t input_id = 0; input_id < num_inputs; input_id++) {
+    ASSERT_EQ(expected_indices.at(input_id).size(), data.at(input_id).size());
+
+    for (uint32_t sample_id = 0; sample_id < num_samples; sample_id++) {
+      const auto& vec = data.at(input_id).at(sample_id);
+      const auto& expected_vec_indices =
+          expected_indices.at(input_id).at(sample_id);
+
+      std::cout << "sample=" << sample_id << ",input=" << input_id << std::endl;
+
+      ASSERT_EQ(expected_vec_indices.size(), vec.len);
+
+      for (uint32_t i = 0; i < expected_vec_indices.size(); i++) {
+        ASSERT_EQ(expected_vec_indices.at(i), vec.active_neurons[i]);
+        ASSERT_EQ(vec.activations[i], 1.0);
       }
     }
   }
@@ -74,28 +71,31 @@ void checkInferenceFeaturization(
   verifyGeneratedSamples(data, expected_indices);
 }
 
+std::vector<uint32_t> expectedPairgrams(std::vector<uint32_t> tokens) {
+  return token_encoding::unigramPreservingPairgrams(tokens.data(),
+                                                    tokens.size(), VOCAB_SIZE);
+}
+
 TEST(TextGenerationFeaturizerTest, Featurization) {
   std::vector<std::string> phrases = {R"({"target": "1 2 3 4 5 6"})"};
 
   std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
-      {{0}, {1}, {1}, {0, 1}, {2}},
-      {{0}, {1, 2}, {1, 2, pairgramHash(1, 2)}, {1, 2}, {3}},
-      {{0},
-       {1, 2, 3},
-       {1, 2, 3, pairgramHash(1, 2), pairgramHash(1, 3), pairgramHash(2, 3)},
-       {2, 3},
-       {4}},
-      {{0},
-       {1, 2, 3, 4},
-       {2, 3, 4, pairgramHash(2, 3), pairgramHash(2, 4), pairgramHash(3, 4)},
-       {3, 4},
-       {5}},
-      {{0},
-       {2, 3, 4, 5},
-       {3, 4, 5, pairgramHash(3, 4), pairgramHash(3, 5), pairgramHash(4, 5)},
-       {4, 5},
-       {6}},
-  };
+      // Prompt input
+      {{0}, {0}, {0}, {0}, {0}},
+      //  LRC context input
+      {{1}, {1, 2}, {1, 2, 3}, {1, 2, 3, 4}, {2, 3, 4, 5}},
+      // IRC context input
+      {
+          {1},
+          expectedPairgrams({1, 2}),
+          expectedPairgrams({1, 2, 3}),
+          expectedPairgrams({2, 3, 4}),
+          expectedPairgrams({3, 4, 5}),
+      },
+      // SRC context input
+      {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}},
+      // Labels
+      {{2}, {3}, {4}, {5}, {6}}};
 
   checkDataFeaturization(phrases, expected_indices);
 }
@@ -105,22 +105,20 @@ TEST(TextGenerationFeaturizerTest, FeaturizationWithContext) {
       R"({"context": "1 2", "target": "3 4 5 6"})"};
 
   std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
-      {{0},
-       {1, 2, 3},
-       {1, 2, 3, pairgramHash(1, 2), pairgramHash(1, 3), pairgramHash(2, 3)},
-       {2, 3},
-       {4}},
-      {{0},
-       {1, 2, 3, 4},
-       {2, 3, 4, pairgramHash(2, 3), pairgramHash(2, 4), pairgramHash(3, 4)},
-       {3, 4},
-       {5}},
-      {{0},
-       {2, 3, 4, 5},
-       {3, 4, 5, pairgramHash(3, 4), pairgramHash(3, 5), pairgramHash(4, 5)},
-       {4, 5},
-       {6}},
-  };
+      // Prompt input
+      {{0}, {0}, {0}},
+      //  LRC context input
+      {{1, 2, 3}, {1, 2, 3, 4}, {2, 3, 4, 5}},
+      // IRC context input
+      {
+          expectedPairgrams({1, 2, 3}),
+          expectedPairgrams({2, 3, 4}),
+          expectedPairgrams({3, 4, 5}),
+      },
+      // SRC context input
+      {{2, 3}, {3, 4}, {4, 5}},
+      // Labels
+      {{4}, {5}, {6}}};
 
   checkDataFeaturization(phrases, expected_indices);
 }
@@ -130,36 +128,47 @@ TEST(TextGenerationFeaturizerTest, FeaturizationWithPrompt) {
       R"({"prompt": "1 2", "context": "3 4", "target": "5 6 7"})"};
 
   std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
-      {{1, 2},
-       {3, 4, 5},
-       {3, 4, 5, pairgramHash(3, 4), pairgramHash(3, 5), pairgramHash(4, 5)},
-       {4, 5},
-       {6}},
-      {{1, 2},
-       {3, 4, 5, 6},
-       {4, 5, 6, pairgramHash(4, 5), pairgramHash(4, 6), pairgramHash(5, 6)},
-       {5, 6},
-       {7}},
-  };
+      // Prompt input
+      {{1, 2}, {1, 2}},
+      //  LRC context input
+      {{3, 4, 5}, {3, 4, 5, 6}},
+      // IRC context input
+      {
+          expectedPairgrams({3, 4, 5}),
+          expectedPairgrams({4, 5, 6}),
+      },
+      // SRC context input
+      {{4, 5}, {5, 6}},
+      // Labels
+      {{6}, {7}}};
 
   checkDataFeaturization(phrases, expected_indices);
 }
 
 TEST(TextGenerationFeaturizerTest, InferenceFeaturization) {
   std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
-      {{0},
-       {2, 3, 4, 5},
-       {3, 4, 5, pairgramHash(3, 4), pairgramHash(3, 5), pairgramHash(4, 5)},
-       {4, 5}},
-  };
+      // Prompt input
+      {{0}},
+      //  LRC context input
+      {{2, 3, 4, 5}},
+      // IRC context input
+      {expectedPairgrams({3, 4, 5})},
+      // SRC context input
+      {{4, 5}}};
 
   checkInferenceFeaturization({}, {1, 2, 3, 4, 5}, expected_indices);
 }
 
 TEST(TextGenerationFeaturizerTest, InferenceFeaturizationWithPrompt) {
   std::vector<std::vector<std::vector<uint32_t>>> expected_indices = {
-      {{7, 8, 9}, {1, 2}, {1, 2, pairgramHash(1, 2)}, {1, 2}},
-  };
+      // Prompt input
+      {{7, 8, 9}},
+      //  LRC context input
+      {{1, 2}},
+      // IRC context input
+      {expectedPairgrams({1, 2})},
+      // SRC context input
+      {{1, 2}}};
 
   checkInferenceFeaturization({7, 8, 9}, {1, 2}, expected_indices);
 }
