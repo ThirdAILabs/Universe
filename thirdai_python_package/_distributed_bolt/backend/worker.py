@@ -58,6 +58,7 @@ class Worker:
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
 
+        logging.info(f"sub_task initializing_model on worker-{id}")
         start = time()
         self.model = bolt.DistributedTrainingWrapper(
             model=model_to_wrap,
@@ -66,8 +67,9 @@ class Worker:
         )
         end = time()
 
-        logging.info(f"func initializing_model | time {(end - start)*1000} ms")
+        logging.info(f"sub_task initialized_model | time {(end - start)*1000} ms")
 
+        start = time()
         if self.communication_type == "circular":
             self.comm = comm.Circular(
                 self.model, self.id, self.primary_worker, self.num_workers
@@ -87,6 +89,10 @@ class Worker:
                     """
                 )
             )
+        end = time()
+        logging.info(
+            f"sub_task communication_intialized | time {(end - start)*1000} ms"
+        )
 
         if not self._try_load_new_datasets_into_model():
             raise ValueError(
