@@ -19,6 +19,7 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function)
     : _hash_function(std::move(hash_function)),
       _num_tables(_hash_function->numTables()),
       _range(_hash_function->range()),
+      _total_samples_indexed(0),
       _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, false>>(
           _num_tables, _range)) {
   thirdai::licensing::checkLicense();
@@ -30,6 +31,7 @@ Flash<LABEL_T>::Flash(std::shared_ptr<hashing::HashFunction> hash_function,
     : _hash_function(std::move(hash_function)),
       _num_tables(_hash_function->numTables()),
       _range(_hash_function->range()),
+      _total_samples_indexed(0),
       _hashtable(std::make_shared<hashtable::VectorHashTable<LABEL_T, true>>(
           _num_tables, reservoir_size, _range)) {
   thirdai::licensing::checkLicense();
@@ -39,6 +41,10 @@ template <typename LABEL_T>
 void Flash<LABEL_T>::addBatch(const BoltBatch& batch,
                               const std::vector<LABEL_T>& labels,
                               licensing::TrainPermissionsToken token) {
+  _total_samples_indexed += batch.getBatchSize();
+  licensing::entitlements().verifyAllowedNumberOfTrainingSamples(
+      _total_samples_indexed);
+
   // A token can only be constructed if the user has a full access
   // license or is using a dataset that is allowed under their demo license.
   // Hence this method successfully being called with a token is enough to
@@ -148,7 +154,9 @@ template void Flash<uint64_t>::serialize(cereal::BinaryOutputArchive&);
 template <typename LABEL_T>
 template <class Archive>
 void Flash<LABEL_T>::serialize(Archive& archive) {
-  archive(_hash_function, _num_tables, _range, _hashtable);
+  licensing::entitlements().verifySaveLoad();
+  archive(_hash_function, _num_tables, _range, _hashtable,
+          _total_samples_indexed);
 }
 
 template class Flash<uint32_t>;

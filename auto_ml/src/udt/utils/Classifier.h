@@ -5,6 +5,7 @@
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <licensing/src/CheckLicense.h>
+#include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <pybind11/pybind11.h>
 #include <memory>
 
