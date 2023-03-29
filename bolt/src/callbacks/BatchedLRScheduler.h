@@ -38,6 +38,9 @@ class BatchedLRScheduler : public Callback {
 
     if (cur_metric < _last_metric) {
       _n_bad_batches++;
+      std::cout << "Cur metric: " << cur_metric
+                << " is less than last metric of " << _last_metric
+                << ". Incrementing n bad batches" << std::endl;
     } else {
       _n_bad_batches = 0;
     }
