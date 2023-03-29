@@ -1,6 +1,9 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/cereal.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/archives/binary.hpp>
 #include <cereal/types/vector.hpp>
 #include <cstdint>
 #include <vector>

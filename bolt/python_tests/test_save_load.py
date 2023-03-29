@@ -68,30 +68,14 @@ def test_checkpoint_load_dag():
         if hasattr(layer_1, "biases"):
             assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
 
-    wrapped_model = bolt.DistributedTrainingWrapper(
-        model=model,
-        train_config=get_train_config(epochs=2, batch_size=100),
-        worker_id=0,
+    model.model.train(
+        data, labels, train_config=get_train_config(epochs=2, batch_size=100)
     )
-    wrapped_new_model = bolt.DistributedTrainingWrapper(
-        model=model,
-        train_config=get_train_config(epochs=2, batch_size=100),
-        worker_id=0,
+    new_model.train(
+        data, labels, train_config=get_train_config(epochs=2, batch_size=100)
     )
-
-    gradient_shape = np.array(model.gradient_reference().get_gradients()).shape
-    gradients = np.ones(gradient_shape)
-
-    wrapped_model.gradient_reference().set_gradients(gradients)
-    wrapped_new_model.gradient_reference().set_gradients(gradients)
-
-    wrapped_model.update_parameters()
-    wrapped_new_model.update_parameters()
-    # Verify we can train the new model. Ideally we could check accuracy can
-    # improve, but that is a bit flaky.
-
-    nodes_1 = wrapped_model.model.nodes()
-    nodes_2 = wrapped_new_model.model.nodes()
+    nodes_1 = model.model.nodes()
+    nodes_2 = new_model.model.nodes()
     for layer_1, layer_2 in zip(nodes_1, nodes_2):
         if hasattr(layer_1, "weights"):
             print(layer_1.weights.get(), layer_2.weights.get())
