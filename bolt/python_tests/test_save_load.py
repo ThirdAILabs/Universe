@@ -16,16 +16,26 @@ def get_eval_config():
 
 
 class ModelWithLayers:
-    def __init__(self, n_classes):
+    def __init__(self, n_classes, sparse_model=True):
         self.input_layer = bolt.nn.Input(dim=n_classes)
 
-        self.hidden1 = bolt.nn.FullyConnected(dim=2000, activation="relu")(
-            self.input_layer
-        )
+        if sparse_model:
+            self.hidden1 = bolt.nn.FullyConnected(
+                dim=2000, sparsity=0.15, activation="relu"
+            )(self.input_layer)
+        else:
+            self.hidden1 = bolt.nn.FullyConnected(dim=2000, activation="relu")(
+                self.input_layer
+            )
 
-        self.hidden2 = bolt.nn.FullyConnected(dim=2000, activation="relu")(
-            self.input_layer
-        )
+        if sparse_model:
+            self.hidden2 = bolt.nn.FullyConnected(
+                dim=2000, sparsity=0.15, activation="relu"
+            )(self.input_layer)
+        else:
+            self.hidden2 = bolt.nn.FullyConnected(dim=2000, activation="relu")(
+                self.input_layer
+            )
 
         self.concat = bolt.nn.Concatenate()([self.hidden1, self.hidden2])
 
@@ -48,8 +58,13 @@ class ModelWithLayers:
 
 def test_checkpoint_load_dag():
     n_classes = 100
+
+    # We need dense model as in sparse the model tends to diverge after training.
+    # With dense model too, models tends to diverge when train for longer durations
+    # because of non-associative property of float(with OpenMP).
     data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
-    model = ModelWithLayers(n_classes=n_classes)
+
+    model = ModelWithLayers(n_classes=n_classes, sparse_model=False)
 
     # Train model and get accuracy.
     model.train(data, labels, epochs=1)
