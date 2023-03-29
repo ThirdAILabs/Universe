@@ -315,7 +315,8 @@ class FullyConnectedLayer final {
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
             _disable_sparse_parameter_updates, _sampling_mode,
             _should_save_optimizer);
-    // std::cout << "Should Save Optimizer " << _should_save_optimizer << std::endl;
+    // std::cout << "Should Save Optimizer " << _should_save_optimizer <<
+    // std::endl;
     if (_should_save_optimizer) {
       archive(_weight_optimizer, _bias_optimizer);
     }

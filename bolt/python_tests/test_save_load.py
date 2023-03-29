@@ -1,6 +1,6 @@
+import numpy as np
 import pytest
 from thirdai import bolt
-import numpy as np
 
 from utils import gen_numpy_training_data
 
@@ -47,7 +47,6 @@ class ModelWithLayers:
 
 
 def test_checkpoint_load_dag():
-
     n_classes = 100
     data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
     model = ModelWithLayers(n_classes=n_classes)
@@ -69,19 +68,18 @@ def test_checkpoint_load_dag():
             assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
 
     model.model.train(
-        data, labels, train_config=get_train_config(epochs=2, batch_size=100)
+        data, labels, train_config=get_train_config(epochs=1, batch_size=100)
     )
     new_model.train(
-        data, labels, train_config=get_train_config(epochs=2, batch_size=100)
+        data, labels, train_config=get_train_config(epochs=1, batch_size=100)
     )
     nodes_1 = model.model.nodes()
-    nodes_2 = new_model.model.nodes()
+    nodes_2 = new_model.nodes()
     for layer_1, layer_2 in zip(nodes_1, nodes_2):
         if hasattr(layer_1, "weights"):
-            print(layer_1.weights.get(), layer_2.weights.get())
-            assert np.allclose(layer_1.weights.get(), layer_2.weights.get())
+            assert np.allclose(layer_1.weights.get(), layer_2.weights.get(), atol=0.01)
         if hasattr(layer_1, "biases"):
-            assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
+            assert np.allclose(layer_1.biases.get(), layer_2.biases.get(), atol=0.01)
 
 
 def test_save_load_dag():

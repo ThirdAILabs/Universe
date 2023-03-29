@@ -252,5 +252,7 @@ class Worker:
     def get_updated_metrics(self):
         return self.model.get_updated_metrics()
 
-    def model(self):
+    def model(self, with_optimizer):
+        if with_optimizer:
+            self.model.save_with_optimizer = True
         return self.model.model

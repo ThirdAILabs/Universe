@@ -533,11 +533,13 @@ That's all for now, folks! More docs coming soon :)
           "The third element, the active neuron matrix, is only present if "
           "we are returning activations AND the ouptut is sparse.",
           bolt::python::OutputRedirect())
-      .def("save",  
-            [](BoltGraph& model, const std::string &filename){
-                model.saveWithOptimizer(false);
-                model.save(filename);
-                }, py::arg("filename"))
+      .def(
+          "save",
+          [](BoltGraph& model, const std::string& filename) {
+            model.saveWithOptimizer(false);
+            model.save(filename);
+          },
+          py::arg("filename"))
       .def_static("load", &BoltGraph::load, py::arg("filename"))
       .def("__str__",
            [](const BoltGraph& model) {
@@ -576,11 +578,13 @@ That's all for now, folks! More docs coming soon :)
            "Returns a list of all Nodes that make up the graph in traversal "
            "order. This list is guaranetted to be static after a model is "
            "compiled.")
-       .def("checkpoint",  
-            [](BoltGraph& model, const std::string &filename){
-                model.saveWithOptimizer(true);
-                model.save(filename);
-                }, py::arg("filename"))
+      .def(
+          "checkpoint",
+          [](BoltGraph& model, const std::string& filename) {
+            model.saveWithOptimizer(true);
+            model.save(filename);
+          },
+          py::arg("filename"))
 #endif
       .def(getPickleFunction<BoltGraph>());
 
@@ -630,7 +634,18 @@ That's all for now, folks! More docs coming soon :)
            bolt::python::OutputRedirect())
       .def("validate_and_save_if_best",
            &thirdai::bolt::DistributedTrainingWrapper::validationAndSaveBest,
-           bolt::python::OutputRedirect());
+           bolt::python::OutputRedirect())
+      .def_property(
+          "save_with_optimizer",
+          [](DistributedTrainingWrapper& node) {
+            (void)node;
+            throw std::invalid_argument(
+                "Reading save_with_optimizer not allowed.");
+          },
+          [](DistributedTrainingWrapper& node, bool should_save_optimizer) {
+            BoltGraphPtr model = node.getModel();
+            model->saveWithOptimizer(should_save_optimizer);
+          });
 
   createLossesSubmodule(nn_submodule);
 }

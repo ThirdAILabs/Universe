@@ -72,6 +72,9 @@ class UDTFactory {
 
   static void save_udt(const udt::UDT& classifier, const std::string& filename);
 
+  static void checkpoint_udt(const udt::UDT& classifier,
+                             const std::string& filename);
+
   static void save_generator(const QueryCandidateGenerator& generator,
                              const std::string& filename);
 

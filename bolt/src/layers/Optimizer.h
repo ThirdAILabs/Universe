@@ -1,9 +1,9 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/archives/binary.hpp>
 #include <cereal/cereal.hpp>
 #include <cereal/types/optional.hpp>
-#include <cereal/archives/binary.hpp>
 #include <cereal/types/vector.hpp>
 #include <cstdint>
 #include <vector>
@@ -25,7 +25,7 @@ struct AdamOptimizer {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(momentum, velocity);
+    archive(momentum, gradients, velocity);
   }
 };
 
