@@ -40,6 +40,57 @@ class DistributedDatasetLoader(ABC):
         pass
 
 
+class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
+    """
+    This is a DistributedDatasetLoader that can accept any featurizer and use it to
+    featurize the data.
+    """
+
+    def __init__(
+        self,
+        batch_size,
+        data_source_factory,
+        max_in_memory_batches=None,
+        featurizer=None,
+        shuffle=True,
+        *args,
+        **kwargs,
+    ):
+        self.featurizer = featurizer
+        self.batch_size = batch_size
+        self.max_in_memory_batches = max_in_memory_batches
+        self.shuffle = shuffle
+        self.data_source_factory = data_source_factory
+        self.args = args
+        self.kwargs = kwargs
+        self.dataset_finished = False
+
+    def load(self):
+        data_source = self.data_source_factory(*self.args, **self.kwargs)
+        self.generator = dataset.DatasetLoader(
+            data_source=data_source,
+            featurizer=self.featurizer,
+            shuffle=self.shuffle,
+        )
+
+    def next(self):
+        if self.dataset_finished:
+            return None
+
+        if self.max_in_memory_batches == None:
+            load = self.generator.load_all(batch_size=self.batch_size)
+            self.dataset_finished = True
+        else:
+            load = self.generator.load_some(
+                num_batches=self.max_in_memory_batches, batch_size=self.batch_size
+            )
+
+        return load
+
+    def restart(self):
+        self.generator.restart()
+
+
 @dataclass
 class ValidationContext:
     validation_source: DistributedDatasetLoader

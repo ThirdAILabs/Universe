@@ -52,6 +52,26 @@ std::vector<uint32_t> pairgrams(const uint32_t* tokens, uint32_t len) {
   return pairgram_tokens;
 }
 
+std::vector<uint32_t> unigramPreservingPairgrams(const uint32_t* tokens,
+                                                 uint32_t len,
+                                                 uint32_t unigram_range) {
+  std::vector<uint32_t> pairgrams(tokens, tokens + len);
+  for (uint32_t i = 0; i < len; i++) {
+    for (uint32_t j = 0; j < i; j++) {
+      uint32_t pairgram = hashing::combineHashes(tokens[j], tokens[i]);
+      // Shift the pairgrams so that the unigrams and pairgrams are in a
+      // disjoint ranges.
+      // In the output unigrams are in the range [0, unigram_range)
+      // and pairgrams are in the range [unigram range, UINT_MAX)
+      pairgram =
+          pairgram % (std::numeric_limits<uint32_t>::max() - unigram_range);
+      pairgrams.push_back(pairgram + unigram_range);
+    }
+  }
+
+  return pairgrams;
+}
+
 void mod(std::vector<uint32_t>& tokens, uint32_t dim) {
   for (uint32_t& token : tokens) {
     token %= dim;

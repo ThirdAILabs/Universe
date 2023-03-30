@@ -18,6 +18,7 @@ set(DATASET_TESTS
     SaveLoadInMemoryDatasetTest
     DatasetLoaderTests
     TokenEncodingTests
+    TextGenerationFeaturizerTest
     RecurrenceAugmentationTests)
 
 include(GoogleTest)
