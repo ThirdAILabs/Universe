@@ -83,9 +83,11 @@ class TextGenerationFeaturizer final : public Featurizer {
         "getDimensions is not supported for TextGenerationFeaturizer.");
   }
 
+  // There is no target because we are only making a single prediction at the
+  // end of the context, and thus no need for a set of target tokens.
   std::vector<BoltVector> featurizeInferenceSample(
       const std::vector<uint32_t>& prompt,
-      const std::vector<uint32_t>& tokens) const;
+      const std::vector<uint32_t>& context) const;
 
   void save(const std::string& filename) const;
 

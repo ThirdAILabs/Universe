@@ -134,11 +134,11 @@ BoltVector TextGenerationFeaturizer::promptContext(
 
 std::vector<BoltVector> TextGenerationFeaturizer::featurizeInferenceSample(
     const std::vector<uint32_t>& prompt,
-    const std::vector<uint32_t>& tokens) const {
-  uint32_t prediction_index = tokens.size();
-  return {promptContext(prompt), lrcContext(tokens, prediction_index),
-          ircContext(tokens, prediction_index),
-          srcContext(tokens, prediction_index)};
+    const std::vector<uint32_t>& context) const {
+  uint32_t prediction_index = context.size();
+  return {promptContext(prompt), lrcContext(context, prediction_index),
+          ircContext(context, prediction_index),
+          srcContext(context, prediction_index)};
 }
 
 std::pair<std::vector<uint32_t>, uint32_t> TextGenerationFeaturizer::getContext(
