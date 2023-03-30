@@ -52,6 +52,9 @@ class EmbeddingLayer {
   }
 
   std::vector<float>& getRawEmbeddingBlock() { return *_embedding_block; }
+  void saveWithOptimizer(bool should_save_optimizer) {
+    _should_save_optimizer = should_save_optimizer;
+  }
 
   std::vector<float>& getRawEmbeddingBlockGradient() {
     return _optimizer->gradients;
@@ -117,7 +120,10 @@ class EmbeddingLayer {
             _log_embedding_block_size, _update_chunk_size, _reduction,
             _num_tokens_per_input, _embedding_block_size, _hash_fn,
             _embedding_block, _embedding_chunks_used,
-            _disable_sparse_parameter_updates);
+            _disable_sparse_parameter_updates, _should_save_optimizer);
+    if (_should_save_optimizer) {
+      archive(_optimizer);
+    }
   }
 
   uint64_t _num_lookups_per_token;
@@ -143,6 +149,10 @@ class EmbeddingLayer {
   std::vector<bool> _embedding_chunks_used;
   std::optional<AdamOptimizer> _optimizer = std::nullopt;
   bool _disable_sparse_parameter_updates;
+
+  // A flag to determine whether the current network saves the optimizer states
+  // or not. If true, it saves the optimizer states, else doesn't.
+  bool _should_save_optimizer;
 };
 
 }  // namespace thirdai::bolt

@@ -4,7 +4,7 @@ from functools import wraps
 from time import time
 
 import thirdai._distributed_bolt.backend.communication as comm
-from thirdai._thirdai import bolt, logging
+from thirdai._thirdai import bolt, bolt_v2, logging
 
 
 def timed(f):
@@ -58,16 +58,23 @@ class Worker:
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
 
+        logging.info(f"sub_task initializing_model on worker-{id}")
         start = time()
-        self.model = bolt.DistributedTrainingWrapper(
+        DistributedTrainingWrapper = (
+            bolt_v2.train.DistributedTrainingWrapper
+            if isinstance(model_to_wrap, bolt_v2.nn.Model)
+            else bolt.DistributedTrainingWrapper
+        )
+        self.model = DistributedTrainingWrapper(
             model=model_to_wrap,
             train_config=train_config,
             worker_id=id,
         )
         end = time()
 
-        logging.info(f"func initializing_model | time {(end - start)*1000} ms")
+        logging.info(f"sub_task initialized_model | time {(end - start)*1000} ms")
 
+        start = time()
         if self.communication_type == "circular":
             self.comm = comm.Circular(
                 self.model, self.id, self.primary_worker, self.num_workers
@@ -87,6 +94,10 @@ class Worker:
                     """
                 )
             )
+        end = time()
+        logging.info(
+            f"sub_task communication_intialized | time {(end - start)*1000} ms"
+        )
 
         if not self._try_load_new_datasets_into_model():
             raise ValueError(
@@ -252,5 +263,8 @@ class Worker:
     def get_updated_metrics(self):
         return self.model.get_updated_metrics()
 
-    def model(self):
+    def model(self, with_optimizer):
+        # setting with_optimizer flag, here implies that model would be serialized/pickled with optimizer. It is similar to how save/checkpoint works as pickling also uses cereal.
+        if with_optimizer:
+            self.model.should_save_optimizer(True)
         return self.model.model

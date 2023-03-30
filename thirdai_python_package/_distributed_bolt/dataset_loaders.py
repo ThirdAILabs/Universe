@@ -40,11 +40,16 @@ class DistributedDatasetLoader(ABC):
         pass
 
 
-class DistributedMultiDatasourceloader(DistributedDatasetLoader):
+class DistributedFeaturizerDatasetLoader(DistributedDatasetLoader):
+    """
+    This is a DistributedDatasetLoader that can accept any featurizer and use it to
+    featurize the data.
+    """
+
     def __init__(
         self,
         batch_size,
-        datasource,
+        data_source_factory,
         max_in_memory_batches=None,
         featurizer=None,
         shuffle=True,
@@ -55,13 +60,13 @@ class DistributedMultiDatasourceloader(DistributedDatasetLoader):
         self.batch_size = batch_size
         self.max_in_memory_batches = max_in_memory_batches
         self.shuffle = shuffle
-        self.datasource = datasource
+        self.data_source_factory = data_source_factory
         self.args = args
         self.kwargs = kwargs
         self.dataset_finished = False
 
     def load(self):
-        data_source = self.datasource(*self.args, **self.kwargs)
+        data_source = self.data_source_factory(*self.args, **self.kwargs)
         self.generator = dataset.DatasetLoader(
             data_source=data_source,
             featurizer=self.featurizer,
@@ -192,6 +197,7 @@ class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
         self.current_dataset = None
         self.current_labels = None
         self.generated_for_this_epoch = False
+        self.dataset_finished = True
 
     def load(self, shuffle: bool = True):
         pass

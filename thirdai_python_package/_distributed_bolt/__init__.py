@@ -1,5 +1,5 @@
 from .dataset_loaders import (
-    DistributedMultiDatasourceloader,
+    DistributedFeaturizerDatasetLoader,
     DistributedSvmDatasetLoader,
     DistributedTabularDatasetLoader,
     ValidationContext,

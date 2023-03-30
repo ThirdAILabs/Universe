@@ -5,8 +5,11 @@
 #include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
+#include <json/include/nlohmann/json.hpp>
 #include <limits>
 #include <stdexcept>
+
+using json = nlohmann::json;
 
 namespace thirdai::dataset {
 
@@ -80,9 +83,11 @@ class TextGenerationFeaturizer final : public Featurizer {
         "getDimensions is not supported for TextGenerationFeaturizer.");
   }
 
+  // There is no target because we are only making a single prediction at the
+  // end of the context, and thus no need for a set of target tokens.
   std::vector<BoltVector> featurizeInferenceSample(
       const std::vector<uint32_t>& prompt,
-      const std::vector<uint32_t>& tokens) const;
+      const std::vector<uint32_t>& context) const;
 
   void save(const std::string& filename) const;
 
@@ -106,28 +111,28 @@ class TextGenerationFeaturizer final : public Featurizer {
                         uint32_t label_index) const;
 
   static BoltVector promptContext(const std::vector<uint32_t>& prompt_tokens);
-  /**
-   * This function differs from our regular pairgram utility because of how it
-   * handles unigrams. Our regular pairgram utility will include hash(t_i, t_i)
-   * for i = [0...seq_len). However we want the unigrams to be consistent
-   * between the lrc and irc contexts. This uses the token itself for the
-   * unigrams representation of each token that is included in the pairgrams
-   * rather than the hash of the token with itself.
-   */
-  std::vector<uint32_t> unigram_preserving_pairgrams(const uint32_t* tokens,
-                                                     uint32_t len) const;
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<Featurizer>(this), _lrc_len, _irc_len, _src_len);
   }
+
   /**
    * Helper function to featurize a single line from the text dataset and
    * returns the created input samples and labels.
    */
   std::vector<std::vector<BoltVector>> featurizeText(
       const std::string& line) const;
+
+  /**
+   * Returns the context tokens (the concatenation of the context and target) as
+   * well as the index to start predicting from.
+   */
+  static std::pair<std::vector<uint32_t>, uint32_t> getContext(
+      const json& line_content);
+
+  static std::vector<uint32_t> getPrompt(const json& line_content);
 
   static std::vector<uint32_t> parseTokens(const std::string& line);
 
