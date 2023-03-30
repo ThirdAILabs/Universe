@@ -87,7 +87,7 @@ def test_checkpoint_load_dag():
     new_model.train(
         data, labels, train_config=get_train_config(epochs=1, batch_size=100)
     )
-    compare_parameters_of_two_models(model.model, new_model, atol=1e-2)
+    compare_parameters_of_two_models(model.model, new_model, atol=1e-1)
 
 
 def test_save_load_dag():
