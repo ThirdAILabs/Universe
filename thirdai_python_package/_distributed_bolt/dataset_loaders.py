@@ -197,6 +197,7 @@ class DistributedGenericInMemoryDatasetLoader(DistributedDatasetLoader):
         self.current_dataset = None
         self.current_labels = None
         self.generated_for_this_epoch = False
+        self.dataset_finished = True
 
     def load(self, shuffle: bool = True):
         pass

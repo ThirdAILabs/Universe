@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import pytest
+from download_dataset_fixtures import download_mnist_dataset
 
 
 @pytest.fixture(scope="module")
@@ -106,3 +107,19 @@ def metrics_aggregation_from_workers(train_metrics):
             overall_metrics[key] += value[-1] / 2
 
     return overall_metrics
+
+
+@pytest.fixture(scope="session")
+def mnist_distributed_split(download_mnist_dataset):
+    train_file, test_file = download_mnist_dataset
+    path = "mnist_data"
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    split_into_2(
+        file_to_split=train_file,
+        destination_file_1="mnist_data/part1",
+        destination_file_2="mnist_data/part2",
+    )
+
+    return ("mnist_data/part1", "mnist_data/part2"), test_file
