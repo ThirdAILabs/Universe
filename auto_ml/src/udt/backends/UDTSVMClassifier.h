@@ -35,6 +35,7 @@ class UDTSVMClassifier final : public UDTBackend {
                           bool return_predicted_class) final;
 
   bolt::BoltGraphPtr model() const final { return _classifier->model(); }
+
  private:
   static dataset::DatasetLoaderPtr svmDatasetLoader(
       dataset::DataSourcePtr data_source, bool shuffle);
