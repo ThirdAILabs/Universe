@@ -27,7 +27,7 @@ class TabularDatasetFactory {
 
   dataset::DatasetLoaderPtr getDatasetLoader(
       const dataset::DataSourcePtr& data_source, bool shuffle,
-      const dataset::DatasetLoader::DatasetShuffleConfig shuffle_config);
+      const dataset::DatasetShuffleConfig shuffle_config = dataset::DatasetShuffleConfig());
 
   std::vector<BoltVector> featurizeInput(const MapInput& input) {
     dataset::MapSampleRef input_ref(input);
