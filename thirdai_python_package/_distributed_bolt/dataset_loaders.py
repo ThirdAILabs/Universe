@@ -66,9 +66,11 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         self.shuffle_config = shuffle_config
 
     def load(self, shuffle: bool = True):
+        shuffle_config_arg = {'shuffle_config': self.shuffle_config} if self.shuffle_config is not None else {}
         self.generator = self.data_processor.get_dataset_loader(
             _create_data_source(self.train_file),
             training=shuffle,
+            **shuffle_config_arg
         )
 
     def next(self):
@@ -124,8 +126,9 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
                 self.cold_start_meta_data,
             )
         )
+        shuffle_config_arg = {'shuffle_config': self.shuffle_config} if self.shuffle_config is not None else {}
         self.generator = self.data_processor.get_dataset_loader(
-            cold_start_data_source, training=shuffle
+            cold_start_data_source, training=shuffle, **shuffle_config_arg
         )
 
 
