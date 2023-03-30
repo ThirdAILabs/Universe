@@ -7,7 +7,7 @@ from distributed_utils import (
     ray_two_node_cluster_config,
     split_into_2,
 )
-from thirdai import bolt
+from thirdai import bolt, dataset
 from thirdai.demos import (
     download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
 )
@@ -134,6 +134,7 @@ def test_distributed_mach_cold_start(
             "precision@1",
             "recall@10",
         ],
+        shuffle_config=dataset.ShuffleConfig(min_vecs_in_buffer=5000)
     )
 
     overall_metrics = metrics_aggregation_from_workers(metrics["train_metrics"])
