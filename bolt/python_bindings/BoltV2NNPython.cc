@@ -56,6 +56,9 @@ void createBoltV2NNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
 
   py::class_<tensor::Tensor, tensor::TensorPtr>(nn, "Tensor")
+      .def(py::init(py::overload_cast<const BoltVector&, uint32_t>(
+               tensor::Tensor::convert)),
+           py::arg("vector"), py::arg("dim"))
       .def_property_readonly(
           "active_neurons",
           [](const tensor::TensorPtr& tensor) {
