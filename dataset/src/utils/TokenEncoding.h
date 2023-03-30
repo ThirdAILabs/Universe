@@ -56,8 +56,8 @@ inline std::vector<uint32_t> pairgrams(const std::vector<uint32_t>& unigrams) {
  * unigrams themselves.
  */
 std::vector<uint32_t> unigramPreservingPairgrams(const uint32_t* tokens,
-                                                   uint32_t len,
-                                                   uint32_t unigram_range);
+                                                 uint32_t len,
+                                                 uint32_t unigram_range);
 
 /**
  * Mods each of the given tokens by dim.
