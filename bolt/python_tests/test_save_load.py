@@ -2,10 +2,10 @@ import numpy as np
 import pytest
 from thirdai import bolt
 
-from utils import gen_numpy_training_data
 from thirdai_python_package_tests.distributed_bolt_test.distributed_utils import (
     compare_parameters_of_two_models,
 )
+from utils import gen_numpy_training_data
 
 pytestmark = [pytest.mark.unit]
 

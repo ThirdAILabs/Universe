@@ -635,8 +635,9 @@ That's all for now, folks! More docs coming soon :)
       .def("validate_and_save_if_best",
            &thirdai::bolt::DistributedTrainingWrapper::validationAndSaveBest,
            bolt::python::OutputRedirect())
-      .def(
-          "should_save_optimizer",&thirdai::bolt::DistributedTrainingWrapper::saveWithOptimizer, py::arg("should_save_optimizer"));
+      .def("should_save_optimizer",
+           &thirdai::bolt::DistributedTrainingWrapper::saveWithOptimizer,
+           py::arg("should_save_optimizer"));
 
   createLossesSubmodule(nn_submodule);
 }

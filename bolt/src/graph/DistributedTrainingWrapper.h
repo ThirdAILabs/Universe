@@ -34,7 +34,7 @@ class DistributedTrainingWrapper {
     _bolt_graph->processTrainingBatch(batch_labels, _metric_aggregator);
   }
 
-  void saveWithOptimizer(bool should_save_optimizer){
+  void saveWithOptimizer(bool should_save_optimizer) {
     _bolt_graph->saveWithOptimizer(should_save_optimizer);
   }
 
