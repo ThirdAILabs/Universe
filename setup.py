@@ -217,6 +217,7 @@ setup(
             "gcsfs",
         ],
         "distributed": [
+            "boto3",
             "ray",
             "toml",
             "protobuf==3.19.6",
