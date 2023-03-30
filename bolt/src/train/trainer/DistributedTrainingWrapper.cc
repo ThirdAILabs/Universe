@@ -1,6 +1,7 @@
 #include "DistributedTrainingWrapper.h"
 #include <bolt/src/train/metrics/Metric.h>
 #include <exceptions/src/Exceptions.h>
+#include <utils/Logging.h>
 
 namespace thirdai::bolt::train {
 
@@ -8,10 +9,11 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
     const nn::model::ModelPtr& model, const TrainConfig& train_config,
     uint32_t worker_id)
     : _model(model),
+      _worker_id(worker_id),
       _learning_rate(train_config.learningRate()),
       _train_metrics(createMetrics(model, train_config.metrics())),
+      _logging_interval(train_config.logLossFrequency()),
       _use_sparsity_in_validation(false) {
-  (void)worker_id;
   if (_model->outputs().size() != 1) {
     throw std::invalid_argument(
         "Distributed training is currently only supported for models with a "
@@ -53,6 +55,15 @@ void DistributedTrainingWrapper::computeAndStoreBatchGradients(
   _model->trainOnBatch(inputs, labels);
 
   _train_metrics.recordBatch(inputs.at(0)->batchSize());
+}
+
+void DistributedTrainingWrapper::updateParameters() {
+  _model->updateParameters(_learning_rate);
+
+  if (shouldLogMetrics()) {
+    logging::info("train | train_steps {} | {}", _model->trainSteps(),
+                  _train_metrics.summarizeLastStep());
+  }
 }
 
 std::unordered_map<std::string, float>

@@ -24,7 +24,7 @@ class DistributedTrainingWrapper {
 
   void computeAndStoreBatchGradients(uint32_t batch_idx);
 
-  void updateParameters() { _model->updateParameters(_learning_rate); }
+  void updateParameters();
 
   std::unordered_map<std::string, float> validationAndSaveBest();
 
@@ -68,10 +68,18 @@ class DistributedTrainingWrapper {
       const nn::model::ModelPtr& model,
       const std::vector<std::string>& metrics);
 
+  bool shouldLogMetrics() const {
+    return _worker_id == 0 && _logging_interval &&
+           ((_model->trainSteps() % *_logging_interval) ==
+            (*_logging_interval - 1));
+  }
+
   nn::model::ModelPtr _model;
+  uint32_t _worker_id;
 
   float _learning_rate;
   metrics::MetricCollection _train_metrics;
+  std::optional<uint32_t> _logging_interval;
   metrics::InputMetrics _validation_metrics;
   bool _use_sparsity_in_validation;
 
