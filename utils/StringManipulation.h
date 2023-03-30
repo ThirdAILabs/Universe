@@ -37,4 +37,6 @@ inline uint32_t toInteger(const char* start) {
   return std::strtoul(start, &end, 10);
 }
 
+bool startsWith(const std::string& to_search_in, const std::string& prefix);
+
 }  // namespace thirdai::text

@@ -47,6 +47,8 @@ class UDTGraphClassifier final : public UDTBackend {
 
   void clearGraph() final { _dataset_manager->clearGraph(); }
 
+  bolt::BoltGraphPtr model() const final { return _classifier->model(); }
+
  private:
   UDTGraphClassifier() {}
 

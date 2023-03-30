@@ -10,11 +10,13 @@
 #include <cryptopp/osrng.h>
 #include <cryptopp/rsa.h>
 #include <exceptions/src/Exceptions.h>
+#include <licensing/src/entitlements/Entitlements.h>
 #include <sys/types.h>
 #include <exception>
 #include <filesystem>
 #include <fstream>
 #include <optional>
+#include <unordered_set>
 #if defined __linux__ || defined __APPLE__
 #include <pwd.h>
 #include <unistd.h>
@@ -26,26 +28,17 @@ namespace thirdai::licensing {
 class SignedLicense {
  public:
   /**
-   * Checks for a license file in the following order
-   * 0. The passed in license path
-   * 1. env(THIRDAI_LICENSE_PATH)
-   * 2. ~/license.serialized
-   * 3. {cwd}/license.serialized
-   * Uses the first file found.
-   * If no license is found, we throw an error.
-   * If a license is found we verify it with the passed in public key,
-   * then check whether it has expired. If either check fails we throw an error.
-   * Otherwise we just return.
+   * Verifies the passed in license file with the stored public key,
+   * then checks whether it has expired. If either fails we throw an error.
+   * Otherwise we return the entitlements found in the license file.
    */
-  static void findVerifyAndCheckLicense(
-      const std::optional<std::string>& license_path) {
-    std::vector<std::string> license_file_name_options =
-        get_license_name_options(license_path);
+  static Entitlements entitlementsFromLicenseFile(
+      const std::string& license_path) {
+    SignedLicense license = getLicenseFromFile(license_path);
 
-    std::pair<SignedLicense, std::string> license_with_file =
-        get_license_from_options(license_file_name_options);
+    verifyAndCheckLicense(license, license_path);
 
-    verify_and_check_license(license_with_file);
+    return license.getLicense().entitlements();
   }
 
   // This is public because it is a top level serialization target, only
@@ -133,10 +126,10 @@ class SignedLicense {
     return serialize_into;
   }
 
-  const License& get_license() const { return _license; }
+  const License& getLicense() const { return _license; }
 
   // For now this is just used for testing
-  void set_license(License new_license) { _license = std::move(new_license); }
+  void setLicense(License new_license) { _license = std::move(new_license); }
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
@@ -147,106 +140,45 @@ class SignedLicense {
   }
 
   static inline const std::string PUBLIC_KEY_BASE_64 =
-      "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAsIv9g8w+"
-      "DLlepzpE02luu6lV2DY7g5N0cnqhbaoArE5UOEiKK2EFPCeQTp8+TkYk64/"
-      "ieMab4CoIU3ZmVp5GUyKkWsLJhDUE3dXJrLhIDTg7HFr6qwrFDosRWI26grq+"
-      "CFPsiVLTjlJCd+7sv1EtR5TPhympKAKRbUI1pffnK8QTJ8F5Bfg/"
-      "1tLHk3lpUp4vF90se0TWgmXe7CW6GtWeXqiwsfzK9IzkgLbX4DQJnyIRPS9MLoQr/"
-      "nSws7jMPDtUIuSjUIOQojxIhxTO5iL+"
-      "mfiV2h7nRLMtJM6lLKmrDK09sE4geE8zJytCcP1l15s7gZy7g7i1mwrpfiulmfNVvDj0LoKY"
-      "D2"
-      "nx1mj+gCgnUasqLWILNUXgV19eGGLd23+"
-      "hc7NzF10KFVXIcLebrG7o6WfFY5NSYu2pDzialgpCXmiysyIKj/HXY1hpbi0/dMII/"
-      "lVN2QhDb5zTVIjzBr+kMuJ9dNNl9Sn4eso+dMNjQrQ2F9WvcgS1ZQ4Ju/5qOZrRAgMBAAE=";
+      "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAw4ZXDhvzjwpN6N2HaX64H7KMAZGg"
+      "nyEvIvWYHNgUEl5E4C1DsfzeDCZNU1xvAzwssiUUVN3RQJ1XPESIMZH9eO9TCTmVhGAo407m"
+      "phJ8vDm7uQw6i6mpvxvYDY0HuUyhGGWAzN1wooBwH82IUfIjrhc2S2VEpSLBS7wHqO2doRiE"
+      "09ormgqPRFHh63rWw/83DGWXKxeKiQG0Oq2dBY90ZkPO1npAjVJAM7KUqv/"
+      "kMEpz9CXBEaNTewKW0pG7WypyGp5UmeGDjoyivD7BaVopRSNh12H2FLvKDyahiJlKRW99R4e"
+      "5muqc31DLlYeVULJIZDC3zpv/"
+      "TXn5IOnZ0ftw9H8skLOp+"
+      "jHvUvf5UGITjlZaXbeGxRvtdyMayCDar1DnkwKmquzYPT3SOjIyAV9C9kp/QGCndgQzc8/"
+      "bPlFPUhv7J99gfFFzjPefpfRkB9z/"
+      "x0AMN2a0j7V6qlTUDLdRWapRX92CTJU0cUuKdWXh4+TE+"
+      "narN9tYVp5MpTfgfGorAgMBAAE=";
 
-  /*
-   * Returns a vector of possible license file names. Tries to add each of the
-   * following license file paths in the following order:
-   * 0. The passed in license path
-   * 1. env(THIRDAI_LICENSE_PATH)
-   * 2. ~/license.serialized
-   * 3. {cwd}/license.serialized
-   * If one of the methods fails does not add that path.
-   */
-  static std::vector<std::string> get_license_name_options(
-      const std::optional<std::string>& license_path) {
-    std::vector<std::string> license_file_name_options;
-
-    if (license_path) {
-      license_file_name_options.push_back(license_path.value());
+  static SignedLicense getLicenseFromFile(const std::string& license_file) {
+    if (!can_access_file(license_file)) {
+      throw exceptions::LicenseCheckException(
+          "Cannot access the passed in license file " + license_file);
     }
-
-    auto optional_license_environment_path =
-        get_license_path_from_environment();
-    if (optional_license_environment_path) {
-      license_file_name_options.push_back(
-          optional_license_environment_path.value());
-    }
-
-    auto optional_home_dir = get_home_directory();
-    if (optional_home_dir) {
-      license_file_name_options.push_back(optional_home_dir.value() +
-                                          "/license.serialized");
-    }
-
-    auto optional_current_dir = get_current_directory();
-    if (optional_current_dir) {
-      license_file_name_options.push_back(optional_current_dir.value() +
-                                          "/license.serialized");
-    }
-
-    return license_file_name_options;
-  }
-
-  // Finds the first license file in the list of license file options,
-  // deserializes it, and returns it along with the file name. If no license
-  // file can be opened, we throw an error. If the deserialization fails, Cereal
-  // will throw an error.
-  static std::pair<SignedLicense, std::string> get_license_from_options(
-      const std::vector<std::string>& license_file_name_options) {
-    std::optional<std::pair<SignedLicense, std::string>> license_with_file;
-    for (const std::string& license_file_name : license_file_name_options) {
-      if (can_access_file(license_file_name)) {
-        license_with_file = {deserializeFromFile(license_file_name),
-                             license_file_name};
-        break;
-      }
-    }
-
-    if (!license_with_file) {
-      std::string license_files_tried;
-      for (const std::string& license_file_name : license_file_name_options) {
-        license_files_tried += license_file_name + ", ";
-      }
-      throw thirdai::exceptions::LicenseCheckException(
-          "could not find any license file (tried the following locations: " +
-          license_files_tried +
-          "). Go to https://thirdai.com/try-bolt to get a license.");
-    }
-
-    return license_with_file.value();
+    return deserializeFromFile(license_file);
   }
 
   // Verifies the license with the stored public key. If the verification fails,
   // throws an error. If the verication is succesfull but the license has
   // expired, throws an error.
-  static void verify_and_check_license(
-      const std::pair<SignedLicense, std::string>& license_with_file) {
+  static void verifyAndCheckLicense(const SignedLicense& license,
+                                    const std::string& license_file) {
     CryptoPP::RSA::PublicKey public_key;
     CryptoPP::StringSource ss(PUBLIC_KEY_BASE_64, true,
                               new CryptoPP::Base64Decoder);
     public_key.BERDecode(ss);
 
-    if (!license_with_file.first.verify(public_key)) {
+    if (!license.verify(public_key)) {
       throw thirdai::exceptions::LicenseCheckException(
-          "license verification failure using license file " +
-          license_with_file.second +
+          "license verification failure using license file " + license_file +
           ". Go to https://thirdai.com/try-bolt to get a valid license.");
     }
 
-    if (license_with_file.first.get_license().isExpired()) {
+    if (license.getLicense().isExpired()) {
       throw thirdai::exceptions::LicenseCheckException(
-          "the following license file is expired: " + license_with_file.second +
+          "the following license file is expired: " + license_file +
           ". Go to https://thirdai.com/try-bolt to renew your license.");
     }
   }

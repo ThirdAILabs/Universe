@@ -125,6 +125,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
            py::arg("learning_rate"))
       .def("ops", &model::Model::ops)
       .def("__getitem__", &model::Model::getOp, py::arg("name"))
+      .def("outputs", &model::Model::outputs)
+      .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
       .def("save", &model::Model::save, py::arg("filename"))
       .def_static("load", &model::Model::load, py::arg("filename"))

@@ -72,17 +72,21 @@ def split_into_2(
                         f_2.write(line)
 
 
-def check_models_are_same_on_first_two_nodes(distributed_model):
-    model_node_1 = distributed_model.get_model(worker_id=0)
-    model_node_2 = distributed_model.get_model(worker_id=1)
-
+def compare_parameters_of_two_models(model_node_1, model_node_2, atol=1e-8):
     nodes_1 = model_node_1.nodes()
     nodes_2 = model_node_2.nodes()
     for layer_1, layer_2 in zip(nodes_1, nodes_2):
         if hasattr(layer_1, "weights"):
-            assert np.allclose(layer_1.weights.get(), layer_2.weights.get())
+            assert np.allclose(layer_1.weights.get(), layer_2.weights.get(), atol=atol)
         if hasattr(layer_1, "biases"):
-            assert np.equal(layer_1.biases.get(), layer_2.biases.get()).all()
+            assert np.allclose(layer_1.biases.get(), layer_2.biases.get(), atol=atol)
+
+
+def check_models_are_same_on_first_two_nodes(distributed_model):
+    model_node_1 = distributed_model.get_model(worker_id=0)
+    model_node_2 = distributed_model.get_model(worker_id=1)
+
+    compare_parameters_of_two_models(model_node_1, model_node_2)
 
 
 def remove_files(file_names):

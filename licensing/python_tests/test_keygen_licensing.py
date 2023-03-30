@@ -1,6 +1,6 @@
 import pytest
 import thirdai
-from licensing_utils import this_should_require_a_license_bolt
+from licensing_utils import run_udt_training_routine
 
 pytestmark = [pytest.mark.release]
 
@@ -24,10 +24,14 @@ SUSPENDED_KEY = "9R3F-KLNJ-M3M4-KWLW-9E9E-7TNT-4FXH-V7R9"
 # This key is not on Keygen
 NONEXISTENT_KEY = "THIS-IS-A-VERY-NONEXISTENT-KEY"
 
+# This is a key on Keygen good for a while that does not allow model save
+# loading, but that is otherwise full access
+NO_SAVE_LOAD_KEY = "EU7E-HLRJ-LXW4-TMHX-7AUC-AFFR-WJAK-9CTW"
+
 
 def test_keygen_good_key():
     thirdai.licensing.activate(GOOD_KEY)
-    this_should_require_a_license_bolt()
+    run_udt_training_routine()
 
 
 def test_expired_key():
@@ -36,7 +40,7 @@ def test_expired_key():
         RuntimeError,
         match=r".*returned the following message: is expired",
     ):
-        this_should_require_a_license_bolt()
+        run_udt_training_routine()
 
 
 def test_suspended_key():
@@ -45,7 +49,7 @@ def test_suspended_key():
         RuntimeError,
         match=r".*returned the following message: is suspended",
     ):
-        this_should_require_a_license_bolt()
+        run_udt_training_routine()
 
 
 def test_nonexistent_key():
@@ -54,7 +58,18 @@ def test_nonexistent_key():
         RuntimeError,
         match=r".*returned the following message: does not exist",
     ):
-        this_should_require_a_license_bolt()
+        run_udt_training_routine()
+
+
+def test_no_save_load_key():
+    thirdai.licensing.activate(NO_SAVE_LOAD_KEY)
+    run_udt_training_routine(do_save_load=False)
+
+    with pytest.raises(
+        Exception,
+        match=r"Saving and loading of models is not authorized under this license",
+    ):
+        run_udt_training_routine()
 
 
 # This fixture removes the stored access key after each test finishes, ensuring

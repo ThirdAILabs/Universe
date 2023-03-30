@@ -53,6 +53,10 @@ class FullyConnectedLayer final {
     _disable_sparse_parameter_updates = true;
   };
 
+  void saveWithOptimizer(bool should_save_optimizer) {
+    _should_save_optimizer = should_save_optimizer;
+  }
+
   BoltBatch createBatchState(const uint32_t batch_size,
                              bool use_sparsity) const {
     bool is_sparse = (_sparsity < 1.0) && use_sparsity;
@@ -167,6 +171,10 @@ class FullyConnectedLayer final {
   // or distributed mode
   bool _disable_sparse_parameter_updates;
 
+  // A flag to determine whether the current network saves the optimizer states
+  // or not. If true, it saves the optimizer states, else doesn't.
+  bool _should_save_optimizer;
+
   BoltSamplingMode _sampling_mode;
 
   /* --------------- Within-batch variables ------------------------------
@@ -278,7 +286,11 @@ class FullyConnectedLayer final {
   void save(Archive& archive) const {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
-            _disable_sparse_parameter_updates, _sampling_mode);
+            _disable_sparse_parameter_updates, _sampling_mode,
+            _should_save_optimizer);
+    if (_should_save_optimizer) {
+      archive(_weight_optimizer, _bias_optimizer);
+    }
   }
 
   /**
@@ -300,8 +312,11 @@ class FullyConnectedLayer final {
   void load(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _trainable, _act_func,
             _weights, _biases, _hasher, _hash_table, _rand_neurons,
-            _disable_sparse_parameter_updates, _sampling_mode);
-
+            _disable_sparse_parameter_updates, _sampling_mode,
+            _should_save_optimizer);
+    if (_should_save_optimizer) {
+      archive(_weight_optimizer, _bias_optimizer);
+    }
     // TODO(david) another way to reduce memory for inference is to remove these
     // in addition to the optimizer as mentioned above
     initActiveNeuronsTrackers();

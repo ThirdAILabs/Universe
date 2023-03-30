@@ -88,16 +88,23 @@ class Model {
   const autograd::ComputationList& outputs() const;
 
   /**
+   * Returns the inputs storing the labels of the model.
+   */
+  const autograd::ComputationList& labels() const;
+
+  /**
    * Returns a list of all ops.
    */
-
-   const std::vector<ops::OpPtr>& ops() const;
+  const std::vector<ops::OpPtr>& ops() const;
 
   /**
    * Retrieves on op by name. Throws if not found.
    */
   ops::OpPtr getOp(const std::string& name) const;
 
+  /**
+   * Retrieves a computation in the graph by name. Throws if not found.
+   */
   autograd::ComputationPtr getComputation(const std::string& name) const;
 
   /**

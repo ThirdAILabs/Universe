@@ -164,6 +164,8 @@ class Node {
    */
   virtual void disableSparseParameterUpdates() {}
 
+  virtual void saveWithOptimizer(bool should_save_optimizer) = 0;
+
   virtual ~Node() = default;
 
   /**

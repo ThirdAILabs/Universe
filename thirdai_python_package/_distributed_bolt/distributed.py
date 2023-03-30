@@ -63,7 +63,7 @@ def add_distributed_to_udt():
         # initializing freeze-hash-tables=True by default.
         training_metrics = dist_model.train(freeze_hash_tables=True)
 
-        model = dist_model.get_model()
+        model = dist_model.get_model(with_optimizer=True)
 
         self._set_model(trained_model=model)
 
@@ -466,6 +466,7 @@ class DistributedDataParallel:
         # for more details.
         ray_model_ref = ray.put(model)
 
+        self.logging.info("Initializing Primary Worker")
         self.primary_worker = cluster_config.primary_worker_config.remote(
             num_workers=cluster_config.num_workers,
             model_to_wrap=ray_model_ref,
@@ -476,6 +477,8 @@ class DistributedDataParallel:
             validation_context=self.validation_context,
         )
 
+        self.logging.info("Primary Worker Intialized")
+        self.logging.info("Initializing Replica Workers")
         self.replica_workers = []
         for worker_id, replica_worker_config in enumerate(
             cluster_config.replica_worker_configs, start=1
@@ -492,6 +495,7 @@ class DistributedDataParallel:
                     log_dir=cluster_config.log_dir,
                 )
             )
+        self.logging.info("Replica Workers Intialized")
 
         self.workers = [self.primary_worker] + self.replica_workers
 
@@ -575,5 +579,5 @@ class DistributedDataParallel:
         }
         return distributed_train_metrics
 
-    def get_model(self, worker_id=0):
-        return ray.get(self.workers[worker_id].model.remote())
+    def get_model(self, worker_id=0, with_optimizer=False):
+        return ray.get(self.workers[worker_id].model.remote(with_optimizer))

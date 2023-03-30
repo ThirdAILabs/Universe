@@ -16,7 +16,8 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
       _reduction(config.reduction()),
       _num_tokens_per_input(config.numTokensPerInput()),
       _hash_fn(seed),
-      _disable_sparse_parameter_updates(false) {
+      _disable_sparse_parameter_updates(false),
+      _should_save_optimizer(false) {
   switch (_reduction) {
     case EmbeddingReductionType::SUM:
     case EmbeddingReductionType::AVERAGE:
@@ -240,7 +241,6 @@ void EmbeddingLayer::buildLayerSummary(std::ostream& summary) const {
   if (_num_tokens_per_input) {
     summary << ", num_tokens_per_input=" << _num_tokens_per_input.value();
   }
-  summary << "\n";
 }
 
 }  // namespace thirdai::bolt
