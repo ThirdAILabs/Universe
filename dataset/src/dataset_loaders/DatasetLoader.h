@@ -8,7 +8,7 @@
 
 namespace thirdai::dataset {
 
-typedef struct DatasetShuffleConfig{
+typedef struct DatasetShuffleConfig {
   explicit DatasetShuffleConfig(size_t min_vecs_in_buffer = 64000,
                                 uint32_t seed = time(NULL))
       : min_buffer_size(min_vecs_in_buffer), seed(seed) {}
@@ -27,7 +27,6 @@ class DatasetLoader final {
                 DatasetShuffleConfig shuffle_config = DatasetShuffleConfig(),
                 size_t internal_featurization_batch_size =
                     DEFAULT_FEATURIZATION_BATCH_SIZE);
-  
 
   std::vector<BoltDatasetPtr> loadAll(size_t batch_size, bool verbose = true);
 
