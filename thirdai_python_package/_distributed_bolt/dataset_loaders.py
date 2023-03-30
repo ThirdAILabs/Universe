@@ -54,7 +54,7 @@ class DistributedUDTDatasetLoader(DistributedDatasetLoader):
         train_file: str,
         batch_size: int,
         data_processor,
-        shuffle_config,
+        shuffle_config=None,
         max_in_memory_batches: int = None,
     ):
         self.generator = None
@@ -104,7 +104,7 @@ class DistributedColdStartDatasetLoader(DistributedUDTDatasetLoader):
         weak_column_names: List[str],
         data_processor,
         cold_start_meta_data,
-        shuffle_config,
+        shuffle_config=None,
     ):
         self.generator = None
         self.train_file = train_file
