@@ -147,6 +147,8 @@ class Node {
 
   void freeze() { _frozen = true; }
 
+  void unfreeze() { _frozen = false; }
+
   // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;
 

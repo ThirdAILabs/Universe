@@ -125,6 +125,7 @@ void createBoltNNSubmodule(py::module_& bolt_submodule) {
   py::class_<Node, NodePtr>(nn_submodule, "Node")
       .def_property_readonly("name", [](Node& node) { return node.name(); })
       .def("freeze", &Node::freeze)
+      .def("unfreeze", &Node::unfreeze)
       .def("disable_sparse_parameter_updates",
            &Node::disableSparseParameterUpdates,
            "Forces the node to use dense parameter updates.");
