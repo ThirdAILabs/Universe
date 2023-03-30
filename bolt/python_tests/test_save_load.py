@@ -3,6 +3,9 @@ import pytest
 from thirdai import bolt
 
 from utils import gen_numpy_training_data
+from thirdai_python_package_tests.distributed_bolt_test.distributed_utils import (
+    compare_parameters_of_two_models,
+)
 
 pytestmark = [pytest.mark.unit]
 
@@ -61,7 +64,10 @@ def test_checkpoint_load_dag():
 
     # We need dense model as in sparse the model tends to diverge after training.
     # With dense model too, models tends to diverge when train for longer durations
-    # because of non-associative property of float(with OpenMP).
+    # because of non-associative sum of float
+    # (https://stackoverflow.com/questions/10371857/is-floating-point-addition-and-multiplication-associative)
+    # and slight data-race while calcuating gradients. Thse two factors leads to
+    # different gradient during different training. Hence, model trained separately diverge.
     data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
 
     model = ModelWithLayers(n_classes=n_classes, sparse_model=False)
@@ -81,13 +87,7 @@ def test_checkpoint_load_dag():
     new_model.train(
         data, labels, train_config=get_train_config(epochs=1, batch_size=100)
     )
-    nodes_1 = model.model.nodes()
-    nodes_2 = new_model.nodes()
-    for layer_1, layer_2 in zip(nodes_1, nodes_2):
-        if hasattr(layer_1, "weights"):
-            assert np.allclose(layer_1.weights.get(), layer_2.weights.get(), atol=0.01)
-        if hasattr(layer_1, "biases"):
-            assert np.allclose(layer_1.biases.get(), layer_2.biases.get(), atol=0.01)
+    compare_parameters_of_two_models(model.model, new_model, atol=1e-2)
 
 
 def test_save_load_dag():

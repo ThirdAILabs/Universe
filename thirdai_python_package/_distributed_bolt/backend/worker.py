@@ -259,6 +259,7 @@ class Worker:
         return self.model.get_updated_metrics()
 
     def model(self, with_optimizer):
+        # setting with_optimizer flag, here implies that model would be serialized/pickled with optimizer. It is similar to how save/checkpoint works as pickling also uses cereal.
         if with_optimizer:
-            self.model.save_with_optimizer = True
+            self.model.should_save_optimizer(True)
         return self.model.model
