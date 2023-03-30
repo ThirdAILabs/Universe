@@ -49,7 +49,7 @@ TabularDatasetFactory::TabularDatasetFactory(
 
 dataset::DatasetLoaderPtr TabularDatasetFactory::getDatasetLoader(
     const dataset::DataSourcePtr& data_source, bool shuffle,
-    const dataset::DatasetShuffleConfig shuffle_config) {
+    dataset::DatasetShuffleConfig shuffle_config) {
   return std::make_unique<dataset::DatasetLoader>(
       data_source, _labeled_featurizer,
       /* shuffle= */ shuffle, shuffle_config);

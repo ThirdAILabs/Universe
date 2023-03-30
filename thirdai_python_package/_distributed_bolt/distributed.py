@@ -80,7 +80,7 @@ def add_distributed_to_udt():
         metrics: List[str] = [],
         verbose: bool = True,
         validation: Optional[bolt.Validation] = None,
-        shuffle_config: Optional[dataset.DatasetShuffleConfig] = None,
+        shuffle_config: Optional[dataset.ShuffleConfig] = None,
     ):
         """
         This function trains UDT in the distributed setting. ThirdAI uses Ray
@@ -189,7 +189,7 @@ def add_distributed_to_udt():
         metrics: List[str] = [],
         verbose: bool = True,
         validation: Optional[bolt.Validation] = None,
-        shuffle_config: Optional[dataset.DatasetShuffleConfig] = None,
+        shuffle_config: Optional[dataset.ShuffleConfig] = None,
     ):
         """
         This function does cold-start pretraining for UDT in the distributed setting.
