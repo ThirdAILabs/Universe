@@ -1,4 +1,8 @@
 #include "ComparativeLoss.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -146,4 +150,14 @@ void ComparativeLoss::gradients(BoltVector& activations,
   }
 }
 
+template void ComparativeLoss::serialize(cereal::BinaryInputArchive&);
+template void ComparativeLoss::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void ComparativeLoss::serialize(Archive& archive) {
+  archive(cereal::base_class<Loss>(this), _output, _labels);
+}
+
 }  // namespace thirdai::bolt::nn::loss
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::loss::ComparativeLoss)

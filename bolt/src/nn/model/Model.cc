@@ -1,9 +1,12 @@
 #include "Model.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/nn/autograd/ComputationGraph.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
-#include <licensing/src/CheckLicense.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <algorithm>
 #include <memory>
 #include <optional>
@@ -19,7 +22,6 @@ Model::Model(autograd::ComputationList inputs,
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
-      _allocation_manager({}),
       _train_steps(0) {
   licensing::checkLicense();
 
@@ -53,14 +55,20 @@ tensor::TensorList Model::forward(const tensor::TensorList& inputs,
                                   bool use_sparsity) {
   uint32_t input_batch_size = setInput(inputs);
 
-  return forward(input_batch_size, use_sparsity);
-}
+  _allocation_manager.reallocateIfNeeded(input_batch_size, use_sparsity);
 
-tensor::TensorList Model::forward(const tensor::TensorPtr& inputs,
-                                  bool use_sparsity) {
-  setInput(inputs);
+#pragma omp parallel for default(none) \
+    shared(input_batch_size) if (input_batch_size > 1)
+  for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
+       index_in_batch++) {
+    forwardVector(index_in_batch, /* training= */ false);
+  }
 
-  return forward(inputs->batchSize(), use_sparsity);
+  tensor::TensorList outputs;
+  for (auto& output : _outputs) {
+    outputs.push_back(output->tensor());
+  }
+  return outputs;
 }
 
 void Model::trainOnBatch(const tensor::TensorList& inputs,
@@ -68,26 +76,23 @@ void Model::trainOnBatch(const tensor::TensorList& inputs,
   uint32_t input_batch_size = setInput(inputs);
   uint32_t label_batch_size = setLabels(labels);
 
-  trainOnBatch(input_batch_size, label_batch_size);
-}
+  if (input_batch_size != label_batch_size) {
+    throw std::invalid_argument(
+        "Input batch size and label batch size do not match.");
+  }
+  _allocation_manager.reallocateIfNeeded(input_batch_size,
+                                         /* use_sparsity= */ true);
 
-void Model::trainOnBatch(const tensor::TensorPtr& inputs,
-                         const tensor::TensorPtr& labels) {
-  setInput(inputs);
-  setLabels(labels);
-
-  trainOnBatch(inputs->batchSize(), labels->batchSize());
+#pragma omp parallel for default(none) shared(input_batch_size)
+  for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
+       index_in_batch++) {
+    forwardVector(index_in_batch, /* training= */ true);
+    backpropagateVector(index_in_batch, input_batch_size);
+  }
 }
 
 tensor::TensorList Model::forward(const tensor::TensorList& inputs,
                                   const tensor::TensorList& labels,
-                                  bool use_sparsity) {
-  setLabels(labels);
-  return forward(inputs, use_sparsity);
-}
-
-tensor::TensorList Model::forward(const tensor::TensorPtr& inputs,
-                                  const tensor::TensorPtr& labels,
                                   bool use_sparsity) {
   setLabels(labels);
   return forward(inputs, use_sparsity);
@@ -118,6 +123,8 @@ autograd::ComputationList Model::computationOrder() const {
 
 const autograd::ComputationList& Model::outputs() const { return _outputs; }
 
+const autograd::ComputationList& Model::labels() const { return _labels; }
+
 ops::OpPtr Model::getOp(const std::string& name) const {
   for (const auto& op : _ops) {
     if (op->name() == name) {
@@ -141,13 +148,14 @@ autograd::ComputationPtr Model::getComputation(const std::string& name) const {
 std::string Model::summary(bool print) const {
   std::stringstream summary;
 
-  summary << "===================== Model =====================\n";
-  for (uint32_t i = 0; i < _computation_order.size(); i++) {
-    _computation_order[i]->summary(summary);
+  summary << "\n===================== Model =====================\n";
+  for (const auto& input : _inputs) {
+    input->summary(summary);
     summary << "\n";
-    if (i < _computation_order.size() - 1) {
-      summary << "-------------------------------------------------\n";
-    }
+  }
+  for (const auto& comp : _computation_order) {
+    comp->summary(summary);
+    summary << "\n";
   }
   summary << "=================================================\n";
 
@@ -160,37 +168,28 @@ std::string Model::summary(bool print) const {
 
 uint32_t Model::trainSteps() const { return _train_steps; }
 
-tensor::TensorList Model::forward(uint32_t input_batch_size,
-                                  bool use_sparsity) {
-  _allocation_manager.reallocateIfNeeded(input_batch_size, use_sparsity);
-
-#pragma omp parallel for default(none) shared(input_batch_size)
-  for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
-       index_in_batch++) {
-    forwardVector(index_in_batch, /* training= */ false);
-  }
-
-  tensor::TensorList outputs;
-  for (auto& output : _outputs) {
-    outputs.push_back(output->tensor());
-  }
-  return outputs;
+void Model::save(const std::string& filename) {
+  auto output_stream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  save_stream(output_stream);
 }
 
-void Model::trainOnBatch(uint32_t input_batch_size, uint32_t label_batch_size) {
-  if (input_batch_size != label_batch_size) {
-    throw std::invalid_argument(
-        "Input batch size and label batch size do not match.");
-  }
-  _allocation_manager.reallocateIfNeeded(input_batch_size,
-                                         /* use_sparsity= */ true);
+void Model::save_stream(std::ostream& output_stream) {
+  cereal::BinaryOutputArchive oarchive(output_stream);
+  oarchive(*this);
+}
 
-#pragma omp parallel for default(none) shared(input_batch_size)
-  for (uint32_t index_in_batch = 0; index_in_batch < input_batch_size;
-       index_in_batch++) {
-    forwardVector(index_in_batch, /* training= */ true);
-    backpropagateVector(index_in_batch, input_batch_size);
-  }
+std::shared_ptr<Model> Model::load(const std::string& filename) {
+  auto input_stream = dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  return load_stream(input_stream);
+}
+
+std::shared_ptr<Model> Model::load_stream(std::istream& input_stream) {
+  cereal::BinaryInputArchive iarchive(input_stream);
+  std::shared_ptr<Model> deserialize_into(new Model());
+  iarchive(*deserialize_into);
+
+  return deserialize_into;
 }
 
 void Model::forwardVector(uint32_t index_in_batch, bool training) {
@@ -245,24 +244,8 @@ uint32_t Model::setInput(const tensor::TensorList& input_batches) {
   return setBatchHelper(_inputs, input_batches, "inputs");
 }
 
-void Model::setInput(const tensor::TensorPtr& input) {
-  if (_inputs.size() != 1) {
-    throw std::invalid_argument("Expected " + std::to_string(_inputs.size()) +
-                                " input batches but received 1.");
-  }
-  _inputs[0]->setTensor(input);
-}
-
 uint32_t Model::setLabels(const tensor::TensorList& label_batches) {
   return setBatchHelper(_labels, label_batches, "labels");
-}
-
-void Model::setLabels(const tensor::TensorPtr& labels) {
-  if (_labels.size() != 1) {
-    throw std::invalid_argument("Expected " + std::to_string(_labels.size()) +
-                                " label batches but received 1.");
-  }
-  _labels[0]->setTensor(labels);
 }
 
 void Model::matchOutputFullyConnectedLayersWithLabels() {
@@ -278,6 +261,15 @@ void Model::matchOutputFullyConnectedLayersWithLabels() {
       }
     }
   }
+}
+
+template void Model::serialize(cereal::BinaryInputArchive&);
+template void Model::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void Model::serialize(Archive& archive) {
+  archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
+          _allocation_manager, _train_steps);
 }
 
 }  // namespace thirdai::bolt::nn::model

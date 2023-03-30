@@ -616,7 +616,13 @@ That's all for now, folks! More docs coming soon :)
             return GradientReference(*node.getModel().get());
           },
           py::return_value_policy::reference_internal,
-          "Returns gradient reference for Distributed Training Wrapper");
+          "Returns gradient reference for Distributed Training Wrapper")
+      .def("get_updated_metrics",
+           &thirdai::bolt::DistributedTrainingWrapper::getUpdatedMetrics,
+           bolt::python::OutputRedirect())
+      .def("validate_and_save_if_best",
+           &thirdai::bolt::DistributedTrainingWrapper::validationAndSaveBest,
+           bolt::python::OutputRedirect());
 
   createLossesSubmodule(nn_submodule);
 }

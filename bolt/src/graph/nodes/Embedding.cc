@@ -108,6 +108,7 @@ void EmbeddingNode::summarizeImpl(std::stringstream& summary,
   (void)detailed;
   summary << _token_input->name() << " -> " << name() << ": (Embedding):";
   _embedding_layer->buildLayerSummary(summary);
+  summary << "\n";
 }
 
 }  // namespace thirdai::bolt

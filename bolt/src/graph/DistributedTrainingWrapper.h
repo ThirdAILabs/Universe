@@ -45,8 +45,13 @@ class DistributedTrainingWrapper {
         _train_config.getReconstructHashFunctionsBatchInterval(
             _train_context->batchSize(), _train_context->len()));
     if (_worker_id == 0) {
-      _bolt_graph->logValidateAndSave(_train_config, _metric_aggregator);
+      _bolt_graph->logAndSaveIfNeeded(_train_config, _metric_aggregator);
     }
+  }
+
+  std::optional<InferenceMetricData> validationAndSaveBest() {
+    return _bolt_graph->validateAndSaveIfBest(
+        _train_config, _train_config.getValidationContext().value());
   }
 
   BoltGraphPtr getModel() { return _bolt_graph; }
@@ -84,6 +89,12 @@ class DistributedTrainingWrapper {
 
   void freezeHashTables(bool insert_labels_if_not_found) {
     _bolt_graph->freezeHashTables(insert_labels_if_not_found);
+  }
+
+  MetricData getUpdatedMetrics() {
+    _metric_aggregator.logAndReset();
+    auto metric_data = _metric_aggregator.getOutput();
+    return metric_data;
   }
 
  private:

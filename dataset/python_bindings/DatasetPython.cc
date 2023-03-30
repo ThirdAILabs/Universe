@@ -15,6 +15,7 @@
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/TabularHashFeatures.h>
 #include <dataset/src/blocks/Text.h>
+#include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/MaskedSentenceFeaturizer.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
@@ -300,6 +301,10 @@ void createDatasetSubmodule(py::module_& module) {
       .def("next_line", &DataSource::nextLine)
       .def("resource_name", &DataSource::resourceName)
       .def("restart", &DataSource::restart);
+
+  py::class_<cold_start::ColdStartDataSource, dataset::DataSource,
+             cold_start::ColdStartDataSourcePtr>
+      ColdStartDataSource(dataset_submodule, "ColdStartDataSource");
 
   py::class_<FileDataSource, DataSource, std::shared_ptr<FileDataSource>>(
       dataset_submodule, "FileDataSource")

@@ -68,6 +68,8 @@ class MetricAggregator {
 
   uint32_t getNumMetricsTracked() { return _metrics.size(); }
 
+  std::vector<std::shared_ptr<Metric>> getMetrics() const { return _metrics; }
+
  private:
   std::vector<std::shared_ptr<Metric>> _metrics;
   MetricData _output;

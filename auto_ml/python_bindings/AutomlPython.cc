@@ -2,6 +2,7 @@
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
@@ -41,7 +42,15 @@ void defineAutomlInModule(py::module_& module) {
       .def("filename", &ValidationOptions::filename)
       .def("args", &ValidationOptions::args);
 
-  py::class_<udt::ValidationArgs>(module, "ValidationArgs");  // NOLINT
+  py::class_<udt::ValidationArgs>(module, "ValidationArgs")
+      .def_property_readonly(
+          "metrics", [](udt::ValidationArgs const& v) { return v.metrics(); })
+      .def_property_readonly(
+          "steps_per_validation",
+          [](udt::ValidationArgs const& v) { return v.stepsPerValidation(); })
+      .def_property_readonly(
+          "sparse_inference",
+          [](udt::ValidationArgs const& v) { return v.sparseInference(); });
 
   /**
    * This class definition overrides the __new__ method because we want to
@@ -89,12 +98,17 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("callbacks") = std::vector<bolt::CallbackPtr>{},
            py::arg("verbose") = true,
-           py::arg("logging_interval") = std::nullopt)
+           py::arg("logging_interval") = std::nullopt,
+           bolt::python::OutputRedirect())
+      .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
+           py::arg("learning_rate") = 0.001,
+           py::arg("metrics") = std::vector<std::string>{},
+           bolt::python::OutputRedirect())
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false, py::arg("verbose") = true,
-           py::arg("return_metrics") = false)
+           py::arg("return_metrics") = false, bolt::python::OutputRedirect())
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false)
@@ -104,7 +118,8 @@ void defineAutomlInModule(py::module_& module) {
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
-           py::arg("validation"), py::arg("callbacks"), py::arg("verbose"))
+           py::arg("validation"), py::arg("callbacks"), py::arg("verbose"),
+           bolt::python::OutputRedirect())
       .def("embedding_representation", &udt::UDT::embedding,
            py::arg("input_sample"))
       .def("get_entity_embedding", &udt::UDT::entityEmbedding,
@@ -112,6 +127,11 @@ void defineAutomlInModule(py::module_& module) {
       .def("index", &udt::UDT::updateTemporalTrackers, py::arg("input_sample"))
       .def("index_batch", &udt::UDT::updateTemporalTrackersBatch,
            py::arg("input_samples"))
+      .def("index_nodes", &udt::UDT::indexNodes, py::arg("data_source"))
+      .def("clear_graph", &udt::UDT::clearGraph)
+      .def("set_decode_params", &udt::UDT::setDecodeParams,
+           py::arg("min_num_eval_results"),
+           py::arg("top_k_per_eval_aggregation"))
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))
@@ -124,8 +144,10 @@ void defineAutomlInModule(py::module_& module) {
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
+      .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &UDTFactory::save_udt, py::arg("filename"))
-      .def_static("load", &udt::UDT::load, py::arg("filename"));
+      .def_static("load", &udt::UDT::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<udt::UDT>());
 }
 
 void createModelsSubmodule(py::module_& module) {
@@ -195,6 +217,21 @@ void createModelsSubmodule(py::module_& module) {
            docs::TEXT_CLASSIFIER_SAVE);
 }
 
+void createDistributedPreprocessingWrapper(py::module_& module) {
+  auto distributed_preprocessing_submodule =
+      module.def_submodule("distributed_preprocessing");
+  distributed_preprocessing_submodule.def(
+      "preprocess_cold_start_train_source",
+      &cold_start::preprocessColdStartTrainSource, py::arg("data"),
+      py::arg("strong_column_names"), py::arg("weak_column_names"),
+      py::arg("dataset_factory"), py::arg("metadata"));
+
+  py::class_<cold_start::ColdStartMetaData, cold_start::ColdStartMetaDataPtr>(
+      distributed_preprocessing_submodule, "ColdStartMetaData")
+      .def(bolt::python::getPickleFunction<cold_start::ColdStartMetaData>());
+  ;
+}
+
 void createUDTTypesSubmodule(py::module_& module) {
   auto udt_types_submodule = module.def_submodule("types");
 
@@ -203,6 +240,16 @@ void createUDTTypesSubmodule(py::module_& module) {
       udt_types_submodule, "ColumnType", "Base class for bolt types.")
       .def("__str__", &automl::data::DataType::toString)
       .def("__repr__", &automl::data::DataType::toString);
+
+  // TODO(Josh): Add docs here and elsewhere
+  py::class_<automl::data::NeighborsDataType, automl::data::DataType,
+             automl::data::NeighborsDataTypePtr>(udt_types_submodule,
+                                                 "neighbors")
+      .def(py::init<>());
+
+  py::class_<automl::data::NodeIDDataType, automl::data::DataType,
+             automl::data::NodeIDDataTypePtr>(udt_types_submodule, "node_id")
+      .def(py::init<>());
 
   py::class_<automl::data::CategoricalMetadataConfig,
              automl::data::CategoricalMetadataConfigPtr>(udt_types_submodule,

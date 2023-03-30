@@ -5,6 +5,7 @@
 #include <bolt/src/nn/model/AllocationManager.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <licensing/src/CheckLicense.h>
 #include <vector>
 
 namespace thirdai::bolt::nn::model {
@@ -39,9 +40,6 @@ class Model {
   tensor::TensorList forward(const tensor::TensorList& inputs,
                              bool use_sparsity);
 
-  tensor::TensorList forward(const tensor::TensorPtr& inputs,
-                             bool use_sparsity);
-
   /**
    * Performs the foward and backward pass through the model for the given
    * training batch. There is no intermediate thread synchronization between ops
@@ -50,9 +48,6 @@ class Model {
    */
   void trainOnBatch(const tensor::TensorList& inputs,
                     const tensor::TensorList& labels);
-
-  void trainOnBatch(const tensor::TensorPtr& inputs,
-                    const tensor::TensorPtr& labels);
 
   /**
    * Performs the forward pass through the model on a given batch. Differs from
@@ -63,10 +58,6 @@ class Model {
    */
   tensor::TensorList forward(const tensor::TensorList& inputs,
                              const tensor::TensorList& labels,
-                             bool use_sparsity);
-
-  tensor::TensorList forward(const tensor::TensorPtr& inputs,
-                             const tensor::TensorPtr& labels,
                              bool use_sparsity);
 
   /**
@@ -97,6 +88,11 @@ class Model {
   const autograd::ComputationList& outputs() const;
 
   /**
+   * Returns the inputs storing the labels of the model.
+   */
+  const autograd::ComputationList& labels() const;
+
+  /**
    * Retrieves on op by name. Throws if not found.
    */
   ops::OpPtr getOp(const std::string& name) const;
@@ -114,19 +110,21 @@ class Model {
    */
   uint32_t trainSteps() const;
 
+  /**
+   * Saves the model without optimizer state.
+   */
+  void save(const std::string& filename);
+
+  void save_stream(std::ostream& output_stream);
+
+  /**
+   * Loads the model and automatically initializes the optimizer state.
+   */
+  static std::shared_ptr<Model> load(const std::string& filename);
+
+  static std::shared_ptr<Model> load_stream(std::istream& input_stream);
+
  private:
-  /**
-   * Helper function for forward and forwardSingleInput. Handles all of
-   * the logic after setting the inputs and labels.
-   */
-  tensor::TensorList forward(uint32_t input_batch_size, bool use_sparsity);
-
-  /**
-   * Helper method for trainOnBatch and trainOnSingleInputBatch. Handles all of
-   * the logic after setting the inputs and labels.
-   */
-  void trainOnBatch(uint32_t input_batch_size, uint32_t label_batch_size);
-
   /**
    * Computes the forward pass through the model for the given sample in the
    * batch. Assumes that setInputs(...) has already been called.
@@ -145,14 +143,10 @@ class Model {
    */
   uint32_t setInput(const tensor::TensorList& input_batches);
 
-  void setInput(const tensor::TensorPtr& input);
-
   /**
    * Sets the given labels as the current labels for the model.
    */
   uint32_t setLabels(const tensor::TensorList& label_batches);
-
-  void setLabels(const tensor::TensorPtr& labels);
 
   /**
    * When a loss is applied to a single output computation coming from a fully
@@ -173,6 +167,12 @@ class Model {
   AllocationManager _allocation_manager;
 
   uint32_t _train_steps;
+
+  Model() : _allocation_manager() { licensing::checkLicense(); }
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using ModelPtr = std::shared_ptr<Model>;

@@ -46,7 +46,6 @@ class StateMachine {
 
   static void validateDelimiter(char delimiter);
   ParserState fromNewColumn(char current_char) const;
-  ParserState fromEscapeInQuotes(char current_char) const;
   ParserState fromRegularInQuotes(char current_char) const;
   ParserState fromRegularOutsideQuotes(char current_char) const;
   ParserState fromPotentialEndQuote(char current_char) const;
