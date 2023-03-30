@@ -83,8 +83,10 @@ bolt::MetricData trainInMemory(bolt::BoltGraphPtr& model,
                                bolt::TrainConfig train_config,
                                size_t batch_size, bool freeze_hash_tables,
                                licensing::TrainPermissionsToken token) {
+                                std::cout << "TRAIN IN MEMORY" << std::endl;
   auto loaded_data = dataset_loader->loadAll(
       /* batch_size = */ batch_size, /* verbose = */ train_config.verbose());
+      std::cout << "after load all" << std::endl;
   auto [train_data, train_labels] = splitDataLabels(std::move(loaded_data));
 
   uint32_t epochs = train_config.epochs();

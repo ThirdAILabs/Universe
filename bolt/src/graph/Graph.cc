@@ -251,29 +251,8 @@ MetricData BoltGraph::train(
     const std::optional<ValidationContext>& validation =
         train_config.getValidationContext();
     if (validation) {
-      std::cout << "IN VALIDATE AND SAVE" << std::endl;
-      std::cout << "validation data size"
-                << validation->data().at(0)->batchSize() << std::endl;
-      std::cout << "validation data example highest activation id "
-                << validation->labels()->at(0)[3].getHighestActivationId()
-                << std::endl;
-      std::cout << "validation data example highest activation id "
-                << validation->labels()->at(0)[4].getHighestActivationId()
-                << std::endl;
-      std::cout << "should return activations "
-                << validation->config().shouldReturnActivations() << std::endl;
-      std::cout << "get metric agg "
-                << validation->config()
-                       .getMetricAggregator()
-                       .getMetrics()
-                       .at(0)
-                       ->name()
-                << std::endl;
-      std::cout << "sparse inference"
-                << validation->config().sparseInferenceEnabled() << std::endl;
       auto [val_metrics, _] = evaluate(validation->data(), validation->labels(),
                                        validation->config());
-      std::cout << "CATEGORICAL ACCY " << val_metrics["categorical_accuracy"] << std::endl;
       train_state.updateValidationMetrics(val_metrics);
     }
 
@@ -506,6 +485,8 @@ BoltGraph::getInputGradientSingle(
 InferenceResult BoltGraph::evaluate(
     const std::vector<dataset::BoltDatasetPtr>& test_data,
     const dataset::BoltDatasetPtr& test_labels, const EvalConfig& eval_config) {
+  // std::cout << "BEGINNING OF EVAL CALL "
+  //           << test_labels->at(0)[0].getHighestActivationId() << std::endl;
   DatasetContext predict_context(test_data, test_labels);
 
   bool has_labels = (test_labels != nullptr);
@@ -658,7 +639,8 @@ void BoltGraph::processEvaluationBatch(uint64_t batch_size,
 
   prepareToProcessBatch(batch_size, /* use_sparsity= */ use_sparsity);
 
-#pragma omp parallel for default(none) shared(batch_size, batch_labels, metrics)
+  // #pragma omp parallel for default(none) shared(batch_size, batch_labels,
+  // metrics)
   for (uint64_t vec_id = 0; vec_id < batch_size; vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.
@@ -668,6 +650,11 @@ void BoltGraph::processEvaluationBatch(uint64_t batch_size,
 
     if (batch_labels) {
       const auto& labels = (*batch_labels)[vec_id];
+      if (vec_id <= 4) {
+        // std::cout << "LABEL: " << labels.getHighestActivationId()
+        //           << " OUTPUT: " << output.getHighestActivationId()
+        //           << std::endl;
+      }
       metrics.processSample(output, labels);
     }
   }

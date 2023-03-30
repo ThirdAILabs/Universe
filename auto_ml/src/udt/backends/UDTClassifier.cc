@@ -57,38 +57,35 @@ py::object UDTClassifier::train(
     const std::vector<std::string>& metrics,
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval) {
-  std::optional<ValidationDatasetLoader> validation_dataset_loader =
-      std::nullopt;
-  if (validation) {
-    validation_dataset_loader =
-        ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
-                                    validation->first, /* shuffle= */ false),
-                                validation->second);
-    validation_dataset_loader->first->loadSome(3, 1)
-        ->at(0)
-        ->at(0)[0]
-        .getHighestActivationId();
-    // auto x1 = validation_dataset_loader->first->loadSome(3, 1)
-    //               ->at(0)
-    //               ->at(0)[1]
-    //               .getHighestActivationId();
-    // auto x2 = validation_dataset_loader->first->loadSome(3, 1)
-    //               ->at(0)
-    //               ->at(0)[2]
-    //               .getHighestActivationId();
-    // validation_dataset_loader->first->restart();
-    // std::cout << "IN UDT TRAIN SETTING UP VALIDATION " << x0 << " " << x1 <<
-    // " "
-    //           << x2 << " END OF EXAMPLES " << std::endl;
-  }
-
+  (void)validation;
   auto train_dataset_loader =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  return _classifier->train(
-      train_dataset_loader, learning_rate, epochs, validation_dataset_loader,
-      batch_size_opt, max_in_memory_batches, metrics, callbacks, verbose,
-      logging_interval, licensing::TrainPermissionsToken(data));
+  // auto out = validation_dataset_loader->first->loadSome(300, 1);
+  // auto x0 = out->at(0)->at(0)[0].getHighestActivationId();
+  // auto x1 = out->at(1)->at(0)[0].getHighestActivationId();
+  // std::cout << "AFTER CREATING TRAIN DATASET LOADER " << x0 << " " << x1
+  //           << std::endl;
+  // validation_dataset_loader->first->restart();
+
+  // std::optional<ValidationDatasetLoader> validation_dataset_loader =
+  //     std::nullopt;
+  // if (validation) {
+  //   validation_dataset_loader =
+  //       ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
+  //                                   validation->first, /* shuffle= */ false),
+  //                               validation->second);
+  //   auto out = validation_dataset_loader->first->loadSome(300, 1);
+  //   auto x0 = out->at(0)->at(0)[0].getHighestActivationId();
+  //   auto x1 = out->at(1)->at(0)[0].getHighestActivationId();
+  //   std::cout << x0 << " " << x1 << std::endl;
+  //   validation_dataset_loader->first->restart();
+  // }
+
+  return _classifier->train(train_dataset_loader, learning_rate, epochs,
+                            std::nullopt, batch_size_opt, max_in_memory_batches,
+                            metrics, callbacks, verbose, logging_interval,
+                            licensing::TrainPermissionsToken(data));
 }
 
 py::object UDTClassifier::trainBatch(const MapInputBatch& batch,

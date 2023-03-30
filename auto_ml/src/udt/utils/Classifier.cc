@@ -15,11 +15,25 @@ py::object thirdai::automl::udt::utils::Classifier::train(
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval,
     licensing::TrainPermissionsToken token) {
+  // std::cout << "IN CLASSIFIER TRAIN " << std::endl;
+  // auto out = validation->first->loadSome(300, 1);
+  // auto x0 = out->at(0)->at(0)[0].getHighestActivationId();
+  // auto x1 = out->at(1)->at(0)[0].getHighestActivationId();
+  // std::cout << x0 << " " << x1 << std::endl;
+  // validation->first->restart();
+
   uint32_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
   bolt::TrainConfig train_config =
       getTrainConfig(epochs, learning_rate, validation, metrics, callbacks,
                      verbose, logging_interval);
+
+  // std::cout << "IN CLASSIFIER TRAIN, VALIDATION : "
+  //           << train_config.getValidationContext()
+  //                  ->labels()
+  //                  ->at(0)[0]
+  //                  .getHighestActivationId()
+  //           << std::endl;
 
   auto output = utils::train(
       _model, dataset, train_config, batch_size, max_in_memory_batches,
@@ -63,6 +77,9 @@ py::object Classifier::evaluate(dataset::DatasetLoaderPtr& dataset,
       dataset->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
   auto [test_data, test_labels] =
       utils::splitDataLabels(std::move(loaded_data));
+
+  std::cout << "BEFORE CLASSIFIER EVAL "
+            << test_labels->at(0)[0].getHighestActivationId() << std::endl;
 
   auto [output_metrics, output] =
       _model->evaluate(test_data, test_labels, eval_config);

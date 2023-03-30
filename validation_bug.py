@@ -4,6 +4,9 @@ from thirdai.demos import download_beir_dataset
 dataset = "scifact"
 unsup_file, sup_train_file, sup_test_file, n_target_classes = download_beir_dataset(dataset)
 
+
+print("STARTING TEST\n\n\n\n")
+
 model = bolt.UniversalDeepTransformer(
     data_types={
         "QUERY": bolt.types.text(),
@@ -22,17 +25,19 @@ model.cold_start(
     strong_column_names=["TITLE"],
     weak_column_names=["TEXT"],
     learning_rate=0.001,
-    epochs=2,
+    epochs=1,
     validation=validation,
     metrics=["categorical_accuracy", "recall@100"],
 )
 
+print("EVALUATE \n\n")
 activations = model.evaluate(sup_test_file, metrics=['categorical_accuracy','recall@100'])
+print("\n\n")
 
 model.train(
     filename=sup_train_file,
     learning_rate=0.001,
-    epochs=5,
+    epochs=1,
     validation=validation,
     metrics=["categorical_accuracy", "recall@100"],
 )
