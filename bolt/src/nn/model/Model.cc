@@ -123,6 +123,8 @@ autograd::ComputationList Model::computationOrder() const {
 
 const autograd::ComputationList& Model::outputs() const { return _outputs; }
 
+const std::vector<ops::OpPtr>& Model::ops() const { return _ops; }
+
 ops::OpPtr Model::getOp(const std::string& name) const {
   for (const auto& op : _ops) {
     if (op->name() == name) {
@@ -192,6 +194,9 @@ Model::outputLabelPairs() const {
   for (const auto& loss : _losses) {
     auto outputs_used = loss->outputsUsed();
     auto loss_labels = loss->labels();
+    // A label and output match if they are both used in a loss function with no
+    // other labels or outputs, hence we can iterate over the loss functions and
+    // see which act on a single output and label.
     if (outputs_used.size() == 1 && loss_labels.size() == 1) {
       output_label_pairs.emplace_back(outputs_used.at(0), loss_labels.at(0));
     }

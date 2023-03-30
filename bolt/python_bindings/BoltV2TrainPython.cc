@@ -41,7 +41,7 @@ class GradientReference {
     }
 
     uint64_t flattened_dim = new_grads.shape(0);
-    _model->setGradents(new_grads.data(), flattened_dim);
+    _model->setGradients(new_grads.data(), flattened_dim);
   }
 
  private:

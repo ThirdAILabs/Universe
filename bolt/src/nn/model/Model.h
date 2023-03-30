@@ -88,6 +88,12 @@ class Model {
   const autograd::ComputationList& outputs() const;
 
   /**
+   * Returns a list of all ops.
+   */
+
+   const std::vector<ops::OpPtr>& ops() const;
+
+  /**
    * Retrieves on op by name. Throws if not found.
    */
   ops::OpPtr getOp(const std::string& name) const;

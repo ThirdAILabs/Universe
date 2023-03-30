@@ -18,6 +18,10 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
         "single output.");
   }
 
+  for (const auto& op : model->ops()) {
+    op->disableSparseParameterUpdates();
+  }
+
   if (auto validation = train_config.getValidationContext()) {
     _validation_data =
         convertLabeldData(validation->data(), validation->labels());
@@ -93,8 +97,8 @@ std::pair<const float*, uint64_t> DistributedTrainingWrapper::getGradients()
   return {combined_grads, total_dim};
 }
 
-void DistributedTrainingWrapper::setGradents(const float* new_grad,
-                                             uint64_t flattened_dim) {
+void DistributedTrainingWrapper::setGradients(const float* new_grad,
+                                              uint64_t flattened_dim) {
   auto grads = _model->gradients();
 
   uint64_t total_dim = sumFlattenedDims(grads);

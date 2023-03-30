@@ -54,7 +54,7 @@ class DistributedTrainingWrapper {
 
   std::pair<const float*, uint64_t> getGradients() const;
 
-  void setGradents(const float* new_grad, uint64_t flattened_dim);
+  void setGradients(const float* new_grad, uint64_t flattened_dim);
 
  private:
   std::optional<LabeledDataset> convertLabeldData(
