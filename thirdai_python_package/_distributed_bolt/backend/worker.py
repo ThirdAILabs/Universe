@@ -59,18 +59,16 @@ class Worker:
         )
 
         start = time()
-        if isinstance(model_to_wrap, bolt_v2.nn.Model):
-            self.model = bolt_v2.train.DistributedTrainingWrapper(
-                model=model_to_wrap,
-                train_config=train_config,
-                worker_id=id,
-            )
-        else:
-            self.model = bolt.DistributedTrainingWrapper(
-                model=model_to_wrap,
-                train_config=train_config,
-                worker_id=id,
-            )
+        DistributedTrainingWrapper = (
+            bolt_v2.train.DistributedTrainingWrapper
+            if isinstance(model_to_wrap, bolt_v2.nn.Model)
+            else bolt.DistributedTrainingWrapper
+        )
+        self.model = DistributedTrainingWrapper(
+            model=model_to_wrap,
+            train_config=train_config,
+            worker_id=id,
+        )
         end = time()
 
         logging.info(f"func initializing_model | time {(end - start)*1000} ms")
