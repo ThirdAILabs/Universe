@@ -63,7 +63,7 @@ def add_distributed_to_udt():
         # initializing freeze-hash-tables=True by default.
         training_metrics = dist_model.train(freeze_hash_tables=True)
 
-        model = dist_model.get_model()
+        model = dist_model.get_model(with_optimizer=True)
 
         self._set_model(trained_model=model)
 
@@ -583,5 +583,5 @@ class DistributedDataParallel:
         }
         return distributed_train_metrics
 
-    def get_model(self, worker_id=0):
-        return ray.get(self.workers[worker_id].model.remote())
+    def get_model(self, worker_id=0, with_optimizer=False):
+        return ray.get(self.workers[worker_id].model.remote(with_optimizer))
