@@ -146,6 +146,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &UDTFactory::save_udt, py::arg("filename"))
+      .def("checkpoint", &UDTFactory::checkpoint_udt, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"))
       .def(bolt::python::getPickleFunction<udt::UDT>());
 }
@@ -436,6 +437,16 @@ std::shared_ptr<udt::UDT> UDTFactory::createUDTSpecifiedFileFormat(
 
 void UDTFactory::save_udt(const udt::UDT& classifier,
                           const std::string& filename) {
+  classifier.model()->saveWithOptimizer(false);
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);
+  classifier.save_stream(filestream);
+}
+
+void UDTFactory::checkpoint_udt(const udt::UDT& classifier,
+                                const std::string& filename) {
+  classifier.model()->saveWithOptimizer(true);
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);

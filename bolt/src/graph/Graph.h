@@ -120,6 +120,8 @@ class BoltGraph {
 
   NodePtr output() { return _output; }
 
+  void saveWithOptimizer(bool should_save_optimizer);
+
  private:
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::checkLicense(); }
