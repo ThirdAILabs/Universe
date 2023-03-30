@@ -1,6 +1,10 @@
+import numpy as np
 import pytest
 from thirdai import bolt
 
+from thirdai_python_package_tests.distributed_bolt_test.distributed_utils import (
+    compare_parameters_of_two_models,
+)
 from utils import gen_numpy_training_data
 
 pytestmark = [pytest.mark.unit]
@@ -15,16 +19,26 @@ def get_eval_config():
 
 
 class ModelWithLayers:
-    def __init__(self, n_classes):
+    def __init__(self, n_classes, sparse_model=True):
         self.input_layer = bolt.nn.Input(dim=n_classes)
 
-        self.hidden1 = bolt.nn.FullyConnected(
-            dim=2000, sparsity=0.15, activation="relu"
-        )(self.input_layer)
+        if sparse_model:
+            self.hidden1 = bolt.nn.FullyConnected(
+                dim=2000, sparsity=0.15, activation="relu"
+            )(self.input_layer)
+        else:
+            self.hidden1 = bolt.nn.FullyConnected(dim=2000, activation="relu")(
+                self.input_layer
+            )
 
-        self.hidden2 = bolt.nn.FullyConnected(
-            dim=2000, sparsity=0.15, activation="relu"
-        )(self.input_layer)
+        if sparse_model:
+            self.hidden2 = bolt.nn.FullyConnected(
+                dim=2000, sparsity=0.15, activation="relu"
+            )(self.input_layer)
+        else:
+            self.hidden2 = bolt.nn.FullyConnected(dim=2000, activation="relu")(
+                self.input_layer
+            )
 
         self.concat = bolt.nn.Concatenate()([self.hidden1, self.hidden2])
 
@@ -43,6 +57,37 @@ class ModelWithLayers:
 
     def evaluate(self, data, labels):
         return self.model.evaluate(data, labels, eval_config=get_eval_config())[0]
+
+
+def test_checkpoint_load_dag():
+    n_classes = 100
+
+    # We need dense model as in sparse the model tends to diverge after training.
+    # With dense model too, models tends to diverge when train for longer durations
+    # because of non-associative sum of float
+    # (https://stackoverflow.com/questions/10371857/is-floating-point-addition-and-multiplication-associative)
+    # and slight data-race while calcuating gradients. Thse two factors leads to
+    # different gradient during different training. Hence, model trained separately diverge.
+    data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
+
+    model = ModelWithLayers(n_classes=n_classes, sparse_model=False)
+
+    # Train model and get accuracy.
+    model.train(data, labels, epochs=1)
+
+    # Save and load as new model.
+    checkpoint_loc = "./checkpointed_dag_pymodel"
+    model.model.checkpoint(filename=checkpoint_loc)
+
+    new_model = bolt.nn.Model.load(filename=checkpoint_loc)
+
+    model.model.train(
+        data, labels, train_config=get_train_config(epochs=1, batch_size=100)
+    )
+    new_model.train(
+        data, labels, train_config=get_train_config(epochs=1, batch_size=100)
+    )
+    compare_parameters_of_two_models(model.model, new_model, atol=1e-2)
 
 
 def test_save_load_dag():
