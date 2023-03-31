@@ -467,10 +467,13 @@ class DistributedDataParallel:
         # for more details.
         ray_model_ref = ray.put(model)
 
-        license_state = thirdai._thirdai.licensing._get_license_state()
-        licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
-            license_state
-        )
+        if hasattr(thirdai._thirdai, "licensing"):
+            license_state = thirdai._thirdai.licensing._get_license_state()
+            licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
+                license_state
+            )
+        else:
+            licensing_lambda = lambda: None
 
         self.logging.info("Initializing Primary Worker")
         self.primary_worker = cluster_config.primary_worker_config.remote(
