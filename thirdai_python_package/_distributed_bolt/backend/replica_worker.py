@@ -1,3 +1,5 @@
+from typing import Callable
+
 import ray
 from thirdai._distributed_bolt.backend.worker import Worker
 from thirdai._thirdai import bolt
@@ -25,7 +27,8 @@ class ReplicaWorker(Worker):
     def __init__(
         self,
         num_workers: int,
-        model_to_wrap: bolt.nn.Model,
+        model_lambda: Callable[[], bolt.nn.Model],
+        licensing_lambda: Callable[[], None],
         train_source,
         train_config: bolt.TrainConfig,
         id: int,
@@ -51,7 +54,8 @@ class ReplicaWorker(Worker):
         """
         super().__init__(
             num_workers=num_workers,
-            model_to_wrap=model_to_wrap,
+            model_lambda=model_lambda,
+            licensing_lambda=licensing_lambda,
             train_source=train_source,
             id=id,
             primary_worker=primary_worker,

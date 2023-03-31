@@ -6,6 +6,7 @@ import time
 from typing import Dict, List, Optional, Union
 
 import ray
+import thirdai
 from thirdai._distributed_bolt.backend.communication import AVAILABLE_METHODS
 from thirdai._distributed_bolt.backend.primary_worker import PrimaryWorker
 from thirdai._distributed_bolt.backend.replica_worker import ReplicaWorker
@@ -466,10 +467,16 @@ class DistributedDataParallel:
         # for more details.
         ray_model_ref = ray.put(model)
 
+        license_state = thirdai._thirdai.licensing._get_license_state()
+        licensing_lambda = lambda: thirdai._thirdai.licensing._set_license_state(
+            license_state
+        )
+
         self.logging.info("Initializing Primary Worker")
         self.primary_worker = cluster_config.primary_worker_config.remote(
             num_workers=cluster_config.num_workers,
-            model_to_wrap=ray_model_ref,
+            model_lambda=lambda: ray.get(ray_model_ref),
+            licensing_lambda=licensing_lambda,
             train_source=train_sources[0],
             train_config=train_config,
             communication_type=cluster_config.communication_type,
@@ -486,7 +493,8 @@ class DistributedDataParallel:
             self.replica_workers.append(
                 replica_worker_config.remote(
                     num_workers=cluster_config.num_workers,
-                    model_to_wrap=ray_model_ref,
+                    model_lambda=lambda: ray.get(ray_model_ref),
+                    licensing_lambda=licensing_lambda,
                     train_source=train_sources[worker_id],
                     train_config=train_config,
                     id=worker_id,
