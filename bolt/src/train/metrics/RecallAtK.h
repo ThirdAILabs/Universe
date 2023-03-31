@@ -12,8 +12,7 @@ namespace thirdai::bolt::train::metrics {
 class RecallAtK final : public Metric {
  public:
   RecallAtK(nn::autograd::ComputationPtr outputs,
-                      nn::autograd::ComputationPtr labels,
-                      uint32_t k);
+            nn::autograd::ComputationPtr labels, uint32_t k);
 
   void record(uint32_t index_in_batch) final;
 

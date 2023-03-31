@@ -5,8 +5,7 @@
 namespace thirdai::bolt::train::metrics {
 
 PrecisionAtK::PrecisionAtK(nn::autograd::ComputationPtr outputs,
-                                         nn::autograd::ComputationPtr labels,
-                                         uint32_t k)
+                           nn::autograd::ComputationPtr labels, uint32_t k)
     : _outputs(std::move(outputs)),
       _labels(std::move(labels)),
       _correct(0),
@@ -20,14 +19,14 @@ void PrecisionAtK::record(uint32_t index_in_batch) {
   TopKActivationsQueue topKPredictions = output.findKLargestActivations(_k);
 
   while (!topKPredictions.empty()) {
-      ValueIndexPair valueIndex = topKPredictions.top();
-      uint32_t prediction = valueIndex.second;
-      if (label.findActiveNeuronNoTemplate(prediction).activation > 0) {
-        _correct++;
-      }
-      topKPredictions.pop();
+    ValueIndexPair valueIndex = topKPredictions.top();
+    uint32_t prediction = valueIndex.second;
+    if (label.findActiveNeuronNoTemplate(prediction).activation > 0) {
+      _correct++;
+    }
+    topKPredictions.pop();
   }
-  _num_samples += _k; 
+  _num_samples += _k;
 }
 
 void PrecisionAtK::reset() {
