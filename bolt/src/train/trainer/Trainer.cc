@@ -77,7 +77,7 @@ metrics::History Trainer::train(
 
     epoch_timer.stop();
 
-    train_metrics.updateHistory(_history);
+    train_metrics.updateHistory(*_history);
 
     (*_history)["epoch_times"].push_back(epoch_timer.seconds());
 
@@ -128,7 +128,7 @@ metrics::History Trainer::validate(
 
   val_timer.stop();
 
-  validation_metrics.updateHistory(_history);
+  validation_metrics.updateHistory(*_history);
 
   (*_history)["val_times"].push_back(val_timer.seconds());
 

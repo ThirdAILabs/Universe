@@ -62,6 +62,7 @@ class LayerNameManager {
 */
 class Node {
  public:
+  Node() : _frozen(false) {}
   /*
    * Compiles a single Node, including initializing any parameters and setting
    * the Node's name. The Node should use the passed in LayerNameManager to get
@@ -92,7 +93,9 @@ class Node {
   // Updates any trainable parameters
   inline void updateParameters(float learning_rate, uint32_t batch_cnt) {
     assert(getState() == NodeState::PreparedForBatchProcessing);
-    updateParametersImpl(learning_rate, batch_cnt);
+    if (!_frozen) {
+      updateParametersImpl(learning_rate, batch_cnt);
+    }
   }
 
   // Returns the ith output of the node.
@@ -142,6 +145,10 @@ class Node {
   std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayers();
 
+  void freeze() { _frozen = true; }
+
+  void unfreeze() { _frozen = false; }
+
   // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;
 
@@ -163,6 +170,8 @@ class Node {
    * parameters that they apply sparse updates to.
    */
   virtual void disableSparseParameterUpdates() {}
+
+  virtual void saveWithOptimizer(bool should_save_optimizer) = 0;
 
   virtual ~Node() = default;
 
@@ -218,6 +227,7 @@ class Node {
   void serialize(Archive& archive);
 
   std::optional<std::string> _name;
+  bool _frozen;
 };
 
 }  // namespace thirdai::bolt

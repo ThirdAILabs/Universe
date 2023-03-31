@@ -1,4 +1,5 @@
 from .dataset_loaders import (
+    DistributedFeaturizerDatasetLoader,
     DistributedSvmDatasetLoader,
     DistributedTabularDatasetLoader,
     ValidationContext,

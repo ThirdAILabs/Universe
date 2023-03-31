@@ -70,6 +70,16 @@ void EmbeddingNode::disableSparseParameterUpdates() {
   _embedding_layer->disableSparseParameterUpdates();
 }
 
+void EmbeddingNode::saveWithOptimizer(bool should_save_optimizer) {
+  if (getState() != NodeState::Compiled &&
+      getState() != NodeState::PreparedForBatchProcessing) {
+    throw exceptions::NodeStateMachineError(
+        "Cannot call saveWithOptimizer until the model "
+        "containing the node is compiled.");
+  }
+  _embedding_layer->saveWithOptimizer(should_save_optimizer);
+}
+
 void EmbeddingNode::compileImpl() {
   assert(_config.has_value());
   _embedding_layer = std::make_shared<EmbeddingLayer>(_config.value());

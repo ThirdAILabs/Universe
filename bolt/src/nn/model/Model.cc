@@ -123,6 +123,10 @@ autograd::ComputationList Model::computationOrder() const {
 
 const autograd::ComputationList& Model::outputs() const { return _outputs; }
 
+const autograd::ComputationList& Model::labels() const { return _labels; }
+
+const std::vector<ops::OpPtr>& Model::ops() const { return _ops; }
+
 ops::OpPtr Model::getOp(const std::string& name) const {
   for (const auto& op : _ops) {
     if (op->name() == name) {
@@ -166,13 +170,50 @@ std::string Model::summary(bool print) const {
 
 uint32_t Model::trainSteps() const { return _train_steps; }
 
-void Model::save(const std::string& filename) {
+std::vector<uint32_t> Model::inputDims() const {
+  std::vector<uint32_t> dims;
+  for (const auto& input : _inputs) {
+    dims.push_back(input->dim());
+  }
+  return dims;
+}
+
+std::vector<std::vector<float>*> Model::gradients() const {
+  std::vector<std::vector<float>*> grads;
+
+  for (const auto& op : _ops) {
+    auto op_grads = op->gradients();
+    grads.insert(grads.end(), op_grads.begin(), op_grads.end());
+  }
+
+  return grads;
+}
+
+std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
+Model::outputLabelPairs() const {
+  std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
+      output_label_pairs;
+
+  for (const auto& loss : _losses) {
+    auto outputs_used = loss->outputsUsed();
+    auto loss_labels = loss->labels();
+    // A label and output match if they are both used in a loss function with no
+    // other labels or outputs, hence we can iterate over the loss functions and
+    // see which act on a single output and label.
+    if (outputs_used.size() == 1 && loss_labels.size() == 1) {
+      output_label_pairs.emplace_back(outputs_used.at(0), loss_labels.at(0));
+    }
+  }
+  return output_label_pairs;
+}
+
+void Model::save(const std::string& filename) const {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(output_stream);
 }
 
-void Model::save_stream(std::ostream& output_stream) {
+void Model::save_stream(std::ostream& output_stream) const {
   cereal::BinaryOutputArchive oarchive(output_stream);
   oarchive(*this);
 }
@@ -246,17 +287,13 @@ uint32_t Model::setLabels(const tensor::TensorList& label_batches) {
   return setBatchHelper(_labels, label_batches, "labels");
 }
 
-void Model::matchOutputFullyConnectedLayersWithLabels() {
-  for (const auto& loss : _losses) {
-    auto outputs_used = loss->outputsUsed();
-    auto loss_labels = loss->labels();
-    if (outputs_used.size() == 1 && loss_labels.size() == 1) {
-      auto fully_connected = std::dynamic_pointer_cast<ops::FullyConnected>(
-          outputs_used.at(0)->op());
+void Model::matchOutputFullyConnectedLayersWithLabels() const {
+  for (const auto& [output, label] : outputLabelPairs()) {
+    auto fully_connected =
+        std::dynamic_pointer_cast<ops::FullyConnected>(output->op());
 
-      if (fully_connected) {
-        outputs_used.at(0)->addInput(loss_labels.at(0));
-      }
+    if (fully_connected) {
+      output->addInput(label);
     }
   }
 }
