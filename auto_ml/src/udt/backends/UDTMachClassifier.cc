@@ -147,9 +147,12 @@ std::vector<std::pair<std::string, double>> UDTMachClassifier::machSingleDecode(
         _mach_label_block->index()->entitiesByHash(active_neuron);
     for (const auto& entity : entities) {
       if (!entity_to_scores.count(entity)) {
-        entity_to_scores[entity] = activation;
-      } else {
-        entity_to_scores[entity] += activation;
+        auto hashes = _mach_label_block->index()->hashAndStoreEntity(entity);
+        float score = 0;
+        for (const auto& hash : hashes) {
+          score += output.activations[hash];
+        }
+        entity_to_scores[entity] = score;
       }
     }
     top_K.pop();
@@ -285,23 +288,23 @@ py::object UDTMachClassifier::entityEmbedding(
 
 void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
                                         uint32_t top_k_per_eval_aggregation) {
-  if (min_num_eval_results == 0 || top_k_per_eval_aggregation == 0) {
-    throw std::invalid_argument("Params must not be 0.");
-  }
+  // if (min_num_eval_results == 0 || top_k_per_eval_aggregation == 0) {
+  //   throw std::invalid_argument("Params must not be 0.");
+  // }
 
-  if (min_num_eval_results > top_k_per_eval_aggregation) {
-    throw std::invalid_argument(
-        "min_num_eval_results must be <= top_k_per_eval_aggregation.");
-  }
+  // if (min_num_eval_results > top_k_per_eval_aggregation) {
+  //   throw std::invalid_argument(
+  //       "min_num_eval_results must be <= top_k_per_eval_aggregation.");
+  // }
 
-  uint32_t n_target_classes = _mach_label_block->index()->maxElements();
-  if (min_num_eval_results > n_target_classes ||
-      top_k_per_eval_aggregation > n_target_classes) {
-    throw std::invalid_argument(
-        "Both min_num_eval_results and top_k_per_eval_aggregation must be less "
-        "than or equal to n_target_classes = " +
-        std::to_string(n_target_classes) + ".");
-  }
+  // uint32_t n_target_classes = _mach_label_block->index()->maxElements();
+  // if (min_num_eval_results > n_target_classes ||
+  //     top_k_per_eval_aggregation > n_target_classes) {
+  //   throw std::invalid_argument(
+  //       "Both min_num_eval_results and top_k_per_eval_aggregation must be less "
+  //       "than or equal to n_target_classes = " +
+  //       std::to_string(n_target_classes) + ".");
+  // }
 
   _min_num_eval_results = min_num_eval_results;
   _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
