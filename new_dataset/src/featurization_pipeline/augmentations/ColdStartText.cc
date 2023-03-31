@@ -109,11 +109,11 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
   // Shuffle the augmented data and augmented labels (in the same order).
   // We have to use std::shuffle and two RNGs from <random> with the same state
   //  for reasons described here: https://stackoverflow.com/a/16969267
-  std::mt19937 rng_1(_seed);
-  auto rng_2 = rng_1;
+  // std::mt19937 rng_1(_seed);
+  // auto rng_2 = rng_1;
 
-  std::shuffle(augmented_data.begin(), augmented_data.end(), rng_1);
-  std::shuffle(augmented_labels.begin(), augmented_labels.end(), rng_2);
+  // std::shuffle(augmented_data.begin(), augmented_data.end(), rng_1);
+  // std::shuffle(augmented_labels.begin(), augmented_labels.end(), rng_2);
 
   columns::StringColumnPtr augmented_label_column =
       std::make_shared<columns::CppStringColumn>(augmented_labels);

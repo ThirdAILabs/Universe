@@ -126,6 +126,7 @@ class NumericalCategoricalBlock final : public CategoricalBlock {
   void encodeCategory(std::string_view category,
                       uint32_t num_categories_in_sample,
                       SegmentedFeatureVector& vec) final {
+    std::cout << "CATEGORY " << category << std::endl;
     char* end;
     uint32_t id = std::strtoul(category.data(), &end, 10);
     if (id >= _dim) {
