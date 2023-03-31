@@ -4,6 +4,8 @@
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/train/callbacks/Callback.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
+#include <bolt/src/train/metrics/PrecisionAtK.h>
+#include <bolt/src/train/metrics/RecallAtK.h>
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/metrics/Metric.h>
 #include <bolt/src/train/trainer/Dataset.h>
@@ -126,6 +128,22 @@ void createBoltV2TrainSubmodule(py::module_& module) {
       .def(py::init<nn::autograd::ComputationPtr,
                     nn::autograd::ComputationPtr>(),
            py::arg("outputs"), py::arg("labels"));
+
+  py::class_<metrics::PrecisionAtK,
+             std::shared_ptr<metrics::PrecisionAtK>, metrics::Metric>(
+      metrics, "PrecisionAtK")
+      .def(py::init<nn::autograd::ComputationPtr,
+                    nn::autograd::ComputationPtr,
+                    uint32_t>(),
+           py::arg("outputs"), py::arg("labels"), py::arg("k"));
+
+  py::class_<metrics::RecallAtK,
+             std::shared_ptr<metrics::RecallAtK>, metrics::Metric>(
+      metrics, "RecallAtK")
+      .def(py::init<nn::autograd::ComputationPtr,
+                    nn::autograd::ComputationPtr,
+                    uint32_t>(),
+           py::arg("outputs"), py::arg("labels"), py::arg("k"));
 
   auto callbacks = train.def_submodule("callbacks");
 
