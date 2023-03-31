@@ -3,6 +3,7 @@
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/train/callbacks/Callback.h>
+#include <bolt/src/train/callbacks/ReduceLROnPlateau.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
 #include <bolt/src/train/metrics/LossMetric.h>
 #include <bolt/src/train/metrics/Metric.h>
@@ -131,6 +132,16 @@ void createBoltV2TrainSubmodule(py::module_& module) {
 
   py::class_<callbacks::Callback, callbacks::CallbackPtr>(callbacks,  // NOLINT
                                                           "Callback");
+
+  py::class_<callbacks::ReduceLROnPlateau,
+             std::shared_ptr<callbacks::ReduceLROnPlateau>,
+             callbacks::Callback>(callbacks, "ReduceLROnPlateau")
+      .def(py::init<std::string, uint32_t, uint32_t, float, float, bool, bool,
+                    float>(),
+           py::arg("metric"), py::arg("patience") = 10, py::arg("cooldown") = 0,
+           py::arg("decay_factor") = 0.1, py::arg("threshold") = 1e-3,
+           py::arg("relative_threshold") = true, py::arg("maximize") = true,
+           py::arg("min_lr") = 0);
 }
 
 }  // namespace thirdai::bolt::train::python
