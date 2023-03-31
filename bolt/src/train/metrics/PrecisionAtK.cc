@@ -27,8 +27,7 @@ void PrecisionAtK::record(uint32_t index_in_batch) {
       }
       topKPredictions.pop();
   }
-  _num_samples+=_k;
-  
+  _num_samples += _k; 
 }
 
 void PrecisionAtK::reset() {

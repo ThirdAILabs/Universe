@@ -33,7 +33,6 @@ void RecallAtK::record(uint32_t index_in_batch) {
       _num_samples++;
     }
   }
-  
 }
 
 void RecallAtK::reset() {

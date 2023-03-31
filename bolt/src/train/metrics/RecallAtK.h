@@ -7,7 +7,7 @@
 namespace thirdai::bolt::train::metrics {
 
 /**
- * Computes the precision@k for the given output.
+ * Computes the recall@k for the given output.
  */
 class RecallAtK final : public Metric {
  public:
