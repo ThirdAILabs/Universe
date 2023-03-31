@@ -66,9 +66,10 @@ class Worker:
 
         logging.info(f"sub_task initializing_model on worker-{id}")
         start = time()
+        # TODO(Nick): Remove hasattr check
         DistributedTrainingWrapper = (
             bolt_v2.train.DistributedTrainingWrapper
-            if isinstance(model_to_wrap, bolt_v2.nn.Model)
+            if hasattr(bolt_v2, "nn") and isinstance(model_to_wrap, bolt_v2.nn.Model)
             else bolt.DistributedTrainingWrapper
         )
         self.model = DistributedTrainingWrapper(
