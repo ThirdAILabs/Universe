@@ -37,7 +37,7 @@ def test_all_reduce_circular_communication():
                 np.random.randint(100, size=shape).astype("float32")
                 for shape in flattened_weight_matrix_shapes
             ]
-        )
+        ).flatten()
         for j in range(len(flattened_weight_matrix_shapes)):
             weights_all_reduced_gt[j] += circular_communicating_workers[i].gradients[j]
         circular_communicating_workers[i].calculate_gradient_partitions()
