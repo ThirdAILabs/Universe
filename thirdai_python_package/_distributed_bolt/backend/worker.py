@@ -3,6 +3,7 @@ import textwrap
 from functools import wraps
 from time import time
 
+
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, bolt_v2, logging
 
@@ -33,21 +34,15 @@ class Worker:
     def __init__(
         self,
         num_workers: int,
-        model_to_wrap: bolt.nn.Model,
-        train_source,
         id: int,
         primary_worker,
-        train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
-        validation_context=None,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
         DistributedWrapper with the dataset read in.
         """
-        self.train_source = train_source
-        self.train_source.load()
 
         self.num_workers = num_workers
         self.id = id
@@ -58,46 +53,21 @@ class Worker:
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
 
-        logging.info(f"sub_task initializing_model on worker-{id}")
-        start = time()
-        DistributedTrainingWrapper = (
-            bolt_v2.train.DistributedTrainingWrapper
-            if isinstance(model_to_wrap, bolt_v2.nn.Model)
-            else bolt.DistributedTrainingWrapper
-        )
-        self.model = DistributedTrainingWrapper(
-            model=model_to_wrap,
-            train_config=train_config,
-            worker_id=id,
-        )
-        end = time()
 
-        logging.info(f"sub_task initialized_model | time {(end - start)*1000} ms")
 
-        start = time()
-        if self.communication_type == "circular":
-            self.comm = comm.Circular(
-                self.model, self.id, self.primary_worker, self.num_workers
-            )
-        elif self.communication_type == "linear":
-            self.comm = comm.Linear(self.model, self.id, self.primary_worker)
-        elif self.communication_type == "gloo":
-            # We are using "default", as a global group name for all the workers, as
-            # right now, we connect all the worker in one cluster
-            self.comm = comm.Gloo(self.model, self.id, self.num_workers, "default")
-        else:
-            raise ValueError(
-                textwrap.dedent(
-                    """
-                        Currently only three modes of communication are supported.
-                        Use: "circular" or "linear" or "gloo". 
-                    """
-                )
-            )
-        end = time()
-        logging.info(
-            f"sub_task communication_intialized | time {(end - start)*1000} ms"
-        )
+    @timed
+    def prepare_for_training(
+        self,
+        model_to_wrap: bolt.nn.Model,
+        train_source,
+        train_config: bolt.TrainConfig,
+    ):
+        
+        self.train_source = train_source
+        self.train_source.load()
+        
+        self._initialize_model(model_to_wrap, train_config, self.id)
+        self._initialize_communication()
 
         if not self._try_load_new_datasets_into_model():
             raise ValueError(
@@ -107,6 +77,7 @@ class Worker:
     # see https://github.com/ray-project/ray/blob/4b59dfbe59a143ab8dcc505dad860b4c330b6426/python/ray/actor.py#L1183
     # It looks like ray doesnot support direct class attribute access in python.
     # Hence, we will need to expose this function here in worker
+    @timed
     def set_friend(self, friend):
         """
         Add the friend for communicating for cicrcular all reduce
@@ -216,6 +187,42 @@ class Worker:
         else:
             self.comm.receive_gradients(averaged_gradients_ref)
 
+
+    @timed
+    def _initialize_model(self, model_to_wrap, train_config, worker_id):
+        DistributedTrainingWrapper = (
+            bolt_v2.train.DistributedTrainingWrapper
+            if isinstance(model_to_wrap, bolt_v2.nn.Model)
+            else bolt.DistributedTrainingWrapper
+        )
+        self.model = DistributedTrainingWrapper(
+            model=model_to_wrap,
+            train_config=train_config,
+            worker_id=id,
+        )
+        
+    @timed
+    def _initialize_communication(self):
+        if self.communication_type == "circular":
+            self.comm = comm.Circular(
+                self.model, self.id, self.primary_worker, self.num_workers
+            )
+        elif self.communication_type == "linear":
+            self.comm = comm.Linear(self.model, self.id, self.primary_worker)
+        elif self.communication_type == "gloo":
+            # We are using "default", as a global group name for all the workers, as
+            # right now, we connect all the worker in one cluster
+            self.comm = comm.Gloo(self.model, self.id, self.num_workers, "default")
+        else:
+            raise ValueError(
+                textwrap.dedent(
+                    """
+                        Currently only three modes of communication are supported.
+                        Use: "circular" or "linear" or "gloo". 
+                    """
+                )
+            )
+    
     @timed
     def _try_load_new_datasets_into_model(self) -> bool:
         """

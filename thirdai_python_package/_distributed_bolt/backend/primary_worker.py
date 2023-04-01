@@ -42,7 +42,6 @@ class PrimaryWorker(Worker):
             train_config=train_config,
             communication_type=communication_type,
             log_dir=log_dir,
-            validation_context=validation_context,
         )
 
     def add_validation_to_train_config(self, validation_context, train_config):
