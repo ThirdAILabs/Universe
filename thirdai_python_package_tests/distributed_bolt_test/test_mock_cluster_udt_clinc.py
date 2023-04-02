@@ -5,7 +5,7 @@ from distributed_utils import ray_two_node_cluster_config, remove_files
 from thirdai import bolt
 from thirdai.demos import download_clinc_dataset
 
-pytestmark = [pytest.mark.distributed, pytest.mark.release]
+pytestmark = [pytest.mark.distributed]
 
 TRAIN_FILE_1 = "./clinc_train_0.csv"
 TRAIN_FILE_2 = "./clinc_train_1.csv"

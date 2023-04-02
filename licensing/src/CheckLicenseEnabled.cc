@@ -20,8 +20,9 @@ namespace thirdai::licensing {
 
 // TODO(Josh): Refactor these into a single std::unique_ptr<LicensingMethod>
 // with a getEntitlements call
+std::optional<std::string> _license_path = std::nullopt;
+std::optional<std::string> _api_key = std::nullopt;
 std::unique_ptr<HeartbeatThread> _heartbeat_thread = nullptr;
-LicenseState _license_state;
 
 std::optional<Entitlements> _entitlements;
 
@@ -29,9 +30,8 @@ void checkLicense() {
 #pragma message( \
     "THIRDAI_CHECK_LICENSE is defined, adding license checking code")  // NOLINT
 
-  if (_license_state.api_key_state.has_value()) {
-    _entitlements =
-        keygen::entitlementsFromKeygen(*_license_state.api_key_state);
+  if (_api_key.has_value()) {
+    _entitlements = keygen::entitlementsFromKeygen(*_api_key);
     return;
   }
 
@@ -43,9 +43,9 @@ void checkLicense() {
     return;
   }
 
-  if (_license_state.license_path_state.has_value()) {
-    _entitlements = SignedLicense::entitlementsFromLicenseFile(
-        _license_state.license_path_state.value());
+  if (_license_path.has_value()) {
+    _entitlements =
+        SignedLicense::entitlementsFromLicenseFile(_license_path.value());
     return;
   }
 
@@ -62,12 +62,10 @@ Entitlements entitlements() {
   return _entitlements.value();
 }
 
-void activate(const std::string& api_key) {
-  _license_state.api_key_state = api_key;
-}
+void activate(const std::string& api_key) { _api_key = api_key; }
 
 void deactivate() {
-  _license_state.api_key_state = std::nullopt;
+  _api_key = std::nullopt;
   _entitlements = std::nullopt;
 }
 
@@ -75,18 +73,12 @@ void startHeartbeat(const std::string& heartbeat_url,
                     const std::optional<uint32_t>& heartbeat_timeout) {
   _heartbeat_thread =
       std::make_unique<HeartbeatThread>(heartbeat_url, heartbeat_timeout);
-  _license_state.heartbeat_state = {heartbeat_url, heartbeat_timeout};
 }
 
-void endHeartbeat() {
-  _heartbeat_thread = nullptr;
-  _license_state.heartbeat_state = std::nullopt;
-}
+void endHeartbeat() { _heartbeat_thread = nullptr; }
 
 void setLicensePath(const std::string& license_path) {
-  _license_state.license_path_state = license_path;
+  _license_path = license_path;
 }
-
-LicenseState getLicenseState() { return _license_state; }
 
 }  // namespace thirdai::licensing

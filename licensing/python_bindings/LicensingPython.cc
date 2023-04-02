@@ -31,41 +31,8 @@ void createLicensingSubmodule(py::module_& module) {
       "Starts a ThirdAI heartbeat endpoint to remain authenticated for future "
       "calls to ThirdAI functions.");
 
-  py::class_<LicenseState>(licensing_submodule, "LicenseState")
-      .def(py::pickle(
-          [](const LicenseState& s) {  // __getstate__
-            /* Return a tuple that fully encodes the state of the object */
-            return py::make_tuple(s.api_key_state, s.heartbeat_state,
-                                  s.license_path_state);
-          },
-          [](const py::tuple& t) {  // __setstate__
-            if (t.size() != 3) {
-              throw std::runtime_error("Invalid state!");
-            }
-
-            /* Create a new C++ instance */
-            LicenseState s;
-            s.api_key_state = t[0].cast<std::optional<std::string>>();
-            s.heartbeat_state = t[1].cast<std::optional<
-                std::pair<std::string, std::optional<uint32_t>>>>();
-            s.license_path_state = t[2].cast<std::optional<std::string>>();
-
-            return s;
-
-          }));
-
   licensing_submodule.def("end_heartbeat", &thirdai::licensing::endHeartbeat,
                           "Ends the current ThirdAI heartbeat.");
-
-  licensing_submodule.def(
-      "_get_license_state", &thirdai::licensing::getLicenseState,
-      "Gets a summary of all current ThirdAI licensing metadata.");
-
-  licensing_submodule.def("_set_license_state",
-                          &thirdai::licensing::setLicenseState,
-                          py::arg("license_state"),
-                          "Sets a summary of all current ThirdAI licensing "
-                          "metadata, as returned by _get_license_info.");
 }
 
 }  // namespace thirdai::licensing::python

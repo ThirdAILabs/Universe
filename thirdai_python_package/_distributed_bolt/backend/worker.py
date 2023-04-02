@@ -2,9 +2,7 @@ import os
 import textwrap
 from functools import wraps
 from time import time
-from typing import Callable
 
-import thirdai
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, bolt_v2, logging
 
@@ -35,23 +33,19 @@ class Worker:
     def __init__(
         self,
         num_workers: int,
-        model_lambda: Callable[[], bolt.nn.Model],
-        licensing_lambda: Callable[[], None],
+        model_to_wrap: bolt.nn.Model,
         train_source,
         id: int,
         primary_worker,
         train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
+        validation_context=None,
     ):
         """
         Initializes the worker, including wrapping the passed in model in a
         DistributedWrapper with the dataset read in.
         """
-
-        licensing_lambda()
-        model_to_wrap = model_lambda()
-
         self.train_source = train_source
         self.train_source.load()
 
@@ -66,10 +60,9 @@ class Worker:
 
         logging.info(f"sub_task initializing_model on worker-{id}")
         start = time()
-        # TODO(Nick): Remove hasattr check
         DistributedTrainingWrapper = (
             bolt_v2.train.DistributedTrainingWrapper
-            if hasattr(bolt_v2, "nn") and isinstance(model_to_wrap, bolt_v2.nn.Model)
+            if isinstance(model_to_wrap, bolt_v2.nn.Model)
             else bolt.DistributedTrainingWrapper
         )
         self.model = DistributedTrainingWrapper(
