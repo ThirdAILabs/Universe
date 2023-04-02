@@ -37,10 +37,16 @@ def push_to_local_file(parsed_file_path, raw_telemetry):
 def push_to_s3(parsed_s3_path, raw_telemetry, optional_endpoint_url):
     import boto3
 
-    client = boto3.client("s3", endpoint_url=optional_endpoint_url)
+    if optional_endpoint_url is None:
+        client = boto3.client("s3")
+    else:
+        client = boto3.client("s3", endpoint_url=optional_endpoint_url)
+    key = parsed_s3_path.path
+    if key.startswith("/"):
+        key = key[1:]
     client.put_object(
         Bucket=parsed_s3_path.netloc,
-        Key=parsed_s3_path.path,
+        Key=key,
         Body=raw_telemetry,
     )
 
@@ -125,6 +131,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     killer = GracefulKiller()
+
+    if args.optional_endpoint_url == "None":
+        args.optional_endpoint_url = None
 
     launch_daemon(
         args.push_dir,

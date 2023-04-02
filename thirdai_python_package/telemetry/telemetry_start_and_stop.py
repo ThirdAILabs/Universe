@@ -35,7 +35,7 @@ background_telemetry_push_process = None
 # If we have to wait longer than this many seconds when trying to gracefully
 # terminate the background process, we give up and send a kill message, possibly
 # losing telemetry data.
-BACKGROUND_THREAD_TIMEOUT_SECONDS = 0.5
+BACKGROUND_THREAD_TIMEOUT_SECONDS = 2
 
 # Wait this many seconds after starting the background thread before checking if
 # it is still running.
