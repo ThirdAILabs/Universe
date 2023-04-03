@@ -78,11 +78,15 @@ void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
   auto [mean, variance] = moments(input);
   float stddev = std::sqrt(variance + 1e-6);
 
-  float grad_variance =
-      partialDerivativeWRTVariance<DENSE>(input, output, mean, stddev);
+  float sum_grad = 0.0;
+  float sum_grad_x_hat = 0.0;
 
-  float grad_mean = partialDerivativeWRTMean<DENSE>(input, output, mean, stddev,
-                                                    grad_variance);
+  for (uint32_t i = 0; i < input.len; i++) {
+    float x_hat = (input.activations[i] - mean) / stddev;
+
+    sum_grad += output.gradients[i];
+    sum_grad_x_hat += output.gradients[i] * x_hat;
+  }
 
   for (uint32_t i = 0; i < input.len; i++) {
     float grad_y = output.gradients[i];
@@ -90,15 +94,41 @@ void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
 
     uint32_t neuron = input.activeNeuronAtIndex<DENSE>(i);
 
-    input.gradients[i] +=
-        grad_y * _gamma[neuron] / stddev +
-        grad_variance * 2 / input.len * (output.activations[i] - mean) +
-        grad_mean / input.len;
+    float grad_x = 0.0;
+    grad_x += input.len * grad_y;
+    grad_x -= sum_grad;
+    grad_x -= sum_grad_x_hat * x_hat;
+    grad_x /= (input.len * stddev);
+
+    input.gradients[i] += _gamma[neuron] * grad_x;
 
     _gamma_optimizer.gradients[neuron] += output.gradients[i] * x_hat;
 
     _beta_optimizer.gradients[neuron] += output.gradients[i];
   }
+
+  // float grad_variance =
+  //     partialDerivativeWRTVariance<DENSE>(input, output, mean, stddev);
+
+  // float grad_mean = partialDerivativeWRTMean<DENSE>(input, output, mean,
+  // stddev,
+  //                                                   grad_variance);
+
+  // for (uint32_t i = 0; i < input.len; i++) {
+  //   float grad_y = output.gradients[i];
+  //   float x_hat = (input.activations[i] - mean) / stddev;
+
+  //   uint32_t neuron = input.activeNeuronAtIndex<DENSE>(i);
+
+  //   input.gradients[i] +=
+  //       grad_y * _gamma[neuron] / stddev +
+  //       grad_variance * 2 / input.len * (output.activations[i] - mean) +
+  //       grad_mean / input.len;
+
+  //   _gamma_optimizer.gradients[neuron] += output.gradients[i] * x_hat;
+
+  //   _beta_optimizer.gradients[neuron] += output.gradients[i];
+  // }
 }
 
 template <bool DENSE>
