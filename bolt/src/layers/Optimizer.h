@@ -24,7 +24,7 @@ struct AdamOptimizer {
   std::vector<float> velocity;
 
   // Cereal needs public empty constructor if it is wrapped around optional
-  explicit AdamOptimizer(){};
+  explicit AdamOptimizer() {}
 
   void applyUpdate(std::vector<float>& params, float learning_rate,
                    uint32_t train_steps) {

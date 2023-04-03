@@ -21,7 +21,7 @@ $$ \frac{\partial L}{\partial \sigma^2} = \sum_{i=1}^N \frac{\partial L}{\partia
 
 $$ \frac{\partial L}{\partial \mu} = \sum_{i=1}^N \frac{\partial L}{\partial y_i} \gamma_i \frac{-1}{\sqrt{\sigma^2 + \epsilon}} - \frac{\partial L}{\partial \sigma^2} \frac{2}{N} \sum_{i=1}^N (x_i - \mu) $$ 
 
-$$ \frac{\partial L}{\partial x_i} = \frac{\gamma_i}{\sqrt{\sigma^2 + \epsilon}} + \frac{\partial L}{\partial \sigma^2} \frac{2}{N}(x_i - \mu) + \frac{\partial L}{\partial \mu} \frac{1}{N} $$ 
+$$ \frac{\partial L}{\partial x_i} = \frac{\partial L}{\partial y_i}\gamma_i \frac{1}{\sqrt{\sigma^2 + \epsilon}} + \frac{\partial L}{\partial \sigma^2} \frac{2}{N}(x_i - \mu) + \frac{\partial L}{\partial \mu} \frac{1}{N} $$ 
 
 ### Partial derivative w.r.t. the learned parameters
 
@@ -30,3 +30,8 @@ Note: These need to be summed over the batch, the following are just for a singl
 $$ \frac{\partial L}{\partial \gamma_i} = \frac{\partial L}{\partial y_i} \hat{x_i} $$ 
 
 $$ \frac{\partial L}{\partial \beta_i} = \frac{\partial L}{\partial y_i} $$
+
+
+## Sources
+- https://melfm.github.io/posts/2018-08-Understanding-Normalization/
+- https://github.com/marian-nmt/marian-dev/blob/aafe8fb5ca8f613f52da7589a72e1a647d51f820/src/tensors/cpu/tensor_operators.cpp

@@ -2,11 +2,15 @@
 
 #include <bolt/src/layers/Optimizer.h>
 #include <bolt/src/nn/ops/Op.h>
+#include <memory>
 
 namespace thirdai::bolt::nn::ops {
 
-class LayerNorm final : public Op {
+class LayerNorm final : public Op,
+                        public std::enable_shared_from_this<LayerNorm> {
  public:
+  static std::shared_ptr<LayerNorm> make();
+
   void forward(const autograd::ComputationList& inputs,
                tensor::TensorPtr& output, uint32_t index_in_batch,
                bool training) final;
@@ -28,39 +32,34 @@ class LayerNorm final : public Op {
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
+  autograd::ComputationPtr apply(const autograd::ComputationPtr& input);
+
  private:
-  static std::pair<float, float> moments(const BoltVector& vector) {
-    float mean = 0.0;
-    for (uint32_t i = 0; i < vector.len; i++) {
-      mean += vector.activations[i];
-    }
-    mean /= vector.len;
+  LayerNorm();
 
-    float variance = 0.0;
-    for (uint32_t i = 0; i < vector.len; i++) {
-      float delta = vector.activations[i] - mean;
-      variance += (delta * delta);
-    }
-    variance /= vector.len;
+  template <bool DENSE>
+  void forward(const BoltVector& input, BoltVector& output);
 
-    return {mean, variance};
-  }
+  template <bool DENSE>
+  void backpropagate(BoltVector& input, const BoltVector& output);
 
+  template <bool DENSE>
   float partialDerivativeWRTVariance(const BoltVector& input_vector,
                                      const BoltVector& output_vector,
                                      float mean, float stddev);
 
+  template <bool DENSE>
   float partialDerivativeWRTMean(const BoltVector& input_vector,
                                  const BoltVector& output_vector, float mean,
                                  float stddev, float partial_wrt_variance);
 
-  std::optional<uint32_t> _dim;
+  static std::pair<float, float> moments(const BoltVector& vector);
 
-  std::vector<float> _scale;
-  std::vector<float> _offset;
+  std::vector<float> _gamma;
+  std::vector<float> _beta;
 
-  AdamOptimizer _scale_optimizer;
-  AdamOptimizer _offset_optimizer;
+  AdamOptimizer _gamma_optimizer;
+  AdamOptimizer _beta_optimizer;
 };
 
 }  // namespace thirdai::bolt::nn::ops

@@ -1,14 +1,24 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/LayerNorm.h>
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <cmath>
 #include <stdexcept>
 
 namespace thirdai::bolt::nn::ops {
 
-// TODO(Nicholas): Fix indexing of scale -> needs to use active_neurons[i] if
-// sparse.
+std::string nextLayerNormOpName() {
+  static uint32_t constructed = 0;
+  return "layer_norm_" + std::to_string(++constructed);
+}
+
+LayerNorm::LayerNorm() : Op(nextLayerNormOpName()) {}
+
+std::shared_ptr<LayerNorm> LayerNorm::make() {
+  return std::shared_ptr<LayerNorm>(new LayerNorm());
+}
+
 void LayerNorm::forward(const autograd::ComputationList& inputs,
                         tensor::TensorPtr& output, uint32_t index_in_batch,
                         bool training) {
@@ -18,17 +28,30 @@ void LayerNorm::forward(const autograd::ComputationList& inputs,
       inputs.at(0)->tensor()->getVector(index_in_batch);
   BoltVector& output_vector = output->getVector(index_in_batch);
 
-  auto [mean, variance] = moments(input_vector);
+  if (input_vector.isDense()) {
+    forward<true>(input_vector, output_vector);
+  } else {
+    forward<false>(input_vector, output_vector);
+  }
+}
 
-  float stddev = std::sqrt(variance + 1e-7);
-
-  std::copy(input_vector.active_neurons,
-            input_vector.active_neurons + input_vector.len,
-            output_vector.active_neurons);
+template <bool DENSE>
+void LayerNorm::forward(const BoltVector& input, BoltVector& output) {
   assert(input_vector.len == output_vector.len);
-  for (uint32_t i = 0; i < input_vector.len; i++) {
-    float centered = (input_vector.activations[i] - mean) / stddev;
-    output_vector.activations[i] = _scale[i] * centered + _offset[i];
+
+  auto [mean, variance] = moments(input);
+
+  float stddev = std::sqrt(variance + 1e-6);
+
+  std::copy(input.active_neurons, input.active_neurons + input.len,
+            output.active_neurons);
+
+  for (uint32_t i = 0; i < input.len; i++) {
+    float x_hat = (input.activations[i] - mean) / stddev;
+
+    uint32_t neuron = input.activeNeuronAtIndex<DENSE>(i);
+
+    output.activations[i] = _gamma[neuron] * x_hat + _beta[neuron];
   }
 }
 
@@ -43,37 +66,52 @@ void LayerNorm::backpropagate(autograd::ComputationList& inputs,
   BoltVector& input_vector = inputs.at(0)->tensor()->getVector(index_in_batch);
   const BoltVector& output_vector = output->getVector(index_in_batch);
 
-  auto [mean, variance] = moments(input_vector);
-  float stddev = std::sqrt(variance + 1e-7);
-
-  float partial_wrt_variance =
-      partialDerivativeWRTVariance(input_vector, output_vector, mean, stddev);
-
-  float partial_wrt_mean = partialDerivativeWRTMean(
-      input_vector, output_vector, mean, stddev, partial_wrt_variance);
-
-  for (uint32_t i = 0; i < input_vector.len; i++) {
-    input_vector.gradients[i] += _scale[i] / stddev +
-                                 partial_wrt_variance * 2 / input_vector.len *
-                                     (input_vector.activations[i] - mean) +
-                                 partial_wrt_mean / input_vector.len;
-
-    _scale_optimizer.gradients[i] += output_vector.gradients[i] *
-                                     (input_vector.activations[i] - mean) /
-                                     stddev;
-
-    _offset_optimizer.gradients[i] += output_vector.gradients[i];
+  if (input_vector.isDense()) {
+    backpropagate<true>(input_vector, output_vector);
+  } else {
+    backpropagate<false>(input_vector, output_vector);
   }
 }
 
-float LayerNorm::partialDerivativeWRTVariance(const BoltVector& input_vector,
-                                              const BoltVector& output_vector,
+template <bool DENSE>
+void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
+  auto [mean, variance] = moments(input);
+  float stddev = std::sqrt(variance + 1e-6);
+
+  float grad_variance =
+      partialDerivativeWRTVariance<DENSE>(input, output, mean, stddev);
+
+  float grad_mean = partialDerivativeWRTMean<DENSE>(input, output, mean, stddev,
+                                                    grad_variance);
+
+  for (uint32_t i = 0; i < input.len; i++) {
+    float grad_y = output.gradients[i];
+    float x_hat = (input.activations[i] - mean) / stddev;
+
+    uint32_t neuron = input.activeNeuronAtIndex<DENSE>(i);
+
+    input.gradients[i] +=
+        grad_y * _gamma[neuron] / stddev +
+        grad_variance * 2 / input.len * (output.activations[i] - mean) +
+        grad_mean / input.len;
+
+    _gamma_optimizer.gradients[neuron] += output.gradients[i] * x_hat;
+
+    _beta_optimizer.gradients[neuron] += output.gradients[i];
+  }
+}
+
+template <bool DENSE>
+float LayerNorm::partialDerivativeWRTVariance(const BoltVector& input,
+                                              const BoltVector& output,
                                               float mean, float stddev) {
   float partial_wrt_variance = 0.0;
 
-  for (uint32_t i = 0; i < input_vector.len; i++) {
-    float numerator = output_vector.gradients[i] * _scale[i] *
-                      (mean - input_vector.activations[i]);
+  for (uint32_t i = 0; i < input.len; i++) {
+    uint32_t neuron = input.activeNeuronAtIndex<DENSE>(i);
+
+    float numerator =
+        output.gradients[i] * _gamma[neuron] * (mean - input.activations[i]);
     float denominator = 2 * stddev * stddev * stddev;
     partial_wrt_variance += numerator / denominator;
   }
@@ -81,39 +119,51 @@ float LayerNorm::partialDerivativeWRTVariance(const BoltVector& input_vector,
   return partial_wrt_variance;
 }
 
-float LayerNorm::partialDerivativeWRTMean(const BoltVector& input_vector,
-                                          const BoltVector& output_vector,
-                                          float mean, float stddev,
+template <bool DENSE>
+float LayerNorm::partialDerivativeWRTMean(const BoltVector& input,
+                                          const BoltVector& output, float mean,
+                                          float stddev,
                                           float partial_wrt_variance) {
   float direct_partial = 0.0;
   float partial_from_variance = 0.0;
-  for (uint32_t i = 0; i < input_vector.len; i++) {
-    direct_partial += output_vector.gradients[i] * _scale[i];
+  for (uint32_t i = 0; i < input.len; i++) {
+    uint32_t neuron = input.activeNeuronAtIndex<DENSE>(i);
 
-    partial_from_variance += (input_vector.activations[i] - mean);
+    direct_partial += output.gradients[i] * _gamma[neuron];
+
+    partial_from_variance += (input.activations[i] - mean);
   }
 
   direct_partial /= stddev;
 
-  partial_from_variance *= partial_wrt_variance * 2 / input_vector.len;
+  partial_from_variance *= partial_wrt_variance * 2 / input.len;
 
   return -direct_partial - partial_from_variance;
 }
 
-void LayerNorm::updateParameters(float learning_rate, uint32_t train_steps) {
-  _scale_optimizer.applyUpdate(_scale, learning_rate, train_steps);
-  _offset_optimizer.applyUpdate(_offset, learning_rate, train_steps);
-}
-
-uint32_t LayerNorm::dim() const {
-  if (!_dim) {
-    throw std::runtime_error(
-        "Cannot access dimension of layer norm before applying it to the "
-        "result of a computation.");
+std::pair<float, float> LayerNorm::moments(const BoltVector& vector) {
+  float mean = 0.0;
+  for (uint32_t i = 0; i < vector.len; i++) {
+    mean += vector.activations[i];
   }
+  mean /= vector.len;
 
-  return *_dim;
+  float variance = 0.0;
+  for (uint32_t i = 0; i < vector.len; i++) {
+    float delta = vector.activations[i] - mean;
+    variance += (delta * delta);
+  }
+  variance /= vector.len;
+
+  return {mean, variance};
 }
+
+void LayerNorm::updateParameters(float learning_rate, uint32_t train_steps) {
+  _gamma_optimizer.applyUpdate(_gamma, learning_rate, train_steps);
+  _beta_optimizer.applyUpdate(_beta, learning_rate, train_steps);
+}
+
+uint32_t LayerNorm::dim() const { return _gamma.size(); }
 
 std::optional<uint32_t> LayerNorm::nonzeros(
     const autograd::ComputationList& inputs, bool use_sparsity) const {
@@ -129,6 +179,23 @@ void LayerNorm::summary(std::ostream& summary,
                         const autograd::Computation* output) const {
   summary << "LayerNorm(" << name() << "): " << inputs.at(0)->name() << " -> "
           << output->name();
+}
+
+autograd::ComputationPtr LayerNorm::apply(
+    const autograd::ComputationPtr& input) {
+  if (dim() == 0) {
+    _gamma.assign(input->dim(), 1.0);
+    _beta.assign(input->dim(), 0.0);
+    _gamma_optimizer = AdamOptimizer(input->dim());
+    _beta_optimizer = AdamOptimizer(input->dim());
+  } else if (input->dim() != dim()) {
+    throw std::invalid_argument(
+        "Cannot apply LayerNorm op for input with dimension " +
+        std::to_string(dim()) + " to input with dimension " +
+        std::to_string(input->dim()) + ".");
+  }
+
+  return autograd::Computation::make(shared_from_this(), {input});
 }
 
 }  // namespace thirdai::bolt::nn::ops
