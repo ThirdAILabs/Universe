@@ -32,9 +32,9 @@ void createLicensingSubmodule(py::module_& module) {
       "calls to ThirdAI functions.");
 
   py::class_<LicenseState>(licensing_submodule, "LicenseState")
+      // https://pybind11.readthedocs.io/en/stable/advanced/classes.html#pickling-support
       .def(py::pickle(
           [](const LicenseState& s) {  // __getstate__
-            /* Return a tuple that fully encodes the state of the object */
             return py::make_tuple(s.api_key_state, s.heartbeat_state,
                                   s.license_path_state);
           },
@@ -43,7 +43,6 @@ void createLicensingSubmodule(py::module_& module) {
               throw std::runtime_error("Invalid state!");
             }
 
-            /* Create a new C++ instance */
             LicenseState s;
             s.api_key_state = t[0].cast<std::optional<std::string>>();
             s.heartbeat_state = t[1].cast<std::optional<

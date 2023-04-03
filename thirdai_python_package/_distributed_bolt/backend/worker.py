@@ -49,6 +49,11 @@ class Worker:
         DistributedWrapper with the dataset read in.
         """
 
+        # These next two steps are necessary to satisfy our licensing system.
+        # Deserializing a model requires a valid license, so we can't pass the
+        # model directly in to the constructor. Instead, we pass in a lambda
+        # that we run to initialize licensing, then a lambda that we call to
+        # get and deserialize the model.
         licensing_lambda()
         model_to_wrap = model_lambda()
 
