@@ -10,6 +10,7 @@ $$ \sigma^2 = \frac{1}{N}\sum_{i=1}^N (x_i - \mu) $$
 $$ \hat{x} = \frac{x_i - \mu}{\sqrt{\sigma^2 + \epsilon}} $$
 
 $$ y_i = \gamma_i \cdot \hat{x} + \beta_i $$
+
 Where $\gamma_i$ and $\beta_i$ are learned. 
 
 ## Backpropagation
