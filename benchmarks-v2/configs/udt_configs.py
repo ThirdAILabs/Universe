@@ -191,6 +191,35 @@ class MovieLensUDTBenchmark(UDTBenchmarkConfig):
             "movieId": bolt.types.categorical(delimiter=" "),
             "timestamp": bolt.types.date(),
         }
+    
+class AmazonGamesUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "amazon_games_udt"
+    dataset_name = "amazon_games"
+
+    train_file = "amazon_games/train.csv"
+    test_file = "amazon_games/test.csv"
+
+    target = "gameId"
+    n_target_classes = 3706
+    temporal_relationships = {
+        "userId": [
+            bolt.temporal.categorical(column_name="gameId", track_last_n=length)
+            for length in [1, 2, 5, 10, 25]
+        ]
+    }
+
+    learning_rate = 0.0001
+    num_epochs = 5
+    metrics = ["recall@10", "precision@10"]
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types(path_prefix):
+        return {
+            "userId": bolt.types.categorical(),
+            "movieId": bolt.types.categorical(delimiter=" "),
+            "timestamp": bolt.types.date(),
+        }
 
 
 class ForestCoverTypeUDTBenchmark(UDTBenchmarkConfig):
