@@ -70,9 +70,6 @@ class EmbeddingLayer {
   void updateParametersSparse(float lr, uint32_t iter, float B1, float B2,
                               float eps);
 
-  void updateParametersDense(float lr, uint32_t iter, float B1, float B2,
-                             float eps);
-
   inline uint64_t getEmbeddingBlockOffset(uint32_t token,
                                           uint64_t lookup_index) {
     uint64_t id = token * _num_lookups_per_token + lookup_index;
