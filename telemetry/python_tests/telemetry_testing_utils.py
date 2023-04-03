@@ -31,9 +31,9 @@ def scrape_telemetry(telemetry_start_method):
         client = boto3.client("s3")
         parsed_s3_path = urlparse(telemetry_start_method[1])
         raw_telemetry = (
-            client.get_object(Bucket=parsed_s3_path.netloc, Key=parsed_s3_path.path)[
-                "Body"
-            ]
+            client.get_object(
+                Bucket=parsed_s3_path.netloc, Key=parsed_s3_path.path[1:]
+            )["Body"]
             .read()
             .decode("utf-8")
         )
