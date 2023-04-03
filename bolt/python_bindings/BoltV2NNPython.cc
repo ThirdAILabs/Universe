@@ -114,9 +114,11 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def(py::init(&ops::Concatenate::make))
       .def("__call__", &ops::Concatenate::apply);
 
-  py::class_ < ops::LayerNorm, ops::L
+  py::class_<ops::LayerNorm, ops::LayerNormPtr, ops::Op>(nn, "LayerNorm")
+      .def(py::init(&ops::LayerNorm::make))
+      .def("__call__", &ops::LayerNorm::apply);
 
-      nn.def("Input", &ops::Input::make, py::arg("dim"));
+  nn.def("Input", &ops::Input::make, py::arg("dim"));
 
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
