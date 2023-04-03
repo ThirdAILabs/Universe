@@ -5,6 +5,7 @@
 Let $N$ be the dimension of the vectors that are being normalized. Let $x_1, x_2, ..., x_N$ be the elements of the vector that are being normalized, and $y_1, y_2, ..., y_N$ be the normalized components of the vector. 
 
 $$ \mu = \frac{1}{N}\sum_{i=1}^N x_i $$
+
 $$ \sigma^2 = \frac{1}{N}\sum_{i=1}^N (x_i - \mu)^2 $$
 
 $$ \hat{x}_i = \frac{x_i - \mu}{\sqrt{\sigma^2 + \epsilon}} $$
