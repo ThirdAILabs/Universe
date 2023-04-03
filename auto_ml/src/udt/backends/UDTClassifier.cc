@@ -63,10 +63,10 @@ py::object UDTClassifier::train(
   std::optional<ValidationDatasetLoader> validation_dataset_loader =
       std::nullopt;
   if (validation) {
-    validation_dataset_loader =
-        ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
-                                    validation->first, /* shuffle= */ false),
-                                validation->second);
+    // validation_dataset_loader =
+    //     ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
+    //                                 validation->first, /* shuffle= */ false),
+    //                             validation->second);
     //   auto out = validation_dataset_loader->first->loadSome(300, 1);
     //   auto x0 = out->at(0)->at(0)[0].getHighestActivationId();
     //   auto x1 = out->at(1)->at(0)[0].getHighestActivationId();

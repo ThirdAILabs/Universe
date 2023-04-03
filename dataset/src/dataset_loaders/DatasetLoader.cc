@@ -129,6 +129,7 @@ void DatasetLoader::fillVectorBuffer(size_t num_rows) {
     for (auto row : *rows) {
       std::cout << row << std::endl;
     }
+    std::exit(0);
     if (!rows) {
       return;
     }
