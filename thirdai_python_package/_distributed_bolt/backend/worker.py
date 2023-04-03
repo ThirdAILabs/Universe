@@ -2,7 +2,7 @@ import os
 import textwrap
 from functools import wraps
 from time import time
-
+import sys
 
 import thirdai._distributed_bolt.backend.communication as comm
 from thirdai._thirdai import bolt, bolt_v2, logging
@@ -53,7 +53,29 @@ class Worker:
             log_to_stderr=False, path=os.path.join(log_dir, f"worker-{id}.log")
         )
 
+    @timed
+    def apply(
+        self,
+        func,
+        *args,
+        **kwargs,
+    ):
+        """A Generic interface to apply arbitrary member function on the remote worker.
+            It logs function failure at the worker level.
+        Args:
+            func: The function to call.
+            args: Optional additional args for that function call
+            kwargs: Optional additional kwargs for that function call
+        Returns:
+            Same as function called.
+        """
+        try:
+            return func(self, *args, **kwargs)
+        except Exception as err:
 
+            print(f"Worker Exception! {err=}. {func=}")
+            logging.warn(f"Worker Exception! {err=}. {func=}")
+            sys.exit(1)
 
     @timed
     def prepare_for_training(
@@ -62,10 +84,10 @@ class Worker:
         train_source,
         train_config: bolt.TrainConfig,
     ):
-        
+
         self.train_source = train_source
         self.train_source.load()
-        
+
         self._initialize_model(model_to_wrap, train_config, self.id)
         self._initialize_communication()
 
@@ -187,7 +209,6 @@ class Worker:
         else:
             self.comm.receive_gradients(averaged_gradients_ref)
 
-
     @timed
     def _initialize_model(self, model_to_wrap, train_config, worker_id):
         DistributedTrainingWrapper = (
@@ -200,7 +221,7 @@ class Worker:
             train_config=train_config,
             worker_id=id,
         )
-        
+
     @timed
     def _initialize_communication(self):
         if self.communication_type == "circular":
@@ -222,7 +243,7 @@ class Worker:
                     """
                 )
             )
-    
+
     @timed
     def _try_load_new_datasets_into_model(self) -> bool:
         """

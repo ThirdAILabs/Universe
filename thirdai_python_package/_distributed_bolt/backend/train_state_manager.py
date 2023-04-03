@@ -10,7 +10,9 @@ class TrainStateManager:
     expose high level APIs for trainings, predict.
     """
 
-    def __init__(self, workers, primary_worker, logging, communication_type):
+    def __init__(
+        self, workers, primary_worker, logging, communication_type, worker_manager
+    ):
         """
         Initializes the TrainStateManager
 
@@ -28,6 +30,7 @@ class TrainStateManager:
         self.primary_worker = primary_worker
         self.logging = logging
         self.communication_type = communication_type
+        self.worker_manager = worker_manager
         self.logging.info(f"Using {communication_type} method for communication")
         # This tracks the total number of batches completed in this epoch for
         # the distributed job.
@@ -38,12 +41,14 @@ class TrainStateManager:
         self.batch_id_within_epoch = 0
         self.updates = 0
         if communication_type == "circular":
-            for i in range(len(self.workers)):
-                ray.get(
-                    self.workers[i].set_friend.remote(
-                        self.workers[(i - 1) % (len(self.workers))]
+            self.worker_manager.foreach_worker(
+                func=[
+                    lambda worker: worker.set_friend(
+                        self.workers[(worker_id - 1) % (len(self.workers))]
                     )
-                )
+                    for worker_id in range(len(self.workers))
+                ]
+            )
         self.bolt_computation_time = 0
         self.averaging_and_communication_time = 0
 
@@ -56,11 +61,12 @@ class TrainStateManager:
 
         :param workers: batch number for the particular worker with worker id (id).
         :type workers: int
+
         """
 
-        gradients_list = ray.get(
-            [worker.get_calculated_gradients.remote() for worker in self.workers]
-        )
+        gradients_list = self.worker_manager.foreach_worker(
+            lambda worker: worker.get_calculated_gradients()
+        ).get()
 
         # We initialize the sum of gradient variables by setting them equal to the
         # first set of gradients
@@ -75,11 +81,9 @@ class TrainStateManager:
         # This allows us to do just a single copy of the gradient array to shared disk, instead
         # of 1 per worker.
         gradient_averages_ref = ray.put(self.gradient_averages)
-        ray.get(
-            [
-                worker.receive_gradients.remote(gradient_averages_ref)
-                for worker in self.workers
-            ]
+
+        self.worker_manager.foreach_worker(
+            lambda worker: worker.receive_gradients(gradient_averages_ref)
         )
 
     def run_circular_cluster_communication(self):
@@ -102,13 +106,10 @@ class TrainStateManager:
         ]:
             for node in range(num_workers - 1):
                 should_avg_gradients = node == num_workers - 2
-                ray.get(
-                    [
-                        worker.process_ring.remote(
-                            update_id, avg_gradients=should_avg_gradients, reduce=reduce
-                        )
-                        for worker in self.workers
-                    ]
+                self.worker_manager.foreach_worker(
+                    lambda worker: worker.process_ring(
+                        update_id, avg_gradients=should_avg_gradients, reduce=reduce
+                    )
                 )
                 update_id -= 1
 
@@ -126,14 +127,14 @@ class TrainStateManager:
 
     def move_to_next_epoch(self):
         self.batch_id_within_epoch = 0
-        metrics = ray.get(
-            [worker.get_updated_metrics.remote() for worker in self.workers]
-        )
-        ray.get([worker.move_to_next_epoch.remote() for worker in self.workers])
+        metrics = self.worker_manager.foreach_worker(
+            lambda worker: worker.get_updated_metrics()
+        ).get()
+        self.worker_manager.foreach_worker(lambda worker: worker.move_to_next_epoch())
         return metrics
 
     def freeze_hash_tables(self):
-        ray.get([worker.freeze_hash_tables.remote() for worker in self.workers])
+        self.worker_manager.foreach_worker(lambda worker: worker.freeze_hash_tables())
 
     def _compute_and_store_next_batch_gradients(self):
         """
@@ -141,12 +142,9 @@ class TrainStateManager:
         workers and returns whether all workers have a next batch.
         """
         start_calculating_gradients_time = time.time()
-        has_next_batches = ray.get(
-            [
-                worker.compute_and_store_next_batch_gradients.remote()
-                for worker in self.workers
-            ]
-        )
+        has_next_batches = self.worker_manager.foreach_worker(
+            lambda worker: worker.compute_and_store_next_batch_gradients()
+        ).get()
         self.bolt_computation_time += time.time() - start_calculating_gradients_time
         return all(has_next_batches)
 
@@ -160,9 +158,13 @@ class TrainStateManager:
             self.run_linear_cluster_communication()
         elif self.communication_type == "circular":
             self.run_circular_cluster_communication()
-            ray.get([worker.receive_gradients.remote() for worker in self.workers])
+            self.worker_manager.foreach_worker(
+                lambda worker: worker.receive_gradients()
+            )
         elif self.communication_type == "gloo":
-            ray.get([worker.receive_gradients.remote() for worker in self.workers])
+            self.worker_manager.foreach_worker(
+                lambda worker: worker.receive_gradients()
+            )
 
         self.averaging_and_communication_time += time.time() - start_communication_time
 
@@ -171,7 +173,7 @@ class TrainStateManager:
         Calls each update_parameters on each worker to update parameters
         """
         start_update_parameter_time = time.time()
-        ray.get([worker.update_parameters.remote() for worker in self.workers])
+        self.worker_manager.foreach_worker(lambda worker: worker.update_parameters())
         self.bolt_computation_time += time.time() - start_update_parameter_time
 
     def _log_post_batch(self, epoch):
@@ -187,4 +189,6 @@ class TrainStateManager:
         )
 
     def validate_and_save_if_best(self):
-        return ray.get(self.workers[0].validate_and_save_if_best.remote())
+        return self.worker_manager.foreach_worker(
+            lambda worker: worker.validate_and_save_if_best()
+        ).get()

@@ -16,6 +16,7 @@ from thirdai._distributed_bolt.dataset_loaders import (
     DistributedUDTDatasetLoader,
     ValidationContext,
 )
+from thirdai._distributed_bolt.backend.worker_manager import FaultTolerantWorkerManager
 from thirdai._thirdai import bolt
 
 from .utils import get_num_cpus, init_logging
@@ -502,6 +503,11 @@ class DistributedDataParallel:
         self.num_of_batches = min(
             ray.get([worker.num_of_batches.remote() for worker in self.workers])
         )
+        self.num_of_batches = min(
+            self.worker_manager.foreach_worker(
+                lambda worker: worker.num_of_batches()
+            ).get()
+        )
 
         self.logging.info(
             f"Data loaded on all nodes, minimmum num batches is {self.num_of_batches}."
@@ -544,11 +550,16 @@ class DistributedDataParallel:
             total batches trained and total real time.
         """
         train_start = time.time()
+
+        self.worker_manager = FaultTolerantWorkerManager(
+            self.workers, init_id=0, logging=self.logging
+        )
         train_state_manager = TrainStateManager(
             self.workers,
             self.primary_worker,
             self.logging,
             self.communication_type,
+            self.worker_manager,
         )
 
         starting_epoch = 0
@@ -580,4 +591,6 @@ class DistributedDataParallel:
         return distributed_train_metrics
 
     def get_model(self, worker_id=0, with_optimizer=False):
-        return ray.get(self.workers[worker_id].model.remote(with_optimizer))
+        self.worker_manager.foreach_worker(
+            lambda worker: worker.model(with_optimizer), remote_worker_ids=[worker_id]
+        ).get()
