@@ -172,7 +172,9 @@ std::optional<uint32_t> LayerNorm::nonzeros(
 
 void LayerNorm::disableSparseParameterUpdates() {}
 
-std::vector<std::vector<float>*> LayerNorm::gradients() const { return {}; }
+std::vector<std::vector<float>*> LayerNorm::gradients() {
+  return {&_gamma_optimizer.gradients, &_beta_optimizer.gradients};
+}
 
 void LayerNorm::summary(std::ostream& summary,
                         const autograd::ComputationList& inputs,

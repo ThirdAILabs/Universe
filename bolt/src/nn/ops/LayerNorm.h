@@ -27,7 +27,7 @@ class LayerNorm final : public Op,
 
   void disableSparseParameterUpdates() final;
 
-  std::vector<std::vector<float>*> gradients() const final;
+  std::vector<std::vector<float>*> gradients() final;
 
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
@@ -61,5 +61,7 @@ class LayerNorm final : public Op,
   AdamOptimizer _gamma_optimizer;
   AdamOptimizer _beta_optimizer;
 };
+
+using LayerNormPtr = std::shared_ptr<LayerNorm>;
 
 }  // namespace thirdai::bolt::nn::ops

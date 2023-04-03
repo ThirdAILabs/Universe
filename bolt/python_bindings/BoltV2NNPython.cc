@@ -9,6 +9,7 @@
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <pybind11/cast.h>
@@ -113,7 +114,9 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def(py::init(&ops::Concatenate::make))
       .def("__call__", &ops::Concatenate::apply);
 
-  nn.def("Input", &ops::Input::make, py::arg("dim"));
+  py::class_ < ops::LayerNorm, ops::L
+
+      nn.def("Input", &ops::Input::make, py::arg("dim"));
 
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
