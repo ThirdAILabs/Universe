@@ -35,6 +35,11 @@ void LayerNorm::forward(const autograd::ComputationList& inputs,
 void LayerNorm::backpropagate(autograd::ComputationList& inputs,
                               tensor::TensorPtr& output,
                               uint32_t index_in_batch) {
+  /**
+   * See bolt/src/nn/ops/derivations/LayerNorm.md for the derivation of this
+   * function.
+   */
+
   BoltVector& input_vector = inputs.at(0)->tensor()->getVector(index_in_batch);
   const BoltVector& output_vector = output->getVector(index_in_batch);
 
