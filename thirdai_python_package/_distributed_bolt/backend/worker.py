@@ -217,7 +217,8 @@ class Worker:
             if isinstance(model_to_wrap, bolt_v2.nn.Model)
             else bolt.DistributedTrainingWrapper
         )
-        if self.id == 0 and validation_context != None:
+        if validation_context != None:
+            assert self.id == 0, "Validation should only be called on primary worker"
             train_config = self.add_validation_to_train_config(
                 validation_context, train_config
             )

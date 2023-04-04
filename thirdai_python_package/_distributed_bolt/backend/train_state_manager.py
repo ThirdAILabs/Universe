@@ -190,5 +190,5 @@ class TrainStateManager:
 
     def validate_and_save_if_best(self):
         return self.worker_manager.foreach_worker(
-            lambda worker: worker.validate_and_save_if_best()
+            lambda worker: worker.validate_and_save_if_best(), remote_worker_ids=[0]
         ).get()

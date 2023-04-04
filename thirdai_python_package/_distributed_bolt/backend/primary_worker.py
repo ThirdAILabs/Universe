@@ -22,15 +22,9 @@ class PrimaryWorker(Worker):
     def __init__(
         self,
         num_workers: int,
-        train_config: bolt.TrainConfig,
         communication_type: str,
         log_dir: str,
-        validation_context,
     ):
-        if validation_context != None:
-            train_config = self.add_validation_to_train_config(
-                validation_context, train_config
-            )
         super().__init__(
             num_workers=num_workers,
             id=0,

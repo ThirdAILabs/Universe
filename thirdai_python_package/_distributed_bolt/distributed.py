@@ -448,13 +448,14 @@ class DistributedDataParallel:
         self.logging = cluster_config.logging
         self.train_config = train_config
         self.validation_context = validation_context
+        num_workers = cluster_config.num_workers
 
-        if len(train_sources) != cluster_config.num_workers:
+        if len(train_sources) != num_workers:
             raise ValueError(
                 "Received ",
                 len(train_sources),
                 " training datasets. Expected ",
-                cluster_config.num_workers,
+                num_workers,
                 " datasets, one for each node.",
             )
 
@@ -469,10 +470,9 @@ class DistributedDataParallel:
 
         self.logging.info("Initializing Primary Worker")
         self.primary_worker = cluster_config.primary_worker_config.remote(
-            num_workers=cluster_config.num_workers,
+            num_workers=num_workers,
             communication_type=cluster_config.communication_type,
             log_dir=cluster_config.log_dir,
-            validation_context=self.validation_context,
         )
 
         self.logging.info("Primary Worker Intialized")
@@ -483,7 +483,7 @@ class DistributedDataParallel:
         ):
             self.replica_workers.append(
                 replica_worker_config.remote(
-                    num_workers=cluster_config.num_workers,
+                    num_workers=num_workers,
                     id=worker_id,
                     primary_worker=self.primary_worker,
                     communication_type=cluster_config.communication_type,
@@ -495,12 +495,22 @@ class DistributedDataParallel:
         self.workers = [self.primary_worker] + self.replica_workers
 
         self.worker_manager.foreach_worker(
-            lambda worker: worker.prepare_for_training(
-                model_to_wrap=ray_model_ref,
-                train_source=train_sources[0],
-                train_config=train_config,
-                validation_context=validation_context,
-            )
+            [
+                lambda worker: worker.prepare_for_training(
+                    model_to_wrap=ray_model_ref,
+                    train_source=train_sources[0],
+                    train_config=train_config,
+                    validation_context=validation_context,
+                )
+            ]
+            + [
+                lambda worker: worker.prepare_for_training(
+                    model_to_wrap=ray_model_ref,
+                    train_source=train_sources[0],
+                    train_config=train_config,
+                )
+                for _ in range(num_workers - 1)
+            ]
         )
 
         self.num_of_batches = min(
