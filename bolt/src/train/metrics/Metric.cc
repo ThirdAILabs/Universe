@@ -74,14 +74,15 @@ InputMetrics metricsForSingleOutputModel(
 
 float divideTwoAtomicIntegers(const std::atomic_uint32_t& numerator,
                               const std::atomic_uint32_t& denominator) {
-  if (denominator == 0) {
-    return 0;
-  };
 
-  // We are using memory order relaxed because we don't need a strict ordering
-  // between concurrent accesses, just atomic guarentees.
-  return static_cast<float>(numerator.load(std::memory_order_relaxed)) /
-         denominator.load(std::memory_order_relaxed);
+  uint32_t loaded_numerator = numerator.load();
+  uint32_t loaded_denominator = denominator.load();
+
+  if (loaded_denominator == 0) {
+    return 0.0;
+  }
+
+  return static_cast<float>(loaded_numerator) / loaded_denominator;
 }
 
 uint32_t truePositivesInTopK(TopKActivationsQueue& top_k_predictions,
