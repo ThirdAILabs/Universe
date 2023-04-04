@@ -6,6 +6,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/CheckLicense.h>
+#include <utils/UUID.h>
 #include <vector>
 
 namespace thirdai::bolt::nn::model {
@@ -199,6 +200,8 @@ class Model {
   AllocationManager _allocation_manager;
 
   uint32_t _train_steps;
+
+  std::string _model_uuid;
 
   Model() : _allocation_manager() { licensing::checkLicense(); }
 
