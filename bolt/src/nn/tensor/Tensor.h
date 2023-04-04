@@ -22,6 +22,9 @@ class Tensor {
 
   static std::shared_ptr<Tensor> convert(const BoltBatch& batch, uint32_t dim);
 
+  static std::shared_ptr<Tensor> convert(const BoltVector& vector,
+                                         uint32_t dim);
+
   /**
    * Returns the dimension of the vectors in the tensor.
    */

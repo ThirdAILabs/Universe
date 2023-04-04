@@ -94,6 +94,12 @@ std::shared_ptr<Tensor> Tensor::convert(const BoltBatch& batch, uint32_t dim) {
   return std::make_shared<Tensor>(batch, dim);
 }
 
+std::shared_ptr<Tensor> Tensor::convert(const BoltVector& vector,
+                                        uint32_t dim) {
+  BoltBatch batch({vector});
+  return convert(batch, dim);
+}
+
 uint32_t Tensor::dim() const { return _dim; }
 
 std::optional<uint32_t> Tensor::nonzeros() const { return _nonzeros; }

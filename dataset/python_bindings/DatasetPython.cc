@@ -284,7 +284,7 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("vocab_size"))
       .def("featurize_for_inference",
            &TextGenerationFeaturizer::featurizeInferenceSample,
-           py::arg("tokens"))
+           py::arg("prompt"), py::arg("context"))
       .def(bolt::python::getPickleFunction<TextGenerationFeaturizer>());
 
   /*

@@ -1,4 +1,5 @@
 #include "BoltV2NNPython.h"
+#include "PybindUtils.h"
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
@@ -56,6 +57,9 @@ void createBoltV2NNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
 
   py::class_<tensor::Tensor, tensor::TensorPtr>(nn, "Tensor")
+      .def(py::init(py::overload_cast<const BoltVector&, uint32_t>(
+               tensor::Tensor::convert)),
+           py::arg("vector"), py::arg("dim"))
       .def_property_readonly(
           "active_neurons",
           [](const tensor::TensorPtr& tensor) {
