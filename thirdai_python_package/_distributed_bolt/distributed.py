@@ -494,6 +494,9 @@ class DistributedDataParallel:
 
         self.workers = [self.primary_worker] + self.replica_workers
 
+        self.worker_manager = FaultTolerantWorkerManager(
+            self.workers, init_id=0, logging=self.logging
+        )
         self.worker_manager.foreach_worker(
             [
                 lambda worker: worker.prepare_for_training(
@@ -561,9 +564,6 @@ class DistributedDataParallel:
         """
         train_start = time.time()
 
-        self.worker_manager = FaultTolerantWorkerManager(
-            self.workers, init_id=0, logging=self.logging
-        )
         train_state_manager = TrainStateManager(
             self.workers,
             self.primary_worker,
