@@ -107,9 +107,9 @@ BoltVector TextGenerationFeaturizer::srcContext(
   BoltVector vector(/* l= */ _src_len, /* is_dense= */ false,
                     /* has_gradient= */ false);
 
-  // Zero pad if short range context length is greater than number of tokens. We
-  // pad the begining so that the last token before the prediction is always at
-  // the end.
+  // Zero pad if short range context length is greater than number of tokens.
+  // We pad the begining so that the last token before the prediction is
+  // always at the end.
   std::fill_n(vector.active_neurons, padding_len, 0);
   std::copy(context_start, context_start + src_len,
             vector.active_neurons + padding_len);
@@ -154,8 +154,8 @@ std::pair<std::vector<uint32_t>, uint32_t> TextGenerationFeaturizer::getContext(
     std::vector<uint32_t> context_tokens =
         parseTokens(getStringField(line_content, "context"));
 
-    // The predict start is 1 after the end of the context because there will be
-    // a [CLS] token.
+    // The predict start is 1 after the end of the context because there will
+    // be a [CLS] token.
     uint32_t predict_start = context_tokens.size() + 1;
 
     context_tokens.insert(context_tokens.end(), target_tokens.begin(),
