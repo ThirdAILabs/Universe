@@ -494,14 +494,18 @@ class DistributedDataParallel:
 
         self.workers = [self.primary_worker] + self.replica_workers
 
-        self.worker_manager.foreach_worker(lambda worker: worker.prepare_for_training())
+        self.worker_manager.foreach_worker(
+            lambda worker: worker.prepare_for_training(
+                model_to_wrap=ray_model_ref,
+                train_source=train_sources[0],
+                train_config=train_config,
+                validation_context=validation_context,
+            )
+        )
+
         self.num_of_batches = min(
             self.worker_manager.foreach_worker(
-                lambda worker: worker.num_of_batches(
-                    model_to_wrap=ray_model_ref,
-                    train_source=train_sources[0],
-                    train_config=train_config,
-                )
+                lambda worker: worker.num_of_batches()
             ).get()
         )
 

@@ -83,12 +83,13 @@ class Worker:
         model_to_wrap: bolt.nn.Model,
         train_source,
         train_config: bolt.TrainConfig,
+        validation_context,
     ):
 
         self.train_source = train_source
         self.train_source.load()
 
-        self._initialize_model(model_to_wrap, train_config, self.id)
+        self._initialize_model(model_to_wrap, train_config, validation_context)
         self._initialize_communication()
 
         if not self._try_load_new_datasets_into_model():
@@ -210,16 +211,20 @@ class Worker:
             self.comm.receive_gradients(averaged_gradients_ref)
 
     @timed
-    def _initialize_model(self, model_to_wrap, train_config, worker_id):
+    def _initialize_model(self, model_to_wrap, train_config, validation_context=None):
         DistributedTrainingWrapper = (
             bolt_v2.train.DistributedTrainingWrapper
             if isinstance(model_to_wrap, bolt_v2.nn.Model)
             else bolt.DistributedTrainingWrapper
         )
+        if self.id == 0 and validation_context != None:
+            train_config = self.add_validation_to_train_config(
+                validation_context, train_config
+            )
         self.model = DistributedTrainingWrapper(
             model=model_to_wrap,
             train_config=train_config,
-            worker_id=id,
+            worker_id=self.id,
         )
 
     @timed
