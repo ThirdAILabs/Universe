@@ -1,9 +1,9 @@
 #include "CallbacksPython.h"
-#include <bolt/src/callbacks/BatchedLRScheduler.h>
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/callbacks/EarlyStopCheckpoint.h>
 #include <bolt/src/callbacks/LearningRateScheduler.h>
 #include <bolt/src/callbacks/Overfitting.h>
+#include <bolt/src/callbacks/ReduceLROnPlateau.h>
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
 
@@ -83,8 +83,8 @@ void createCallbacksSubmodule(py::module_& module) {
 
   py::class_<LearningRateScheduler, LearningRateSchedulerPtr, Callback>(
       callbacks_submodule, "LearningRateScheduler")
-      .def(py::init<LRSchedulePtr>(), py::arg("schedule"))
-      .def("get_final_lr", &LearningRateScheduler::getFinalLR);
+      .def(py::init<LRSchedulePtr, bool>(), py::arg("schedule"),
+           py::arg("batch_level_steps") = false);
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<KeyboardInterrupt, KeyboardInterruptPtr, Callback>(
@@ -102,14 +102,13 @@ cold-start where we attain the best results when overfitting the unsupervised
 data.
 )pbdoc");
 
-  py::class_<BatchedLRScheduler, std::shared_ptr<BatchedLRScheduler>, Callback>(
-      callbacks_submodule, "BatchedLRScheduler")
-      .def(py::init<std::string, std::string, uint32_t, uint32_t, double,
-                    uint32_t>(),
-           py::arg("save_loc"), py::arg("monitored_metric"),
-           py::arg("n_bad_batches_before_update"),
-           py::arg("n_total_lr_updates"), py::arg("scaledown"),
-           py::arg("warmup_batches"));
+  py::class_<ReduceLROnPlateau, std::shared_ptr<ReduceLROnPlateau>, Callback>(
+      callbacks_submodule, "ReduceLROnPlateau")
+      .def(py::init<std::string, float, uint32_t, uint32_t, float, uint32_t,
+                    bool>(),
+           py::arg("monitored_metric"), py::arg("factor"), py::arg("patience"),
+           py::arg("n_total_lr_updates"), py::arg("min_delta"),
+           py::arg("cooldown"), py::arg("verbose"));
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
