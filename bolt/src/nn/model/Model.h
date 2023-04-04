@@ -183,6 +183,8 @@ class Model {
    */
   void matchOutputFullyConnectedLayersWithLabels() const;
 
+  void saveMetadata(const std::string& save_path) const;
+
   autograd::ComputationList _inputs;
   autograd::ComputationList _outputs;
   autograd::ComputationList _labels;

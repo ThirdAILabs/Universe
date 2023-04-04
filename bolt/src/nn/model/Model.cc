@@ -7,7 +7,10 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <utils/Version.h>
 #include <algorithm>
+#include <chrono>
+#include <ctime>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -211,6 +214,8 @@ void Model::save(const std::string& filename) const {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(output_stream);
+
+  saveMetadata(filename);
 }
 
 void Model::save_stream(std::ostream& output_stream) const {
@@ -296,6 +301,22 @@ void Model::matchOutputFullyConnectedLayersWithLabels() const {
       output->addInput(label);
     }
   }
+}
+
+void Model::saveMetadata(const std::string& save_path) const {
+  auto file = dataset::SafeFileIO::ofstream(save_path + ".metadata");
+
+  file << "thirdai_version=" << version() << std::endl;
+
+  auto time = std::chrono::system_clock::now();
+  auto c_time = std::chrono::system_clock::to_time_t(time);
+  file << "date_saved=" << std::ctime(&c_time);
+  file << "train_steps_before_save=" << trainSteps() << std::endl;
+
+#if THIRDAI_EXPOSE_ALL
+  file << "model_summary=";
+  file << summary(/* print= */ false);
+#endif
 }
 
 template void Model::serialize(cereal::BinaryInputArchive&);
