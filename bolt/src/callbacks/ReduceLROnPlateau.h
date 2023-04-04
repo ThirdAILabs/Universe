@@ -43,24 +43,19 @@ class ReduceLROnPlateau : public Callback {
   void onBatchEnd(BoltGraph& model, TrainState& train_state) final {
     (void)model;
 
-    if (_cooldown_count < _cooldown) {
-      _cooldown_count++;
-      return;
-    }
-    _cooldown_count = 0;
-
     double cur_metric =
         train_state.getAllTrainBatchMetrics()[_metric->name()].back();
 
-    if (!isImprovement(cur_metric)) {
-      _n_bad_batches++;
-      if (_verbose) {
-        std::cout << "Cur metric: " << cur_metric
-                  << " is less than last metric of " << _last_metric
-                  << ". Incrementing n bad batches" << std::endl;
-      }
-    } else {
+    if (isImprovement(cur_metric)) {
+      _best_metric = cur_metric;
       _n_bad_batches = 0;
+    } else {
+      _n_bad_batches++;
+    }
+
+    if (_cooldown_count > 0) {
+      _cooldown_count--;
+      _n_bad_batches = 0;  // ignore any bad batches in cooldown
     }
 
     if (_n_bad_batches > _patience) {
@@ -68,16 +63,14 @@ class ReduceLROnPlateau : public Callback {
         train_state.stop_training = true;
       } else {
         std::cout << "Scaling down LR from " << train_state.learning_rate
-                  << " to ";
-        train_state.learning_rate *= _factor;
-        std::cout << train_state.learning_rate
+                  << " to " << train_state.learning_rate * _factor
                   << ". Num Updates = " << _n_lr_updates << std::endl;
+        train_state.learning_rate *= _factor;
         _n_lr_updates++;
+        _cooldown_count = _cooldown;
+        _n_bad_batches = 0;
       }
-      _n_bad_batches = 0;
     }
-
-    _last_metric = cur_metric;
   }
 
  private:
@@ -96,8 +89,8 @@ class ReduceLROnPlateau : public Callback {
   }
 
   bool isImprovement(double metric_value) {
-    return std::abs(metric_value - _last_metric) >= _min_delta &&
-           _metric->betterThan(metric_value, _last_metric);
+    return std::abs(metric_value - _best_metric) >= _min_delta &&
+           _metric->betterThan(metric_value, _best_metric);
   }
 
   std::shared_ptr<Metric> _metric;
@@ -110,7 +103,7 @@ class ReduceLROnPlateau : public Callback {
   uint32_t _cooldown;
   uint32_t _cooldown_count = 0;
   bool _verbose;
-  double _last_metric;
+  double _best_metric;
 };
 
 }  // namespace thirdai::bolt
