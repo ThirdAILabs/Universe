@@ -197,7 +197,7 @@ void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
       embedding_block[n] +=
           lr * (_optimizer->momentum[n] / B1_bias_corrected) /
           (std::sqrt(_optimizer->velocity[n] / B2_bias_corrected) + eps);
-      assert(!std::isnan(_embedding_block[n]));
+      assert(!std::isnan(embedding_block[n]));
 
       _optimizer->gradients[n] = 0;
     }
@@ -227,7 +227,7 @@ void EmbeddingLayer::updateParametersDense(float lr, uint32_t iter, float B1,
     embedding_block[n] +=
         lr * (_optimizer->momentum[n] / B1_bias_corrected) /
         (std::sqrt(_optimizer->velocity[n] / B2_bias_corrected) + eps);
-    assert(!std::isnan(_embedding_block[n]));
+    assert(!std::isnan(embedding_block[n]));
 
     _optimizer->gradients[n] = 0;
   }
