@@ -6,6 +6,22 @@
 
 namespace thirdai::bolt::train::callbacks {
 
+/**
+ * This callback scales the learning at the end of each epoch after a
+ * configurable number of epochs without improvement. The callback tracks the
+ * performance of the model on the given metric and stores how many epochs it
+ * has gone since improving on that metric. If too many epochs pass without
+ * improvement it will decay the learning rate.
+ *
+ * The parameter patience controls how many epochs the model has to improve on
+ * the metric, and the threshold parameter controls how much improvement the
+ * model must make. The threshold can be relative or absolute. If it is relative
+ * then the value of the metric the model must reach is (1 + threshold) *
+ * previous_best_metric. If the threshold is absolute then the model must reach
+ * is threshold + previous_best_metric. The cooldown specifies how many epochs
+ * must pass after a learning rate decay before it starts decrementing the
+ * patience again.
+ */
 class ReduceLROnPlateau final : public Callback {
  public:
   ReduceLROnPlateau(std::string metric, uint32_t patience, uint32_t cooldown,
@@ -22,6 +38,18 @@ class ReduceLROnPlateau final : public Callback {
         _min_lr(min_lr),
         _patience_remaining(patience),
         _cooldown_remaining(cooldown) {
+    if (patience == 0) {
+      throw std::invalid_argument("Patience must be > 0.");
+    }
+
+    if (_decay_factor <= 0 || _decay_factor >= 1.0) {
+      throw std::invalid_argument("Decay factor must be in the range (0, 1).");
+    }
+
+    if (_threshold < 0.0) {
+      throw std::invalid_argument("Threshold must be >= 0.");
+    }
+
     if (_maximize) {
       _best_metric = 0;
     } else {
