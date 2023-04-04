@@ -333,6 +333,7 @@ set(THIRDAI_SOURCES
     bolt/src/train/metrics/CategoricalAccuracy.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
+    bolt/src/train/trainer/DistributedTrainingWrapper.cc
     bolt/src/graph/Graph.cc
     bolt/src/graph/ExecutionConfig.cc
     bolt/src/graph/nodes/FullyConnected.cc
@@ -372,6 +373,7 @@ set(THIRDAI_SOURCES
     dataset/src/dataset_loaders/DatasetLoader.cc
     dataset/src/cold_start/ColdStartDataSource.cc
     dataset/src/utils/TokenEncoding.cc
+    dataset/src/featurizers/TextGenerationFeaturizer.cc
     dataset/src/utils/CsvParser.cc
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
@@ -406,7 +408,9 @@ set(THIRDAI_SOURCES
     auto_ml/src/cold_start/ColdStartUtils.cc
     utils/Logging.cc
     utils/StringManipulation.cc
-    utils/UUID.cc)
+    utils/UUID.cc
+    licensing/src/entitlements/RestrictionTree.cc
+    licensing/src/entitlements/Entitlements.cc)
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set

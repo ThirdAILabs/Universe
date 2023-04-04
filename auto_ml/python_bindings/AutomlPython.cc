@@ -118,7 +118,8 @@ void defineAutomlInModule(py::module_& module) {
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
-           py::arg("validation"), py::arg("callbacks"), py::arg("verbose"),
+           py::arg("validation"), py::arg("callbacks"),
+           py::arg("max_in_memory_batches") = std::nullopt, py::arg("verbose"),
            bolt::python::OutputRedirect())
       .def("embedding_representation", &udt::UDT::embedding,
            py::arg("input_sample"))
@@ -146,6 +147,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &UDTFactory::save_udt, py::arg("filename"))
+      .def("checkpoint", &UDTFactory::checkpoint_udt, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"))
       .def(bolt::python::getPickleFunction<udt::UDT>());
 }
@@ -435,6 +437,16 @@ std::shared_ptr<udt::UDT> UDTFactory::createUDTSpecifiedFileFormat(
 
 void UDTFactory::save_udt(const udt::UDT& classifier,
                           const std::string& filename) {
+  classifier.model()->saveWithOptimizer(false);
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);
+  classifier.save_stream(filestream);
+}
+
+void UDTFactory::checkpoint_udt(const udt::UDT& classifier,
+                                const std::string& filename) {
+  classifier.model()->saveWithOptimizer(true);
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);
