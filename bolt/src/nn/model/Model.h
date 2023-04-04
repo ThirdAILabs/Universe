@@ -138,9 +138,12 @@ class Model {
   outputLabelPairs() const;
 
   /**
-   * Saves the model without optimizer state.
+   * Saves the model without optimizer state. Save metadata indicates if a
+   * metadata file should also be created which gives the thirdai version, the
+   * date saved, number of train steps before the save, and the model summary
+   * (only if THIRDAI_EXPOSE_ALL is true).
    */
-  void save(const std::string& filename) const;
+  void save(const std::string& filename, bool save_metadata = true) const;
 
   void save_stream(std::ostream& output_stream) const;
 

@@ -210,12 +210,14 @@ Model::outputLabelPairs() const {
   return output_label_pairs;
 }
 
-void Model::save(const std::string& filename) const {
+void Model::save(const std::string& filename, bool save_metadata) const {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(output_stream);
 
-  saveMetadata(filename);
+  if (save_metadata) {
+    saveMetadata(filename);
+  }
 }
 
 void Model::save_stream(std::ostream& output_stream) const {
