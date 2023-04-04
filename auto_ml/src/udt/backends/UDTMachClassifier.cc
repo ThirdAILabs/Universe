@@ -147,9 +147,12 @@ std::vector<std::pair<std::string, double>> UDTMachClassifier::machSingleDecode(
         _mach_label_block->index()->entitiesByHash(active_neuron);
     for (const auto& entity : entities) {
       if (!entity_to_scores.count(entity)) {
-        entity_to_scores[entity] = activation;
-      } else {
-        entity_to_scores[entity] += activation;
+        auto hashes = _mach_label_block->index()->hashAndStoreEntity(entity);
+        float score = 0;
+        for (const auto& hash : hashes) {
+          score += output.activations[hash];
+        }
+        entity_to_scores[entity] = score;
       }
     }
     top_K.pop();
