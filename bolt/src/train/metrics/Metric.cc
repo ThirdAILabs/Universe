@@ -74,7 +74,6 @@ InputMetrics metricsForSingleOutputModel(
 
 float divideTwoAtomicIntegers(const std::atomic_uint32_t& numerator,
                               const std::atomic_uint32_t& denominator) {
-
   uint32_t loaded_numerator = numerator.load();
   uint32_t loaded_denominator = denominator.load();
 
