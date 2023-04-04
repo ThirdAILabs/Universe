@@ -143,7 +143,8 @@ py::object UDTClassifier::coldstart(
     const std::vector<std::string>& weak_column_names, float learning_rate,
     uint32_t epochs, const std::vector<std::string>& metrics,
     const std::optional<ValidationDataSource>& validation,
-    const std::vector<bolt::CallbackPtr>& callbacks, bool verbose) {
+    const std::vector<bolt::CallbackPtr>& callbacks,
+    std::optional<size_t> max_in_memory_batches, bool verbose) {
   auto metadata = getColdStartMetaData();
 
   auto data_source = cold_start::preprocessColdStartTrainSource(
@@ -151,7 +152,7 @@ py::object UDTClassifier::coldstart(
 
   return train(data_source, learning_rate, epochs, validation,
                /* batch_size = */ std::nullopt,
-               /* max_in_memory_batches= */ std::nullopt, metrics,
+               /* max_in_memory_batches= */ max_in_memory_batches, metrics,
                /* callbacks= */ callbacks, /* verbose= */ verbose,
                /* logging_interval= */ std::nullopt);
 }

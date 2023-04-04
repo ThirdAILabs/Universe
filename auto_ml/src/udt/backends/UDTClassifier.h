@@ -61,6 +61,7 @@ class UDTClassifier final : public UDTBackend {
                        const std::vector<std::string>& metrics,
                        const std::optional<ValidationDataSource>& validation,
                        const std::vector<bolt::CallbackPtr>& callbacks,
+                       std::optional<size_t> max_in_memory_batches,
                        bool verbose) final;
 
   py::object embedding(const MapInput& sample) final;
