@@ -43,16 +43,6 @@ class LayerNorm final : public Op,
   template <bool DENSE>
   void backpropagate(BoltVector& input, const BoltVector& output);
 
-  template <bool DENSE>
-  float partialDerivativeWRTVariance(const BoltVector& input_vector,
-                                     const BoltVector& output_vector,
-                                     float mean, float stddev);
-
-  template <bool DENSE>
-  float partialDerivativeWRTMean(const BoltVector& input_vector,
-                                 const BoltVector& output_vector, float mean,
-                                 float stddev, float partial_wrt_variance);
-
   static std::pair<float, float> moments(const BoltVector& vector);
 
   std::vector<float> _gamma;

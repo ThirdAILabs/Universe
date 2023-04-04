@@ -58,11 +58,6 @@ void LayerNorm::forward(const BoltVector& input, BoltVector& output) {
 void LayerNorm::backpropagate(autograd::ComputationList& inputs,
                               tensor::TensorPtr& output,
                               uint32_t index_in_batch) {
-  /**
-   * See bolt/src/nn/ops/derivations/LayerNorm.md for the derivation of this
-   * function.
-   */
-
   BoltVector& input_vector = inputs.at(0)->tensor()->getVector(index_in_batch);
   const BoltVector& output_vector = output->getVector(index_in_batch);
 
@@ -75,6 +70,9 @@ void LayerNorm::backpropagate(autograd::ComputationList& inputs,
 
 template <bool DENSE>
 void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
+  // Derivative comes from
+  // https://github.com/marian-nmt/marian-dev/blob/master/src/tensors/cpu/tensor_operators.cpp#L1156
+
   auto [mean, variance] = moments(input);
   float stddev = std::sqrt(variance + 1e-6);
 
@@ -94,10 +92,7 @@ void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
 
     uint32_t neuron = input.activeNeuronAtIndex<DENSE>(i);
 
-    float grad_x = 0.0;
-    grad_x += input.len * grad_y;
-    grad_x -= sum_grad;
-    grad_x -= sum_grad_x_hat * x_hat;
+    float grad_x = input.len * grad_y - sum_grad - sum_grad_x_hat * x_hat;
     grad_x /= (input.len * stddev);
 
     input.gradients[i] += _gamma[neuron] * grad_x;
@@ -106,69 +101,6 @@ void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
 
     _beta_optimizer.gradients[neuron] += output.gradients[i];
   }
-
-  // float grad_variance =
-  //     partialDerivativeWRTVariance<DENSE>(input, output, mean, stddev);
-
-  // float grad_mean = partialDerivativeWRTMean<DENSE>(input, output, mean,
-  // stddev,
-  //                                                   grad_variance);
-
-  // for (uint32_t i = 0; i < input.len; i++) {
-  //   float grad_y = output.gradients[i];
-  //   float x_hat = (input.activations[i] - mean) / stddev;
-
-  //   uint32_t neuron = input.activeNeuronAtIndex<DENSE>(i);
-
-  //   input.gradients[i] +=
-  //       grad_y * _gamma[neuron] / stddev +
-  //       grad_variance * 2 / input.len * (output.activations[i] - mean) +
-  //       grad_mean / input.len;
-
-  //   _gamma_optimizer.gradients[neuron] += output.gradients[i] * x_hat;
-
-  //   _beta_optimizer.gradients[neuron] += output.gradients[i];
-  // }
-}
-
-template <bool DENSE>
-float LayerNorm::partialDerivativeWRTVariance(const BoltVector& input,
-                                              const BoltVector& output,
-                                              float mean, float stddev) {
-  float partial_wrt_variance = 0.0;
-
-  for (uint32_t i = 0; i < input.len; i++) {
-    uint32_t neuron = input.activeNeuronAtIndex<DENSE>(i);
-
-    float numerator =
-        output.gradients[i] * _gamma[neuron] * (mean - input.activations[i]);
-    float denominator = 2 * stddev * stddev * stddev;
-    partial_wrt_variance += numerator / denominator;
-  }
-
-  return partial_wrt_variance;
-}
-
-template <bool DENSE>
-float LayerNorm::partialDerivativeWRTMean(const BoltVector& input,
-                                          const BoltVector& output, float mean,
-                                          float stddev,
-                                          float partial_wrt_variance) {
-  float direct_partial = 0.0;
-  float partial_from_variance = 0.0;
-  for (uint32_t i = 0; i < input.len; i++) {
-    uint32_t neuron = input.activeNeuronAtIndex<DENSE>(i);
-
-    direct_partial += output.gradients[i] * _gamma[neuron];
-
-    partial_from_variance += (input.activations[i] - mean);
-  }
-
-  direct_partial /= stddev;
-
-  partial_from_variance *= partial_wrt_variance * 2 / input.len;
-
-  return -direct_partial - partial_from_variance;
 }
 
 std::pair<float, float> LayerNorm::moments(const BoltVector& vector) {
