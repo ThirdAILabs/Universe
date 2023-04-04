@@ -105,6 +105,7 @@ def modify_udt():
         metrics: List[str] = [],
         validation: Optional[bolt.Validation] = None,
         callbacks: List[bolt.callbacks.Callback] = [],
+        max_in_memory_batches: Optional[int] = None,
         verbose: bool = True,
     ):
         data_source = _create_data_source(filename)
@@ -121,6 +122,7 @@ def modify_udt():
             metrics=metrics,
             validation=validation,
             callbacks=callbacks,
+            max_in_memory_batches=max_in_memory_batches,
             verbose=verbose,
         )
 
