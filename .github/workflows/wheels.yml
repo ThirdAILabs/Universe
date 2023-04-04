@@ -135,7 +135,7 @@ jobs:
           path: ./wheelhouse/*.whl
       
       - name: Notify slack fail
-        if: failure()
+        if: failure() && github.event_name == 'release' && github.event.action == 'published'
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         uses: voxmedia/github-action-slack-notify-build@v1
