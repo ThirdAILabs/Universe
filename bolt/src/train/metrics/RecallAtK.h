@@ -8,6 +8,12 @@ namespace thirdai::bolt::train::metrics {
 
 /**
  * Computes the recall@k for the given output.
+ *
+ * Recall@k measures the proportion of relevant items retrieved among the top k
+ * items returned by a ranking algorithm or classifier. It is calculated as the
+ * number of true positives among the top k predictions divided by the total
+ * number of positive samples.
+ * https://en.wikipedia.org/wiki/Precision_and_recall#Recall
  */
 class RecallAtK final : public Metric {
  public:
@@ -28,8 +34,8 @@ class RecallAtK final : public Metric {
   nn::autograd::ComputationPtr _outputs;
   nn::autograd::ComputationPtr _labels;
 
-  std::atomic_uint32_t _correct;
-  std::atomic_uint32_t _num_samples;
+  std::atomic_uint32_t _true_positives;
+  std::atomic_uint32_t _total_positives;
   uint32_t _k;
 };
 

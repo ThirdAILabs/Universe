@@ -112,4 +112,10 @@ InputMetrics metricsForSingleOutputModel(
     const nn::autograd::ComputationPtr& output,
     const nn::autograd::ComputationPtr& labels);
 
+float divideTwoAtomicIntegers(const std::atomic_uint32_t& numerator,
+                              const std::atomic_uint32_t& denominator);
+
+uint32_t truePositivesInTopK(TopKActivationsQueue& top_k_predictions,
+                             const BoltVector& label);
+
 }  // namespace thirdai::bolt::train::metrics

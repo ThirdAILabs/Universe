@@ -1,5 +1,7 @@
 #include "Metric.h"
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
+#include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <atomic>
 #include <stdexcept>
 
@@ -68,6 +70,32 @@ InputMetrics metricsForSingleOutputModel(
   }
 
   return metrics;
+}
+
+float divideTwoAtomicIntegers(const std::atomic_uint32_t& numerator,
+                              const std::atomic_uint32_t& denominator) {
+  if (denominator == 0) {
+    return 0;
+  };
+
+  // We are using memory order relaxed because we don't need a strict ordering
+  // between concurrent accesses, just atomic guarentees.
+  return static_cast<float>(numerator.load(std::memory_order_relaxed)) /
+         denominator.load(std::memory_order_relaxed);
+}
+
+uint32_t truePositivesInTopK(TopKActivationsQueue& top_k_predictions,
+                             const BoltVector& label) {
+  uint32_t true_positives = 0;
+  while (!top_k_predictions.empty()) {
+    ValueIndexPair valueIndex = top_k_predictions.top();
+    uint32_t prediction = valueIndex.second;
+    if (label.findActiveNeuronNoTemplate(prediction).activation > 0) {
+      true_positives++;
+    }
+    top_k_predictions.pop();
+  }
+  return true_positives;
 }
 
 }  // namespace thirdai::bolt::train::metrics
