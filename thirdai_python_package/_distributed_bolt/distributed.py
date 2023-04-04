@@ -564,7 +564,8 @@ class DistributedDataParallel:
 
         starting_epoch = 0
         train_metrics = {}
-        if freeze_hash_tables:
+        # We need this check since we have a test with num_epochs = 0
+        if freeze_hash_tables and self.train_config.num_epochs > 0:
             train_metrics = self.train_on_epoch(
                 train_state_manager=train_state_manager,
                 epoch=starting_epoch,
