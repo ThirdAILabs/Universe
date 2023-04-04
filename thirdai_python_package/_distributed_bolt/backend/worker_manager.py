@@ -6,12 +6,13 @@ import ray
 from ray.exceptions import RayTaskError
 
 
-class ResultOrError:
-    def __init__(self, result: Any = None, error: Exception = None):
-        # None is a valid result if the remote function
-        # does not return anything.
+from typing import Any, List
+
+
+class CallResult:
+    def __init__(self, worker_id: int, result: Any = None, error: Exception = None):
+        self.worker_id = worker_id
         self._result = result
-        # Easier to handle if we show the user the original error.
         self._error = (
             error.as_instanceof_cause() if isinstance(error, RayTaskError) else error
         )
@@ -21,37 +22,21 @@ class ResultOrError:
         return self._error is None
 
     def get(self):
-        """Returns the result or the error."""
         if self._error:
             return self._error
         else:
             return self._result
 
 
-@dataclass
-class CallResult:
-    worker_id: int
-    result_or_error: ResultOrError
-
-    @property
-    def ok(self):
-        """Passes through the ok property from the result_or_error."""
-        return self.result_or_error.ok
-
-    def get(self):
-        """Passes through the get method from the result_or_error."""
-        return self.result_or_error.get()
-
-
 class RemoteCallResults:
     def __init__(self):
-        self.result_or_errors: List[CallResult] = []
+        self.call_results: List[CallResult] = []
 
-    def add_result(self, worker_id: int, result_or_error: ResultOrError):
-        self.result_or_errors.append(CallResult(worker_id, result_or_error))
+    def add_result(self, worker_id: int, result: Any = None, error: Exception = None):
+        self.call_results.append(CallResult(worker_id, result, error))
 
     def get(self):
-        return self.result_or_errors
+        return [call_result.get() for call_result in self.call_results]
 
 
 class FaultTolerantWorkerManager:
@@ -72,7 +57,6 @@ class FaultTolerantWorkerManager:
 
     def num_workers(self):
         return len(self.workers)
-
 
     def foreach_worker(
         self,
@@ -103,7 +87,6 @@ class FaultTolerantWorkerManager:
             self.workers[self.next_id] = worker
             self.remote_worker_states[self.next_id] = self._WorkerState()
             self.next_id += 1
-
 
     def _call_workers(
         self,
@@ -176,10 +159,9 @@ class FaultTolerantWorkerManager:
                 remote_results.add_result(worker_id, ResultOrError(result=result))
 
             except Exception as err:
-                #TODO(pratik): Add error handling code when worker faults. 
-                
+                # TODO(pratik): Add error handling code when worker faults.
+
                 # Return error to the user.
                 remote_results.add_result(worker_id, ResultOrError(error=err))
-                
 
         return remote_results
