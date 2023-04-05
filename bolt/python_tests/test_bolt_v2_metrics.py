@@ -59,7 +59,9 @@ def evaluate_test_cases(test_cases, model, metrics, metric_name):
         assert np.isclose(metric_val, tc["correct_metric_val"])
 
 
-@pytest.mark.unit
+pytestmark = [pytest.mark.unit]
+
+
 def test_precision_at_1():
     metric_name = "prec@1"
     k = 1
@@ -86,9 +88,6 @@ def test_precision_at_1():
     ]
 
     evaluate_test_cases(test_cases, model, metrics, metric_name)
-
-
-pytestmark = [pytest.mark.unit]
 
 
 def test_precision_at_5():
