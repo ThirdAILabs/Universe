@@ -4,6 +4,8 @@ import pytest
 from distributed_utils import ray_two_node_cluster_config, remove_files
 from thirdai import bolt
 from thirdai.demos import download_clinc_dataset
+import glob
+
 
 pytestmark = [pytest.mark.distributed]
 
@@ -36,6 +38,13 @@ def get_clinc_udt_model(integer_target=False):
 # We still want a  release test that tests distributed and makes sure licensing
 # works, so this is the best we can do for now.
 # TODO(Josh/Pratik): Look into getting ray working with cibuildwheel
+
+
+def read_last_n_lines(file_path, n):
+    with open(file_path, "r", encoding="utf-8") as f:
+        return f.readlines()[-n:]
+
+
 @pytest.mark.release
 def test_distributed_start(ray_two_node_cluster_config):
     udt_model = get_clinc_udt_model(integer_target=True)
@@ -49,15 +58,22 @@ def test_distributed_start(ray_two_node_cluster_config):
             epochs=0,
         )
     except:
-        file_name = "/tmp/ray/session_latest/logs"
+        folder_path = "/tmp/ray/session_latest/logs"
+        n = 20
+        file_types = ["*.log", "*.err", "*.out", "*.txt"]
+        files = []
 
-        # Open the file in read mode
-        with open(file_name, "r") as file:
-            # Read the content of the file
-            content = file.read()
+        for file_type in file_types:
+            files.extend(glob.glob(os.path.join(folder_path, file_type)))
 
-        # Print the content to the command line
-        print(content)
+        for file_path in files:
+            file_name = os.path.basename(file_path)
+            print(f"File: {file_name}")
+            print("Last 20 lines:")
+            last_n_lines = read_last_n_lines(file_path, n)
+            for line in last_n_lines:
+                print(line.strip())
+            print("\n" + "=" * 80 + "\n")
 
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
