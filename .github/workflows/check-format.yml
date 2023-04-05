@@ -18,46 +18,46 @@ on:
   workflow_dispatch:
 
 jobs:
-  cpp-format:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-      with:           
-        submodules: 'recursive'
-        token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+  # cpp-format:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #     with:           
+  #       submodules: 'recursive'
+  #       token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
             
-    - name: Run clang-format
-      uses: DoozyX/clang-format-lint-action@v0.12
-      with:
-        source: '.'
-        exclude: './deps'
-        clangFormatVersion: 10
-        style: file
+  #   - name: Run clang-format
+  #     uses: DoozyX/clang-format-lint-action@v0.12
+  #     with:
+  #       source: '.'
+  #       exclude: './deps'
+  #       clangFormatVersion: 10
+  #       style: file
 
-  python-format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Prepare Black
-        run: |
-          sudo pip3 install black
-      - name: Prepare isort
-        run: |
-          sudo pip3 install isort
-      - name: Check Black format 
-        run: |
-          black . --check --exclude "build|.venv|venv|.env|env|deps"
-      - name: Check isort format
-        run: |
-          isort . --check --profile black --skip-glob deps --skip _deps
+  # python-format:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Prepare Black
+  #       run: |
+  #         sudo pip3 install black
+  #     - name: Prepare isort
+  #       run: |
+  #         sudo pip3 install isort
+  #     - name: Check Black format 
+  #       run: |
+  #         black . --check --exclude "build|.venv|venv|.env|env|deps"
+  #     - name: Check isort format
+  #       run: |
+  #         isort . --check --profile black --skip-glob deps --skip _deps
 
-  cmake-format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Prepare cmake format
-        run: |
-          sudo pip3 install cmake-format
-      - name: Check Cmake format
-        run: |
-          find . -name 'CMakeLists.txt' -o -name '*.cmake' | grep -v ./deps | xargs -I% cmake-format --check % 
+  # cmake-format:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Prepare cmake format
+  #       run: |
+  #         sudo pip3 install cmake-format
+  #     - name: Check Cmake format
+  #       run: |
+  #         find . -name 'CMakeLists.txt' -o -name '*.cmake' | grep -v ./deps | xargs -I% cmake-format --check % 

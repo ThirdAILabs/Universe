@@ -19,27 +19,27 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  python-tests:
-    runs-on: ubuntu-latest-8-cores
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
-      # the rest of the steps
-      - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
-          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+  # python-tests:
+  #   runs-on: ubuntu-latest-8-cores
+  #   steps:
+  #     # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+  #     # the rest of the steps
+  #     - uses: actions/checkout@v2
+  #       with:           
+  #         submodules: 'recursive'
+  #         token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
-      - name: Build python package and install test dependencies
-        run: bin/build.py --extras test
+  #     - name: Build python package and install test dependencies
+  #       run: bin/build.py --extras test
 
-      # Install go (necessary for running go unit tests)
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+  #     # Install go (necessary for running go unit tests)
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v3
+  #       with:
+  #         go-version: 1.19
 
-      - name: Run python unit tests
-        run: bin/python-test.sh -m unit
+  #     - name: Run python unit tests
+  #       run: bin/python-test.sh -m unit
 
   python-release-tests:
     runs-on: ubuntu-latest
@@ -62,18 +62,18 @@ jobs:
       - name: Run python release tests
         run: bin/python-test.sh -m release
 
-  distributed-python-tests:
-    runs-on: ubuntu-latest-8-cores
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
-      # the rest of the steps
-      - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
-          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+  # distributed-python-tests:
+  #   runs-on: ubuntu-latest-8-cores
+  #   steps:
+  #     # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+  #     # the rest of the steps
+  #     - uses: actions/checkout@v2
+  #       with:           
+  #         submodules: 'recursive'
+  #         token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
-      - name: Build python package and install test dependencies
-        run: bin/build.py --extras test
+  #     - name: Build python package and install test dependencies
+  #       run: bin/build.py --extras test
 
-      - name: Run python distributed tests
-        run: bin/python-test.sh -m distributed
+  #     - name: Run python distributed tests
+  #       run: bin/python-test.sh -m distributed

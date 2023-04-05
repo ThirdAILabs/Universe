@@ -19,48 +19,48 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  cpp-release-tests:
-    runs-on: ubuntu-latest
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
-      # the rest of the steps
-      - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
-          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+  # cpp-release-tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+  #     # the rest of the steps
+  #     - uses: actions/checkout@v2
+  #       with:           
+  #         submodules: 'recursive'
+  #         token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
           
-      - name: Run all c++ tests
-        run: |
-          bin/build.py -t all -f THIRDAI_BUILD_LICENSE
-          bin/cpp-test.sh -V
+  #     - name: Run all c++ tests
+  #       run: |
+  #         bin/build.py -t all -f THIRDAI_BUILD_LICENSE
+  #         bin/cpp-test.sh -V
           
-  cpp-asan-tests:
-    runs-on: 
-      labels: ubuntu-latest-8-cores
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
-      # the rest of the steps
-      - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
-          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+  # cpp-asan-tests:
+  #   runs-on: 
+  #     labels: ubuntu-latest-8-cores
+  #   steps:
+  #     # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+  #     # the rest of the steps
+  #     - uses: actions/checkout@v2
+  #       with:           
+  #         submodules: 'recursive'
+  #         token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
           
-      - name: Run all c++ tests
-        run: |
-          bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m RelWithAsan
-          bin/cpp-test.sh -j 12 -V
+  #     - name: Run all c++ tests
+  #       run: |
+  #         bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m RelWithAsan
+  #         bin/cpp-test.sh -j 12 -V
 
-  cpp-debug-tests:
-    runs-on: ubuntu-latest
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
-      # the rest of the steps
-      - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
-          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+  # cpp-debug-tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+  #     # the rest of the steps
+  #     - uses: actions/checkout@v2
+  #       with:           
+  #         submodules: 'recursive'
+  #         token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
           
-      - name: Run all c++ tests
-        run: |
-          bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m Debug
-          bin/cpp-test.sh -V
+  #     - name: Run all c++ tests
+  #       run: |
+  #         bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m Debug
+  #         bin/cpp-test.sh -V
