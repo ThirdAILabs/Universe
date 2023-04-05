@@ -11,12 +11,13 @@ def build_metrics_test_model(metric, metric_name, metric_args={}):
     Builds a model where the metrics are applied to the input, making metrics easily testable.
 
     Args:
-        metric (bolt Metric): bolt metric to evaluate
+        metric (Bolt Metric): Bolt metric to evaluate
         metric_name (str): Name of metric
         metric_args (dict): Optional keyword arguments for metric
 
     Returns:
-        type: Description of the return value(s).
+        model (Bolt Model): Model created for metric evaluation
+        metrics (dict): Map of metric name to Bolt Metric
 
     """
 
