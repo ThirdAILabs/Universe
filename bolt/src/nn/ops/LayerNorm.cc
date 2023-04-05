@@ -37,7 +37,7 @@ void LayerNorm::forward(const autograd::ComputationList& inputs,
 
 template <bool DENSE>
 void LayerNorm::forward(const BoltVector& input, BoltVector& output) {
-  assert(input_vector.len == output_vector.len);
+  assert(input.len == output.len);
 
   auto [mean, variance] = moments(input);
 
@@ -70,6 +70,8 @@ void LayerNorm::backpropagate(autograd::ComputationList& inputs,
 
 template <bool DENSE>
 void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
+  assert(input.len == output.len);
+
   // Derivative comes from
   // https://github.com/marian-nmt/marian-dev/blob/master/src/tensors/cpu/tensor_operators.cpp#L1156
 
