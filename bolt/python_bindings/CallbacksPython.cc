@@ -106,9 +106,10 @@ data.
       callbacks_submodule, "ReduceLROnPlateau")
       .def(py::init<std::string, float, uint32_t, uint32_t, float, uint32_t,
                     bool>(),
-           py::arg("monitored_metric"), py::arg("factor"), py::arg("patience"),
-           py::arg("n_total_lr_updates"), py::arg("min_delta"),
-           py::arg("cooldown"), py::arg("verbose"));
+           py::arg("monitored_metric"), py::arg("factor") = 0.2,
+           py::arg("patience") = 10, py::arg("n_total_lr_updates") = 10,
+           py::arg("min_delta") = 0, py::arg("cooldown") = 0,
+           py::arg("verbose") = false);
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")
