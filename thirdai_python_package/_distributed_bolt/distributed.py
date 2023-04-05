@@ -57,12 +57,23 @@ def add_distributed_to_udt():
             validation_context=validation_context,
         )
 
-        # We are freezing hashtables by default for distributed training after one epoch,
-        # Ideally we should read freezehashtables from UDTOptions and then pass
-        # it to distributed Wrapper. However, for the time being we are just
-        # initializing freeze-hash-tables=True by default.
+        epoch = 0
+
+        # trains the model until training is complete
         while not distributed_trainer.finished():
-            distributed_trainer.step()
+
+            # whether there is more batch left to train, else moves directly to next proch
+            have_next_batch = distributed_trainer.step()
+
+            if not have_next_batch:
+                epoch += 1
+
+                # We are freezing hashtables by default for distributed training after one epoch,
+                # Ideally we should read freezehashtables from UDTOptions and then pass
+                # it to distributed Wrapper. However, for the time being we are just
+                # initializing freeze-hash-tables=True by default.
+                if epoch == 1:
+                    distributed_trainer.train_state_manager.freeze_hash_tables()
 
         model = distributed_trainer.get_model(with_optimizer=True)
 
@@ -421,7 +432,6 @@ class RayTrainingClusterConfig:
         ]
 
 
-# TODO(pratik): add freezing hash_table
 class DistributedDataParallel:
     """
     This class implements the public facing APIs for a distributed data parallel
