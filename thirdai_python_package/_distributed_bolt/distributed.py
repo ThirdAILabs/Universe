@@ -537,7 +537,6 @@ class DistributedDataParallel:
         ray_model_ref,
         train_sources: Union[List[DistributedDatasetLoader], List[str]],
     ):
-
         self.logging.info("Initializing Primary Worker")
         primary_worker = cluster_config.primary_worker_config.remote(
             num_workers=cluster_config.num_workers,
