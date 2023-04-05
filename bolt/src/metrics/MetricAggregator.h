@@ -10,6 +10,10 @@ namespace thirdai::bolt {
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
 using InferenceMetricData = std::unordered_map<std::string, double>;
 
+namespace tests {
+class ReduceLROnPlateauTest;
+}  // namespace tests
+
 // TODO(Geordie): Instead of hard coding the options, use a static map.
 class MetricAggregator {
  public:
@@ -77,6 +81,8 @@ class MetricAggregator {
   uint32_t getNumMetricsTracked() { return _metrics.size(); }
 
   std::vector<std::shared_ptr<Metric>> getMetrics() const { return _metrics; }
+
+  friend class tests::ReduceLROnPlateauTest;
 
  private:
   std::vector<std::shared_ptr<Metric>> _metrics;

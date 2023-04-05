@@ -21,7 +21,7 @@ class ReduceLROnPlateau : public Callback {
         _min_delta(min_delta),
         _cooldown(cooldown),
         _verbose(verbose),
-        _last_metric(_metric->worst()) {
+        _best_metric(_metric->worst()) {
     assertGreaterThanZero(factor, "factor");
     assertGreaterThanZero(patience, "patience");
     assertGreaterThanZero(n_total_lr_updates, "n_total_lr_updates");
@@ -58,17 +58,21 @@ class ReduceLROnPlateau : public Callback {
       _n_bad_batches = 0;  // ignore any bad batches in cooldown
     }
 
-    if (_n_bad_batches > _patience) {
-      if (_n_lr_updates > _n_total_lr_updates) {
+    if (_n_bad_batches >= _patience) {
+      if (_n_lr_updates >= _n_total_lr_updates) {
         train_state.stop_training = true;
       } else {
-        std::cout << "Scaling down LR from " << train_state.learning_rate
-                  << " to " << train_state.learning_rate * _factor
-                  << ". Num Updates = " << _n_lr_updates << std::endl;
-        train_state.learning_rate *= _factor;
         _n_lr_updates++;
         _cooldown_count = _cooldown;
         _n_bad_batches = 0;
+
+        if (_verbose) {
+          std::cout << "Scaling down LR from " << train_state.learning_rate
+                    << " to " << train_state.learning_rate * _factor
+                    << ". Num Updates = " << _n_lr_updates << std::endl;
+        }
+
+        train_state.learning_rate *= _factor;
       }
     }
   }
