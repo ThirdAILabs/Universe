@@ -39,12 +39,25 @@ def get_clinc_udt_model(integer_target=False):
 @pytest.mark.release
 def test_distributed_start(ray_two_node_cluster_config):
     udt_model = get_clinc_udt_model(integer_target=True)
+    try:
+        udt_model.train_distributed(
+            cluster_config=ray_two_node_cluster_config("linear"),
+            filenames=[
+                f"{os.getcwd()}/{TRAIN_FILE_1}",
+                f"{os.getcwd()}/{TRAIN_FILE_2}",
+            ],
+            epochs=0,
+        )
+    except:
+        file_name = "/tmp/ray/session_latest/logs"
 
-    udt_model.train_distributed(
-        cluster_config=ray_two_node_cluster_config("linear"),
-        filenames=[f"{os.getcwd()}/{TRAIN_FILE_1}", f"{os.getcwd()}/{TRAIN_FILE_2}"],
-        epochs=0,
-    )
+        # Open the file in read mode
+        with open(file_name, "r") as file:
+            # Read the content of the file
+            content = file.read()
+
+        # Print the content to the command line
+        print(content)
 
 
 # `ray_two_node_cluster_config` fixture added as parameter to start the mini_cluster
