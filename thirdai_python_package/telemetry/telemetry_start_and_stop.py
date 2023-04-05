@@ -128,9 +128,9 @@ def start(
         write_dir,
         "--upload_interval_seconds",
         str(write_period_seconds),
-        "--optional_endpoint_url",
-        str(optional_endpoint_url),
     ]
+    if optional_endpoint_url:
+        args += (["--optional_endpoint_url", optional_endpoint_url],)
     background_telemetry_push_process = subprocess.Popen(args)
 
     push_location = write_dir + f"/telemetry-" + telemetry.uuid()

@@ -126,14 +126,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--optional_endpoint_url",
         help="Optional endpoint url to pass to boto3. Usually not needed (currently used for testing).",
-        required=True,
+        default=None,
     )
     args = parser.parse_args()
 
     killer = GracefulKiller()
-
-    if args.optional_endpoint_url == "None":
-        args.optional_endpoint_url = None
 
     launch_daemon(
         args.push_dir,
