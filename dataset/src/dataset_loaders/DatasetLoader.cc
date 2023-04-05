@@ -47,13 +47,10 @@ std::vector<BoltDatasetPtr> DatasetLoader::loadAll(size_t batch_size,
 
 std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
     size_t batch_size, size_t num_batches, bool verbose) {
-  // We checked _header against _featurizer->expectsHeader() in the constructor
-  // so this check again is safe.
-  if (_featurizer->expectsHeader()) {
+  if (_header) {
     // We call _featurizer->processHeader here in case we want to use the same
-    // featurizer for two different data loaders. This way the featurizer will
-    // internalize its own column number map based on the header of the data
-    // loader at load time instead of construction time.
+    // featurizer for two different data loaders. This guarantees that the
+    // featurizer uses the correct column number map for each data loader.
     _featurizer->processHeader(*_header);
   }
 #if THIRDAI_EXPOSE_ALL
