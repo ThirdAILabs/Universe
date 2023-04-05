@@ -130,7 +130,7 @@ def start(
         str(write_period_seconds),
     ]
     if optional_endpoint_url:
-        args += (["--optional_endpoint_url", optional_endpoint_url],)
+        args += ["--optional_endpoint_url", optional_endpoint_url]
     background_telemetry_push_process = subprocess.Popen(args)
 
     push_location = write_dir + f"/telemetry-" + telemetry.uuid()
