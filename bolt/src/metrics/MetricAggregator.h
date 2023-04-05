@@ -60,7 +60,7 @@ class MetricAggregator {
 
   MetricData getOutput() { return _output; }
 
-  MetricData getBatchOutput() { return _batch_output; }
+  MetricData getBatchMetrics() { return _batch_output; }
 
   std::vector<double>& getSingleOutput(const std::string& metric_name) {
     if (_output.count(metric_name) != 0) {

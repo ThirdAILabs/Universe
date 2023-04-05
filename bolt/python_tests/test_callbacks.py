@@ -195,3 +195,16 @@ def test_overfitting_callback_metric_not_passed():
         ValueError, match=r"Metric: categorical_accuracy not found in training metrics."
     ):
         train_simple_udt_with_callback(callback, [])
+
+
+def test_reduce_lr_on_plateau_callback_missing_metric():
+    callback = bolt.callbacks.ReduceLROnPlateau("categorical_accuracy")
+    with pytest.raises(
+        ValueError, match=r"ReduceLROnPlateau: Could not find metric categorical_accuracy in list of provided train metrics."
+    ):
+        train_simple_udt_with_callback(callback, [])
+
+
+def test_reduce_lr_on_plateau_callback():
+    callback = bolt.callbacks.ReduceLROnPlateau("categorical_accuracy")
+    train_simple_udt_with_callback(callback, ["categorical_accuracy"])

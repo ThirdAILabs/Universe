@@ -48,7 +48,7 @@ class ReduceLROnPlateau : public Callback {
 
   void onTrainBegin(BoltGraph& model, TrainState& train_state) final {
     (void)model;
-    auto train_metrics = train_state.validation_metric_names;
+    auto train_metrics = train_state.train_metric_names;
     if (std::find(train_metrics.begin(), train_metrics.end(),
                   _metric->name()) == train_metrics.end()) {
       throw std::invalid_argument("ReduceLROnPlateau: Could not find metric " +
