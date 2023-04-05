@@ -218,6 +218,7 @@ MetricData BoltGraph::train(
       logAndSaveIfNeeded(train_config, train_metrics);
       auto validation_metrics = validateIfNeeded(train_config);
 
+      train_metrics.logBatchMetrics();
       callbacks.onBatchEnd(*this, train_state);
     }
 
