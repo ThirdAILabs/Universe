@@ -71,7 +71,6 @@ std::optional<InferenceMetricData> BoltGraph::validateAndSaveIfBest(
     const TrainConfig& train_config, const ValidationContext& validation) {
   auto [validation_metrics, _] =
       evaluate(validation.data(), validation.labels(), validation.config());
-
   const std::optional<SaveContext>& save_context = train_config.saveContext();
 
   if (save_context && _tracked_metric != nullptr) {
@@ -485,8 +484,6 @@ BoltGraph::getInputGradientSingle(
 InferenceResult BoltGraph::evaluate(
     const std::vector<dataset::BoltDatasetPtr>& test_data,
     const dataset::BoltDatasetPtr& test_labels, const EvalConfig& eval_config) {
-  // std::cout << "BEGINNING OF EVAL CALL "
-  //           << test_labels->at(0)[0].getHighestActivationId() << std::endl;
   DatasetContext predict_context(test_data, test_labels);
 
   bool has_labels = (test_labels != nullptr);
@@ -639,8 +636,7 @@ void BoltGraph::processEvaluationBatch(uint64_t batch_size,
 
   prepareToProcessBatch(batch_size, /* use_sparsity= */ use_sparsity);
 
-  // #pragma omp parallel for default(none) shared(batch_size, batch_labels,
-  // metrics)
+#pragma omp parallel for default(none) shared(batch_size, batch_labels, metrics)
   for (uint64_t vec_id = 0; vec_id < batch_size; vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.
@@ -650,11 +646,6 @@ void BoltGraph::processEvaluationBatch(uint64_t batch_size,
 
     if (batch_labels) {
       const auto& labels = (*batch_labels)[vec_id];
-      if (vec_id <= 4) {
-        // std::cout << "LABEL: " << labels.getHighestActivationId()
-        //           << " OUTPUT: " << output.getHighestActivationId()
-        //           << std::endl;
-      }
       metrics.processSample(output, labels);
     }
   }
