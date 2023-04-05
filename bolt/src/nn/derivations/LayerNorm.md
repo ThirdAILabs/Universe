@@ -53,7 +53,7 @@ This gives us the equation:
 
 $$ \begin{align*} 
   \frac{\partial L}{\partial x_i} &= \sum_{j=1}^N \frac{\partial L}{\partial y_j} \gamma_j \frac{\partial \hat{x}_j}{\partial x_i} \\
-  \frac{\partial L}{\partial x_i} &= \sum_{j=1}^N \frac{\partial L}{\partial y_j} \gamma_j \left[ \left( 1_{i = j} - \frac{1}{N} \right) \frac{1}{\sqrt{\sigma^2 + \epsilon}} - \hat{x}_j \frac{1}{N} \frac{1}{\sqrt{\sigma^2 + \epsilon}} \hat{x}_i \right] \\
+  &= \sum_{j=1}^N \frac{\partial L}{\partial y_j} \gamma_j \left[ \left( 1_{i = j} - \frac{1}{N} \right) \frac{1}{\sqrt{\sigma^2 + \epsilon}} - \hat{x}_j \frac{1}{N} \frac{1}{\sqrt{\sigma^2 + \epsilon}} \hat{x}_i \right] \\
   &= \frac{\partial L}{\partial y_i} \gamma_i \frac{1}{\sqrt{\sigma^2 + \epsilon}} - \sum_{j=1}^N \frac{\partial L}{\partial y_j} \gamma_j \frac{1}{N} \frac{1}{\sqrt{\sigma^2 + \epsilon}} - \sum_{j=1}^N \frac{\partial L}{\partial y_j} \gamma_j \hat{x}_j \frac{1}{N} \frac{1}{\sqrt{\sigma^2 + \epsilon}} \hat{x}_i \\ 
   &= \frac{1}{N\sqrt{\sigma^2 + \epsilon}} \left[ N \frac{\partial L}{\partial y_i} \gamma_i - \sum_{j=1}^N \frac{\partial L}{\partial y_j} \gamma_j - \hat{x}_i \sum_{j=1}^N \frac{\partial L}{\partial y_j} \gamma_j \hat{x}_j \right]
 \end{align*}$$
