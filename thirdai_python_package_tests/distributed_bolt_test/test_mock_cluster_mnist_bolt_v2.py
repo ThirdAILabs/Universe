@@ -75,7 +75,7 @@ def train_distributed_bolt_v2(ray_cluster_config, train_files, test_file):
 
     train_config = old_bolt.TrainConfig(learning_rate=0.0001, epochs=3)
 
-    distributed_model = db.DistributedDataParallel(
+    distributed_trainer = db.DistributedDataParallel(
         cluster_config=ray_cluster_config,
         model=model,
         train_config=train_config,
@@ -83,9 +83,12 @@ def train_distributed_bolt_v2(ray_cluster_config, train_files, test_file):
         validation_context=validation_context,
     )
 
-    metrics = distributed_model.train()
+    while not distributed_trainer.finished():
+        distributed_trainer.step()
 
-    check_model_parameters_match(distributed_model)
+    metrics = distributed_trainer.get_metrics()
+
+    check_model_parameters_match(distributed_trainer)
 
     return metrics
 
