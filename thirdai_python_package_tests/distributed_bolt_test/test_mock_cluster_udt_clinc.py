@@ -26,6 +26,7 @@ def get_clinc_udt_model(integer_target=False):
         target="category",
         n_target_classes=151,
         integer_target=integer_target,
+        options={"embedding_dimension": 128},
     )
     return udt_model
 
