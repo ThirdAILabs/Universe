@@ -14,7 +14,7 @@ class ReduceLROnPlateauTest {
   }
 };
 
-TEST(ReduceLROnPlateau, NoisyCategoricalFeatures) {
+TEST(ReduceLROnPlateau, VerifyLRSteps) {
   TrainConfig config =
       TrainConfig::makeConfig(/* learning_rate = */ 10, /* epochs = */ 1);
   config.withMetrics({"categorical_accuracy"});

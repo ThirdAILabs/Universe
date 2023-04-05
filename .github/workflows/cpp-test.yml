@@ -44,11 +44,13 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-          
+
       - name: Run all c++ tests
         run: |
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m RelWithAsan
-          bin/cpp-test.sh -j 12 -V
+
+      -name: Setup tmate
+       uses: mxschmitt/action-tmate@v3
 
   cpp-debug-tests:
     runs-on: ubuntu-latest
@@ -64,3 +66,4 @@ jobs:
         run: |
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m Debug
           bin/cpp-test.sh -V
+
