@@ -207,7 +207,7 @@ setup(
             "beir",
             "pyOpenSSL>22.1.0",
             "ray",
-            "glob",
+            "glob2",
         ],
         "benchmark": [
             "toml",
