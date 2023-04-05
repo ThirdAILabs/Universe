@@ -12,8 +12,8 @@ namespace thirdai::bolt {
  * model by some factor when that metric begins to plateau. This monitoring is
  * done at a per-batch level
  *
- * @param monitored_metric Train metric to monitor
- * @param factor Scaledown factor
+ * @param monitored_metric Train metric to monitor.
+ * @param factor Scaledown factor for the learning rate.
  * @param patience Each scaledown happens if the metric has not beaten a
  * previous best value in "patience" number of batches.
  * @param n_total_lr_updates After making this many updates the training will
@@ -21,7 +21,7 @@ namespace thirdai::bolt {
  * @param min_delta The metric must improve by at least this absolute amount to
  * qualify as an improvement.
  * @param cooldown Immediately after an update the callback will wait "cooldown"
- * batches before counting towards the patience. beaten a previous best value in
+ * batches before counting towards the patience.
  * @param verbose Prints logs.
  */
 class ReduceLROnPlateau : public Callback {
