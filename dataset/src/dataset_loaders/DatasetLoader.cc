@@ -126,10 +126,9 @@ void DatasetLoader::fillVectorBuffer(size_t num_rows) {
   while (_buffer.size() <= num_rows) {
     auto rows = _data_source->nextBatch(
         /* target_batch_size = */ _featurization_batch_size);
-    for (auto row : *rows) {
-      std::cout << row << std::endl;
-    }
-    std::exit(0);
+    // for (auto row : *rows) {
+    //   std::cout << row << std::endl;
+    // }
     if (!rows) {
       return;
     }

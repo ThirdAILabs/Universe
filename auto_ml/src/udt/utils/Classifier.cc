@@ -15,12 +15,7 @@ py::object thirdai::automl::udt::utils::Classifier::train(
     const std::vector<std::shared_ptr<bolt::Callback>>& callbacks, bool verbose,
     std::optional<uint32_t> logging_interval,
     licensing::TrainPermissionsToken token) {
-  // std::cout << "IN CLASSIFIER TRAIN " << std::endl;
-  // auto out = validation->first->loadSome(300, 1);
-  // auto x0 = out->at(0)->at(0)[0].getHighestActivationId();
-  // auto x1 = out->at(1)->at(0)[0].getHighestActivationId();
-  // std::cout << x0 << " " << x1 << std::endl;
-  // validation->first->restart();
+  std::cout << "IN CLASSIFIER TRAIN " << std::endl;
 
   uint32_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 

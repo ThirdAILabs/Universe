@@ -46,14 +46,15 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     this exception_ptr and rethrow after.
   */
   std::exception_ptr featurization_err;
-// #pragma omp parallel for default(none) 
-//     shared(input_batch, featurized_batch, featurization_err) if (_parallel)
+  // #pragma omp parallel for default(none)
+  //     shared(input_batch, featurized_batch, featurization_err) if (_parallel)
   for (size_t sample_id = 0; sample_id < input_batch.size(); ++sample_id) {
     try {
+      auto x = input_batch.at(sample_id).column(const ColumnIdentifier &column);
       featurized_batch[sample_id] =
           featurizeSampleInBatch(input_batch.at(sample_id));
     } catch (const std::exception& e) {
-// #pragma omp critical
+      // #pragma omp critical
       featurization_err = std::current_exception();
     }
   }
@@ -65,6 +66,10 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
 
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     const LineInputBatch& input_batch) {
+  std::cout << "in featureize" << std::endl;
+  // for (auto part : input_batch) {
+  //   std::cout << part << std::endl;
+  // }
   if (input_batch.empty()) {
     throw std::invalid_argument("Cannot featurize empty batch.");
   }
@@ -155,7 +160,7 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::consolidate(
   std::vector<std::vector<BoltVector>> outputs(
       _block_lists.size(), std::vector<BoltVector>(n_output_samples));
 
-// #pragma omp parallel for default(none) shared(vectors, outputs, offsets)
+  // #pragma omp parallel for default(none) shared(vectors, outputs, offsets)
   for (uint32_t input_sample_id = 0; input_sample_id < vectors.size();
        input_sample_id++) {
     auto& augmented_vectors = vectors.at(input_sample_id);
