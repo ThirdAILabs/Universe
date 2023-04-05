@@ -40,7 +40,6 @@ void LayerNorm::forward(const BoltVector& input, BoltVector& output) {
   assert(input.len == output.len);
 
   auto [mean, variance] = moments(input);
-
   float stddev = std::sqrt(variance + 1e-6);
 
   std::copy(input.active_neurons, input.active_neurons + input.len,
@@ -72,8 +71,8 @@ template <bool DENSE>
 void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
   assert(input.len == output.len);
 
-  // Derivative comes from
-  // https://github.com/marian-nmt/marian-dev/blob/master/src/tensors/cpu/tensor_operators.cpp#L1156
+  // See bolt/src/nn/derivations/LayerNorm.md for the derivation of the code
+  // below.
 
   auto [mean, variance] = moments(input);
   float stddev = std::sqrt(variance + 1e-6);
