@@ -497,9 +497,10 @@ class DistributedDataParallel:
 
     def step(self):
         have_next_batch = self.train_state_manager.train_batch(epoch=self.current_epoch)
-        if have_next_batch:
-            self._post_batch_training_updates(self.train_state_manager)
-        else:
+        self._post_batch_training_updates(
+            self.train_state_manager, self.validation_context
+        )
+        if not have_next_batch:
             self.train_metrics = self.train_state_manager.move_to_next_epoch()
             self.current_epoch += 1
 
@@ -519,15 +520,15 @@ class DistributedDataParallel:
     def get_model(self, worker_id=0, with_optimizer=False):
         return ray.get(self.workers[worker_id].model.remote(with_optimizer))
 
-    def _post_batch_training_updates(self, train_state_manager):
+    def _post_batch_training_updates(self, train_state_manager, validation_context):
         self.total_batches_trained += 1
         # whether we need to validate
-        if self.validation_context != None:
+        if validation_context != None:
             if (
-                train_state_manager.updates
-                % self.validation_context.validation_frequency
+                train_state_manager.updates % validation_context.validation_frequency
                 == 0
             ):
+
                 self.validation_metrics.append(
                     train_state_manager.validate_and_save_if_best()
                 )
