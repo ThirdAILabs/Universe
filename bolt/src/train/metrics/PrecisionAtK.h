@@ -2,7 +2,6 @@
 
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/metrics/Metric.h>
-#include <atomic>
 
 namespace thirdai::bolt::train::metrics {
 

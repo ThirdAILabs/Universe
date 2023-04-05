@@ -1,6 +1,5 @@
 #include "RecallAtK.h"
 #include <bolt_vector/src/BoltVector.h>
-#include <atomic>
 
 namespace thirdai::bolt::train::metrics {
 
