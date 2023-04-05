@@ -7,20 +7,6 @@ LABEL_DIM = 5
 
 
 def build_metrics_test_model(metric, metric_name, metric_args={}):
-    """
-    Builds a model where the metrics are applied to the input, making metrics easily testable.
-
-    Args:
-        metric (Bolt Metric): Bolt metric to evaluate
-        metric_name (str): Name of metric
-        metric_args (dict): Optional keyword arguments for metric
-
-    Returns:
-        model (Bolt Model): Model created for metric evaluation
-        metrics (dict): Map of metric name to Bolt Metric
-
-    """
-
     # This operator is not used, but we need to create a 1 layer model to test metrics
     op = bolt.nn.FullyConnected(
         dim=LABEL_DIM,
@@ -102,7 +88,9 @@ def test_precision_at_1():
     evaluate_test_cases(test_cases, model, metrics, metric_name)
 
 
-@pytest.mark.unit
+pytestmark = [pytest.mark.unit]
+
+
 def test_precision_at_5():
     metric_name = "prec@5"
     k = 5
@@ -136,7 +124,6 @@ def test_precision_at_5():
     evaluate_test_cases(test_cases, model, metrics, metric_name)
 
 
-@pytest.mark.unit
 def test_recall_at_1():
     metric_name = "rec@1"
     k = 1
@@ -165,7 +152,6 @@ def test_recall_at_1():
     evaluate_test_cases(test_cases, model, metrics, metric_name)
 
 
-@pytest.mark.unit
 def test_recall_at_5():
     metric_name = "rec@5"
     k = 5
@@ -195,7 +181,8 @@ def test_recall_at_5():
     evaluate_test_cases(test_cases, model, metrics, metric_name)
 
 
-@pytest.mark.unit
+# The following tie behavior tests are for documenting an unintuitive behavior
+# with the p@k and r@k metrics, rather than testing for a desired/correct outcome
 def test_precision_tie_behavior():
     metric_name = "prec@1"
     k = 1
@@ -219,7 +206,6 @@ def test_precision_tie_behavior():
     evaluate_test_cases(test_cases, model, metrics, metric_name)
 
 
-@pytest.mark.unit
 def test_recall_tie_behavior():
     metric_name = "rec@1"
     k = 1

@@ -3,6 +3,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <atomic>
 #include <memory>
 #include <string>
@@ -113,10 +114,10 @@ InputMetrics metricsForSingleOutputModel(
     const nn::autograd::ComputationPtr& output,
     const nn::autograd::ComputationPtr& labels);
 
-float divideTwoAtomicIntegers(const std::atomic_uint32_t& numerator,
-                              const std::atomic_uint32_t& denominator);
+float divideTwoAtomicIntegers(const std::atomic_uint64_t& numerator,
+                              const std::atomic_uint64_t& denominator);
 
-uint32_t truePositivesInTopK(TopKActivationsQueue& top_k_predictions,
-                             const BoltVector& label);
+uint32_t truePositivesInTopK(const BoltVector& output, const BoltVector& label,
+                             const uint32_t& k);
 
 }  // namespace thirdai::bolt::train::metrics

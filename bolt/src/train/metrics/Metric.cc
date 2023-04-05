@@ -69,8 +69,8 @@ InputMetrics metricsForSingleOutputModel(
   return metrics;
 }
 
-float divideTwoAtomicIntegers(const std::atomic_uint32_t& numerator,
-                              const std::atomic_uint32_t& denominator) {
+float divideTwoAtomicIntegers(const std::atomic_uint64_t& numerator,
+                              const std::atomic_uint64_t& denominator) {
   uint32_t loaded_numerator = numerator.load();
   uint32_t loaded_denominator = denominator.load();
 
@@ -81,8 +81,10 @@ float divideTwoAtomicIntegers(const std::atomic_uint32_t& numerator,
   return static_cast<float>(loaded_numerator) / loaded_denominator;
 }
 
-uint32_t truePositivesInTopK(TopKActivationsQueue& top_k_predictions,
-                             const BoltVector& label) {
+uint32_t truePositivesInTopK(const BoltVector& output, const BoltVector& label,
+                             const uint32_t& k) {
+  TopKActivationsQueue top_k_predictions = output.findKLargestActivations(k);
+
   uint32_t true_positives = 0;
   while (!top_k_predictions.empty()) {
     ValueIndexPair valueIndex = top_k_predictions.top();

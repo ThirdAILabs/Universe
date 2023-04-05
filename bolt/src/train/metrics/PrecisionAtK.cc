@@ -6,27 +6,25 @@ PrecisionAtK::PrecisionAtK(nn::autograd::ComputationPtr outputs,
                            nn::autograd::ComputationPtr labels, uint32_t k)
     : _outputs(std::move(outputs)),
       _labels(std::move(labels)),
-      _true_positives(0),
-      _predicted_positives(0),
+      _num_correct_predicted(0),
+      _num_predicted(0),
       _k(k) {}
 
 void PrecisionAtK::record(uint32_t index_in_batch) {
   const BoltVector& output = _outputs->tensor()->getVector(index_in_batch);
   const BoltVector& label = _labels->tensor()->getVector(index_in_batch);
 
-  TopKActivationsQueue top_k_predictions = output.findKLargestActivations(_k);
-
-  _true_positives += truePositivesInTopK(top_k_predictions, label);
-  _predicted_positives += _k;
+  _num_correct_predicted += truePositivesInTopK(output, label, _k);
+  _num_predicted += _k;
 }
 
 void PrecisionAtK::reset() {
-  _true_positives = 0;
-  _predicted_positives = 0;
+  _num_correct_predicted = 0;
+  _num_predicted = 0;
 }
 
 float PrecisionAtK::value() const {
-  return divideTwoAtomicIntegers(_true_positives, _predicted_positives);
+  return divideTwoAtomicIntegers(_num_correct_predicted, _num_predicted);
 }
 
 float PrecisionAtK::worst() const { return 0.0; }

@@ -8,9 +8,8 @@ namespace thirdai::bolt::train::metrics {
 /**
  * Computes the precision@k for the given output.
  *
- * Precision@k measures the proportion of relevant items among the top k items
- * returned by a ranking algorithm or classifier. It is calculated as the number
- * of true positives among the top k predictions divided by k.
+ * Precision@k is the number of true samples in the top k items
+ * divided by k
  * https://en.wikipedia.org/wiki/Precision_and_recall#Precision
  */
 class PrecisionAtK final : public Metric {
@@ -32,8 +31,8 @@ class PrecisionAtK final : public Metric {
   nn::autograd::ComputationPtr _outputs;
   nn::autograd::ComputationPtr _labels;
 
-  std::atomic_uint32_t _true_positives;
-  std::atomic_uint32_t _predicted_positives;
+  std::atomic_uint64_t _num_correct_predicted;
+  std::atomic_uint64_t _num_predicted;
   uint32_t _k;
 };
 
