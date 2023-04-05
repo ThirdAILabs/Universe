@@ -61,7 +61,6 @@ def add_distributed_to_udt():
 
         # trains the model until training is complete
         while not distributed_trainer.finished():
-
             # whether there is more batch left to train, else moves directly to next proch
             have_next_batch = distributed_trainer.step()
 
