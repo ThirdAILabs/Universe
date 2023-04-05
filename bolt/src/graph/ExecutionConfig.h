@@ -318,12 +318,9 @@ class TrainState {
       validation_metric_names = val_context->config().getMetricNames();
     }
 
-    auto train_metrics = train_metric_aggregator.getMetrics();
-    train_metric_names.reserve(train_metrics.size());
-
-    std::transform(
-        train_metrics.begin(), train_metrics.end(), train_metric_names.begin(),
-        [](const std::shared_ptr<Metric>& metric) { return metric->name(); });
+    for (const auto& metric : train_metric_aggregator.getMetrics()) {
+      train_metric_names.push_back(metric->name());
+    }
   }
 
   float learning_rate;
