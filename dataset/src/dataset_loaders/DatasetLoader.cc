@@ -25,11 +25,10 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
   // needed. The first row is interpreted as the header. The featurizer
   // is responsible for checking that the header is properly formatted.
   if (_featurizer->expectsHeader()) {
-    auto header = _data_source->nextLine();
-    if (!header) {
+    _header = _data_source->nextLine();
+    if (!_header) {
       throw std::invalid_argument("Cannot read empty file.");
     }
-    _featurizer->processHeader(*header);
   }
 }
 
@@ -48,6 +47,9 @@ std::vector<BoltDatasetPtr> DatasetLoader::loadAll(size_t batch_size,
 
 std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
     size_t batch_size, size_t num_batches, bool verbose) {
+  if (_featurizer->expectsHeader() && _header.has_value()) {
+    _featurizer->processHeader(*_header);
+  }
 #if THIRDAI_EXPOSE_ALL
   if (verbose) {
     // This is useful internally but we don't want to expose it to keep the

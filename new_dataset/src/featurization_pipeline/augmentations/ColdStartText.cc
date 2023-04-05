@@ -82,7 +82,7 @@ ColumnMap ColdStartTextAugmentation::apply(const ColumnMap& columns) {
   std::vector<std::string> augmented_labels;
   std::vector<std::string> augmented_data;
 
-  for (uint64_t row_id = 264; row_id < 265; row_id++) {
+  for (uint64_t row_id = 0; row_id < label_column->numRows(); row_id++) {
     std::string weak_text = concatenateStringColumnEntries(
         columns, row_id, _weak_column_names, /* delimiter= */ ". ");
 

@@ -139,7 +139,6 @@ class NGramTextBlock final : public TextBlock {
 
  protected:
   void encodeText(std::string_view text, SegmentedFeatureVector& vec) final {
-    std::cout << "TEXT " << text << std::endl;
     std::vector<uint32_t> ngrams =
         token_encoding::ngrams(text, /* n= */ _n, _delimiter);
     token_encoding::mod(ngrams, _dim);

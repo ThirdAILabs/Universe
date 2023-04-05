@@ -50,7 +50,6 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
   //     shared(input_batch, featurized_batch, featurization_err) if (_parallel)
   for (size_t sample_id = 0; sample_id < input_batch.size(); ++sample_id) {
     try {
-      auto x = input_batch.at(sample_id).column(const ColumnIdentifier &column);
       featurized_batch[sample_id] =
           featurizeSampleInBatch(input_batch.at(sample_id));
     } catch (const std::exception& e) {
@@ -66,10 +65,6 @@ std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
 
 std::vector<std::vector<BoltVector>> TabularFeaturizer::featurize(
     const LineInputBatch& input_batch) {
-  std::cout << "in featureize" << std::endl;
-  // for (auto part : input_batch) {
-  //   std::cout << part << std::endl;
-  // }
   if (input_batch.empty()) {
     throw std::invalid_argument("Cannot featurize empty batch.");
   }
