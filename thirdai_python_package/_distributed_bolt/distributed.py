@@ -528,7 +528,6 @@ class DistributedDataParallel:
                 train_state_manager.updates % validation_context.validation_frequency
                 == 0
             ):
-
                 self.validation_metrics.append(
                     train_state_manager.validate_and_save_if_best()
                 )
