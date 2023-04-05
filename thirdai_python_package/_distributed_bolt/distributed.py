@@ -421,6 +421,7 @@ class RayTrainingClusterConfig:
         ]
 
 
+# TODO(pratik): add freezing hash_table
 class DistributedDataParallel:
     """
     This class implements the public facing APIs for a distributed data parallel
@@ -562,7 +563,7 @@ class DistributedDataParallel:
         for worker_id, replica_worker_config in enumerate(
             cluster_config.replica_worker_configs, start=1
         ):
-            self.replica_workers.append(
+            replica_workers.append(
                 replica_worker_config.remote(
                     num_workers=cluster_config.num_workers,
                     model_to_wrap=ray_model_ref,
