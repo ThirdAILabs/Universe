@@ -1,7 +1,5 @@
 #include "Metric.h"
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
-#include <bolt_vector/src/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <stdexcept>
 
 namespace thirdai::bolt::train::metrics {
