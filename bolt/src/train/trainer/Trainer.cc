@@ -88,8 +88,6 @@ metrics::History Trainer::train(
 
     train_metrics.reset();
 
-    callbacks.onEpochEnd();
-
     // This condition ensures that if we steps_per_validation coincides with the
     // end of the epoch that we don't validate twice: once above when we reach
     // the validation interval and once when we reach the end of the epoch.
@@ -98,6 +96,8 @@ metrics::History Trainer::train(
                use_sparsity_in_validation);
       steps_since_validation = 0;
     }
+
+    callbacks.onEpochEnd();
   }
 
   callbacks.onTrainEnd();
