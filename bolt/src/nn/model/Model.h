@@ -6,6 +6,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/CheckLicense.h>
+#include <utils/UUID.h>
 #include <vector>
 
 namespace thirdai::bolt::nn::model {
@@ -88,10 +89,23 @@ class Model {
   const autograd::ComputationList& outputs() const;
 
   /**
+   * Returns the inputs storing the labels of the model.
+   */
+  const autograd::ComputationList& labels() const;
+
+  /**
+   * Returns a list of all ops.
+   */
+  const std::vector<ops::OpPtr>& ops() const;
+
+  /**
    * Retrieves on op by name. Throws if not found.
    */
   ops::OpPtr getOp(const std::string& name) const;
 
+  /**
+   * Retrieves a computation in the graph by name. Throws if not found.
+   */
   autograd::ComputationPtr getComputation(const std::string& name) const;
 
   /**
@@ -106,11 +120,33 @@ class Model {
   uint32_t trainSteps() const;
 
   /**
-   * Saves the model without optimizer state.
+   * Returns the dimensions of the inputs the model is expecting, in the order
+   * they are expected.
    */
-  void save(const std::string& filename);
+  std::vector<uint32_t> inputDims() const;
 
-  void save_stream(std::ostream& output_stream);
+  /**
+   * Returns a list of references to gradients of all parameters in the model.
+   */
+  std::vector<std::vector<float>*> gradients() const;
+
+  /**
+   * Returns a list of pairs of matching outputs and labels. A label and output
+   * match if they are both used in a loss function with no other labels or
+   * outputs.
+   */
+  std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
+  outputLabelPairs() const;
+
+  /**
+   * Saves the model without optimizer state. Save metadata indicates if a
+   * metadata file should also be created which gives the thirdai version, model
+   * uuid, the date saved, number of train steps before the save, and the model
+   * summary (summary only present if THIRDAI_EXPOSE_ALL is true).
+   */
+  void save(const std::string& filename, bool save_metadata = true) const;
+
+  void save_stream(std::ostream& output_stream) const;
 
   /**
    * Loads the model and automatically initializes the optimizer state.
@@ -149,7 +185,14 @@ class Model {
    * the loss function so that the labels can be selected as active neurons when
    * the layer is sparse.
    */
-  void matchOutputFullyConnectedLayersWithLabels();
+  void matchOutputFullyConnectedLayersWithLabels() const;
+
+  /**
+   * Creates a metadata file which gives the thirdai version, model uuid, the
+   * date saved, number of train steps before the save, and the model summary
+   * (summary only present if THIRDAI_EXPOSE_ALL is true).
+   */
+  void saveMetadata(const std::string& save_path) const;
 
   autograd::ComputationList _inputs;
   autograd::ComputationList _outputs;
@@ -162,6 +205,8 @@ class Model {
   AllocationManager _allocation_manager;
 
   uint32_t _train_steps;
+
+  std::string _model_uuid;
 
   Model() : _allocation_manager() { licensing::checkLicense(); }
 

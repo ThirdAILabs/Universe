@@ -1,5 +1,6 @@
 #include "DatasetPython.h"
 #include "PyDataSource.h"
+#include <bolt/python_bindings/PybindUtils.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/DatasetLoaderWrappers.h>
@@ -19,6 +20,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/MaskedSentenceFeaturizer.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
+#include <dataset/src/featurizers/TextGenerationFeaturizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
@@ -272,6 +274,17 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<std::shared_ptr<Vocabulary>, uint32_t, float>(),
            py::arg("vocabulary"), py::arg("pairgram_range"),
            py::arg("masked_tokens_percentage"));
+
+  py::class_<TextGenerationFeaturizer, Featurizer,
+             std::shared_ptr<TextGenerationFeaturizer>>(
+      dataset_submodule, "TextGenerationFeaturizer")
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+           py::arg("lrc_len"), py::arg("irc_len"), py::arg("src_len"),
+           py::arg("vocab_size"))
+      .def("featurize_for_inference",
+           &TextGenerationFeaturizer::featurizeInferenceSample,
+           py::arg("prompt"), py::arg("context"))
+      .def(bolt::python::getPickleFunction<TextGenerationFeaturizer>());
 
 #endif
 

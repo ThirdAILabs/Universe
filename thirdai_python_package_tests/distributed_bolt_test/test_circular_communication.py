@@ -25,25 +25,18 @@ def test_all_reduce_circular_communication():
             circular_communicating_workers[(i - 1) % num_workers]
         )
 
-    flattened_weight_matrix_shapes = [(29,), (35,)]
+    flattened_weight_matrix_shape = (100,)
 
-    weights_all_reduced_gt = [
-        np.zeros(shape) for shape in flattened_weight_matrix_shapes
-    ]
+    weights_all_reduced_gt = np.zeros(flattened_weight_matrix_shape, dtype="float32")
     # Set up mock initial gradients for each worker
     for i in range(num_workers):
-        circular_communicating_workers[i].gradients = np.array(
-            [
-                np.random.randint(100, size=shape).astype("float32")
-                for shape in flattened_weight_matrix_shapes
-            ]
-        )
-        for j in range(len(flattened_weight_matrix_shapes)):
-            weights_all_reduced_gt[j] += circular_communicating_workers[i].gradients[j]
+        circular_communicating_workers[i].gradients = np.random.randint(
+            100, size=flattened_weight_matrix_shape
+        ).astype("float32")
+        weights_all_reduced_gt += circular_communicating_workers[i].gradients
         circular_communicating_workers[i].calculate_gradient_partitions()
 
-    for i in range(len(weights_all_reduced_gt)):
-        weights_all_reduced_gt[i] /= num_workers
+    weights_all_reduced_gt /= num_workers
 
     # This code is copied from the function run_circular_cluster_communication in
     # primary_worker.py and the function process_ring in circular.py
@@ -61,9 +54,8 @@ def test_all_reduce_circular_communication():
                 )
             update_id -= 1
 
-    for worker in circular_communicating_workers:
-        for gradient_id in range(len(weights_all_reduced_gt)):
-            assert np.array_equal(
-                weights_all_reduced_gt[gradient_id],
-                circular_communicating_workers[worker_id].gradients[gradient_id],
-            )
+    for worker_id, worker in enumerate(circular_communicating_workers):
+        assert np.array_equal(
+            weights_all_reduced_gt,
+            circular_communicating_workers[worker_id].gradients,
+        )

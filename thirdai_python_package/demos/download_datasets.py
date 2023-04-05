@@ -631,6 +631,20 @@ def download_amazon_kaggle_product_catalog_sampled():
     return TRAIN_FILE, n_target_classes
 
 
+def download_agnews_dataset(corpus_file):
+    from datasets import load_dataset
+
+    corpus = load_dataset("ag_news")["train"]["text"]
+    with open(corpus_file, "w") as fw:
+        nothing = fw.write("id,text\n")
+        count = 0
+        for line in corpus:
+            nothing = fw.write(str(count) + "," + line.replace(",", " ").lower() + "\n")
+            count += 1
+
+    return len(corpus)
+
+
 def download_beir_dataset(dataset):
     from beir import util
     from beir.datasets.data_loader import GenericDataLoader
