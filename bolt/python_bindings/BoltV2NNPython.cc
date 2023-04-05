@@ -108,7 +108,10 @@ void createBoltV2NNSubmodule(py::module_& module) {
            py::arg("lookup_size"), py::arg("log_embedding_block_size"),
            py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
            py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
-      .def("__call__", &ops::Embedding::apply);
+      .def("__call__", &ops::Embedding::apply)
+      .def("duplicate_with_new_reduction",
+           &ops::Embedding::duplicateWithNewReduction, py::arg("reduction"),
+           py::arg("num_tokens_per_input"));
 
   py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
       .def(py::init(&ops::Concatenate::make))
@@ -136,7 +139,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("outputs", &model::Model::outputs)
       .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
-      .def("save", &model::Model::save, py::arg("filename"))
+      .def("save", &model::Model::save, py::arg("filename"),
+           py::arg("save_metadata") = true)
       .def_static("load", &model::Model::load, py::arg("filename"))
       .def(thirdai::bolt::python::getPickleFunction<model::Model>());
 

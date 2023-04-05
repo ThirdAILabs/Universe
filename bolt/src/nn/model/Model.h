@@ -6,6 +6,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/CheckLicense.h>
+#include <utils/UUID.h>
 #include <vector>
 
 namespace thirdai::bolt::nn::model {
@@ -138,9 +139,12 @@ class Model {
   outputLabelPairs() const;
 
   /**
-   * Saves the model without optimizer state.
+   * Saves the model without optimizer state. Save metadata indicates if a
+   * metadata file should also be created which gives the thirdai version, model
+   * uuid, the date saved, number of train steps before the save, and the model
+   * summary (summary only present if THIRDAI_EXPOSE_ALL is true).
    */
-  void save(const std::string& filename) const;
+  void save(const std::string& filename, bool save_metadata = true) const;
 
   void save_stream(std::ostream& output_stream) const;
 
@@ -183,6 +187,13 @@ class Model {
    */
   void matchOutputFullyConnectedLayersWithLabels() const;
 
+  /**
+   * Creates a metadata file which gives the thirdai version, model uuid, the
+   * date saved, number of train steps before the save, and the model summary
+   * (summary only present if THIRDAI_EXPOSE_ALL is true).
+   */
+  void saveMetadata(const std::string& save_path) const;
+
   autograd::ComputationList _inputs;
   autograd::ComputationList _outputs;
   autograd::ComputationList _labels;
@@ -194,6 +205,8 @@ class Model {
   AllocationManager _allocation_manager;
 
   uint32_t _train_steps;
+
+  std::string _model_uuid;
 
   Model() : _allocation_manager() { licensing::checkLicense(); }
 

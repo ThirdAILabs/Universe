@@ -1,5 +1,8 @@
+import re
+
 import numpy as np
 import pytest
+import thirdai
 from thirdai import bolt_v2 as bolt
 from thirdai import dataset
 
@@ -50,6 +53,26 @@ def build_model(n_classes):
     )
 
     return model
+
+
+def check_metadata_file(model, save_filename):
+    summary = [
+        re.escape(line) for line in model.summary(print=False).split("\n") if line != ""
+    ]
+    expected_lines = [
+        re.escape("thirdai_version=" + thirdai.__version__),
+        "model_uuid=[0-9A-F]+",
+        "date_saved=.*",
+        "train_steps_before_save=32",
+        "model_summary=",
+        *summary,
+    ]
+
+    with open(save_filename + ".metadata") as file:
+        contents = file.readlines()
+
+        for line, expected in zip(contents, expected_lines):
+            assert re.match(expected, line.strip())
 
 
 def train_model(model, train_data, train_labels):
@@ -114,6 +137,9 @@ def test_bolt_save_load():
     # Save and reload model
     temp_save_path = "./temp_save_model"
     model.save(temp_save_path)
+
+    check_metadata_file(model, temp_save_path)
+
     model = bolt.nn.Model.load(temp_save_path)
 
     # Check that the accuracies match

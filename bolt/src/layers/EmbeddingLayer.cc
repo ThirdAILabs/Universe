@@ -39,7 +39,8 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   uint64_t n_chunks =
       (_embedding_block_size + _update_chunk_size - 1) / _update_chunk_size;
   _embedding_block_size = n_chunks * _update_chunk_size;
-  _embedding_block = std::vector<float>(_embedding_block_size, 0);
+  _embedding_block =
+      std::make_shared<std::vector<float>>(_embedding_block_size, 0);
 
   initOptimizer();
 
@@ -48,7 +49,7 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   std::mt19937 gen(seed);
   std::normal_distribution<float> dist(0.0, 0.01);
 
-  std::generate(_embedding_block.begin(), _embedding_block.end(),
+  std::generate(_embedding_block->begin(), _embedding_block->end(),
                 [&]() { return dist(gen); });
 }
 
@@ -68,6 +69,9 @@ void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
 
   std::fill_n(output.gradients, _total_embedding_dim, 0);
 
+  // Preform outer dereferencing once here to avoid repeating it later.
+  auto& embedding_block = *_embedding_block;
+
   for (uint64_t lookup_index = 0; lookup_index < _num_lookups_per_token;
        lookup_index++) {
     float* output_start =
@@ -85,13 +89,13 @@ void EmbeddingLayer::forward(const BoltVector& tokens, BoltVector& output) {
         case EmbeddingReductionType::AVERAGE:
           // Safe since we allocated 2^_log_embedding_block_size+_lookup_size
           for (uint64_t i = 0; i < _lookup_size; i++) {
-            output_start[i] += _embedding_block[embedding_block_offset + i];
+            output_start[i] += embedding_block[embedding_block_offset + i];
           }
           break;
         case EmbeddingReductionType::CONCATENATION:
           std::copy(
-              _embedding_block.data() + embedding_block_offset,
-              _embedding_block.data() + embedding_block_offset + _lookup_size,
+              embedding_block.data() + embedding_block_offset,
+              embedding_block.data() + embedding_block_offset + _lookup_size,
               output_start);
 
           // Shift output_start since each token maps to unique range in the
@@ -148,7 +152,7 @@ void EmbeddingLayer::backpropagate(const BoltVector& tokens,
 void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
                                       float B2, float eps) {
   if (_disable_sparse_parameter_updates) {
-    _optimizer->applyUpdate(_embedding_block, lr, iter);
+    _optimizer->applyUpdate(*_embedding_block, lr, iter);
   } else {
     updateParametersSparse(lr, iter, B1, B2, eps);
   }
@@ -159,8 +163,11 @@ void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
-#pragma omp parallel for default(none) \
-    shared(B1, B2, B1_bias_corrected, B2_bias_corrected, eps, lr)
+  // Preform outer dereferencing once here to avoid repeating it later.
+  auto& embedding_block = *_embedding_block;
+
+#pragma omp parallel for default(none) shared( \
+    embedding_block, B1, B2, B1_bias_corrected, B2_bias_corrected, eps, lr)
   for (uint64_t chunk_id = 0; chunk_id < _embedding_chunks_used.size();
        chunk_id++) {
     if (!_embedding_chunks_used[chunk_id]) {
@@ -187,10 +194,10 @@ void EmbeddingLayer::updateParametersSparse(float lr, uint32_t iter, float B1,
       assert(!std::isnan(_optimizer->momentum[n]));
       assert(!std::isnan(_optimizer->velocity[n]));
 
-      _embedding_block[n] +=
+      embedding_block[n] +=
           lr * (_optimizer->momentum[n] / B1_bias_corrected) /
           (std::sqrt(_optimizer->velocity[n] / B2_bias_corrected) + eps);
-      assert(!std::isnan(_embedding_block[n]));
+      assert(!std::isnan(embedding_block[n]));
 
       _optimizer->gradients[n] = 0;
     }
@@ -215,6 +222,26 @@ void EmbeddingLayer::buildLayerSummary(std::ostream& summary) const {
   if (_num_tokens_per_input) {
     summary << ", num_tokens_per_input=" << _num_tokens_per_input.value();
   }
+}
+
+std::unique_ptr<EmbeddingLayer> EmbeddingLayer::duplicateWithNewReduction(
+    const std::string& reduction,
+    std::optional<uint64_t> num_tokens_per_input) const {
+  EmbeddingLayerConfig config(_num_lookups_per_token, _lookup_size,
+                              _log_embedding_block_size, _update_chunk_size,
+                              reduction, num_tokens_per_input);
+
+  auto new_layer = std::make_unique<EmbeddingLayer>(config);
+
+  if (new_layer->_embedding_block_size != _embedding_block_size) {
+    throw std::runtime_error(
+        "Expected embedding_block_size to be consistent in "
+        "duplicateWithNewReduction.");
+  }
+  new_layer->_hash_fn = _hash_fn;
+  new_layer->_embedding_block = _embedding_block;
+
+  return new_layer;
 }
 
 }  // namespace thirdai::bolt

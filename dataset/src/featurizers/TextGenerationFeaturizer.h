@@ -117,6 +117,7 @@ class TextGenerationFeaturizer final : public Featurizer {
   void serialize(Archive& archive) {
     archive(cereal::base_class<Featurizer>(this), _lrc_len, _irc_len, _src_len);
   }
+
   /**
    * Helper function to featurize a single line from the text dataset and
    * returns the created input samples and labels.
@@ -124,8 +125,10 @@ class TextGenerationFeaturizer final : public Featurizer {
   std::vector<std::vector<BoltVector>> featurizeText(
       const std::string& line) const;
 
-  // Returns the context tokens (the concatenation of the context and target) as
-  // well as the index to start predicting from.
+  /**
+   * Returns the context tokens (the concatenation of the context and target) as
+   * well as the index to start predicting from.
+   */
   static std::pair<std::vector<uint32_t>, uint32_t> getContext(
       const json& line_content);
 
