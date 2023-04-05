@@ -84,8 +84,10 @@ void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
   for (uint32_t i = 0; i < input.len; i++) {
     float x_hat = (input.activations[i] - mean) / stddev;
 
-    sum_grad += output.gradients[i];
-    sum_grad_x_hat += output.gradients[i] * x_hat;
+    uint32_t neuron = input.activeNeuronAtIndex<DENSE>(i);
+
+    sum_grad += output.gradients[i] * _gamma[neuron];
+    sum_grad_x_hat += output.gradients[i] * _gamma[neuron] * x_hat;
   }
 
   for (uint32_t i = 0; i < input.len; i++) {
@@ -94,10 +96,11 @@ void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
 
     uint32_t neuron = input.activeNeuronAtIndex<DENSE>(i);
 
-    float grad_x = input.len * grad_y - sum_grad - sum_grad_x_hat * x_hat;
+    float grad_x =
+        input.len * grad_y * _gamma[neuron] - sum_grad - sum_grad_x_hat * x_hat;
     grad_x /= (input.len * stddev);
 
-    input.gradients[i] += _gamma[neuron] * grad_x;
+    input.gradients[i] += grad_x;
 
     _gamma_optimizer.gradients[neuron] += output.gradients[i] * x_hat;
 
