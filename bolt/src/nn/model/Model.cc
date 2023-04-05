@@ -7,7 +7,11 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <utils/UUID.h>
+#include <utils/Version.h>
 #include <algorithm>
+#include <chrono>
+#include <ctime>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -22,7 +26,9 @@ Model::Model(autograd::ComputationList inputs,
     : _inputs(std::move(inputs)),
       _outputs(std::move(outputs)),
       _losses(std::move(losses)),
-      _train_steps(0) {
+      _train_steps(0),
+      _model_uuid(
+          utils::uuid::getRandomHexString(/* num_bytes_randomness= */ 16)) {
   licensing::checkLicense();
 
   for (const auto& loss : _losses) {
@@ -207,10 +213,14 @@ Model::outputLabelPairs() const {
   return output_label_pairs;
 }
 
-void Model::save(const std::string& filename) const {
+void Model::save(const std::string& filename, bool save_metadata) const {
   auto output_stream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   save_stream(output_stream);
+
+  if (save_metadata) {
+    saveMetadata(filename);
+  }
 }
 
 void Model::save_stream(std::ostream& output_stream) const {
@@ -298,13 +308,32 @@ void Model::matchOutputFullyConnectedLayersWithLabels() const {
   }
 }
 
+void Model::saveMetadata(const std::string& save_path) const {
+  auto file = dataset::SafeFileIO::ofstream(save_path + ".metadata");
+
+  file << "thirdai_version=" << version() << std::endl;
+
+  file << "model_uuid=" << _model_uuid << std::endl;
+
+  auto time = std::chrono::system_clock::now();
+  auto c_time = std::chrono::system_clock::to_time_t(time);
+  file << "date_saved=" << std::ctime(&c_time);
+
+  file << "train_steps_before_save=" << trainSteps() << std::endl;
+
+#if THIRDAI_EXPOSE_ALL
+  file << "model_summary=";
+  file << summary(/* print= */ false);
+#endif
+}
+
 template void Model::serialize(cereal::BinaryInputArchive&);
 template void Model::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void Model::serialize(Archive& archive) {
   archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
-          _allocation_manager, _train_steps);
+          _allocation_manager, _train_steps, _model_uuid);
 }
 
 }  // namespace thirdai::bolt::nn::model

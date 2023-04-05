@@ -38,11 +38,18 @@ class Embedding final : public Op,
 
   autograd::ComputationPtr apply(autograd::ComputationPtr input);
 
+  std::shared_ptr<Embedding> duplicateWithNewReduction(
+      const std::string& reduction,
+      std::optional<uint64_t> num_tokens_per_input);
+
  private:
   Embedding(uint64_t num_embedding_lookups, uint64_t lookup_size,
             uint64_t log_embedding_block_size, const std::string& reduction,
             std::optional<uint64_t> num_tokens_per_input,
             uint64_t update_chunk_size);
+
+  Embedding(std::unique_ptr<EmbeddingLayer>&& kernel, const std::string& name)
+      : Op(name), _kernel(std::move(kernel)) {}
 
   std::unique_ptr<EmbeddingLayer> _kernel;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include "LayerConfig.h"
@@ -10,6 +11,7 @@
 #include <cmath>
 #include <ctime>
 #include <optional>
+#include <stdexcept>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -49,20 +51,18 @@ class EmbeddingLayer {
     _disable_sparse_parameter_updates = true;
   }
 
+  std::vector<float>& getRawEmbeddingBlock() { return *_embedding_block; }
   void saveWithOptimizer(bool should_save_optimizer) {
     _should_save_optimizer = should_save_optimizer;
   }
-
-  std::vector<float>& getRawEmbeddingBlock() { return _embedding_block; }
 
   std::vector<float>& getRawEmbeddingBlockGradient() {
     return _optimizer->gradients;
   }
 
-  EmbeddingLayer(const EmbeddingLayer&) = delete;
-  EmbeddingLayer(EmbeddingLayer&&) = delete;
-  EmbeddingLayer& operator=(const EmbeddingLayer&) = delete;
-  EmbeddingLayer& operator=(EmbeddingLayer&&) = delete;
+  std::unique_ptr<EmbeddingLayer> duplicateWithNewReduction(
+      const std::string& reduction,
+      std::optional<uint64_t> num_tokens_per_input) const;
 
   ~EmbeddingLayer() = default;
 
@@ -138,7 +138,7 @@ class EmbeddingLayer {
 
   hashing::UniversalHash _hash_fn;
 
-  std::vector<float> _embedding_block;
+  std::shared_ptr<std::vector<float>> _embedding_block;
 
   /**
    * The embedding block is grouped into chunks of size _update_chunk_size.
