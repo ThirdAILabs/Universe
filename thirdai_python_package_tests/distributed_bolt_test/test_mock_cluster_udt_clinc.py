@@ -58,7 +58,7 @@ def test_distributed_start(ray_two_node_cluster_config):
             epochs=0,
         )
     except Exception as err:
-        print(f"{err}")
+        print(f"Found Err{err}")
         folder_path = "/tmp/ray/session_latest/logs"
         n = 20
         file_types = ["*.log", "*.err", "*.out", "*.txt"]
