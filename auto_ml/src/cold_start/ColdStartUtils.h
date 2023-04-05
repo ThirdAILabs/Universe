@@ -72,6 +72,6 @@ dataset::cold_start::ColdStartDataSourcePtr preprocessColdStartTrainSource(
     const dataset::DataSourcePtr& data,
     const std::vector<std::string>& strong_column_names,
     const std::vector<std::string>& weak_column_names,
-    const data::TabularDatasetFactoryPtr& dataset_factory,
+    data::TabularDatasetFactoryPtr& dataset_factory,
     ColdStartMetaDataPtr& metadata);
 }  // namespace thirdai::automl::cold_start
