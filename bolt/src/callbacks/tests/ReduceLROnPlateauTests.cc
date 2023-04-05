@@ -15,8 +15,8 @@ class ReduceLROnPlateauTest {
 };
 
 TEST(ReduceLROnPlateau, NoisyCategoricalFeatures) {
-  float start_lr = 10;
-  TrainConfig config = TrainConfig::makeConfig(start_lr, /* epochs = */ 1);
+  TrainConfig config =
+      TrainConfig::makeConfig(/* learning_rate = */ 10, /* epochs = */ 1);
   config.withMetrics({"categorical_accuracy"});
   TrainState train_state(config, /* batch_size = */ 1, /* data_len = */ 1);
   ReduceLROnPlateau callback("categorical_accuracy", /* factor = */ 0.5,
