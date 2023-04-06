@@ -10,8 +10,11 @@ namespace thirdai::dataset::mach {
 
 /**
  * Given the output activations to a mach model, decode using the mach index
- * back to the original classes.
- * TODO(david) implement the more efficient version.
+ * back to the original classes. We take the top K values from the output and
+ * select a candidate list of documents based on the inverted index. For each
+ * one of those candidates we compute a score by summing the activations of its
+ * hashed indicies. TopKUnlimited means we sum from ALL hashed indices instead
+ * of those just in the top K activations.
  */
 std::vector<std::pair<std::string, double>> topKUnlimitedDecode(
     const BoltVector& output, const MachIndexPtr& index,

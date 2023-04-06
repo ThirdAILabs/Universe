@@ -129,8 +129,10 @@ py::object UDTMachClassifier::evaluate(const dataset::DataSourcePtr& data,
   for (uint32_t i = 0; i < output.numSamples(); i++) {
     BoltVector output_activations = output.getSampleAsNonOwningBoltVector(i);
     auto predictions = dataset::mach::topKUnlimitedDecode(
-        output_activations, _mach_label_block->index(), _min_num_eval_results,
-        _top_k_per_eval_aggregation);
+        /* output = */ output_activations,
+        /* index = */ _mach_label_block->index(),
+        /* min_num_eval_results = */ _min_num_eval_results,
+        /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
     predicted_entities[i] = predictions;
   }
 
@@ -151,8 +153,10 @@ py::object UDTMachClassifier::predict(const MapInput& sample,
   BoltVector output = _classifier->model()->predictSingle(
       _dataset_factory->featurizeInput(sample), sparse_inference);
   auto decoded_output = dataset::mach::topKUnlimitedDecode(
-      output, _mach_label_block->index(), _min_num_eval_results,
-      _top_k_per_eval_aggregation);
+      /* output = */ output,
+      /* index = */ _mach_label_block->index(),
+      /* min_num_eval_results = */ _min_num_eval_results,
+      /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
 
   return py::cast(decoded_output);
 }
@@ -175,8 +179,10 @@ py::object UDTMachClassifier::predictBatch(const MapInputBatch& samples,
   for (uint32_t i = 0; i < outputs.getBatchSize(); i++) {
     auto vector = outputs[i];
     auto predictions = dataset::mach::topKUnlimitedDecode(
-        vector, _mach_label_block->index(), _min_num_eval_results,
-        _top_k_per_eval_aggregation);
+        /* output = */ vector,
+        /* index = */ _mach_label_block->index(),
+        /* min_num_eval_results = */ _min_num_eval_results,
+        /* top_k_per_eval_aggregation = */ _top_k_per_eval_aggregation);
     predicted_entities[i] = predictions;
   }
 

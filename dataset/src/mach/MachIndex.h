@@ -15,10 +15,6 @@
 #include <unordered_map>
 #include <vector>
 
-namespace thirdai::dataset::tests {
-class MachDecodeTest;
-}  // namespace thirdai::dataset::tests
-
 namespace thirdai::dataset::mach {
 
 /**
@@ -81,8 +77,6 @@ class NumericCategoricalMachIndex : public MachIndex {
   std::vector<uint32_t> hashAndStoreEntity(const std::string& string) final;
 
   std::vector<std::string> entitiesByHash(uint32_t hash_val) const final;
-
-  friend class tests::MachDecodeTest;
 
  private:
   NumericCategoricalMachIndex() {}
