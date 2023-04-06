@@ -42,8 +42,10 @@ void LayerNorm::forward(const BoltVector& input, BoltVector& output) {
   auto [mean, variance] = moments(input);
   float stddev = std::sqrt(variance + 1e-6);
 
-  std::copy(input.active_neurons, input.active_neurons + input.len,
-            output.active_neurons);
+  if constexpr (!DENSE) {
+    std::copy(input.active_neurons, input.active_neurons + input.len,
+              output.active_neurons);
+  }
 
   for (uint32_t i = 0; i < input.len; i++) {
     float x_hat = (input.activations[i] - mean) / stddev;
