@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace thirdai::dataset {
+namespace thirdai::dataset::mach {
 
 /**
  * Interface for a MachIndex. Should support hashing string entities
@@ -142,4 +142,4 @@ static NumericCategoricalMachIndexPtr asNumericIndex(
   return std::dynamic_pointer_cast<NumericCategoricalMachIndex>(index);
 }
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::dataset::mach

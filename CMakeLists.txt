@@ -388,8 +388,9 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
-    dataset/src/blocks/MachIndex.cc
-    dataset/src/blocks/MachBlock.cc
+    dataset/src/mach/MachDecode.cc
+    dataset/src/mach/MachIndex.cc
+    dataset/src/mach/MachBlock.cc
     dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc
