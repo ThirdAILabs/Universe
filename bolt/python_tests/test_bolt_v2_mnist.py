@@ -31,7 +31,7 @@ def test_bolt_on_mnist(load_mnist_bolt_v2):
 
     hidden_layer = bolt.nn.FullyConnected(
         dim=20000,
-        input_dim=784,
+        input_dim=input_layer.dim(),
         sparsity=0.01,
         activation="relu",
         sampling_config=old_bolt.nn.DWTASamplingConfig(
