@@ -4,6 +4,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <utility>
 
 namespace thirdai::dataset {
 
@@ -90,6 +91,13 @@ std::vector<BoltVector> RecurrenceAugmentation::replicateOtherVectors(
     bolt_vec = builder.toBoltVector();
   }
   return vectors;
+}
+
+std::pair<uint32_t, uint32_t> RecurrenceAugmentation::outputRange(
+    uint32_t step) {
+  auto begin = step * _vocab.maxSize().value();
+  auto end = begin + _vocab.maxSize().value();
+  return {begin, end};
 }
 
 uint32_t RecurrenceAugmentation::elementIdAtStep(const BoltVector& output,

@@ -1,4 +1,5 @@
 #include "UDTRecurrentClassifier.h"
+#include <bolt/src/graph/nodes/FullyConnected.h>
 #include <auto_ml/src/featurization/RecurrentDatasetFactory.h>
 #include <auto_ml/src/udt/utils/Conversion.h>
 #include <auto_ml/src/udt/utils/Models.h>
@@ -8,6 +9,8 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <utils/StringManipulation.h>
+#include <memory>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::automl::udt {
@@ -121,6 +124,8 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
   std::vector<std::string> predictions;
 
   for (uint32_t step = 0; step < _target->max_length; step++) {
+    std::dynamic_pointer_cast<bolt::FullyConnectedNode>(_model->output())
+        ->setOutputRange(_dataset_factory->outputRange(step));
     BoltVector output = _model->predictSingle(
         _dataset_factory->featurizeInput(mutable_sample), sparse_inference);
     auto predicted_id = _dataset_factory->elementIdAtStep(output, step);
@@ -131,6 +136,9 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
     _dataset_factory->addPredictionToSample(mutable_sample, predicted_id);
     predictions.push_back(_dataset_factory->elementString(predicted_id));
   }
+
+  std::dynamic_pointer_cast<bolt::FullyConnectedNode>(_model->output())
+      ->setOutputRange(std::nullopt);
 
   // We previously incorporated predictions at each step into the sample.
   // Now, we extract
@@ -168,6 +176,9 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
 
   for (uint32_t step = 0; step < _target->max_length && !progress.allDone();
        step++) {
+    std::dynamic_pointer_cast<bolt::FullyConnectedNode>(_model->output())
+        ->setOutputRange(_dataset_factory->outputRange(step));
+
     auto batch_activations = _model->predictSingleBatch(
         _dataset_factory->featurizeInputBatch(mutable_samples),
         sparse_inference);
@@ -195,6 +206,9 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
     // TODO(Geordie/Tharun): Should we join or return list instead?
     output[i] = text::join(all_predictions[i], {_target->delimiter});
   }
+
+  std::dynamic_pointer_cast<bolt::FullyConnectedNode>(_model->output())
+      ->setOutputRange(std::nullopt);
 
   return std::move(output);
 }

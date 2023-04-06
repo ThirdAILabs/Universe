@@ -92,6 +92,12 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   }
 
   for (uint64_t n = 0; n < len_out; n++) {
+    if (DENSE && _compute_range &&
+        (n < _compute_range->first || n >= _compute_range->second)) {
+      output.activations[n] = 0;
+      continue;
+    }
+
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
     uint64_t act_neuron = output.activeNeuronAtIndex<DENSE>(n);
