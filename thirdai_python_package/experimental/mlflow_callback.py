@@ -84,7 +84,7 @@ class MlflowCallback(bolt.callbacks.Callback):
         if self.batch_cnt % self.batch_interval == 0:
             import mlflow  # import inside class to not force another package dependency
 
-            for name, values in train_state.get_all_train_metrics().items():
+            for name, values in train_state.get_all_train_batch_metrics().items():
                 mlflow.log_metric(self._clean(name), values[-1])
             mlflow.log_metric("learning_rate", train_state.learning_rate)
 
