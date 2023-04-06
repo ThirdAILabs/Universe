@@ -2,7 +2,7 @@ enable_testing()
 
 include(GoogleTest)
 
-set(BOLT_VECTOR_TESTS BoltVectorTest BoltVectorLoadSaveTest)
+set(BOLT_VECTOR_TESTS BoltVectorTest BoltVectorLoadSaveTest BoltVectorNormTest)
 
 foreach(BOLT_VECTOR_TEST IN LISTS BOLT_VECTOR_TESTS)
   add_executable(${BOLT_VECTOR_TEST} ${BOLT_VECTOR_TEST}.cc)

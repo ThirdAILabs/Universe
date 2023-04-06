@@ -110,8 +110,6 @@ struct BoltVector {
 
   TopKActivationsQueue findKLargestActivations(uint32_t k) const;
 
-  float euclideanDistance(const BoltVector& vec);
-
   bool hasGradients() const;
 
   friend std::ostream& operator<<(std::ostream& out, const BoltVector& vec);
