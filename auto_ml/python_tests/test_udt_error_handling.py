@@ -147,3 +147,16 @@ def test_invalid_char_k_contextual_text_encoding(invalid_encoding):
             target="target",
             n_target_classes=2,
         )
+
+
+def test_invalid_column_name_in_udt_predict():
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "text_col": bolt.types.text(contextual_encoding="local"),
+            "target": bolt.types.categorical(),
+        },
+        target="target",
+        n_target_classes=2,
+    )
+
+    print(model.predict({"HAHAHA": "some text"}))
