@@ -9,7 +9,7 @@
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/blocks/MachBlock.h>
+#include <dataset/src/mach/MachBlock.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <stdexcept>
 
@@ -89,14 +89,6 @@ class UDTMachClassifier final : public UDTBackend {
   }
 
  private:
-  /**
-   * Given the output activations to a mach model, decode using the mach index
-   * back to the original documents. Documents may be strings or integers.
-   * TODO(david) implement the more efficient version.
-   */
-  std::vector<std::pair<std::string, double>> machSingleDecode(
-      const BoltVector& output);
-
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
         /* label_delimiter = */ _mach_label_block->delimiter(),

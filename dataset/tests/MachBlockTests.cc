@@ -1,7 +1,7 @@
 
 #include <gtest/gtest.h>
-#include <dataset/src/blocks/MachBlock.h>
-#include <dataset/src/blocks/MachIndex.h>
+#include <dataset/src/mach/MachBlock.h>
+#include <dataset/src/mach/MachIndex.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <random>
 

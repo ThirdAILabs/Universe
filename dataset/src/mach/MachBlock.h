@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Categorical.h"
 #include "MachIndex.h"
+#include <dataset/src/blocks/Categorical.h>
 #include <exceptions/src/Exceptions.h>
 #include <variant>
 
