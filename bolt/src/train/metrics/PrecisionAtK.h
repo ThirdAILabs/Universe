@@ -2,17 +2,20 @@
 
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/metrics/Metric.h>
-#include <atomic>
 
 namespace thirdai::bolt::train::metrics {
 
 /**
- * Computes the categorical accuracy (precision@1) for the given output.
+ * Computes the precision@k for the given output.
+ *
+ * Precision@k is the number of true samples in the top k items
+ * divided by k
+ * https://en.wikipedia.org/wiki/Precision_and_recall#Precision
  */
-class CategoricalAccuracy final : public Metric {
+class PrecisionAtK final : public Metric {
  public:
-  CategoricalAccuracy(nn::autograd::ComputationPtr outputs,
-                      nn::autograd::ComputationPtr labels);
+  PrecisionAtK(nn::autograd::ComputationPtr outputs,
+               nn::autograd::ComputationPtr labels, uint32_t k);
 
   void record(uint32_t index_in_batch) final;
 
@@ -28,8 +31,9 @@ class CategoricalAccuracy final : public Metric {
   nn::autograd::ComputationPtr _outputs;
   nn::autograd::ComputationPtr _labels;
 
-  std::atomic_uint64_t _correct;
-  std::atomic_uint64_t _num_samples;
+  std::atomic_uint64_t _num_correct_predicted;
+  std::atomic_uint64_t _num_predicted;
+  uint32_t _k;
 };
 
 }  // namespace thirdai::bolt::train::metrics
