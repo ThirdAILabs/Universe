@@ -7,10 +7,21 @@
 namespace thirdai::text {
 
 /**
- * Splits a sentence by delimiter.
+ * Splits a string by delimiter.
  */
-std::vector<std::string_view> split(std::string_view sentence,
-                                    char delimiter = ' ');
+std::vector<std::string_view> split(std::string_view string, char delimiter);
+
+/**
+ * Parses a sentence into word and punctuation tokens.
+ * The returned tokens are strings, not to be confused with integer token IDs,
+ * For example, "Anshu is CEO, Tharun is CTO." will be parsed into:
+ * {"Anshu", "is", "CEO", ",", "Tharun", "is", "CTO", "."}
+ *
+ * Note: this function does not currently support no-latin alphabet characters.
+ * To see more expected behaviors, see tests prefixed with
+ * "TestTokenizeSentence" in StringManipulationTests.cc
+ */
+std::vector<std::string_view> tokenizeSentence(std::string_view sentence);
 
 /**
  * Joins a vector of strings into a single delimited string.
