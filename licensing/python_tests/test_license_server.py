@@ -10,6 +10,8 @@ import pytest
 
 @pytest.mark.unit
 def test_go_server():
-    go_src_directory = pathlib.Path(__file__).parent.parent / "src" / "server"
+    go_src_directory = (
+        pathlib.Path(__file__).parent.parent / "src" / "methods" / "server"
+    )
     os.chdir(go_src_directory)
     assert subprocess.run(f"go test", shell=True).returncode == 0

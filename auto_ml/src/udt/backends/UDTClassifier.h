@@ -6,6 +6,7 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
@@ -25,13 +26,17 @@ class UDTClassifier final : public UDTBackend {
                 const std::optional<std::string>& model_config,
                 const config::ArgumentMap& user_args);
 
-  void train(const dataset::DataSourcePtr& data, float learning_rate,
-             uint32_t epochs, const std::optional<Validation>& validation,
-             std::optional<size_t> batch_size,
-             std::optional<size_t> max_in_memory_batches,
-             const std::vector<std::string>& metrics,
-             const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-             bool verbose, std::optional<uint32_t> logging_interval) final;
+  py::object train(
+      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+      const std::optional<ValidationDataSource>& validation,
+      std::optional<size_t> batch_size,
+      std::optional<size_t> max_in_memory_batches,
+      const std::vector<std::string>& metrics,
+      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
+      bool verbose, std::optional<uint32_t> logging_interval) final;
+
+  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
+                        const std::vector<std::string>& metrics) final;
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -49,14 +54,15 @@ class UDTClassifier final : public UDTBackend {
       const std::optional<std::variant<uint32_t, std::string>>& target_class)
       final;
 
-  void coldstart(const dataset::DataSourcePtr& data,
-                 const std::vector<std::string>& strong_column_names,
-                 const std::vector<std::string>& weak_column_names,
-                 float learning_rate, uint32_t epochs,
-                 const std::vector<std::string>& metrics,
-                 const std::optional<Validation>& validation,
-                 const std::vector<bolt::CallbackPtr>& callbacks,
-                 bool verbose) final;
+  py::object coldstart(const dataset::DataSourcePtr& data,
+                       const std::vector<std::string>& strong_column_names,
+                       const std::vector<std::string>& weak_column_names,
+                       float learning_rate, uint32_t epochs,
+                       const std::vector<std::string>& metrics,
+                       const std::optional<ValidationDataSource>& validation,
+                       const std::vector<bolt::CallbackPtr>& callbacks,
+                       std::optional<size_t> max_in_memory_batches,
+                       bool verbose) final;
 
   py::object embedding(const MapInput& sample) final;
 
@@ -70,13 +76,14 @@ class UDTClassifier final : public UDTBackend {
     return std::to_string(class_id);
   }
 
-  bolt::BoltGraphPtr model() const final { return _model; }
+  bolt::BoltGraphPtr model() const final { return _classifier->model(); }
 
-  void setModel(bolt::BoltGraphPtr model) final {
-    if (_model->outputDim() != model->outputDim()) {
+  void setModel(const bolt::BoltGraphPtr& model) final {
+    bolt::BoltGraphPtr& curr_model = _classifier->model();
+    if (curr_model->outputDim() != curr_model->outputDim()) {
       throw std::invalid_argument("Output dim mismatch in set_model.");
     }
-    _model = std::move(model);
+    curr_model = model;
   }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const final {
@@ -95,6 +102,11 @@ class UDTClassifier final : public UDTBackend {
     _dataset_factory->verifyCanDistribute();
   }
 
+  cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
+    return std::make_shared<cold_start::ColdStartMetaData>(
+        _label_block->delimiter(), _label_block->columnName(), integerTarget());
+  }
+
  private:
   dataset::CategoricalBlockPtr labelBlock(
       const std::string& target_name,
@@ -106,15 +118,6 @@ class UDTClassifier final : public UDTBackend {
 
   bool integerTarget() const { return !_class_name_to_neuron; }
 
-  /**
-   * Computes the optimal binary prediction threshold to maximize the given
-   * metric on max_num_batches batches of the given dataset. Note: does not
-   * shuffle the data to obtain the batches.
-   */
-  std::optional<float> tuneBinaryClassificationPredictionThreshold(
-      const dataset::DataSourcePtr& data_source, const std::string& metric_name,
-      size_t batch_size);
-
   UDTClassifier() {}
 
   friend cereal::access;
@@ -125,12 +128,9 @@ class UDTClassifier final : public UDTBackend {
   dataset::ThreadSafeVocabularyPtr _class_name_to_neuron;
   dataset::CategoricalBlockPtr _label_block;
 
-  bolt::BoltGraphPtr _model;
+  utils::ClassifierPtr _classifier;
+
   data::TabularDatasetFactoryPtr _dataset_factory;
-
-  bool _freeze_hash_tables;
-
-  std::optional<float> _binary_prediction_threshold;
 };
 
 }  // namespace thirdai::automl::udt

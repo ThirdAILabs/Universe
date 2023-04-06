@@ -18,6 +18,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -43,7 +44,7 @@ struct DataType {
 
 using DataTypePtr = std::shared_ptr<DataType>;
 
-struct CategoricalDataType : DataType {
+struct CategoricalDataType final : public DataType {
   explicit CategoricalDataType(std::optional<char> delimiter = std::nullopt,
                                CategoricalMetadataConfigPtr metadata = nullptr)
       : delimiter(delimiter), metadata_config(std::move(metadata)) {}
@@ -73,9 +74,16 @@ enum class TextEncodingType {
   Unigrams,
   Bigrams,
   Pairgrams,
+  CharacterKGram,
 };
 
-inline TextEncodingType getTextEncodingFromString(const std::string& encoding) {
+inline std::pair<TextEncodingType, std::optional<uint32_t>>
+getTextEncodingFromString(const std::string& encoding) {
+  if (std::regex_match(encoding, std::regex("char-[1-9]\\d*"))) {
+    uint32_t k = std::strtol(encoding.data() + 5, nullptr, 10);
+    return std::make_pair(TextEncodingType::CharacterKGram, k);
+  }
+
   std::unordered_map<std::string, TextEncodingType> contextual_encodings = {
       {"none", TextEncodingType::Unigrams},
       {"local", TextEncodingType::Bigrams},
@@ -85,19 +93,20 @@ inline TextEncodingType getTextEncodingFromString(const std::string& encoding) {
   if (contextual_encodings.count(encoding) == 0) {
     throw std::invalid_argument(
         "Created text column with invalid contextual_encoding '" + encoding +
-        "' please choose one of 'none', 'local', or 'global'.");
+        "' please choose one of 'none', 'local', 'char-k' (k is a number, e.g. "
+        "'char-5'), or 'global'.");
   };
-  return contextual_encodings[encoding];
+  return std::make_pair(contextual_encodings[encoding], std::nullopt);
 }
 
-struct TextDataType : DataType {
+struct TextDataType final : public DataType {
   explicit TextDataType(std::optional<double> average_n_words = std::nullopt,
                         const std::string& contextual_encoding = "none")
       : average_n_words(average_n_words),
         contextual_encoding(getTextEncodingFromString(contextual_encoding)) {}
 
   std::optional<double> average_n_words;
-  TextEncodingType contextual_encoding;
+  std::pair<TextEncodingType, std::optional<uint32_t>> contextual_encoding;
 
   std::string toString() const final { return R"({"type": "text"})"; }
 
@@ -112,7 +121,7 @@ struct TextDataType : DataType {
 
 using TextDataTypePtr = std::shared_ptr<TextDataType>;
 
-struct NumericalDataType : DataType {
+struct NumericalDataType final : public DataType {
   explicit NumericalDataType(std::pair<double, double> _range,
                              std::string _granularity = "m")
       : range(std::move(_range)), granularity(std::move(_granularity)) {}
@@ -138,7 +147,7 @@ struct NumericalDataType : DataType {
 
 using NumericalDataTypePtr = std::shared_ptr<NumericalDataType>;
 
-struct DateDataType : DataType {
+struct DateDataType final : public DataType {
   std::string toString() const final { return R"({"type": "date"})"; }
 
  private:
@@ -151,6 +160,79 @@ struct DateDataType : DataType {
 
 using DateDataTypePtr = std::shared_ptr<DateDataType>;
 
+struct SequenceDataType final : public DataType {
+  explicit SequenceDataType(char delimiter = ' ',
+                            std::optional<uint32_t> max_length = std::nullopt)
+      : delimiter(delimiter), max_length(max_length) {
+    if (max_length && max_length.value() == 0) {
+      throw std::invalid_argument("Sequence max_length cannot be 0.");
+    }
+  }
+
+  char delimiter;
+  std::optional<uint32_t> max_length;
+
+  std::string toString() const final { return R"({"type": "sequence"})"; }
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<DataType>(this), delimiter, max_length);
+  }
+};
+
+using SequenceDataTypePtr = std::shared_ptr<SequenceDataType>;
+
+/**
+ * Should only be used for graph data. Represents the neighbors of a node
+ * as a space separated list of positive integers (each integer is the node id
+ * of a neighbor; see NodeIDDataType). Thus, the first few lines of valid data
+ * for a graph dataset might look like:
+ *
+ *        neighbors, node_id, target
+ *        1 4 5,0,1
+ *        ,1,0
+ *        9 2,2,0
+ * TODO(Josh): Make the delimiter character configurable
+ */
+struct NeighborsDataType : DataType {
+  std::string toString() const final { return R"({"type": "neighbors"})"; }
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<DataType>(this));
+  }
+};
+
+using NeighborsDataTypePtr = std::shared_ptr<NeighborsDataType>;
+
+/**
+ * Should only be used for graph data. Represents the id of a node
+ * as a single integer. Each node (a row of input data) should have a unique
+ * node id. Thus, the first few lines of valid data for a graph dataset might
+ * look like:
+ *
+ *        neighbors, node_id, target
+ *        1 4 5,0,1
+ *        ,1,0
+ *        9 2,2,0
+ */
+struct NodeIDDataType : DataType {
+  std::string toString() const final { return R"({"type": "node id"})"; }
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<DataType>(this));
+  }
+};
+
+using NodeIDDataTypePtr = std::shared_ptr<NodeIDDataType>;
+
 CategoricalDataTypePtr asCategorical(const DataTypePtr& data_type);
 
 NumericalDataTypePtr asNumerical(const DataTypePtr& data_type);
@@ -158,6 +240,12 @@ NumericalDataTypePtr asNumerical(const DataTypePtr& data_type);
 TextDataTypePtr asText(const DataTypePtr& data_type);
 
 DateDataTypePtr asDate(const DataTypePtr& data_type);
+
+SequenceDataTypePtr asSequence(const DataTypePtr& data_type);
+
+NeighborsDataTypePtr asNeighbors(const DataTypePtr& data_type);
+
+NodeIDDataTypePtr asNodeID(const DataTypePtr& data_type);
 
 using ColumnDataTypes = std::map<std::string, DataTypePtr>;
 

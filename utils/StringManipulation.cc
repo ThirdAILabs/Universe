@@ -179,4 +179,26 @@ std::vector<std::string_view> tokenizeSentence(std::string_view string) {
   return tokens.tokens();
 }
 
+std::string join(const std::vector<std::string>& strings,
+                 const std::string& delimiter) {
+  if (strings.empty()) {
+    return "";
+  }
+
+  std::stringstream joined_stream;
+  joined_stream << strings.front();
+  for (uint32_t i = 1; i < strings.size(); i++) {
+    joined_stream << delimiter << strings[i];
+  }
+  return joined_stream.str();
+}
+
+bool startsWith(const std::string& to_search_in, const std::string& prefix) {
+  if (prefix.size() > to_search_in.size()) {
+    return false;
+  }
+
+  return std::string_view(to_search_in.data(), prefix.size()) == prefix;
+}
+
 }  // namespace thirdai::text

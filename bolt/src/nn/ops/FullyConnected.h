@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -45,6 +46,8 @@ class FullyConnected final
 
   void disableSparseParameterUpdates() final;
 
+  std::vector<std::vector<float>*> gradients() const final;
+
   void summary(std::ostream& summary, const autograd::ComputationList& inputs,
                const autograd::Computation* output) const final;
 
@@ -83,6 +86,18 @@ class FullyConnected final
   uint32_t _reconstruct_hash_functions;
   uint32_t _updates_since_rebuild_hash_tables;
   uint32_t _updates_since_reconstruct_hash_functions;
+
+  FullyConnected() {}
+
+  friend class cereal::access;
+
+  // We use save/load instead of serialize so we can ensure the optimizer is
+  // initialized when the model is loaded.
+  template <class Archive>
+  void save(Archive& archive) const;
+
+  template <class Archive>
+  void load(Archive& archive);
 };
 
 using FullyConnectedPtr = std::shared_ptr<FullyConnected>;

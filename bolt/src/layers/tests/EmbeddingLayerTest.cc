@@ -24,7 +24,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 
     auto layer = std::make_unique<EmbeddingLayer>(config, seed);
 
-    std::iota(layer->_embedding_block.begin(), layer->_embedding_block.end(),
+    std::iota(layer->_embedding_block->begin(), layer->_embedding_block->end(),
               1.0);
 
     return layer;
@@ -41,7 +41,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
   }
 
   static float* getEmbeddingBlock(std::unique_ptr<EmbeddingLayer>& layer) {
-    return layer->_embedding_block.data();
+    return layer->_embedding_block->data();
   }
 
   static float* getEmbeddingGradients(std::unique_ptr<EmbeddingLayer>& layer) {

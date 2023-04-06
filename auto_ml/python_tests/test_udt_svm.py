@@ -13,7 +13,8 @@ def test_svm_udt_on_mnist(download_mnist_dataset):
         file_format="svm", n_target_classes=10, input_dim=784
     )
 
-    model.train(train_file, epochs=2)
+    metrics = model.train(train_file, epochs=2, metrics=["categorical_accuracy"])
+    assert metrics["categorical_accuracy"][-1] > 0
 
     original_metrics = model.evaluate(
         test_file, metrics=["categorical_accuracy"], return_metrics=True

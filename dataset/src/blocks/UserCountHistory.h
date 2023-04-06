@@ -78,8 +78,8 @@ class UserCountHistoryBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(ColumnarInputSample& input,
-                                  SegmentedFeatureVector& vec) final {
+  void buildSegment(ColumnarInputSample& input,
+                    SegmentedFeatureVector& vec) final {
     auto [user, time_seconds, val] = getUserTimeVal(input);
 
     auto counts = indexAndGetCountsFromHistory(
@@ -89,7 +89,6 @@ class UserCountHistoryBlock final : public Block {
     for (auto count : counts) {
       vec.addDenseFeatureToSegment(count);
     }
-    return nullptr;
   }
 
   std::vector<ColumnIdentifier*> concreteBlockColumnIdentifiers() final {

@@ -439,9 +439,9 @@ class QueryCandidateGenerator {
         constructInputBlocks(_query_generator_config->nGrams(),
                              /* column_index = */ 0);
 
-    _inference_featurizer = std::make_shared<dataset::TabularFeaturizer>(
-        /* input_blocks = */ inference_input_blocks,
-        /* labels_blocks = */ std::vector<dataset::BlockPtr>{},
+    _inference_featurizer = dataset::TabularFeaturizer::make(
+        /* block_lists = */ {dataset::BlockList(
+            std::move(inference_input_blocks))},
         /* has_header = */ false,
         /* delimiter = */ _query_generator_config->delimiter());
   }
@@ -474,9 +474,8 @@ class QueryCandidateGenerator {
     auto input_blocks = constructInputBlocks(_query_generator_config->nGrams(),
                                              /* column_index = */ column_index);
 
-    return std::make_shared<dataset::TabularFeaturizer>(
-        /* input_blocks = */ input_blocks,
-        /* label_blocks = */ std::vector<dataset::BlockPtr>{},
+    return dataset::TabularFeaturizer::make(
+        /* input_blocks = */ {dataset::BlockList(std::move(input_blocks))},
         /* has_header = */ true,
         /* delimiter = */ _query_generator_config->delimiter());
   }
@@ -590,7 +589,7 @@ class QueryCandidateGenerator {
     std::vector<std::string_view> input_vector{
         std::string_view(query.data(), query.length())};
     dataset::RowSampleRef input_vector_ref(input_vector);
-    return _inference_featurizer->makeInputVector(input_vector_ref);
+    return _inference_featurizer->featurize(input_vector_ref).at(0);
   }
 
   std::shared_ptr<dataset::BoltDataset> loadDatasetInMemory(
@@ -605,7 +604,7 @@ class QueryCandidateGenerator {
     return dataset_loader
         ->loadAll(/* batch_size = */ _query_generator_config->batchSize(),
                   /* verbose = */ verbose)
-        .first.at(0);
+        .at(0);
   }
 
   std::tuple<uint32_t, uint32_t> mapColumnNamesToIndices(

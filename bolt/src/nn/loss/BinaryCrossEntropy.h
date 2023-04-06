@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt/src/nn/loss/ComparativeLoss.h>
 
 namespace thirdai::bolt::nn::loss {
@@ -21,6 +22,12 @@ class BinaryCrossEntropy final : public ComparativeLoss {
                        uint32_t batch_size) const final;
 
   float singleLoss(float activation, float label) const final;
+
+  BinaryCrossEntropy() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 };
 
 using BinaryCrossEntropyPtr = std::shared_ptr<BinaryCrossEntropy>;

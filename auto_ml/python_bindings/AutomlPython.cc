@@ -2,8 +2,11 @@
 #include "AutomlDocs.h"
 #include <bolt/python_bindings/PybindUtils.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/UDT.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
@@ -18,34 +21,15 @@ class ValidationOptions {
   ValidationOptions(std::string filename, std::vector<std::string> metrics,
                     std::optional<uint32_t> interval, bool use_sparse_inference)
       : _filename(std::move(filename)),
-        _metrics(std::move(metrics)),
-        _interval(interval),
-        _use_sparse_inference(use_sparse_inference) {}
+        _args(std::move(metrics), interval, use_sparse_inference) {}
 
   const std::string& filename() const { return _filename; }
 
-  uint32_t interval() const { return _interval.value_or(0); }
-
-  bolt::EvalConfig validationConfig() const {
-    bolt::EvalConfig val_config =
-        bolt::EvalConfig::makeConfig().withMetrics(_metrics);
-
-    if (_use_sparse_inference) {
-      val_config.enableSparseInference();
-    }
-
-    return val_config;
-  }
-
-  const std::vector<std::string>& metrics() const { return _metrics; }
-
-  bool sparseInference() const { return _use_sparse_inference; }
+  const udt::ValidationArgs& args() const { return _args; }
 
  private:
   std::string _filename;
-  std::vector<std::string> _metrics;
-  std::optional<uint32_t> _interval;
-  bool _use_sparse_inference;
+  udt::ValidationArgs _args;
 };
 
 void defineAutomlInModule(py::module_& module) {
@@ -56,9 +40,17 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("interval") = std::nullopt,
            py::arg("use_sparse_inference") = false, docs::VALIDATION)
       .def("filename", &ValidationOptions::filename)
-      .def("metrics", &ValidationOptions::metrics)
-      .def("interval", &ValidationOptions::interval)
-      .def("sparse_inference", &ValidationOptions::sparseInference);
+      .def("args", &ValidationOptions::args);
+
+  py::class_<udt::ValidationArgs>(module, "ValidationArgs")
+      .def_property_readonly(
+          "metrics", [](udt::ValidationArgs const& v) { return v.metrics(); })
+      .def_property_readonly(
+          "steps_per_validation",
+          [](udt::ValidationArgs const& v) { return v.stepsPerValidation(); })
+      .def_property_readonly(
+          "sparse_inference",
+          [](udt::ValidationArgs const& v) { return v.sparseInference(); });
 
   /**
    * This class definition overrides the __new__ method because we want to
@@ -98,13 +90,6 @@ void defineAutomlInModule(py::module_& module) {
       .def_static("load", &UDTFactory::load, py::arg("filename"),
                   docs::UDT_CLASSIFIER_AND_GENERATOR_LOAD);
 
-  py::class_<udt::Validation>(module, "UDTValidation")
-      .def(py::init<dataset::DataSourcePtr, std::vector<std::string>,
-                    std::optional<uint32_t>, bool>(),
-           py::arg("data"), py::arg("metrics"),
-           py::arg("steps_per_validation") = std::nullopt,
-           py::arg("sparse_inference") = false);
-
   py::class_<udt::UDT, std::shared_ptr<udt::UDT>>(module, "UDT")
       .def("train", &udt::UDT::train, py::arg("data"), py::arg("learning_rate"),
            py::arg("epochs"), py::arg("validation") = std::nullopt,
@@ -113,12 +98,17 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("callbacks") = std::vector<bolt::CallbackPtr>{},
            py::arg("verbose") = true,
-           py::arg("logging_interval") = std::nullopt)
+           py::arg("logging_interval") = std::nullopt,
+           bolt::python::OutputRedirect())
+      .def("train_batch", &udt::UDT::trainBatch, py::arg("batch"),
+           py::arg("learning_rate") = 0.001,
+           py::arg("metrics") = std::vector<std::string>{},
+           bolt::python::OutputRedirect())
       .def("evaluate", &udt::UDT::evaluate, py::arg("data"),
            py::arg("metrics") = std::vector<std::string>{},
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false, py::arg("verbose") = true,
-           py::arg("return_metrics") = false)
+           py::arg("return_metrics") = false, bolt::python::OutputRedirect())
       .def("predict", &udt::UDT::predict, py::arg("sample"),
            py::arg("sparse_inference") = false,
            py::arg("return_predicted_class") = false)
@@ -128,7 +118,9 @@ void defineAutomlInModule(py::module_& module) {
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
-           py::arg("validation"), py::arg("callbacks"), py::arg("verbose"))
+           py::arg("validation"), py::arg("callbacks"),
+           py::arg("max_in_memory_batches") = std::nullopt, py::arg("verbose"),
+           bolt::python::OutputRedirect())
       .def("embedding_representation", &udt::UDT::embedding,
            py::arg("input_sample"))
       .def("get_entity_embedding", &udt::UDT::entityEmbedding,
@@ -136,6 +128,11 @@ void defineAutomlInModule(py::module_& module) {
       .def("index", &udt::UDT::updateTemporalTrackers, py::arg("input_sample"))
       .def("index_batch", &udt::UDT::updateTemporalTrackersBatch,
            py::arg("input_samples"))
+      .def("index_nodes", &udt::UDT::indexNodes, py::arg("data_source"))
+      .def("clear_graph", &udt::UDT::clearGraph)
+      .def("set_decode_params", &udt::UDT::setDecodeParams,
+           py::arg("min_num_eval_results"),
+           py::arg("top_k_per_eval_aggregation"))
       .def("reset_temporal_trackers", &udt::UDT::resetTemporalTrackers)
       .def("index_metadata", &udt::UDT::updateMetadata, py::arg("column_name"),
            py::arg("update"))
@@ -148,8 +145,11 @@ void defineAutomlInModule(py::module_& module) {
       .def("_get_model", &udt::UDT::model)
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
+      .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &UDTFactory::save_udt, py::arg("filename"))
-      .def_static("load", &udt::UDT::load, py::arg("filename"));
+      .def("checkpoint", &UDTFactory::checkpoint_udt, py::arg("filename"))
+      .def_static("load", &udt::UDT::load, py::arg("filename"))
+      .def(bolt::python::getPickleFunction<udt::UDT>());
 }
 
 void createModelsSubmodule(py::module_& module) {
@@ -219,6 +219,21 @@ void createModelsSubmodule(py::module_& module) {
            docs::TEXT_CLASSIFIER_SAVE);
 }
 
+void createDistributedPreprocessingWrapper(py::module_& module) {
+  auto distributed_preprocessing_submodule =
+      module.def_submodule("distributed_preprocessing");
+  distributed_preprocessing_submodule.def(
+      "preprocess_cold_start_train_source",
+      &cold_start::preprocessColdStartTrainSource, py::arg("data"),
+      py::arg("strong_column_names"), py::arg("weak_column_names"),
+      py::arg("dataset_factory"), py::arg("metadata"));
+
+  py::class_<cold_start::ColdStartMetaData, cold_start::ColdStartMetaDataPtr>(
+      distributed_preprocessing_submodule, "ColdStartMetaData")
+      .def(bolt::python::getPickleFunction<cold_start::ColdStartMetaData>());
+  ;
+}
+
 void createUDTTypesSubmodule(py::module_& module) {
   auto udt_types_submodule = module.def_submodule("types");
 
@@ -227,6 +242,16 @@ void createUDTTypesSubmodule(py::module_& module) {
       udt_types_submodule, "ColumnType", "Base class for bolt types.")
       .def("__str__", &automl::data::DataType::toString)
       .def("__repr__", &automl::data::DataType::toString);
+
+  // TODO(Josh): Add docs here and elsewhere
+  py::class_<automl::data::NeighborsDataType, automl::data::DataType,
+             automl::data::NeighborsDataTypePtr>(udt_types_submodule,
+                                                 "neighbors")
+      .def(py::init<>());
+
+  py::class_<automl::data::NodeIDDataType, automl::data::DataType,
+             automl::data::NodeIDDataTypePtr>(udt_types_submodule, "node_id")
+      .def(py::init<>());
 
   py::class_<automl::data::CategoricalMetadataConfig,
              automl::data::CategoricalMetadataConfigPtr>(udt_types_submodule,
@@ -260,6 +285,12 @@ void createUDTTypesSubmodule(py::module_& module) {
   py::class_<automl::data::DateDataType, automl::data::DataType,
              automl::data::DateDataTypePtr>(udt_types_submodule, "date")
       .def(py::init<>(), docs::UDT_DATE_TYPE);
+
+  py::class_<automl::data::SequenceDataType, automl::data::DataType,
+             automl::data::SequenceDataTypePtr>(udt_types_submodule, "sequence")
+      .def(py::init<char, std::optional<uint32_t>>(),
+           py::arg("delimiter") = ' ', py::arg("max_length") = std::nullopt,
+           docs::UDT_SEQUENCE_TYPE);
 }
 
 void createUDTTemporalSubmodule(py::module_& module) {
@@ -406,6 +437,16 @@ std::shared_ptr<udt::UDT> UDTFactory::createUDTSpecifiedFileFormat(
 
 void UDTFactory::save_udt(const udt::UDT& classifier,
                           const std::string& filename) {
+  classifier.model()->saveWithOptimizer(false);
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);
+  classifier.save_stream(filestream);
+}
+
+void UDTFactory::checkpoint_udt(const udt::UDT& classifier,
+                                const std::string& filename) {
+  classifier.model()->saveWithOptimizer(true);
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   filestream.write(reinterpret_cast<const char*>(&UDT_IDENTIFIER), 1);

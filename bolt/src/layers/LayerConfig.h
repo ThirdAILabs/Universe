@@ -81,6 +81,15 @@ enum class EmbeddingReductionType {
   AVERAGE,
 };
 
+/**
+ * During sparse updates in the embedding table the only chunks of the embedding
+ * table which are accessed are updated. This parameter controls the size of
+ * those chunks. The default value 4 was determined by doing a search over
+ * different values on the criteo dataset using different batch sizes, embedding
+ * table sizes, and lookup sizes.
+ */
+constexpr uint32_t DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE = 4;
+
 class EmbeddingLayerConfig {
  public:
   // Public constructor, needed for cereal to construct optional, should not be

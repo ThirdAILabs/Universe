@@ -43,6 +43,13 @@ class Loss {
   virtual autograd::ComputationList labels() const = 0;
 
   virtual ~Loss() = default;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using LossPtr = std::shared_ptr<Loss>;

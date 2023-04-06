@@ -17,6 +17,12 @@ std::vector<std::string_view> split(std::string_view string, char delimiter);
 std::vector<std::string_view> tokenizeSentence(std::string_view string);
 
 /**
+ * Joins a vector of strings into a single delimited string.
+ */
+std::string join(const std::vector<std::string>& strings,
+                 const std::string& delimiter);
+
+/**
  * Creates a copy of the original stringview where all characters are lowercase.
  */
 inline std::string lower(const std::string_view str) {
@@ -34,5 +40,7 @@ inline uint32_t toInteger(const char* start) {
   char* end;
   return std::strtoul(start, &end, 10);
 }
+
+bool startsWith(const std::string& to_search_in, const std::string& prefix);
 
 }  // namespace thirdai::text

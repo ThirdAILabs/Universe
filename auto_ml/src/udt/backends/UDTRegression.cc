@@ -22,15 +22,10 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
                              const config::ArgumentMap& user_args) {
   uint32_t output_bins = num_bins.value_or(defaults::REGRESSION_BINS);
 
-  if (model_config) {
-    _model = utils::loadModel({tabular_options.feature_hash_range}, output_bins,
-                              *model_config);
-  } else {
-    uint32_t hidden_dim = user_args.get<uint32_t>(
-        "embedding_dimension", "integer", defaults::HIDDEN_DIM);
-    _model = utils::defaultModel(tabular_options.feature_hash_range, hidden_dim,
-                                 output_bins);
-  }
+  _model = utils::buildModel(
+      /* input_dim= */ tabular_options.feature_hash_range,
+      /* output_dim= */ output_bins, /* args= */ user_args,
+      /* model_config= */ model_config);
 
   _binning = dataset::RegressionBinningStrategy(
       target->range.first, target->range.second, output_bins);
@@ -51,9 +46,9 @@ UDTRegression::UDTRegression(const data::ColumnDataTypes& input_data_types,
                                             defaults::FREEZE_HASH_TABLES);
 }
 
-void UDTRegression::train(
+py::object UDTRegression::train(
     const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-    const std::optional<Validation>& validation,
+    const std::optional<ValidationDataSource>& validation,
     std::optional<size_t> batch_size_opt,
     std::optional<size_t> max_in_memory_batches,
     const std::vector<std::string>& metrics,
@@ -61,16 +56,25 @@ void UDTRegression::train(
     std::optional<uint32_t> logging_interval) {
   size_t batch_size = batch_size_opt.value_or(defaults::BATCH_SIZE);
 
-  bolt::TrainConfig train_config = utils::getTrainConfig(
-      epochs, learning_rate, validation, metrics, callbacks, verbose,
-      logging_interval, _dataset_factory);
+  std::optional<ValidationDatasetLoader> validation_dataset = std::nullopt;
+  if (validation) {
+    validation_dataset =
+        ValidationDatasetLoader(_dataset_factory->getDatasetLoader(
+                                    validation->first, /* shuffle= */ false),
+                                validation->second);
+  }
+  bolt::TrainConfig train_config =
+      utils::getTrainConfig(epochs, learning_rate, validation_dataset, metrics,
+                            callbacks, verbose, logging_interval);
 
   auto train_dataset =
       _dataset_factory->getDatasetLoader(data, /* shuffle= */ true);
 
-  utils::train(_model, train_dataset, train_config, batch_size,
-               max_in_memory_batches,
-               /* freeze_hash_tables= */ _freeze_hash_tables);
+  auto output = utils::train(_model, train_dataset, train_config, batch_size,
+                             max_in_memory_batches,
+                             /* freeze_hash_tables= */ _freeze_hash_tables);
+
+  return py::cast(output);
 }
 
 py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
@@ -81,11 +85,13 @@ py::object UDTRegression::evaluate(const dataset::DataSourcePtr& data,
   (void)return_predicted_class;  // No classes to return in regression;
 
   bolt::EvalConfig eval_config =
-      utils::getEvalConfig(metrics, sparse_inference, verbose);
+      utils::getEvalConfig(metrics, sparse_inference, verbose,
+                           /* return_activations = */ !return_metrics);
 
-  auto [test_data, test_labels] =
-      _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
-          ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
+  auto dataset = _dataset_factory->getDatasetLoader(data, /* shuffle= */ false)
+                     ->loadAll(/* batch_size= */ defaults::BATCH_SIZE, verbose);
+
+  auto [test_data, test_labels] = utils::splitDataLabels(std::move(dataset));
 
   auto [output_metrics, output] =
       _model->evaluate(test_data, test_labels, eval_config);

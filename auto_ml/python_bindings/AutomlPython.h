@@ -21,6 +21,8 @@ void createModelsSubmodule(py::module_& module);
 
 void createUDTTypesSubmodule(py::module_& module);
 
+void createDistributedPreprocessingWrapper(py::module_& module);
+
 void createUDTTemporalSubmodule(py::module_& module);
 
 void createDeploymentSubmodule(py::module_& module);
@@ -69,6 +71,9 @@ class UDTFactory {
   static constexpr uint8_t UDT_TEXT_CLASSIFIER_IDENTIFIER = 2;
 
   static void save_udt(const udt::UDT& classifier, const std::string& filename);
+
+  static void checkpoint_udt(const udt::UDT& classifier,
+                             const std::string& filename);
 
   static void save_generator(const QueryCandidateGenerator& generator,
                              const std::string& filename);

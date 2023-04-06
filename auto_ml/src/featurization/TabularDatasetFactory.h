@@ -8,9 +8,11 @@
 #include <auto_ml/src/dataset_factories/udt/TemporalRelationshipsAutotuner.h>
 #include <auto_ml/src/featurization/TabularBlockComposer.h>
 #include <dataset/src/DataSource.h>
+#include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
+#include <optional>
 
 namespace thirdai::automl::data {
 
@@ -28,23 +30,17 @@ class TabularDatasetFactory {
 
   std::vector<BoltVector> featurizeInput(const MapInput& input) {
     dataset::MapSampleRef input_ref(input);
-    return {_inference_featurizer->makeInputVector(input_ref)};
+    return _inference_featurizer->featurize(input_ref);
   }
 
-  std::vector<BoltBatch> featurizeInputBatch(const MapInputBatch& inputs) {
-    dataset::MapBatchRef inputs_ref(inputs);
+  std::vector<BoltBatch> featurizeInputBatch(const MapInputBatch& inputs);
 
-    std::vector<BoltBatch> result;
-
-    result.emplace_back(
-        std::move(_inference_featurizer->featurize(inputs_ref).at(0)));
-
-    return result;
-  }
+  std::pair<std::vector<BoltBatch>, BoltBatch> featurizeTrainingBatch(
+      const MapInputBatch& batch);
 
   void updateTemporalTrackers(const MapInput& input) {
     dataset::MapSampleRef input_ref(input);
-    _labeled_featurizer->makeInputVector(input_ref);
+    _labeled_featurizer->featurize(input_ref);
   }
 
   void updateTemporalTrackersBatch(const MapInputBatch& inputs) {
@@ -69,7 +65,16 @@ class TabularDatasetFactory {
 
   bool hasTemporalRelationships() const { return !_temporal_context.empty(); }
 
-  uint32_t inputDim() const { return _labeled_featurizer->getInputDim(); }
+  uint32_t inputDim() const {
+    /*
+      TabularDatasetFactory is used by UDTClassifier and UDTRegression,
+      which both expect a single input vector. Since we configured the
+      featurizer with input blocks in the first position and label blocks in
+      the second position, the dimension of the input vectors is the 0-th entry
+      of the return value of _labeld_featurizer->getDimensions()
+    */
+    return _labeled_featurizer->getDimensions().at(0);
+  }
 
   char delimiter() const { return _delimiter; }
 
@@ -100,7 +105,8 @@ class TabularDatasetFactory {
   dataset::TabularFeaturizerPtr makeFeaturizer(
       const TemporalRelationships& temporal_relationships,
       bool should_update_history, const TabularOptions& options,
-      const std::vector<dataset::BlockPtr>& label_blocks, bool parallel);
+      std::optional<std::vector<dataset::BlockPtr>> label_blocks,
+      bool parallel);
 
   PreprocessedVectorsMap processAllMetadata(
       const ColumnDataTypes& input_data_types, const TabularOptions& options);
@@ -116,9 +122,6 @@ class TabularDatasetFactory {
   static dataset::PreprocessedVectorsPtr preprocessedVectorsFromDataset(
       dataset::DatasetLoader& dataset_loader,
       dataset::ThreadSafeVocabulary& key_vocab);
-
-  static dataset::ColumnNumberMap makeColumnNumberMapFromHeader(
-      dataset::DataSource& data_source, char delimiter);
 
   void verifyColumnMetadataExists(const std::string& col_name) {
     if (!_data_types.count(col_name) ||

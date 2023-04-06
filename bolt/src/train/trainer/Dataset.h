@@ -5,10 +5,13 @@
 
 namespace thirdai::bolt::train {
 
-using Dataset = std::vector<nn::tensor::TensorPtr>;
+using Dataset = std::vector<nn::tensor::TensorList>;
 
 using LabeledDataset = std::pair<Dataset, Dataset>;
 
-Dataset convertDataset(dataset::BoltDataset&& dataset, uint32_t dim);
+Dataset convertDatasets(const std::vector<dataset::BoltDatasetPtr>& datasets,
+                        std::vector<uint32_t> dims);
+
+Dataset convertDataset(const dataset::BoltDatasetPtr& dataset, uint32_t dim);
 
 }  // namespace thirdai::bolt::train

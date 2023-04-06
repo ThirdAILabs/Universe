@@ -8,6 +8,7 @@ set(DATASET_TESTS
     CategoricalBlockTests
     DateBlockTests
     TextBlockTests
+    MachBlockTests
     QuantityHistoryTrackerTest
     ThreadSafeVocabularyTests
     UserItemHistoryBlockTests
@@ -16,7 +17,9 @@ set(DATASET_TESTS
     MlmFeaturizerTests
     SaveLoadInMemoryDatasetTest
     DatasetLoaderTests
-    TokenEncodingTests)
+    TokenEncodingTests
+    TextGenerationFeaturizerTest
+    RecurrenceAugmentationTests)
 
 include(GoogleTest)
 

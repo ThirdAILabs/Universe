@@ -62,13 +62,16 @@ TEST(CsvParserTests, DoubleQuotesInStringColumnNotMistakenAsOuterQuotes) {
                 {R"(""This is in quotes"", and this is not.)"});
 }
 
-TEST(CsvParserTests, EscapeCharactersInQuotesAreEscaped) {
-  testCsvParser(R"("\"ABC\"")", ',', {R"(\"ABC\")"});
-  testCsvParser(R"(\"A,B\")", ',', {R"(\"A)", R"(B\")"});
-}
-
-TEST(CsvParserTests, EscapeCharactersOutsideQuotesAreIgnored) {
+TEST(CsvParserTests, EscapeCharactersAreIgnored) {
   testCsvParser(R"(A\,B)", ',', {"A\\", "B"});
+  // Since the inner escape character is ignored, the first double-quote
+  // inside quotes is not ignored, thus the pair of double quotes is considered
+  // to be quotes inside a quoted column, as opposed to closing quotes.
+  testCsvParser(R"("A\"",B")", ',', {R"(A\"",B)"});
+  // Inner quotes are not ignored, so the first inner quote is treated like an
+  // end quote, meaning that the quotes are malformed. Thus, the outer quotes
+  // are not trimmed.
+  testCsvParser(R"("\"ABC\"")", ',', {R"("\"ABC\"")"});
   // Parser expects that the line does not contain unquoted newline character in
   // the middle of the line.
   // NOLINTNEXTLINE since clang-tidy doesn't like ASSERT_THROW
@@ -122,14 +125,20 @@ TEST(CsvParserTests, NoEndQuote) {
   // Properly handles multiple delimiters after opening quote.
   testCsvParser("\"I wish there was no delimiter, but there is,one", ',',
                 {"\"I wish there was no delimiter", " but there is", "one"});
-  // Once the parser detects that there is no end quote, the first column is no
-  // longer treated as a quoted column and the escape character is ignored.
-  // Thus, the ensuing delimiter is treated as a delimiter.
-  testCsvParser("\"I wish there was no delimiter\\,", ',',
-                {"\"I wish there was no delimiter\\", ""});
-  // Also no end quote since the end quote is escaped.
-  testCsvParser("\"I wish there was no delimiter, but there is.\\", ',',
-                {"\"I wish there was no delimiter", " but there is.\\"});
+}
+
+TEST(CsvParserTests, TrimsReturnAndNewlineCharacters) {
+  testCsvParser("Hello\r", ',', {"Hello"});
+  testCsvParser("Hello\r\n", ',', {"Hello"});
+  testCsvParser("Hello\n", ',', {"Hello"});
+  testCsvParser("\r", ',', {""});
+  testCsvParser("\r\n", ',', {""});
+  testCsvParser("\n", ',', {""});
+}
+
+TEST(CsvParserTests, QuotesInQuotes) {
+  testCsvParser(R"("Hey there"", Delilah")", ',', {R"(Hey there"", Delilah)"});
+  testCsvParser(R"("Hey, ""Delilah""")", ',', {R"(Hey, ""Delilah"")"});
 }
 
 }  // namespace thirdai::dataset::tests

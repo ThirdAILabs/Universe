@@ -40,12 +40,7 @@ def modify_udt():
 
     def _convert_validation(validation: Optional[bolt.Validation]) -> None:
         if validation is not None:
-            return bolt.UDTValidation(
-                data=_create_data_source(validation.filename()),
-                metrics=validation.metrics(),
-                steps_per_validation=validation.interval(),
-                sparse_inference=validation.sparse_inference(),
-            )
+            return (_create_data_source(validation.filename()), validation.args())
         return None
 
     def wrapped_train(
@@ -110,13 +105,14 @@ def modify_udt():
         metrics: List[str] = [],
         validation: Optional[bolt.Validation] = None,
         callbacks: List[bolt.callbacks.Callback] = [],
+        max_in_memory_batches: Optional[int] = None,
         verbose: bool = True,
     ):
         data_source = _create_data_source(filename)
 
         validation = _convert_validation(validation)
 
-        original_cold_start(
+        return original_cold_start(
             self,
             data=data_source,
             strong_column_names=strong_column_names,
@@ -126,6 +122,7 @@ def modify_udt():
             metrics=metrics,
             validation=validation,
             callbacks=callbacks,
+            max_in_memory_batches=max_in_memory_batches,
             verbose=verbose,
         )
 
@@ -136,3 +133,19 @@ def modify_udt():
     bolt.UDT.train = wrapped_train
     bolt.UDT.evaluate = wrapped_evaluate
     bolt.UDT.cold_start = wrapped_cold_start
+
+
+def modify_graph_udt():
+    original_index_nodes_method = bolt.UDT.index_nodes
+
+    def wrapped_index_nodes(self, filename: str):
+        data_source = _create_data_source(filename)
+
+        original_index_nodes_method(self, data_source)
+
+    # TODO(Josh)
+    # wrapped_index.__doc__ = udt_graph_index_doc
+
+    delattr(bolt.UDT, "index_nodes")
+
+    bolt.UDT.index_nodes = wrapped_index_nodes

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <memory>
 
@@ -94,6 +95,12 @@ class Op {
   virtual void disableSparseParameterUpdates() = 0;
 
   /**
+   * Returns references to all of the gradients of the op. Used for distributed
+   * training.
+   */
+  virtual std::vector<std::vector<float>*> gradients() const = 0;
+
+  /**
    * Appends a line to the summary to describe the op when applied to the given
    * inputs and yielding the given output. Ideally this should be in the form:
    * OpType(op name): input(s) -> output(s) [op parameters]
@@ -110,8 +117,17 @@ class Op {
 
   virtual ~Op() = default;
 
+ protected:
+  Op() : Op("unnamed-op") {}
+
  private:
   std::string _name;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_name);
+  }
 };
 
 using OpPtr = std::shared_ptr<Op>;

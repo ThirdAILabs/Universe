@@ -2,7 +2,10 @@
 
 #include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/udt/UDTBackend.h>
+#include <dataset/src/DataSource.h>
+#include <stdexcept>
 #include <string>
 
 namespace thirdai::automl::udt {
@@ -32,13 +35,17 @@ class UDT {
       uint32_t input_dim, const std::optional<std::string>& model_config,
       const config::ArgumentMap& user_args);
 
-  void train(const dataset::DataSourcePtr& data, float learning_rate,
-             uint32_t epochs, const std::optional<Validation>& validation,
-             std::optional<size_t> batch_size,
-             std::optional<size_t> max_in_memory_batches,
-             const std::vector<std::string>& metrics,
-             const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
-             bool verbose, std::optional<uint32_t> logging_interval);
+  py::object train(
+      const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
+      const std::optional<ValidationDataSource>& validation,
+      std::optional<size_t> batch_size,
+      std::optional<size_t> max_in_memory_batches,
+      const std::vector<std::string>& metrics,
+      const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
+      bool verbose, std::optional<uint32_t> logging_interval);
+
+  py::object trainBatch(const MapInputBatch& batch, float learning_rate,
+                        const std::vector<std::string>& metrics);
 
   py::object evaluate(const dataset::DataSourcePtr& data,
                       const std::vector<std::string>& metrics,
@@ -55,17 +62,22 @@ class UDT {
       const MapInput& sample,
       const std::optional<std::variant<uint32_t, std::string>>& target_class);
 
-  void coldstart(const dataset::DataSourcePtr& data,
-                 const std::vector<std::string>& strong_column_names,
-                 const std::vector<std::string>& weak_column_names,
-                 float learning_rate, uint32_t epochs,
-                 const std::vector<std::string>& metrics,
-                 const std::optional<Validation>& validation,
-                 const std::vector<bolt::CallbackPtr>& callbacks,
-                 bool verbose) {
+  py::object coldstart(const dataset::DataSourcePtr& data,
+                       const std::vector<std::string>& strong_column_names,
+                       const std::vector<std::string>& weak_column_names,
+                       float learning_rate, uint32_t epochs,
+                       const std::vector<std::string>& metrics,
+                       const std::optional<ValidationDataSource>& validation,
+                       const std::vector<bolt::CallbackPtr>& callbacks,
+                       std::optional<size_t> max_in_memory_batches,
+                       bool verbose) {
     return _backend->coldstart(data, strong_column_names, weak_column_names,
                                learning_rate, epochs, metrics, validation,
-                               callbacks, verbose);
+                               callbacks, max_in_memory_batches, verbose);
+  }
+
+  cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
+    return _backend->getColdStartMetaData();
   }
 
   py::object embedding(const MapInput& sample) {
@@ -111,11 +123,21 @@ class UDT {
     }
   }
 
+  void indexNodes(const dataset::DataSourcePtr& source) {
+    return _backend->indexNodes(source);
+  }
+
+  void clearGraph() { return _backend->clearGraph(); }
+
+  void setDecodeParams(uint32_t min_num_eval_results,
+                       uint32_t top_k_per_eval_aggregation) {
+    return _backend->setDecodeParams(min_num_eval_results,
+                                     top_k_per_eval_aggregation);
+  }
+
   bolt::BoltGraphPtr model() const { return _backend->model(); }
 
-  void setModel(bolt::BoltGraphPtr model) {
-    _backend->setModel(std::move(model));
-  }
+  void setModel(const bolt::BoltGraphPtr& model) { _backend->setModel(model); }
 
   data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return _backend->tabularDatasetFactory();
@@ -133,6 +155,14 @@ class UDT {
 
  private:
   UDT() {}
+
+  static bool hasGraphInputs(const data::ColumnDataTypes& data_types);
+
+  static void throwUnsupportedUDTConfigurationError(
+      const data::CategoricalDataTypePtr& target_as_categorical,
+      const data::NumericalDataTypePtr& target_as_numerical,
+      const data::SequenceDataTypePtr& target_as_sequence,
+      bool has_graph_inputs);
 
   friend class cereal::access;
 

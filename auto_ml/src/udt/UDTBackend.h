@@ -2,9 +2,12 @@
 
 #include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
+#include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <pybind11/pybind11.h>
 #include <optional>
 #include <stdexcept>
@@ -14,57 +17,38 @@ namespace py = pybind11;
 namespace thirdai::automl::udt {
 
 /**
- * Stores necessary information for validation, used to simplify args and avoid
- * having to pass in multiple optional arguments and verify that they are
- * correctly specified together.
- */
-class Validation {
- public:
-  Validation(dataset::DataSourcePtr data, std::vector<std::string> metrics,
-             std::optional<uint32_t> steps_per_validation = std::nullopt,
-             bool sparse_inference = false)
-      : _data(std::move(data)),
-        _metrics(std::move(metrics)),
-        _steps_per_validation(steps_per_validation),
-        _sparse_inference(sparse_inference) {}
-
-  const auto& data() const { return _data; }
-
-  const auto& metrics() const { return _metrics; }
-
-  const auto& stepsPerValidation() const { return _steps_per_validation; }
-
-  bool sparseInference() const { return _sparse_inference; }
-
- private:
-  dataset::DataSourcePtr _data;
-  std::vector<std::string> _metrics;
-  std::optional<uint32_t> _steps_per_validation;
-  bool _sparse_inference;
-};
-
-/**
- * This is an interface for the backends that are used in a UDT model. To add a
- * new backend a user must implement the required methods (train, evaluate,
- * predict, etc.) and any desired optional methods (explainability, cold start,
- * etc.). These methods are designed to be general in their arguments and
- * support the options that are required for most backends, though some backends
- * may not use all of the args. For instance return_predicted_class is not
- * applicable for regression models.
+ * This is an interface for the backends that are used in a UDT model. To
+ * add a new backend a user must implement the required methods (train,
+ * evaluate, predict, etc.) and any desired optional methods
+ * (explainability, cold start, etc.). These methods are designed to be
+ * general in their arguments and support the options that are required for
+ * most backends, though some backends may not use all of the args. For
+ * instance return_predicted_class is not applicable for regression models.
  */
 class UDTBackend {
  public:
   /**
    * Trains the model on the given dataset.
    */
-  virtual void train(
+  virtual py::object train(
       const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
-      const std::optional<Validation>& validation,
+      const std::optional<ValidationDataSource>& validation,
       std::optional<size_t> batch_size,
       std::optional<size_t> max_in_memory_batches,
       const std::vector<std::string>& metrics,
       const std::vector<std::shared_ptr<bolt::Callback>>& callbacks,
       bool verbose, std::optional<uint32_t> logging_interval) = 0;
+
+  /**
+   * Trains the model on a batch of samples.
+   */
+  virtual py::object trainBatch(const MapInputBatch& batch, float learning_rate,
+                                const std::vector<std::string>& metrics) {
+    (void)batch;
+    (void)learning_rate;
+    (void)metrics;
+    throw notSupported("train_batch");
+  }
 
   /**
    * Performs evaluate of the model on the given dataset and returns the
@@ -100,13 +84,18 @@ class UDTBackend {
   /**
    * Returns the model used.
    */
-  virtual bolt::BoltGraphPtr model() const = 0;
+  virtual bolt::BoltGraphPtr model() const {
+    throw notSupported("accessing underlying model");
+  }
 
   /**
    * Sets a new model. This is used during distributed training to update the
    * backend with the trained model.
    */
-  virtual void setModel(bolt::BoltGraphPtr model) = 0;
+  virtual void setModel(const bolt::BoltGraphPtr& model) {
+    (void)model;
+    throw notSupported("modifying underlying model");
+  }
 
   /**
    * Determines if the model can support distributed training. By default
@@ -132,14 +121,14 @@ class UDTBackend {
    * Performs cold start pretraining. Optional method that is not supported by
    * default for backends.
    */
-  virtual void coldstart(const dataset::DataSourcePtr& data,
-                         const std::vector<std::string>& strong_column_names,
-                         const std::vector<std::string>& weak_column_names,
-                         float learning_rate, uint32_t epochs,
-                         const std::vector<std::string>& metrics,
-                         const std::optional<Validation>& validation,
-                         const std::vector<bolt::CallbackPtr>& callbacks,
-                         bool verbose) {
+  virtual py::object coldstart(
+      const dataset::DataSourcePtr& data,
+      const std::vector<std::string>& strong_column_names,
+      const std::vector<std::string>& weak_column_names, float learning_rate,
+      uint32_t epochs, const std::vector<std::string>& metrics,
+      const std::optional<ValidationDataSource>& validation,
+      const std::vector<bolt::CallbackPtr>& callbacks,
+      std::optional<size_t> max_in_memory_batches, bool verbose) {
     (void)data;
     (void)strong_column_names;
     (void)weak_column_names;
@@ -148,6 +137,7 @@ class UDTBackend {
     (void)metrics;
     (void)validation;
     (void)callbacks;
+    (void)max_in_memory_batches;
     (void)verbose;
     throw notSupported("cold_start");
   }
@@ -187,6 +177,33 @@ class UDTBackend {
    */
   virtual data::TabularDatasetFactoryPtr tabularDatasetFactory() const {
     return nullptr;
+  }
+
+  /**
+   * Returns metadata for ColdStart which are needed to be passed to
+   * ColdStartPreprocessing. Optional Method that is not supported by
+   * defaults for backends. This method is primarily used for distributed
+   * training.
+   */
+  virtual cold_start::ColdStartMetaDataPtr getColdStartMetaData() {
+    throw notSupported("getColdStartMetaData");
+  }
+
+  virtual void indexNodes(const dataset::DataSourcePtr& source) {
+    (void)source;
+    throw notSupported("index_nodes");
+  }
+
+  virtual void clearGraph() { throw notSupported("clear_graph"); }
+
+  /**
+   * Used for UDTMachClassifier.
+   */
+  virtual void setDecodeParams(uint32_t min_num_eval_results,
+                               uint32_t top_k_per_eval_aggregation) {
+    (void)min_num_eval_results;
+    (void)top_k_per_eval_aggregation;
+    throw notSupported("set_decode_params");
   }
 
   virtual ~UDTBackend() = default;

@@ -4,21 +4,15 @@ from collections import defaultdict
 
 import pandas as pd
 import pytest
-from download_dataset_fixtures import download_clinc_dataset
+from download_dataset_fixtures import download_amazon_kaggle_product_catalog_sampled
 from model_test_utils import compute_evaluate_accuracy
 from thirdai import bolt
 
 pytestmark = [pytest.mark.unit]
 
 
-def test_udt_cold_start_kaggle():
-    os.system(
-        "curl -L https://www.dropbox.com/s/tf7e5m0cikhcb95/amazon-kaggle-product-catalog-sampled-0.05.csv?dl=0 -o amazon-kaggle-product-catalog.csv"
-    )
-
-    catalog_file = "amazon-kaggle-product-catalog.csv"
-
-    df = pd.read_csv(catalog_file)
+def test_udt_cold_start_kaggle(download_amazon_kaggle_product_catalog_sampled):
+    catalog_file, n_target_classes = download_amazon_kaggle_product_catalog_sampled
 
     model = bolt.UniversalDeepTransformer(
         data_types={
@@ -26,7 +20,7 @@ def test_udt_cold_start_kaggle():
             "PRODUCT_ID": bolt.types.categorical(),
         },
         target="PRODUCT_ID",
-        n_target_classes=df.shape[0],
+        n_target_classes=n_target_classes,
         integer_target=True,
     )
 
@@ -42,7 +36,7 @@ def test_udt_cold_start_kaggle():
 
     final_metric = FinalMetricCallback()
 
-    model.cold_start(
+    metrics = model.cold_start(
         filename=catalog_file,
         strong_column_names=["TITLE"],
         weak_column_names=["DESCRIPTION", "BULLET_POINTS", "BRAND"],
@@ -55,6 +49,7 @@ def test_udt_cold_start_kaggle():
     os.remove(catalog_file)
 
     assert final_metric.ending_train_metric > 0.5
+    assert metrics["categorical_accuracy"][-1] == final_metric.ending_train_metric
 
 
 def setup_testing_file(missing_values, bad_csv_line):

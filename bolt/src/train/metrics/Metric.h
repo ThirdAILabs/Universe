@@ -91,7 +91,7 @@ class MetricCollection {
    * there values in the history under the key <prefix>_<metric_name>. This is
    * used to distinguish train vs validation metrics.
    */
-  void updateHistory(HistoryPtr& history, const std::string& prefix);
+  void updateHistory(History& history);
 
   /**
    * Creates a string summary of the current values of the metrics.
@@ -106,5 +106,10 @@ class MetricCollection {
  private:
   std::vector<MetricPtr> _metrics;
 };
+
+InputMetrics metricsForSingleOutputModel(
+    const std::vector<std::string>& metric_names,
+    const nn::autograd::ComputationPtr& output,
+    const nn::autograd::ComputationPtr& labels);
 
 }  // namespace thirdai::bolt::train::metrics

@@ -74,6 +74,9 @@ void Node::summarize(std::stringstream& summary, bool detailed) const {
     throw exceptions::NodeStateMachineError(
         "Can only summarize a node after compiling");
   }
+  if (_frozen) {
+    summary << "(frozen) ";
+  }
   summarizeImpl(summary, detailed);
 }
 
