@@ -49,6 +49,12 @@ void assertEqualTokens(const std::vector<std::string_view>& parsed,
   }
 }
 
+TEST(StringManipulationTest, TestTokenizeSentenceTest) {
+  std::string_view sentence = "abcde";
+  auto words = tokenizeSentence(sentence);
+  assertEqualTokens(words, {"abcde"});
+}
+
 TEST(StringManipulationTest, TestTokenizeSentenceNoPunctuation) {
   std::string_view sentence = "no punctuation no cry";
   auto words = tokenizeSentence(sentence);
@@ -85,6 +91,27 @@ TEST(StringManipulationTest, TestTokenizeSentenceHorribleFormatting) {
   auto words = tokenizeSentence(sentence);
   assertEqualTokens(words, {"?", "\"", "?", "!", "Surrounded", "by", ":", ":",
                             "spaces", "too", "?", "!", "\"", "!"});
+}
+
+TEST(StringManipulationTest, TestTokenizeSentenceNewLine) {
+  std::string_view sentence = "Newline in the \n middle.";
+  auto words = tokenizeSentence(sentence);
+  assertEqualTokens(words, {"Newline", "in", "the", "middle", "."});
+
+  sentence = "Return in the \r middle.";
+  words = tokenizeSentence(sentence);
+  assertEqualTokens(words, {"Return", "in", "the", "middle", "."});
+
+  sentence = "Return and newline in the \r\n middle.";
+  words = tokenizeSentence(sentence);
+  assertEqualTokens(words,
+                    {"Return", "and", "newline", "in", "the", "middle", "."});
+}
+
+TEST(StringManipulationTest, TestTokenizeSentenceAccentedCharacters) {
+  std::string_view sentence = "Soufflé";
+  auto words = tokenizeSentence(sentence);
+  assertEqualTokens(words, {"Soufflé"});
 }
 
 }  // namespace thirdai::text
