@@ -1,18 +1,17 @@
 import os
 from abc import ABC, abstractmethod
-
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 from thirdai import bolt, data
 
 
-def roc_auc_with_positive_label(positive_label):
+def roc_auc_with_positive_label(target_name, positive_label):
     def roc_auc_additional_metric(
         activations, test_file, mlflow_logger, step, classname_fn
     ):
-        df = pd.read_csv(test_file)
-        labels = df["label"].to_numpy()
+        df = pd.read_csv(test_file, low_memory=False)
+        labels = df[target_name].to_numpy()
 
         if classname_fn(0) == positive_label:
             predictions = activations[:, 0]
@@ -167,7 +166,7 @@ class InternetAdsUDTBenchmark(UDTBenchmarkConfig):
 
     metrics = ["categorical_accuracy"]
 
-    additional_metric_fn = roc_auc_with_positive_label("ad.")
+    additional_metric_fn = roc_auc_with_positive_label("label", "ad.")
 
     def get_data_types(path_prefix):
         data_types = {
@@ -199,7 +198,7 @@ class FraudDetectionUDTBenchmark(UDTBenchmarkConfig):
 
     metrics = ["categorical_accuracy"]
 
-    additional_metric_fn = roc_auc_with_positive_label("1")
+    additional_metric_fn = roc_auc_with_positive_label("isFraud", "1")
 
     def get_data_types(path_prefix):
         return {
@@ -406,19 +405,42 @@ class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
         return col_types
 
 
+class DiamondsUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "diamonds_udt"
+    dataset_name = "diamonds"
+
+    train_file = "tabular_regression/reg_cat/diamonds_shuf_train_with_header.csv"
+    test_file = "tabular_regression/reg_cat/diamonds_test.csv"
+    
+    target = "price"
+    n_target_classes = None
+    delimiter = ","
+
+    learning_rate = 0.001
+    num_epochs = 15
+    metrics = []
+    additional_metric_fn = regression_metrics_with_target_name("price")
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types(path_prefix):
+        file = os.path.join(path_prefix, DiamondsUDTBenchmark.train_file)
+
+        col_types = data.get_udt_col_types(file)
+        del col_types["Unnamed: 0"]
+        return col_types
+
+
 class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
     config_name = "mercedes_benz_greener_udt"
     dataset_name = "mercedes_benz_greener"
 
     train_file = "tabular_regression/reg_cat/Mercedes_Benz_Greener_Manufacturing_shuf_train_with_header.csv"
-    test_file = (
-        "tabular_regression/reg_cat/Mercedes_Benz_Greener_Manufacturing_test.csv"
-    )
+    test_file = "tabular_regression/reg_cat/Mercedes_Benz_Greener_Manufacturing_test.csv"
 
     target = "y"
     n_target_classes = None
     delimiter = ","
-    options = {"contextual_columns": True}
 
     learning_rate = 0.001
     num_epochs = 15
