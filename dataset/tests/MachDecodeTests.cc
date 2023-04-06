@@ -44,8 +44,8 @@ TEST(MachDecodeTest, TestTopKUnlimitedDecode) {
   std::vector<float> output_activations = {0.2, 0.0, 0.5, 0.4};
   auto output = BoltVector::makeDenseVector(output_activations);
 
-  uint32_t num_results = 4;
-  uint32_t top_k = 4;
+  uint32_t num_results = 3;
+  uint32_t top_k = 3;
   auto results =
       mach::topKUnlimitedDecode(output, MachDecodeTest::makeMachIndex(),
                                 /* min_num_eval_results = */ num_results,
