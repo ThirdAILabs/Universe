@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <optional>
 #include <random>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -39,6 +40,10 @@ class FullyConnectedLayer final {
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
                       uint64_t prev_dim,
                       bool disable_sparse_parameter_updates = false);
+
+  void setOutputRange(std::optional<std::pair<uint32_t, uint32_t>> range) {
+    _compute_range = range;
+  }
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels);
@@ -207,6 +212,8 @@ class FullyConnectedLayer final {
   // _is_active is used if _this_is_dense == false. It tracks the neurons in the
   // current layer which are active at some point in the batch.
   std::vector<bool> _is_active;
+
+  std::optional<std::pair<uint32_t, uint32_t>> _compute_range = std::nullopt;
 
   // -------------------------------------------------------------------------
 

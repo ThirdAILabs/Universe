@@ -111,6 +111,11 @@ std::vector<BoltBatch> RecurrentDatasetFactory::featurizeInputBatch(
   return batch_list;
 }
 
+std::pair<uint32_t, uint32_t> RecurrentDatasetFactory::outputRange(
+    uint32_t step) {
+  return _augmentation->outputRange(step);
+}
+
 uint32_t RecurrentDatasetFactory::elementIdAtStep(const BoltVector& output,
                                                   uint32_t step) {
   return _augmentation->elementIdAtStep(output, step);

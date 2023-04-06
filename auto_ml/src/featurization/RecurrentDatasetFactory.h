@@ -10,6 +10,7 @@
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
 #include <dataset/src/featurizers/TabularFeaturizer.h>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace thirdai::automl::data {
@@ -30,6 +31,8 @@ class RecurrentDatasetFactory {
   std::vector<BoltVector> featurizeInput(const MapInput& sample);
 
   std::vector<BoltBatch> featurizeInputBatch(const MapInputBatch& samples);
+
+  std::pair<uint32_t, uint32_t> outputRange(uint32_t step);
 
   uint32_t elementIdAtStep(const BoltVector& output, uint32_t step);
 

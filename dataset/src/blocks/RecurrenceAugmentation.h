@@ -47,6 +47,8 @@ class RecurrenceAugmentation final : public Augmentation {
         /* dense= */ false, /* column_identifiers= */ _sequence_column);
   }
 
+  std::pair<uint32_t, uint32_t> outputRange(uint32_t step);
+
   uint32_t elementIdAtStep(const BoltVector& output, uint32_t step);
 
   std::string elementString(uint32_t element_id);

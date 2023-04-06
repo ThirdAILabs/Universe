@@ -47,6 +47,10 @@ class FullyConnectedNode final
       uint32_t dim, float sparsity, const std::string& activation,
       uint32_t num_tables, uint32_t hashes_per_table, uint32_t reservoir_size);
 
+  void setOutputRange(std::optional<std::pair<uint32_t, uint32_t>> range) {
+    _layer->setOutputRange(range);
+  }
+
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node);
 
   uint32_t outputDim() const final;
