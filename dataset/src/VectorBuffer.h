@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt_vector/src/BoltVector.h>
+#include <dataset/src/utils/FastDeque.h>
 #include <random>
 #include <stdexcept>
 
@@ -74,7 +75,7 @@ class VectorBuffer {
    * to insert (additionally, it also maintains the invariant that each deque
    * contains the same number of vectors).
    */
-  std::vector<std::deque<BoltVector>> _buffers;
+  std::vector<FastDeque<BoltVector>> _buffers;
 };
 
 }  // namespace thirdai::dataset

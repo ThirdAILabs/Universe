@@ -16,7 +16,7 @@ void VectorBuffer::insert(std::vector<BoltVector>&& vectors) {
   verifyCorrectNumberOfVectors(vectors);
 
   for (uint32_t buffer_id = 0; buffer_id < _buffers.size(); buffer_id++) {
-    _buffers.at(buffer_id).push_back(std::move(vectors.at(buffer_id)));
+    _buffers.at(buffer_id).pushBack(std::move(vectors.at(buffer_id)));
   }
 
   if (_shuffle) {
@@ -32,7 +32,7 @@ std::optional<std::vector<BoltVector>> VectorBuffer::pop() {
   std::vector<BoltVector> vecs_to_return;
   for (auto& buffer : _buffers) {
     vecs_to_return.push_back(std::move(buffer.front()));
-    buffer.pop_front();
+    buffer.popFront();
   }
 
   return vecs_to_return;
