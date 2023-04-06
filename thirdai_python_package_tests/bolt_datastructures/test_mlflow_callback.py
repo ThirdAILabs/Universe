@@ -48,7 +48,7 @@ def test_mlflow_callback(mocker):
     for acc, time in zip(train_accuracies, train_epoch_times):
         log_metric_call_params.append(("categorical_accuracy", acc))
         log_metric_call_params.append(("epoch_times", time))
-        # this long numberis here because of a rounding error
+        # this long number is here because of a representation error
         log_metric_call_params.append(("learning_rate", 0.0010000000474974513))
 
     log_metric_mock.assert_has_calls(
