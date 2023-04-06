@@ -50,7 +50,7 @@ void templatedVisitPair(const BoltVector& vec_1, const BoltVector& vec_2,
         vec_1.findActiveNeuron<VEC_1_DENSE>(active_neuron);
 
     // Skip any neurons that were in the vec_1 to avoid double visiting.
-    if (vec_1_found.pos.has_value()) {
+    if (!vec_1_found.pos.has_value()) {
       float vec_2_activation = vec_2.activations[active_neuron_index_vec_2];
       FoundActiveNeuron vec_2_found = {active_neuron_index_vec_2,
                                        vec_2_activation};
