@@ -19,7 +19,7 @@ $$ \frac{\partial \mu}{\partial x_i} = \frac{1}{N} $$
 
 $$ \frac{\partial \sigma^2}{\partial x_i} = \frac{1}{N} \left[ \sum_{j = 1}^N 2(x_j - \mu) (-\frac{1}{N}) + 2(x_i - \mu) \right] = \frac{2}{N} (x_i - \mu) $$
 
-Note that $ \sum_{i=1}^N (x_i - \mu) = 0$. 
+Note that $\sum_{i=1}^N (x_i - \mu) = 0$. 
 
 Now we can use this to compute the parital derivative of $\frac{1}{\sqrt{\sigma^2 + \epsilon}}$ with respect to an element of the input $x_i$.
 
