@@ -5,6 +5,8 @@ from thirdai import dataset
 
 LABEL_DIM = 5
 
+pytestmark = [pytest.mark.unit]
+
 
 def build_metrics_test_model(metric, metric_name, metric_args={}):
     # This operator is not used, but we need to create a 1 layer model to test metrics
@@ -57,9 +59,6 @@ def evaluate_test_cases(test_cases, model, metrics, metric_name):
         test_data = lists_to_data(x=tc["x"], y=tc["y"])
         metric_val = get_metric(model, test_data, metrics, metric_name)
         assert np.isclose(metric_val, tc["correct_metric_val"])
-
-
-pytestmark = [pytest.mark.unit]
 
 
 def test_precision_at_1():
