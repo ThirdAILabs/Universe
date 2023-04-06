@@ -1,6 +1,5 @@
 #include "Metric.h"
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
-#include <atomic>
 #include <stdexcept>
 
 namespace thirdai::bolt::train::metrics {
@@ -68,6 +67,34 @@ InputMetrics metricsForSingleOutputModel(
   }
 
   return metrics;
+}
+
+float divideTwoAtomicIntegers(const std::atomic_uint64_t& numerator,
+                              const std::atomic_uint64_t& denominator) {
+  uint32_t loaded_numerator = numerator.load();
+  uint32_t loaded_denominator = denominator.load();
+
+  if (loaded_denominator == 0) {
+    return 0.0;
+  }
+
+  return static_cast<float>(loaded_numerator) / loaded_denominator;
+}
+
+uint32_t truePositivesInTopK(const BoltVector& output, const BoltVector& label,
+                             const uint32_t& k) {
+  TopKActivationsQueue top_k_predictions = output.findKLargestActivations(k);
+
+  uint32_t true_positives = 0;
+  while (!top_k_predictions.empty()) {
+    ValueIndexPair valueIndex = top_k_predictions.top();
+    uint32_t prediction = valueIndex.second;
+    if (label.findActiveNeuronNoTemplate(prediction).activation > 0) {
+      true_positives++;
+    }
+    top_k_predictions.pop();
+  }
+  return true_positives;
 }
 
 }  // namespace thirdai::bolt::train::metrics
