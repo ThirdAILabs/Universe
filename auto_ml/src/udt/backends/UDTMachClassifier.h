@@ -94,7 +94,8 @@ class UDTMachClassifier final : public UDTBackend {
         /* label_delimiter = */ _mach_label_block->delimiter(),
         /* label_column_name = */ _mach_label_block->columnName(),
         /* integer_target = */
-        static_cast<bool>(dataset::mach::asNumericIndex(_mach_label_block->index())));
+        static_cast<bool>(
+            dataset::mach::asNumericIndex(_mach_label_block->index())));
   }
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
