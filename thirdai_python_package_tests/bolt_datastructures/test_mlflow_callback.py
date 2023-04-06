@@ -5,7 +5,6 @@ from test_callbacks import train_model_with_callback
 MOCK_TRACKING_URI = "dummy link"
 MOCK_EXPERIMENT_NAME = "dummy experiment"
 MOCK_RUN_NAME = "dummy run"
-MOCK_DATASET_NAME = "dummy dataset"
 MOCK_EXPERIMENT_ARGS_KEY = "dummy key"
 MOCK_EXPERIMENT_ARGS_VALUE = "dummy value"
 
@@ -27,7 +26,6 @@ def test_mlflow_callback(mocker):
         MOCK_TRACKING_URI,
         MOCK_EXPERIMENT_NAME,
         MOCK_RUN_NAME,
-        MOCK_DATASET_NAME,
         {MOCK_EXPERIMENT_ARGS_KEY: MOCK_EXPERIMENT_ARGS_VALUE},
     )
 
@@ -38,7 +36,6 @@ def test_mlflow_callback(mocker):
     start_run_mock.assert_called_once_with(run_name=MOCK_RUN_NAME)
     log_param_mock.assert_has_calls(
         [
-            mocker.call("dataset", MOCK_DATASET_NAME),
             mocker.call(MOCK_EXPERIMENT_ARGS_KEY, MOCK_EXPERIMENT_ARGS_VALUE),
         ]
     )
@@ -51,6 +48,8 @@ def test_mlflow_callback(mocker):
     for acc, time in zip(train_accuracies, train_epoch_times):
         log_metric_call_params.append(("categorical_accuracy", acc))
         log_metric_call_params.append(("epoch_times", time))
+        # this long numberis here because of a rounding error
+        log_metric_call_params.append(("learning_rate", 0.0010000000474974513))
 
     log_metric_mock.assert_has_calls(
         [
