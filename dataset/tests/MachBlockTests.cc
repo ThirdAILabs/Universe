@@ -12,14 +12,14 @@ static uint32_t num_hashes = 10;
 
 class MachBlockTest : public testing::Test {
  public:
-  static StringCategoricalMachIndexPtr stringMachIndex() {
-    return StringCategoricalMachIndex::make(
+  static mach::StringCategoricalMachIndexPtr stringMachIndex() {
+    return mach::StringCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
         /* max_elements = */ 1000);
   }
 
-  static NumericCategoricalMachIndexPtr numericMachIndex() {
-    return NumericCategoricalMachIndex::make(
+  static mach::NumericCategoricalMachIndexPtr numericMachIndex() {
+    return mach::NumericCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
         /* max_elements = */ 20);
   }
@@ -41,8 +41,9 @@ class MachBlockTest : public testing::Test {
   }
 
   static std::vector<SegmentedSparseFeatureVector> makeMachOutputVectors(
-      const std::vector<std::string>& categories, const MachIndexPtr& index) {
-    auto block = MachBlock::make(0, index);
+      const std::vector<std::string>& categories,
+      const mach::MachIndexPtr& index) {
+    auto block = mach::MachBlock::make(0, index);
     std::vector<SegmentedSparseFeatureVector> segmented_vecs;
     for (const auto& category : categories) {
       SegmentedSparseFeatureVector vec;
@@ -53,7 +54,7 @@ class MachBlockTest : public testing::Test {
     return segmented_vecs;
   }
 
-  static void numHashesTest(const MachIndexPtr& index) {
+  static void numHashesTest(const mach::MachIndexPtr& index) {
     auto categories = genRandomCategories();
     auto vecs = makeMachOutputVectors(categories, index);
     for (auto& vec : vecs) {
@@ -61,7 +62,7 @@ class MachBlockTest : public testing::Test {
     }
   }
 
-  static void outputRangeTest(const MachIndexPtr& index) {
+  static void outputRangeTest(const mach::MachIndexPtr& index) {
     auto categories = genRandomCategories();
     auto vecs = makeMachOutputVectors(categories, index);
     for (auto& vec : vecs) {

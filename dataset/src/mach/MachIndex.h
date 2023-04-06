@@ -15,7 +15,11 @@
 #include <unordered_map>
 #include <vector>
 
-namespace thirdai::dataset {
+namespace thirdai::dataset::tests {
+class MachDecodeTest;
+}  // namespace thirdai::dataset::tests
+
+namespace thirdai::dataset::mach {
 
 /**
  * Interface for a MachIndex. Should support hashing string entities
@@ -77,6 +81,8 @@ class NumericCategoricalMachIndex : public MachIndex {
   std::vector<uint32_t> hashAndStoreEntity(const std::string& string) final;
 
   std::vector<std::string> entitiesByHash(uint32_t hash_val) const final;
+
+  friend class tests::MachDecodeTest;
 
  private:
   NumericCategoricalMachIndex() {}
@@ -142,4 +148,4 @@ static NumericCategoricalMachIndexPtr asNumericIndex(
   return std::dynamic_pointer_cast<NumericCategoricalMachIndex>(index);
 }
 
-}  // namespace thirdai::dataset
+}  // namespace thirdai::dataset::mach

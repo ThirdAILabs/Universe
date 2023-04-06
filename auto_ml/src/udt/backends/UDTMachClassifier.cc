@@ -40,19 +40,19 @@ UDTMachClassifier::UDTMachClassifier(
   // TODO(david) should we freeze hash tables for mach? how does this work
   // with coldstart?
 
-  dataset::MachIndexPtr mach_index;
+  dataset::mach::MachIndexPtr mach_index;
   if (integer_target) {
-    mach_index = dataset::NumericCategoricalMachIndex::make(
+    mach_index = dataset::mach::NumericCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
         /* max_elements = */ n_target_classes);
   } else {
-    mach_index = dataset::StringCategoricalMachIndex::make(
+    mach_index = dataset::mach::StringCategoricalMachIndex::make(
         /* output_range = */ output_range, /* num_hashes = */ num_hashes,
         /* max_elements = */ n_target_classes);
   }
 
-  _mach_label_block = dataset::MachBlock::make(target_name, mach_index,
-                                               target_config->delimiter);
+  _mach_label_block = dataset::mach::MachBlock::make(target_name, mach_index,
+                                                     target_config->delimiter);
 
   bool force_parallel = user_args.get<bool>("force_parallel", "boolean", false);
 

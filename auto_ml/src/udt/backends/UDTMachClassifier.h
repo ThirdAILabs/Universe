@@ -94,7 +94,7 @@ class UDTMachClassifier final : public UDTBackend {
         /* label_delimiter = */ _mach_label_block->delimiter(),
         /* label_column_name = */ _mach_label_block->columnName(),
         /* integer_target = */
-        static_cast<bool>(dataset::asNumericIndex(_mach_label_block->index())));
+        static_cast<bool>(dataset::mach::asNumericIndex(_mach_label_block->index())));
   }
 
   static uint32_t autotuneMachOutputDim(uint32_t n_target_classes) {
@@ -121,7 +121,7 @@ class UDTMachClassifier final : public UDTBackend {
   void serialize(Archive& archive);
 
   std::shared_ptr<utils::Classifier> _classifier;
-  dataset::MachBlockPtr _mach_label_block;
+  dataset::mach::MachBlockPtr _mach_label_block;
   data::TabularDatasetFactoryPtr _dataset_factory;
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
