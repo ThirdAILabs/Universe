@@ -3,7 +3,46 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import roc_auc_score
 from thirdai import bolt, data
+
+
+def roc_auc_with_positive_label(positive_label):
+    def roc_auc_additional_metric(
+        activations, test_file, mlflow_logger, step, classname_fn
+    ):
+        df = pd.read_csv(test_file)
+        labels = df["label"].to_numpy()
+
+        if classname_fn(0) == positive_label:
+            predictions = activations[:, 0]
+        else:
+            predictions = activations[:, 1]
+
+        roc_auc = roc_auc_score(labels, predictions)
+
+        if mlflow_logger:
+            mlflow_logger.log_additional_metric(key="roc_auc", value=roc_auc, step=step)
+
+    return roc_auc_additional_metric
+
+
+def regression_metrics_with_target_name(target_name):
+    def regression_additional_metric(
+        activations, test_file, mlflow_logger, step, classname_fn
+    ):
+        df = pd.read_csv(test_file)
+        labels = df[target_name].to_numpy()
+
+        mae = np.mean(np.abs(activations - labels))
+        mse = np.mean(np.square(activations - labels))
+
+        print(f"MAE = {mae}\nMSE = {mse}")
+        if mlflow_logger:
+            mlflow_logger.log_additional_metric(key="mae", value=mae, step=step)
+            mlflow_logger.log_additional_metric(key="mse", value=mse, step=step)
+
+    return regression_additional_metric
 
 
 class UDTBenchmarkConfig(ABC):
@@ -113,6 +152,71 @@ class CriteoUDTConfig(UDTBenchmarkConfig):
         return data_types
 
 
+class InternetAdsUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "internet_ads_udt"
+    dataset_name = "internet_ads"
+
+    train_file = "internet_ads/train_with_header.data"
+    test_file = "internet_ads/test_with_header.data"
+
+    target = "label"
+    n_target_classes = 2
+
+    learning_rate = 1e-3
+    num_epochs = 100
+
+    metrics = ["categorical_accuracy"]
+
+    additional_metric_fn = roc_auc_with_positive_label("ad.")
+
+    def get_data_types(path_prefix):
+        data_types = {
+            "0": bolt.types.numerical(range=(0, 640)),
+            "1": bolt.types.numerical(range=(0, 640)),
+            "2": bolt.types.numerical(range=(0, 60)),
+        }
+
+        for i in range(3, 1558):
+            data_types[str(i)] = bolt.types.categorical()
+
+        data_types["label"] = bolt.types.categorical()
+
+        return data_types
+
+
+class FraudDetectionUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "fraud_detection_udt"
+    dataset_name = "fraud_detection"
+
+    train_file = "fraud_detection/new_train.csv"
+    test_file = "fraud_detection/new_test.csv"
+
+    target = "isFraud"
+    n_target_classes = 2
+
+    learning_rate = 1e-3
+    num_epochs = 2
+
+    metrics = ["categorical_accuracy"]
+
+    additional_metric_fn = roc_auc_with_positive_label("1")
+
+    def get_data_types(path_prefix):
+        return {
+            "step": bolt.types.categorical(),
+            "type": bolt.types.categorical(),
+            "amount": bolt.types.numerical(range=(0, 10000001)),
+            "nameOrig": bolt.types.categorical(),
+            "oldbalanceOrg": bolt.types.numerical(range=(0, 59585041)),
+            "newbalanceOrig": bolt.types.numerical(range=(0, 49585041)),
+            "nameDest": bolt.types.categorical(),
+            "oldbalanceDest": bolt.types.numerical(range=(0, 356015890)),
+            "newbalanceDest": bolt.types.numerical(range=(0, 356179279)),
+            "isFraud": bolt.types.categorical(),
+            "isFlaggedFraud": bolt.types.categorical(),
+        }
+
+
 class WayfairUDTConfig(UDTBenchmarkConfig):
     config_name = "wayfair_udt"
     dataset_name = "wayfair"
@@ -191,7 +295,8 @@ class MovieLensUDTBenchmark(UDTBenchmarkConfig):
             "movieId": bolt.types.categorical(delimiter=" "),
             "timestamp": bolt.types.date(),
         }
-    
+
+
 class AmazonGamesUDTBenchmark(UDTBenchmarkConfig):
     config_name = "amazon_games_udt"
     dataset_name = "amazon_games"
@@ -200,7 +305,7 @@ class AmazonGamesUDTBenchmark(UDTBenchmarkConfig):
     test_file = "amazon_games/test.csv"
 
     target = "gameId"
-    n_target_classes = 3706
+    n_target_classes = 33388
     temporal_relationships = {
         "userId": [
             bolt.temporal.categorical(column_name="gameId", track_last_n=length)
@@ -217,8 +322,38 @@ class AmazonGamesUDTBenchmark(UDTBenchmarkConfig):
     def get_data_types(path_prefix):
         return {
             "userId": bolt.types.categorical(),
-            "movieId": bolt.types.categorical(delimiter=" "),
+            "gameId": bolt.types.categorical(delimiter=" "),
             "timestamp": bolt.types.date(),
+        }
+
+
+class NetflixUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "netflix_udt"
+    dataset_name = "netflix_100M"
+
+    train_file = "netflix/netflix_train.csv"
+    test_file = "netflix/netflix_test.csv"
+
+    target = "movie"
+    n_target_classes = 17770
+    temporal_relationships = {
+        "user": [
+            bolt.temporal.categorical(column_name="movie", track_last_n=length)
+            for length in [1, 2, 5, 10, 25, 50]
+        ]
+    }
+
+    learning_rate = 0.0001
+    num_epochs = 5
+    metrics = ["recall@10", "precision@10"]
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types(path_prefix):
+        return {
+            "user": bolt.types.categorical(),
+            "movie": bolt.types.categorical(delimiter=" "),
+            "date": bolt.types.date(),
         }
 
 
@@ -243,19 +378,6 @@ class ForestCoverTypeUDTBenchmark(UDTBenchmarkConfig):
         return {f"col{i}": bolt.types.categorical() for i in range(55)}
 
 
-def regression_metrics(activations, test_file, mlflow_logger, step):
-    df = pd.read_csv(test_file)
-    labels = df["Purchase"].to_numpy()
-
-    mae = np.mean(np.abs(activations - labels))
-    mse = np.mean(np.square(activations - labels))
-
-    print(f"MAE = {mae}\nMSE = {mse}")
-    if mlflow_logger:
-        mlflow_logger.log_additional_metric(key="mae", value=mae, step=step)
-        mlflow_logger.log_additional_metric(key="mse", value=mse, step=step)
-
-
 class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
     config_name = "black_friday_udt"
     dataset_name = "black_friday"
@@ -272,12 +394,41 @@ class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
     learning_rate = 0.001
     num_epochs = 15
     metrics = []
-    additional_metric_fn = regression_metrics
+    additional_metric_fn = regression_metrics_with_target_name("Purchase")
 
     @staticmethod
     @abstractmethod
     def get_data_types(path_prefix):
         file = os.path.join(path_prefix, BlackFridayUDTBenchmark.train_file)
+
+        col_types = data.get_udt_col_types(file)
+        del col_types["Unnamed: 0"]
+        return col_types
+
+
+class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "mercedes_benz_greener_udt"
+    dataset_name = "mercedes_benz_greener"
+
+    train_file = "tabular_regression/reg_cat/Mercedes_Benz_Greener_Manufacturing_shuf_train_with_header.csv"
+    test_file = (
+        "tabular_regression/reg_cat/Mercedes_Benz_Greener_Manufacturing_test.csv"
+    )
+
+    target = "y"
+    n_target_classes = None
+    delimiter = ","
+    options = {"contextual_columns": True}
+
+    learning_rate = 0.001
+    num_epochs = 15
+    metrics = []
+    additional_metric_fn = regression_metrics_with_target_name("y")
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types(path_prefix):
+        file = os.path.join(path_prefix, MercedesBenzGreenerUDTBenchmark.train_file)
 
         col_types = data.get_udt_col_types(file)
         del col_types["Unnamed: 0"]

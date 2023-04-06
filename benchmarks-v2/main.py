@@ -66,7 +66,7 @@ if __name__ == "__main__":
     )
     if len(configs) == 0:
         raise ValueError(
-            f"Could match regular expression '{args.config}' to any configs."
+            f"Couldn't match regular expression '{args.config}' to any configs."
         )
 
     for config in configs:

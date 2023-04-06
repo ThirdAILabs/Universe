@@ -67,4 +67,5 @@ class UDTRunner(Runner):
                     test_file=test_file,
                     mlflow_logger=mlflow_logger,
                     step=epoch,
+                    classname_fn=model.class_name,
                 )
