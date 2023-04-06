@@ -85,12 +85,14 @@ class MlflowCallback(bolt.callbacks.Callback):
             import mlflow  # import inside class to not force another package dependency
 
             for name, values in train_state.get_all_train_batch_metrics().items():
+                # -1 pulls the most recent metric value in values
                 mlflow.log_metric(self._clean(name), values[-1])
             mlflow.log_metric("learning_rate", train_state.learning_rate)
 
     def on_epoch_end(self, model, train_state):
         import mlflow  # import inside class to not force another package dependency
 
+        # -1 pulls the most recent metric value in values
         for name, values in train_state.get_all_train_metrics().items():
             mlflow.log_metric(self._clean(name), values[-1])
         for name, values in train_state.get_all_validation_metrics().items():
