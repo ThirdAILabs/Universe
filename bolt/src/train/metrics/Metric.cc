@@ -1,5 +1,7 @@
 #include "Metric.h"
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
+#include <bolt/src/train/metrics/LossMetric.h>
 #include <stdexcept>
 
 namespace thirdai::bolt::train::metrics {
@@ -51,15 +53,28 @@ void MetricCollection::reset() {
   }
 }
 
-InputMetrics metricsForSingleOutputModel(
-    const std::vector<std::string>& metric_names,
-    const nn::autograd::ComputationPtr& output,
-    const nn::autograd::ComputationPtr& labels) {
+InputMetrics fromMetricNames(const nn::model::ModelPtr& model,
+                             const std::vector<std::string>& metric_names,
+                             const std::string& prefix) {
+  if (model->outputs().size() != 1 || model->labels().size() != 1 ||
+      model->losses().size() != 1) {
+    throw std::invalid_argument(
+        "Can only specify metrics by their name for models with a single "
+        "output, label, and loss.");
+  }
+
+  nn::autograd::ComputationPtr output = model->outputs().front();
+  nn::autograd::ComputationPtr labels = model->labels().front();
+  nn::loss::LossPtr loss = model->losses().front();
+
   InputMetrics metrics;
 
   for (const auto& name : metric_names) {
     if (name == "categorical_accuracy") {
-      metrics[name] = std::make_shared<CategoricalAccuracy>(output, labels);
+      metrics[prefix + name] =
+          std::make_shared<CategoricalAccuracy>(output, labels);
+    } else if (name == "loss") {
+      metrics[prefix + name] = std::make_shared<LossMetric>(loss);
     } else {
       throw std::invalid_argument("Metric '" + name +
                                   "' is not yet supported.");

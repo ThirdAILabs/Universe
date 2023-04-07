@@ -3,6 +3,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/vector.hpp>
 #include <bolt/src/nn/autograd/ComputationGraph.h>
+#include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
@@ -130,6 +131,8 @@ autograd::ComputationList Model::computationOrder() const {
 const autograd::ComputationList& Model::outputs() const { return _outputs; }
 
 const autograd::ComputationList& Model::labels() const { return _labels; }
+
+const std::vector<loss::LossPtr>& Model::losses() const { return _losses; }
 
 const std::vector<ops::OpPtr>& Model::ops() const { return _ops; }
 
