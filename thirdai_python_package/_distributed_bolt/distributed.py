@@ -62,9 +62,9 @@ def add_distributed_to_udt():
         # trains the model until training is complete
         while not distributed_trainer.finished():
             # whether there is more batch left to train, else moves directly to next epoch
-            have_next_batch = distributed_trainer.step()
+            has_next_batch = distributed_trainer.step()
 
-            if not have_next_batch:
+            if not has_next_batch:
                 epoch += 1
 
                 # We are freezing hashtables by default for distributed training after one epoch,
@@ -505,15 +505,15 @@ class DistributedDataParallel:
         self.current_epoch = 0
 
     def step(self):
-        have_next_batch = self.train_state_manager.train_batch(epoch=self.current_epoch)
+        has_next_batch = self.train_state_manager.train_batch(epoch=self.current_epoch)
         self._post_batch_training_updates(
             self.train_state_manager, self.validation_context
         )
-        if not have_next_batch:
+        if not has_next_batch:
             self.train_metrics = self.train_state_manager.move_to_next_epoch()
             self.current_epoch += 1
 
-        return have_next_batch
+        return has_next_batch
 
     def finished(self):
         return self.current_epoch >= self.train_config.num_epochs
