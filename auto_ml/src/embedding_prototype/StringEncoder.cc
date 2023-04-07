@@ -10,6 +10,7 @@
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <bolt/src/nn/loss/EuclideanContrastive.h>
 
 namespace thirdai::automl::udt {
 

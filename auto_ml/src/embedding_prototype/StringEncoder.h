@@ -10,8 +10,6 @@
 #include <pybind11/pybind11.h>
 #include <unordered_map>
 
-// #include <bolt/src/nn/loss/EuclideanContrastive.h>
-
 namespace thirdai::automl::udt {
 
 namespace py = pybind11;
