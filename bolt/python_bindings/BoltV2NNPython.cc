@@ -123,7 +123,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
            py::arg("losses"))
       .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
-           py::arg("labels"), py::arg("_token") = licensing::TrainPermissionsToken())
+           py::arg("labels"),
+           py::arg("_token") = licensing::TrainPermissionsToken())
       .def("forward",
            py::overload_cast<const tensor::TensorList&, bool>(
                &model::Model::forward),
