@@ -25,8 +25,8 @@ class DWTAHashFunction final : public HashFunction {
 
  public:
   DWTAHashFunction(uint32_t input_dim, uint32_t _hashes_per_table,
-                   uint32_t _num_tables, uint32_t range_pow, uint32_t permutes,
-                   uint32_t seed = time(nullptr));
+                   uint32_t _num_tables, uint32_t range_pow, uint32_t binsize,
+                   uint32_t permutes, uint32_t seed = time(nullptr));
 
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;
@@ -38,12 +38,17 @@ class DWTAHashFunction final : public HashFunction {
     return std::make_unique<DWTAHashFunction>(
         /* input_dim= */ _dim, /* hashes_per_table= */ _hashes_per_table,
         /* num_tables= */ _num_tables,
-        /* range_pow= */ _log_binsize * _hashes_per_table, _permute);
+        /* range_pow= */ _log_binsize * _hashes_per_table, /*binsize=*/_binsize,
+        _permute);
   }
 
   std::string getName() const final { return "DWTA"; }
 
   uint32_t getPermutes() const override { return _permute; }
+
+  uint32_t getBinsize() const override { return _binsize; }
+
+  uint32_t getHashesPerTable() const override { return _hashes_per_table; }
 };
 
 }  // namespace thirdai::hashing

@@ -28,14 +28,13 @@ std::shared_ptr<FullyConnectedNode> FullyConnectedNode::make(
 }
 
 std::shared_ptr<FullyConnectedNode>
-FullyConnectedNode::makeExplicitSamplingConfig(uint32_t dim, float sparsity,
-                                               const std::string& activation,
-                                               uint32_t num_tables,
-                                               uint32_t hashes_per_table,
-                                               uint32_t reservoir_size,
-                                               uint32_t permutes) {
+FullyConnectedNode::makeExplicitSamplingConfig(
+    uint32_t dim, float sparsity, const std::string& activation,
+    uint32_t num_tables, uint32_t hashes_per_table, uint32_t range_pow,
+    uint32_t binsize, uint32_t reservoir_size, uint32_t permutes) {
   auto sampling_config = std::make_shared<DWTASamplingConfig>(
-      num_tables, hashes_per_table, reservoir_size, permutes);
+      num_tables, hashes_per_table, range_pow, binsize, reservoir_size,
+      permutes);
   return make(dim, sparsity, activation, sampling_config);
 }
 

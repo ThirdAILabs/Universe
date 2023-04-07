@@ -22,6 +22,9 @@ SampledHashTable<LABEL_T>::SampledHashTable(uint64_t num_tables,
       _gen_rand(max_rand) {
   std::mt19937 generator(seed);
 
+  // std::cout << "The range is: " << _range << "\nnum_tables: " << _num_tables
+  //           << std::endl;
+
   for (uint64_t i = 1; i < _max_rand; i++) {
     _gen_rand[i] = generator();
   }

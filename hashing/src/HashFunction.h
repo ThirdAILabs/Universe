@@ -95,6 +95,14 @@ class HashFunction {
     throw std::logic_error("Invalid call");
   };
 
+  virtual uint32_t getBinsize() const {
+    throw std::logic_error("Invalid call");
+  }
+
+  virtual uint32_t getHashesPerTable() const {
+    throw std::logic_error("Invalid Call for getting hashes per table");
+  }
+
   virtual ~HashFunction() = default;
 
  protected:

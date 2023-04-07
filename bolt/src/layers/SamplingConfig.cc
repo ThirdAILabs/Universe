@@ -9,11 +9,14 @@ namespace thirdai::bolt {
 
 std::unique_ptr<hashing::HashFunction> DWTASamplingConfig::getHashFunction(
     uint32_t input_dim) const {
+  // std::cout << "getHashFunction\nhashes per table: " << _hashes_per_table
+  //           << std::endl;
   return std::make_unique<hashing::DWTAHashFunction>(
       /* input_dim= */ input_dim,
       /* hashes_per_table= */ _hashes_per_table,
       /* num_tables= */ _num_tables,
-      /* range_pow= */ 7 * _hashes_per_table,
+      /* range_pow= */ _range_pow,
+      /* binsize=*/_binsize,
       /*permutations=*/_permutes);
 }
 
@@ -22,7 +25,7 @@ DWTASamplingConfig::getHashTable() const {
   return std::make_unique<hashtable::SampledHashTable<uint32_t>>(
       /* num_tables= */ _num_tables,
       /* reservoir_size= */ _reservoir_size,
-      /* range= */ 1 << (7 * _hashes_per_table));
+      /* range= */ 1 << (_range_pow));
 }
 
 // uint32_t getNumberHashTables(uint32_t input_dim, uint32_t layer_dim){
@@ -91,6 +94,8 @@ SamplingConfigPtr DWTASamplingConfig::autotune(uint32_t layer_dim,
   return std::make_shared<DWTASamplingConfig>(
       /* num_tables= */ num_tables,
       /* hashes_per_table= */ hashes_per_table,
+      /* range_pow=*/range_pow,
+      /*binsize=*/8,
       /* reservoir_size= */ reservoir_size,
       /*permutations=*/8);
 }
@@ -118,7 +123,7 @@ void SamplingConfig::serialize(Archive& archive) {
 template <class Archive>
 void DWTASamplingConfig::serialize(Archive& archive) {
   archive(cereal::base_class<SamplingConfig>(this), _num_tables,
-          _hashes_per_table, _reservoir_size, _permutes);
+          _hashes_per_table, _range_pow, _binsize, _reservoir_size, _permutes);
 }
 
 template <class Archive>

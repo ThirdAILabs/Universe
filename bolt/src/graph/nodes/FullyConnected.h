@@ -45,8 +45,8 @@ class FullyConnectedNode final
 
   static std::shared_ptr<FullyConnectedNode> makeExplicitSamplingConfig(
       uint32_t dim, float sparsity, const std::string& activation,
-      uint32_t num_tables, uint32_t hashes_per_table, uint32_t reservoir_size,
-      uint32_t permutes);
+      uint32_t num_tables, uint32_t hashes_per_table, uint32_t range_pow,
+      uint32_t binsize, uint32_t reservoir_size, uint32_t permutes);
 
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node);
 

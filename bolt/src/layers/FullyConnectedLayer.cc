@@ -697,15 +697,19 @@ void FullyConnectedLayer::initSamplingDatastructures(
     _sampling_mode = BoltSamplingMode::LSH;
   }
 
+  // std::cout << "Start initializing hash tables" << std::endl;
   _hasher = sampling_config->getHashFunction(_prev_dim);
 
   _hash_table = sampling_config->getHashTable();
+
+  // std::cout << "Hash tables initialized" << std::endl;
 
   /* Initializing hence, we need to force build the hash tables
    * Hence, force_build is true here in buildHashTablesImpl(force_build)
    */
   buildHashTablesImpl(true);
 
+  // std::cout << "Buildhashtables impl done" << std::endl;
   _rand_neurons = std::vector<uint32_t>(_dim);
 
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
@@ -898,7 +902,9 @@ void FullyConnectedLayer::buildSamplingSummary(std::ostream& summary) const {
       summary << "hash_function=" << _hasher->getName() << ", ";
 
       if (_hasher->getName() == "DWTA") {
-        summary << "permutations: " << _hasher->getPermutes() << ", ";
+        summary << "permutations= " << _hasher->getPermutes() << ", "
+                << "binsize= " << _hasher->getBinsize() << ", "
+                << "hashes_per_table= " << _hasher->getHashesPerTable() << ", ";
       }
       _hash_table->summarize(summary);
     }

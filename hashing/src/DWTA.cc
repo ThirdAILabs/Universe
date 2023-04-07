@@ -8,21 +8,24 @@
 
 namespace thirdai::hashing {
 
-constexpr uint32_t DEFAULT_BINSIZE = 128;
+constexpr uint32_t DEFAULT_BINSIZE = 8;
 
 DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
                                    uint32_t hashes_per_table,
                                    uint32_t num_tables, uint32_t range_pow,
-                                   uint32_t permutes, uint32_t seed)
+                                   uint32_t binsize, uint32_t permutes,
+                                   uint32_t seed)
     : HashFunction(num_tables, 1 << range_pow),
       _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
       _dim(input_dim),
-      _binsize(DEFAULT_BINSIZE),
+      _binsize(binsize),
       _log_binsize(floor(log2(_binsize))),
       _permute(ceil((static_cast<double>(_num_hashes) * _binsize) / _dim)) {
   _permute = permutes;  // NOLINT
-
+  (void)DEFAULT_BINSIZE;
+  // std::cout << "Hash function range: " << _range << std::endl;
+  // std::cout << "hashes per table:" << _hashes_per_table << std::endl;
   std::mt19937 gen(seed);
 
   std::uniform_int_distribution<uint32_t> bin_mapper(
@@ -119,8 +122,19 @@ void DWTAHashFunction::compactHashes(const uint32_t* hashes,
        * the output range: num_hashes_per_table * log(binsize).
        */
       h = h & (_binsize - 1);
-
       index += h << ((_hashes_per_table - 1 - j) * _log_binsize);
+      if (index >= _range) {
+        std::cout << "The index is: " << index << " h:" << h
+                  << " and the range: " << _range << " shift by:"
+                  << ((_hashes_per_table - 1 - j) * _log_binsize) << std::endl;
+        throw std::logic_error("Index going out of range");
+      }
+    }
+
+    if (index >= _range) {
+      std::cout << "The index is: " << index << "and the range: " << _range
+                << std::endl;
+      throw std::logic_error("Index going out of range");
     }
     final_hashes[i] = index;
   }

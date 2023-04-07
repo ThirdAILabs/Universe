@@ -76,7 +76,7 @@ ConvLayerConfig::ConvLayerConfig(uint64_t _num_filters, float _sparsity,
     uint32_t l = sparsity < 0.1 ? 256 : 64;
     sampling_config = std::make_unique<DWTASamplingConfig>(
         /*num_tables= */ l,
-        /* hashes_per_table= */ k, rs, /*=*/8);
+        /* hashes_per_table= */ k, /*range_pow =*/3, /*binsize=*/8, rs, /*=*/8);
   } else {
     sampling_config = nullptr;
   }
