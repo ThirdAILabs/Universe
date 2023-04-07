@@ -62,10 +62,11 @@ void EuclideanContrastive::gradients(uint32_t index_in_batch,
     return;
   }
   float multiplier =
-      label -
-      ((1 - label) *
-       std::max<float>(_dissimilar_cutoff_distance - euclidean_distance, 0) /
-       euclidean_distance);
+      (label -
+       ((1 - label) *
+        std::max<float>(_dissimilar_cutoff_distance - euclidean_distance, 0) /
+        euclidean_distance)) /
+      batch_size;
 
   bolt_vector::visitPair(
       vec_1, vec_2,
