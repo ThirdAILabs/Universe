@@ -6,20 +6,19 @@
 namespace thirdai::bolt::nn::loss {
 
 /**
- * Contrastive loss function, 0.5D^2(1 - Y) + Ymax(0, m - D)^2. See LeCun:
- * http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf.
+ * Contrastive loss function, 0.5D^2(1 - Y) + Ymax(0, m - D)^2.
+ * See bolt/src/nn/derivations/EuclideanContrastive.md for gradient derivation.
  */
-class Contrastive final : public Loss {
+class EuclideanContrastive final : public Loss {
  public:
-  explicit Contrastive(autograd::ComputationPtr output_1,
-                       autograd::ComputationPtr output_2,
-                       autograd::ComputationPtr labels,
-                       float dissimilar_cutoff_margin);
+  explicit EuclideanContrastive(autograd::ComputationPtr output_1,
+                                autograd::ComputationPtr output_2,
+                                autograd::ComputationPtr labels,
+                                float dissimilar_cutoff_distance);
 
-  static std::shared_ptr<Contrastive> make(autograd::ComputationPtr output_1,
-                                           autograd::ComputationPtr output_2,
-                                           autograd::ComputationPtr labels,
-                                           float dissimilar_cutoff_margin);
+  static std::shared_ptr<EuclideanContrastive> make(
+      autograd::ComputationPtr output_1, autograd::ComputationPtr output_2,
+      autograd::ComputationPtr labels, float dissimilar_cutoff_distance);
 
   void gradients(uint32_t index_in_batch, uint32_t batch_size) const final;
 
@@ -37,9 +36,9 @@ class Contrastive final : public Loss {
   float euclideanDistanceSquared(uint32_t index_in_batch) const;
 
   autograd::ComputationPtr _output_1, _output_2, _labels;
-  float _dissimilar_cutoff_margin;
+  float _dissimilar_cutoff_distance;
 };
 
-using ContrastivePtr = std::shared_ptr<Contrastive>;
+using EuclideanContrastivePtr = std::shared_ptr<EuclideanContrastive>;
 
 }  // namespace thirdai::bolt::nn::loss

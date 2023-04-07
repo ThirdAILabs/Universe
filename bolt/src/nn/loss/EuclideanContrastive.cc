@@ -7,15 +7,15 @@
 
 namespace thirdai::bolt::nn::loss {
 
-Contrastive::Contrastive(autograd::ComputationPtr output_1,
-                         autograd::ComputationPtr output_2,
-                         autograd::ComputationPtr labels,
-                         float dissimilar_cutoff_margin)
+EuclideanContrastive::EuclideanContrastive(autograd::ComputationPtr output_1,
+                                           autograd::ComputationPtr output_2,
+                                           autograd::ComputationPtr labels,
+                                           float dissimilar_cutoff_distance)
     : _output_1(std::move(output_1)),
       _output_2(std::move(output_2)),
       _labels(std::move(labels)),
-      _dissimilar_cutoff_margin(dissimilar_cutoff_margin) {
-  if (dissimilar_cutoff_margin <= 0) {
+      _dissimilar_cutoff_distance(dissimilar_cutoff_distance) {
+  if (dissimilar_cutoff_distance <= 0) {
     throw std::invalid_argument(
         "The cutoff margin for the distance between dissimilar points must be "
         "greater than 0.");
@@ -35,15 +35,17 @@ Contrastive::Contrastive(autograd::ComputationPtr output_1,
   }
 }
 
-std::shared_ptr<Contrastive> Contrastive::make(
+std::shared_ptr<EuclideanContrastive> EuclideanContrastive::make(
     autograd::ComputationPtr output_1, autograd::ComputationPtr output_2,
-    autograd::ComputationPtr labels, float dissimilar_cutoff_margin) {
-  return std::make_shared<Contrastive>(output_1, output_2, labels,
-                                       dissimilar_cutoff_margin);
+    autograd::ComputationPtr labels, float dissimilar_cutoff_distance) {
+  return std::make_shared<EuclideanContrastive>(output_1, output_2, labels,
+                                                dissimilar_cutoff_distance);
 }
 
-void Contrastive::gradients(uint32_t index_in_batch,
-                            uint32_t batch_size) const {
+void EuclideanContrastive::gradients(uint32_t index_in_batch,
+                                     uint32_t batch_size) const {
+  // See bolt/src/nn/derivations/EuclideanContrastive.md for this derivation.
+
   (void)batch_size;
   float label = _labels->tensor()->getVector(index_in_batch).activations[0];
   auto& vec_1 = _output_1->tensor()->getVector(index_in_batch);
@@ -51,48 +53,61 @@ void Contrastive::gradients(uint32_t index_in_batch,
 
   float euclidean_distance =
       std::sqrt(euclideanDistanceSquared(index_in_batch));
-  float dissimilar_multiplier =
-      _dissimilar_cutoff_margin < euclidean_distance
-          ? 0
-          : (_dissimilar_cutoff_margin - euclidean_distance) /
-                euclidean_distance;
+  // If the euclidean distance between points is 0, they were likely the same
+  // input, or the network is in a degenerative state. Either way, the gradient
+  // will be nan or inf, and we don't want this so we treat it as a NOOP.
+  if (euclidean_distance == 0) {
+    return;
+  }
+  float multiplier =
+      1 - label -
+      label *
+          std::max<float>(_dissimilar_cutoff_distance - euclidean_distance, 0);
 
   bolt_vector::visitPair(
       vec_1, vec_2,
-      [&vec_1, &vec_2, label, dissimilar_multiplier](
-          FoundActiveNeuron neuron_1, FoundActiveNeuron neuron_2) {
-        float update = label * (neuron_1.activation - neuron_2.activation) +
-                       (1 - label) * dissimilar_multiplier *
-                           (neuron_2.activation - neuron_1.activation);
+      [&vec_1, &vec_2, multiplier](FoundActiveNeuron neuron_1,
+                                   FoundActiveNeuron neuron_2) {
+        float update = multiplier * (neuron_1.activation - neuron_2.activation);
         if (neuron_1.pos) {
-          vec_1.gradients[neuron_1.pos.value()] += update;
+          vec_1.gradients[neuron_1.pos.value()] -= update;
         }
         if (neuron_2.pos) {
-          vec_2.gradients[neuron_2.pos.value()] -= update;
+          vec_2.gradients[neuron_2.pos.value()] += update;
         }
       });
 }
 
-float Contrastive::loss(uint32_t index_in_batch) const {
+float EuclideanContrastive::loss(uint32_t index_in_batch) const {
   float label = _labels->tensor()->getVector(index_in_batch).activations[0];
 
   float euclidean_distance_squared = euclideanDistanceSquared(index_in_batch);
+  // If the euclidean distance between points is 0, they were likely the same
+  // input, or the network is in a degenerative state. Either way, the gradient
+  // will be nan or inf, and we don't want this so we treat it as not
+  // contributing to the loss.
+  if (euclidean_distance_squared == 0) {
+    return 0;
+  }
   float euclidean_distance = std::sqrt(euclidean_distance_squared);
   float cutoff_distance =
-      std::max<float>(0, _dissimilar_cutoff_margin - euclidean_distance);
+      std::max<float>(0, _dissimilar_cutoff_distance - euclidean_distance);
   float cutoff_distance_squared = cutoff_distance * cutoff_distance;
 
   return (1 - label) * 0.5 * euclidean_distance_squared +
          label * cutoff_distance_squared;
 }
 
-autograd::ComputationList Contrastive::outputsUsed() const {
+autograd::ComputationList EuclideanContrastive::outputsUsed() const {
   return {_output_1, _output_2};
 }
 
-autograd::ComputationList Contrastive::labels() const { return {_labels}; }
+autograd::ComputationList EuclideanContrastive::labels() const {
+  return {_labels};
+}
 
-float Contrastive::euclideanDistanceSquared(uint32_t index_in_batch) const {
+float EuclideanContrastive::euclideanDistanceSquared(
+    uint32_t index_in_batch) const {
   auto& vec_1 = _output_1->tensor()->getVector(index_in_batch);
   auto& vec_2 = _output_2->tensor()->getVector(index_in_batch);
 
