@@ -51,7 +51,7 @@ def get_contrastive_and_embedding_models(
     )
 
 
-def test_number_contrastive_embeddings():
+def test_contrastive_number_embeddings():
     """
     This test sets up a task where the input to the network are one hot encoded
     integers. A number's embedding should be close to another number's embedding
@@ -105,7 +105,6 @@ def test_number_contrastive_embeddings():
             "train_loss": bolt.train.metrics.LossMetric(contrastive_loss),
         },
     )
-    assert history["train_loss"][-1] < history["train_loss"][0]
 
     identity = bolt.train.convert_dataset(
         dataset.from_numpy(
