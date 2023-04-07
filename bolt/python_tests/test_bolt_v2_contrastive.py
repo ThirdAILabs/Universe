@@ -55,30 +55,33 @@ def test_number_contrastive_embeddings():
     """
     This test sets up a task where the input to the network are one hot encoded
     integers. A number's embedding should be close to another number's embedding
-    if they are close to each other on the number line.
+    if they are in the same group. This is an easy test because none of the
+    items are in the same group, so the model can just make items in the same
+    group have the same embedding.
     """
-    input_dim = 20
-    inputs_are_similar = lambda i, j: abs(i - j) < 2
+    max_integer = 20
+    groups = [0, 0, 1, 1, 1, 2, 3, 3, 4, 4, 4, 4, 4, 5, 6, 6, 6, 7, 8, 8]
+    inputs_are_similar = lambda i, j: groups[i] == groups[j]
     dissimilar_cutoff_distance = 1
     batch_size = 64
     embedding_dim = 50
 
-    inputs_1 = np.zeros((input_dim * input_dim, input_dim), dtype="float32")
-    inputs_2 = np.zeros((input_dim * input_dim, input_dim), dtype="float32")
-    labels = np.zeros(input_dim * input_dim, dtype="float32")
+    inputs_1 = np.zeros((max_integer * max_integer, max_integer), dtype="float32")
+    inputs_2 = np.zeros((max_integer * max_integer, max_integer), dtype="float32")
+    labels = np.zeros(max_integer * max_integer, dtype="float32")
 
-    for i in range(input_dim):
-        for j in range(input_dim):
-            inputs_1[input_dim * i + j][i] = 1
-            inputs_2[input_dim * i + j][j] = 1
-            labels[input_dim * i + j] = inputs_are_similar(i, j)
+    for i in range(max_integer):
+        for j in range(max_integer):
+            inputs_1[max_integer * i + j][i] = 1
+            inputs_2[max_integer * i + j][j] = 1
+            labels[max_integer * i + j] = inputs_are_similar(i, j)
 
     inputs_1 = dataset.from_numpy(inputs_1, batch_size=batch_size)
     inputs_2 = dataset.from_numpy(inputs_2, batch_size=batch_size)
     labels = dataset.from_numpy(labels, batch_size=batch_size)
 
     inputs = bolt.train.convert_datasets(
-        [inputs_1, inputs_2], dims=[input_dim, input_dim]
+        [inputs_1, inputs_2], dims=[max_integer, max_integer]
     )
     labels = bolt.train.convert_dataset(labels, dim=1)
 
@@ -87,7 +90,7 @@ def test_number_contrastive_embeddings():
         embedding_model,
         contrastive_loss,
     ) = get_contrastive_and_embedding_models(
-        input_dim,
+        max_integer,
         embedding_dim=embedding_dim,
         dissimilar_cutoff_distance=dissimilar_cutoff_distance,
     )
@@ -106,9 +109,10 @@ def test_number_contrastive_embeddings():
 
     identity = bolt.train.convert_dataset(
         dataset.from_numpy(
-            np.identity(input_dim, dtype="float32"), batch_size=input_dim * input_dim
+            np.identity(max_integer, dtype="float32"),
+            batch_size=max_integer * max_integer,
         ),
-        dim=input_dim,
+        dim=max_integer,
     )[0]
 
     result = np.array(
@@ -121,8 +125,8 @@ def test_number_contrastive_embeddings():
     total_dissimilar_distance = 0
     num_similar = 0
     num_dissimilar = 0
-    for i in range(input_dim):
-        for j in range(input_dim):
+    for i in range(max_integer):
+        for j in range(max_integer):
             if i != j:
                 if inputs_are_similar(i, j):
                     total_similar_distance += pairwise_distances[i][j]
