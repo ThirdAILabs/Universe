@@ -57,7 +57,9 @@ class MapSampleRef final : public ColumnarInputSample {
 
   std::string_view column(const ColumnIdentifier& column) final {
     if (!_columns.count(column.name())) {
-      return {};
+      throw std::invalid_argument(
+          "Searched for column '" + column.name() +
+          "' which does not exist in the input sample.");
     }
     return _columns.at(column.name());
   }
