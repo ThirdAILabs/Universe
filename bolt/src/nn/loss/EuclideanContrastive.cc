@@ -1,6 +1,7 @@
 #include "EuclideanContrastive.h"
 #include <bolt_vector/src/BoltVector.h>
 #include <bolt_vector/src/BoltVectorUtils.h>
+#include <cmath>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -60,9 +61,10 @@ void EuclideanContrastive::gradients(uint32_t index_in_batch,
     return;
   }
   float multiplier =
-      1 - label -
-      label *
-          std::max<float>(_dissimilar_cutoff_distance - euclidean_distance, 0);
+      label -
+      ((1 - label) *
+       std::max<float>(_dissimilar_cutoff_distance - euclidean_distance, 0) /
+       euclidean_distance);
 
   bolt_vector::visitPair(
       vec_1, vec_2,
@@ -94,8 +96,8 @@ float EuclideanContrastive::loss(uint32_t index_in_batch) const {
       std::max<float>(0, _dissimilar_cutoff_distance - euclidean_distance);
   float cutoff_distance_squared = cutoff_distance * cutoff_distance;
 
-  return (1 - label) * 0.5 * euclidean_distance_squared +
-         label * cutoff_distance_squared;
+  return label * 0.5 * euclidean_distance_squared +
+         (1 - label) * cutoff_distance_squared;
 }
 
 autograd::ComputationList EuclideanContrastive::outputsUsed() const {

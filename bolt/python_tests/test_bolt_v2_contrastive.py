@@ -54,10 +54,11 @@ def test_number_embeddings():
     integers. A number's embedding should be close to another number's embedding
     if they are close to each other on the number line.
     """
-    input_dim = 10
-    number_line_distance = 1
+    input_dim = 20
+    inputs_are_similar = lambda i, j: abs(i - j) < 2
     dissimilar_cutoff_distance = 1
     batch_size = 64
+    embedding_dim = 50
 
     inputs_1 = np.zeros((input_dim * input_dim, input_dim), dtype="float32")
     inputs_2 = np.zeros((input_dim * input_dim, input_dim), dtype="float32")
@@ -67,7 +68,7 @@ def test_number_embeddings():
         for j in range(input_dim):
             inputs_1[input_dim * i + j][i] = 1
             inputs_2[input_dim * i + j][j] = 1
-            labels[input_dim * i + j] = (float)(abs(i - j) > number_line_distance)
+            labels[input_dim * i + j] = inputs_are_similar(i, j)
 
     inputs_1 = dataset.from_numpy(inputs_1, batch_size=batch_size)
     inputs_2 = dataset.from_numpy(inputs_2, batch_size=batch_size)
@@ -84,7 +85,7 @@ def test_number_embeddings():
         contrastive_loss,
     ) = get_contrastive_and_embedding_models(
         input_dim,
-        embedding_dim=20,
+        embedding_dim=embedding_dim,
         dissimilar_cutoff_distance=dissimilar_cutoff_distance,
     )
 
@@ -119,17 +120,18 @@ def test_number_embeddings():
     num_dissimilar = 0
     for i in range(input_dim):
         for j in range(input_dim):
-            dissimilar = abs(i - j) > number_line_distance
-            if dissimilar:
-                total_dissimilar_distance += pairwise_distances[i][j]
-                num_dissimilar += 1
-            else:
-                total_similar_distance += pairwise_distances[i][j]
-                num_similar += 1
+            if i != j:
+                if inputs_are_similar(i, j):
+                    total_similar_distance += pairwise_distances[i][j]
+                    num_similar += 1
+                else:
+                    total_dissimilar_distance += pairwise_distances[i][j]
+                    num_dissimilar += 1
 
     average_similar_distance = total_similar_distance / num_similar
     average_dissimilar_distance = total_dissimilar_distance / num_dissimilar
 
+    print(average_similar_distance, average_dissimilar_distance)
     assert average_similar_distance < average_dissimilar_distance
 
 

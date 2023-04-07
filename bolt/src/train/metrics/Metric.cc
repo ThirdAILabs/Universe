@@ -22,7 +22,7 @@ MetricCollection::MetricCollection(const InputMetrics& metrics) {
 }
 
 void MetricCollection::recordBatch(uint32_t batch_size) {
-  // #pragma omp parallel for default(none) shared(batch_size)
+#pragma omp parallel for default(none) shared(batch_size)
   for (uint32_t i = 0; i < batch_size; i++) {
     for (const auto& metric : _metrics) {
       metric->record(i);

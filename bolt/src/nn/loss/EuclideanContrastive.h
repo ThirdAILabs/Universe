@@ -6,8 +6,11 @@
 namespace thirdai::bolt::nn::loss {
 
 /**
- * Contrastive loss function, 0.5D^2(1 - Y) + Ymax(0, m - D)^2.
- * See bolt/src/nn/derivations/EuclideanContrastive.md for gradient derivation.
+ * Contrastive loss function:
+ * L = 0.5 * D(U,V)^2(Y) + (1 - Y) * 0.5 * max(0, m - D(U,V))^2,
+ * where D is Euclidean distance and Y is the label (Y = 1 when the points are
+ * similar and = 0 when they are dissimilar). See
+ * bolt/src/nn/derivations/EuclideanContrastive.md for the gradient derivation.
  */
 class EuclideanContrastive final : public Loss {
  public:
