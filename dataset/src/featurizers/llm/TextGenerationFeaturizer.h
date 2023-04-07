@@ -5,7 +5,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <bolt_vector/src/BoltVector.h>
 #include <dataset/src/Featurizer.h>
-#include <dataset/src/featurizers/TextContextFeaturizer.h>
+#include <dataset/src/featurizers/llm/TextContextFeaturizer.h>
 #include <json/include/nlohmann/json.hpp>
 #include <limits>
 #include <stdexcept>

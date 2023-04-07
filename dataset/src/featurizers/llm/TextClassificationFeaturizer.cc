@@ -6,21 +6,20 @@
 
 namespace thirdai::dataset {
 
-TextClassifierFeaturizer::TextClassifierFeaturizer(
+TextClassificationFeaturizer::TextClassificationFeaturizer(
     const std::string& text_column, const std::string& label_column,
-    uint32_t n_labels, size_t unigram_vocab_size, size_t src_len,
-    size_t irc_len, size_t lrc_len, char delimiter,
-    std::optional<char> label_delimiter, bool integer_labels,
-    bool normalize_categories)
+    uint32_t lrc_len, uint32_t irc_len, uint32_t src_len, uint32_t vocab_size,
+    uint32_t n_labels, char delimiter, std::optional<char> label_delimiter,
+    bool integer_labels, bool normalize_categories)
     : _text_column(text_column),
       _delimiter(delimiter),
-      _context_featurizer(lrc_len, irc_len, src_len, unigram_vocab_size),
+      _context_featurizer(lrc_len, irc_len, src_len, vocab_size),
       _vocab(integer_labels ? nullptr : ThreadSafeVocabulary::make(n_labels)),
       _label_block(labelBlock(label_column, n_labels, _vocab, label_delimiter,
                               normalize_categories)) {}
 
 std::vector<std::vector<BoltVector>>
-thirdai::dataset::TextClassifierFeaturizer::featurize(
+thirdai::dataset::TextClassificationFeaturizer::featurize(
     const std::vector<std::string>& rows) {
   std::vector<std::vector<BoltVector>> feature_columns(
       getNumDatasets(), std::vector<BoltVector>(rows.size()));
@@ -41,7 +40,7 @@ thirdai::dataset::TextClassifierFeaturizer::featurize(
 
     SegmentedSparseFeatureVector builder;
     _label_block->addVectorSegment(sample, builder);
-    feature_columns[4][row_id] = builder.toBoltVector();
+    feature_columns[3][row_id] = builder.toBoltVector();
   }
 
   return feature_columns;

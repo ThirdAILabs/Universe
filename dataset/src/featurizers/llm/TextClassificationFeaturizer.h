@@ -4,26 +4,23 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/ColumnIdentifier.h>
 #include <dataset/src/blocks/ColumnNumberMap.h>
-#include <dataset/src/featurizers/TextContextFeaturizer.h>
+#include <dataset/src/featurizers/llm/TextContextFeaturizer.h>
 #include <dataset/src/utils/ThreadSafeVocabulary.h>
 #include <optional>
 
 namespace thirdai::dataset {
 
-class TextClassifierFeaturizer;
-
-using TextClassifierFeaturizerPtr = std::shared_ptr<TextClassifierFeaturizer>;
-
-class TextClassifierFeaturizer final : public Featurizer {
+class TextClassificationFeaturizer final : public Featurizer {
  public:
   size_t getNumDatasets() final { return 4; }
 
-  TextClassifierFeaturizer(const std::string& text_column,
-                           const std::string& label_column, uint32_t n_labels,
-                           size_t unigram_vocab_size, size_t src_len,
-                           size_t irc_len, size_t lrc_len, char delimiter,
-                           std::optional<char> label_delimiter,
-                           bool integer_labels, bool normalize_categories);
+  TextClassificationFeaturizer(const std::string& text_column,
+                               const std::string& label_column,
+                               uint32_t lrc_len, uint32_t irc_len,
+                               uint32_t src_len, uint32_t vocab_size,
+                               uint32_t n_labels, char delimiter,
+                               std::optional<char> label_delimiter,
+                               bool integer_labels, bool normalize_categories);
 
   bool expectsHeader() const final { return true; }
 
@@ -64,5 +61,8 @@ class TextClassifierFeaturizer final : public Featurizer {
   ThreadSafeVocabularyPtr _vocab;
   BlockPtr _label_block;
 };
+
+using TextClassificationFeaturizerPtr =
+    std::shared_ptr<TextClassificationFeaturizer>;
 
 }  // namespace thirdai::dataset

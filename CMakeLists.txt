@@ -375,9 +375,9 @@ set(THIRDAI_SOURCES
     dataset/src/dataset_loaders/DatasetLoader.cc
     dataset/src/cold_start/ColdStartDataSource.cc
     dataset/src/utils/TokenEncoding.cc
-    dataset/src/featurizers/TextContextFeaturizer.cc
-    dataset/src/featurizers/TextGenerationFeaturizer.cc
-    dataset/src/featurizers/TextClassificationFeaturizer.cc
+    dataset/src/featurizers/llm/TextContextFeaturizer.cc
+    dataset/src/featurizers/llm/TextGenerationFeaturizer.cc
+    dataset/src/featurizers/llm/TextClassificationFeaturizer.cc
     dataset/src/utils/CsvParser.cc
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/featurizers/ClickThroughFeaturizer.cc
