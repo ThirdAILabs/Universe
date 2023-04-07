@@ -159,17 +159,8 @@ class WayfairUDTConfig(UDTBenchmarkConfig):
         }
 
     learning_rate = 0.001
-    num_epochs = 5
+    num_epochs = 1
     metrics = ["categorical_accuracy", "f_measure(0.95)"]
-
-    # Learning rate scheduler that decreases the learning rate by a factor of 10
-    # after the third epoch. This scheduling is what gives us the optimal
-    # f-measure on the wayfair dataset.
-    callbacks = [
-        bolt.callbacks.LearningRateScheduler(
-            schedule=bolt.callbacks.MultiStepLR(gamma=0.1, milestones=[3])
-        )
-    ]
 
 
 class MovieLensUDTBenchmark(UDTBenchmarkConfig):
@@ -190,7 +181,7 @@ class MovieLensUDTBenchmark(UDTBenchmarkConfig):
 
     learning_rate = 0.0001
     num_epochs = 5
-    metrics = ["recall@10"]
+    metrics = ["recall@10", "precision@10"]
 
     @staticmethod
     @abstractmethod

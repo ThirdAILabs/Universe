@@ -1,5 +1,5 @@
 #include "Metric.h"
-#include <atomic>
+#include <bolt/src/train/metrics/CategoricalAccuracy.h>
 #include <stdexcept>
 
 namespace thirdai::bolt::train::metrics {
@@ -29,10 +29,9 @@ void MetricCollection::recordBatch(uint32_t batch_size) {
   }
 }
 
-void MetricCollection::updateHistory(std::shared_ptr<History>& history,
-                                     const std::string& prefix) {
+void MetricCollection::updateHistory(History& history) {
   for (const auto& metric : _metrics) {
-    (*history)[prefix + metric->name()].push_back(metric->value());
+    history[metric->name()].push_back(metric->value());
   }
 }
 
@@ -50,6 +49,52 @@ void MetricCollection::reset() {
   for (auto& metric : _metrics) {
     metric->reset();
   }
+}
+
+InputMetrics metricsForSingleOutputModel(
+    const std::vector<std::string>& metric_names,
+    const nn::autograd::ComputationPtr& output,
+    const nn::autograd::ComputationPtr& labels) {
+  InputMetrics metrics;
+
+  for (const auto& name : metric_names) {
+    if (name == "categorical_accuracy") {
+      metrics[name] = std::make_shared<CategoricalAccuracy>(output, labels);
+    } else {
+      throw std::invalid_argument("Metric '" + name +
+                                  "' is not yet supported.");
+    }
+  }
+
+  return metrics;
+}
+
+float divideTwoAtomicIntegers(const std::atomic_uint64_t& numerator,
+                              const std::atomic_uint64_t& denominator) {
+  uint32_t loaded_numerator = numerator.load();
+  uint32_t loaded_denominator = denominator.load();
+
+  if (loaded_denominator == 0) {
+    return 0.0;
+  }
+
+  return static_cast<float>(loaded_numerator) / loaded_denominator;
+}
+
+uint32_t truePositivesInTopK(const BoltVector& output, const BoltVector& label,
+                             const uint32_t& k) {
+  TopKActivationsQueue top_k_predictions = output.findKLargestActivations(k);
+
+  uint32_t true_positives = 0;
+  while (!top_k_predictions.empty()) {
+    ValueIndexPair valueIndex = top_k_predictions.top();
+    uint32_t prediction = valueIndex.second;
+    if (label.findActiveNeuronNoTemplate(prediction).activation > 0) {
+      true_positives++;
+    }
+    top_k_predictions.pop();
+  }
+  return true_positives;
 }
 
 }  // namespace thirdai::bolt::train::metrics

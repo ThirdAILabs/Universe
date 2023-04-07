@@ -2,6 +2,8 @@
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/callbacks/EarlyStopCheckpoint.h>
 #include <bolt/src/callbacks/LearningRateScheduler.h>
+#include <bolt/src/callbacks/Overfitting.h>
+#include <bolt/src/callbacks/ReduceLROnPlateau.h>
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
 
@@ -38,6 +40,7 @@ void createCallbacksSubmodule(py::module_& module) {
       .def("get_train_metric_values", &TrainState::getTrainMetricValues,
            py::arg("metric_name"))
       .def("get_all_train_metrics", &TrainState::getAllTrainMetrics)
+      .def("get_all_train_batch_metrics", &TrainState::getAllTrainBatchMetrics)
       .def("get_validation_metric_values",
            &TrainState::getValidationMetricValues, py::arg("metric_name"))
       .def("get_all_validation_metrics", &TrainState::getAllValidationMetrics);
@@ -80,14 +83,33 @@ void createCallbacksSubmodule(py::module_& module) {
 
   py::class_<LearningRateScheduler, LearningRateSchedulerPtr, Callback>(
       callbacks_submodule, "LearningRateScheduler")
-      .def(py::init<LRSchedulePtr>(), py::arg("schedule"))
-      .def("get_final_lr", &LearningRateScheduler::getFinalLR);
+      .def(py::init<LRSchedulePtr, bool>(), py::arg("schedule"),
+           py::arg("batch_level_steps") = false);
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<KeyboardInterrupt, KeyboardInterruptPtr, Callback>(
       callbacks_submodule, "KeyboardInterrupt")
       .def(py::init<>());
 #endif
+
+  py::class_<Overfitting, std::shared_ptr<Overfitting>, Callback>(
+      callbacks_submodule, "Overfitting")
+      .def(py::init<std::string, float>(), py::arg("monitored_metric"),
+           py::arg("threshold") = 0.97, R"pbdoc(
+This callback overfits the specified training metric to a threshold and
+stops once that threshold is reached. This is useful for things like
+cold-start where we attain the best results when overfitting the unsupervised
+data.
+)pbdoc");
+
+  py::class_<ReduceLROnPlateau, std::shared_ptr<ReduceLROnPlateau>, Callback>(
+      callbacks_submodule, "ReduceLROnPlateau")
+      .def(py::init<std::string, float, uint32_t, uint32_t, float, uint32_t,
+                    bool>(),
+           py::arg("monitored_metric"), py::arg("factor") = 0.2,
+           py::arg("patience") = 10, py::arg("n_total_lr_updates") = 10,
+           py::arg("min_delta") = 0, py::arg("cooldown") = 0,
+           py::arg("verbose") = false);
 
   py::class_<EarlyStopCheckpoint, EarlyStopCheckpointPtr, Callback>(
       callbacks_submodule, "EarlyStopCheckpoint")

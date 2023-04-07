@@ -1,8 +1,12 @@
 #include "BoltV2NNPython.h"
+#include "PybindUtils.h"
+#include <bolt/src/nn/autograd/Computation.h>
 #include <bolt/src/nn/loss/BinaryCrossEntropy.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/loss/Loss.h>
 #include <bolt/src/nn/model/Model.h>
+#include <bolt/src/nn/ops/Concatenate.h>
+#include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
@@ -53,6 +57,9 @@ void createBoltV2NNSubmodule(py::module_& module) {
   auto nn = module.def_submodule("nn");
 
   py::class_<tensor::Tensor, tensor::TensorPtr>(nn, "Tensor")
+      .def(py::init(py::overload_cast<const BoltVector&, uint32_t>(
+               tensor::Tensor::convert)),
+           py::arg("vector"), py::arg("dim"))
       .def_property_readonly(
           "active_neurons",
           [](const tensor::TensorPtr& tensor) {
@@ -73,6 +80,8 @@ void createBoltV2NNSubmodule(py::module_& module) {
           py::return_value_policy::reference_internal);
 
   py::class_<autograd::Computation, autograd::ComputationPtr>(nn, "Computation")
+      .def("dim", &autograd::Computation::dim)
+      .def("tensor", &autograd::Computation::tensor)
       .def("name", &autograd::Computation::name);
 
   py::class_<ops::Op, ops::OpPtr>(nn, "Op").def("name", &ops::Op::name);
@@ -93,33 +102,42 @@ void createBoltV2NNSubmodule(py::module_& module) {
         return toNumpy(op.biasesPtr(), {op.dimensions()[0]});
       });
 
+  py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")
+      .def(py::init(&ops::Embedding::make), py::arg("num_embedding_lookups"),
+           py::arg("lookup_size"), py::arg("log_embedding_block_size"),
+           py::arg("reduction"), py::arg("num_tokens_per_input") = std::nullopt,
+           py::arg("update_chunk_size") = DEFAULT_EMBEDDING_UPDATE_CHUNK_SIZE)
+      .def("__call__", &ops::Embedding::apply)
+      .def("duplicate_with_new_reduction",
+           &ops::Embedding::duplicateWithNewReduction, py::arg("reduction"),
+           py::arg("num_tokens_per_input"));
+
+  py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
+      .def(py::init(&ops::Concatenate::make))
+      .def("__call__", &ops::Concatenate::apply);
+
   nn.def("Input", &ops::Input::make, py::arg("dim"));
 
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
            py::arg("losses"))
-      .def(
-          "train_on_batch",
-          py::overload_cast<const tensor::TensorPtr&, const tensor::TensorPtr&>(
-              &model::Model::trainOnBatch),
-          py::arg("inputs"), py::arg("labels"))
-      .def("train_on_batch",
-           py::overload_cast<const tensor::TensorList&,
-                             const tensor::TensorList&>(
-               &model::Model::trainOnBatch),
-           py::arg("inputs"), py::arg("labels"))
-      .def("forward",
-           py::overload_cast<const tensor::TensorPtr&, bool>(
-               &model::Model::forward),
-           py::arg("inputs"), py::arg("use_sparsity"))
+      .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
+           py::arg("labels"))
       .def("forward",
            py::overload_cast<const tensor::TensorList&, bool>(
                &model::Model::forward),
            py::arg("inputs"), py::arg("use_sparsity"))
       .def("update_parameters", &model::Model::updateParameters,
            py::arg("learning_rate"))
+      .def("ops", &model::Model::ops)
       .def("__getitem__", &model::Model::getOp, py::arg("name"))
-      .def("summary", &model::Model::summary, py::arg("print") = true);
+      .def("outputs", &model::Model::outputs)
+      .def("labels", &model::Model::labels)
+      .def("summary", &model::Model::summary, py::arg("print") = true)
+      .def("save", &model::Model::save, py::arg("filename"),
+           py::arg("save_metadata") = true)
+      .def_static("load", &model::Model::load, py::arg("filename"))
+      .def(thirdai::bolt::python::getPickleFunction<model::Model>());
 
   auto loss = nn.def_submodule("losses");
 

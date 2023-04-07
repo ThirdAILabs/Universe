@@ -1,5 +1,4 @@
 from typing import List, Optional
-from urllib.parse import urlparse
 
 import pandas as pd
 import thirdai
@@ -34,15 +33,15 @@ def _create_data_source(path):
     return thirdai.dataset.FileDataSource(path)
 
 
-# This function defines train and eval methods that wrap the UDT train and
-# eval methods, allowing users to pass just a single filepath to refer both to
-# s3 and to local files. It also monkeypatches these functions onto the UDT
-# object and deletes the existing evaluate and train functions so that the user
-# interface is clean.
-def modify_udt_classifier():
-    original_train_method = bolt.models.Pipeline.train_with_source
-    original_eval_method = bolt.models.Pipeline.evaluate_with_source
-    original_cold_start_method = bolt.models.UDTClassifier.cold_start
+def modify_udt():
+    original_train = bolt.UDT.train
+    original_evaluate = bolt.UDT.evaluate
+    original_cold_start = bolt.UDT.cold_start
+
+    def _convert_validation(validation: Optional[bolt.Validation]) -> None:
+        if validation is not None:
+            return (_create_data_source(validation.filename()), validation.args())
+        return None
 
     def wrapped_train(
         self,
@@ -57,32 +56,23 @@ def modify_udt_classifier():
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
     ):
-        if batch_size is None:
-            batch_size = self.default_train_batch_size
-
-        train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
-
-        if not verbose:
-            train_config.silence()
-        if callbacks:
-            train_config.with_callbacks(callbacks)
-        if metrics:
-            train_config.with_metrics(metrics)
-        if logging_interval:
-            train_config.with_log_loss_frequency(logging_interval)
-
         data_source = _create_data_source(filename)
 
-        return original_train_method(
-            self,
-            data_source=data_source,
-            train_config=train_config,
-            validation=validation,
-            max_in_memory_batches=max_in_memory_batches,
-            batch_size=batch_size,
-        )
+        validation = _convert_validation(validation)
 
-    wrapped_train.__doc__ = classifier_train_doc
+        return original_train(
+            self,
+            data=data_source,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            validation=validation,
+            batch_size=batch_size,
+            max_in_memory_batches=max_in_memory_batches,
+            metrics=metrics,
+            callbacks=callbacks,
+            verbose=verbose,
+            logging_interval=logging_interval,
+        )
 
     def wrapped_evaluate(
         self,
@@ -93,25 +83,17 @@ def modify_udt_classifier():
         return_metrics: bool = False,
         verbose: bool = True,
     ):
-        eval_config = bolt.EvalConfig()
-        if not verbose:
-            eval_config.silence()
-        if metrics:
-            eval_config.with_metrics(metrics)
-        if use_sparse_inference:
-            eval_config.enable_sparse_inference()
-
         data_source = _create_data_source(filename)
 
-        return original_eval_method(
+        return original_evaluate(
             self,
-            data_source=data_source,
-            eval_config=eval_config,
+            data=data_source,
+            metrics=metrics,
+            sparse_inference=use_sparse_inference,
             return_predicted_class=return_predicted_class,
+            verbose=verbose,
             return_metrics=return_metrics,
         )
-
-    wrapped_evaluate.__doc__ = classifier_eval_doc
 
     def wrapped_cold_start(
         self,
@@ -123,31 +105,47 @@ def modify_udt_classifier():
         metrics: List[str] = [],
         validation: Optional[bolt.Validation] = None,
         callbacks: List[bolt.callbacks.Callback] = [],
+        max_in_memory_batches: Optional[int] = None,
+        verbose: bool = True,
     ):
-        train_config = bolt.TrainConfig(learning_rate=learning_rate, epochs=epochs)
-
-        if callbacks:
-            train_config.with_callbacks(callbacks)
-        if metrics:
-            train_config.with_metrics(metrics)
-
         data_source = _create_data_source(filename)
 
-        original_cold_start_method(
+        validation = _convert_validation(validation)
+
+        return original_cold_start(
             self,
-            data_source,
-            strong_column_names,
-            weak_column_names,
-            train_config,
-            validation,
+            data=data_source,
+            strong_column_names=strong_column_names,
+            weak_column_names=weak_column_names,
+            learning_rate=learning_rate,
+            epochs=epochs,
+            metrics=metrics,
+            validation=validation,
+            callbacks=callbacks,
+            max_in_memory_batches=max_in_memory_batches,
+            verbose=verbose,
         )
 
-    wrapped_cold_start.__doc__ = udt_cold_start_doc
+    delattr(bolt.UDT, "train")
+    delattr(bolt.UDT, "evaluate")
+    delattr(bolt.UDT, "cold_start")
 
-    delattr(bolt.models.Pipeline, "train_with_source")
-    delattr(bolt.models.Pipeline, "evaluate_with_source")
-    delattr(bolt.models.UDTClassifier, "cold_start")
+    bolt.UDT.train = wrapped_train
+    bolt.UDT.evaluate = wrapped_evaluate
+    bolt.UDT.cold_start = wrapped_cold_start
 
-    bolt.models.Pipeline.train = wrapped_train
-    bolt.models.Pipeline.evaluate = wrapped_evaluate
-    bolt.models.UDTClassifier.cold_start = wrapped_cold_start
+
+def modify_graph_udt():
+    original_index_nodes_method = bolt.UDT.index_nodes
+
+    def wrapped_index_nodes(self, filename: str):
+        data_source = _create_data_source(filename)
+
+        original_index_nodes_method(self, data_source)
+
+    # TODO(Josh)
+    # wrapped_index.__doc__ = udt_graph_index_doc
+
+    delattr(bolt.UDT, "index_nodes")
+
+    bolt.UDT.index_nodes = wrapped_index_nodes

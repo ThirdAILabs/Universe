@@ -6,6 +6,14 @@ import zipfile
 
 import numpy as np
 import pandas as pd
+from thirdai._thirdai import bolt
+
+from .beir_download_utils import (
+    remap_doc_ids,
+    remap_query_answers,
+    write_supervised_file,
+    write_unsupervised_file,
+)
 
 
 def _download_dataset(url, zip_file, check_existence, output_dir):
@@ -15,6 +23,18 @@ def _download_dataset(url, zip_file, check_existence, output_dir):
     if any([not os.path.exists(must_exist) for must_exist in check_existence]):
         with zipfile.ZipFile(zip_file, "r") as zip_ref:
             zip_ref.extractall(output_dir)
+
+
+def _create_inference_samples(filename, label_col):
+    df = pd.read_csv(filename)
+    inference_samples = []
+    for _, row in df.iterrows():
+        sample = dict(row)
+        label = sample[label_col]
+        del sample[label_col]
+        sample = {x: str(y) for x, y in sample.items()}
+        inference_samples.append((sample, label))
+    return inference_samples
 
 
 def to_udt_input_batch(dataframe):
@@ -463,28 +483,25 @@ def download_brazilian_houses_dataset():
     TRAIN_FILE = "./brazilian_houses_train.csv"
     TEST_FILE = "./brazilian_houses_test.csv"
 
-    import datasets
+    if not os.path.exists(TRAIN_FILE) or not os.path.exists(TEST_FILE):
+        import datasets
 
-    dataset = datasets.load_dataset(
-        "inria-soda/tabular-benchmark", data_files="reg_num/Brazilian_houses.csv"
+        dataset = datasets.load_dataset(
+            "inria-soda/tabular-benchmark", data_files="reg_num/Brazilian_houses.csv"
+        )
+
+        df = pd.DataFrame(dataset["train"].shuffle())
+
+        # Split in to train/test, there are about 10,000 rows in entire dataset.
+        train_df = df.iloc[:8000, :]
+        test_df = df.iloc[8000:, :]
+
+        train_df.to_csv(TRAIN_FILE, index=False)
+        test_df.to_csv(TEST_FILE, index=False)
+
+    inference_samples = _create_inference_samples(
+        filename=TEST_FILE, label_col="totalBRL"
     )
-
-    df = pd.DataFrame(dataset["train"].shuffle())
-
-    # Split in to train/test, there are about 10,000 rows in entire dataset.
-    train_df = df.iloc[:8000, :]
-    test_df = df.iloc[8000:, :]
-
-    train_df.to_csv(TRAIN_FILE, index=False)
-    test_df.to_csv(TEST_FILE, index=False)
-
-    inference_samples = []
-    for _, row in test_df.iterrows():
-        sample = dict(row)
-        label = sample["totalBRL"]
-        del sample["totalBRL"]
-        sample = {x: str(y) for x, y in sample.items()}
-        inference_samples.append((sample, label))
 
     return TRAIN_FILE, TEST_FILE, inference_samples
 
@@ -528,15 +545,154 @@ def download_internet_ads_dataset(seed=42):
             test_file.write(header)
             test_file.writelines(lines[train_test_split:])
 
-    inference_samples = []
-    with open(TEST_FILE, "r") as test_file:
-        for line in test_file.readlines()[1:]:
-            column_vals = {
-                col_name: value
-                for col_name, value in zip(column_names, line.split(","))
-            }
-            label = column_vals["label"].strip()
-            del column_vals["label"]
-            inference_samples.append((column_vals, label))
+    inference_samples = _create_inference_samples(filename=TEST_FILE, label_col="label")
 
     return TRAIN_FILE, TEST_FILE, inference_samples
+
+
+def download_mnist_dataset():
+    TRAIN_FILE = "mnist"
+    TEST_FILE = "mnist.t"
+    if not os.path.exists(TRAIN_FILE):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
+        )
+        os.system("bzip2 -d mnist.bz2")
+
+    if not os.path.exists(TEST_FILE):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
+        )
+        os.system("bzip2 -d mnist.t.bz2")
+
+    return TRAIN_FILE, TEST_FILE
+
+
+def download_yelp_chi_dataset(seed=42):
+    PATH = "yelp_all.csv"
+    URL = "https://www.dropbox.com/s/ge2sr9iab16hc1x/yelp_all.csv"
+    TRAIN_FILE = "yelp_train.csv"
+    TEST_FILE = "yelp_test.csv"
+
+    if not os.path.exists(PATH):
+        # -L will follow the redirects to correctly download the file from dropbox
+        os.system(f"curl -L {URL} --output {PATH}")
+
+    all_data = pd.read_csv("yelp_all.csv")
+    all_data = all_data.sample(frac=1, random_state=seed)
+
+    numerical_col_names = ["col_" + str(i) for i in range(32)]
+    numerical_col_ranges = (
+        all_data[numerical_col_names].agg([min, max]).T.values.tolist()
+    )
+
+    # Create train and test splits
+    train_length = all_data.shape[0] // 2
+    test_length = all_data.shape[0] - train_length
+    train_data, test_data = (
+        all_data.head(train_length).copy(),
+        all_data.tail(test_length).copy(),
+    )
+    train_data.to_csv(TRAIN_FILE, index=False)
+
+    # Save the test data at first with the labels so that we can create inference samples
+    test_data.to_csv(TEST_FILE, index=False)
+    inference_samples = _create_inference_samples(
+        filename=TEST_FILE, label_col="target"
+    )
+
+    # Zero the ground truth so the model doesn't have access to it during evaluation
+    test_data["target"] = np.zeros(test_length)
+    test_data.to_csv(TEST_FILE, index=False)
+
+    udt_data_types = {
+        "node_id": bolt.types.node_id(),
+        **{
+            col_name: bolt.types.numerical(col_range)
+            for col_range, col_name in zip(numerical_col_ranges, numerical_col_names)
+        },
+        "target": bolt.types.categorical(),
+        "neighbors": bolt.types.neighbors(),
+    }
+
+    return TRAIN_FILE, TEST_FILE, inference_samples, udt_data_types
+
+
+def download_amazon_kaggle_product_catalog_sampled():
+    TRAIN_FILE = "amazon-kaggle-product-catalog.csv"
+    if not os.path.exists(TRAIN_FILE):
+        os.system(
+            "curl -L https://www.dropbox.com/s/tf7e5m0cikhcb95/amazon-kaggle-product-catalog-sampled-0.05.csv?dl=0 -o amazon-kaggle-product-catalog.csv"
+        )
+
+    df = pd.read_csv(f"{os.getcwd()}/{TRAIN_FILE}")
+    n_target_classes = df.shape[0]
+
+    return TRAIN_FILE, n_target_classes
+
+
+def download_agnews_dataset(corpus_file):
+    from datasets import load_dataset
+
+    corpus = load_dataset("ag_news")["train"]["text"]
+    with open(corpus_file, "w") as fw:
+        nothing = fw.write("id,text\n")
+        count = 0
+        for line in corpus:
+            nothing = fw.write(str(count) + "," + line.replace(",", " ").lower() + "\n")
+            count += 1
+
+    return len(corpus)
+
+
+def download_beir_dataset(dataset):
+    from beir import util
+    from beir.datasets.data_loader import GenericDataLoader
+
+    url = f"https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{dataset}.zip"
+    data_path = util.download_and_unzip(url, ".")
+
+    corpus, queries_test, qrels_test = GenericDataLoader(data_folder=data_path).load(
+        split="test"
+    )
+
+    write_unsupervised_file(corpus, data_path)
+
+    # we remap doc ids from 0 to N-1 so we can specify integer target in UDT
+    # coldstart only works with integer target for now
+    doc_ids_to_integers = remap_doc_ids(corpus)
+    n_target_classes = len(doc_ids_to_integers)
+
+    # Not all of the beir datasets come with a train split, some only have a test
+    # split. In cases without a train split, we won't write a new supervised train file.
+    if os.path.exists(data_path + "/qrels/train.tsv"):
+        _, queries_train, qrels_train = GenericDataLoader(data_folder=data_path).load(
+            split="train"
+        )
+
+        new_qrels_train = remap_query_answers(qrels_train, doc_ids_to_integers)
+
+        write_supervised_file(
+            queries_train, new_qrels_train, data_path, "trn_supervised.csv"
+        )
+    else:
+        print(
+            f"BEIR Dataset {dataset} doesn't come with a train split, returning None for the trn_supervised path."
+        )
+
+    new_qrels_test = remap_query_answers(qrels_test, doc_ids_to_integers)
+
+    write_supervised_file(queries_test, new_qrels_test, data_path, "tst_supervised.csv")
+
+    trn_supervised = (
+        f"{dataset}/trn_supervised.csv"
+        if os.path.exists(data_path + "/qrels/train.tsv")
+        else None
+    )
+
+    return (
+        f"{dataset}/unsupervised.csv",
+        trn_supervised,
+        f"{dataset}/tst_supervised.csv",
+        n_target_classes,
+    )

@@ -32,8 +32,8 @@ class MockBlock final : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(ColumnarInputSample& input,
-                                  SegmentedFeatureVector& vec) final {
+  void buildSegment(ColumnarInputSample& input,
+                    SegmentedFeatureVector& vec) final {
     auto val_str = input.column(_column);
     char* end;
     float val = std::strtof(val_str.data(), &end);
@@ -43,7 +43,6 @@ class MockBlock final : public Block {
     } else {
       vec.addSparseFeatureToSegment(0, val);
     }
-    return nullptr;
   }
 
  private:

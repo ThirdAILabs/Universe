@@ -3,6 +3,7 @@
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <atomic>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -91,7 +92,7 @@ class MetricCollection {
    * there values in the history under the key <prefix>_<metric_name>. This is
    * used to distinguish train vs validation metrics.
    */
-  void updateHistory(HistoryPtr& history, const std::string& prefix);
+  void updateHistory(History& history);
 
   /**
    * Creates a string summary of the current values of the metrics.
@@ -106,5 +107,16 @@ class MetricCollection {
  private:
   std::vector<MetricPtr> _metrics;
 };
+
+InputMetrics metricsForSingleOutputModel(
+    const std::vector<std::string>& metric_names,
+    const nn::autograd::ComputationPtr& output,
+    const nn::autograd::ComputationPtr& labels);
+
+float divideTwoAtomicIntegers(const std::atomic_uint64_t& numerator,
+                              const std::atomic_uint64_t& denominator);
+
+uint32_t truePositivesInTopK(const BoltVector& output, const BoltVector& label,
+                             const uint32_t& k);
 
 }  // namespace thirdai::bolt::train::metrics

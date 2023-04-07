@@ -3,6 +3,7 @@
 #include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/SamplingConfig.h>
@@ -10,6 +11,8 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
+#include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -54,10 +57,23 @@ bolt::SamplingConfigPtr getSamplingConfig(const json& config,
 }
 
 /**
- * Helper function to create a fully connected node. Expects the fields 'dim',
- * 'sparsity', 'activation', and 'predecessor' to be present in the config.
- * Optionally a field 'sampling_config' can be specified. If it is not present
- * the sampling parameters will be autotuned if not specified.
+ * Helper function to get the predecessor of a node.
+ */
+bolt::NodePtr getPredecessor(
+    const json& config,
+    const std::unordered_map<std::string, bolt::NodePtr>& created_nodes) {
+  std::string predecessor = getString(config, "predecessor");
+  if (!created_nodes.count(predecessor)) {
+    throw std::invalid_argument("Could not find node '" + predecessor + "'.");
+  }
+  return created_nodes.at(predecessor);
+}
+
+/**
+ * Helper function to create a fully connected node. Expects the fields
+ * 'dim', 'sparsity', 'activation', and 'predecessor' to be present in the
+ * config. Optionally a field 'sampling_config' can be specified. If it is
+ * not present the sampling parameters will be autotuned if not specified.
  */
 bolt::NodePtr buildFullyConnectedNode(
     const json& config, const ArgumentMap& args,
@@ -76,12 +92,46 @@ bolt::NodePtr buildFullyConnectedNode(
     layer = bolt::FullyConnectedNode::makeAutotuned(dim, sparsity, activation);
   }
 
-  std::string predecessor = getString(config, "predecessor");
-  if (!created_nodes.count(predecessor)) {
-    throw std::invalid_argument("Could not find node '" + predecessor + "'.");
-  }
-  layer->addPredecessor(created_nodes.at(predecessor));
+  layer->addPredecessor(getPredecessor(config, created_nodes));
 
+  return layer;
+}
+
+/**
+ * Helper function to create an embedding node. Expects the fields
+ * 'num_embedding_lookups', 'lookup_size', 'log_embedding_block_size', and
+ * 'reduction' to be present in the config. Optionally a field
+ * 'num_tokens_per_input' can be specified to indicate the number of tokens in
+ * each sample. This field is only required for concatenation reductions.
+ */
+bolt::EmbeddingNodePtr buildEmbeddingNode(
+    const json& config, const ArgumentMap& args,
+    const std::unordered_map<std::string, bolt::NodePtr>& created_nodes) {
+  uint32_t num_lookups =
+      integerParameter(config, "num_embedding_lookups", args);
+  uint32_t lookup_size = integerParameter(config, "lookup_size", args);
+  uint32_t log_block_size =
+      integerParameter(config, "log_embedding_block_size", args);
+  std::string reduction = stringParameter(config, "reduction", args);
+
+  std::optional<uint32_t> num_tokens_per_input = std::nullopt;
+  if (config.contains("num_tokens_per_input")) {
+    num_tokens_per_input =
+        integerParameter(config, "num_tokens_per_input", args);
+  }
+
+  bolt::EmbeddingNodePtr layer =
+      bolt::EmbeddingNode::make(num_lookups, lookup_size, log_block_size,
+                                reduction, num_tokens_per_input);
+
+  bolt::NodePtr predecessor = getPredecessor(config, created_nodes);
+
+  if (auto input = std::dynamic_pointer_cast<bolt::Input>(predecessor)) {
+    layer->addInput(input);
+  } else {
+    throw std::invalid_argument(
+        "Predecessor of an embedding node must be an input.");
+  }
   return layer;
 }
 
@@ -129,6 +179,9 @@ bolt::BoltGraphPtr buildModel(const json& config, const ArgumentMap& args,
     if (type == "fully_connected") {
       created_nodes[name] =
           buildFullyConnectedNode(node_config, args, created_nodes);
+    } else if (type == "embedding") {
+      created_nodes[name] =
+          buildEmbeddingNode(node_config, args, created_nodes);
     } else {
       throw std::invalid_argument("Found unsupported node type '" + type +
                                   "'.");

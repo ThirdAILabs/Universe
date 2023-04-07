@@ -37,8 +37,6 @@ class Computation {
    */
   tensor::TensorPtr& tensor();
 
-  const tensor::TensorPtr& tensor() const;
-
   /**
    * Computes the activations of the neurons in the output of the computation
    * from its inputs using its source op. Calls the forward method of the source
@@ -113,6 +111,15 @@ class Computation {
   tensor::TensorPtr _output;
 
   std::string _name;
+
+  Computation() {}
+
+  friend class cereal::access;
+  // Because inputs are also computations clang-tidy things this is an infinite
+  // recursive loop because eventually the serialize function for the input
+  // computations are called within the serialize function for this computation.
+  template <class Archive>
+  void serialize(Archive& archive);  // NOLINT
 };
 
 }  // namespace thirdai::bolt::nn::autograd

@@ -92,6 +92,10 @@ class Input final : public Node {
     return (*_input_batch)[vec_index];
   }
 
+  void saveWithOptimizer(bool should_save_optimizer) final {
+    (void)should_save_optimizer;
+  };
+
   void summarizeImpl(std::stringstream& summary, bool detailed) const final;
 
   std::string type() const final { return "input"; }

@@ -76,6 +76,8 @@ class FullyConnectedNode final
   float* getBiasGradientsPtr();
   void disableSparseParameterUpdates() final;
 
+  void saveWithOptimizer(bool should_save_optimizer) final;
+
   bool hasParameters() final { return true; }
 
   std::string type() const final { return "fc"; }

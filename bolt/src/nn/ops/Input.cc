@@ -1,4 +1,8 @@
 #include "Input.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/nn/ops/Op.h>
 #include <memory>
 #include <stdexcept>
@@ -64,4 +68,14 @@ void Input::summary(std::ostream& summary,
   summary << "Input(" << name() << ") -> " << output->name();
 }
 
+template void Input::serialize(cereal::BinaryInputArchive&);
+template void Input::serialize(cereal::BinaryOutputArchive&);
+
+template <class Archive>
+void Input::serialize(Archive& archive) {
+  archive(cereal::base_class<Op>(this), _dim, _nonzeros);
+}
+
 }  // namespace thirdai::bolt::nn::ops
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::nn::ops::Input)

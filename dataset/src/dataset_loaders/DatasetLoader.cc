@@ -25,16 +25,15 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
   // needed. The first row is interpreted as the header. The featurizer
   // is responsible for checking that the header is properly formatted.
   if (_featurizer->expectsHeader()) {
-    auto header = _data_source->nextLine();
-    if (!header) {
+    _header = _data_source->nextLine();
+    if (!_header) {
       throw std::invalid_argument("Cannot read empty file.");
     }
-    _featurizer->processHeader(*header);
   }
 }
 
-std::pair<InputDatasets, LabelDataset> DatasetLoader::loadAll(size_t batch_size,
-                                                              bool verbose) {
+std::vector<BoltDatasetPtr> DatasetLoader::loadAll(size_t batch_size,
+                                                   bool verbose) {
   auto datasets =
       loadSome(/* batch_size = */ batch_size,
                /* num_batches = */ std::numeric_limits<size_t>::max(),
@@ -46,8 +45,23 @@ std::pair<InputDatasets, LabelDataset> DatasetLoader::loadAll(size_t batch_size,
   return datasets.value();
 }
 
-std::optional<std::pair<InputDatasets, LabelDataset>> DatasetLoader::loadSome(
+std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
     size_t batch_size, size_t num_batches, bool verbose) {
+  if (_header) {
+    /**
+      We call _featurizer->processHeader here in case we want to use the same
+      featurizer for two different data loaders. This guarantees that the
+      featurizer uses the correct column number map for each data loader.
+
+      If a second dataset loader is created using the same featurizer as the
+      first dataset loader, but the data its featurizing has a different
+      ordering of columns, then the column number map will be updated to reflect
+      the second dataset. This will cause an issue when the first dataset loader
+      attempts to load more data. Always updating the featurizer with the
+      current dataset before loading solves this issue.
+    */
+    _featurizer->processHeader(*_header);
+  }
 #if THIRDAI_EXPOSE_ALL
   if (verbose) {
     // This is useful internally but we don't want to expose it to keep the
@@ -94,25 +108,20 @@ std::optional<std::pair<InputDatasets, LabelDataset>> DatasetLoader::loadSome(
     return std::nullopt;
   }
 
-  // For now assume labels is always the last dataset in the list
-  // TODO(any): Once we have Bolt V2, fix this to work with an arbitrary
-  // number of datasets and labels in arbitrary positions
-  BoltDatasetPtr labels =
-      std::make_shared<BoltDataset>(std::move(dataset_slices.back()));
   std::vector<BoltDatasetPtr> data;
-  for (uint32_t i = 0; i < dataset_slices.size() - 1; i++) {
-    data.push_back(
-        std::make_shared<BoltDataset>(std::move(dataset_slices.at(i))));
+  data.reserve(dataset_slices.size());
+  for (auto& dataset_slice : dataset_slices) {
+    data.push_back(std::make_shared<BoltDataset>(std::move(dataset_slice)));
   }
 
   if (verbose) {
     std::cout << "loaded data | source '" << _data_source->resourceName()
-              << "' | vectors " << labels->len() << " | batches "
-              << labels->numBatches() << " | time " << duration
+              << "' | vectors " << data.at(0)->len() << " | batches "
+              << data.at(0)->numBatches() << " | time " << duration
               << "s | complete\n"
               << std::endl;
   }
-  return std::make_pair(data, labels);
+  return data;
 }
 
 void DatasetLoader::restart() {
