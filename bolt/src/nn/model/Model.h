@@ -6,6 +6,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <licensing/src/CheckLicense.h>
+#include <licensing/src/entitlements/TrainPermissionsToken.h>
 #include <utils/UUID.h>
 #include <vector>
 
@@ -48,7 +49,8 @@ class Model {
    * be selected by sparse fully connected layers which yield outputs.
    */
   void trainOnBatch(const tensor::TensorList& inputs,
-                    const tensor::TensorList& labels);
+                    const tensor::TensorList& labels,
+                    licensing::TrainPermissionsToken token = {});
 
   /**
    * Performs the forward pass through the model on a given batch. Differs from

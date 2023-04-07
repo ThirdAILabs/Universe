@@ -78,7 +78,10 @@ tensor::TensorList Model::forward(const tensor::TensorList& inputs,
 }
 
 void Model::trainOnBatch(const tensor::TensorList& inputs,
-                         const tensor::TensorList& labels) {
+                         const tensor::TensorList& labels,
+                         licensing::TrainPermissionsToken token) {
+  (void)token;
+
   uint32_t input_batch_size = setInput(inputs);
   uint32_t label_batch_size = setLabels(labels);
 
@@ -332,6 +335,8 @@ template void Model::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void Model::serialize(Archive& archive) {
+  licensing::entitlements().verifySaveLoad();
+
   archive(_inputs, _outputs, _labels, _losses, _ops, _computation_order,
           _allocation_manager, _train_steps, _model_uuid);
 }

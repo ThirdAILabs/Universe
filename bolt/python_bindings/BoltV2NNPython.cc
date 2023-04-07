@@ -11,6 +11,7 @@
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
+#include <licensing/src/methods/file/License.h>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
@@ -122,18 +123,20 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
            py::arg("losses"))
       .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
-           py::arg("labels"))
+           py::arg("labels"), py::arg("_token") = licensing::TrainPermissionsToken())
       .def("forward",
            py::overload_cast<const tensor::TensorList&, bool>(
                &model::Model::forward),
            py::arg("inputs"), py::arg("use_sparsity"))
       .def("update_parameters", &model::Model::updateParameters,
            py::arg("learning_rate"))
+#if THIRDAI_EXPOSE_ALL
       .def("ops", &model::Model::ops)
       .def("__getitem__", &model::Model::getOp, py::arg("name"))
       .def("outputs", &model::Model::outputs)
       .def("labels", &model::Model::labels)
       .def("summary", &model::Model::summary, py::arg("print") = true)
+#endif
       .def("save", &model::Model::save, py::arg("filename"),
            py::arg("save_metadata") = true)
       .def_static("load", &model::Model::load, py::arg("filename"))
