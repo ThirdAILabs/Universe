@@ -51,7 +51,7 @@ def run_benchmark(config, run_name):
             mlflow_uri,
             config.experiment_name,
             run_name,
-            {"dataset", config.dataset_name},
+            {"dataset": config.dataset_name},
         )
     ]
 
