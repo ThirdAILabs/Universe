@@ -50,6 +50,9 @@ Model::Model(autograd::ComputationList inputs,
 
   matchOutputFullyConnectedLayersWithLabels();
 
+  // This will block the user if they have any limit on the output_dim or the
+  // number of training samples.
+  // TODO(Nicholas, Josh): Implement these checks.
   licensing::entitlements().verifyAllowedOutputDim(
       licensing::Entitlements::NO_LIMIT);
   licensing::entitlements().verifyAllowedNumberOfTrainingSamples(
