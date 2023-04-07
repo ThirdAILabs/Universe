@@ -11,7 +11,7 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
     : _model(model),
       _worker_id(worker_id),
       _learning_rate(train_config.learningRate()),
-      _train_metrics(createMetrics(model, train_config.metrics())),
+      _train_metrics(metrics::fromMetricNames(model, train_config.metrics())),
       _logging_interval(train_config.logLossFrequency()),
       _use_sparsity_in_validation(false) {
   if (_model->outputs().size() != 1) {
@@ -27,8 +27,7 @@ DistributedTrainingWrapper::DistributedTrainingWrapper(
   if (auto validation = train_config.getValidationContext()) {
     _validation_data =
         convertLabeldData(validation->data(), validation->labels());
-    _validation_metrics =
-        createMetrics(model, validation->config().getMetricNames());
+    _validation_metrics = validation->config().getMetricNames();
     _use_sparsity_in_validation =
         validation->config().shouldReturnActivations();
   }
@@ -73,8 +72,8 @@ DistributedTrainingWrapper::validationAndSaveBest() {
   }
 
   Trainer trainer(_model);
-  auto history = trainer.validate(*_validation_data, _validation_metrics,
-                                  _use_sparsity_in_validation);
+  auto history = trainer.validate_with_metric_names(
+      *_validation_data, _validation_metrics, _use_sparsity_in_validation);
 
   std::unordered_map<std::string, float> last_metrics;
   for (const auto& [metric_name, metric_vals] : history) {
@@ -147,13 +146,6 @@ uint64_t DistributedTrainingWrapper::sumFlattenedDims(
     total_dim += grad->size();
   }
   return total_dim;
-}
-
-metrics::InputMetrics DistributedTrainingWrapper::createMetrics(
-    const nn::model::ModelPtr& model, const std::vector<std::string>& metrics) {
-  auto [output, labels] = model->outputLabelPairs().front();
-  // TODO(Nicholas): add support for loss metric.
-  return metrics::metricsForSingleOutputModel(metrics, output, labels);
 }
 
 }  // namespace thirdai::bolt::train
