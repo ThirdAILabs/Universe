@@ -2,6 +2,7 @@
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <dataset/src/utils/TokenEncoding.h>
 #include <algorithm>
+#include <exception>
 #include <string>
 
 namespace thirdai::dataset {
@@ -24,23 +25,34 @@ thirdai::dataset::TextClassificationFeaturizer::featurize(
   std::vector<std::vector<BoltVector>> feature_columns(
       getNumDatasets(), std::vector<BoltVector>(rows.size()));
 
+  std::exception_ptr err;
+
 #pragma omp parallel for default(none) \
-    shared(rows, feature_columns, _delimiter, _text_column, _label_block)
+    shared(rows, feature_columns, _delimiter, _text_column, _label_block, err)
   for (uint32_t row_id = 0; row_id < rows.size(); row_id++) {
-    const std::string& row = rows[row_id];
+    try {
+      const std::string& row = rows[row_id];
 
-    CsvSampleRef sample(row, _delimiter);
-    std::string text_column(sample.column(_text_column));
+      CsvSampleRef sample(row, _delimiter);
+      std::string text_column(sample.column(_text_column));
 
-    std::vector<uint32_t> text_tokens = token_encoding::tokens(text_column);
+      std::vector<uint32_t> text_tokens = token_encoding::tokens(text_column);
 
-    feature_columns[0][row_id] = _context_featurizer.lrcContext(text_tokens);
-    feature_columns[1][row_id] = _context_featurizer.ircContext(text_tokens);
-    feature_columns[2][row_id] = _context_featurizer.srcContext(text_tokens);
+      feature_columns[0][row_id] = _context_featurizer.lrcContext(text_tokens);
+      feature_columns[1][row_id] = _context_featurizer.ircContext(text_tokens);
+      feature_columns[2][row_id] = _context_featurizer.srcContext(text_tokens);
 
-    SegmentedSparseFeatureVector builder;
-    _label_block->addVectorSegment(sample, builder);
-    feature_columns[3][row_id] = builder.toBoltVector();
+      SegmentedSparseFeatureVector builder;
+      _label_block->addVectorSegment(sample, builder);
+      feature_columns[3][row_id] = builder.toBoltVector();
+    } catch (...) {
+#pragma omp critical
+      err = std::current_exception();
+    }
+
+    if (err) {
+      std::rethrow_exception(err);
+    }
   }
 
   return feature_columns;
