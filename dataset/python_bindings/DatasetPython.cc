@@ -289,7 +289,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<TextClassificationFeaturizer, Featurizer,
              TextClassificationFeaturizerPtr>(dataset_submodule,
-                                              "TextClassifierFeaturizer")
+                                              "TextClassificationFeaturizer")
       .def(py::init<const std::string&, const std::string&, uint32_t, uint32_t,
                     uint32_t, uint32_t, uint32_t, char, std::optional<char>,
                     bool, bool>(),
