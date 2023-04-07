@@ -7,6 +7,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <licensing/src/CheckLicense.h>
 #include <utils/UUID.h>
 #include <utils/Version.h>
 #include <algorithm>
@@ -48,6 +49,11 @@ Model::Model(autograd::ComputationList inputs,
   _ops.assign(ops.begin(), ops.end());
 
   matchOutputFullyConnectedLayersWithLabels();
+
+  licensing::entitlements().verifyAllowedOutputDim(
+      licensing::Entitlements::NO_LIMIT);
+  licensing::entitlements().verifyAllowedNumberOfTrainingSamples(
+      licensing::Entitlements::NO_LIMIT);
 }
 
 std::shared_ptr<Model> Model::make(autograd::ComputationList inputs,

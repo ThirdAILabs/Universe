@@ -4,6 +4,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/cold_start/ColdStartDataSource.h>
 #include <exceptions/src/Exceptions.h>
+#include <limits>
 #include <unordered_set>
 #include <utility>
 
@@ -26,6 +27,11 @@ class Entitlements {
   void verifyAllowedOutputDim(uint64_t output_dim) const;
 
   void verifyDataSource(const dataset::DataSourcePtr& source) const;
+
+  // This can be passed to verifyAllowedNumberOfTrainingSamples or
+  // verifyAllowedOutputDim to assert that there are no limits on these
+  // parameters, as any limit will cause them it to fail.
+  static constexpr uint64_t NO_LIMIT = std::numeric_limits<uint64_t>::max() - 1;
 
  private:
   std::optional<ModelRestrictions> getModelRestrictions() const;
