@@ -1,7 +1,10 @@
 import numpy as np
+import pytest
 from sklearn.metrics.pairwise import euclidean_distances
 from thirdai import bolt_v2 as bolt
 from thirdai import dataset
+
+pytestmark = [pytest.mark.unit]
 
 
 def get_contrastive_and_embedding_models(
@@ -48,7 +51,7 @@ def get_contrastive_and_embedding_models(
     )
 
 
-def test_number_embeddings():
+def test_number_contrastive_embeddings():
     """
     This test sets up a task where the input to the network are one hot encoded
     integers. A number's embedding should be close to another number's embedding
