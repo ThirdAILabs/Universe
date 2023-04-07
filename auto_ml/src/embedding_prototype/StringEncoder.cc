@@ -5,6 +5,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/trainer/Trainer.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/blocks/BlockList.h>
@@ -34,11 +35,12 @@ StringEncoder::StringEncoder(const float* non_owning_pretrained_fc_weights,
   _two_tower_model = createTwoTowerModel(fc_op, input_dim);
 
   const data::ColumnDataTypes& input_data_types = {{"text", data_type}};
-  _embedding_factory = std::make_shared<data::TabularDatasetFactory>(
+  _embedding_factory = data::TabularDatasetFactory::make(
       input_data_types,
-      /* temporal_tracking_relationships = */ data::TemporalRelationships(),
-      /* label_blocks = */ dataset::BlockList(),
-      /* label_col_names = */ std::vector<std::string>(), options,
+      /* temporal_tracking_relationships = */ {},
+      /* label_blocks = */ {},
+      /* label_col_names = */ {},
+      /* options = */ options,
       /* force_parallel = */ false);
 }
 
@@ -52,11 +54,12 @@ py::object StringEncoder::supervisedTrain(
   auto label_block = dataset::NumericalCategoricalBlock::make(
       /* col= */ label_col,
       /* n_classes= */ 2);
-  auto supervised_factory = std::make_shared<data::TabularDatasetFactory>(
+  auto supervised_factory = data::TabularDatasetFactory::make(
       input_data_types,
-      /* temporal_tracking_relationships = */ data::TemporalRelationships(),
-      /* label_blocks = */ std::vector<dataset::BlockPtr>{label_block},
-      /* label_col_names = */ std::vector<std::string>(), _options,
+      /* temporal_tracking_relationships = */ {},
+      /* label_blocks = */ {label_block},
+      /* label_col_names = */ {},
+      /* tabular_options = */ _options,
       /* force_parallel = */ false);
 
   auto train_dataset_loader =
@@ -118,8 +121,9 @@ bolt::nn::model::ModelPtr StringEncoder::createTwoTowerModel(
   auto label = bolt::nn::ops::Input::make(/* dim= */ 1);
 
   auto loss =
-      bolt::nn::loss::EuclideanContrastive::make(output_1, output_2, label, 1)
+      bolt::nn::loss::EuclideanContrastive::make(output_1, output_2, label, 1);
 
-          return bolt::nn::model::Model::make({input}, {output}, {loss});
+  return bolt::nn::model::Model::make({input_1, input_2}, {output_1, output_2},
+                                      {loss});
 }
 }  // namespace thirdai::automl::udt

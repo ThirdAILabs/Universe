@@ -1,3 +1,4 @@
+#pragma once
 
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/ops/FullyConnected.h>

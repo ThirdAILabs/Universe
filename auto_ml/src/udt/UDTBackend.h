@@ -3,6 +3,7 @@
 #include <bolt/src/callbacks/Callback.h>
 #include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
+#include <auto_ml/src/embedding_prototype/StringEncoder.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/DataSource.h>
@@ -207,6 +208,10 @@ class UDTBackend {
   }
 
   virtual ~UDTBackend() = default;
+
+  virtual StringEncoderPtr getEncoder() const {
+    throw notSupported("get_encoder");
+  }
 
  protected:
   UDTBackend() {}

@@ -2,9 +2,12 @@
 
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <auto_ml/src/config/ArgumentMap.h>
+#include <auto_ml/src/dataset_factories/udt/DataTypes.h>
 #include <auto_ml/src/featurization/TabularDatasetFactory.h>
+#include <auto_ml/src/featurization/TabularOptions.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Classifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -88,6 +91,36 @@ class UDTMachClassifier final : public UDTBackend {
     _dataset_factory->verifyCanDistribute();
   }
 
+  StringEncoderPtr getEncoder() const final {
+    // TODO(Josh): This method is pretty hacky
+    if (_data_types.size() != 2) {
+      throw std::runtime_error(
+          "Creating an encoder is only supported for UDT instantiations with a "
+          "single text column and a target column, but there were not exactly "
+          "two data types");
+    }
+    data::TextDataTypePtr text_type;
+    for (const auto& d : _data_types) {
+      text_type = data::asText(d.second);
+      if (text_type) {
+        break;
+      }
+    }
+    if (!text_type) {
+      throw std::runtime_error(
+          "Creating an encoder is only supported for UDT instantiations with a "
+          "single text column and a target column, but did not find a text "
+          "column.");
+    }
+
+    auto fc = _classifier->model()
+                  ->getNodeByName("fc_1")
+                  ->getInternalFullyConnectedLayers()
+                  .at(0);
+    return std::make_shared<StringEncoder>(fc->getWeights(), fc->getBiases(),
+                                           fc->getDim(), text_type, _options);
+  }
+
  private:
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {
     return std::make_shared<cold_start::ColdStartMetaData>(
@@ -126,6 +159,10 @@ class UDTMachClassifier final : public UDTBackend {
   data::TabularDatasetFactoryPtr _dataset_factory;
   uint32_t _min_num_eval_results;
   uint32_t _top_k_per_eval_aggregation;
+
+  // TODO(Josh): These were added only to get getEncoder working
+  data::ColumnDataTypes _data_types;
+  data::TabularOptions _options;
 };
 
 }  // namespace thirdai::automl::udt

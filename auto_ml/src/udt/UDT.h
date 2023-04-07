@@ -143,6 +143,8 @@ class UDT {
     return _backend->tabularDatasetFactory();
   }
 
+  StringEncoderPtr getEncoder() const { return _backend->getEncoder(); }
+
   void verifyCanDistribute() const { _backend->verifyCanDistribute(); }
 
   void save(const std::string& filename) const;
