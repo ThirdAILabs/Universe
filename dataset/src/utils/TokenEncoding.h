@@ -21,6 +21,8 @@ inline uint32_t seededMurmurHash(const char* key, uint32_t len) {
   return hashing::MurmurHash(key, len, HASH_SEED);
 }
 
+std::vector<uint32_t> tokens(const std::string& line);
+
 /**
  * Hash each input word and return a list of tokens. Commonly called unigrams.
  */

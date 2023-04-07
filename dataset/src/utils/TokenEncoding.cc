@@ -29,6 +29,21 @@ std::vector<uint32_t> ngrams(std::vector<uint32_t> tokens, uint32_t n) {
   return tokens;
 }
 
+std::vector<uint32_t> tokens(const std::string& line) {
+  std::vector<uint32_t> tokens;
+
+  const char* start = line.data();
+  const char* line_end = line.data() + line.size();
+
+  while (start != line_end) {
+    char* end;
+    tokens.push_back(std::strtoul(start, &end, /* base= */ 10));
+    start = end;
+  }
+
+  return tokens;
+}
+
 std::vector<uint32_t> tokenize(const std::vector<std::string_view>& words) {
   std::vector<uint32_t> n_gram_tokens;
   n_gram_tokens.reserve(words.size());
