@@ -5,6 +5,7 @@
 #include <auto_ml/src/cold_start/ColdStartUtils.h>
 #include <auto_ml/src/config/ModelConfig.h>
 #include <auto_ml/src/dataset_factories/udt/DataTypes.h>
+#include <auto_ml/src/embedding_prototype/StringEncoder.h>
 #include <auto_ml/src/udt/UDT.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -150,6 +151,13 @@ void defineAutomlInModule(py::module_& module) {
       .def("checkpoint", &UDTFactory::checkpoint_udt, py::arg("filename"))
       .def_static("load", &udt::UDT::load, py::arg("filename"))
       .def(bolt::python::getPickleFunction<udt::UDT>());
+
+  py::class_<udt::StringEncoder, udt::StringEncoderPtr>(module, "StringEncoder")
+      .def(py::init<uint64_t, const data::TextDataTypePtr&,
+                    const data::TabularOptions&>(),
+           py::arg("embedding_dim"), py::arg("text_data_type"),
+           py::arg("options"), bolt::python::OutputRedirect())
+      .def("supervised_train", &udt::StringEncoder, py::arg("filename"));
 }
 
 void createModelsSubmodule(py::module_& module) {
