@@ -153,11 +153,14 @@ void defineAutomlInModule(py::module_& module) {
       .def(bolt::python::getPickleFunction<udt::UDT>());
 
   py::class_<udt::StringEncoder, udt::StringEncoderPtr>(module, "StringEncoder")
-      .def(py::init<uint64_t, const data::TextDataTypePtr&,
-                    const data::TabularOptions&>(),
-           py::arg("embedding_dim"), py::arg("text_data_type"),
-           py::arg("options"), bolt::python::OutputRedirect())
-      .def("supervised_train", &udt::StringEncoder, py::arg("filename"));
+      .def("supervised_train", &udt::StringEncoder::supervisedTrain,
+           py::arg("data_source"), py::arg("input_col_1"),
+           py::arg("input_col_2"), py::arg("label_col"),
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
+           bolt::python::OutputRedirect())
+      .def("encode", &udt::StringEncoder::encode, py::arg("string"))
+      .def("encode_batch", &udt::StringEncoder::encodeBatch,
+           py::arg("strings"));
 }
 
 void createModelsSubmodule(py::module_& module) {

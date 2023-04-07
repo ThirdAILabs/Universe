@@ -1,26 +1,33 @@
 #include "StringManipulation.h"
+#include <cctype>
+#include <iostream>
+#include <optional>
+#include <regex>
 #include <sstream>
+#include <stdexcept>
+#include <string_view>
+#include <vector>
 
 namespace thirdai::text {
 
-std::vector<std::string_view> split(std::string_view sentence, char delimiter) {
+std::vector<std::string_view> split(std::string_view string, char delimiter) {
   std::vector<std::string_view> words;
 
   bool prev_is_delim = true;
   uint32_t start_of_word_offset = 0;
-  for (uint32_t i = 0; i < sentence.size(); i++) {
-    if (prev_is_delim && sentence[i] != delimiter) {
+  for (uint32_t i = 0; i < string.size(); i++) {
+    if (prev_is_delim && string[i] != delimiter) {
       // If we go from a space to a non-space character then we are at the
       // start of a word.
       start_of_word_offset = i;
       prev_is_delim = false;
     }
-    if (!prev_is_delim && sentence[i] == delimiter) {
+    if (!prev_is_delim && string[i] == delimiter) {
       // If we go from a non-space character to a space then we are at the end
       // of a word.
       uint32_t len = i - start_of_word_offset;
 
-      std::string_view word_view(sentence.data() + start_of_word_offset, len);
+      std::string_view word_view(string.data() + start_of_word_offset, len);
 
       words.push_back(word_view);
       prev_is_delim = true;
@@ -29,14 +36,38 @@ std::vector<std::string_view> split(std::string_view sentence, char delimiter) {
   if (!prev_is_delim) {
     // If we don't find a space at the end of the sentence, then there's a
     // last word we need to hash.
-    uint32_t len = sentence.size() - start_of_word_offset;
+    uint32_t len = string.size() - start_of_word_offset;
 
-    std::string_view word_view(sentence.data() + start_of_word_offset, len);
+    std::string_view word_view(string.data() + start_of_word_offset, len);
 
     words.push_back(word_view);
   }
 
   return words;
+}
+
+std::vector<std::string_view> tokenizeSentence(std::string_view sentence) {
+  std::string sentence_str(sentence);
+
+  // A-Za-zÀ-ÖØ-öø-ÿ0-9 : alphanumeric characters, including accents.
+  // \s : whitespace
+  // Together: match strings of at least one alphanumeric character or a single
+  // non-alphanumeric non-whitespace character
+  std::regex regex(R"([A-Za-zÀ-ÖØ-öø-ÿ0-9]+|[^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s])");
+
+  std::sregex_iterator iter(sentence_str.begin(), sentence_str.end(), regex);
+  std::sregex_iterator end;
+
+  std::vector<std::string_view> tokens;
+
+  while (iter != end) {
+    std::smatch match = *iter;
+    tokens.push_back(
+        std::string_view(sentence.data() + match.position(), match.length()));
+    ++iter;
+  }
+
+  return tokens;
 }
 
 std::string join(const std::vector<std::string>& strings,

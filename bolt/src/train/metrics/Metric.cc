@@ -1,6 +1,7 @@
 #include "Metric.h"
+#include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/metrics/CategoricalAccuracy.h>
-#include <atomic>
+#include <bolt/src/train/metrics/LossMetric.h>
 #include <stdexcept>
 
 namespace thirdai::bolt::train::metrics {
@@ -52,15 +53,28 @@ void MetricCollection::reset() {
   }
 }
 
-InputMetrics metricsForSingleOutputModel(
-    const std::vector<std::string>& metric_names,
-    const nn::autograd::ComputationPtr& output,
-    const nn::autograd::ComputationPtr& labels) {
+InputMetrics fromMetricNames(const nn::model::ModelPtr& model,
+                             const std::vector<std::string>& metric_names,
+                             const std::string& prefix) {
+  if (model->outputs().size() != 1 || model->labels().size() != 1 ||
+      model->losses().size() != 1) {
+    throw std::invalid_argument(
+        "Can only specify metrics by their name for models with a single "
+        "output, label, and loss.");
+  }
+
+  nn::autograd::ComputationPtr output = model->outputs().front();
+  nn::autograd::ComputationPtr labels = model->labels().front();
+  nn::loss::LossPtr loss = model->losses().front();
+
   InputMetrics metrics;
 
   for (const auto& name : metric_names) {
     if (name == "categorical_accuracy") {
-      metrics[name] = std::make_shared<CategoricalAccuracy>(output, labels);
+      metrics[prefix + name] =
+          std::make_shared<CategoricalAccuracy>(output, labels);
+    } else if (name == "loss") {
+      metrics[prefix + name] = std::make_shared<LossMetric>(loss);
     } else {
       throw std::invalid_argument("Metric '" + name +
                                   "' is not yet supported.");
@@ -68,6 +82,34 @@ InputMetrics metricsForSingleOutputModel(
   }
 
   return metrics;
+}
+
+float divideTwoAtomicIntegers(const std::atomic_uint64_t& numerator,
+                              const std::atomic_uint64_t& denominator) {
+  uint32_t loaded_numerator = numerator.load();
+  uint32_t loaded_denominator = denominator.load();
+
+  if (loaded_denominator == 0) {
+    return 0.0;
+  }
+
+  return static_cast<float>(loaded_numerator) / loaded_denominator;
+}
+
+uint32_t truePositivesInTopK(const BoltVector& output, const BoltVector& label,
+                             const uint32_t& k) {
+  TopKActivationsQueue top_k_predictions = output.findKLargestActivations(k);
+
+  uint32_t true_positives = 0;
+  while (!top_k_predictions.empty()) {
+    ValueIndexPair valueIndex = top_k_predictions.top();
+    uint32_t prediction = valueIndex.second;
+    if (label.findActiveNeuronNoTemplate(prediction).activation > 0) {
+      true_positives++;
+    }
+    top_k_predictions.pop();
+  }
+  return true_positives;
 }
 
 }  // namespace thirdai::bolt::train::metrics

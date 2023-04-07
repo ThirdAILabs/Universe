@@ -94,6 +94,11 @@ class Model {
   const autograd::ComputationList& labels() const;
 
   /**
+   * Returns the loss functions of the model.
+   */
+  const std::vector<loss::LossPtr>& losses() const;
+
+  /**
    * Returns a list of all ops.
    */
   const std::vector<ops::OpPtr>& ops() const;
@@ -129,14 +134,6 @@ class Model {
    * Returns a list of references to gradients of all parameters in the model.
    */
   std::vector<std::vector<float>*> gradients() const;
-
-  /**
-   * Returns a list of pairs of matching outputs and labels. A label and output
-   * match if they are both used in a loss function with no other labels or
-   * outputs.
-   */
-  std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
-  outputLabelPairs() const;
 
   /**
    * Saves the model without optimizer state. Save metadata indicates if a
@@ -178,6 +175,14 @@ class Model {
    * Sets the given labels as the current labels for the model.
    */
   uint32_t setLabels(const tensor::TensorList& label_batches);
+
+  /**
+   * Returns a list of pairs of matching outputs and labels. A label and output
+   * match if they are both used in a loss function with no other labels or
+   * outputs.
+   */
+  std::vector<std::pair<autograd::ComputationPtr, autograd::ComputationPtr>>
+  outputLabelPairs() const;
 
   /**
    * When a loss is applied to a single output computation coming from a fully

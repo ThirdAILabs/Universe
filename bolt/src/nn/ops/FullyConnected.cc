@@ -8,6 +8,7 @@
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt_vector/src/BoltVector.h>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 
@@ -152,6 +153,13 @@ const float* FullyConnected::weightsPtr() const {
 
 const float* FullyConnected::biasesPtr() const {
   return _kernel->getBiasesPtr();
+}
+
+void FullyConnected::setWeightsAndBiases(const float* weights,
+                                         const float* biases) {
+  std::memcpy(_kernel->getWeightsPtr(), weights,
+              _kernel->getDim() * _kernel->getInputDim());
+  std::memcpy(_kernel->getBiasesPtr(), biases, _kernel->getDim());
 }
 
 template void FullyConnected::save(cereal::BinaryOutputArchive&) const;

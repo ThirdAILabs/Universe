@@ -72,6 +72,9 @@ class FullyConnected final
    */
   const float* biasesPtr() const;
 
+  void setWeightsAndBiases(const float* weights_to_set,
+                           const float* biases_to_set);
+
  private:
   FullyConnected(
       uint32_t dim, uint32_t input_dim, float sparsity,
