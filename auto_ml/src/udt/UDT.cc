@@ -35,6 +35,8 @@ UDT::UDT(data::ColumnDataTypes data_types,
   tabular_options.delimiter = delimiter;
   tabular_options.feature_hash_range = user_args.get<uint32_t>(
       "input_dim", "integer", defaults::FEATURE_HASH_RANGE);
+  tabular_options.feature_hash_range = user_args.get<uint32_t>(
+      "param_multiplier", "integer", defaults::FEATURE_HASH_RANGE);// changing input_dim to param_multiplier as need this in qt distribution
 
   if (!data_types.count(target_col)) {
     throw std::invalid_argument(
