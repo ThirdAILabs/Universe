@@ -20,8 +20,9 @@ class EuclideanContrastive final : public Loss {
                                 float dissimilar_cutoff_distance);
 
   static std::shared_ptr<EuclideanContrastive> make(
-      autograd::ComputationPtr output_1, autograd::ComputationPtr output_2,
-      autograd::ComputationPtr labels, float dissimilar_cutoff_distance);
+      const autograd::ComputationPtr& output_1,
+      const autograd::ComputationPtr& output_2,
+      const autograd::ComputationPtr& labels, float dissimilar_cutoff_distance);
 
   void gradients(uint32_t index_in_batch, uint32_t batch_size) const final;
 

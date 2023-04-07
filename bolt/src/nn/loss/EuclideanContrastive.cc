@@ -37,8 +37,9 @@ EuclideanContrastive::EuclideanContrastive(autograd::ComputationPtr output_1,
 }
 
 std::shared_ptr<EuclideanContrastive> EuclideanContrastive::make(
-    autograd::ComputationPtr output_1, autograd::ComputationPtr output_2,
-    autograd::ComputationPtr labels, float dissimilar_cutoff_distance) {
+    const autograd::ComputationPtr& output_1,
+    const autograd::ComputationPtr& output_2,
+    const autograd::ComputationPtr& labels, float dissimilar_cutoff_distance) {
   return std::make_shared<EuclideanContrastive>(output_1, output_2, labels,
                                                 dissimilar_cutoff_distance);
 }
