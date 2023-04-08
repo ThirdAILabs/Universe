@@ -11,6 +11,7 @@
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Numerical.h>
+#include <pybind11/stl.h>
 
 namespace thirdai::automl::udt {
 
@@ -49,34 +50,44 @@ StringEncoder::StringEncoder(const std::string& activation_func,
 py::object StringEncoder::supervisedTrain(
     const dataset::DataSourcePtr& data_source, const std::string& input_col_1,
     const std::string& input_col_2, const std::string& label_col,
-    float learning_rate, uint32_t epochs,
-    const std::vector<std::string>& metrics) {
-  const data::ColumnDataTypes& input_data_types = {{input_col_1, _data_type},
-                                                   {input_col_2, _data_type}};
+    float learning_rate, uint32_t epochs) {
+  const data::ColumnDataTypes& input_data_types_1 = {{input_col_1, _data_type}};
+  const data::ColumnDataTypes& input_data_types_2 = {{input_col_2, _data_type}};
   auto label_block = dataset::NumericalBlock::make(
       /* col= */ label_col);
-  auto supervised_factory = data::TabularDatasetFactory::make(
-      input_data_types,
+
+  auto supervised_factory_1 = data::TabularDatasetFactory::make(
+      input_data_types_1,
+      /* temporal_tracking_relationships = */ {},
+      /* label_blocks = */ {label_block},
+      /* label_col_names = */ {},
+      /* tabular_options = */ _options,
+      /* force_parallel = */ false);
+  auto supervised_factory_2 = data::TabularDatasetFactory::make(
+      input_data_types_2,
       /* temporal_tracking_relationships = */ {},
       /* label_blocks = */ {label_block},
       /* label_col_names = */ {},
       /* tabular_options = */ _options,
       /* force_parallel = */ false);
 
-  auto train_dataset_loader =
-      supervised_factory->getDatasetLoader(data_source, /* shuffle = */ true);
+  auto train_dataset_loader_1 =
+      supervised_factory_1->getDatasetLoader(data_source, /* shuffle = */ true);
+  auto old_data_1 = train_dataset_loader_1->loadAll(defaults::BATCH_SIZE);
 
-  auto old_data = train_dataset_loader->loadAll(defaults::BATCH_SIZE);
+  data_source->restart();
+  auto train_dataset_loader_2 =
+      supervised_factory_2->getDatasetLoader(data_source, /* shuffle = */ true);
+  auto old_data_2 = train_dataset_loader_1->loadAll(defaults::BATCH_SIZE);
 
-  bolt::train::Trainer trainer(_embedding_model);
+  bolt::train::Trainer trainer(_two_tower_model);
 
-  auto labels = bolt::train::convertDataset(old_data.back(), 1);
-  old_data.pop_back();
+  auto labels = bolt::train::convertDataset(old_data_1.back(), 1);
+  auto old_data = {old_data_1.at(0), old_data_2.at(0)};
   auto input_data =
       bolt::train::convertDatasets(old_data, _two_tower_model->inputDims());
 
-  return py::cast(trainer.train_with_metric_names(
-      {input_data, labels}, learning_rate, epochs, metrics));
+  return py::cast(trainer.train({input_data, labels}, learning_rate, epochs));
 }
 
 bolt::nn::model::ModelPtr StringEncoder::createEmbeddingModel(

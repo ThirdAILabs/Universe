@@ -158,7 +158,7 @@ void defineAutomlInModule(py::module_& module) {
       .def("supervised_train", &udt::StringEncoder::supervisedTrain,
            py::arg("data_source"), py::arg("input_col_1"),
            py::arg("input_col_2"), py::arg("label_col"),
-           py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
+           py::arg("learning_rate"), py::arg("epochs"),
            bolt::python::OutputRedirect())
       .def("encode", &udt::StringEncoder::encode, py::arg("string"))
       .def("encode_batch", &udt::StringEncoder::encodeBatch, py::arg("strings"))

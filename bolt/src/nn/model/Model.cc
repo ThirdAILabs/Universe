@@ -268,8 +268,9 @@ inline uint32_t setBatchHelper(autograd::ComputationList& inputs,
                                const std::string& type) {
   if (batches.size() != inputs.size()) {
     std::stringstream error;
-    error << "Expected " << inputs.size() << " " << type << " but received "
-          << batches.size() << ".";
+    error << "When initializing the model for training, expected "
+          << inputs.size() << " " << type << " but received " << batches.size()
+          << ".";
     throw std::invalid_argument(error.str());
   }
 

@@ -30,8 +30,7 @@ class StringEncoder {
                              const std::string& input_col_1,
                              const std::string& input_col_2,
                              const std::string& label_col, float learning_rate,
-                             uint32_t epochs,
-                             const std::vector<std::string>& metrics);
+                             uint32_t epochs);
 
   bolt::nn::tensor::TensorPtr encode(const std::string& string);
 
