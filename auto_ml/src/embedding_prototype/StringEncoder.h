@@ -24,7 +24,8 @@ class StringEncoder {
                          const float* non_owning_pretrained_fc_biases,
                          uint32_t fc_dim,
                          const data::TextDataTypePtr& data_type,
-                         const data::TabularOptions& options);
+                         const data::TabularOptions& options,
+                         float distance_cutoff);
 
   py::object supervisedTrain(const dataset::DataSourcePtr& data_source,
                              const std::string& input_col_1,
@@ -77,7 +78,8 @@ class StringEncoder {
       const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim);
 
   static bolt::nn::model::ModelPtr createTwoTowerModel(
-      const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim);
+      const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim,
+      float distance_cutoffs);
 
   data::TabularDatasetFactoryPtr _embedding_factory;
   bolt::nn::model::ModelPtr _embedding_model, _two_tower_model;

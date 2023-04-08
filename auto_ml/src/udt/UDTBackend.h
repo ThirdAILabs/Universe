@@ -209,9 +209,10 @@ class UDTBackend {
 
   virtual ~UDTBackend() = default;
 
-  virtual StringEncoderPtr getEncoder(
-      const std::string& activation_func) const {
+  virtual StringEncoderPtr getEncoder(const std::string& activation_func,
+                                      float distance_cutoff) const {
     (void)activation_func;
+    (void)distance_cutoff;
     throw notSupported("get_encoder");
   }
 

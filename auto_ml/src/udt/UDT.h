@@ -143,8 +143,9 @@ class UDT {
     return _backend->tabularDatasetFactory();
   }
 
-  StringEncoderPtr getEncoder(const std::string& activation_func) const {
-    return _backend->getEncoder(activation_func);
+  StringEncoderPtr getEncoder(const std::string& activation_func,
+                              float distance_cutoff) const {
+    return _backend->getEncoder(activation_func, distance_cutoff);
   }
 
   void verifyCanDistribute() const { _backend->verifyCanDistribute(); }

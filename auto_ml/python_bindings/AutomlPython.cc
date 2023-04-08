@@ -147,7 +147,8 @@ void defineAutomlInModule(py::module_& module) {
       .def("_set_model", &udt::UDT::setModel, py::arg("trained_model"))
       .def("verify_can_distribute", &udt::UDT::verifyCanDistribute)
       .def("get_encoder", &udt::UDT::getEncoder,
-           py::arg("activation_func") = "linear")
+           py::arg("activation_func") = "linear",
+           py::arg("distance_cutoff") = 1)
       .def("get_cold_start_meta_data", &udt::UDT::getColdStartMetaData)
       .def("save", &UDTFactory::save_udt, py::arg("filename"))
       .def("checkpoint", &UDTFactory::checkpoint_udt, py::arg("filename"))

@@ -291,7 +291,7 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
 }
 
 StringEncoderPtr UDTMachClassifier::getEncoder(
-    const std::string& activation_func) const {
+    const std::string& activation_func, float distance_cutoff) const {
   // TODO(Josh): This method is pretty hacky
   if (_data_types.size() != 2) {
     throw std::runtime_error(
@@ -320,7 +320,7 @@ StringEncoderPtr UDTMachClassifier::getEncoder(
                 .at(0);
   return std::make_shared<StringEncoder>(activation_func, fc->getWeights(),
                                          fc->getBiases(), fc->getDim(),
-                                         text_type, _options);
+                                         text_type, _options, distance_cutoff);
 }
 
 template <class Archive>

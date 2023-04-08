@@ -20,7 +20,8 @@ StringEncoder::StringEncoder(const std::string& activation_func,
                              const float* non_owning_pretrained_fc_biases,
                              uint32_t fc_dim,
                              const data::TextDataTypePtr& data_type,
-                             const data::TabularOptions& options)
+                             const data::TabularOptions& options,
+                             float distance_cutoff)
     : _data_type(data_type), _options(options) {
   uint32_t input_dim = options.feature_hash_range;
 
@@ -35,7 +36,7 @@ StringEncoder::StringEncoder(const std::string& activation_func,
 
   _embedding_model = createEmbeddingModel(fc_op, input_dim);
 
-  _two_tower_model = createTwoTowerModel(fc_op, input_dim);
+  _two_tower_model = createTwoTowerModel(fc_op, input_dim, distance_cutoff);
 
   const data::ColumnDataTypes& input_data_types = {{"text", data_type}};
   _embedding_factory = data::TabularDatasetFactory::make(
@@ -121,7 +122,8 @@ bolt::nn::tensor::TensorPtr StringEncoder::encode(const std::string& string) {
 }
 
 bolt::nn::model::ModelPtr StringEncoder::createTwoTowerModel(
-    const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim) {
+    const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim,
+    float distance_cutoff) {
   auto input_1 = bolt::nn::ops::Input::make(/* dim= */ input_dim);
 
   auto input_2 = bolt::nn::ops::Input::make(/* dim= */ input_dim);
@@ -132,8 +134,8 @@ bolt::nn::model::ModelPtr StringEncoder::createTwoTowerModel(
 
   auto label = bolt::nn::ops::Input::make(/* dim= */ 1);
 
-  auto loss =
-      bolt::nn::loss::EuclideanContrastive::make(output_1, output_2, label, 1);
+  auto loss = bolt::nn::loss::EuclideanContrastive::make(
+      output_1, output_2, label, distance_cutoff);
 
   return bolt::nn::model::Model::make({input_1, input_2}, {output_1, output_2},
                                       {loss});
