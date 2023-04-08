@@ -290,10 +290,42 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
   _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
 }
 
+StringEncoderPtr UDTMachClassifier::getEncoder() const {
+  // TODO(Josh): This method is pretty hacky
+  if (_data_types.size() != 2) {
+    throw std::runtime_error(
+        "Creating an encoder is only supported for UDT instantiations with a "
+        "single text column and a target column, but there were not exactly "
+        "two data types (found " +
+        std::to_string(_data_types.size()) + ")");
+  }
+  data::TextDataTypePtr text_type;
+  for (const auto& d : _data_types) {
+    text_type = data::asText(d.second);
+    if (text_type) {
+      break;
+    }
+  }
+  if (!text_type) {
+    throw std::runtime_error(
+        "Creating an encoder is only supported for UDT instantiations with a "
+        "single text column and a target column, but did not find a text "
+        "column.");
+  }
+
+  auto fc = _classifier->model()
+                ->getNodeByName("fc_1")
+                ->getInternalFullyConnectedLayers()
+                .at(0);
+  return std::make_shared<StringEncoder>(fc->getWeights(), fc->getBiases(),
+                                         fc->getDim(), text_type, _options);
+}
+
 template <class Archive>
 void UDTMachClassifier::serialize(Archive& archive) {
   archive(cereal::base_class<UDTBackend>(this), _classifier, _mach_label_block,
-          _dataset_factory, _min_num_eval_results, _top_k_per_eval_aggregation);
+          _dataset_factory, _min_num_eval_results, _top_k_per_eval_aggregation,
+          _data_types, _options);
 }
 
 }  // namespace thirdai::automl::udt

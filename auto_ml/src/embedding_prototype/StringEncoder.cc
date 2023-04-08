@@ -1,6 +1,7 @@
 #include "StringEncoder.h"
 #include <bolt/src/callbacks/Callback.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
+#include <bolt/src/nn/loss/EuclideanContrastive.h>
 #include <bolt/src/nn/ops/Input.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/train/trainer/Trainer.h>
@@ -10,7 +11,6 @@
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/blocks/BlockList.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <bolt/src/nn/loss/EuclideanContrastive.h>
 
 namespace thirdai::automl::udt {
 
@@ -25,7 +25,7 @@ StringEncoder::StringEncoder(const float* non_owning_pretrained_fc_weights,
   auto fc_op = bolt::nn::ops::FullyConnected::make(
       /* dim= */ fc_dim,
       /* input_dim= */ input_dim, /* sparsity= */ 1.0,
-      /* activation= */ "relu",
+      /* activation= */ "linear",
       /* sampling=*/nullptr);
 
   fc_op->setWeightsAndBiases(non_owning_pretrained_fc_weights,

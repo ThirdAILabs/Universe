@@ -158,8 +158,9 @@ const float* FullyConnected::biasesPtr() const {
 void FullyConnected::setWeightsAndBiases(const float* weights,
                                          const float* biases) {
   std::memcpy(_kernel->getWeightsPtr(), weights,
-              _kernel->getDim() * _kernel->getInputDim());
-  std::memcpy(_kernel->getBiasesPtr(), biases, _kernel->getDim());
+              _kernel->getDim() * _kernel->getInputDim() * sizeof(float));
+  std::memcpy(_kernel->getBiasesPtr(), biases,
+              _kernel->getDim() * sizeof(float));
 }
 
 template void FullyConnected::save(cereal::BinaryOutputArchive&) const;
