@@ -122,16 +122,15 @@ void createBoltV2NNSubmodule(py::module_& module) {
   py::class_<model::Model, model::ModelPtr>(nn, "Model")
       .def(py::init(&model::Model::make), py::arg("inputs"), py::arg("outputs"),
            py::arg("losses"))
-      .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
-           py::arg("labels"),
-           py::arg("_token") = licensing::TrainPermissionsToken())
       .def("forward",
            py::overload_cast<const tensor::TensorList&, bool>(
                &model::Model::forward),
            py::arg("inputs"), py::arg("use_sparsity"))
+#if THIRDAI_EXPOSE_ALL
+      .def("train_on_batch", &model::Model::trainOnBatch, py::arg("inputs"),
+           py::arg("labels"))
       .def("update_parameters", &model::Model::updateParameters,
            py::arg("learning_rate"))
-#if THIRDAI_EXPOSE_ALL
       .def("ops", &model::Model::ops)
       .def("__getitem__", &model::Model::getOp, py::arg("name"))
       .def("outputs", &model::Model::outputs)

@@ -87,10 +87,7 @@ tensor::TensorList Model::forward(const tensor::TensorList& inputs,
 }
 
 void Model::trainOnBatch(const tensor::TensorList& inputs,
-                         const tensor::TensorList& labels,
-                         licensing::TrainPermissionsToken token) {
-  (void)token;
-
+                         const tensor::TensorList& labels) {
   uint32_t input_batch_size = setInput(inputs);
   uint32_t label_batch_size = setLabels(labels);
 

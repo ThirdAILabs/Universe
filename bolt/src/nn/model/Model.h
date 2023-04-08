@@ -49,8 +49,7 @@ class Model {
    * be selected by sparse fully connected layers which yield outputs.
    */
   void trainOnBatch(const tensor::TensorList& inputs,
-                    const tensor::TensorList& labels,
-                    licensing::TrainPermissionsToken token = {});
+                    const tensor::TensorList& labels);
 
   /**
    * Performs the forward pass through the model on a given batch. Differs from
