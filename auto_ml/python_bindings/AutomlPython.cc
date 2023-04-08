@@ -161,8 +161,9 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("learning_rate"), py::arg("epochs"), py::arg("metrics"),
            bolt::python::OutputRedirect())
       .def("encode", &udt::StringEncoder::encode, py::arg("string"))
-      .def("encode_batch", &udt::StringEncoder::encodeBatch,
-           py::arg("strings"));
+      .def("encode_batch", &udt::StringEncoder::encodeBatch, py::arg("strings"))
+      .def("save", &udt::StringEncoder::save, py::arg("filename"))
+      .def_static("load", &udt::StringEncoder::load, py::arg("filename"));
 }
 
 void createModelsSubmodule(py::module_& module) {

@@ -10,7 +10,7 @@
 #include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/Validation.h>
 #include <dataset/src/blocks/BlockList.h>
-#include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/Numerical.h>
 
 namespace thirdai::automl::udt {
 
@@ -53,9 +53,8 @@ py::object StringEncoder::supervisedTrain(
     const std::vector<std::string>& metrics) {
   const data::ColumnDataTypes& input_data_types = {{input_col_1, _data_type},
                                                    {input_col_2, _data_type}};
-  auto label_block = dataset::NumericalCategoricalBlock::make(
-      /* col= */ label_col,
-      /* n_classes= */ 2);
+  auto label_block = dataset::NumericalBlock::make(
+      /* col= */ label_col);
   auto supervised_factory = data::TabularDatasetFactory::make(
       input_data_types,
       /* temporal_tracking_relationships = */ {},

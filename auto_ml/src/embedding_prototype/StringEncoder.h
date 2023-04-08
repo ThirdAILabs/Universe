@@ -14,6 +14,9 @@ namespace thirdai::automl::udt {
 
 namespace py = pybind11;
 
+class StringEncoder;
+using StringEncoderPtr = std::shared_ptr<StringEncoder>;
+
 class StringEncoder {
  public:
   explicit StringEncoder(const std::string& activation_func,
@@ -35,7 +38,42 @@ class StringEncoder {
   bolt::nn::tensor::TensorList encodeBatch(
       const std::vector<std::string>& strings);
 
+  void save(const std::string& filename) const {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    save_stream(filestream);
+  }
+
+  void save_stream(std::ostream& output_stream) const {
+    cereal::BinaryOutputArchive oarchive(output_stream);
+    oarchive(*this);
+  }
+
+  static StringEncoderPtr load(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    return load_stream(filestream);
+  }
+
+  static StringEncoderPtr load_stream(std::istream& input_stream) {
+    cereal::BinaryInputArchive iarchive(input_stream);
+    StringEncoderPtr deserialize_into(new StringEncoder());
+    iarchive(*deserialize_into);
+
+    return deserialize_into;
+  }
+
  private:
+  StringEncoder() {}
+
+  friend cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_embedding_factory, _embedding_model, _two_tower_model, _data_type,
+            _options);
+  }
+
   static bolt::nn::model::ModelPtr createEmbeddingModel(
       const bolt::nn::ops::FullyConnectedPtr& embedding_op, uint32_t input_dim);
 
@@ -47,7 +85,5 @@ class StringEncoder {
   data::TextDataTypePtr _data_type;
   data::TabularOptions _options;
 };
-
-using StringEncoderPtr = std::shared_ptr<StringEncoder>;
 
 }  // namespace thirdai::automl::udt
