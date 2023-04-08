@@ -290,7 +290,8 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
   _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
 }
 
-StringEncoderPtr UDTMachClassifier::getEncoder() const {
+StringEncoderPtr UDTMachClassifier::getEncoder(
+    const std::string& activation_func) const {
   // TODO(Josh): This method is pretty hacky
   if (_data_types.size() != 2) {
     throw std::runtime_error(
@@ -317,8 +318,9 @@ StringEncoderPtr UDTMachClassifier::getEncoder() const {
                 ->getNodeByName("fc_1")
                 ->getInternalFullyConnectedLayers()
                 .at(0);
-  return std::make_shared<StringEncoder>(fc->getWeights(), fc->getBiases(),
-                                         fc->getDim(), text_type, _options);
+  return std::make_shared<StringEncoder>(activation_func, fc->getWeights(),
+                                         fc->getBiases(), fc->getDim(),
+                                         text_type, _options);
 }
 
 template <class Archive>

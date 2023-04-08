@@ -209,7 +209,9 @@ class UDTBackend {
 
   virtual ~UDTBackend() = default;
 
-  virtual StringEncoderPtr getEncoder() const {
+  virtual StringEncoderPtr getEncoder(
+      const std::string& activation_func) const {
+    (void)activation_func;
     throw notSupported("get_encoder");
   }
 

@@ -14,7 +14,8 @@
 
 namespace thirdai::automl::udt {
 
-StringEncoder::StringEncoder(const float* non_owning_pretrained_fc_weights,
+StringEncoder::StringEncoder(const std::string& activation_func,
+                             const float* non_owning_pretrained_fc_weights,
                              const float* non_owning_pretrained_fc_biases,
                              uint32_t fc_dim,
                              const data::TextDataTypePtr& data_type,
@@ -25,7 +26,7 @@ StringEncoder::StringEncoder(const float* non_owning_pretrained_fc_weights,
   auto fc_op = bolt::nn::ops::FullyConnected::make(
       /* dim= */ fc_dim,
       /* input_dim= */ input_dim, /* sparsity= */ 1.0,
-      /* activation= */ "linear",
+      /* activation= */ activation_func,
       /* sampling=*/nullptr);
 
   fc_op->setWeightsAndBiases(non_owning_pretrained_fc_weights,
