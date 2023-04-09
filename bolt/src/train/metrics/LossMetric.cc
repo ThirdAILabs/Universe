@@ -4,7 +4,7 @@
 namespace thirdai::bolt::train::metrics {
 
 LossMetric::LossMetric(nn::loss::LossPtr loss_fn)
-    : _loss_fn(std::move(loss_fn)) {}
+    : _loss_fn(std::move(loss_fn)), _loss(0), _num_samples(0) {}
 
 void LossMetric::record(uint32_t index_in_batch) {
   float sample_loss = _loss_fn->loss(index_in_batch);
