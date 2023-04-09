@@ -35,7 +35,8 @@ UDT::UDT(data::ColumnDataTypes data_types,
   tabular_options.delimiter = delimiter;
   tabular_options.feature_hash_range = user_args.get<uint32_t>(
       "input_dim", "integer", defaults::FEATURE_HASH_RANGE);
-
+  tabular_options.feature_hash_range = user_args.get<uint32_t>(
+      "fhr", "integer", defaults::FEATURE_HASH_RANGE);
   if (!data_types.count(target_col)) {
     throw std::invalid_argument(
         "Target column provided was not found in data_types.");
