@@ -83,10 +83,7 @@ def train_distributed_bolt_v2(ray_cluster_config, train_files, test_file):
         validation_context=validation_context,
     )
 
-    while not distributed_trainer.finished():
-        distributed_trainer.step()
-
-    metrics = distributed_trainer.get_metrics()
+    metrics = distributed_trainer.train(train_config.num_epochs)
 
     check_model_parameters_match(distributed_trainer)
 

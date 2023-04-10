@@ -57,22 +57,9 @@ def add_distributed_to_udt():
             validation_context=validation_context,
         )
 
-        epoch = 0
+        distributed_trainer.train(epochs)
 
-        # trains the model until training is complete
-        while not distributed_trainer.finished():
-            # whether there is more batch left to train, else moves directly to next epoch
-            have_next_batch = distributed_trainer.step()
-
-            if not have_next_batch:
-                epoch += 1
-
-                # We are freezing hashtables by default for distributed training after one epoch,
-                # Ideally we should read freezehashtables from UDTOptions and then pass
-                # it to distributed Wrapper. However, for the time being we are just
-                # initializing freeze-hash-tables=True by default.
-                if epoch == 1:
-                    distributed_trainer.train_state_manager.freeze_hash_tables()
+                
 
         model = distributed_trainer.get_model(with_optimizer=True)
 
@@ -509,14 +496,29 @@ class DistributedDataParallel:
         self.total_batches_trained += 1
 
         self._validate()
-        if not have_next_batch:
-            self.train_metrics = self.train_state_manager.move_to_next_epoch()
-            self.current_epoch += 1
 
         return have_next_batch
 
-    def finished(self):
-        return self.current_epoch >= self.train_config.num_epochs
+    def restart_data(self):
+        self.train_metrics = self.train_state_manager.move_to_next_epoch()
+        self.current_epoch += 1
+
+    def train(self, epochs):
+        for epoch in range(epochs):
+            # We are freezing hashtables by default for distributed training after one epoch,
+            # Ideally we should read freezehashtables from UDTOptions and then pass
+            # it to distributed Wrapper. However, for the time being we are just
+            # initializing freeze-hash-tables=True by default.
+            if epoch == 1:
+                self.train_state_manager.freeze_hash_tables()
+            
+            while self.step():
+                pass
+
+            self.restart_data()
+
+        return self.get_metrics()
+
 
     def get_metrics(self):
         distributed_train_metrics = {
