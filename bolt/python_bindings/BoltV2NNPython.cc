@@ -10,6 +10,7 @@
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
 #include <bolt/src/nn/ops/Input.h>
+#include <bolt/src/nn/ops/LayerNorm.h>
 #include <bolt/src/nn/ops/Op.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <pybind11/cast.h>
@@ -85,7 +86,9 @@ void createBoltV2NNSubmodule(py::module_& module) {
       .def("tensor", &autograd::Computation::tensor)
       .def("name", &autograd::Computation::name);
 
-  py::class_<ops::Op, ops::OpPtr>(nn, "Op").def("name", &ops::Op::name);
+  py::class_<ops::Op, ops::OpPtr>(nn, "Op")
+      .def("dim", &ops::Op::dim)
+      .def("name", &ops::Op::name);
 
   py::class_<ops::FullyConnected, ops::FullyConnectedPtr, ops::Op>(
       nn, "FullyConnected")
@@ -116,6 +119,10 @@ void createBoltV2NNSubmodule(py::module_& module) {
   py::class_<ops::Concatenate, ops::ConcatenatePtr, ops::Op>(nn, "Concatenate")
       .def(py::init(&ops::Concatenate::make))
       .def("__call__", &ops::Concatenate::apply);
+
+  py::class_<ops::LayerNorm, ops::LayerNormPtr, ops::Op>(nn, "LayerNorm")
+      .def(py::init(&ops::LayerNorm::make))
+      .def("__call__", &ops::LayerNorm::apply);
 
   nn.def("Input", &ops::Input::make, py::arg("dim"));
 
