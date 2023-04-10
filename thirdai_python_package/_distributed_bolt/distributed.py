@@ -59,8 +59,6 @@ def add_distributed_to_udt():
 
         distributed_trainer.train(epochs)
 
-                
-
         model = distributed_trainer.get_model(with_optimizer=True)
 
         self._set_model(trained_model=model)
@@ -497,7 +495,7 @@ class DistributedDataParallel:
 
         self._validate()
 
-        return have_next_batch
+        return has_next_batch
 
     def restart_data(self):
         self.train_metrics = self.train_state_manager.move_to_next_epoch()
@@ -511,14 +509,13 @@ class DistributedDataParallel:
             # initializing freeze-hash-tables=True by default.
             if epoch == 1:
                 self.train_state_manager.freeze_hash_tables()
-            
+
             while self.step():
                 pass
 
             self.restart_data()
 
         return self.get_metrics()
-
 
     def get_metrics(self):
         distributed_train_metrics = {
