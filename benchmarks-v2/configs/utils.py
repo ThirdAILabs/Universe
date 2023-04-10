@@ -159,7 +159,7 @@ def mach_precision_at_1_with_target_name(target_name, target_delimeter=None):
 
 def qr_recall_at_5_with_target_name(target_name):
     def recall_at_5_additional_metric(model, test_file):
-        predictions = model.evaluate(filename=test_file, top_k=5)
+        predictions = model.evaluate(filename=test_file, top_k=5)[0]
         df = pd.read_csv(test_file)
         labels = df[target_name].to_numpy()
 
@@ -176,7 +176,7 @@ def qr_recall_at_5_with_target_name(target_name):
 
 def qr_precision_at_1_with_target_name(target_name):
     def precision_at_1_additional_metric(model, test_file):
-        predictions = model.evaluate(filename=test_file, top_k=1)
+        predictions = model.evaluate(filename=test_file, top_k=1)[0]
         df = pd.read_csv(test_file)
         labels = df[target_name].to_numpy()
 
