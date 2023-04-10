@@ -64,7 +64,11 @@ def train_distributed_bolt_check(
         train_config=train_config,
         train_sources=train_sources,
     )
-    distributed_trainer.train(train_config.num_epochs)
+    for _ in range(train_config.num_epochs):
+        while distributed_trainer.step():
+            pass
+
+        distributed_trainer.restart_data()
 
     check_models_are_same_on_first_two_nodes(distributed_trainer)
 

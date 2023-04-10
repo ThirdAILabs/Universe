@@ -498,7 +498,7 @@ class DistributedDataParallel:
         self.current_epoch = 0
 
     def step(self):
-        have_next_batch = self.train_state_manager.train_batch(epoch=self.current_epoch)
+        has_next_batch = self.train_state_manager.train_batch(epoch=self.current_epoch)
         self.total_batches_trained += 1
 
         self._validate()
@@ -509,6 +509,8 @@ class DistributedDataParallel:
         self.train_metrics = self.train_state_manager.move_to_next_epoch()
         self.current_epoch += 1
 
+    # Note(pratik): This function simplifies training for bolt, for training with bolt_v2,
+    # use step based training as freeze_hash_tables not implemented for it.
     def train(self, epochs):
         for epoch in range(epochs):
             # We are freezing hashtables by default for distributed training after one epoch,
