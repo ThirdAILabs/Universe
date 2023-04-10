@@ -327,10 +327,13 @@ set(THIRDAI_SOURCES
     bolt/src/nn/loss/ComparativeLoss.cc
     bolt/src/nn/loss/CategoricalCrossEntropy.cc
     bolt/src/nn/loss/BinaryCrossEntropy.cc
+    bolt/src/nn/loss/EuclideanContrastive.cc
     bolt/src/train/metrics/Metric.cc
     bolt/src/train/callbacks/Callback.cc
     bolt/src/train/metrics/LossMetric.cc
     bolt/src/train/metrics/CategoricalAccuracy.cc
+    bolt/src/train/metrics/PrecisionAtK.cc
+    bolt/src/train/metrics/RecallAtK.cc
     bolt/src/train/trainer/Trainer.cc
     bolt/src/train/trainer/Dataset.cc
     bolt/src/train/trainer/DistributedTrainingWrapper.cc
@@ -386,8 +389,9 @@ set(THIRDAI_SOURCES
     dataset/src/blocks/ColumnIdentifier.cc
     dataset/src/blocks/RecurrenceAugmentation.cc
     dataset/src/blocks/Sequence.cc
-    dataset/src/blocks/MachIndex.cc
-    dataset/src/blocks/MachBlock.cc
+    dataset/src/mach/MachDecode.cc
+    dataset/src/mach/MachIndex.cc
+    dataset/src/mach/MachBlock.cc
     dataset/src/utils/GraphInfo.cc
     telemetry/src/PrometheusClient.cc
     new_dataset/src/featurization_pipeline/transformations/Binning.cc

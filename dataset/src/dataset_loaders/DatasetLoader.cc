@@ -25,11 +25,10 @@ DatasetLoader::DatasetLoader(DataSourcePtr data_source,
   // needed. The first row is interpreted as the header. The featurizer
   // is responsible for checking that the header is properly formatted.
   if (_featurizer->expectsHeader()) {
-    auto header = _data_source->nextLine();
-    if (!header) {
+    _header = _data_source->nextLine();
+    if (!_header) {
       throw std::invalid_argument("Cannot read empty file.");
     }
-    _featurizer->processHeader(*header);
   }
 }
 
@@ -48,6 +47,21 @@ std::vector<BoltDatasetPtr> DatasetLoader::loadAll(size_t batch_size,
 
 std::optional<std::vector<BoltDatasetPtr>> DatasetLoader::loadSome(
     size_t batch_size, size_t num_batches, bool verbose) {
+  if (_header) {
+    /**
+      We call _featurizer->processHeader here in case we want to use the same
+      featurizer for two different data loaders. This guarantees that the
+      featurizer uses the correct column number map for each data loader.
+
+      If a second dataset loader is created using the same featurizer as the
+      first dataset loader, but the data its featurizing has a different
+      ordering of columns, then the column number map will be updated to reflect
+      the second dataset. This will cause an issue when the first dataset loader
+      attempts to load more data. Always updating the featurizer with the
+      current dataset before loading solves this issue.
+    */
+    _featurizer->processHeader(*_header);
+  }
 #if THIRDAI_EXPOSE_ALL
   if (verbose) {
     // This is useful internally but we don't want to expose it to keep the

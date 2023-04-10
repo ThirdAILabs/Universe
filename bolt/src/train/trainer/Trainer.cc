@@ -88,8 +88,6 @@ metrics::History Trainer::train(
 
     train_metrics.reset();
 
-    callbacks.onEpochEnd();
-
     // This condition ensures that if we steps_per_validation coincides with the
     // end of the epoch that we don't validate twice: once above when we reach
     // the validation interval and once when we reach the end of the epoch.
@@ -98,11 +96,33 @@ metrics::History Trainer::train(
                use_sparsity_in_validation);
       steps_since_validation = 0;
     }
+
+    callbacks.onEpochEnd();
   }
 
   callbacks.onTrainEnd();
 
   return *_history;  // Copies the history in case users modify it.
+}
+
+metrics::History Trainer::train_with_metric_names(
+    const LabeledDataset& train_data, float learning_rate, uint32_t epochs,
+    const std::vector<std::string>& train_metrics,
+    const std::optional<LabeledDataset>& validation_data,
+    const std::vector<std::string>& validation_metrics,
+    std::optional<uint32_t> steps_per_validation,
+    bool use_sparsity_in_validation,
+    const std::vector<callbacks::CallbackPtr>& callbacks) {
+  return train(
+      /* train_data= */ train_data,
+      /* learning_rate= */ learning_rate, /* epochs= */ epochs,
+      /* train_metrics= */
+      metrics::fromMetricNames(_model, train_metrics, "train_"),
+      /* validation_data= */ validation_data, /* validation_metrics= */
+      metrics::fromMetricNames(_model, validation_metrics, "val_"),
+      /* steps_per_validation= */ steps_per_validation,
+      /* use_sparsity_in_validation= */ use_sparsity_in_validation,
+      /* callbacks= */ callbacks);
 }
 
 metrics::History Trainer::validate(
@@ -140,6 +160,15 @@ metrics::History Trainer::validate(
   validation_metrics.reset();
 
   return *_history;  // Copies the history in case users modify it.
+}
+
+metrics::History Trainer::validate_with_metric_names(
+    const LabeledDataset& validation_data,
+    const std::vector<std::string>& validation_metrics, bool use_sparsity) {
+  return validate(/* validation_data= */ validation_data,
+                  /* validation_metrics= */
+                  metrics::fromMetricNames(_model, validation_metrics, "val_"),
+                  /* use_sparsity= */ use_sparsity);
 }
 
 void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {

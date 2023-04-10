@@ -28,4 +28,6 @@ void endHeartbeat() {}
 
 void setLicensePath(const std::string& license_path) { (void)license_path; }
 
+LicenseState getLicenseState() { return {}; }
+
 }  // namespace thirdai::licensing

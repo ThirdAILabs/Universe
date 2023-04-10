@@ -32,4 +32,26 @@ void endHeartbeat();
 // License verification method 3: license file
 void setLicensePath(const std::string& license_path);
 
+struct LicenseState {
+  std::optional<std::string> api_key_state;
+  std::optional<std::pair<std::string, std::optional<uint32_t>>>
+      heartbeat_state;
+  std::optional<std::string> license_path_state;
+};
+
+LicenseState getLicenseState();
+
+inline void setLicenseState(const LicenseState& state) {
+  if (state.api_key_state) {
+    activate(state.api_key_state.value());
+  }
+  if (state.heartbeat_state) {
+    auto heartbeat_state_value = state.heartbeat_state.value();
+    startHeartbeat(heartbeat_state_value.first, heartbeat_state_value.second);
+  }
+  if (state.license_path_state) {
+    setLicensePath(state.license_path_state.value());
+  }
+}
+
 }  // namespace thirdai::licensing

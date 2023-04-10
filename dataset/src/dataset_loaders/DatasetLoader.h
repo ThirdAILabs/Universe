@@ -62,6 +62,7 @@ class DatasetLoader final {
 
   DataSourcePtr _data_source;
   std::shared_ptr<Featurizer> _featurizer;
+  std::optional<std::string> _header = std::nullopt;
 
   bool _shuffle;
   // We try to ensure at least this many batches are in the buffer and shuffled

@@ -112,4 +112,4 @@ def test_distributed_mnist_bolt_v2(
         test_file=test_file,
     )
 
-    assert metrics["validation_metrics"][-1]["categorical_accuracy"] > 0.9
+    assert metrics["validation_metrics"][-1]["val_categorical_accuracy"] > 0.9

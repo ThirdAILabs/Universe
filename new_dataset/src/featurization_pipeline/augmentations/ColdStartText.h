@@ -132,7 +132,7 @@ class ColdStartTextAugmentation final : public Augmentation {
       std::vector<std::string> weak_column_names, std::string label_column_name,
       std::string output_column_name,
       const ColdStartConfig& config = ColdStartConfig::longBothPhrases(),
-      uint32_t seed = 42803);
+      uint32_t seed = time(nullptr));
 
   ColumnMap apply(const ColumnMap& columns) final;
 
@@ -230,7 +230,7 @@ class ColdStartTextAugmentation final : public Augmentation {
         _weak_sample_reps(1),
         _strong_max_len(std::nullopt),
         _strong_sample_num_words(std::nullopt),
-        _seed(42803) {}
+        _seed(time(nullptr)) {}
 
   friend class cereal::access;
   template <class Archive>
@@ -238,7 +238,8 @@ class ColdStartTextAugmentation final : public Augmentation {
     archive(cereal::base_class<Augmentation>(this), _strong_column_names,
             _weak_column_names, _label_column_name, _output_column_name,
             _weak_min_len, _weak_max_len, _weak_chunk_len,
-            _weak_sample_num_words, _strong_max_len, _strong_sample_num_words);
+            _weak_sample_num_words, _weak_sample_reps, _strong_max_len,
+            _strong_sample_num_words, _seed);
   }
 };
 
