@@ -488,6 +488,7 @@ class DistributedDataParallel:
         )
         self.total_batches_trained = 0
         self.validation_metrics = []
+        self.train_metrics = []
 
         self.train_state_manager = TrainStateManager(
             self.workers,
