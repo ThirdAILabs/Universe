@@ -1,47 +1,15 @@
 import os
 from abc import ABC, abstractmethod
-import numpy as np
-import pandas as pd
-from sklearn.metrics import roc_auc_score
 from thirdai import bolt, data
-
-
-def roc_auc_with_positive_label(target_name, positive_label):
-    def roc_auc_additional_metric(
-        activations, test_file, mlflow_logger, step, classname_fn
-    ):
-        df = pd.read_csv(test_file, low_memory=False)
-        labels = df[target_name].to_numpy()
-
-        if classname_fn(0) == positive_label:
-            predictions = activations[:, 0]
-        else:
-            predictions = activations[:, 1]
-
-        roc_auc = roc_auc_score(labels, predictions)
-
-        if mlflow_logger:
-            mlflow_logger.log_additional_metric(key="roc_auc", value=roc_auc, step=step)
-
-    return roc_auc_additional_metric
-
-
-def regression_metrics_with_target_name(target_name):
-    def regression_additional_metric(
-        activations, test_file, mlflow_logger, step, classname_fn
-    ):
-        df = pd.read_csv(test_file)
-        labels = df[target_name].to_numpy()
-
-        mae = np.mean(np.abs(activations - labels))
-        mse = np.mean(np.square(activations - labels))
-
-        print(f"MAE = {mae}\nMSE = {mse}")
-        if mlflow_logger:
-            mlflow_logger.log_additional_metric(key="mae", value=mae, step=step)
-            mlflow_logger.log_additional_metric(key="mse", value=mse, step=step)
-
-    return regression_additional_metric
+from .utils import (
+    AdditionalMetricCallback, 
+    roc_auc_with_target_name, 
+    mse_with_target_name, 
+    mae_with_target_name, 
+    mach_recall_at_5_with_target_name, 
+    mach_precision_at_1_with_target_name, 
+    gnn_roc_auc_with_target_name
+)
 
 
 class UDTBenchmarkConfig(ABC):
@@ -56,13 +24,24 @@ class UDTBenchmarkConfig(ABC):
     temporal_relationships = {}
     delimiter = ","
     model_config = None
+    model_config_path = None
     options = {}
 
     learning_rate = None
-    num_epochs = None
+    num_epochs = 0
+    integer_target = False
     callbacks = []
     metrics = ["categorical_accuracy"]
-    additional_metric_fn = None
+
+    # Cold Start configs
+    cold_start_learning_rate = 0
+    cold_start_num_epochs = 0
+    cold_start_train_file = None
+    strong_column_names = []
+    weak_column_names = []
+
+    # Query Reformulation configs
+    dataset_size = "medium"
 
     @staticmethod
     @abstractmethod
@@ -165,8 +144,12 @@ class InternetAdsUDTBenchmark(UDTBenchmarkConfig):
     num_epochs = 100
 
     metrics = ["categorical_accuracy"]
-
-    additional_metric_fn = roc_auc_with_positive_label("label", "ad.")
+    callbacks = [
+        AdditionalMetricCallback(
+            metric_name="roc_auc", 
+            metric_fn=roc_auc_with_target_name("label", "ad."), 
+        )
+    ]
 
     def get_data_types(path_prefix):
         data_types = {
@@ -197,8 +180,12 @@ class FraudDetectionUDTBenchmark(UDTBenchmarkConfig):
     num_epochs = 2
 
     metrics = ["categorical_accuracy"]
-
-    additional_metric_fn = roc_auc_with_positive_label("isFraud", "1")
+    callbacks = [
+        AdditionalMetricCallback(
+            metric_name="roc_auc", 
+            metric_fn=roc_auc_with_target_name("isFraud", "1"), 
+        )
+    ]
 
     def get_data_types(path_prefix):
         return {
@@ -393,8 +380,17 @@ class BlackFridayUDTBenchmark(UDTBenchmarkConfig):
     learning_rate = 0.001
     num_epochs = 15
     metrics = []
-    additional_metric_fn = regression_metrics_with_target_name("Purchase")
-
+    callbacks = [
+        AdditionalMetricCallback(
+            metric_name="mse", 
+            metric_fn=mse_with_target_name("Purchase"), 
+        ),
+        AdditionalMetricCallback(
+            metric_name="mae", 
+            metric_fn=mae_with_target_name("Purchase"), 
+        )
+    ]
+    
     @staticmethod
     @abstractmethod
     def get_data_types(path_prefix):
@@ -419,7 +415,16 @@ class DiamondsUDTBenchmark(UDTBenchmarkConfig):
     learning_rate = 0.001
     num_epochs = 15
     metrics = []
-    additional_metric_fn = regression_metrics_with_target_name("price")
+    callbacks = [
+        AdditionalMetricCallback(
+            metric_name="mse", 
+            metric_fn=mse_with_target_name("price"), 
+        ),
+        AdditionalMetricCallback(
+            metric_name="mae", 
+            metric_fn=mae_with_target_name("price"), 
+        )
+    ]
 
     @staticmethod
     @abstractmethod
@@ -445,7 +450,16 @@ class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
     learning_rate = 0.001
     num_epochs = 15
     metrics = []
-    additional_metric_fn = regression_metrics_with_target_name("y")
+    callbacks = [
+        AdditionalMetricCallback(
+            metric_name="mse", 
+            metric_fn=mse_with_target_name("y"), 
+        ),
+        AdditionalMetricCallback(
+            metric_name="mae", 
+            metric_fn=mae_with_target_name("y"), 
+        )
+    ]
 
     @staticmethod
     @abstractmethod
@@ -455,3 +469,161 @@ class MercedesBenzGreenerUDTBenchmark(UDTBenchmarkConfig):
         col_types = data.get_udt_col_types(file)
         del col_types["Unnamed: 0"]
         return col_types
+
+
+class ScifactColdStartUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "scifact_cold_start_udt"
+    dataset_name = "scifact"
+
+    cold_start_train_file = "scifact/unsupervised.csv"
+    test_file = "scifact/tst_supervised.csv"
+    
+    target = "DOC_ID"
+    integer_target = True
+    n_target_classes = 5183
+    delimiter = ","
+
+    metrics=["precision@1", "recall@5"]
+    cold_start_num_epochs=5
+    cold_start_learning_rate=1e-3
+    strong_column_names=["TITLE"]
+    weak_column_names=["TEXT"]
+    options={"embedding_dimension": 1024}
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types(path_prefix):
+        return {
+            "QUERY": bolt.types.text(contextual_encoding="local"),
+            "DOC_ID": bolt.types.categorical(delimiter=":"),
+        }
+
+
+class CookingColdStartUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "cooking_cold_start_udt"
+    dataset_name = "cooking"
+
+    cold_start_train_file = "catalog_recommender/cooking/reformatted_trn_unsupervised.csv"
+    test_file = "catalog_recommender/cooking/reformatted_tst_supervised.csv"
+    
+    target = "LABEL_IDS"
+    integer_target = True
+    n_target_classes = 26109
+    delimiter = ","
+    model_config_path = "catalog_recommender/cooking/cooking_model_config"
+
+    metrics=["precision@1", "recall@100"]
+    cold_start_num_epochs=15
+    cold_start_learning_rate=1e-3
+    strong_column_names=[]
+    weak_column_names=["DESCRIPTION", "BRAND"]
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types(path_prefix):
+        return {
+            "LABEL_IDS": bolt.types.categorical(delimiter=";"),
+            "QUERY": bolt.types.text(contextual_encoding="local"),
+        }
+
+
+class ScifactMachUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "scifact_mach_udt"
+    dataset_name = "scifact"
+
+    train_file = "scifact/trn_supervised.csv"
+    test_file = "scifact/tst_supervised.csv"
+    
+    target = "DOC_ID"
+    integer_target = True
+    n_target_classes = 5183
+    delimiter = ","
+
+    num_epochs=10
+    learning_rate=1e-3
+    options={"extreme_classification": True, "embedding_dimension": 1024}
+    metrics=[]
+    callbacks = [
+        AdditionalMetricCallback(
+            metric_name="precision@1", 
+            metric_fn=mach_precision_at_1_with_target_name("DOC_ID", target_delimeter=":"), 
+        ),
+        AdditionalMetricCallback(
+            metric_name="recall@5", 
+            metric_fn=mach_recall_at_5_with_target_name("DOC_ID", target_delimeter=":"), 
+        )
+    ]
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types(path_prefix):
+        return {
+            "QUERY": bolt.types.text(contextual_encoding="local"),
+            "DOC_ID": bolt.types.categorical(delimiter=":"),
+        }
+
+
+class YelpChiUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "yelp_chi_udt"
+    dataset_name = "yelp_chi"
+
+    train_file = "yelp_chi/yelp_train.csv"
+    test_file = "yelp_chi/yelp_test.csv"
+    
+    target = "target"
+    integer_target = True
+    n_target_classes = 2
+    delimiter = ","
+
+    num_epochs=15
+    learning_rate=1e-3
+    metrics=["categorical_accuracy"]
+    callbacks = [
+        AdditionalMetricCallback(
+            metric_name="roc_auc", 
+            metric_fn=gnn_roc_auc_with_target_name("target"), 
+        )
+    ]
+
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types(path_prefix):
+        return {
+            "node_id": bolt.types.node_id(),
+            **{f"col_{i}": bolt.types.numerical([0, 1]) for i in range(32)},
+            "target": bolt.types.categorical(),
+            "neighbors": bolt.types.neighbors(),
+        }
+
+class PokecUDTBenchmark(UDTBenchmarkConfig):
+    config_name = "pokec_udt"
+    dataset_name = "pokec"
+
+    train_file = "pokec/train.csv"
+    test_file = "pokec/train.csv"
+    
+    target = "target"
+    integer_target = True
+    n_target_classes = 2
+    delimiter = ","
+
+    num_epochs=15
+    learning_rate=1e-3
+    metrics=["categorical_accuracy"]
+    callbacks = [
+        AdditionalMetricCallback(
+            metric_name="roc_auc", 
+            metric_fn=gnn_roc_auc_with_target_name("target"), 
+        )
+    ]
+
+    @staticmethod
+    @abstractmethod
+    def get_data_types(path_prefix):
+        return {
+            "node_id": bolt.types.node_id(),
+            **{f"col_{col_name}": bolt.types.numerical(col_range) for col_name, col_range in enumerate([[0.0, 1.0], [0.0, 100.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [13.0, 112.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0]])},
+            "target": bolt.types.categorical(),
+            "neighbors": bolt.types.neighbors(),
+        }

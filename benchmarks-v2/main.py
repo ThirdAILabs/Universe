@@ -15,7 +15,7 @@ def parse_arguments():
         "--runner",
         type=str,
         required=True,
-        choices=["udt", "bolt_fc", "dlrm"],
+        choices=["udt", "bolt_fc", "dlrm", "query_reformulation"],
         help="Which runner to use to run the benchmark.",
     )
     parser.add_argument(
