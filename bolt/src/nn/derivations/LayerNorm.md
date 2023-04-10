@@ -8,6 +8,8 @@ $$ \sigma^2 =  \frac{1}{N}  \sum_{i=1}^N (x_i - \mu)^2$$
 
 $$ \hat{x}_i = \frac{x_i - \mu}{\sqrt{\sigma^2 + \epsilon}} $$
 
+Where $\epsilon$ is a small constant that improves numerical stability by ensuring we cannot get a divide by zero error.
+
 $$ y_i = \gamma_i \cdot \hat{x}_i + \beta_i $$ 
 
 
@@ -17,11 +19,12 @@ First lets consider the partial derivatives of $\mu$ and $\sigma^2$ with respect
 
 $$ \frac{\partial \mu}{\partial x_i} = \frac{1}{N} $$ 
 
-$$ \frac{\partial \sigma^2}{\partial x_i} = \frac{1}{N} \left[ \sum_{j = 1}^N 2(x_j - \mu) (-\frac{1}{N}) + 2(x_i - \mu) \right] = \frac{2}{N} (x_i - \mu) $$
+$$ \frac{\partial \sigma^2}{\partial x_i} = \frac{1}{N} \left[ \left( \sum_{j = 1}^N 2(x_j - \mu) (-\frac{1}{N}) \right) + 2(x_i - \mu) \right] = \frac{2}{N} (x_i - \mu) $$
 
-Note that $\sum_{i=1}^N (x_i - \mu) = 0$. 
+We can simplify the above expression using the following fact:
+$$ \sum_{i=1}^N (x_i - \mu) = 0$$
 
-Now we can use this to compute the parital derivative of $\frac{1}{\sqrt{\sigma^2 + \epsilon}}$ with respect to an element of the input $x_i$.
+Now we can use these partial derivatives to compute the partial derivative of $\frac{1}{\sqrt{\sigma^2 + \epsilon}}$ with respect to an element of the input $x_i$.
 
 $$ \begin{align*} 
   \frac{\partial}{\partial x_i}\frac{1}{\sqrt{\sigma^2 + \epsilon}} &= -\frac{1}{2} \frac{1}{\sqrt{\sigma^2 + \epsilon}^3} \frac{\partial \sigma^2}{\partial x_i} \\
@@ -32,12 +35,12 @@ $$ \begin{align*}
 Now we can use this to write a formula for an arbitrary element of the Jacobian ($J_f$)of the function $f: (x_1, x_2, ..., x_N) \to (\hat{x}_1, \hat{x}_2, ..., \hat{x}_N) $. 
 
 $$ \begin{align*} 
-  \frac{\partial \hat{x}_i}{\partial x_j} &= \left( \frac{\partial x_i}{\partial x_j} - \frac{\partial \mu}{\partial x_j} \right) \frac{1}{\sqrt{\sigma^2 + \epsilon}} + (x_i - \mu) \frac{\partial}{\partial x_j}\frac{1}{\sqrt{\sigma^2 + \epsilon}} \\
-  &= \left( 1_{i = j} - \frac{1}{N} \right) \frac{1}{\sqrt{\sigma^2 + \epsilon}} + (x_i - \mu) \left( - \frac{1}{N} \right)\frac{1}{\sqrt{\sigma^2 + \epsilon}^2} \hat{x}_j \\ 
-  &= \left( 1_{i = j} - \frac{1}{N} \right) \frac{1}{\sqrt{\sigma^2 + \epsilon}} - \hat{x}_i \frac{1}{N} \frac{1}{\sqrt{\sigma^2 + \epsilon}} \hat{x}_j
+  \frac{\partial \hat{x}_i}{\partial x_j} &= \left( \frac{\partial x_i}{\partial x_j} - \frac{\partial \mu}{\partial x_j} \right) \frac{1}{\sqrt{\sigma^2 + \epsilon}} + (x_i - \mu) \frac{\partial}{\partial x_j}\frac{1}{\sqrt{\sigma^2 + \epsilon}}  & \text{Product rule}\\
+  &= \left( 1_{i = j} - \frac{1}{N} \right) \frac{1}{\sqrt{\sigma^2 + \epsilon}} + (x_i - \mu) \left( - \frac{1}{N} \right)\frac{1}{\sqrt{\sigma^2 + \epsilon}^2} \hat{x}_j & \text{Substituting for partial derivatives} \\ 
+  &= \left( 1_{i = j} - \frac{1}{N} \right) \frac{1}{\sqrt{\sigma^2 + \epsilon}} - \hat{x}_i \frac{1}{N} \frac{1}{\sqrt{\sigma^2 + \epsilon}} \hat{x}_j & \text{By definition of $\hat{x}_i$}
 \end{align*} $$
 
-Now the partial derivatives of the loss $L$ with respect to each of the inputs can be written as:
+By the definition of the Jacobian $J_f$ the partial derivatives of the loss $L$ with respect to each of the inputs can be written as:
 
 $$ \left( \frac{\partial L}{\partial x_1}, \frac{\partial L}{\partial x_2}, ... , \frac{\partial L}{\partial x_N} \right) = \left( \frac{\partial L}{\partial \hat{x}_1}, \frac{\partial L}{\partial x_2}, ... , \frac{\partial L}{\partial x_N} \right) J_f $$ 
 
@@ -49,7 +52,7 @@ Using the equation for $y_i$ we get:
 
 $$ \frac{\partial L}{\partial \hat{x}_j} = \frac{\partial L}{\partial y_j} \gamma_j $$ 
 
-This gives us the equation:
+This gives us the following equation for the partial derivative of the loss with respect to $x_i$:
 
 $$ \begin{align*} 
   \frac{\partial L}{\partial x_i} &= \sum_{j=1}^N \frac{\partial L}{\partial y_j} \gamma_j \frac{\partial \hat{x}_j}{\partial x_i} \\

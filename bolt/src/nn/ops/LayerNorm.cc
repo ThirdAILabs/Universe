@@ -40,7 +40,7 @@ void LayerNorm::forward(const BoltVector& input, BoltVector& output) {
   assert(input.len == output.len);
 
   auto [mean, variance] = moments(input);
-  float stddev = std::sqrt(variance + 1e-6);
+  float stddev = std::sqrt(variance + EPSILON);
 
   if constexpr (!DENSE) {
     std::copy(input.active_neurons, input.active_neurons + input.len,
@@ -77,7 +77,7 @@ void LayerNorm::backpropagate(BoltVector& input, const BoltVector& output) {
   // below.
 
   auto [mean, variance] = moments(input);
-  float stddev = std::sqrt(variance + 1e-6);
+  float stddev = std::sqrt(variance + EPSILON);
 
   float sum_grad = 0.0;
   float sum_grad_x_hat = 0.0;

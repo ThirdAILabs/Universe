@@ -45,6 +45,8 @@ class LayerNorm final : public Op,
 
   static std::pair<float, float> moments(const BoltVector& vector);
 
+  static constexpr float EPSILON = 1e-6;
+
   std::vector<float> _gamma;
   std::vector<float> _beta;
 
