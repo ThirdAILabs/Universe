@@ -410,7 +410,7 @@ def test_udt_override_input_dim():
         data_types={"col": bolt.types.categorical()},
         target="col",
         n_target_classes=40,
-        options={"input_dim": 200},
+        options={"fhr": 200},
     )
 
     summary = udt_model._get_model().summary(detailed=True, print=False)

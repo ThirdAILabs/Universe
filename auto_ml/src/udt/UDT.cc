@@ -33,8 +33,7 @@ UDT::UDT(data::ColumnDataTypes data_types,
   tabular_options.time_granularity = std::move(time_granularity);
   tabular_options.lookahead = lookahead;
   tabular_options.delimiter = delimiter;
-  tabular_options.feature_hash_range = user_args.get<uint32_t>(
-      "input_dim", "integer", defaults::FEATURE_HASH_RANGE);
+  // renaming input_dim to fhr for external users
   tabular_options.feature_hash_range = user_args.get<uint32_t>(
       "fhr", "integer", defaults::FEATURE_HASH_RANGE);
   if (!data_types.count(target_col)) {
