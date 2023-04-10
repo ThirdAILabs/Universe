@@ -1,19 +1,28 @@
 import json
 import os
 
-from thirdai import bolt, deployment
 import pandas as pd
+from thirdai import bolt, deployment
 
 from ..configs.udt_configs import UDTBenchmarkConfig
 from ..configs.utils import AdditionalMetricCallback
 from .runner import Runner
 
+
 class UDTRunner(Runner):
     config_type = UDTBenchmarkConfig
 
     def run_benchmark(config: UDTBenchmarkConfig, path_prefix: str, mlflow_logger):
-        train_file = os.path.join(path_prefix, config.train_file) if config.train_file is not None else None
-        cold_start_train_file = os.path.join(path_prefix, config.cold_start_train_file) if config.cold_start_train_file is not None else None
+        train_file = (
+            os.path.join(path_prefix, config.train_file)
+            if config.train_file is not None
+            else None
+        )
+        cold_start_train_file = (
+            os.path.join(path_prefix, config.cold_start_train_file)
+            if config.cold_start_train_file is not None
+            else None
+        )
         test_file = os.path.join(path_prefix, config.test_file)
 
         if config.model_config_path:
@@ -49,10 +58,13 @@ class UDTRunner(Runner):
                 callback.set_mlflow_logger(mlflow_logger)
 
         if model_config_path:
-            if os.path.join(path_prefix, config.model_config_path) != model_config_path: os.remove(model_config_path)
+            if os.path.join(path_prefix, config.model_config_path) != model_config_path:
+                os.remove(model_config_path)
 
         # If the config has the neighbors type, we can assume a GNN backend
-        contains_neighbors = any([type(t) == bolt.types.neighbors for t in data_types.values()])
+        contains_neighbors = any(
+            [type(t) == bolt.types.neighbors for t in data_types.values()]
+        )
         if contains_neighbors:
             test_file_dir = os.path.dirname(test_file)
             if not os.path.exists(os.path.join(test_file_dir, "gnn_index.csv")):
@@ -80,4 +92,3 @@ class UDTRunner(Runner):
                 validation=validation,
                 callbacks=config.callbacks + [mlflow_logger] if mlflow_logger else [],
             )
-        

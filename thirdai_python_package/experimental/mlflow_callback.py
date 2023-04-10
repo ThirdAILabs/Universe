@@ -6,7 +6,6 @@ from typing import Any, Dict, Optional
 from thirdai._thirdai import bolt
 
 
-
 # TODO how can we define this under bolt.callbacks?
 class MlflowCallback(bolt.callbacks.Callback):
     """An Mlflow callback is initialized for a single experiment run.

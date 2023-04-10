@@ -10,7 +10,9 @@ from .runner import Runner
 class QueryReformulationRunner(Runner):
     config_type = QueryReformulationBenchmarkConfig
 
-    def run_benchmark(config: QueryReformulationBenchmarkConfig, path_prefix: str, mlflow_logger):
+    def run_benchmark(
+        config: QueryReformulationBenchmarkConfig, path_prefix: str, mlflow_logger
+    ):
         train_file = os.path.join(path_prefix, config.train_file)
         test_file = os.path.join(path_prefix, config.test_file)
 
@@ -24,7 +26,9 @@ class QueryReformulationRunner(Runner):
             model_config_path = None
 
         model = bolt.UniversalDeepTransformer(
-            source_column=config.source_column, target_column=config.target_column, dataset_size=config.dataset_size
+            source_column=config.source_column,
+            target_column=config.target_column,
+            dataset_size=config.dataset_size,
         )
 
         if model_config_path:
@@ -36,4 +40,6 @@ class QueryReformulationRunner(Runner):
             metric_val = metric_fn(model, test_file)
 
             print(f"{metric_name} = {metric_val}")
-            mlflow_logger.log_additional_metric(key=metric_name, value=metric_val, step=0)
+            mlflow_logger.log_additional_metric(
+                key=metric_name, value=metric_val, step=0
+            )

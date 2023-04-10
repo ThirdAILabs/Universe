@@ -1,5 +1,11 @@
 from abc import ABC, abstractmethod
-from .utils import AdditionalMetricCallback, qr_recall_at_5_with_target_name, qr_precision_at_1_with_target_name
+
+from .utils import (
+    AdditionalMetricCallback,
+    qr_precision_at_1_with_target_name,
+    qr_recall_at_5_with_target_name,
+)
+
 
 class QueryReformulationBenchmarkConfig(ABC):
     config_name = None
@@ -15,7 +21,7 @@ class QueryReformulationBenchmarkConfig(ABC):
     additional_metric_fns = {}
     model_config = None
     options = {}
-    
+
 
 class CQICQUDTBenchmark(QueryReformulationBenchmarkConfig):
     config_name = "cq_icq_query_reformulation"
@@ -30,5 +36,5 @@ class CQICQUDTBenchmark(QueryReformulationBenchmarkConfig):
 
     additional_metric_fns = {
         "recall@5": qr_recall_at_5_with_target_name("correct_queries"),
-        "precision@1": qr_precision_at_1_with_target_name("correct_queries")
+        "precision@1": qr_precision_at_1_with_target_name("correct_queries"),
     }

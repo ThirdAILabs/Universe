@@ -1,10 +1,10 @@
-from thirdai import bolt
-import pandas as pd
 import numpy as np
+import pandas as pd
 from sklearn.metrics import roc_auc_score
+from thirdai import bolt
+
 
 class AdditionalMetricCallback(bolt.callbacks.Callback):
-
     def __init__(
         self,
         metric_name=None,
@@ -14,13 +14,13 @@ class AdditionalMetricCallback(bolt.callbacks.Callback):
         mlflow_logger=None,
     ):
         super().__init__()
-        
+
         self.metric_name = metric_name
         self.metric_fn = metric_fn
         self.test_file = test_file
         self.model = model
         self.mlflow_logger = mlflow_logger
-    
+
         self.step = 0
 
     def set_test_file(self, test_file):
@@ -28,26 +28,24 @@ class AdditionalMetricCallback(bolt.callbacks.Callback):
 
     def set_model(self, model):
         self.model = model
-    
+
     def set_mlflow_logger(self, mlflow_logger):
         self.mlflow_logger = mlflow_logger
 
-
     def on_epoch_end(self, model, train_state):
-
         metric_val = self.metric_fn(self.model, self.test_file)
 
         print(f"{self.metric_name} = {metric_val}")
         if self.mlflow_logger:
-            self.mlflow_logger.log_additional_metric(key=self.metric_name, value=metric_val, step=self.step)
+            self.mlflow_logger.log_additional_metric(
+                key=self.metric_name, value=metric_val, step=self.step
+            )
 
         self.step += 1
-        
+
 
 def roc_auc_with_target_name(target_name, positive_label="1"):
-    def roc_auc_additional_metric(
-        model, test_file
-    ):
+    def roc_auc_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
         df = pd.read_csv(test_file, low_memory=False)
         labels = df[target_name].to_numpy()
@@ -65,10 +63,7 @@ def roc_auc_with_target_name(target_name, positive_label="1"):
 
 
 def gnn_roc_auc_with_target_name(target_name):
-    def roc_auc_additional_metric(
-        model, test_file
-    ):
-
+    def roc_auc_additional_metric(model, test_file):
         df = pd.read_csv(test_file)
         inference_samples = []
         for _, row in df.iterrows():
@@ -96,9 +91,7 @@ def gnn_roc_auc_with_target_name(target_name):
 
 
 def mse_with_target_name(target_name):
-    def mse_additional_metric(
-        model, test_file
-    ):
+    def mse_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
         df = pd.read_csv(test_file)
         labels = df[target_name].to_numpy()
@@ -111,9 +104,7 @@ def mse_with_target_name(target_name):
 
 
 def mae_with_target_name(target_name):
-    def mae_additional_metric(
-        model, test_file
-    ):
+    def mae_additional_metric(model, test_file):
         activations = model.evaluate(test_file)
         df = pd.read_csv(test_file)
         labels = df[target_name].to_numpy()
@@ -135,8 +126,14 @@ def mach_recall_at_5_with_target_name(target_name, target_delimeter=None):
         predictions = [[score[0] for score in scores] for scores in activations]
         labels = [[idx for idx in idxs.split(target_delimeter)] for idxs in labels]
 
-        recall_at_5 = sum([len([pred for pred in predictions[i] if pred in labels[i]]) / len(labels[i]) for i in range(len(labels))]) / len(labels)
-        
+        recall_at_5 = sum(
+            [
+                len([pred for pred in predictions[i] if pred in labels[i]])
+                / len(labels[i])
+                for i in range(len(labels))
+            ]
+        ) / len(labels)
+
         return recall_at_5
 
     return recall_at_5_additional_metric
@@ -151,7 +148,9 @@ def mach_precision_at_1_with_target_name(target_name, target_delimeter=None):
         predictions = [[score[0] for score in scores] for scores in activations]
         labels = [[idx for idx in idxs.split(target_delimeter)] for idxs in labels]
 
-        precision_at_1 = sum([1 if predictions[i][0] in labels[i] else 0 for i in range(len(labels))]) / len(labels)
+        precision_at_1 = sum(
+            [1 if predictions[i][0] in labels[i] else 0 for i in range(len(labels))]
+        ) / len(labels)
 
         return precision_at_1
 
@@ -173,7 +172,7 @@ def qr_recall_at_5_with_target_name(target_name):
         return recall_at_5
 
     return recall_at_5_additional_metric
-    
+
 
 def qr_precision_at_1_with_target_name(target_name):
     def precision_at_1_additional_metric(model, test_file):

@@ -1,5 +1,6 @@
 from thirdai import bolt
 
+
 def get_train_and_eval_configs(benchmark_config, callbacks=None):
     learning_rate = benchmark_config.learning_rate
     metrics = benchmark_config.metrics
@@ -22,4 +23,3 @@ def get_train_and_eval_configs(benchmark_config, callbacks=None):
         eval_config.return_activations()
 
     return train_config, eval_config
-
