@@ -50,7 +50,11 @@ def test_get_set_values_dragon_vector():
     new_first_layer_weights = first_layer.weights.copy().flatten()
 
     # checking whether the gradients are correct
-    # set is parallel in dragon and is not thread safe and there might be a race condition when two indices go the sum bucket in the dragon vector and are picked up by two threads at the same time. that is indices[i], values[j] is possible if hash(i) == hash(j) and are in a race condition.
+    # set is parallel in dragon and is not thread safe and there
+    # might be a race condition when two indices go the sum bucket
+    # in the dragon vector and are picked up by two threads at the same time.
+    # that is indices[i], values[j] is possible if hash(i) == hash(j) and are
+    # in a race condition.
 
     number_weights_mismatch = 0
     for i, values in enumerate(new_first_layer_weights):
