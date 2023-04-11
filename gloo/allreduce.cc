@@ -2,7 +2,7 @@
 #include <gloo/allreduce.h>
 #include <gloo/reduce.h>
 
-namespace pygloo {
+namespace boltgloo {
 
 template <typename T>
 void allreduce(const std::shared_ptr<gloo::Context> &context, intptr_t sendbuf,
@@ -69,4 +69,4 @@ void allreduce_wrapper(const std::shared_ptr<gloo::Context> &context,
     throw std::runtime_error("Unhandled dataType");
   }
 }
-} // namespace pygloo
+} // namespace boltgloo
