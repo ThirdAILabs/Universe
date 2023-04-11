@@ -95,12 +95,13 @@ void createBoltV2NNSubmodule(py::module_& module) {
            py::arg("rebuild_hash_tables") = 10,
            py::arg("reconstruct_hash_functions") = 100)
       .def("__call__", &ops::FullyConnected::apply)
-      .def_property_readonly("weights",
-                             [](const ops::FullyConnected& op) {
-                               return toNumpy(op.weightsPtr(), op.dimensions());
-                             })
+      .def_property_readonly(
+          "weights",
+          [](const ops::FullyConnected& op) {
+            return toNumpy(op.weightsPtr(), {op.dim(), op.inputDim()});
+          })
       .def_property_readonly("biases", [](const ops::FullyConnected& op) {
-        return toNumpy(op.biasesPtr(), {op.dimensions()[0]});
+        return toNumpy(op.biasesPtr(), {op.dim()});
       });
 
   py::class_<ops::Embedding, ops::EmbeddingPtr, ops::Op>(nn, "Embedding")

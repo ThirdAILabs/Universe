@@ -58,9 +58,9 @@ class FullyConnected final
   autograd::ComputationPtr apply(autograd::ComputationPtr input);
 
   /**
-   * Returns the dimensions of the layer as {dim, input_dim}.
+   * Returns the input dim of the fully connected layer.
    */
-  std::vector<uint32_t> dimensions() const;
+  uint32_t inputDim() const;
 
   /**
    * Returns a non-owning pointer to the weights.

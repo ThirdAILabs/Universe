@@ -155,7 +155,7 @@ void defineAutomlInModule(py::module_& module) {
       .def_static("load", &udt::UDT::load, py::arg("filename"))
       .def(bolt::python::getPickleFunction<udt::UDT>());
 
-  py::class_<udt::TextEmbeddingModel, udt::StringEncoderPtr>(
+  py::class_<udt::TextEmbeddingModel, udt::TextEmbeddingModelPtr>(
       module, "TextEmbeddingModel")
       .def("supervised_train", &udt::TextEmbeddingModel::supervisedTrain,
            py::arg("data_source"), py::arg("input_col_1"),

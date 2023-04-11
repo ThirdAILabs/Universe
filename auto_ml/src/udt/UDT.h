@@ -143,8 +143,8 @@ class UDT {
     return _backend->tabularDatasetFactory();
   }
 
-  StringEncoderPtr getEncoder(const std::string& activation_func,
-                              float distance_cutoff) const {
+  TextEmbeddingModelPtr getEncoder(const std::string& activation_func,
+                                   float distance_cutoff) const {
     return _backend->getEncoder(activation_func, distance_cutoff);
   }
 

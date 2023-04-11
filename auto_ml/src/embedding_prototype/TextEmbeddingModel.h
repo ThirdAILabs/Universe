@@ -15,17 +15,23 @@ namespace thirdai::automl::udt {
 namespace py = pybind11;
 
 class TextEmbeddingModel;
-using StringEncoderPtr = std::shared_ptr<TextEmbeddingModel>;
+using TextEmbeddingModelPtr = std::shared_ptr<TextEmbeddingModel>;
 
+/**
+ * This class represents an embedding model that turns text in to a vector
+ * representation. It
+ */
 class TextEmbeddingModel {
  public:
-  explicit TextEmbeddingModel(const std::string& activation_func,
-                              const float* non_owning_pretrained_fc_weights,
-                              const float* non_owning_pretrained_fc_biases,
-                              uint32_t fc_dim,
-                              const data::TextDataTypePtr& data_type,
-                              const data::TabularOptions& options,
-                              float distance_cutoff);
+  explicit TextEmbeddingModel(
+      const bolt::nn::ops::FullyConnectedPtr& embedding_op,
+      const data::TextDataTypePtr& data_type, data::TabularOptions options,
+      float distance_cutoff);
+
+  static TextEmbeddingModelPtr make(
+      const bolt::nn::ops::FullyConnectedPtr& embedding_op,
+      const data::TextDataTypePtr& data_type, data::TabularOptions options,
+      float distance_cutoff);
 
   py::object supervisedTrain(const dataset::DataSourcePtr& data_source,
                              const std::string& input_col_1,
@@ -49,15 +55,15 @@ class TextEmbeddingModel {
     oarchive(*this);
   }
 
-  static StringEncoderPtr load(const std::string& filename) {
+  static TextEmbeddingModelPtr load(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     return load_stream(filestream);
   }
 
-  static StringEncoderPtr load_stream(std::istream& input_stream) {
+  static TextEmbeddingModelPtr load_stream(std::istream& input_stream) {
     cereal::BinaryInputArchive iarchive(input_stream);
-    StringEncoderPtr deserialize_into(new TextEmbeddingModel());
+    TextEmbeddingModelPtr deserialize_into(new TextEmbeddingModel());
     iarchive(*deserialize_into);
 
     return deserialize_into;
@@ -70,8 +76,8 @@ class TextEmbeddingModel {
 
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_embedding_factory, _embedding_model, _two_tower_model, _data_type,
-            _options);
+    archive(_embedding_factory, _embedding_model, _two_tower_model,
+            _text_data_type, _options);
   }
 
   static bolt::nn::model::ModelPtr createEmbeddingModel(
@@ -83,7 +89,7 @@ class TextEmbeddingModel {
 
   data::TabularDatasetFactoryPtr _embedding_factory;
   bolt::nn::model::ModelPtr _embedding_model, _two_tower_model;
-  data::TextDataTypePtr _data_type;
+  data::TextDataTypePtr _text_data_type;
   data::TabularOptions _options;
 };
 

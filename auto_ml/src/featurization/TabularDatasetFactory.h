@@ -17,9 +17,6 @@
 
 namespace thirdai::automl::data {
 
-class TabularDatasetFactory;
-using TabularDatasetFactoryPtr = std::shared_ptr<TabularDatasetFactory>;
-
 class TabularDatasetFactory {
  public:
   TabularDatasetFactory(
@@ -29,7 +26,7 @@ class TabularDatasetFactory {
       std::set<std::string> label_col_names, const TabularOptions& options,
       bool force_parallel);
 
-  static TabularDatasetFactoryPtr make(
+  static auto make(
       ColumnDataTypes input_data_types,
       const UserProvidedTemporalRelationships& provided_temporal_relationships,
       const std::vector<dataset::BlockPtr>& label_blocks,
@@ -172,5 +169,7 @@ class TabularDatasetFactory {
 
   TabularOptions _options;
 };
+
+using TabularDatasetFactoryPtr = std::shared_ptr<TabularDatasetFactory>;
 
 }  // namespace thirdai::automl::data

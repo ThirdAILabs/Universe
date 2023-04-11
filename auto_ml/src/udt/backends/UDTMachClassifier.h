@@ -91,8 +91,8 @@ class UDTMachClassifier final : public UDTBackend {
     _dataset_factory->verifyCanDistribute();
   }
 
-  StringEncoderPtr getEncoder(const std::string& activation_func,
-                              float distance_cutoff) const final;
+  TextEmbeddingModelPtr getEncoder(const std::string& activation_func,
+                                   float distance_cutoff) const final;
 
  private:
   cold_start::ColdStartMetaDataPtr getColdStartMetaData() final {

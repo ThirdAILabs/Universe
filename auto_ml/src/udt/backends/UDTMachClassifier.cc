@@ -21,9 +21,7 @@ UDTMachClassifier::UDTMachClassifier(
     const std::optional<std::string>& model_config,
     const config::ArgumentMap& user_args)
     : _min_num_eval_results(defaults::MACH_MIN_NUM_EVAL_RESULTS),
-      _top_k_per_eval_aggregation(defaults::MACH_TOP_K_PER_EVAL_AGGREGATION),
-      _data_types(input_data_types),
-      _options(tabular_options) {
+      _top_k_per_eval_aggregation(defaults::MACH_TOP_K_PER_EVAL_AGGREGATION) {
   uint32_t output_range = user_args.get<uint32_t>(
       "extreme_output_dim", "integer", autotuneMachOutputDim(n_target_classes));
   uint32_t num_hashes = user_args.get<uint32_t>(
@@ -290,7 +288,7 @@ void UDTMachClassifier::setDecodeParams(uint32_t min_num_eval_results,
   _top_k_per_eval_aggregation = top_k_per_eval_aggregation;
 }
 
-StringEncoderPtr UDTMachClassifier::getEncoder(
+TextEmbeddingModelPtr UDTMachClassifier::getEncoder(
     const std::string& activation_func, float distance_cutoff) const {
   auto data_types = _dataset_factory->inputDataTypes();
   if (data_types.size() != 2) {
@@ -318,9 +316,19 @@ StringEncoderPtr UDTMachClassifier::getEncoder(
                 ->getNodeByName("fc_1")
                 ->getInternalFullyConnectedLayers()
                 .at(0);
-  return std::make_shared<TextEmbeddingModel>(
-      activation_func, fc->getWeights(), fc->getBiases(), fc->getDim(),
-      text_type, _dataset_factory->tabularOptions(), distance_cutoff);
+
+  auto tabular_options = _dataset_factory->tabularOptions();
+
+  auto fc_op = bolt::nn::ops::FullyConnected::make(
+      /* dim = */ fc->getDim(),
+      /* input_dim = */ fc->getInputDim(), /* sparsity= */ 1.0,
+      /* activation = */ activation_func,
+      /* sampling = */ nullptr);
+
+  fc_op->setWeightsAndBiases(fc->getWeightsPtr(), fc->getBiasesPtr());
+
+  return TextEmbeddingModel::make(fc_op, text_type, tabular_options,
+                                  distance_cutoff);
 }
 
 template <class Archive>
