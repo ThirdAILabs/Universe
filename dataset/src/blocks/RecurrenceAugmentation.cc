@@ -125,7 +125,7 @@ uint32_t RecurrenceAugmentation::elementIdAtStep(
   for (uint32_t neuron : active_neurons) {
     bool valid = (!unique_predictions || !predictions.count(neuron)) &&
                  (!no_eos || !isEOS(neuron));
-    if (!valid) {
+    if (valid) {
       return neuron;
     }
   }

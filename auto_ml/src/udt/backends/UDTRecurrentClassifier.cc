@@ -150,6 +150,9 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
   std::dynamic_pointer_cast<bolt::FullyConnectedNode>(_model->output())
       ->setOutputRange(std::nullopt);
 
+  std::cout << "Predictions: '" << text::join(predictions, {_target->delimiter})
+            << "'" << std::endl;
+
   // We previously incorporated predictions at each step into the sample.
   // Now, we extract
   // TODO(Geordie/Tharun): Should we join or return list instead?
