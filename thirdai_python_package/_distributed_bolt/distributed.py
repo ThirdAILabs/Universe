@@ -512,13 +512,13 @@ class DistributedDataParallel:
 
     # Note(pratik): This function simplifies training for bolt, for training with bolt_v2,
     # use step based training as freeze_hash_tables not implemented for it.
-    def train(self, epochs):
+    def train(self, epochs, freeze_hash_tables=True):
         for epoch in range(epochs):
             # We are freezing hashtables by default for distributed training after one epoch,
             # Ideally we should read freezehashtables from UDTOptions and then pass
             # it to distributed Wrapper. However, for the time being we are just
             # initializing freeze-hash-tables=True by default.
-            if epoch == 1:
+            if epoch == 1 and freeze_hash_tables:
                 self.train_state_manager.freeze_hash_tables()
 
             while self.step():
