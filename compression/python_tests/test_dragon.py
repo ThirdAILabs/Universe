@@ -56,13 +56,13 @@ def test_get_set_values_dragon_vector():
     for i, values in enumerate(new_first_layer_weights):
         if values != 0:
             if old_first_layer_weights[i] != new_first_layer_weights[i]:
-                number_weights_mismatch+=1
+                number_weights_mismatch += 1
     number_biases_mismatch = 0
     for i, values in enumerate(new_first_layer_biases):
         if values != 0:
             if old_first_layer_biases[i] != new_first_layer_biases[i]:
-                number_biases_mismatch+=1
-    
+                number_biases_mismatch += 1
+
     assert number_weights_mismatch <= TOLERANCE and number_biases_mismatch <= TOLERANCE
 
 
@@ -86,11 +86,11 @@ def test_concat_values_dragon_vector():
     first_layer.weights.set(concatenated_weights)
 
     new_first_layer_weights = first_layer.weights.copy().flatten()
-    number_weights_mismatch =0
+    number_weights_mismatch = 0
     for i, values in enumerate(new_first_layer_weights):
         if values != 0:
             if 2 * old_first_layer_weights[i] != new_first_layer_weights[i]:
-                number_weights_mismatch+=1
+                number_weights_mismatch += 1
     assert number_weights_mismatch <= TOLERANCE
 
 
