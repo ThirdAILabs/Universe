@@ -21,7 +21,7 @@ def test_get_set_values_dragon_vector():
     model = build_simple_hidden_layer_model(
         input_dim=INPUT_DIM, hidden_dim=HIDDEN_DIM, output_dim=OUTPUT_DIM
     )
-    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy(), print_when_done = False)
+    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     first_layer = model.get_layer("fc_1")
 
@@ -70,7 +70,7 @@ def test_concat_values_dragon_vector():
     model = build_simple_hidden_layer_model(
         input_dim=INPUT_DIM, hidden_dim=HIDDEN_DIM, output_dim=OUTPUT_DIM
     )
-    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy(), print_when_done = False)
+    model.compile(loss=bolt.nn.losses.CategoricalCrossEntropy())
 
     first_layer = model.get_layer("fc_1")
     old_first_layer_weights = first_layer.weights.copy().flatten()
