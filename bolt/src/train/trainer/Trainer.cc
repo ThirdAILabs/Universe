@@ -1,9 +1,14 @@
 #include "Trainer.h"
 #include <bolt/src/train/metrics/Metric.h>
+#include <bolt/src/train/trainer/Dataset.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <bolt/src/utils/Timer.h>
+#include <dataset/src/Datasets.h>
 #include <utils/Logging.h>
 #include <chrono>
+#include <limits>
+#include <optional>
+#include <stdexcept>
 
 namespace thirdai::bolt::train {
 
@@ -125,6 +130,48 @@ metrics::History Trainer::train_with_metric_names(
       /* callbacks= */ callbacks);
 }
 
+metrics::History Trainer::train_with_dataset_loader(
+    const dataset::DatasetLoaderPtr& train_data_loader, float learning_rate,
+    uint32_t epochs, uint32_t batch_size,
+    std::optional<uint32_t> max_in_memory_batches,
+    const std::vector<std::string>& train_metrics,
+    const dataset::DatasetLoaderPtr& validation_data_loader,
+    const std::vector<std::string>& validation_metrics,
+    std::optional<uint32_t> steps_per_validation,
+    bool use_sparsity_in_validation,
+    const std::vector<callbacks::CallbackPtr>& callbacks) {
+  if (!max_in_memory_batches) {
+    auto train_data = loadData(train_data_loader, batch_size).value();
+
+    std::optional<LabeledDataset> validation_data = std::nullopt;
+    if (validation_data_loader) {
+      validation_data = loadData(validation_data_loader, batch_size);
+    }
+
+    return train_with_metric_names(train_data, learning_rate, epochs,
+                                   train_metrics, validation_data,
+                                   validation_metrics, steps_per_validation,
+                                   use_sparsity_in_validation, callbacks);
+  }
+
+  std::optional<LabeledDataset> validation_data = std::nullopt;
+  if (validation_data_loader) {
+    validation_data = loadData(validation_data_loader, batch_size);
+  }
+
+  for (uint32_t e = 0; e < epochs; e++) {
+    while (auto train_chunk =
+               loadData(train_data_loader, batch_size, max_in_memory_batches)) {
+      train_with_metric_names(train_chunk.value(), learning_rate, epochs,
+                              train_metrics, validation_data,
+                              validation_metrics, steps_per_validation,
+                              use_sparsity_in_validation, callbacks);
+    }
+  }
+
+  return *_history;
+}
+
 metrics::History Trainer::validate(
     const LabeledDataset& validation_data,
     const metrics::InputMetrics& validation_metrics_in, bool use_sparsity) {
@@ -194,6 +241,39 @@ std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
       _epoch, _model->trainSteps(), metric_summary, batches, time);
 
   return logline;
+}
+
+std::optional<LabeledDataset> Trainer::loadData(
+    const dataset::DatasetLoaderPtr& dataset_loader, uint32_t batch_size,
+    std::optional<uint32_t> max_batches_opt) {
+  uint32_t max_batches =
+      max_batches_opt.value_or(std::numeric_limits<uint32_t>::max());
+
+  auto datasets = dataset_loader->loadSome(batch_size, max_batches);
+  if (!datasets) {
+    return std::nullopt;
+  }
+
+  auto input_dims = _model->inputDims();
+  auto label_dims = _model->labelDims();
+
+  if (datasets->size() != (input_dims.size() + label_dims.size())) {
+    std::stringstream error;
+    error << "DatasetLoader generated " << datasets->size()
+          << " but the model was expecting " << input_dims.size()
+          << " inputs and " << label_dims.size() << " labels.";
+    throw std::invalid_argument(error.str());
+  }
+
+  std::vector<dataset::BoltDatasetPtr> input_datasets(
+      datasets->begin(), datasets->begin() + input_dims.size());
+
+  std::vector<dataset::BoltDatasetPtr> label_datasets(
+      datasets->begin() + input_dims.size(), datasets->end());
+
+  return std::make_optional<LabeledDataset>(
+      convertDatasets(input_datasets, input_dims),
+      convertDatasets(label_datasets, label_dims));
 }
 
 }  // namespace thirdai::bolt::train
