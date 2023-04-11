@@ -106,7 +106,7 @@ std::pair<uint32_t, uint32_t> RecurrenceAugmentation::outputRange(
 
 uint32_t RecurrenceAugmentation::elementIdAtStep(
     const BoltVector& output, uint32_t step,
-    const std::unordered_set<uint32_t>& predictions, bool unique_predictions,
+    std::unordered_set<uint32_t>& predictions, bool unique_predictions,
     bool no_eos) {
   if (!output.isDense()) {
     throw std::invalid_argument(
@@ -123,9 +123,12 @@ uint32_t RecurrenceAugmentation::elementIdAtStep(
             });
 
   for (uint32_t neuron : active_neurons) {
-    bool valid = (!unique_predictions || !predictions.count(neuron)) &&
-                 (!no_eos || !isEOS(neuron));
+    uint32_t position_independent_id = neuron - begin;
+    bool valid =
+        (!unique_predictions || !predictions.count(position_independent_id)) &&
+        (!no_eos || !isEOS(neuron));
     if (valid) {
+      predictions.insert(position_independent_id);
       return neuron;
     }
   }

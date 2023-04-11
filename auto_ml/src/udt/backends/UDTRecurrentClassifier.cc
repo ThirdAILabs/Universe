@@ -142,16 +142,12 @@ py::object UDTRecurrentClassifier::predict(const MapInput& sample,
       break;
     }
 
-    predicted_ids.insert(predicted_id);
     _dataset_factory->addPredictionToSample(mutable_sample, predicted_id);
     predictions.push_back(_dataset_factory->elementString(predicted_id));
   }
 
   std::dynamic_pointer_cast<bolt::FullyConnectedNode>(_model->output())
       ->setOutputRange(std::nullopt);
-
-  std::cout << "Predictions: '" << text::join(predictions, {_target->delimiter})
-            << "'" << std::endl;
 
   // We previously incorporated predictions at each step into the sample.
   // Now, we extract
@@ -214,7 +210,6 @@ py::object UDTRecurrentClassifier::predictBatch(const MapInputBatch& samples,
           continue;
         }
 
-        all_predicted_ids[i].insert(predicted_id);
         _dataset_factory->addPredictionToSample(mutable_samples[i],
                                                 predicted_id);
         all_predictions[i].push_back(
